@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, PlusIcon, MinusIcon, SquareCheckIcon, PanelIcon, FlameIcon, ArchiveBoxIcon, ZapIcon } from '../components/Icons';
+import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, PlusIcon, SquareCheckIcon, PanelIcon, FlameIcon, ArchiveBoxIcon, ZapIcon } from '../components/Icons';
+import { Search as SearchIcon } from 'lucide-react';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { useConfirmation } from '../hooks/useConfirmation';
 import { Action, ScheduledTask, DayOfWeek, Arena, DailyCommitment, SeasonQuest, ActionType, PlannerMatrixQuadrant, Report } from '../types';
@@ -9,7 +10,6 @@ import { PoolAction } from '../components/PoolAction';
 import { DropIndicator } from '../components/DropIndicator';
 import { DailyPanelModal } from '../components/DailyPanelModal';
 import { announceBlockingOverlay } from '../utils/blockingOverlay';
-import { MilestonePoolAction } from '../components/MilestonePoolAction';
 import { ActionModal } from '../components/ActionModal';
 import { GlassCard } from '../components/GlassCard';
 import { useTutorial } from '../contexts/TutorialContext';
@@ -27,6 +27,18 @@ import {
 } from '../utils/restScreenActionSession';
 import '../components/core-ui.css';
 import { EmojiGlyph } from '../components/EmojiGlyph';
+
+/**
+ * Zoom do planner: um controle so, quatro paradas.
+ *
+ * Eram dois botoes (+ e -) mais um rotulo "2x" empilhados na coluna flutuante,
+ * tres alvos de toque cobrindo a grade justamente onde a pessoa precisa ver o
+ * dia. Agora a lupa avanca uma parada por toque e volta ao inicio depois da
+ * ultima — mesma amplitude, um terco do espaco.
+ */
+const PLANNER_ZOOMS = [1, 2, 3, 4] as const;
+type PlannerZoom = typeof PLANNER_ZOOMS[number];
+const PLANNER_ZOOM_FACTORS: Record<PlannerZoom, number> = { 1: 0.5, 2: 0.75, 3: 1, 4: 1.4 };
 
 type BayEntryPayload = { count: number; isUnlimited: boolean; taskIds?: string[]; displayCount?: number };
 type ExecutionDropTarget = { date: string; index: number } | null;
@@ -327,14 +339,22 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
                 className="absolute left-0 right-1 cursor-pointer select-none flex items-center justify-center"
                 style={{ top: `${top}px`, height: `${height}px`, touchAction: 'none' }}
             >
-                <div className="relative w-full h-full">
-                    <div className="absolute inset-0 w-full h-full" style={{ ...backgroundStyle, clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }} />
-                    {task.completed && <div className="absolute inset-0" style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)', background: 'linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.04) 58%, rgba(8,12,20,0.18) 100%)' }} />}
-                    <div className={`absolute inset-0 border-2 ${task.completed ?'border-white/30 shadow-[0_0_14px_rgba(255,255,255,0.08)]' : 'border-dashed border-gray-600'}`} style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }} />
+                {/*
+                  * O losango vestia o gradiente do ativo e uma borda cinza
+                  * tracejada — a MESMA borda de qualquer tarefa. A forma dizia
+                  * "isto fecha um trecho" e a cor dizia "mais do mesmo". Agora
+                  * ele usa o ouro de marco e o halo do bloco MARCO do index.css,
+                  * o mesmo que a bay usa, para ser reconhecido como um objeto so
+                  * nos dois lugares.
+                  */}
+                <div className="relative w-full h-full marco-halo-wrap">
+                    <div className="marco-losango absolute inset-0 w-full h-full" />
+                    {task.completed && <div className="absolute inset-0" style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)', background: 'linear-gradient(135deg, rgba(255,255,255,0.34), rgba(255,255,255,0.08) 58%, rgba(8,12,20,0.22) 100%)' }} />}
+                    <div className="marco-borda-interna absolute inset-0" />
                     {task.completed && <div className="absolute right-2 top-2 z-20 flex h-5 w-5 items-center justify-center rounded-full border border-white/20 bg-black/28 text-white shadow-[0_0_8px_rgba(255,255,255,0.12)]"><SquareCheckIcon className="h-3 w-3 text-emerald-300 drop-shadow-[0_0_4px_rgba(52,211,153,0.55)]" /></div>}
-                    <div className={`relative z-10 w-full h-full flex flex-col items-center justify-center text-center p-1 ${task.completed ?'text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.08)]' : ''}`}>
-                        <EmojiGlyph symbol={action?.icon || "🏁"} size="milestone" className="text-white" />
-                        <div className="text-xs font-semibold truncate max-w-full px-1">{action?.name}</div>
+                    <div className="relative z-10 w-full h-full flex flex-col items-center justify-center text-center p-1 text-[#241a07]">
+                        <EmojiGlyph symbol={action?.icon || "🏁"} size="milestone" className="drop-shadow-[0_1px_1px_rgba(253,241,196,0.6)]" />
+                        <div className="text-xs font-black truncate max-w-full px-1 drop-shadow-[0_1px_1px_rgba(253,241,196,0.5)]">{action?.name}</div>
                     </div>
                     {isHolding && (<div className="absolute inset-0 bg-black/50 animate-pulse" style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}><div className={`h-full w-full ${task.completed ?'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`}></div></div>)}
                     {showSparkles && <Sparkles />}
@@ -951,15 +971,6 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         return () => window.removeEventListener('planner:focus-date', handlePlannerFocusDate as EventListener);
     }, []);
 
-    const [showOracleInput, setShowOracleInput] = useState(false);
-    const [oracleInput, setOracleInput] = useState('');
-    const oracleInputRef = useRef<HTMLInputElement>(null);
-
-    useEffect(() => {
-        if (showOracleInput && oracleInputRef.current) {
-            oracleInputRef.current.focus();
-        }
-    }, [showOracleInput]);
 
     const toDateString = (value: Date) => formatLocalDateString(value);
     const today = buildLocalDateFromString(getOperationalDateString());
@@ -1106,189 +1117,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         return out;
     };
 
-    const splitOracleInput = (raw: string) => {
-        const input = raw.trim();
-        const quoteMatch = input.match(/"([^"]+)"/);
-        const description = quoteMatch?.[1]?.trim() || '';
-        const withoutQuote = quoteMatch ?input.replace(quoteMatch[0], '').trim() : input;
 
-        const findAtIndex = (value: string) => {
-            for (let i = value.length - 1; i >= 0; i -= 1) {
-                if (value[i] !== '@') continue;
-                if (i === 0) return i;
-                if (/\s/.test(value[i - 1])) return i;
-            }
-            return -1;
-        };
-
-        const atIndex = findAtIndex(withoutQuote);
-        if (atIndex < 0) return { base: withoutQuote, arenaName: '', description };
-
-        const before = withoutQuote.slice(0, atIndex).trim();
-        const after = withoutQuote.slice(atIndex + 1).trim();
-        if (!after) return { base: before, arenaName: '', description };
-
-        const numeric = after.match(/^\s*(\d{1,3})\b/);
-        if (numeric) {
-            const arenaName = numeric[1];
-            const remainder = after.slice(numeric[0].length).trim();
-            const base = `${before} ${remainder}`.trim();
-            return { base, arenaName, description };
-        }
-
-        const quotedArena = after.match(/^\s*"([^"]+)"\s*/);
-        if (quotedArena) {
-            const arenaName = quotedArena[1].trim();
-            const remainder = after.slice(quotedArena[0].length).trim();
-            const base = `${before} ${remainder}`.trim();
-            return { base, arenaName, description };
-        }
-
-        const normalizedAfter = after;
-        const cutPoints = [
-            normalizedAfter.search(/\b\d+\s*(x|vez|vezes)\b/i),
-            normalizedAfter.search(/\b(\d{1,2}\s*h\s*\d{1,2}|\d{1,2}\s*(h|hora|horas)|\d+\s*(m|min|mins|minuto|minutos))\b/i),
-            normalizedAfter.search(/\b(\d{1,2}\s*(?:hora|horas)?\s*(?:da|de)\s*(manha|tarde|noite)|(?:de|da)\s*(manha|tarde|noite)|as\s*\d{1,2}(?::\d{2})?|\d{1,2}[:h]\d{2}|\d{1,2}h)\b/i),
-            normalizedAfter.search(/\b(seg|segunda|ter|terca|terça|qua|quarta|qui|quinta|sex|sexta|sab|sabado|sábado|dom|domingo)\b/i),
-            normalizedAfter.search(/\s[-–]\s/),
-            normalizedAfter.search(/[|,;]/),
-        ].filter(i => i >= 0);
-
-        const cut = cutPoints.length > 0 ?Math.min(...cutPoints) : normalizedAfter.length;
-        const arenaName = normalizedAfter.slice(0, cut).trim();
-        const remainder = normalizedAfter.slice(cut).trim();
-        const base = `${before} ${remainder}`.trim();
-
-        return { base, arenaName, description };
-    };
-
-    const handleOracleSubmit = async () => {
-        if (!oracleInput.trim()) return;
-
-        try {
-            const { base, arenaName, description } = splitOracleInput(oracleInput);
-            const duration = parseDurationMinutes(base) ?? 30;
-            const repetitions = parseRepetitions(base) ?? 1;
-            const startTimeInMinutes = parseTimeMinutes(base);
-            const selectedDays = parseDaysOfWeek(base);
-
-            const normalizedBase = base;
-            const cutPoints = [
-                normalizedBase.search(/\b\d+\s*(x|vez|vezes)\b/i),
-                normalizedBase.search(/\b(\d{1,2}\s*h\s*\d{1,2}|\d{1,2}\s*(h|hora|horas)|\d+\s*(m|min|mins|minuto|minutos))\b/i),
-                normalizedBase.search(/\b(?:as\s*\d{1,2}(?::\d{2})?|\d{1,2}[:h]\d{2}|\d{1,2}h)\b/i),
-                normalizedBase.search(/\b(seg|segunda|ter|terca|terça|qua|quarta|qui|quinta|sex|sexta|sab|sabado|sábado|dom|domingo)\b/i),
-            ].filter(i => i >= 0);
-            const nameEnd = cutPoints.length > 0 ?Math.min(...cutPoints) : normalizedBase.length;
-            const parsedName = normalizedBase.slice(0, nameEnd).trim();
-            const actionName = parsedName;
-            const actionDescription = description;
-
-            // 2. Find Target Arena
-            let targetArenaId = '';
-
-            const allArenas: Array<{ arena: Arena; assetId: string; normalizedName: string }> = assets.flatMap(asset =>
-                asset.arenas.map(arena => ({ arena, assetId: asset.id, normalizedName: normalizeText(arena.name) }))
-            );
-
-            const findArena = (name: string): { arena: Arena, assetId: string } | null => {
-                const normalizedQuery = normalizeText(name);
-                const exact = allArenas.find(a => a.normalizedName === normalizedQuery);
-                if (exact) return { arena: exact.arena, assetId: exact.assetId };
-
-                let best: { arena: Arena; assetId: string; score: number; dist: number } | null = null;
-                for (const candidate of allArenas) {
-                    const candName = candidate.normalizedName;
-                    const dist = levenshteinDistance(normalizedQuery, candName);
-                    const maxLen = Math.max(normalizedQuery.length, candName.length) || 1;
-                    const score = 1 - dist / maxLen;
-                    const prefixBonus = candName.startsWith(normalizedQuery) || normalizedQuery.startsWith(candName) ?0.08 : 0;
-                    const finalScore = Math.min(1, score + prefixBonus);
-                    if (!best || finalScore > best.score) {
-                        best = { arena: candidate.arena, assetId: candidate.assetId, score: finalScore, dist };
-                    }
-                }
-
-                if (best && (best.dist <= 2 || best.score >= 0.82)) {
-                    return { arena: best.arena, assetId: best.assetId };
-                }
-
-                return null;
-            };
-
-            const geralAsset = assets.find(a => a.id === 'geral') || assets[0];
-
-            if (arenaName) {
-                const found = findArena(arenaName);
-                if (found) {
-                    targetArenaId = found.arena.id;
-                } else if (geralAsset) {
-                    const newArena = await addArena(geralAsset.id, {
-                        name: arenaName,
-                        icon: '🏟️',
-                        description: 'Arena criada pelo Oráculo'
-                    });
-                    targetArenaId = newArena.id;
-                }
-            }
-
-            if (!targetArenaId) {
-                const outros = findArena('Outros');
-                if (outros) {
-                    targetArenaId = outros.arena.id;
-                } else if (geralAsset) {
-                    const newArena = await addArena(geralAsset.id, {
-                        name: 'Outros',
-                        icon: '📦',
-                        description: 'Arena criada pelo Oráculo'
-                    });
-                    targetArenaId = newArena.id;
-                }
-            }
-
-            // 4. Create Action
-            if (!targetArenaId || !actionName) return;
-
-            const actionType: ActionType = startTimeInMinutes !== null && selectedDays.length === 0 ?'Compromisso' : 'Ação Recorrente';
-
-            const created = await addAction({
-                name: actionName,
-                description: actionDescription || undefined,
-                arenaId: targetArenaId,
-                icon: '📝',
-                duration,
-                difficulty: 1,
-                actionType,
-                repetitions: actionType === 'Ação Recorrente' ?Math.max(1, repetitions) : 1,
-            });
-
-            if (actionType === 'Compromisso' && startTimeInMinutes !== null) {
-                const operationalDateString = formatLocalDateString(currentDate);
-                const displayMinutes = startTimeInMinutes < OPERATIONAL_DAY_START_MINUTE
-                    ? startTimeInMinutes + (24 * 60)
-                    : startTimeInMinutes;
-                const dateString = getActualDateStringForOperationalMinutes(operationalDateString, displayMinutes);
-                const actualStartTime = getActualStartTimeForOperationalMinutes(displayMinutes);
-                await scheduleTask(created, dateString, actualStartTime);
-            }
-
-            if (actionType === 'Ação Recorrente' && selectedDays.length > 0 && startTimeInMinutes !== null) {
-                await scheduleMultipleTasks(created, selectedDays, startTimeInMinutes);
-            }
-
-            setOracleInput('');
-            setShowOracleInput(false);
-        } catch (error) {
-            console.error("Error in Oracle Submit:", error);
-        }
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') {
-            handleOracleSubmit();
-        }
-    };
-    const [isMilestonePoolOpen, setIsMilestonePoolOpen] = useState(false);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [dailyDropIndicator, setDailyDropIndicator] = useState<{ top: number, height: number } | null>(null);
     const [weeklyDropIndicator, setWeeklyDropIndicator] = useState<{ dayIndex: number; top: number; height: number; } | null>(null);
@@ -1297,11 +1126,12 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const [currentTime, setCurrentTime] = useState(new Date());
     const dailyTimeIndicatorRef = useRef<HTMLDivElement>(null);
     const weeklyTimeIndicatorRef = useRef<HTMLDivElement>(null);
-    const [zoomLevel, setZoomLevel] = useState<3 | 2 | 1>(() => {
+    const [zoomLevel, setZoomLevel] = useState<PlannerZoom>(() => {
         if (typeof window === 'undefined') return 2;
         try {
             const saved = localStorage.getItem('planner_zoom_v3');
-            return saved ?(Number(saved) as 3 | 2 | 1) : 2;
+            const parsed = Number(saved);
+            return PLANNER_ZOOMS.includes(parsed as PlannerZoom) ? (parsed as PlannerZoom) : 2;
         } catch {
             return 2;
         }
@@ -1348,8 +1178,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         currentPosition: { x: 0, y: 0 },
     });
 
-    const zoomFactors: Record<number, number> = { 3: 1, 2: 0.75, 1: 0.5 };
-    const scaleFactor = zoomFactors[zoomLevel];
+    const scaleFactor = PLANNER_ZOOM_FACTORS[zoomLevel];
 
     const refreshDragTargets = useCallback(() => {
         bayAreaElRef.current = document.querySelector('[data-testid="bay-area"]') as HTMLElement | null;
@@ -1380,7 +1209,6 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         const offset = elemRect ?{ x: pos.x - elemRect.left, y: pos.y - elemRect.top } : { x: 0, y: 0 };
         const elementHeight = elemRect?.height || Math.max(40, item.duration * scaleFactor);
         dropAnchorOffsetRef.current = Math.min(Math.max(offset.y, 16), Math.min(32, elementHeight * 0.45));
-        setIsMilestonePoolOpen(false);
         refreshDragTargets();
         if (scrollContainerRef.current) {
             lastScrollTopRef.current = scrollContainerRef.current.scrollTop;
@@ -1855,8 +1683,11 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     }, [activeCycle, selectedOperationalDateString, tasks]);
 
     // Marco availability is cycle-scoped. Old completions must not block a new cycle.
-    const milestoneActions = actions.filter(
-        action => action.actionType === 'Marco' && !plannerScopedTasks.some(task => task.actionId === action.id)
+    const milestoneActions = useMemo(
+        () => actions.filter(
+            action => action.actionType === 'Marco' && !plannerScopedTasks.some(task => task.actionId === action.id)
+        ),
+        [actions, plannerScopedTasks],
     );
 
     const tasksById = useMemo(() => new Map(tasks.map(task => [task.id, task])), [tasks]);
@@ -2056,8 +1887,20 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 : unified[actionId].count + visibleTaskIds.length;
         });
         
+        // Marco entra na bay como qualquer outra acao.
+        //
+        // Ele vivia numa aba propria, atras de um botao no canto: para agendar
+        // um marco era preciso lembrar que a aba existia. Como marco nao passa
+        // pelo pool de repeticoes (ele acontece uma vez), ele nao aparecia aqui
+        // sozinho — entra com count 1 e some da bay no instante em que ganha uma
+        // tarefa no ciclo, que e exatamente o filtro de milestoneActions.
+        milestoneActions.forEach(action => {
+            if (unified[action.id]) return;
+            unified[action.id] = { count: 1, isUnlimited: false, taskIds: [] };
+        });
+
         return unified;
-    }, [availableTaskPool, bayAreaTasks, executionQueuedTaskIds, getActionById, plannerScopedTasks]);
+    }, [availableTaskPool, bayAreaTasks, executionQueuedTaskIds, getActionById, milestoneActions, plannerScopedTasks]);
 
     const visibleBayAreaEntries = useMemo(() => {
         const arenaAssetIdByArenaId = new Map<string, string>();
@@ -2149,7 +1992,11 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 count={payload.displayCount ?? payload.count}
                 isUnlimited={payload.isUnlimited}
                 taskId={nextTaskId}
-                onComplete={(aid, tid) => scheduleAndCompleteNow(aid, tid)}
+                onComplete={(aid, tid) => (
+                    action.actionType === 'Marco'
+                        ? scheduleAndCompleteMilestoneNow(aid)
+                        : scheduleAndCompleteNow(aid, tid)
+                )}
                 onCustomDragStart={handleCustomDragStart}
                 onActionClick={(a) => setModalData({ action: a, taskId: nextTaskId })}
             />
@@ -2257,7 +2104,11 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                                                                 count={payload.displayCount ?? payload.count}
                                                                 isUnlimited={payload.isUnlimited}
                                                                 taskId={nextTaskId}
-                                                                onComplete={(aid, tid) => scheduleAndCompleteNow(aid, tid)}
+                                                                onComplete={(aid, tid) => (
+                                                                    action.actionType === 'Marco'
+                                                                        ? scheduleAndCompleteMilestoneNow(aid)
+                                                                        : scheduleAndCompleteNow(aid, tid)
+                                                                )}
                                                                 onCustomDragStart={handleCustomDragStart}
                                                                 onActionClick={(a) => setModalData({ action: a, taskId: nextTaskId })}
                                                             />
@@ -2291,10 +2142,6 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                                     )}
                                 </div>
                             )}
-                        </div>
-                        <div className={`relative flex-shrink-0 ${bayAreaHeight} transition-all duration-300`}>
-                            <button aria-label="Metas disponíveis" onClick={() => setIsMilestonePoolOpen(prev => !prev)} className="planner-bay-surface w-10 h-full rounded-2xl flex items-center justify-center hover:bg-white/[0.05] transition-colors"><svg viewBox="0 0 24 24" className="w-5 h-5 text-[var(--accent-silver)] transform rotate-45 opacity-70"><rect x="3" y="3" width="18" height="18" rx="2" fill="currentColor" /></svg></button>
-                            {isMilestonePoolOpen && (<div className="absolute top-full right-0 mt-2 max-h-[42vh] w-56 overflow-y-auto core-surface-strong rounded-xl p-2 space-y-1 z-[80] animate-fade-in shadow-[0_18px_44px_rgba(0,0,0,0.42)]"><h4 className="core-label text-center pb-1 border-b border-white/6">Marcos</h4>{milestoneActions.length > 0 ?milestoneActions.map(action => (<MilestonePoolAction key={action.id} action={action} onCustomDragStart={handleCustomDragStart} onComplete={scheduleAndCompleteMilestoneNow} onActionClick={(a) => setModalData({ action: a })} />)) : (<p className="text-[10px] text-center text-gray-600 py-2">Vazio</p>)}</div>)}
                         </div>
                     </div>
                     <DayHeader
@@ -2380,52 +2227,19 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             )}
 
             {/* Floating Action Button */}
-            <div className="fixed bottom-[calc(4.25rem+var(--safe-area-bottom))] right-4 z-20 flex flex-col items-center space-y-2">
+            <div className="fixed bottom-[calc(4.4rem+var(--safe-area-bottom))] right-4 z-20 flex flex-col items-center space-y-2">
 
-                {/* Oracle Input Panel */}
-                {showOracleInput && (
-                    <div className="absolute bottom-full mb-4 right-0 w-72 z-30">
-                        <GlassCard variant="gold" className="p-2 backdrop-blur-xl border border-[var(--skin-accent-color)]/20 shadow-[0_16px_40px_rgba(0,0,0,0.32)]">
-                            <div className="flex flex-col space-y-2">
-                                <label className="core-label text-[var(--skin-accent-color)] ml-1">{'Or\u00E1culo'}</label>
-                                <div className="flex items-center space-x-2">
-                                    <input
-                                        ref={oracleInputRef}
-                                        type="text"
-                                        value={oracleInput}
-                                        onChange={(e) => setOracleInput(e.target.value)}
-                                        onKeyDown={handleKeyDown}
-                                        placeholder={'A\u00E7\u00E3o @ Arena...'}
-                                        className="planner-oracle-input flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--skin-accent-color)]/50 placeholder-gray-500"
-                                    />
-                                    <button aria-label="Enviar ao Oráculo"
-                                        onClick={handleOracleSubmit}
-                                        className="p-2 bg-[var(--ui-button-primary-bg)] text-[var(--ui-text-on-accent)] rounded-lg hover:brightness-110 transition-colors"
-                                    >
-                                        <PlusIcon className="w-4 h-4" />
-                                    </button>
-                                </div>
-                                <div className="planner-oracle-helper text-[10px] text-gray-400 px-1">
-                                    Ex: "Ler Livro @ Estudos" ou apenas "Ler Livro"
-                                </div>
-                            </div>
-                        </GlassCard>
-                    </div>
-                )}
-
-                <div className="planner-floating-stack flex flex-col items-center bg-black/45 backdrop-blur-lg border border-white/8 rounded-full p-0.5 space-y-0.5 shadow-[0_10px_24px_rgba(0,0,0,0.22)]">
+                <div className="planner-floating-stack flex flex-col items-center bg-black/45 backdrop-blur-lg border border-white/8 rounded-full p-0.5 shadow-[0_10px_24px_rgba(0,0,0,0.22)]">
                     <button
                         id="focus-mode-button"
-                        onClick={() => setShowOracleInput(!showOracleInput)}
-                        className={`planner-soft-control p-1.5 rounded-full transition-all ${showOracleInput ?'bg-[var(--ui-button-primary-bg)] text-[var(--ui-text-on-accent)]' : 'text-white hover:bg-white/10'}`}
-                        title="Adicionar por texto"
+                        onClick={() => setZoomLevel(prev => PLANNER_ZOOMS[(PLANNER_ZOOMS.indexOf(prev) + 1) % PLANNER_ZOOMS.length])}
+                        className="planner-soft-control flex min-h-11 min-w-11 flex-col items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
+                        title={`Zoom ${zoomLevel}x de ${PLANNER_ZOOMS.length}. Toque para o proximo.`}
+                        aria-label={`Zoom do planner, nivel ${zoomLevel} de ${PLANNER_ZOOMS.length}. Toque para avancar.`}
                     >
-                        <span className="text-sm">{'\u{1F4DD}'}</span>
+                        <SearchIcon className="w-4 h-4" />
+                        <span className="planner-date-label font-bold text-[8px] leading-none text-white/72">{zoomLevel}x</span>
                     </button>
-                    <div className="w-6 h-px bg-white/10 my-0.5"></div>
-                    <button onClick={() => setZoomLevel(prev => Math.min(3, prev + 1) as 1 | 2 | 3)} disabled={zoomLevel === 3} className="planner-soft-control p-1.5 disabled:opacity-50" title="Aproximar"><PlusIcon className="w-3.5 h-3.5" /></button>
-                    <span className="planner-date-label font-bold text-[9px] leading-none text-white/72">{zoomLevel}x</span>
-                    <button onClick={() => setZoomLevel(prev => Math.max(1, prev - 1) as 1 | 2 | 3)} disabled={zoomLevel === 1} className="planner-soft-control p-1.5 disabled:opacity-50" title="Afastar"><MinusIcon className="w-3.5 h-3.5" /></button>
                 </div>
                 <button aria-label="Nova ação" onClick={() => setIsActionModalOpen(true)} className="w-12 h-12 rounded-full luxe-skin-button flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform"><PlusIcon className="w-6 h-6 text-black" /></button>
             </div>

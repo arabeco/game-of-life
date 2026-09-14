@@ -584,7 +584,18 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
                     {[
                         { id: 'people', label: 'Pessoas', subtitle: `${requestCount} pendencias` },
                         { id: 'messages', label: 'Mensagens', subtitle: `${friends.length} contatos` },
-                        { id: 'clan', label: 'Clã', subtitle: clan ? clan.name : 'Sem grupo' },
+                        // Sem grupo mas com convite na mao, a legenda para de dizer
+                        // "Sem grupo" e passa a dizer que ha algo para responder:
+                        // e o unico aviso visivel para quem nao viu o push.
+                        {
+                            id: 'clan',
+                            label: 'Clã',
+                            subtitle: clan
+                                ? clan.name
+                                : incomingClanInvites.length > 0
+                                    ? `${incomingClanInvites.length} convite${incomingClanInvites.length > 1 ? 's' : ''}`
+                                    : 'Sem grupo',
+                        },
                     ].map((section) => (
                         <button
                             key={section.id}
@@ -611,7 +622,49 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
             )}
 
             {activeSection === 'clan' && (
-                <div className="flex justify-center">
+                <div className="flex flex-col items-center gap-3">
+                    {/*
+                      * O convite de grupo precisa aparecer ONDE O PUSH ENTREGA.
+                      *
+                      * A notificacao de convite carrega url '/?oracle=clan' e joga
+                      * a pessoa exatamente aqui — onde, sem grupo, so existia o
+                      * "Criar Grupo". O botao de aceitar morava em Pessoas >
+                      * Solicitacoes, duas navegacoes adiante e sem nada indicando
+                      * o caminho: recebia-se o aviso e nao havia onde entrar. O
+                      * mesmo convite continua listado la; aqui ele fica no fim da
+                      * estrada que o proprio push abriu.
+                      */}
+                    {!clan && incomingClanInvites.length > 0 && (
+                        <div className="w-full max-w-md space-y-2">
+                            {incomingClanInvites.map(invite => (
+                                <div key={invite.id} className="rounded-[26px] border border-amber-300/24 bg-amber-400/[0.07] p-4">
+                                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-200/80">Convite de grupo</div>
+                                    <div className="mt-1 text-base font-bold text-white">
+                                        {String(invite.metadata?.clanName || 'Um grupo')}
+                                    </div>
+                                    <p className="mt-1 text-xs text-white/55">
+                                        {String(invite.metadata?.senderNickname || 'A liderança')} convidou você.
+                                    </p>
+                                    <div className="mt-3 flex gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => void respondToClanInvite(invite.id, true)}
+                                            className="flex-1 rounded-xl bg-emerald-500/18 py-2.5 text-[11px] font-black uppercase tracking-[0.14em] text-emerald-200 transition-colors hover:bg-emerald-500/28"
+                                        >
+                                            Entrar no grupo
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => void respondToClanInvite(invite.id, false)}
+                                            className="rounded-xl border border-white/10 px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.14em] text-white/45 transition-colors hover:border-rose-300/30 hover:text-rose-200"
+                                        >
+                                            Recusar
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                     {clan ? (
                         <ClanOverviewModal embedded onClose={() => undefined} />
                     ) : (

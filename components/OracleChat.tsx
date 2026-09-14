@@ -26,6 +26,20 @@ const READING_FEED_ID = 'reading:now';
 const CYCLE_READING_FEED_ID = 'reading:cycle';
 const isReading = (id?: string) => id === READING_FEED_ID || id === CYCLE_READING_FEED_ID;
 
+/**
+ * Leitura nao e sabedoria.
+ *
+ * As abas se dividiam por CANAL de entrega — tudo que chegava pelo feed caia em
+ * Sabedoria. So que a leitura do ciclo tambem chega pelo feed, e ela fala do
+ * SEU dia e do SEU ciclo: o lugar dela e a primeira aba, junto dos dois botoes
+ * que produzem a mesma coisa a pedido. Sabedoria fica com o que ela sempre
+ * quis ser: card de conteudo, que nao depende do seu estado. A divisao passa a
+ * ser por ASSUNTO, e as duas pontas (hidratacao e filtro) leem daqui para nao
+ * discordarem de novo.
+ */
+const CATEGORIAS_DE_LEITURA = new Set(['analise_padroes']);
+const ehLeitura = (category?: string | null) => Boolean(category && CATEGORIAS_DE_LEITURA.has(category));
+
 interface Message {
   section?: 'guidance' | 'wisdom';
   role: 'user' | 'assistant';
@@ -332,7 +346,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
     const feedCards: Message[] = recentFeedCards.slice(-30).map((feedMessage) => ({
       role: 'assistant',
-      section: feedMessage.deliveryType === 'feed' ? 'wisdom' : 'guidance',
+      section: ehLeitura(feedMessage.category) ? 'guidance' : (feedMessage.deliveryType === 'feed' ? 'wisdom' : 'guidance'),
       content: feedMessage.content,
       timestamp: new Date(feedMessage.createdAt),
       mode: feedMessage.mode,
@@ -678,7 +692,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   // If isEmbedded is true, we render a smaller status bar inside the chat area if header is hidden
   const showStatusPill = hideHeader;
 
-  const wisdomIds = new Set((oracleMessages || []).filter(message => message.deliveryType === 'feed' && message.contextSnapshot?.purpose !== 'oracle_speech').map(message => message.id));
+  const wisdomIds = new Set((oracleMessages || []).filter(message => message.deliveryType === 'feed' && message.contextSnapshot?.purpose !== 'oracle_speech' && !ehLeitura(message.category)).map(message => message.id));
   const visibleMessages = section === 'mission' ? [] : messages.filter(message => section === 'wisdom' ? (message.section === 'wisdom' || wisdomIds.has(message.feedId || '')) : !(message.section === 'wisdom' || wisdomIds.has(message.feedId || '')));
 
   const content = (
@@ -732,7 +746,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         )}
 
         <div className="flex shrink-0 gap-2 border-b border-white/10 px-4 py-2" role="tablist" aria-label="Oráculo">
-          {([{id:'guidance',label:'Meu dia',icon:Sun},{id:'mission',label:'Missão',icon:Flag},{id:'wisdom',label:'Sabedoria',icon:BookOpen}] as const).map(({id,label,icon:Icon}, index, tabs) => <button key={id} id={`oracle-tab-${id}`} role="tab" aria-selected={section === id} tabIndex={section === id ? 0 : -1} aria-controls="oracle-content" className={`flex min-h-12 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl px-1 text-[11px] font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--skin-accent-color)] ${section === id ? 'bg-white/10 text-[var(--skin-accent-color)]' : 'text-white/55'}`} onKeyDown={event => {
+          {([{id:'guidance',label:'Dia e ciclo',icon:Sun},{id:'mission',label:'Missão',icon:Flag},{id:'wisdom',label:'Sabedoria',icon:BookOpen}] as const).map(({id,label,icon:Icon}, index, tabs) => <button key={id} id={`oracle-tab-${id}`} role="tab" aria-selected={section === id} tabIndex={section === id ? 0 : -1} aria-controls="oracle-content" className={`flex min-h-12 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl px-1 text-[11px] font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--skin-accent-color)] ${section === id ? 'bg-white/10 text-[var(--skin-accent-color)]' : 'text-white/55'}`} onKeyDown={event => {
             const next = event.key === 'ArrowRight' ? (index+1)%tabs.length : event.key === 'ArrowLeft' ? (index+tabs.length-1)%tabs.length : event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length-1 : -1;
             if (next < 0) return;
             event.preventDefault(); setSection(tabs[next].id); document.getElementById(`oracle-tab-${tabs[next].id}`)?.focus();
@@ -745,7 +759,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
         {/* Messages */}
         <div id="oracle-content" role="tabpanel" aria-labelledby={`oracle-tab-${section}`} className="min-h-0 flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-          {section === 'mission' && <OracleMissionPanel key={`${userProfile.id}:${activeArenaPact?.id || 'none'}`} />}
+          {section === 'mission' && <OracleMissionPanel onOpenMissions={() => {dispatchAppView({view:'social'}); window.setTimeout(() => window.dispatchEvent(new CustomEvent('mundo-tab-request', {detail:{tab:'temporada'}})),80); onClose();}} onContinue={arenaId => { if (arenaId) openArena(arenaId); else openPlannerView(); onClose(); }} key={`${userProfile.id}:${activeArenaPact?.id || 'none'}`} />}
           {section !== 'mission' && visibleMessages.length === 0 && (
             <div className="flex min-h-full flex-col items-center justify-center p-6 text-center">
               <div className="opacity-50">

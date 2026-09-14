@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useGame } from '../contexts/GameContext';
 import { useConfirmation } from '../hooks/useConfirmation';
 import type {
+  Action,
   Arena,
   LinkedRelationshipArena,
   RelationshipCompetitionChallenge,
@@ -17,6 +18,8 @@ import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
 import { CheckIcon, MessageIcon, PlusIcon, RefreshCwIcon, TrashIcon, TrophyIcon, UsersIcon, XIcon } from './Icons';
 import { getDisplayLevel } from '../constants/lifeAreas';
+import { ArenaCard } from './ArenaCard';
+import { ArenaDetailModal } from './ArenaDetailModal';
 
 type VisibleConnectionType = Extract<RelationshipLinkType, 'mentoria' | 'parceria' | 'competicao'>;
 type ProfileLite = Pick<UserProfile, 'id' | 'nickname' | 'avatarUrl' | 'level'>;
@@ -87,28 +90,65 @@ const formatChallengeTime = (deadlineAt?: string | null, completedAt?: string | 
   return `${Math.ceil(hours / 24)} dia(s) restantes`;
 };
 
-const ArenaProgress: React.FC<{ entry: LinkedRelationshipArena; owner: string }> = ({ entry, owner }) => {
+/** A arena de um vinculo, montada a partir do que o servidor mandou. */
+const previewArenaFromEntry = (entry: LinkedRelationshipArena): Arena => (
+  entry.arena || {
+    id: entry.arenaId || `shared-preview-${entry.id}`,
+    assetId: String(entry.metadata?.asset_id || 'geral'),
+    name: String(entry.metadata?.name || 'Arena compartilhada'),
+    description: String(entry.metadata?.description || ''),
+    icon: String(entry.metadata?.icon || '\u{1F3DB}\uFE0F'),
+    actionIds: [],
+    isArchived: false,
+  }
+);
+
+/**
+ * A arena do vinculo e uma ARENA, nao um resumo dela.
+ *
+ * Aqui existia um cartao proprio: nome, uma porcentagem e uma barrinha. Era a
+ * unica arena do app desenhada de outro jeito, e nao abria — dava para ver que
+ * o par tinha 40% e nao dava para ver 40% DE QUE. Passa a usar o mesmo ArenaCard
+ * das campanhas e da aba Arenas, e abre no mesmo ArenaDetailModal, que ja sabe
+ * receber acoes e tarefas de fora e travar a edicao quando a arena e do outro.
+ */
+const ArenaProgress: React.FC<{
+  entry: LinkedRelationshipArena;
+  owner: string;
+  onOpen: () => void;
+  /** A arena do contexto, quando ela e sua. Presente = usa a fonte viva. */
+  arenaViva?: Arena | null;
+  acoesVivas?: Action[];
+}> = ({ entry, owner, onOpen, arenaViva = null, acoesVivas }) => {
   const progress = getArenaProgress(entry);
-  const name = entry.arena?.name || String(entry.metadata?.name || 'Arena');
+
+  // A SUA arena aqui e A SUA arena la. Literalmente o mesmo objeto.
+  //
+  // Antes este cartao era montado da FOTO que o servidor manda junto do vinculo:
+  // arena do payload, acoes do payload, e uma porcentagem propria que somava
+  // todas as tarefas ja concluidas, sem recorte nenhum. Dava 43% aqui enquanto a
+  // aba Arenas mostrava 15% pela mesma arena — porque la o app corta as tarefas
+  // no ciclo aberto (getArenaPresentationTasks) e aqui ninguem cortava. Duas
+  // fontes, duas contas, dois numeros.
+  //
+  // Agora, sendo sua, entram a arena e as acoes VIVAS do contexto e nao se passa
+  // `tasks` nem `progressPercent`: o ArenaCard faz exatamente o que faz na aba
+  // Arenas. Uma fonte so, sem como divergir. Sendo do par, o payload continua
+  // sendo a unica fonte que existe — o ciclo da outra pessoa nao chega aqui.
+  const usarContexto = Boolean(arenaViva);
 
   return (
-    <div className="rounded-lg border border-white/10 bg-black/25 p-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="text-[9px] font-black uppercase tracking-[0.16em] text-white/40">{owner}</div>
-          <div className="mt-1 truncate text-sm font-bold text-white">{name}</div>
-        </div>
-        <div className="text-xs font-black text-white/66">
-          {progress.percent === null ? 'Livre' : `${progress.percent}%`}
-        </div>
-      </div>
-      {progress.percent !== null ? (
-        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/8">
-          <div className="h-full rounded-full bg-[var(--skin-accent-color)]" style={{ width: `${progress.percent}%` }} />
-        </div>
-      ) : (
-        <div className="mt-2 text-[10px] leading-relaxed text-white/42">Acompanhamento livre, sem meta de repeticoes.</div>
-      )}
+    <div className="flex flex-col gap-1">
+      <div className="px-0.5 text-[9px] font-black uppercase tracking-[0.16em] text-white/40">{owner}</div>
+      <ArenaCard
+        arena={arenaViva || previewArenaFromEntry(entry)}
+        actions={(usarContexto ? acoesVivas : entry.actions) || entry.actions || []}
+        tasks={usarContexto ? undefined : (entry.tasks || [])}
+        relationshipBadgeType={entry.linkType ?? null}
+        progressPercent={usarContexto ? undefined : (progress.percent ?? undefined)}
+        onClick={onOpen}
+        variant="compact"
+      />
     </div>
   );
 };
@@ -127,6 +167,7 @@ export const ConnectionsModal: React.FC<{
     endRelationshipLink,
     fetchRelationshipHubData,
     friends,
+    getActionsForArena,
     respondToRelationshipInvite,
     selectMentorshipArena,
     shareRelationshipArena,
@@ -149,6 +190,19 @@ export const ConnectionsModal: React.FC<{
   const [mentorshipPickerLink, setMentorshipPickerLink] = useState<RelationshipLink | null>(null);
   const [competitionInviteFriend, setCompetitionInviteFriend] = useState<UserProfile | null>(null);
   const [selectedArenaId, setSelectedArenaId] = useState('');
+  /** Arena de vinculo aberta em detalhe. Ver abrirArenaDoVinculo. */
+  const [arenaDoVinculoAberta, setArenaDoVinculoAberta] = useState<LinkedRelationshipArena | null>(null);
+
+  /**
+   * A arena do contexto, quando a do vinculo e sua.
+   *
+   * Devolve null para a arena do par: ela nao existe no seu contexto e a foto do
+   * payload e a unica fonte. Para a sua, devolve o objeto vivo — o MESMO que a
+   * aba Arenas desenha — para os dois lugares nunca discordarem.
+   */
+  const arenaVivaDoVinculo = useCallback((entry: LinkedRelationshipArena): Arena | null => (
+    assets.flatMap((asset) => asset.arenas).find((arena) => arena.id === entry.arenaId) || null
+  ), [assets]);
   const [competitionDurationDays, setCompetitionDurationDays] = useState(7);
 
   const visibleInvites = useMemo(
@@ -418,6 +472,7 @@ export const ConnectionsModal: React.FC<{
                   <span className="flex items-center justify-center gap-1.5">
                     {type === 'mentoria' ? <CheckIcon className="h-4 w-4 text-amber-300" /> : type === 'parceria' ? <UsersIcon className="h-4 w-4 text-cyan-300" /> : <TrophyIcon className="h-4 w-4 text-rose-300" />}
                     {typeCopy[type].label}
+                    {invites.some(invite => invite.linkType === type && invite.recipientId === userProfile.id) && <span className="rounded-full bg-amber-200 px-1.5 text-[9px] text-black" aria-label="Convites recebidos">{invites.filter(invite => invite.linkType === type && invite.recipientId === userProfile.id).length}</span>}
                   </span>
                 </button>
               ))}
@@ -456,8 +511,8 @@ export const ConnectionsModal: React.FC<{
                         </div>
                         {incoming ? (
                           <div className="flex gap-1">
-                            <button id={`connections-invite-accept-${invite.id}`} data-invite-accept={invite.linkType} type="button" disabled={Boolean(busyKey)} onClick={() => void respond(invite, 'accept')} className="rounded-md bg-emerald-400/15 p-2 text-emerald-200" aria-label="Aceitar convite"><CheckIcon className="h-4 w-4" /></button>
-                            <button id={`connections-invite-decline-${invite.id}`} type="button" disabled={Boolean(busyKey)} onClick={() => void respond(invite, 'decline')} className="rounded-md bg-white/5 p-2 text-white/55" aria-label="Recusar convite"><XIcon className="h-4 w-4" /></button>
+                            <button id={`connections-invite-accept-${invite.id}`} data-invite-accept={invite.linkType} type="button" disabled={Boolean(busyKey)} onClick={() => void respond(invite, 'accept')} className="min-h-11 min-w-11 flex items-center justify-center rounded-md bg-emerald-400/15 p-2 text-emerald-200" aria-label="Aceitar convite"><CheckIcon className="h-4 w-4" /></button>
+                            <button id={`connections-invite-decline-${invite.id}`} type="button" disabled={Boolean(busyKey)} onClick={() => void respond(invite, 'decline')} className="min-h-11 min-w-11 flex items-center justify-center rounded-md bg-white/5 p-2 text-white/55" aria-label="Recusar convite"><XIcon className="h-4 w-4" /></button>
                           </div>
                         ) : (
                           <button type="button" disabled={Boolean(busyKey)} onClick={() => void respond(invite, 'revoke')} className="p-2 text-white/45 hover:text-rose-200" aria-label="Cancelar convite"><TrashIcon className="h-4 w-4" /></button>
@@ -532,8 +587,8 @@ export const ConnectionsModal: React.FC<{
                                   </div>
                                   {(ownArena || rivalArena) && (
                                     <div className="mt-3 grid grid-cols-2 gap-2">
-                                      {ownArena ? <ArenaProgress entry={ownArena} owner="Você" /> : <div />}
-                                      {rivalArena ? <ArenaProgress entry={rivalArena} owner={other?.nickname || 'Rival'} /> : <div />}
+                                      {ownArena ? <ArenaProgress entry={ownArena} owner="Você" arenaViva={arenaVivaDoVinculo(ownArena)} acoesVivas={getActionsForArena(ownArena.arenaId)} onOpen={() => setArenaDoVinculoAberta(ownArena)} /> : <div />}
+                                      {rivalArena ? <ArenaProgress entry={rivalArena} owner={other?.nickname || 'Rival'} onOpen={() => setArenaDoVinculoAberta(rivalArena)} /> : <div />}
                                     </div>
                                   )}
                                 </div>
@@ -549,7 +604,7 @@ export const ConnectionsModal: React.FC<{
                               ));
                               const owner = ownerId === userProfile.id ? 'Sua arena' : `Arena de ${other?.nickname || 'aliado'}`;
                               return entry ? (
-                                <ArenaProgress key={ownerId} entry={entry} owner={owner} />
+                                <ArenaProgress key={ownerId} entry={entry} owner={owner} arenaViva={arenaVivaDoVinculo(entry)} acoesVivas={getActionsForArena(entry.arenaId)} onOpen={() => setArenaDoVinculoAberta(entry)} />
                               ) : (
                                 <div key={ownerId} className="flex min-h-[5.6rem] flex-col justify-center rounded-lg border border-dashed border-white/12 bg-black/15 p-3">
                                   <div className="text-[9px] font-black uppercase tracking-[0.16em] text-white/40">{owner}</div>
@@ -563,7 +618,7 @@ export const ConnectionsModal: React.FC<{
                             {relationshipArenas.map((entry) => {
                               const ownerId = entry.arena?.userId || String(entry.metadata?.owner_user_id || entry.createdByUserId || '');
                               const owner = ownerId === userProfile.id ? 'Sua arena' : `Arena de ${other?.nickname || 'aliado'}`;
-                              return <ArenaProgress key={entry.id} entry={entry} owner={owner} />;
+                              return <ArenaProgress key={entry.id} entry={entry} owner={owner} arenaViva={arenaVivaDoVinculo(entry)} acoesVivas={getActionsForArena(entry.arenaId)} onOpen={() => setArenaDoVinculoAberta(entry)} />;
                             })}
                           </div>
                         ) : (
@@ -732,6 +787,26 @@ export const ConnectionsModal: React.FC<{
           </div>
         </div>
       )}
+
+      {arenaDoVinculoAberta && (() => {
+        // Quando a arena e sua, o modal recebe a arena VIVA do contexto: assim
+        // ele abre editavel e mostra o seu estado de agora, nao a foto que o
+        // servidor mandou junto do vinculo. Sendo do outro, vai a previa e
+        // trava em readOnly — ninguem edita arena alheia por aqui.
+        const previa = previewArenaFromEntry(arenaDoVinculoAberta);
+        const minha = arenaVivaDoVinculo(arenaDoVinculoAberta);
+        return (
+          <ArenaDetailModal
+            arena={minha || previa}
+            actionsOverride={minha ? undefined : (arenaDoVinculoAberta.actions || [])}
+            tasksOverride={minha ? undefined : (arenaDoVinculoAberta.tasks || [])}
+            readOnly={!minha}
+            linkedRelationshipLinkId={arenaDoVinculoAberta.relationshipLinkId}
+            linkedRelationshipType={arenaDoVinculoAberta.linkType || null}
+            onClose={() => setArenaDoVinculoAberta(null)}
+          />
+        );
+      })()}
 
       {confirmationElement}
     </Portal>

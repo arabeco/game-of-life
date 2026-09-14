@@ -65,6 +65,34 @@
   --tier-quest:       #14B8A6;
   --tier-season-gradient: linear-gradient(45deg, #FF0080, #7928CA, #00DFD8);
 
+  /*
+   * Fundos das acoes de quest.
+   *
+   * Estas tres eram citadas por getActionBackgroundStyle e nao existiam em
+   * lugar nenhum do projeto: `background: var(--quest-grad-sidequest)` com a
+   * variavel indefinida nao pinta nada, e a acao caia no cinza do cartao. Era
+   * esse o "sidequest sem cor" — nao uma decisao de design, uma variavel que
+   * ninguem chegou a escrever. Seguem a mesma formula de buildAssetActionGradient
+   * para assentar ao lado das acoes comuns.
+   */
+  --quest-grad-sidequest: linear-gradient(135deg, color-mix(in srgb, #22C55E 50%, #10141b) 0%, color-mix(in srgb, #22C55E 72%, #111827) 100%);
+  --quest-grad-clan: linear-gradient(135deg, color-mix(in srgb, #14B8A6 50%, #10141b) 0%, color-mix(in srgb, #14B8A6 72%, #111827) 100%);
+  --quest-grad-season: linear-gradient(135deg, color-mix(in srgb, #7928CA 52%, #10141b) 0%, color-mix(in srgb, #00DFD8 40%, #111827) 100%);
+
+  /*
+   * MARCO: o losango tem luz propria.
+   *
+   * Marco nao e uma acao maior, e outra categoria de coisa — fecha um trecho.
+   * Ele ja era losango no planner, mas vestido com o gradiente do ativo e uma
+   * borda cinza tracejada igual a de qualquer tarefa: a forma dizia "especial"
+   * e a cor dizia "mais do mesmo". Este gradiente e o halo sao a diferenca, e
+   * valem tanto na bay quanto na grade, para o marco ser o MESMO objeto nos
+   * dois lugares.
+   */
+  --marco-grad: linear-gradient(140deg, #fdf1c4 0%, #e3c25a 30%, #b8892a 62%, #5c4413 88%, #241a07 100%);
+  --marco-halo: rgba(227, 194, 90, 0.42);
+  --marco-borda: rgba(253, 241, 196, 0.72);
+
   /* Default Game Mode Colors (Dark/Neon/Gold) */
   --bg-primary: #000000;
   --bg-secondary: rgba(255, 255, 255, 0.05);
@@ -2028,4 +2056,64 @@ body {
     0 50%
   );
   border-radius: 0;
+}
+
+/* ============================================================
+ * MARCO — losango com brilho, na bay e na grade do planner.
+ *
+ * A aba separada de Marcos saiu: um marco e uma coisa que voce arrasta para o
+ * dia, igual a qualquer acao, e escondia-lo atras de um botao fazia a pessoa
+ * esquecer que ele existia. Agora ele mora na bay junto do resto e se anuncia
+ * pela forma e pela luz, nao por um menu.
+ * ============================================================ */
+.marco-losango {
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  background: var(--marco-grad);
+}
+
+/* O halo nao pode usar box-shadow: o clip-path corta a sombra junto. Ele e uma
+ * camada por baixo, levemente maior, com o mesmo recorte e um blur. */
+.marco-halo-wrap {
+  position: relative;
+  isolation: isolate;
+}
+
+.marco-halo-wrap::before {
+  content: '';
+  position: absolute;
+  /* px, e nao %: a fatia do planner e larga e baixa, e um inset percentual
+   * esticava o halo horizontalmente ate virar um borrao do tamanho da tarefa.
+   * Em px ele e a mesma auréola fina na bay (42px) e na grade (250px). */
+  inset: -5px;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  background: var(--marco-halo);
+  filter: blur(4px);
+  opacity: 0.75;
+  z-index: -1;
+  pointer-events: none;
+  animation: marco-pulso 3.2s ease-in-out infinite;
+}
+
+/* A borda interna, tambem recortada: um losango um pouco menor por cima do
+ * gradiente deixa uma moldura clara de 1.5px sem precisar de outline. */
+.marco-borda-interna::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  background: var(--marco-borda);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1.5px;
+  pointer-events: none;
+}
+
+@keyframes marco-pulso {
+  0%, 100% { opacity: 0.38; }
+  50%      { opacity: 0.78; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marco-halo-wrap::before { animation: none; opacity: 0.6; }
 }

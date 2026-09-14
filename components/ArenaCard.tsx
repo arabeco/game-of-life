@@ -10,6 +10,7 @@ import { EmojiGlyph } from './EmojiGlyph';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import { getContentVisualPalette, resolveArenaVisualFamily } from '../utils/contentCardVisuals';
 import { getActionSurfaceBadgeClassName, resolveActionSurfaceBadge } from '../utils/actionSurfaceBadges';
+import { getArenaDomainFlags } from '../utils/taskDomain.js';
 import './arena-ui.css';
 
 const hexToRgb = (hex: string) => {
@@ -378,7 +379,18 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
             clanQuests,
             getClanQuestProgress,
             getSharedActionPoolProgress,
-            forceSharedPool: linkType ? true : undefined,
+            // A porcentagem da SUA arena e a SUA.
+            //
+            // Com vinculo, isto marcava `true` e o contador trocava o seu
+            // historico pessoal pelo pool compartilhado — que numa parceria
+            // recem-aceita esta vazio. Era literalmente o seu progresso indo a
+            // 0 por ter aceitado alguem. `false` (e nao `undefined`) porque o
+            // auto-detect do motor tambem liga o pool assim que o par completa
+            // qualquer coisa, e isso reproduziria o mesmo sumico pela porta do
+            // lado. O numero do par aparece no cartao de Vinculos, que e onde a
+            // pergunta "como o outro esta indo?" e feita. Office segue no pool:
+            // la a arena e de fato coletiva.
+            forceSharedPool: linkType ? false : undefined,
         });
     }, [actions, arena, clanQuests, getClanQuestProgress, getSharedActionPoolProgress, linkType, tasksForCounts]);
     const progress = typeof progressPercent === 'number'
@@ -396,27 +408,43 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
         [userCodexes]
     );
     const sourceCodex = arena.originCodexId ? codexById.get(arena.originCodexId) ?? null : null;
-    const renderRelationshipBadge = () => {
+    /**
+     * O selo e a UNICA marca de vinculo agora.
+     *
+     * Enquanto aceitar uma parceria repintava a arena inteira, dava para viver
+     * sem selo na miniatura: a cor gritava. Tirada a cor, a miniatura ficaria
+     * sem dizer NADA — e a grade de Arenas so usa miniatura. Por isso ele passa
+     * a desenhar nos dois tamanhos: `mini` para o cartao compacto, cheio para o
+     * dossie. Mentoria verde, parceria azul, competicao vermelha — as mesmas
+     * cores dos vinculos em Mundo, para a pessoa ler a mesma coisa nos dois
+     * lugares.
+     */
+    const renderRelationshipBadge = (mini = false) => {
+        const caixa = mini
+            ? 'inline-flex h-[13px] w-[13px] items-center justify-center rounded-full border backdrop-blur-[2px]'
+            : 'inline-flex h-4 w-4 items-center justify-center rounded-full border';
+        const glifo = mini ? 'h-[7px] w-[7px]' : 'h-[9px] w-[9px]';
+
         if (effectiveLinkType === 'mentoria') {
             return (
-                <span title="Mentoria" className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-emerald-300/40 bg-emerald-500/18 text-emerald-300 shadow-[0_4px_10px_rgba(16,185,129,0.18)]">
-                    <CrownIcon className="h-[9px] w-[9px]" />
+                <span title="Mentoria" aria-label="Arena com mentoria" className={`${caixa} border-emerald-300/45 bg-emerald-500/28 text-emerald-200 shadow-[0_4px_10px_rgba(16,185,129,0.18)]`}>
+                    <CrownIcon className={glifo} />
                 </span>
             );
         }
 
         if (effectiveLinkType === 'parceria') {
             return (
-                <span title="Parceria" className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-sky-300/40 bg-sky-500/18 text-sky-300 shadow-[0_4px_10px_rgba(56,189,248,0.16)]">
-                    <UsersIcon className="h-[9px] w-[9px]" />
+                <span title="Parceria" aria-label="Arena em parceria" className={`${caixa} border-sky-300/45 bg-sky-500/28 text-sky-200 shadow-[0_4px_10px_rgba(56,189,248,0.16)]`}>
+                    <UsersIcon className={glifo} />
                 </span>
             );
         }
 
         if (PRODUCT_FEATURES.relationshipCompetition && effectiveLinkType === 'competicao') {
             return (
-                <span title="Competição" className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-rose-300/40 bg-rose-500/18 text-rose-300 shadow-[0_4px_10px_rgba(244,63,94,0.18)]">
-                    <TrophyIcon className="h-[9px] w-[9px]" />
+                <span title="Competição" aria-label="Arena em competição" className={`${caixa} border-rose-300/45 bg-rose-500/28 text-rose-200 shadow-[0_4px_10px_rgba(244,63,94,0.18)]`}>
+                    <TrophyIcon className={glifo} />
                 </span>
             );
         }
@@ -438,8 +466,14 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     const assetAccentColor = Object.prototype.hasOwnProperty.call(ASSET_ACCENT_COLORS, arena.assetId)
         ? ASSET_ACCENT_COLORS[arena.assetId as keyof typeof ASSET_ACCENT_COLORS]
         : '#F0C843';
+    // Sidequest e verde, igual as acoes dela.
+    //
+    // O fundo das acoes de sidequest usa --quest-grad-sidequest; a arena que as
+    // guarda vinha com o dourado padrao e as duas nao se reconheciam como a
+    // mesma coisa. O verde aqui e o mesmo #22C55E daquela variavel.
+    const isSideQuestArena = getArenaDomainFlags(arena).isSideQuest;
     const accentColor = visualFamily === 'normal'
-        ? (isClanQuestArena ? '#C0C0C0' : assetAccentColor)
+        ? (isClanQuestArena ? '#C0C0C0' : isSideQuestArena ? '#22C55E' : assetAccentColor)
         : visualPalette.accent;
     const skinColor = visualPalette.border;
     const arenaGoldBar = 'linear-gradient(90deg, #7a5813 0%, #d4af37 46%, #f6e2a3 100%)';
@@ -566,9 +600,9 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                     </div>
                 )}
 
-                {effectiveLinkType && !isCompactThumbnail && (
-                    <div className="absolute top-1 left-1 z-20">
-                        {renderRelationshipBadge()}
+                {effectiveLinkType && (
+                    <div className={isCompactThumbnail ? 'absolute left-[3px] top-[3px] z-20' : 'absolute top-1 left-1 z-20'}>
+                        {renderRelationshipBadge(isCompactThumbnail)}
                     </div>
                 )}
             </div>

@@ -1,4 +1,5 @@
-﻿import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
+import { loadCatalogRows } from '../utils/networkEfficiency.js';
+import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Asset, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, SequenceItem, DailyProofStreak, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RelationshipCompetitionChallenge, RelationshipCompetitionProposal, RelationshipMentorshipOffer, RewardModalPayload, UserBlock, ModerationReportInput, PlannerMatrixQuadrant } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, ItemCategory, ItemDef, RANK_UP_INSIGNIA_ID, resolveItemDef, getCatalogItemsByCategory, isChestEligibleItem, isItemCatalogVisible } from '../constants/items';
@@ -3109,7 +3110,36 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const [, setAchievementQueue] = useState<{ type: FeedEventType; data: any; }[]>([]);
     const activeAchievementRef = useRef<{ type: FeedEventType; data: any; } | null>(null);
     const competitionResultModalKeysRef = useRef<Set<string>>(new Set());
+    /** completionIds ja pagos nesta sessao. Ver grantMissionReward. */
+    const grantedCompletionsRef = useRef<Set<string>>(new Set());
+    /**
+     * Espelho sempre atual do perfil, para escrita depois de await.
+     *
+     * grantMissionReward reconstroi completedSeasonMissions depois de esperar
+     * bau e inventario. Lendo do closure, a lista voltava ao que era ANTES
+     * daqueles awaits e apagava o que tivesse entrado no meio — inclusive a
+     * marca da propria missao, que e o que impede o gatilho de disparar de
+     * novo. updateUserProfile faz merge de primeiro nivel, entao array tem de
+     * ser montado a partir do valor vivo.
+     */
+    const userProfileRef = useRef(userProfile);
+    userProfileRef.current = userProfile;
     const [feed, setFeed] = useState<FeedEvent[]>(() => []);
+
+    /**
+     * Identidade de uma celebracao, para a fila nao repetir a mesma.
+     *
+     * O modal de missao concluida entrava em loop: quem dispara a celebracao
+     * podia chamar setAchievementUnlocked varias vezes para o MESMO feito, e a
+     * fila aceitava todas. Fechar no "Prosseguir" so puxava a copia seguinte
+     * 160ms depois — de fora parece um botao que nao funciona. Duas do mesmo
+     * tipo com o mesmo titulo sao a mesma; nao ha o que comemorar duas vezes.
+     */
+    const achievementIdentity = (achievement: { type: FeedEventType; data: any; }) => [
+        achievement.type,
+        achievement.data?.completionId ?? achievement.data?.challengeId ?? achievement.data?.id ?? '',
+        achievement.data?.title ?? achievement.data?.name ?? '',
+    ].join('|');
 
     const setAchievementUnlocked = useCallback((achievement: { type: FeedEventType; data: any; } | null) => {
         if (!achievement) {
@@ -3129,7 +3159,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         if (activeAchievementRef.current) {
-            setAchievementQueue(prev => [...prev, achievement]);
+            const identity = achievementIdentity(achievement);
+            if (achievementIdentity(activeAchievementRef.current) === identity) return;
+            setAchievementQueue(prev => (
+                prev.some(entry => achievementIdentity(entry) === identity)
+                    ? prev
+                    : [...prev, achievement]
+            ));
             return;
         }
 
@@ -6027,11 +6063,22 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         } as UserCodex;
     }, []);
 
-    const fetchCodexData = useCallback(async () => {
+    const fetchCodexData = useCallback(async (forceCatalog = false) => {
         let catalog: CodexCatalogItem[] = [];
         try {
-            const { data: catalogData, error } = await supabase.from('codex_catalog').select('*');
-            if (error) console.error('Supabase Error fetching catalog:', error);
+            const catalogData = await loadCatalogRows({
+                storage: {
+                    getItem: (key: string) => globalThis.localStorage.getItem(key),
+                    setItem: (key: string, value: string) => globalThis.localStorage.setItem(key, value),
+                },
+                key: 'glyph:catalog:v1:' + import.meta.env.VITE_SUPABASE_URL + ':' + (getSupabaseUserId() || 'anon'),
+                force: forceCatalog,
+                fetchRows: async () => {
+                    const { data, error } = await supabase.from('codex_catalog').select('*');
+                    if (error) throw error;
+                    return data || [];
+                },
+            });
 
             if (catalogData && catalogData.length > 0) {
                 catalog = (catalogData as any[]).map(item => {
@@ -6062,23 +6109,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             console.error('Failed to fetch codex catalog', err);
         }
 
-        const bioMachineExists = catalog.some(c => c.id === BIOLOGICAL_MACHINE_CODEX.id || c.title === BIOLOGICAL_MACHINE_CODEX.title);
-        if (!bioMachineExists) {
-            const fallbackItem: CodexCatalogItem = {
-                id: BIOLOGICAL_MACHINE_CODEX.id,
-                title: BIOLOGICAL_MACHINE_CODEX.title,
-                description: BIOLOGICAL_MACHINE_CODEX.description,
-                price_brl: BIOLOGICAL_MACHINE_CODEX.price,
-                is_premium: false,
-                cover_image: BIOLOGICAL_MACHINE_CODEX.coverImage,
-                author_name: BIOLOGICAL_MACHINE_CODEX.author,
-                duration_days: BIOLOGICAL_MACHINE_CODEX.durationDays,
-                created_at: new Date().toISOString(),
-                template: BIOLOGICAL_MACHINE_CODEX,
-            };
-            catalog = [fallbackItem, ...catalog];
-        }
-
+        // Only list server-backed products: a local template is not a purchasable SKU.
+        // The Biological Machine template above can repair presentation for an
+        // existing row, but must never invent a catalog id absent from the backend.
         setCodexCatalog([...catalog]);
 
         const userId = getSupabaseUserId();
@@ -6106,7 +6139,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }, [fetchCodexData, session?.user.id]);
 
     const refreshCodexes = useCallback(async () => {
-        await fetchCodexData();
+        await fetchCodexData(true);
     }, [fetchCodexData]);
 
     useEffect(() => {
@@ -12241,9 +12274,23 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         seloDaTemporada?: boolean;
         seasonId?: string;
     }) => {
+        // "Ja recolheu" mora AQUI, e nao em cada chamador.
+        //
+        // Quatro caminhos entram nesta funcao (quest, missao de temporada,
+        // desafio de sistema e pacto de arena) e cada um checava a conclusao a
+        // sua maneira, lendo `userProfile` de um closure que envelhece no
+        // primeiro await. Quando essa leitura saia velha, a mesma missao era
+        // paga de novo e empilhava outro modal. Este ref e a unica trava que
+        // nao depende de estado de render: um completionId so passa uma vez por
+        // sessao, e a partir do momento em que ele entra em
+        // completedSeasonMissions a checagem de perfil segura o resto.
+        if (!grant.completionId) return;
+        if (grantedCompletionsRef.current.has(grant.completionId)) return;
+        if (userProfile.completedSeasonMissions?.includes(grant.completionId)) return;
+        grantedCompletionsRef.current.add(grant.completionId);
+
         const currentExp = userProfile.nobility.exp;
         const addedExp = Math.max(0, Math.round(grant.xp || 0));
-        const nextExp = currentExp + addedExp;
 
         const chestGranted = grant.chest ? await addChest(grant.chest) : false;
 
@@ -12268,11 +12315,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         const addedFragments = Math.max(0, Math.round(grant.fragments || 0));
+        const perfilAtual = userProfileRef.current;
+        // O XP tambem soma sobre o valor vivo: entre o inicio da funcao e aqui
+        // houve await, e o saldo pode ter mudado.
+        const nextExp = (perfilAtual.nobility?.exp ?? currentExp) + addedExp;
         updateUserProfile({
-            nobility: { ...userProfile.nobility, exp: nextExp },
-            completedSeasonMissions: [...(userProfile.completedSeasonMissions || []), grant.completionId],
+            nobility: { ...perfilAtual.nobility, exp: nextExp },
+            completedSeasonMissions: [...new Set([
+                ...(perfilAtual.completedSeasonMissions || []),
+                grant.completionId,
+            ])],
             ...(addedFragments > 0
-                ? { wallet: { ...userProfile.wallet, fragments: (userProfile.wallet?.fragments || 0) + addedFragments } }
+                ? { wallet: { ...perfilAtual.wallet, fragments: (perfilAtual.wallet?.fragments || 0) + addedFragments } }
                 : {}),
         });
 
@@ -12713,6 +12767,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     } = taskDomain;
 
     const automaticChallengeClaimsRef = useRef<Set<string>>(new Set());
+    /** Quantas vezes a entrega automatica falhou por missao. Ver o catch abaixo. */
+    const automaticChallengeRetryRef = useRef<Map<string, number>>(new Map());
     const automaticChallengeClaimInFlightRef = useRef(false);
     const [automaticChallengeClaimTick, setAutomaticChallengeClaimTick] = useState(0);
 
@@ -12845,7 +12901,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         automaticChallengeClaimInFlightRef.current = true;
         void candidate.claim()
             .catch((error) => {
-                automaticChallengeClaimsRef.current.delete(candidate.id);
+                // Uma nova tentativa, nao infinitas.
+                //
+                // Antes o catch devolvia o id ao ref e o finally re-disparava o
+                // efeito na hora: se a entrega falhasse de um jeito que ainda
+                // assim abrisse o modal, a mesma missao era reivindicada de
+                // novo, e de novo, empilhando celebracao em cima de celebracao.
+                // Era esse o "Prosseguir que nao anda". O contador deixa o erro
+                // transitorio se resolver sozinho e fecha a porta no resto: o
+                // que sobrar tenta outra vez no proximo abrir do app, porque o
+                // ref nao sobrevive a sessao.
+                const falhas = (automaticChallengeRetryRef.current.get(candidate.id) || 0) + 1;
+                automaticChallengeRetryRef.current.set(candidate.id, falhas);
+                if (falhas < 2) automaticChallengeClaimsRef.current.delete(candidate.id);
                 console.error('Automatic challenge reward failed:', error);
                 showToast('Nao foi possivel entregar a recompensa do desafio. Tente novamente.', 'error');
             })
@@ -13258,10 +13326,27 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
 
+        // O `.select()` do delete NAO serve de prova aqui.
+        //
+        // Logo acima este mesmo fluxo apaga todas as linhas de clan_members —
+        // inclusive a sua. Sem linha de membro a policy de SELECT de `clans`
+        // para de te deixar enxergar o grupo, entao o delete volta com zero
+        // linhas mesmo tendo funcionado, e a pessoa via "a dissolucao nao foi
+        // confirmada" enquanto o grupo sumia na frente dela. Quem responde e a
+        // pergunta seguinte: a linha ainda esta la? Se nao esta (apagada ou
+        // invisivel, o mesmo para quem acabou de sair), acabou.
         if (!deletedClanRows || deletedClanRows.length === 0) {
-            showToast('A dissolução do grupo não foi confirmada.', 'warning');
-            await refreshClanMembershipState(currentUserId);
-            return;
+            const { data: clanAinda } = await supabase
+                .from('clans')
+                .select('id')
+                .eq('id', clan.id)
+                .maybeSingle();
+
+            if (clanAinda) {
+                showToast('A dissolução do grupo não foi confirmada.', 'warning');
+                await refreshClanMembershipState(currentUserId);
+                return;
+            }
         }
 
         if (clanCacheRef.current && clanCacheRef.current.clanId === clan.id) {
@@ -13974,7 +14059,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         });
     };
 
-    const markDMAsRead = async (senderId: string) => {
+    /**
+     * Marcar como lida precisa ser uma operacao que SABE parar.
+     *
+     * Esta funcao e criada a cada render do provider e aparece na lista de
+     * dependencias do efeito que abre a conversa em DirectMessages. Como os
+     * tres setters abaixo devolviam um array novo mesmo sem nada para mudar,
+     * cada chamada provocava outro render, que dava uma identidade nova a esta
+     * funcao, que disparava o efeito de novo — e o chat travava girando, sem
+     * aceitar clique nem texto, batendo no Supabase a cada volta. Era o "chat
+     * congelado". useCallback estabiliza a identidade; os `return prev` cortam
+     * o render quando nao ha o que marcar. Os dois juntos fecham o ciclo.
+     */
+    const markDMAsRead = useCallback(async (senderId: string) => {
         const userId = session?.user.id;
         if (!userId) return;
 
@@ -13990,13 +14087,29 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
 
-        setDirectMessages(prev => prev.map(msg =>
-            msg.senderId === senderId && msg.recipientId === userId ?{ ...msg, read: true } : msg
-        ));
+        setDirectMessages(prev => {
+            let mudou = false;
+            const proximo = prev.map(msg => {
+                if (msg.senderId === senderId && msg.recipientId === userId && !msg.read) {
+                    mudou = true;
+                    return { ...msg, read: true };
+                }
+                return msg;
+            });
+            return mudou ? proximo : prev;
+        });
 
-        setDMConversations(prev => prev.map(c =>
-            c.participantId === senderId ?{ ...c, unreadCount: 0 } : c
-        ));
+        setDMConversations(prev => {
+            let mudou = false;
+            const proximo = prev.map(c => {
+                if (c.participantId === senderId && c.unreadCount !== 0) {
+                    mudou = true;
+                    return { ...c, unreadCount: 0 };
+                }
+                return c;
+            });
+            return mudou ? proximo : prev;
+        });
 
         const { error: notificationError } = await supabase
             .from('notifications')
@@ -14009,16 +14122,24 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (notificationError) {
             console.error('Error marking DM notifications as read:', notificationError);
         } else {
-            setNotifications(prev => prev.map(notification => (
-                notification.userId === userId
-                && notification.type === 'direct_message'
-                && !notification.read
-                && String(notification.metadata?.senderId || '') === senderId
-                    ? { ...notification, read: true }
-                    : notification
-            )));
+            setNotifications(prev => {
+                let mudou = false;
+                const proximo = prev.map(notification => {
+                    if (
+                        notification.userId === userId
+                        && notification.type === 'direct_message'
+                        && !notification.read
+                        && String(notification.metadata?.senderId || '') === senderId
+                    ) {
+                        mudou = true;
+                        return { ...notification, read: true };
+                    }
+                    return notification;
+                });
+                return mudou ? proximo : prev;
+            });
         }
-    };
+    }, [session?.user.id]);
 
     useEffect(() => {
         const userId = session?.user.id;

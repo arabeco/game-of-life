@@ -878,14 +878,35 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
         () => friends.filter(friend => !enrichedClanMembers.some(member => member.id === friend.id)),
         [friends, enrichedClanMembers]
     );
+    /**
+     * Convites pendentes vem do servidor, nao das notificacoes locais.
+     *
+     * A lista antiga varria `notifications` procurando o convite que ela mesma
+     * tinha mandado — so que a notificacao de convite pertence a quem RECEBE, e
+     * a RLS nao mostra a linha de outra pessoa para quem convidou. Dava sempre
+     * lista vazia: "Convites enviados" nunca aparecia, "Enviado" nunca travava
+     * o botao e o cancelar tentava apagar uma linha que nao era sua. O RPC
+     * get_my_pending_clan_invitee_ids roda com permissao para responder isso.
+     */
+    const [pendingInviteeIds, setPendingInviteeIds] = useState<string[]>([]);
+    useEffect(() => {
+        if (userClanRole !== 'leader') {
+            setPendingInviteeIds([]);
+            return;
+        }
+        let ativo = true;
+        void SupabaseService.getPendingClanInviteeIds().then(ids => {
+            if (ativo) setPendingInviteeIds(ids);
+        });
+        return () => { ativo = false; };
+    }, [userClanRole, clan?.id]);
+
     const sentClanInvites = useMemo(
-        () => notifications.filter((notification: Notification) =>
-            notification.type === 'clan_invite' &&
-            notification.metadata?.clanId === clan?.id &&
-            notification.metadata?.inviteNotification === true &&
-            notification.metadata?.inviterId === userProfile.id
-        ),
-        [clan?.id, notifications, userProfile.id]
+        () => pendingInviteeIds.map(id => ({
+            id,
+            profile: friends.find(friend => friend.id === id) || null,
+        })),
+        [pendingInviteeIds, friends]
     );
 
     const activeSeason = seasons.find(s => s.is_active);
@@ -931,34 +952,46 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
     const handleSendClanInvite = async (friendId: string, nickname: string) => {
         if (!clan || userClanRole !== 'leader' || inviteBusyId) return;
 
-        const alreadySent = sentClanInvites.some(invite => invite.userId === friendId);
-        if (alreadySent) {
+        if (pendingInviteeIds.includes(friendId)) {
             showToast('Esse convite já está pendente.', 'info');
             return;
         }
 
         setInviteBusyId(friendId);
         try {
-            const content = `${userProfile.nickname || 'Um líder'} convidou você para entrar no grupo ${clan.name}. Abra o grupo e solicite entrada.`;
-            await SupabaseService.createNotification(friendId, 'clan_invite', content, {
-                clanId: clan.id,
-                clanName: clan.name,
-                joinRequest: false,
-                inviteNotification: true,
-                inviterId: userProfile.id,
-                senderId: userProfile.id,
-                senderNickname: userProfile.nickname || null,
-                url: '/?oracle=clan',
-            });
+            const result = await SupabaseService.sendClanInvitation(friendId);
+            if (!result.ok) {
+                showToast(
+                    result.reason === 'already_invited'
+                        ? 'Esse convite já está pendente.'
+                        : result.reason === 'clan_full'
+                            ? 'O grupo já está cheio.'
+                            : 'Não foi possível enviar o convite.',
+                    'warning',
+                );
+                return;
+            }
+            setPendingInviteeIds(current => current.includes(friendId) ? current : [...current, friendId]);
             showToast(`Convite enviado para ${nickname}.`, 'success');
         } finally {
             setInviteBusyId(null);
         }
     };
 
-    const handleCancelClanInvite = async (notificationId: string) => {
-        await deleteNotification(notificationId);
-        showToast('Convite cancelado.', 'success');
+    const handleCancelClanInvite = async (friendId: string) => {
+        if (inviteBusyId) return;
+        setInviteBusyId(friendId);
+        try {
+            const revoked = await SupabaseService.revokeClanInvitation(friendId);
+            if (!revoked) {
+                showToast('Não foi possível cancelar o convite.', 'error');
+                return;
+            }
+            setPendingInviteeIds(current => current.filter(id => id !== friendId));
+            showToast('Convite cancelado.', 'success');
+        } finally {
+            setInviteBusyId(null);
+        }
     };
 
     const handleKickMember = async () => {
@@ -1648,16 +1681,21 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
                                                     </div>
                                                     {sentClanInvites.map((invite) => (
                                                         <div key={invite.id} className="bg-black/20 p-3 rounded-2xl flex items-center gap-3 border border-white/10">
-                                                            <div className="w-10 h-10 rounded-full border border-white/15 bg-white/5 flex items-center justify-center shrink-0">
-                                                                <SendIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
-                                                            </div>
+                                                            {invite.profile ? (
+                                                                <UserAvatar avatarUrl={invite.profile.avatarUrl} nickname={invite.profile.nickname} className="h-10 w-10" level={invite.profile.level} showBorder={false} />
+                                                            ) : (
+                                                                <div className="w-10 h-10 rounded-full border border-white/15 bg-white/5 flex items-center justify-center shrink-0">
+                                                                    <SendIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
+                                                                </div>
+                                                            )}
                                                             <div className="min-w-0 flex-1">
-                                                                <div className="font-bold text-white truncate">{invite.metadata?.recipientNickname || invite.metadata?.email || 'Convite enviado'}</div>
-                                                                <p className="text-[11px] text-gray-400 leading-snug">Aguardando a pessoa abrir o grupo e pedir entrada.</p>
+                                                                <div className="font-bold text-white truncate">{invite.profile?.nickname || 'Convite enviado'}</div>
+                                                                <p className="text-[11px] text-gray-400 leading-snug">Aguardando a pessoa responder em Solicitações.</p>
                                                             </div>
                                                             <button
                                                                 onClick={() => handleCancelClanInvite(invite.id)}
-                                                                className="px-3 py-2 rounded-xl bg-red-500/12 text-red-300 text-[11px] font-black uppercase tracking-[0.12em] hover:bg-red-500/20 shrink-0"
+                                                                disabled={inviteBusyId === invite.id}
+                                                                className="px-3 py-2 rounded-xl bg-red-500/12 text-red-300 text-[11px] font-black uppercase tracking-[0.12em] hover:bg-red-500/20 disabled:opacity-50 shrink-0"
                                                             >
                                                                 Cancelar
                                                             </button>
@@ -1671,7 +1709,7 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
                                                     <span>{availableFriendsForInvite.length}</span>
                                                 </div>
                                                 {availableFriendsForInvite.length > 0 ? availableFriendsForInvite.map(friend => {
-                                                    const alreadySent = sentClanInvites.some(invite => invite.userId === friend.id);
+                                                    const alreadySent = pendingInviteeIds.includes(friend.id);
                                                     return (
                                                         <div key={friend.id} className="bg-black/20 p-3 rounded-2xl flex items-center gap-3 border border-white/10">
                                                             <UserAvatar avatarUrl={friend.avatarUrl} nickname={friend.nickname} className="h-10 w-10" level={friend.level} showBorder={false} />

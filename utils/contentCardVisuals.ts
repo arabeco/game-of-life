@@ -117,7 +117,14 @@ export const resolveArenaVisualFamily = ({
   relationshipLinkType?: RelationshipLinkType | null;
   sourceCodex?: Partial<UserCodex> | null;
 }): ContentVisualFamily => {
-  if (relationshipLinkType) return 'shared';
+  // Vinculo e SELO, nao cor.
+  //
+  // Aceitar uma parceria repintava a arena inteira na paleta "shared" — a
+  // pessoa perdia de vista qual arena era qual, porque a cor que ela usava para
+  // reconhecer sumia no mesmo tom de todas as compartilhadas. Quem compartilha
+  // ja e anunciado pelo cracha de parceria/mentoria no proprio cartao. O codex
+  // presenteado continua trocando de familia: ali o conteudo e de fato de outra
+  // pessoa, nao a sua arena com um par junto.
   if (isSharedCodex(sourceCodex)) return 'shared';
   if (isSeasonArenaLike(arena || null)) return 'season';
   if (isStoreCodex(sourceCodex)) return 'store';
@@ -135,7 +142,7 @@ export const resolveCampaignVisualFamily = ({
   relationshipLinkType?: RelationshipLinkType | null;
   sourceCodex?: Partial<UserCodex> | null;
 }): ContentVisualFamily => {
-  if (relationshipLinkType) return 'shared';
+  // Mesma regra da arena: o vinculo aparece no cracha, nao na paleta.
   if (isSharedCodex(sourceCodex)) return 'shared';
   if (isSeasonCampaignLike(campaign, arenas)) return 'season';
   if (isStoreCodex(sourceCodex)) return 'store';

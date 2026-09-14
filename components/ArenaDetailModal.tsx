@@ -298,7 +298,8 @@ export const ArenaDetailModal: React.FC<{
 
     const isOfficeMode = PRODUCT_FEATURES.clanSharedActions && clan?.clanType === 'Office';
     const isLeader = enrichedClanMembers.some(member => member.id === userProfile?.id && member.role === 'leader');
-    const forceSharedPool = effectiveRelationshipType ? true : (isOfficeMode ? true : undefined);
+    // Ver ArenaCard: vinculo NAO troca o seu contador pelo pool. Office sim.
+    const forceSharedPool = effectiveRelationshipType ? false : (isOfficeMode ? true : undefined);
     const tasksForCounts = useMemo(() => {
         if (Array.isArray(tasksOverride)) return tasksOverride;
         if (!activeCycle) return filterTasksAfterFreeProgressReset(tasks, freeProgressResetAt);

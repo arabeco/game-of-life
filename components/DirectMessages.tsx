@@ -89,7 +89,13 @@ export const DirectMessages: React.FC<{ initialParticipantId?: string | null }> 
             setTimeout(() => scrollToBottom(participantChanged ? 'auto' : 'smooth'), 0);
         }
 
-        markDMAsRead(selectedParticipantId);
+        // So chama quando ha o que marcar. Sem isto o efeito reexecutava a cada
+        // render e disparava um UPDATE no Supabase por volta, alem de realimentar
+        // o proprio render — ver o comentario em markDMAsRead.
+        const temNaoLida = activeMessages.some(
+            message => message.senderId === selectedParticipantId && !message.read
+        );
+        if (temNaoLida) markDMAsRead(selectedParticipantId);
         previousParticipantIdRef.current = selectedParticipantId;
         previousMessageCountRef.current = activeMessages.length;
     }, [activeMessages.length, isAtBottom, lastActiveMessage?.id, lastActiveMessage?.senderId, markDMAsRead, selectedParticipantId, userProfile.id]);

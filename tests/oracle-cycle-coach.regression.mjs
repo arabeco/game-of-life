@@ -156,19 +156,57 @@ const sinal = (id, nome, feitas, pendentes) => ({
 });
 
 // --- a conta nao fecha: capacidade contra exigencia ------------------------
+//
+// HOJE CONTA COMO DIA DE TRABALHO. Este caso esperava "6 dias" para
+// cycleDaysRemaining: 6 — mas aquele campo conta os dias DEPOIS de hoje (ele
+// existe para detectar o ultimo dia com `=== 0`). Dividir por ele comia um dia
+// inteiro e inflava a demanda diaria: 34/6 = 5.7 virava "pede 6 por dia" quando
+// o certo e 34/7 = 4.9, "pede 5". A divisao passou a usar cycleWorkableDaysLeft.
 const contaNaoFecha = buildOracleCycleCoachBrief({
   ...baseContext,
   cyclePendingActions: 34,
   cycleDaysRemaining: 6,
   bestDailyCompletions: 3,
 });
-assert.match(contaNaoFecha.content, /Faltam 34 ações e 6 dias/, 'diz o que falta e o tempo');
+assert.match(contaNaoFecha.content, /Faltam 34 ações e 7 dias/, 'conta hoje como dia de trabalho');
+assert.match(contaNaoFecha.content, /Isso pede 5 por dia/, 'a demanda diaria nao vem inflada de um dia');
 assert.match(contaNaoFecha.content, /seu melhor dia até agora foram 3/, 'compara com a capacidade real');
 assert.match(contaNaoFecha.content, /não tira EXP já conquistada/, 'a saida e editar o plano, nao correr atras');
 
-// Ela NAO aparece quando a conta fecha: 6 em 4 dias com melhor dia de 3 cabe.
+// Ela NAO aparece quando a conta fecha: 6 em 5 dias com melhor dia de 3 cabe.
 const contaFecha = buildOracleCycleCoachBrief({ ...baseContext, bestDailyCompletions: 3 });
 assert.doesNotMatch(contaFecha.content, /Isso pede/, 'nao alarma quando a conta fecha');
+
+// --- DIA 1: o Oraculo nao abre o ciclo cobrando -----------------------------
+//
+// No primeiro dia "o que falta" e o ciclo inteiro, porque e assim que um ciclo
+// comeca. Antes disto, com 34 pendentes e melhor dia de 3, a fala de abertura
+// era "faltam 34 acoes... reduzir uma meta agora nao tira EXP" — o app se
+// rendendo antes de a pessoa ter tido um dia.
+const diaUm = buildOracleCycleCoachBrief({
+  ...baseContext,
+  cycleDayNumber: 1,
+  cycleDaysRemaining: 6,
+  cycleCompletionPercent: 0,
+  expectedCycleCompletionPercent: 0,
+  cyclePace: 'no_ritmo',
+  cycleCompletedActions: 0,
+  cyclePendingActions: 34,
+  bestDailyCompletions: 3,
+});
+assert.doesNotMatch(diaUm.content, /Isso pede/, 'dia 1 nao recebe a conta que nao fecha');
+assert.doesNotMatch(diaUm.content, /Reduzir uma meta/, 'dia 1 nao convida a cortar meta');
+assert.doesNotMatch(diaUm.content, /atrasad/i, 'dia 1 nao fala de atraso');
+
+// No dia 2 ela volta: ja existe um dia de execucao real para comparar.
+const diaDois = buildOracleCycleCoachBrief({
+  ...baseContext,
+  cycleDayNumber: 2,
+  cycleDaysRemaining: 6,
+  cyclePendingActions: 34,
+  bestDailyCompletions: 3,
+});
+assert.match(diaDois.content, /Isso pede/, 'a partir do dia 2 a conta volta a medir algo');
 
 // --- arena que nunca comecou ----------------------------------------------
 const natimorta = buildOracleCycleCoachBrief({

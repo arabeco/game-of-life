@@ -292,7 +292,23 @@ export const buildOracleOperationalContext = ({
 
   const todayTasks = tasks.filter((task) => taskMatchesOperationalDate(task, operationalDate));
   const pendingTodayTasks = todayTasks.filter((task) => !task.completed);
-  const overdueTasks = tasks.filter((task) => !task.completed && getTaskOperationalDateString(task) < operationalDate);
+  /**
+   * Atrasado DENTRO deste ciclo.
+   *
+   * Sem o piso da data de inicio, toda tarefa nao concluida de qualquer data
+   * passada entrava aqui — inclusive o ciclo inteiro anterior. No dia 1 de um
+   * ciclo novo a pessoa ja aparecia com dezenas de "atrasadas", o risco subia
+   * para alto (>= 3 basta) e o Oraculo abria falando de pendencia que o proprio
+   * ciclo novo tinha acabado de deixar para tras. Comecar um ciclo e justamente
+   * declarar que o anterior terminou.
+   */
+  const overdueTasks = tasks.filter((task) => {
+    if (task.completed) return false;
+    const taskDate = getTaskOperationalDateString(task);
+    if (taskDate >= operationalDate) return false;
+    if (activeCycle?.startDate && taskDate < activeCycle.startDate) return false;
+    return true;
+  });
 
   const effectiveCycleEnd = activeCycle
     ? (activeCycle.endDate < operationalDate ? activeCycle.endDate : operationalDate)
@@ -398,8 +414,33 @@ export const buildOracleOperationalContext = ({
     ? Math.max(0, cycleTotalDays - cycleDayNumber)
     : null;
 
+  /**
+   * O QUE SE ESPERA ATE AGORA — e "ate agora" nao inclui o dia de hoje.
+   *
+   * Era `dia / total`, que trata o dia corrente como ja gasto. No dia 1 de um
+   * ciclo de 7 isso exigia 14% ANTES de a pessoa ter tido o primeiro dia: com 0%
+   * feito o delta dava -14 e o ritmo saia 'atrasado' na largada. No dia 2, -29,
+   * 'critico'. O Oraculo abria o ciclo cobrando atraso de um ciclo que nao tinha
+   * comecado, e quanto mais curto o ciclo, mais cedo a cobranca.
+   *
+   * Com dias DECORRIDOS o dia 1 espera 0%, que e a unica expectativa honesta
+   * para quem ainda nao teve um dia inteiro. A regua so aperta a partir do dia 2,
+   * quando ja existe um dia de historia para comparar.
+   */
   const expectedCycleProgress = activeCycle && cycleDayNumber && cycleTotalDays
-    ? Math.round((cycleDayNumber / cycleTotalDays) * 100)
+    ? Math.round(((cycleDayNumber - 1) / cycleTotalDays) * 100)
+    : null;
+
+  /**
+   * Dias que ainda da para TRABALHAR, hoje incluso.
+   *
+   * Diferente de `cycleDaysRemaining`, que conta os dias DEPOIS de hoje e existe
+   * para detectar o ultimo dia (`=== 0`). Para dividir pendencia por dia, aquele
+   * numero come um dia: no dia 1 de 7 ele diz 6, e a demanda diaria sai ~17%
+   * maior do que e. Quem divide usa este.
+   */
+  const cycleWorkableDaysLeft = cycleDaysRemaining !== null
+    ? cycleDaysRemaining + 1
     : null;
   const effectiveCycleProgress = typeof cycleProgress === 'number' ? cycleProgress : null;
   const cycleCompletionDelta = expectedCycleProgress !== null && effectiveCycleProgress !== null
@@ -557,6 +598,7 @@ export const buildOracleOperationalContext = ({
     cycleDayNumber,
     cycleTotalDays,
     cycleDaysRemaining,
+    cycleWorkableDaysLeft,
     cycleCompletionPercent: effectiveCycleProgress,
     expectedCycleCompletionPercent: expectedCycleProgress,
     cycleCompletionDelta,

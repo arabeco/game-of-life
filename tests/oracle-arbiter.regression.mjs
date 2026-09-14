@@ -49,6 +49,11 @@ const contextoBase = {
   arenasCount: 3,
   actionsCount: 9,
   cycleLengthDays: 5,
+  // Ciclo ativo tem dia. Sem este campo nenhum julgamento de ritmo sai — e isso
+  // e a regra, nao um acidente: quem nao sabe em que dia esta nao pode dizer que
+  // alguem ficou para tras. O caminho real sempre informa (OracleContext), e o
+  // dia 3 aqui e o mesmo "meio do ciclo" que estes casos sempre descreveram.
+  cycleDayNumber: 3,
   cycleProgress: 50,
   daysSinceLastPlannerOpen: 0,
   daysSinceLastProof: 0,
@@ -773,4 +778,60 @@ for (const streak of [0, 2, 7, 14, 23, 30, 60, 100]) {
   }
 }
 
+// --- PRECISO OU CALADO: nada julga ritmo antes de haver ritmo ---------------
+//
+// Estar em 0% no dia 1 nao e um fato sobre a pessoa, e aritmetica: ninguem pode
+// ter andado num dia que ainda nao aconteceu. Tres candidatos julgavam ritmo sem
+// piso nenhum, e num ciclo de 14 dias o `ciclo_longo` ficava vivo desde o dia 1,
+// a 0,1 ponto de abrir o app com "Encurte a rodada ou tire uma frente".
+const largada = (dia, total = 14) => ({
+  ...contextoBase,
+  cycleLengthDays: total,
+  cycleDayNumber: dia,
+  cycleProgress: 0,
+  cyclePace: 'critico',
+  priorityActionName: 'Correr',
+  arenas: [arena({ pace: 'critico', progressDelta: -40, daysSinceProof: 1 })],
+});
+
+for (const dia of [1, 2]) {
+  const tipos = detectOracleCandidates(largada(dia)).map((c) => c.type);
+  assert.ok(!tipos.includes('ciclo_longo'), `dia ${dia} nao pode dizer que o ciclo arrasta`);
+  assert.ok(!tipos.includes('ciclo_atrasado'), `dia ${dia} nao pode dizer que o ciclo atrasou`);
+  assert.ok(!tipos.includes('arena_atrasada'), `dia ${dia} nao pode dizer que a arena ficou atras`);
+}
+
+// A partir do dia 3 ha dois dias inteiros de historia: o julgamento volta.
+const dia3 = detectOracleCandidates(largada(3)).map((c) => c.type);
+assert.ok(dia3.includes('ciclo_atrasado'), 'no dia 3 o atraso de ciclo volta a valer');
+assert.ok(dia3.includes('arena_atrasada'), 'no dia 3 a arena atras volta a valer');
+
+// `ciclo_longo` exige um terco do prazo decorrido E estar atras do decorrido.
+assert.ok(
+  !detectOracleCandidates(largada(4)).some((c) => c.type === 'ciclo_longo'),
+  'com 21% do prazo decorrido ainda nao ha ciclo arrastando',
+);
+assert.ok(
+  detectOracleCandidates(largada(6)).some((c) => c.type === 'ciclo_longo'),
+  'com um terco decorrido e 0% andado, o prazo esta maior que o ritmo',
+);
+// Quem esta acompanhando o decorrido nao ouve que o ciclo arrasta, mesmo com o
+// progresso abaixo de 35%. Ciclo de 30 dias no dia 11: 33% decorrido, 34% feito
+// — o antigo portao de 35% sozinho acusaria quem esta exatamente no passo.
+assert.ok(
+  !detectOracleCandidates({
+    ...largada(11, 30), cycleProgress: 34, cyclePace: 'no_ritmo',
+  }).some((c) => c.type === 'ciclo_longo'),
+  'progresso acima do decorrido nao e ciclo arrastando, mesmo abaixo de 35%',
+);
+
+// Arena PARADA e RETOMADA nao passam pelo piso: dias sem conclusao sao um numero
+// absoluto, verdadeiro no dia 1 como no dia 20.
+const paradaNoDia1 = detectOracleCandidates({
+  ...largada(1),
+  arenas: [arena({ adjustment: 'pausar_arena', daysSinceProof: 9 })],
+}).map((c) => c.type);
+assert.ok(paradaNoDia1.includes('arena_parada'), 'arena parada ha 9 dias vale em qualquer dia do ciclo');
+
 console.log('Oracle arbiter: candidatos competem, o pior de cada tipo fala primeiro, e o silencio e uma resposta valida.');
+console.log('Preciso ou calado: nenhum julgamento de ritmo sai antes de existir ritmo para julgar.');

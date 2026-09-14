@@ -966,8 +966,23 @@ export const buildOracleCycleCoachBrief = (
    * atras, esta diz por quanto e se ainda cabe.
    */
   const melhorDia = Math.max(0, Math.round(context.bestDailyCompletions || 0));
-  const diasRestantes = context.cycleDaysRemaining ?? 0;
-  if (melhorDia > 0 && diasRestantes > 0 && pending > 0) {
+  // Hoje ainda e um dia de trabalho. `cycleDaysRemaining` conta so os dias DEPOIS
+  // de hoje — dividir por ele inflava a demanda diaria em um dia inteiro.
+  const diasRestantes = context.cycleWorkableDaysLeft ?? ((context.cycleDaysRemaining ?? 0) + 1);
+  /**
+   * No dia 1 esta conta nao tem o que dizer.
+   *
+   * No primeiro dia "o que falta" e o ciclo inteiro, porque e assim que um ciclo
+   * comeca — nao e deficit, e o plano. Mesmo assim a fala saia cobrando: "faltam
+   * 16 acoes e 6 dias, isso pede 2.7 por dia" e terminava convidando a cortar
+   * meta. O app se rendia antes de a pessoa ter tido um dia.
+   *
+   * A partir do dia 2 existe pelo menos um dia de execucao real para comparar, e
+   * a conta passa a medir alguma coisa. Se o plano for grande demais de verdade,
+   * quem diz isso e `meta_inflada`, que olha estrutura e nao relogio.
+   */
+  const temDiaDeHistoria = (context.cycleDayNumber ?? 1) >= 2;
+  if (temDiaDeHistoria && melhorDia > 0 && diasRestantes > 0 && pending > 0) {
     const porDia = pending / diasRestantes;
     if (porDia > melhorDia) {
       const arredondado = porDia >= 2 ? Math.round(porDia) : Math.round(porDia * 10) / 10;

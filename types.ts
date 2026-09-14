@@ -1482,6 +1482,8 @@ export interface OracleContext {
   cycleDayNumber: number | null;
   cycleTotalDays: number | null;
   cycleDaysRemaining: number | null;
+  /** Dias que ainda da para trabalhar, HOJE INCLUSO. Use este para dividir pendencia por dia. */
+  cycleWorkableDaysLeft: number | null;
   cycleCompletionPercent: number | null;
   expectedCycleCompletionPercent: number | null;
   cycleCompletionDelta: number | null;

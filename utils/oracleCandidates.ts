@@ -298,20 +298,73 @@ const detectAbsence = (input: OracleCandidateInput): OracleCandidate[] => (
     : []
 );
 
+/**
+ * QUANTO DO CICLO JA PASSOU, de 0 a 1.
+ *
+ * Todo julgamento sobre ritmo precisa disto. Sem ele, "voce esta em 0%" no dia 1
+ * vira acusacao, quando 0% no dia 1 e aritmetica: ninguem pode ter andado num
+ * dia que ainda nao aconteceu. Conta dias DECORRIDOS — hoje ainda esta em curso.
+ */
+const fracaoDecorrida = (input: OracleCandidateInput): number | null => {
+  const dia = input.cycleDayNumber ?? null;
+  const total = input.cycleLengthDays ?? null;
+  if (!dia || !total || total <= 0) return null;
+  return Math.max(0, Math.min(1, (dia - 1) / total));
+};
+
+/**
+ * Historia suficiente para julgar o ritmo do ciclo.
+ *
+ * Dois dias inteiros ja vividos. Antes disso, "o ciclo esta atrasado" e uma
+ * frase sobre UM dia que a pessoa nao fechou, nao sobre o ciclo — e num ciclo
+ * de 7 dias um unico dia perdido ja bastava para o Oraculo abrir dizendo que
+ * ela estava atras. Julgar ciclo com meio ciclo de dados e chutar com numero.
+ */
+const TEM_HISTORIA_DE_CICLO = 3;
+
 const detectCycleIssues = (input: OracleCandidateInput): OracleCandidate[] => {
   const saida: OracleCandidate[] = [];
+  const decorrido = fracaoDecorrida(input);
+  const diaDoCiclo = input.cycleDayNumber ?? 0;
+
   if (!input.hasActiveCycle && input.arenasCount > 0) {
     // A acao prioritaria vai junto: sem ciclo, a saida util costuma ser executar
     // e nao configurar, e para dizer isso e preciso ter o que apontar.
     saida.push(build('sem_ciclo', { acao: input.priorityActionName }));
   }
-  if (input.cycleLengthDays && input.cycleLengthDays > 7 && input.cycleProgress < 35) {
+
+  /**
+   * "Ciclo arrastado" precisa de ciclo JA ARRASTANDO.
+   *
+   * O portao era so `progresso < 35`, e no comeco de qualquer ciclo o progresso
+   * e baixo por definicao. Resultado: num ciclo de 14 dias este candidato ficava
+   * vivo desde o dia 1, a 0,1 ponto de vencer a abertura — e a linha que ele
+   * traz e "Encurte a rodada ou tire uma frente". Mandar encurtar a rodada no
+   * dia em que a pessoa montou a rodada e o app se rendendo antes dela comecar.
+   *
+   * Agora e preciso que um terco do prazo tenha passado E que o progresso esteja
+   * atras do que o tempo decorrido pedia. Aí sim o prazo esta maior que o ritmo,
+   * que e a frase que ele diz.
+   */
+  if (
+    input.cycleLengthDays
+    && input.cycleLengthDays > 7
+    && decorrido !== null
+    && decorrido >= 1 / 3
+    && input.cycleProgress < 35
+    && input.cycleProgress < decorrido * 100
+  ) {
     saida.push(build('ciclo_longo', {
       dias: input.cycleLengthDays,
       progresso: Math.round(input.cycleProgress),
     }));
   }
-  if (input.cyclePace === 'atrasado' || input.cyclePace === 'critico') {
+
+  // Atraso de ciclo so depois de dois dias inteiros. Ver TEM_HISTORIA_DE_CICLO.
+  if (
+    diaDoCiclo >= TEM_HISTORIA_DE_CICLO
+    && (input.cyclePace === 'atrasado' || input.cyclePace === 'critico')
+  ) {
     saida.push(build('ciclo_atrasado'));
   }
   return saida;
@@ -333,6 +386,20 @@ const detectDeliveryGap = (input: OracleCandidateInput): OracleCandidate[] => (
 const detectArenaIssues = (input: OracleCandidateInput): OracleCandidate[] => {
   const arenas = input.arenas || [];
   const saida: OracleCandidate[] = [];
+  /**
+   * "Atras do ritmo" e medida contra o tempo, e no comeco nao ha tempo.
+   *
+   * `arena_atrasada` compara o progresso da arena com o esperado do ciclo. Nos
+   * primeiros dias esse esperado e quase zero e qualquer arena que ainda nao
+   * recebeu nada entra como atrasada — o que e verdade aritmetica e mentira
+   * pratica: ela nao esta atras, ela nao comecou. Vale o mesmo piso do ciclo.
+   *
+   * `arena_parada` e `arena_retomada` NAO passam por aqui de proposito: as duas
+   * se medem em dias sem conclusao, um numero absoluto que nao depende de onde
+   * o ciclo esta. Uma arena parada ha nove dias esta parada ha nove dias, seja
+   * no dia 1 ou no dia 20.
+   */
+  const podeJulgarRitmo = (input.cycleDayNumber ?? 0) >= TEM_HISTORIA_DE_CICLO;
 
   for (const arena of arenas) {
     const extra = { arenaId: arena.arenaId, arenaName: arena.arenaName, boost: arenaBoost(arena) };
@@ -356,7 +423,7 @@ const detectArenaIssues = (input: OracleCandidateInput): OracleCandidate[] => {
       saida.push(build('arena_parada', { arena: arena.arenaName }, extra));
       continue;
     }
-    if (arena.pace === 'atrasado' || arena.pace === 'critico') {
+    if (podeJulgarRitmo && (arena.pace === 'atrasado' || arena.pace === 'critico')) {
       saida.push(build('arena_atrasada', { arena: arena.arenaName }, extra));
     }
   }

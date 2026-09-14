@@ -44,9 +44,13 @@ export interface OracleMasterDiagnosis {
 /** A conta que nao fecha: o que falta por dia contra o melhor dia ja registrado. */
 const contaNaoFecha = (context: OracleContext): { fecha: boolean; porDia: number; melhorDia: number } => {
   const melhorDia = Math.max(0, Math.round(context.bestDailyCompletions || 0));
-  const diasRestantes = context.cycleDaysRemaining ?? 0;
+  // Hoje conta como dia de trabalho — ver cycleWorkableDaysLeft.
+  const diasRestantes = context.cycleWorkableDaysLeft ?? ((context.cycleDaysRemaining ?? 0) + 1);
   const pendentes = Math.max(0, context.cyclePendingActions);
-  if (melhorDia <= 0 || diasRestantes <= 0 || pendentes <= 0) {
+  // No dia 1 o que falta e o ciclo inteiro: isso e o plano, nao uma conta
+  // estourada. Declarar 'inviavel' na largada travava metade das falas boas.
+  const temDiaDeHistoria = (context.cycleDayNumber ?? 1) >= 2;
+  if (!temDiaDeHistoria || melhorDia <= 0 || diasRestantes <= 0 || pendentes <= 0) {
     return { fecha: true, porDia: 0, melhorDia };
   }
   const porDia = pendentes / diasRestantes;

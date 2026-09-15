@@ -39,7 +39,10 @@ export const LegacyExportKit = forwardRef<LegacyExportKitHandle, LegacyExportKit
     const backdropSkin = getLegacyBackdropSkin(backdropSkinId);
     const exportIdentity = useMemo(() => ({
         nickname: fallbackIdentity?.nickname || sovereignName,
-        level: fallbackIdentity?.level || 1,
+        // `?? 0` e nao `|| 1`: zero e um nivel de verdade (as cinco areas no
+        // degrau do abandono), e `0 || 1` em JavaScript da 1. Ver o piso de 50 em
+        // MASTERY_INDEX_BASE.
+        level: fallbackIdentity?.level ?? 0,
         clanName: fallbackIdentity?.clanName || 'Sem grupo',
         title: fallbackIdentity?.nobilityRankName || fallbackIdentity?.title || 'Vagante',
     }), [fallbackIdentity, sovereignName]);

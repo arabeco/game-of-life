@@ -43,7 +43,8 @@ const buildFallbackIdentity = (sovereignName: string, fallbackIdentity?: ReportI
     sovereign: fallbackIdentity?.sovereign,
     nickname: fallbackIdentity?.nickname || sovereignName,
     title: fallbackIdentity?.title,
-    level: fallbackIdentity?.level || 1,
+    // Ver LegacyExportKit: zero e nivel, nao ausencia de nivel.
+    level: fallbackIdentity?.level ?? 0,
     nobilityRankId: fallbackIdentity?.nobilityRankId,
     nobilityRankName: fallbackIdentity?.nobilityRankName,
     clanName: fallbackIdentity?.clanName || null,
@@ -70,7 +71,10 @@ const resolveLegacyIdentity = (
         sovereign: snapshot.sovereign,
         nickname: snapshot.nickname?.trim() || 'Usuario',
         title: snapshot.title?.trim() || undefined,
-        level: Math.max(1, Number(snapshot.level || 1)),
+        // O piso era 1 CRAVADO, nem era acidente de falsy: quem estivesse no
+        // degrau 0 das cinco areas aparecia como 1 na projecao do legado, e o
+        // Indice renderizava 51 onde devia ser 50.
+        level: Math.max(0, Number(snapshot.level ?? 0)),
         nobilityRankId: snapshot.nobilityRankId || undefined,
         nobilityRankName: snapshot.nobilityRankName?.trim() || undefined,
         clanName: snapshot.clanName ?? null,

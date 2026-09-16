@@ -406,7 +406,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                         {metricas.map((metric) => {
                             const estavel = metric.direction === 'estavel';
                             const favoravel = isFavourable(metric);
-                            const sinal = estavel ? '·' : metric.delta > 0 ? '▲' : '▼';
+                            const sinal = estavel ? 'igual' : metric.delta > 0 ? '▲' : '▼';
                             const tom = estavel
                                 ? 'text-gray-500'
                                 : favoravel ? 'text-emerald-300' : 'text-amber-300';
@@ -432,7 +432,10 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                                             {metric.current}{metric.suffix}
                                         </span>
                                         <span className={`text-[10px] font-black tabular-nums ${tom}`}>
-                                            {sinal} {estavel ? '' : Math.abs(metric.delta)}{estavel ? '' : metric.suffix}
+                                            {/* Estavel escreve "igual": um simbolo solto ao lado do numero
+                                                — "76 ·" — fica orfao, e o "=" que havia antes se lia
+                                                como igualdade, e nao como variacao. */}
+                                            {sinal}{estavel ? '' : ` ${Math.abs(metric.delta)}${metric.suffix}`}
                                         </span>
                                     </div>
                                 </div>

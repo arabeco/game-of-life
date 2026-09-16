@@ -4,6 +4,8 @@ import { formatOperationalHourLabel, getOperationalHourTicks } from '../utils/op
 
 interface CycleAtlasPanelProps {
     weeks: ReportAtlasWeek[];
+    /** Dentro de um `SlideCartaz`, quem desenha titulo e acabamento e o cartaz. */
+    semMoldura?: boolean;
 }
 
 const PALETTE = ['#EAB308', '#22C55E', '#3B82F6', '#F97316', '#EC4899', '#14B8A6', '#A855F7', '#F43F5E'];
@@ -59,7 +61,7 @@ const TaskPill: React.FC<{ item: ReportAtlasTaskItem; compact?: boolean }> = ({ 
     );
 };
 
-export const CycleAtlasPanel: React.FC<CycleAtlasPanelProps> = ({ weeks }) => {
+export const CycleAtlasPanel: React.FC<CycleAtlasPanelProps> = ({ weeks, semMoldura = false }) => {
     const scrollRef = useRef<HTMLDivElement>(null);
 
     const flatDays = useMemo(() => weeks.flatMap((week) => week.days.map((day, dayIndex) => ({
@@ -99,12 +101,17 @@ export const CycleAtlasPanel: React.FC<CycleAtlasPanelProps> = ({ weeks }) => {
     }
 
     return (
-        <div className="flex flex-col h-full space-y-5 p-6">
+        <div className={semMoldura ? 'flex w-full flex-col space-y-4' : 'flex flex-col h-full space-y-5 p-6'}>
+            {/* Com `semMoldura` quem desenha o titulo e o acabamento e o cartaz que
+                envolve este painel — aqui ficaria um segundo cabecalho por cima do
+                dele, com outra tipografia e outra regua. */}
+            {!semMoldura && (
             <div className="text-center">
                 <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">Atlas</h3>
                 <div className="h-0.5 w-12 bg-[var(--skin-accent-color)] mx-auto shadow-[0_0_10px_var(--skin-accent-color)]" />
                 <p className="text-[9px] text-gray-500 uppercase tracking-[0.24em] mt-3">Ciclo continuo, dia a dia</p>
             </div>
+            )}
 
             <div className="grid grid-cols-4 gap-3 text-center">
                 <div className="bg-white/[0.03] border border-white/[0.05] rounded-2xl p-3">
@@ -128,8 +135,11 @@ export const CycleAtlasPanel: React.FC<CycleAtlasPanelProps> = ({ weeks }) => {
             <div className="bg-white/[0.03] rounded-[28px] border border-white/[0.05] overflow-hidden shadow-[0_18px_40px_rgba(0,0,0,0.24)] flex-1 min-h-0">
                 <div className="px-4 py-3 border-b border-white/[0.05] flex items-center justify-between gap-3 bg-black/30">
                     <div>
+                        {/* "Deslize na horizontal para atravessar o ciclo inteiro" nao
+                            cabia na faixa e saia cortado em "...atravessar o ci". A
+                            instrucao que aparece pela metade nao instrui ninguem. */}
                         <p className="text-[9px] font-black text-gray-500 uppercase tracking-[0.22em]">Registro continuo</p>
-                        <p className="text-xs text-white font-bold truncate">Deslize na horizontal para atravessar o ciclo inteiro</p>
+                        <p className="text-[11px] font-bold text-white">Deslize para o lado</p>
                     </div>
                     <p className="text-[9px] text-gray-500 uppercase tracking-[0.16em]">{weeks.length} semanas</p>
                 </div>

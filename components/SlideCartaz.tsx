@@ -9,16 +9,34 @@ export interface LegendaDoCartaz {
     tom?: 'normal' | 'bom' | 'alerta';
 }
 
+export interface BarraDoCartaz {
+    rotulo: string;
+    pts: number;
+    max: number;
+    destaque?: boolean;
+}
+
 interface SlideCartazProps {
     titulo: string;
+    /**
+     * O protagonista quando ele e um DESENHO — um radar, um mapa, uma grade.
+     *
+     * Nem todo quadro tem um numero para mostrar: o de Territorio e o de Atlas
+     * sao figuras, e espremer um numero inventado no topo delas seria arrumar a
+     * hierarquia com dado de enfeite. Quando `figura` vem, ela ocupa o lugar do
+     * numero e cresce para o que sobrar.
+     */
+    figura?: React.ReactNode;
     /** O protagonista. Um numero, uma letra, um sinal — nunca uma frase. */
-    numero: React.ReactNode;
+    numero?: React.ReactNode;
     sufixo?: string;
     /** O que o numero quer dizer, em uma linha curta. */
     rotulo: string;
     /** 0 a 100. Desenha um traco sob o numero; omitir quando nao houver escala. */
     progresso?: number;
     legenda?: LegendaDoCartaz[];
+    /** A decomposicao de uma nota, quando ela existe. */
+    barras?: BarraDoCartaz[];
     /** Uma frase de fechamento, quando o ciclo tem algo a dizer. */
     remate?: string;
     /** A nota do ciclo. E ela que da o acabamento do quadro. */
@@ -60,11 +78,13 @@ const TONS: Record<NonNullable<LegendaDoCartaz['tom']>, string> = {
  */
 export const SlideCartaz: React.FC<SlideCartazProps> = ({
     titulo,
+    figura,
     numero,
     sufixo,
     rotulo,
     progresso,
     legenda = [],
+    barras = [],
     remate,
     rank,
 }) => {
@@ -128,7 +148,7 @@ export const SlideCartaz: React.FC<SlideCartazProps> = ({
                 {titulo}
             </p>
 
-            <div className="relative z-[3] flex flex-col items-center">
+            <div className={`relative z-[3] flex flex-col items-center ${figura ? 'w-full flex-1 justify-center' : ''}`}>
                 {/* O halo pega o acabamento do patamar, e nao a cor do tema: o
                     quadro brilha da cor do resultado. */}
                 <div
@@ -136,22 +156,26 @@ export const SlideCartaz: React.FC<SlideCartazProps> = ({
                     className="pointer-events-none absolute left-1/2 top-1/2 h-[210px] w-[210px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-30 blur-[58px]"
                     style={{ background: acabamento.mid }}
                 />
-                <div className="relative z-10 flex items-baseline justify-center gap-1">
-                    <span
-                        className="font-bold leading-[0.86] tracking-tight"
-                        style={{ fontSize: tamanhoDoNumero, fontFamily: 'Cinzel, Georgia, serif', ...tinta }}
-                    >
-                        {numero}
-                    </span>
-                    {sufixo && (
+                {figura ? (
+                    <div className="relative z-10 w-full">{figura}</div>
+                ) : (
+                    <div className="relative z-10 flex items-baseline justify-center gap-1">
                         <span
-                            className="text-[1.5rem] font-black leading-none tracking-tight"
-                            style={{ color: `${acabamento.pale}66` }}
+                            className="font-bold leading-[0.86] tracking-tight"
+                            style={{ fontSize: tamanhoDoNumero, fontFamily: 'Cinzel, Georgia, serif', ...tinta }}
                         >
-                            {sufixo}
+                            {numero}
                         </span>
-                    )}
-                </div>
+                        {sufixo && (
+                            <span
+                                className="text-[1.5rem] font-black leading-none tracking-tight"
+                                style={{ color: `${acabamento.pale}66` }}
+                            >
+                                {sufixo}
+                            </span>
+                        )}
+                    </div>
+                )}
 
                 {typeof progresso === 'number' && (
                     <div
@@ -207,6 +231,45 @@ export const SlideCartaz: React.FC<SlideCartazProps> = ({
                                     {item.nota}
                                 </p>
                             )}
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {barras.length > 0 && (
+                /* A decomposicao da nota: cada criterio vale ate um teto, entao a
+                   barra mede o quanto daquele teto o ciclo alcancou. Tudo no
+                   acabamento do patamar — era cinza sobre cinza, cinco fios de
+                   1px que ninguem lia. */
+                <div
+                    className="relative z-[3] w-full max-w-[290px] space-y-2 pt-5"
+                    style={{ borderTop: `1px solid ${acabamento.mid}33` }}
+                >
+                    {barras.map((barra) => (
+                        <div key={barra.rotulo} className="flex items-center gap-3">
+                            <span
+                                className="w-[74px] shrink-0 truncate text-right text-[8.5px] font-black uppercase tracking-[0.16em]"
+                                style={{ color: barra.destaque ? '#EAB308' : `${acabamento.pale}55` }}
+                            >
+                                {barra.rotulo}
+                            </span>
+                            <div className="h-[3px] flex-1 overflow-hidden rounded-full" style={{ background: acabamento.dark }}>
+                                <div
+                                    className="h-full rounded-full transition-[width] duration-700"
+                                    style={{
+                                        width: `${barra.max > 0 ? Math.min(100, (barra.pts / barra.max) * 100) : 0}%`,
+                                        background: barra.destaque
+                                            ? 'linear-gradient(90deg, #a97e12, #ffe08a)'
+                                            : `linear-gradient(90deg, ${acabamento.mid}, ${acabamento.pale})`,
+                                    }}
+                                />
+                            </div>
+                            <span
+                                className="w-7 shrink-0 text-right text-[9px] font-black tabular-nums"
+                                style={{ color: barra.destaque ? '#EAB308' : `${acabamento.pale}88` }}
+                            >
+                                +{barra.pts}
+                            </span>
                         </div>
                     ))}
                 </div>

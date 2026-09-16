@@ -229,55 +229,80 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         );
     };
 
-    // Slide 2: Territorio
+    /*
+     * ATLAS: A GRADE E A FIGURA, E O CARTAZ DA A MOLDURA.
+     *
+     * O painel desenhava o proprio cabecalho — titulo, regua e quatro pilulas
+     * cinzas — e ficava sendo o unico slide da serie sem moldura e sem
+     * acabamento, no dialeto antigo. Agora ele entra como figura, e o cartaz
+     * cuida do titulo, do acabamento e da legenda, como nos outros cinco.
+     */
     const renderAtlasSlide = () => (
-        <CycleAtlasPanel weeks={weeklyAtlas} />
+        <SlideCartaz
+            rank={scoreInfo.grade}
+            titulo="Atlas"
+            figura={<CycleAtlasPanel weeks={weeklyAtlas} semMoldura />}
+            rotulo="o ciclo inteiro, dia a dia"
+            legenda={[
+                { rotulo: 'Semanas', valor: `${weeklyAtlas.length}` },
+                { rotulo: 'Dias ativos', valor: `${metrics.consistencyDays || 0}/${totalDays}` },
+            ]}
+        />
     );
 
-    const renderTerritorySlide = () => (
-        <div className="flex flex-col h-full space-y-6 p-6">
-            <div className="text-center">
-                <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">Territorio</h3>
-                <div className="report-rule" />
-            </div>
+    /*
+     * TERRITORIO: O PROTAGONISTA E O DESENHO, E NAO UM NUMERO.
+     *
+     * Este slide tinha o radar dentro de uma caixa de altura minima 200px, com a
+     * arena foco e as acoes dominantes em paineis abaixo — e quando o ciclo nao
+     * tinha progresso por area, o radar sumia e sobrava um RETANGULO CINZA VAZIO
+     * no meio da tela, com um painel pequeno embaixo. Era o mesmo buraco que
+     * Conquistas tinha.
+     *
+     * Aqui o radar e o protagonista e ocupa o quadro. Quando nao ha area medida
+     * para desenhar — um radar precisa de pelo menos tres vertices para ser um
+     * radar, e nao um risco —, quem assume e a arena que dominou o ciclo: ela e
+     * a resposta que este slide da, com ou sem grafico.
+     */
+    const renderTerritorySlide = () => {
+        const temRadar = radarData.length >= 3;
+        const dominantes = (metrics.top3Actions || []).slice(0, 3);
 
-            <div className="flex-1 relative bg-white/[0.02] rounded-3xl border border-white/[0.03] p-2" style={{ minHeight: 200 }}>
-                <Suspense fallback={<div className="w-full h-[200px] rounded-2xl bg-white/[0.02] border border-white/[0.03]" />}>
-                    <ReportRadarChart data={radarData} />
-                </Suspense>
-            </div>
+        const legenda = dominantes.length > 0
+            ? dominantes.map((acao, idx) => ({
+                rotulo: `${['I', 'II', 'III'][idx]} · ${acao.name}`,
+                valor: `${acao.count}x`,
+            }))
+            : [{ rotulo: 'Arenas no ciclo', valor: `${metrics.arenasInvolved || 0}` }];
 
-            <div className="space-y-3">
-                <div className="flex items-center justify-between report-panel p-4 hover:bg-white/[0.05] transition-all">
-                    <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 rounded-xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/20 flex items-center justify-center shadow-inner">
-                            <ZapIcon className="w-5 h-5 text-[var(--skin-accent-color)] filter drop-shadow-[0_0_5px_var(--skin-accent-color)]" />
-                        </div>
-                        <div>
-                            <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest mb-0.5">Arena Foco</p>
-                            <p className="text-sm font-black text-white tracking-tight">{highlight.mostFocusedArena}</p>
-                        </div>
-                    </div>
-                </div>
+        if (temRadar) {
+            return (
+                <SlideCartaz
+                    rank={scoreInfo.grade}
+                    titulo="Território"
+                    figura={(
+                        <Suspense fallback={<div className="h-[240px] w-full" />}>
+                            <ReportRadarChart data={radarData} />
+                        </Suspense>
+                    )}
+                    rotulo={`${highlight.mostFocusedArena} puxou o ciclo`}
+                    legenda={legenda}
+                />
+            );
+        }
 
-                {/* Top 3 Acoes - Roman Numeral Indicators */}
-                {metrics.top3Actions && metrics.top3Actions.length > 0 && (
-                    <div className="report-panel p-4 space-y-2">
-                        <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest mb-2">Ações Dominantes</p>
-                        {metrics.top3Actions.map((action, idx) => (
-                            <div key={idx} className="flex items-center justify-between py-1.5">
-                                <div className="flex items-center gap-3">
-                                    <span className="text-[10px] font-black text-gray-600 w-5 text-right tracking-widest">{['I', 'II', 'III'][idx]}</span>
-                                    <span className="text-xs font-bold text-white truncate max-w-[180px]">{action.name}</span>
-                                </div>
-                                <span className="text-sm font-black text-[var(--skin-accent-color)] tabular-nums">{action.count}<span className="text-[9px] ml-0.5 opacity-40">x</span></span>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-        </div>
-    );
+        return (
+            <SlideCartaz
+                rank={scoreInfo.grade}
+                titulo="Território"
+                numero={highlight.mostFocusedArena}
+                rotulo="a arena que puxou o ciclo"
+                legenda={legenda}
+                remate={`${metrics.arenasInvolved || 0} ${(metrics.arenasInvolved || 0) === 1 ? 'arena entrou' : 'arenas entraram'} neste ciclo.`}
+            />
+        );
+    };
+
 
     /*
      * CONQUISTAS: O PROTAGONISTA E O QUE O CICLO RENDEU.
@@ -424,79 +449,68 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     );
 
     // Slide 4: Veredito
-    const renderVerdictSlide = () => (
-        <div className="flex flex-col h-full items-center justify-center p-6 text-center space-y-8">
-            <div className="absolute top-10 text-center">
-                <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">Veredito</h3>
-                <div className="report-rule" />
-            </div>
+    /*
+     * VEREDITO: O CLIMAX, E ELE E UMA LETRA.
+     *
+     * Ja era um cartaz — a letra em corpo enorme e a frase embaixo —, mas em
+     * branco chapado sobre preto, com a decomposicao em cinco fios cinzas de 1px
+     * que ninguem lia. A letra e o simbolo mais importante da apresentacao
+     * inteira: ela merece o acabamento do patamar, que e justamente o que ela
+     * nomeia.
+     */
+    const renderVerdictSlide = () => {
+        const decomposicao = isFairScoreModel
+            ? [
+                { rotulo: 'Honra', pts: fairness!.scoreBreakdown.honorPts, max: 40 },
+                { rotulo: 'Metas', pts: fairness!.scoreBreakdown.metaPts, max: 30 },
+                { rotulo: 'Cadência', pts: fairness!.scoreBreakdown.cadencePts, max: 15 },
+                { rotulo: 'Realismo', pts: fairness!.scoreBreakdown.realismPts, max: 10 },
+                { rotulo: 'Ascensão', pts: fairness!.scoreBreakdown.ascensionPts, max: 5 },
+            ]
+            : metrics.scoreBreakdown
+                ? [
+                    { rotulo: 'Progresso', pts: metrics.scoreBreakdown.progressPts, max: 40 },
+                    { rotulo: 'Marcos', pts: metrics.scoreBreakdown.milestonePts, max: Math.max(metrics.scoreBreakdown.milestonePts, 30) },
+                    { rotulo: 'Desafios', pts: metrics.scoreBreakdown.questPts, max: Math.max(metrics.scoreBreakdown.questPts, 20) },
+                    { rotulo: 'Consistência', pts: metrics.scoreBreakdown.consistencyPts, max: 20 },
+                    { rotulo: 'Volume', pts: metrics.scoreBreakdown.volumePts, max: 30 },
+                    ...((metrics.scoreBreakdown.premiumBonusPts ?? 0) > 0
+                        ? [{ rotulo: 'Premium', pts: metrics.scoreBreakdown.premiumBonusPts!, max: Math.max(metrics.scoreBreakdown.premiumBonusPts!, 50), destaque: true }]
+                        : []),
+                ]
+                : [];
 
-            {isLowSignal ? (
-                <div className="relative group flex flex-col items-center gap-4">
-                    <div className="absolute inset-0 bg-white/10 opacity-20 blur-[60px] transition-opacity duration-1000" />
-                    <div className="relative z-10 rounded-[32px] border border-white/10 bg-black/60 px-8 py-6 shadow-2xl backdrop-blur-md">
-                        <p className="text-[10px] font-black uppercase tracking-[0.36em] text-gray-500">Medicao</p>
-                        <p className="mt-3 text-3xl font-black tracking-tight text-white">Sinal insuficiente</p>
-                    </div>
-                </div>
-            ) : (
-                <div className="relative group">
-                    <div className="absolute inset-0 bg-[var(--skin-accent-color)] opacity-20 blur-[60px] group-hover:opacity-40 transition-opacity duration-1000" />
-                    <div className={`text-[7rem] font-black ${scoreInfo.color} leading-none tracking-tighter filter drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)] relative z-10 select-none`}>
-                        {scoreInfo.grade}
-                    </div>
-                    <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 bg-black/80 backdrop-blur-md px-6 py-2 rounded-2xl border border-white/[0.1] shadow-2xl z-20">
-                        <span className="text-2xl font-black text-white tracking-tight">{report.performanceScore}</span>
-                    </div>
-                </div>
-            )}
+        if (isLowSignal) {
+            return (
+                <SlideCartaz
+                    rank={scoreInfo.grade}
+                    titulo="Veredito"
+                    numero="—"
+                    rotulo="sinal insuficiente"
+                    remate="Ainda não há sinal suficiente para julgar este ciclo com justiça."
+                    legenda={[
+                        { rotulo: 'Período', valor: `${duration} dias` },
+                        { rotulo: 'Ações', valor: `${metrics.actionsCompleted}/${metrics.totalPlannedActions}` },
+                    ]}
+                />
+            );
+        }
 
-            <div className="pt-12 space-y-2 relative z-10">
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">{formatDate(report.startDate)}  {formatDate(report.endDate)}</p>
-                <p className="text-[10px] font-black text-[var(--skin-accent-color)] uppercase tracking-[0.1em] opacity-60">{duration} dias de operacao</p>
-            </div>
-
-            <p className="text-xl font-black text-white leading-tight tracking-tight max-w-[320px] italic opacity-90 relative z-10">
-                "{isLowSignal ? 'Ainda nao ha sinal suficiente para julgar este ciclo com justica.' : scoreInfo.phrase}"
-            </p>
-
-            {/* Score Decomposition  Mono-tone accent bars */}
-            {(isFairScoreModel || metrics.scoreBreakdown) && (
-                <div className="w-full max-w-[280px] mx-auto mt-6 space-y-2 relative z-10">
-                    <p className="text-[8px] font-black text-gray-600 uppercase tracking-[0.3em] text-center mb-3">Decomposicao</p>
-                    {(
-                        isFairScoreModel
-                            ? [
-                                { label: 'Honra', pts: fairness!.scoreBreakdown.honorPts, max: 40, opacity: 1 },
-                                { label: 'Metas', pts: fairness!.scoreBreakdown.metaPts, max: 30, opacity: 0.82 },
-                                { label: 'Cadencia', pts: fairness!.scoreBreakdown.cadencePts, max: 15, opacity: 0.68 },
-                                { label: 'Realismo', pts: fairness!.scoreBreakdown.realismPts, max: 10, opacity: 0.54 },
-                                { label: 'Ascensao', pts: fairness!.scoreBreakdown.ascensionPts, max: 5, opacity: 0.42 },
-                            ]
-                            : [
-                                { label: 'Progresso', pts: metrics.scoreBreakdown!.progressPts, max: 40, opacity: 1 },
-                                { label: 'Marcos', pts: metrics.scoreBreakdown!.milestonePts, max: Math.max(metrics.scoreBreakdown!.milestonePts, 30), opacity: 0.8 },
-                                { label: 'Desafios', pts: metrics.scoreBreakdown!.questPts, max: Math.max(metrics.scoreBreakdown!.questPts, 20), opacity: 0.65 },
-                                { label: 'Consistencia', pts: metrics.scoreBreakdown!.consistencyPts, max: 20, opacity: 0.5 },
-                                { label: 'Volume', pts: metrics.scoreBreakdown!.volumePts, max: 30, opacity: 0.4 },
-                                ...((metrics.scoreBreakdown?.premiumBonusPts ?? 0) > 0 ? [{ label: 'Premium', pts: metrics.scoreBreakdown!.premiumBonusPts!, max: Math.max(metrics.scoreBreakdown!.premiumBonusPts!, 50), opacity: 1, isPremium: true }] : []),
-                            ]
-                    ).map(({ label, pts, max, opacity, ...rest }) => (
-                        <div key={label} className="flex items-center gap-3">
-                            <span className={`text-[8px] font-black uppercase tracking-widest w-[72px] text-right ${'isPremium' in rest ? 'text-yellow-500' : 'text-gray-600'}`}>{label}</span>
-                            <div className="flex-1 h-1 bg-white/[0.05] rounded-full overflow-hidden">
-                                <div
-                                    className="h-full rounded-full transition-all duration-700"
-                                    style={{ width: `${max > 0 ? (pts / max) * 100 : 0}%`, backgroundColor: 'isPremium' in rest ? '#EAB308' : `var(--skin-accent-color)`, opacity }}
-                                />
-                            </div>
-                            <span className={`text-[9px] font-black tabular-nums w-6 text-right ${'isPremium' in rest ? 'text-yellow-500' : 'text-gray-500'}`}>+{pts}</span>
-                        </div>
-                    ))}
-                </div>
-            )}
-        </div>
-    );
+        return (
+            <SlideCartaz
+                rank={scoreInfo.grade}
+                titulo="Veredito"
+                numero={scoreInfo.grade}
+                rotulo={`${formatDate(report.startDate)} — ${formatDate(report.endDate)} · ${duration} dias`}
+                legenda={[
+                    { rotulo: 'Índice', valor: `${report.performanceScore}` },
+                    { rotulo: 'Ações', valor: `${metrics.actionsCompleted}/${metrics.totalPlannedActions}` },
+                ]}
+                barras={decomposicao}
+                remate={scoreInfo.phrase}
+            />
+        );
+    };
 
     // Slide 5: Resumo do Relatorio
     const renderRewardSlide = () => {
@@ -737,6 +751,23 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                             <div className="w-full space-y-2">
                                 {(onDelete || (onStartNewCycle && (onContinueFromHere || true))) && (
                                     <div className="flex items-center justify-center gap-2">
+                                        {/* O ULTIMO SLIDE TAMBEM TEM VOLTA.
+                                            O rodape do fim trocava as setas pelas chamadas de
+                                            encerramento, e com isso a apresentacao virava rua sem
+                                            saida: quem chegasse ao resumo — inclusive quem abre um
+                                            ciclo antigo, que ja nasce aqui — nao tinha como rever
+                                            nenhum dos cinco quadros anteriores. */}
+                                        {currentSlide > 0 && (
+                                            <button
+                                                onClick={prevSlide}
+                                                className="report-footer-menor"
+                                                title="Rever os quadros anteriores"
+                                            >
+                                                <ChevronLeftIcon className="h-4 w-4" />
+                                                <span>Rever</span>
+                                            </button>
+                                        )}
+
                                         {onDelete && (
                                             <button
                                                 onClick={onDelete}

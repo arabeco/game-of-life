@@ -2719,12 +2719,35 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         const fit = () => {
             cancelAnimationFrame(frame);
             frame = requestAnimationFrame(() => {
-                // Measure at the viewport width so scaling cannot introduce extra lines.
-                content.style.width = `${viewport.clientWidth}px`;
-                const current = Number(getComputedStyle(content).zoom) || 1;
-                const naturalHeight = content.getBoundingClientRect().height / current;
-                const scale = Math.min(1, (viewport.clientHeight - 2) / Math.max(1, naturalHeight));
-                if (Math.abs(scale - current) > 0.002) content.style.zoom = String(scale);
+                const largura = viewport.clientWidth;
+                const zoomAtual = Number(getComputedStyle(content).zoom) || 1;
+
+                // MEDE sempre na largura da tela, e nunca na largura ja compensada:
+                // senao a medida de uma passada vira a base da seguinte e a escala
+                // oscila. `height` vem com o zoom aplicado, por isso a divisao.
+                content.style.width = `${largura}px`;
+                const alturaNatural = content.getBoundingClientRect().height / zoomAtual;
+                const escala = Math.min(1, (viewport.clientHeight - 2) / Math.max(1, alturaNatural));
+                content.style.zoom = String(escala);
+
+                /*
+                 * E COMPENSA A LARGURA, senao o hub inteiro fica torto na tela.
+                 *
+                 * `zoom` encolhe a caixa A PARTIR DO CANTO superior esquerdo, e o
+                 * `margin: 0 auto` que a centraliza ja foi resolvido ANTES, na
+                 * largura sem zoom: cravada em 412 dentro de 412, a margem
+                 * automatica da zero. Depois o zoom reduz a caixa para 335 e os
+                 * 77px que sobram ficam todos do lado direito.
+                 *
+                 * Era isso que deslocava a placa do legado, a trilha de ciclos e o
+                 * botao de encerrar juntos para a esquerda — o carrossel estava
+                 * centrado o tempo todo, so que dentro de uma coluna torta.
+                 *
+                 * Com a largura dividida pela escala, a caixa volta a ocupar a tela
+                 * inteira depois de encolhida, e a centralizacao passa a ser
+                 * verdadeira em vez de acidental.
+                 */
+                content.style.width = `${largura / escala}px`;
             });
         };
         const observer = new ResizeObserver(fit);

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { GlassCard } from '../components/GlassCard';
 import { CreateClanModal } from '../components/CreateClanModal';
@@ -192,6 +192,49 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
     } = useGame();
     const [modal, setModal] = useState<'create' | null>(null);
     const [activeSection, setActiveSection] = useState<SocialSection>(initialSection);
+
+    /*
+     * O CHAT SE MEDE: DO PROPRIO TOPO ATE ONDE A NAVEGACAO COMECA.
+     *
+     * A altura dele era `h-[70dvh]` com teto de `calc(100dvh-11rem)`. Os dois sao
+     * palpite: 70% sobra numa tela e falta noutra, e as 11rem tentam adivinhar a
+     * altura do topo, que muda com o aparelho, com a barra de status e com o
+     * recorte da camera. O resultado era chat curto com preto sobrando, ou chat
+     * passando por baixo da barra de navegacao.
+     *
+     * Aqui nao ha o que adivinhar: o topo do proprio elemento e a posicao da
+     * navegacao sao medidos. `dvh` em vez de `vh` porque no telefone a barra do
+     * navegador entra e sai, e `vh` continua respondendo a tela inteira.
+     */
+    const chatRef = useRef<HTMLDivElement>(null);
+    const [alturaDoChat, setAlturaDoChat] = useState<number | undefined>(undefined);
+    useEffect(() => {
+        if (activeSection !== 'messages') return;
+        let quadro = 0;
+        const medir = () => {
+            cancelAnimationFrame(quadro);
+            quadro = requestAnimationFrame(() => {
+                const caixa = chatRef.current;
+                if (!caixa) return;
+                const topo = caixa.getBoundingClientRect().top;
+                const rodape = document.querySelector('.auth-footer');
+                const alturaDoRodape = rodape ? rodape.getBoundingClientRect().height : 0;
+                const disponivel = window.innerHeight - topo - alturaDoRodape - 8;
+                // Um piso existe para o caso degenerado — teclado aberto num
+                // aparelho baixo —, e nao como medida de trabalho.
+                setAlturaDoChat(Math.max(280, Math.round(disponivel)));
+            });
+        };
+        medir();
+        window.addEventListener('resize', medir);
+        const observador = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(medir) : null;
+        if (chatRef.current?.parentElement) observador?.observe(chatRef.current.parentElement);
+        return () => {
+            cancelAnimationFrame(quadro);
+            window.removeEventListener('resize', medir);
+            observador?.disconnect();
+        };
+    }, [activeSection]);
     const [activeTab, setActiveTab] = useState<'aliados' | 'solicitacoes'>('aliados');
     const [searchResults, setSearchResults] = useState<{ players: UserProfile[], clans: Clan[] }>({ players: [], clans: [] });
     const [searchQuery, setSearchQuery] = useState('');
@@ -616,19 +659,24 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
             </div>
 
             {/*
-              * O chat ocupa a altura que sobra, e nao um numero chutado.
+              * O CHAT E A TELA, E NAO UM CARTAO DENTRO DELA.
               *
-              * Era `min-h-[24rem] max-h-[calc(100dvh-16rem)]`: duas medidas fixas que
-              * brigam entre si. Num aparelho curto o minimo vence o maximo e o conteudo
-              * vaza para fora do `overflow-hidden` — o cabecalho da conversa, com o nome e
-              * o botao de voltar, e a primeira coisa a ser cortada. As 16rem tambem eram um
-              * palpite sobre a altura do topo, e palpite erra em cada aparelho de um jeito.
+              * Ele vivia numa caixa arredondada com borda e sombra, e por dentro tinha a
+              * propria moldura: coluna de avatares com borda, cabecalho com borda, campo de
+              * escrita com borda. Moldura dentro de moldura, e nenhuma delas dizendo nada —
+              * a aba ja e o recorte.
               *
-              * `h-[70dvh]` com um teto da viewport real: cresce com a tela, nunca passa do
-              * que existe, e nao tem minimo para entrar em conflito.
+              * A ALTURA TAMBEM DEIXOU DE SER PALPITE. Era `h-[70dvh]` com teto de
+              * `calc(100dvh-11rem)`: 70% e um chute que sobra numa tela e falta noutra, e as
+              * 11rem sao um palpite sobre a altura do topo — que muda com o aparelho, com a
+              * barra de status e com o recorte da camera. O chat acabava curto, com preto
+              * sobrando embaixo, ou passando por baixo da barra de navegacao.
+              *
+              * Agora ele se mede: do proprio topo ate onde a navegacao comeca. Ninguem
+              * precisa adivinhar duas vezes.
               */}
             {activeSection === 'messages' && (
-                <div className="h-[70dvh] max-h-[calc(100dvh-11rem)] overflow-hidden rounded-[30px] border border-white/8 shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
+                <div ref={chatRef} className="overflow-hidden" style={{ height: alturaDoChat }}>
                     <DirectMessages initialParticipantId={initialParticipantId} />
                 </div>
             )}

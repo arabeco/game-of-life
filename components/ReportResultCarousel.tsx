@@ -198,6 +198,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         const diasSemNada = Math.max(0, totalDays - (metrics.consistencyDays || 0));
         return (
         <SlideCartaz
+            rank={scoreInfo.grade}
             titulo="Execução"
             numero={executionPercentage}
             sufixo="%"
@@ -313,6 +314,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
 
         return (
             <SlideCartaz
+                rank={scoreInfo.grade}
                 titulo="Conquistas"
                 numero={semNada ? '0' : `+${expDoCiclo}`}
                 sufixo="EXP"

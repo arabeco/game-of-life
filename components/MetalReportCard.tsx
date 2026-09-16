@@ -136,7 +136,17 @@ export const getMetalRankPalette = (rank: string): MetalRankPalette => {
 };
 
 // Finishes belong to the plate; the shared rank palette also serves other legacy UI.
-const PLATE_FINISHES: Record<MetalReportRank, { mid: string; pale: string; dark: string; face: string; filter: string }> = {
+export interface PlateFinish { mid: string; pale: string; dark: string; face: string; filter: string }
+
+/*
+ * O ACABAMENTO POR PATAMAR E PUBLICO.
+ *
+ * Ele nasceu dentro desta placa, mas nao e dela: e a cor do RESULTADO. A
+ * apresentacao do ciclo usa o mesmo acabamento para pintar o numero de cada
+ * slide, para que os quadros e a placa do fim sejam a mesma peca — e nao duas
+ * coisas parecidas feitas por pessoas diferentes.
+ */
+const PLATE_FINISHES: Record<MetalReportRank, PlateFinish> = {
   E: { mid: '#81756b', pale: '#d0c7bd', dark: '#302c29', face: '#191613', filter: 'sepia(.3) saturate(.6) brightness(.8)' },
   D: { mid: '#68899e', pale: '#c1dce9', dark: '#283d4d', face: '#101f2c', filter: 'sepia(.3) saturate(1.2) hue-rotate(155deg)' },
   C: { mid: '#b07c54', pale: '#f2c39b', dark: '#4b3223', face: '#291a13', filter: 'sepia(.8) saturate(1.7) hue-rotate(340deg) brightness(.9)' },
@@ -149,6 +159,23 @@ const PLATE_FINISHES: Record<MetalReportRank, { mid: string; pale: string; dark:
   // para o topo da escada parecer profundo, e nao aceso.
   SS: { mid: '#c39a51', pale: '#ffe4a2', dark: '#64401f', face: '#3f0a18', filter: 'sepia(.85) saturate(1.45) hue-rotate(355deg)' },
 };
+export const getPlateFinish = (rank: string): PlateFinish => PLATE_FINISHES[getMetalRankPalette(rank).rank];
+
+/**
+ * A TINTA METALICA DO APP.
+ *
+ * O mesmo gradiente de 103 graus que a placa de ciclo e a do legado usam, preso
+ * ao texto por `background-clip`. Ela sobrevive a captura de imagem da tela de
+ * compartilhamento porque a lib e `html-to-image`, que renderiza CSS de verdade.
+ */
+export const tintaMetalicaDo = (finish: PlateFinish): React.CSSProperties => ({
+  background: `linear-gradient(103deg, ${finish.mid} 2%, ${finish.pale} 26%, #fff8ea 44%, ${finish.pale} 62%, ${finish.mid} 88%, ${finish.pale} 100%)`,
+  backgroundClip: 'text',
+  WebkitBackgroundClip: 'text',
+  WebkitTextFillColor: 'transparent',
+  filter: 'drop-shadow(0 3px 4px rgba(0,0,0,.8))',
+});
+
 const plateOutline = (i: number) => `${18+i},${i} ${302-i},${i} ${320-i},${18+i} ${320-i},${512-i} ${302-i},${530-i} ${18+i},${530-i} ${i},${512-i} ${i},${18+i}`;
 
 export const MetalReportCard: React.FC<MetalReportCardProps> = ({

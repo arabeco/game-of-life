@@ -32,6 +32,20 @@ export const SlideAjustado: React.FC<SlideAjustadoProps> = ({ chave, className =
     const caixaRef = useRef<HTMLDivElement | null>(null);
     const alvoRef = useRef<HTMLDivElement | null>(null);
     const [escala, setEscala] = useState(1);
+    /*
+     * A ALTURA UTIL E PUBLICADA COMO VARIAVEL.
+     *
+     * Um slide-cartaz quer PREENCHER a tela, e nao boiar nela: com a moldura
+     * propria, um quadro de 406px no meio de 626 lia como um cartao solto num
+     * retangulo preto. Mas ele nao pode simplesmente pedir `height: 100%` — o
+     * involucro aqui tem altura automatica de proposito, porque e dela que sai a
+     * medida natural do conteudo.
+     *
+     * Entao a caixa publica quanto ha, e quem quiser preencher usa isso como
+     * PISO. Continua sendo o conteudo quem manda: um slide mais alto que a area
+     * ignora o piso e e reduzido como qualquer outro.
+     */
+    const [alturaUtil, setAlturaUtil] = useState(0);
 
     useLayoutEffect(() => {
         const caixa = caixaRef.current;
@@ -45,6 +59,7 @@ export const SlideAjustado: React.FC<SlideAjustadoProps> = ({ chave, className =
             // realimentaria e a escala nunca estabilizaria.
             const natural = alvo.offsetHeight;
             if (!disponivel || !natural) return;
+            setAlturaUtil(disponivel);
             setEscala(Math.min(1, disponivel / natural));
         };
 
@@ -60,7 +75,11 @@ export const SlideAjustado: React.FC<SlideAjustadoProps> = ({ chave, className =
             <div
                 ref={alvoRef}
                 className="w-full shrink-0"
-                style={{ transform: `scale(${escala})`, transformOrigin: 'center center' }}
+                style={{
+                    transform: `scale(${escala})`,
+                    transformOrigin: 'center center',
+                    ['--altura-do-slide' as string]: alturaUtil ? `${alturaUtil}px` : undefined,
+                }}
             >
                 {children}
             </div>

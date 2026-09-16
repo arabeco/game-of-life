@@ -1,8 +1,14 @@
 .report-shell {
   width: 100%;
   max-width: 420px;
-  height: 85vh;
-  max-height: 800px;
+  /*
+   * 85vh deixava 122px de preto sem funcao em cima e embaixo, enquanto o slide
+   * do resumo era reduzido a 72% para caber. A moldura nao tem borda nem canto
+   * arredondado embaixo — ela foi desenhada para encostar no rodape da tela, e
+   * nao para flutuar no meio dela.
+   */
+  height: 92vh;
+  max-height: 880px;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -186,4 +192,41 @@
 
 .report-secondary-cta:active {
   transform: scale(0.98);
+}
+
+/*
+ * AS SAIDAS DISCRETAS DO FIM DO CICLO.
+ *
+ * `report-secondary-cta` tem 3rem de altura e 6.25rem de largura minima: tres
+ * delas lado a lado nao cabem nos 343px de um telefone, e foi assim que a
+ * chamada principal virou um losango de 62px com o texto quebrado em duas
+ * linhas. Estas sao as mesmas acoes na altura que elas merecem — apagar, sair e
+ * continuar sao o que a pessoa faz quando NAO vai seguir em frente.
+ */
+.report-footer-menor {
+  height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  border-radius: 0.625rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+}
+
+.report-footer-menor:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+}
+
+.report-footer-menor:active {
+  transform: scale(0.97);
 }

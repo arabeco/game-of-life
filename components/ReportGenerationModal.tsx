@@ -28,7 +28,20 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({ on
     const [isClosing, setIsClosing] = useState(false);
     const [isFinishing, setIsFinishing] = useState(true);
     const [finishError, setFinishError] = useState<string | null>(null);
-    const startedRef = useRef(false);
+    /*
+     * O SELO RODA UMA VEZ; A ANIMACAO RODA SEMPRE.
+     *
+     * Aqui havia um `startedRef` que barrava o efeito inteiro na segunda
+     * execucao. Em desenvolvimento o StrictMode monta, desmonta e monta de novo:
+     * a primeira passagem iniciava tudo e era limpa, e a segunda — a que fica na
+     * tela — caia fora na primeira linha. Resultado: a barra parada em zero e
+     * "Consultando registros..." para sempre, com o video rodando por baixo.
+     *
+     * O que NAO pode repetir e `onFinish`, que sela o ciclo. Entao a promessa
+     * dele e guardada: quem montar depois espera a MESMA selagem em vez de pedir
+     * outra. A barra, essa, pode recomecar a vontade.
+     */
+    const selagemRef = useRef<Promise<unknown> | null>(null);
     const onFinishRef = useRef(onFinish);
     const onCompleteRef = useRef(onComplete);
     const videoCompletionRef = useRef<{ promise: Promise<void>; resolve: () => void } | null>(null);
@@ -41,9 +54,6 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({ on
     }
 
     useEffect(() => {
-        if (startedRef.current) return;
-        startedRef.current = true;
-
         let isMounted = true;
         let animationFrame = 0;
         const startedAt = performance.now();
@@ -60,8 +70,11 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({ on
 
         const finalize = async () => {
             try {
+                if (!selagemRef.current) {
+                    selagemRef.current = Promise.resolve(onFinishRef.current());
+                }
                 await Promise.all([
-                    Promise.resolve(onFinishRef.current()),
+                    selagemRef.current,
                     new Promise((resolve) => window.setTimeout(resolve, MIN_SEAL_DURATION_MS)),
                     videoCompletionRef.current?.promise,
                 ]);

@@ -1,4 +1,5 @@
 ﻿import React, { Suspense, useEffect, useMemo, useState } from 'react';
+import { SlideAjustado } from './SlideAjustado';
 import { useGame } from '../contexts/GameContext';
 import { Portal } from './Portal';
 import { SKINS_DATA } from '../constants/GMboard';
@@ -573,35 +574,54 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         ].filter(Boolean) as { label: string; value?: string }[];
 
         return (
-            <div className={`flex h-full flex-col items-center justify-center p-6 text-center transition-all duration-700 ${rewardReveal ? 'opacity-100 scale-100' : 'opacity-0 scale-[0.98]'}`}>
-                <div className="text-center">
-                    <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">Resumo</h3>
-                    <div className="report-rule" />
-                </div>
-
-                <div className="flex w-full flex-1 items-center justify-center py-4">
+            <div className={`flex min-h-full flex-col items-center justify-center gap-3 p-2 text-center transition-all duration-700 ${rewardReveal ? 'opacity-100 scale-100' : 'opacity-0 scale-[0.98]'}`}>
+                {/*
+                  * SEM TITULO E SEM REGUA AQUI.
+                  *
+                  * "RESUMO" mais a regua comiam 60px acima de uma placa que ja diz o
+                  * que e: ela tem o nome do ciclo, as datas, a nota e as metricas. O
+                  * titulo anunciava o que estava logo abaixo, e a conta era paga pela
+                  * placa, que encolhia para caber.
+                  */}
+                <div className="flex w-full items-center justify-center">
                     <MetalReportCard
                         captureId={REWARD_CARD_CAPTURE_ID}
                         entryFlash={rewardFlashActive}
                         rank={scoreInfo.grade}
                         score={report.performanceScore}
-                        title="Card de encerramento"
+                        title={report.cycleName || 'Ciclo concluído'}
                         subtitle="Ciclo consolidado"
                         dateRange={`${formatDate(report.startDate)} - ${formatDate(report.endDate)}`}
                         metrics={[
-                            { label: 'Acoes', value: `${metrics.actionsCompleted}/${metrics.totalPlannedActions}` },
+                            { label: 'Ações', value: `${metrics.actionsCompleted}/${metrics.totalPlannedActions}` },
                             { label: 'Carga', value: `${metrics.totalHours}h` },
                             { label: 'Metas', value: `${sealedMetas}/${plannedMetas}` },
-                            { label: 'Presenca', value: `${fairness?.activeDays ?? metrics.consistencyDays ?? 0} dias` },
+                            { label: 'Presença', value: `${fairness?.activeDays ?? metrics.consistencyDays ?? 0} dias` },
                         ]}
                         badges={rewardBadges}
                         className="w-full max-w-[360px]"
                     />
                 </div>
 
-                <p className={`max-w-[280px] text-[11px] font-black uppercase tracking-[0.18em] text-gray-500 transition-all duration-700 ${rewardReveal ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
-                    {chest ? 'Compartilhe o card, abra o baú ou sele o próximo ciclo.' : 'Compartilhe o card ou sele o próximo ciclo.'}
-                </p>
+                {/* O bau mora JUNTO da recompensa, e nao no rodape.
+                    La embaixo ele disputava a faixa com Sair, Continuar e Novo Ciclo
+                    — quatro chamadas na mesma linha de 343px, e a principal quebrava
+                    em duas linhas. Aqui ele e o que e: parte do premio. */}
+                {chest && onOpenChest && (
+                    <button
+                        onClick={onOpenChest}
+                        disabled={chestOpened || isOpeningChest}
+                        className={`rounded-xl border px-5 py-2.5 text-[10px] font-black uppercase tracking-[0.18em] transition-all ${chestOpened || isOpeningChest ? 'cursor-default border-white/[0.04] bg-white/[0.03] text-gray-600' : 'border-[var(--skin-accent-color)]/40 bg-[var(--skin-accent-color)]/10 text-[var(--skin-accent-color)] hover:bg-[var(--skin-accent-color)]/16'}`}
+                        title={chestOpened ? 'Recompensas ja entregues' : 'Ver o que este ciclo rendeu'}
+                    >
+                        {isOpeningChest ? 'Entregando...' : chestOpened ? 'Recompensas entregues' : 'Abrir o bau do ciclo'}
+                    </button>
+                )}
+
+                {/* A legenda que ensinava "compartilhe o card ou sele o proximo ciclo"
+                    saiu: ela narrava os botoes que estao logo abaixo, ja escritos com
+                    todas as letras, e custava 40px da placa — que e o que a pessoa
+                    veio ver. */}
             </div>
         );
     };
@@ -690,12 +710,23 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                                 />
                             ))}
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1">
                             {autoPlay && !isRewardSlide && (
-                                <span className={`text-[9px] font-black uppercase tracking-[0.22em] ${autoPlayPaused ? 'text-gray-500' : 'text-[var(--skin-accent-color)]'}`}>
+                                <span className={`mr-2 text-[9px] font-black uppercase tracking-[0.22em] ${autoPlayPaused ? 'text-gray-500' : 'text-[var(--skin-accent-color)]'}`}>
                                     {autoPlayPaused ? 'Pausado' : 'Auto'}
                                 </span>
                             )}
+                            {/* Compartilhar e uma acao de tela, e nao de slide: ela vale
+                                igual nos seis. No rodape ela ficava no meio do caminho
+                                entre voltar e avancar, e no ultimo slide ainda disputava
+                                espaco com as tres chamadas do fim do ciclo. */}
+                            <button
+                                aria-label="Compartilhar"
+                                onClick={openShareChoice}
+                                className="flex h-10 w-10 items-center justify-center rounded-full border border-transparent text-gray-500 transition-all hover:border-white/[0.05] hover:bg-white/[0.05] hover:text-white"
+                            >
+                                <ShareIcon className="h-[18px] w-[18px]" />
+                            </button>
                             <button aria-label="Fechar"
                                 onClick={onOk}
                             className="w-10 h-10 rounded-full flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/[0.05] transition-all border border-transparent hover:border-white/[0.05]"
@@ -712,13 +743,18 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                             <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,_var(--skin-accent-color)_0%,_transparent_70%)]" />
                         </div>
 
-                        <div className="absolute inset-0 p-4 z-10 overflow-y-auto">
-                            {slides[currentSlide]()}
+                        {/* A apresentacao nao rola: o slide e medido e reduzido ate caber.
+                            Ver SlideAjustado — aqui havia `overflow-y-auto`, e a placa do
+                            resumo saia cortada com uma barra de rolagem atravessada. */}
+                        <div className="absolute inset-0 z-10 p-4">
+                            <SlideAjustado chave={currentSlide}>
+                                {slides[currentSlide]()}
+                            </SlideAjustado>
                         </div>
                     </div>
 
                     {/* Footer Navigation */}
-                    <div className="report-footer h-16 flex items-center justify-between px-6 border-t">
+                    <div className={`report-footer flex items-center justify-between border-t px-5 ${isRewardSlide ? 'py-2.5' : 'h-16'}`}>
                         {!isRewardSlide ? (
                             <>
                                 <button
@@ -729,15 +765,9 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                                     <ChevronLeftIcon className="w-6 h-6" />
                                 </button>
 
-                                <div className="flex items-center gap-4">
-                                    <button
-                                        onClick={openShareChoice}
-                                        className="report-icon-button"
-                                        title="Compartilhar"
-                                    >
-                                        <ShareIcon className="w-5 h-5" />
-                                    </button>
-                                </div>
+                                <span className="text-[10px] font-black uppercase tracking-[0.28em] text-gray-600 tabular-nums">
+                                    {currentSlide + 1} <span className="text-gray-700">/</span> {totalSlides}
+                                </span>
 
                                 <button
                                     onClick={nextSlide}
@@ -748,62 +778,60 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                                 </button>
                             </>
                         ) : (
-                            <div className="w-full flex gap-3 items-center">
-                                <button
-                                    onClick={openShareChoice}
-                                    className="report-icon-button shrink-0"
-                                    title="Compartilhar"
-                                >
-                                    <ShareIcon className="w-5 h-5" />
-                                </button>
+                            /*
+                              * UMA CHAMADA PRINCIPAL POR LINHA.
+                              *
+                              * Isto era uma fileira so com ate seis botoes numa faixa de
+                              * 343px: compartilhar, apagar, bau, Sair, Continuar e Novo
+                              * Ciclo. O ultimo — que e o que a pessoa veio fazer — era o
+                              * que sobrava, e quebrava "NOVO CICLO" em duas linhas dentro
+                              * de um losango de 62px.
+                              *
+                              * Agora sao duas alturas: as saidas discretas em cima, e
+                              * embaixo, sozinha e larga, a que continua a jornada.
+                              */
+                            <div className="w-full space-y-2">
+                                {(onDelete || (onStartNewCycle && (onContinueFromHere || true))) && (
+                                    <div className="flex items-center justify-center gap-2">
+                                        {onDelete && (
+                                            <button
+                                                onClick={onDelete}
+                                                className="report-footer-menor report-danger-button"
+                                                title="Deletar Ciclo"
+                                            >
+                                                <Trash2Icon className="h-4 w-4" />
+                                                <span>Apagar</span>
+                                            </button>
+                                        )}
 
-                                {onDelete && (
-                                    <button
-                                        onClick={onDelete}
-                                        className="report-icon-button report-danger-button shrink-0"
-                                        title="Deletar Ciclo"
-                                    >
-                                        <Trash2Icon className="w-5 h-5" />
-                                    </button>
-                                )}
+                                        {onStartNewCycle && (
+                                            <button
+                                                onClick={onOk}
+                                                className="report-footer-menor"
+                                                title="Sair com metas livres zeradas"
+                                            >
+                                                <XIcon className="h-4 w-4" />
+                                                <span>Sair</span>
+                                            </button>
+                                        )}
 
-                                {chest && onOpenChest && (
-                                    <button
-                                        onClick={onOpenChest}
-                                        disabled={chestOpened || isOpeningChest}
-                                        className={`shrink-0 rounded-xl border px-4 text-[10px] font-black uppercase tracking-[0.18em] transition-all ${chestOpened || isOpeningChest ? 'h-12 cursor-default border-white/[0.04] bg-white/[0.03] text-gray-600' : 'h-12 border-white/[0.08] bg-black/60 text-white hover:border-[var(--skin-accent-color)]/40 hover:bg-white/[0.05]'}`}
-                                        title={chestOpened ? 'Recompensas já entregues' : 'Ver o que este ciclo rendeu'}
-                                    >
-                                        {isOpeningChest ? 'Entregando...' : chestOpened ? 'Entregue' : 'Ver recompensas'}
-                                    </button>
-                                )}
-
-                                {onStartNewCycle && (
-                                    <button
-                                        onClick={onOk}
-                                        className="report-secondary-cta shrink-0"
-                                        title="Sair com metas livres zeradas"
-                                    >
-                                        <XIcon className="h-4 w-4" />
-                                        <span>Sair</span>
-                                    </button>
-                                )}
-
-                                {onStartNewCycle && onContinueFromHere && (
-                                    <button
-                                        onClick={onContinueFromHere}
-                                        className="report-secondary-cta shrink-0"
-                                        title="Manter este progresso no modo livre"
-                                    >
-                                        <RefreshCwIcon className="h-4 w-4" />
-                                        <span>Continuar</span>
-                                    </button>
+                                        {onStartNewCycle && onContinueFromHere && (
+                                            <button
+                                                onClick={onContinueFromHere}
+                                                className="report-footer-menor"
+                                                title="Manter este progresso no modo livre"
+                                            >
+                                                <RefreshCwIcon className="h-4 w-4" />
+                                                <span>Continuar</span>
+                                            </button>
+                                        )}
+                                    </div>
                                 )}
 
                                 <button
                                     id={onStartNewCycle ? 'report-new-cycle-button' : undefined}
                                     onClick={onStartNewCycle || onOk}
-                                    className="report-primary-cta luxe-skin-button luxe-brilho shadow-xl"
+                                    className="report-primary-cta luxe-skin-button luxe-brilho w-full shadow-xl"
                                 >
                                     {onStartNewCycle ? 'Novo Ciclo' : 'OK'}
                                 </button>
@@ -816,8 +844,8 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 isOpen={isShareChoiceOpen}
                 title={isRewardSlide ? 'Compartilhar resultado do ciclo' : 'Compartilhar relatorio'}
                 subtitle={isRewardSlide
-                    ? 'Escolha se quer compartilhar a imagem do fechamento ou publicar esse resultado no feed.'
-                    : 'Escolha se quer compartilhar a imagem do relatorio ou publicar esse resultado no feed.'}
+                    ? 'Escolha se quer compartilhar a imagem do fechamento ou publicar esse resultado em Feitos.'
+                    : 'Escolha se quer compartilhar a imagem do relatorio ou publicar esse resultado em Feitos.'}
                 onShareImage={handleShareImageChoice}
                 onPostToFeed={onPostToFeed}
                 onClose={() => setIsShareChoiceOpen(false)}

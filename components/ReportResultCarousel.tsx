@@ -196,6 +196,43 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
      */
     const renderExecutionSlide = () => {
         const diasSemNada = Math.max(0, totalDays - (metrics.consistencyDays || 0));
+
+        /*
+         * CICLO SEM NADA PLANEJADO NAO TEM PORCENTAGEM.
+         *
+         * `executionRatePct` devolve 100 quando o ciclo nao teve nenhuma tarefa
+         * (coreLoopUtils: `cycleTasks.length > 0 ? ... : 100`). Como metrica
+         * interna passa — nao ha pendencia —, mas aqui virava a frase mais
+         * destacada da apresentacao: "100% DAS ACOES PLANEJADAS VIRARAM FEITO"
+         * para quem nao fez nada, com o ritmo ao lado dizendo "adiantado".
+         *
+         * Mentir para o lado que agrada e a pior forma de mentir num relatorio.
+         * O numero de la continua como esta — ele alimenta o painel, o comparativo
+         * e os testes. Quem para de afirmar e o cartaz: sem acao planejada, o
+         * protagonista passa a ser o que de fato aconteceu, e o ritmo sai, porque
+         * ritmo contra nada tambem nao quer dizer nada.
+         */
+        const semPlano = (metrics.totalPlannedActions || 0) === 0;
+
+        if (semPlano) {
+            return (
+                <SlideCartaz
+                    rank={scoreInfo.grade}
+                    titulo="Execução"
+                    numero={metrics.consistencyDays || 0}
+                    sufixo={(metrics.consistencyDays || 0) === 1 ? 'dia' : 'dias'}
+                    rotulo="com alguma presença, em um ciclo sem plano"
+                    legenda={[
+                        { rotulo: 'Ações planejadas', valor: '0' },
+                        { rotulo: 'Carga', valor: `${metrics.totalHours}h` },
+                        { rotulo: 'Duração', valor: `${totalDays} dias` },
+                        { rotulo: 'Dias zerados', valor: `${diasSemNada}`, tom: diasSemNada > 0 ? 'alerta' : 'normal' },
+                    ]}
+                    remate="Este ciclo não teve ações planejadas — não há execução a medir."
+                />
+            );
+        }
+
         return (
         <SlideCartaz
             rank={scoreInfo.grade}

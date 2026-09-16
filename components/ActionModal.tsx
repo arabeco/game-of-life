@@ -1399,14 +1399,42 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                     />
 
                     {/* Header Fixed */}
-                    <div className="flex-none p-4 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(0,0,0,0.08))] backdrop-blur-md grid grid-cols-[4.5rem_minmax(0,1fr)_4.5rem] items-start gap-2 z-30 relative border-b border-white/8">
-                        <div className="flex items-center gap-3 pt-1">
+                    {/* As duas colunas laterais tem a MESMA largura de proposito: e ela
+                        que mantem o titulo no centro. Ao entrar em edicao aparece um
+                        botao a mais a esquerda, e 4.5rem nao comportavam dois. */}
+                    <div className="flex-none p-4 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(0,0,0,0.08))] backdrop-blur-md grid grid-cols-[5.5rem_minmax(0,1fr)_5.5rem] items-start gap-2 z-30 relative border-b border-white/8">
+                        <div className="flex items-center gap-2 pt-1">
                             {!isPreview && !disableAuthoring && (hasTaskInstanceContext || !isLockedFromSource || mode === 'edit') && (
                                 <button
                                     onClick={mode === 'view' ?requestEditMode : handleCancel}
+                                    aria-label={mode === 'view' ? 'Editar ação' : 'Cancelar edição'}
                                     className={`p-2 rounded-full border transition-all ${mode === 'edit' ?'bg-red-500/18 text-red-300 border-red-500/30 hover:bg-red-500/26' : 'bg-black/16 border-white/14 text-white/65 hover:text-white hover:bg-white/12'}`}
                                 >
                                     {mode === 'view' ?<EditIcon className="w-4 h-4" /> : <XIcon className="w-4 h-4" />}
+                                </button>
+                            )}
+
+                            {/*
+                              * EXCLUIR MORA AO LADO DE EDITAR.
+                              *
+                              * O botao vivia no FIM do formulario, depois de todos os campos:
+                              * para apagar uma acao era preciso entrar em edicao e rolar a
+                              * tela inteira ate o rodape. Apagar nao e a ultima etapa de
+                              * preencher um formulario — e uma decisao sobre a acao, da mesma
+                              * familia de editar, e o lugar dela e junto.
+                              *
+                              * So em edicao, e so em acao que ja existe: no modo de leitura
+                              * um lixo permanente fica a um toque de distancia de quem so
+                              * queria olhar.
+                              */}
+                            {mode === 'edit' && !isNew && !isPreview && !disableAuthoring && (
+                                <button
+                                    onClick={handleDelete}
+                                    aria-label="Excluir ação"
+                                    title="Excluir ação"
+                                    className="rounded-full border border-red-900/40 bg-red-900/20 p-2 text-red-400 transition-all hover:bg-red-900/40 hover:text-red-300"
+                                >
+                                    <Trash2Icon className="w-4 h-4" />
                                 </button>
                             )}
                         </div>
@@ -1884,11 +1912,10 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                     />
                                                 )}
 
-                                                {!isNew && (
-                                                    <button onClick={handleDelete} className="w-full py-3 rounded-xl bg-red-900/20 text-red-400 hover:bg-red-900/40 border border-red-900/30 text-xs font-bold uppercase tracking-wider transition-all mt-2">
-                                                        Excluir Ação
-                                                    </button>
-                                                )}
+                                                {/* O "Excluir Ação" de largura inteira que ficava aqui
+                                                    subiu para o cabecalho, ao lado do botao de editar.
+                                                    Ver o comentario la em cima: apagar nao e a ultima
+                                                    etapa de preencher um formulario. */}
                                             </>
                                         )}
                                     </div>

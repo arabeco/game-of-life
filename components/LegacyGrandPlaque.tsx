@@ -51,6 +51,18 @@ export const LegacyGrandPlaque: React.FC<LegacyGrandPlaqueProps> = ({
     const formattedHours = `${Number.isInteger(totalHours) ? totalHours : totalHours.toFixed(1)}h`;
     const titleSize = nickname.length > 22 ? 'text-[0.86rem]' : nickname.length > 16 ? 'text-[0.98rem]' : 'text-[1.12rem]';
     /*
+     * A PATENTE NAO SE CORTA.
+     *
+     * Ela saia "ESCU..." na cena. Com as chapas nas pontas a coluna do meio tem
+     * ~192px, e os dois fios decorativos ao lado dela eram `w-8 shrink-0`: 64px
+     * cravados para enfeite, e o resto para a palavra. Cortar o nome do patamar
+     * de alguem para caber um risco e a troca errada.
+     *
+     * Duas correcoes: o corpo cede ao comprimento, como ja fazia o apelido, e os
+     * fios passam a encolher primeiro — enfeite cede antes de conteudo.
+     */
+    const patentSize = patent.length > 12 ? 'text-[0.58rem]' : patent.length > 9 ? 'text-[0.64rem]' : 'text-[0.72rem]';
+    /*
      * A ORDEM E DE LEITURA, nao de importancia.
      *
      * Dois por linha: ciclos e acoes em cima, dias e carga embaixo. Quantidade
@@ -174,15 +186,15 @@ export const LegacyGrandPlaque: React.FC<LegacyGrandPlaqueProps> = ({
                 {nickname}
             </h2>
             <div className={`flex items-center justify-center gap-2.5 ${compact ? 'mt-1.5' : 'mt-2'}`}>
-                <span className="h-px w-8 shrink-0" style={{ background: `linear-gradient(90deg, transparent, ${cor.trimSoft})` }} />
+                <span className="h-px w-8 min-w-0 flex-shrink" style={{ background: `linear-gradient(90deg, transparent, ${cor.trimSoft})` }} />
                 <p
-                    className={`m-0 truncate font-semibold uppercase ${compact ? 'text-[0.72rem]' : 'text-[0.82rem]'}`}
+                    className={`m-0 shrink-0 whitespace-nowrap font-semibold uppercase ${compact ? patentSize : 'text-[0.82rem]'}`}
                     style={{ fontFamily: 'Cinzel, Georgia, serif', letterSpacing: '.2em', ...tintaMetalica }}
                     title={subtitulo}
                 >
                     {subtitulo}
                 </p>
-                <span className="h-px w-8 shrink-0" style={{ background: `linear-gradient(90deg, ${cor.trimSoft}, transparent)` }} />
+                <span className="h-px w-8 min-w-0 flex-shrink" style={{ background: `linear-gradient(90deg, ${cor.trimSoft}, transparent)` }} />
             </div>
         </div>
     );

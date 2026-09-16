@@ -1,3 +1,7 @@
+import { Capacitor } from '@capacitor/core';
+import { Share as CapacitorShare } from '@capacitor/share';
+import { Directory, Filesystem } from '@capacitor/filesystem';
+
 interface ExportElementOptions {
     fileName?: string;
     title?: string;
@@ -125,6 +129,56 @@ const downloadBlob = (blob: Blob, fileName: string) => {
     URL.revokeObjectURL(url);
 };
 
+/**
+ * NO ANDROID, `navigator.share` NAO EXISTE.
+ *
+ * O app roda dentro de uma WebView do Capacitor, e a Web Share API e recurso do
+ * Chrome — a WebView nao a implementa. O codigo antigo chamava `navigator.share`
+ * direto e, quando ele faltava, lancava erro: TODO botao de exportar imagem do
+ * app mostrava "compartilhamento nao disponivel neste aparelho" e nao fazia
+ * nada. Painel diario, legado, perfil, conquista — todos passam por aqui, entao
+ * todos estavam quebrados no produto de verdade.
+ *
+ * O caminho nativo e em duas etapas porque o plugin recebe CAMINHO, nao blob:
+ * grava a imagem no cache do app e manda a uri. Cache nao pede permissao
+ * nenhuma no Android, e o proprio plugin cuida do FileProvider que transforma
+ * aquilo em algo que o WhatsApp consegue ler.
+ */
+const blobParaBase64 = (blob: Blob): Promise<string> => new Promise((resolve, reject) => {
+    const leitor = new FileReader();
+    leitor.onerror = () => reject(leitor.error || new Error('Falha ao ler a imagem.'));
+    leitor.onload = () => {
+        const resultado = String(leitor.result || '');
+        // readAsDataURL devolve "data:image/png;base64,XXXX"; o plugin quer so o XXXX.
+        const virgula = resultado.indexOf(',');
+        resolve(virgula >= 0 ? resultado.slice(virgula + 1) : resultado);
+    };
+    leitor.readAsDataURL(blob);
+});
+
+const compartilharNativo = async (blob: Blob, title: string, fileName: string): Promise<NativeShareResult> => {
+    if (!Capacitor.isNativePlatform()) return 'unavailable';
+
+    try {
+        const base64 = await blobParaBase64(blob);
+        // Nome unico: o cache guarda o arquivo anterior, e sobrescrever enquanto
+        // outro app ainda le a uri antiga rende imagem trocada.
+        const nome = `${Date.now()}-${fileName}`;
+        const { uri } = await Filesystem.writeFile({
+            path: nome,
+            data: base64,
+            directory: Directory.Cache,
+        });
+
+        await CapacitorShare.share({ title, files: [uri], dialogTitle: title });
+        return 'shared';
+    } catch (error) {
+        if (isShareCancelledError(error)) return 'cancelled';
+        console.error('Compartilhamento nativo falhou:', error);
+        return 'unavailable';
+    }
+};
+
 const isShareCancelledError = (error: unknown) => {
     const name = error instanceof DOMException ? error.name : (error as { name?: string } | null)?.name || '';
     const message = error instanceof Error ? error.message : String(error || '');
@@ -163,22 +217,33 @@ const tryShareFile = async (file: File, title: string) => {
 
 export const handleShare = async (
     elementId: string,
-    title: string = 'Meu Progresso - Life OS'
+    title: string = 'Meu Progresso - GLYPH'
 ): Promise<ShareResult> => {
-    if (typeof navigator === 'undefined' || typeof navigator.share !== 'function') {
-        throw new Error('A funcao de compartilhar não e suportada neste navegador.');
-    }
-
+    /*
+     * A CAPTURA VEM PRIMEIRO, e a guarda de navigator.share saiu daqui.
+     *
+     * Ela abortava tudo na primeira linha — e como a WebView do Android nao tem
+     * navigator.share, nenhum botao de imagem do app chegava sequer a desenhar a
+     * figura. Agora tenta o caminho nativo, que e o que existe no aparelho, e so
+     * entao o da web.
+     */
     const element = getTargetElement(elementId);
     const blob = await captureElementBlob(element, '#101010');
+
+    const nativo = await compartilharNativo(blob, title, 'glyph.png');
+    if (nativo === 'shared' || nativo === 'cancelled') return nativo;
+
     const file = new File([blob], 'share.png', { type: 'image/png' });
-    const result = await tryShareFile(file, title);
+    const web = await tryShareFile(file, title);
+    if (web === 'shared' || web === 'cancelled') return web;
 
-    if (result === 'unavailable') {
-        throw new Error('Compartilhamento indisponivel neste aparelho.');
-    }
-
-    return result;
+    /*
+     * Ultimo recurso: baixar. No desktop e o comportamento certo; num aparelho
+     * sem bandeja nativa, e melhor que o aviso seco de antes — a pessoa fica com
+     * a imagem e decide o que fazer com ela.
+     */
+    downloadBlob(blob, 'glyph.png');
+    return 'shared';
 };
 
 export const shareElementWithFeedback = async (

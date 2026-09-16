@@ -1,7 +1,9 @@
-﻿import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { ShareIcon } from './Icons';
 import { FeedEventType } from '../types';
+import { ShareChoiceSheet } from './ShareChoiceSheet';
+import { shareElementWithFeedback } from './Share';
 import { VideoPlayer } from './VideoPlayer';
 import { Portal } from './Portal';
 import { resolveItemDef } from '../constants/items';
@@ -22,6 +24,32 @@ type AchievementRewardDetail = {
     itemId?: string;
     name?: string;
 };
+
+/**
+ * QUAIS FEITOS VIRAM IMAGEM.
+ *
+ * Nem todo feito merece sair do app. Os cinco daqui acontecem raramente — arena
+ * fechada, patente nova, marco, relatorio de ciclo, patente do grupo — e a placa
+ * deles vale como imagem para mandar a alguem.
+ *
+ * Ficam DE FORA, de proposito:
+ *   - QUEST_COMPLETED: missao acontece direto. Uma imagem por missao vira papel
+ *     de parede, e o que e raro perde valor por vizinhanca. Continua podendo ir
+ *     ao feed, que e onde a repeticao nao incomoda.
+ *   - COMPETITION_COMPLETED: ja esta fora de qualquer compartilhamento, e com
+ *     razao — metade das vezes o resultado e derrota, e nao se oferece botao
+ *     para publicar a propria derrota.
+ */
+const FEITOS_QUE_VIRAM_IMAGEM: ReadonlySet<FeedEventType> = new Set<FeedEventType>([
+    'ARENA_COMPLETED',
+    'PLAYER_RANK_UP',
+    'MILESTONE_COMPLETED',
+    'REPORT_COMPLETED',
+    'CLAN_RANK_UP',
+]);
+
+/** Um alvo estavel para a captura da imagem. */
+const ID_DA_PLACA = 'achievement-plate-capture';
 
 const getAchievementDetails = (type: FeedEventType, data: any) => {
     switch (type) {
@@ -70,6 +98,9 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
     const celebrationScreensEnabled = oraclePreferences?.celebrationScreensEnabled !== false;
     const { title, subtitle, icon, message } = getAchievementDetails(achievement.type, achievement.data);
     const cardRef = useRef<HTMLDivElement>(null);
+    const [folhaAberta, setFolhaAberta] = useState(false);
+    /** Este feito oferece imagem, alem do feed? Ver FEITOS_QUE_VIRAM_IMAGEM. */
+    const podeVirarImagem = FEITOS_QUE_VIRAM_IMAGEM.has(achievement.type);
     const isArenaComplete = achievement.type === 'ARENA_COMPLETED';
     const isCompetitionResult = achievement.type === 'COMPETITION_COMPLETED';
     // ARENA_COMPLETED fazia parte do tipo e do texto, mas era excluida aqui e
@@ -159,8 +190,8 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
             itemIds: [],
             rewardHighlights: [],
             metricCards: [
-                { label: 'Ações', value: String(Number(achievement.data.actionCount || 0)) },
-                { label: 'Entregas', simbolo: 'acoes' as const, value: String(Number(achievement.data.deliveries || 0)) },
+                { label: 'Tipos de ação', value: String(Number(achievement.data.actionCount || 0)) },
+                { label: 'Ações concluídas', simbolo: 'acoes' as const, value: String(Number(achievement.data.deliveries || 0)) },
                 { label: 'Dias ativos', value: String(Number(achievement.data.days || 0)) },
             ],
         }
@@ -203,7 +234,16 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
      * volta a ser o que ja e noutros lugares do app: um simbolo ao lado. Sobra
      * ar em volta do unico botao que a pessoa precisa tocar.
      */
-    const primaryButtonClass = 'luxe-skin-button luxe-brilho flex min-w-[13rem] items-center justify-center gap-3 px-10 py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-transform active:scale-[0.97]';
+    /*
+     * O `max-w` existe por causa do botao de compartilhar.
+     *
+     * Ele fica `absolute right-0` de proposito — assim aparecer ou sumir nao move
+     * o botao principal, que e onde a pessoa ja esta mirando. Mas o principal
+     * tinha `min-w-[13rem]` e nenhum teto: num cartao estreito ele crescia
+     * centralizado ate encostar nos 44px do compartilhar, e os dois se
+     * espremiam. O teto garante folga dos dois lados sem tirar o OK do centro.
+     */
+    const primaryButtonClass = 'luxe-skin-button luxe-brilho flex min-w-[13rem] max-w-[calc(100%-6.5rem)] items-center justify-center gap-3 px-10 py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-transform active:scale-[0.97]';
 
     const handlePostToFeed = async () => {
         if (!canShareAchievement) return false;
@@ -307,6 +347,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
             >
                 <div
                     ref={cardRef}
+                    id={ID_DA_PLACA}
                     className={`relative flex flex-col overflow-hidden text-[#f5f3ed] transition-all duration-700 ${estiloDaPlaca.respiro}`}
                     style={{
                         ...estiloDaPlaca.placa(tomDoFeito),
@@ -390,8 +431,15 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                                         {canShareAchievement && (
                                             <button
                                                 type="button"
-                                                aria-label="Compartilhar em Feitos"
-                                                onClick={handlePostToFeed}
+                                                aria-label={podeVirarImagem ? 'Compartilhar' : 'Compartilhar em Feitos'}
+                                                /* Feito que vira imagem abre a escolha; o que so vai
+                                                   ao feed publica direto, porque folha com uma opcao
+                                                   so e um toque a mais sem nada para escolher. */
+                                                onClick={() => {
+                                                    if (podeVirarImagem) setFolhaAberta(true);
+                                                    else void handlePostToFeed();
+                                                }}
+                                                data-html2canvas-ignore
                                                 className="absolute right-0 grid h-11 w-11 shrink-0 place-items-center border border-white/15 bg-white/[0.045] text-white/68 transition-colors hover:border-white/28 hover:bg-white/[0.08] hover:text-white"
                                             >
                                                 <ShareIcon className="h-4 w-4" />
@@ -404,6 +452,27 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                     )}
                 </div>
             </div>
+
+            {/* A escolha so existe para quem tem as duas saidas. O feed fecha o
+                modal por dentro do handlePostToFeed; a imagem nao fecha, porque
+                a pessoa pode querer as duas coisas. */}
+            {podeVirarImagem && (
+                <ShareChoiceSheet
+                    isOpen={folhaAberta}
+                    title={title}
+                    onClose={() => setFolhaAberta(false)}
+                    onPostToFeed={handlePostToFeed}
+                    onShareImage={() => {
+                        void shareElementWithFeedback(showToast, ID_DA_PLACA, {
+                            title: `${title} — GLYPH`,
+                            preparingMessage: 'Preparando a imagem...',
+                            sharedMessage: 'Imagem compartilhada.',
+                            cancelledMessage: 'Compartilhamento cancelado.',
+                            errorMessage: 'Nao foi possivel preparar a imagem.',
+                        });
+                    }}
+                />
+            )}
         </Portal>
     );
 };

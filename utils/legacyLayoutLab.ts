@@ -1,5 +1,7 @@
-export interface LegacyLayoutConfig {
+﻿export interface LegacyLayoutConfig {
   backdropZoom: number;
+  /** Sobe ou desce a foto do salao dentro da cena, em pixels. */
+  backdropOffsetY: number;
   plaqueOffsetX: number;
   plaqueOffsetY: number;
   plaqueZoom: number;
@@ -29,6 +31,7 @@ export const LEGACY_SCENE_PLAQUE_SCALE = 1;
 
 export const DEFAULT_LEGACY_LAYOUT: LegacyLayoutConfig = {
   backdropZoom: 1.02,
+  backdropOffsetY: 0,
   plaqueOffsetX: 0,
   plaqueOffsetY: 52,
   plaqueZoom: 1.12,
@@ -56,7 +59,8 @@ const sanitizeNumber = (value: unknown, fallback: number, min: number, max: numb
 };
 
 export const sanitizeLegacyLayoutConfig = (value: Partial<LegacyLayoutConfig> | null | undefined): LegacyLayoutConfig => ({
-  backdropZoom: sanitizeNumber(value?.backdropZoom, DEFAULT_LEGACY_LAYOUT.backdropZoom, 1, 1.22),
+  backdropZoom: sanitizeNumber(value?.backdropZoom, DEFAULT_LEGACY_LAYOUT.backdropZoom, 1, 1.6),
+  backdropOffsetY: sanitizeNumber(value?.backdropOffsetY, DEFAULT_LEGACY_LAYOUT.backdropOffsetY, -260, 260),
   plaqueOffsetX: sanitizeNumber(value?.plaqueOffsetX, DEFAULT_LEGACY_LAYOUT.plaqueOffsetX, -220, 220),
   plaqueOffsetY: sanitizeNumber(value?.plaqueOffsetY, DEFAULT_LEGACY_LAYOUT.plaqueOffsetY, -120, 120),
   plaqueZoom: sanitizeNumber(value?.plaqueZoom, DEFAULT_LEGACY_LAYOUT.plaqueZoom, 0.55, 1.6),

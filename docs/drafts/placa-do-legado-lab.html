@@ -1,0 +1,458 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Placa do Legado — bancada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+<!--
+  BANCADA DA PLACA DO LEGADO — quarta rodada
+
+  O DESENHO E O DA REFERENCIA: campo vinho profundo, moldura dupla de cantos
+  cortados, Cinzel com tinta metalica, e tres placas menores dentro da grande —
+  nivel, os quatro numeros, patamar.
+
+  O QUE MUDA E A PROPORCAO. A referencia e quadrada (600x604, 1:1) e a placa
+  precisa ser retangular. Saem os dois elementos que existiam so para preencher
+  altura:
+
+    "PLACA DO LEGADO" no alto  ->  o contexto ja diz o que e
+    a frase de rodape          ->  custava um andar inteiro
+
+  E o miolo achata: o que era empilhado em coluna passa a dividir a largura, que
+  e o que sobra numa placa retangular. P1, P2 e P3 sao tres graus disso, do mais
+  parecido com a referencia ao mais espremido.
+
+  A altura real e a proporcao de cada uma estao escritas embaixo dela. E
+  criterio, nao enfeite.
+
+  A variante A e o desenho que esta no app hoje. Nada aqui toca o app.
+-->
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 0 0 90px; background: #08090c; color: #fff; font-family: Inter, "Segoe UI", system-ui, sans-serif; }
+
+  .barraTopo {
+    position: sticky; top: 0; z-index: 50; display: flex; flex-wrap: wrap; align-items: center; gap: 18px;
+    padding: 11px 20px; background: rgba(8,9,12,.94); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+  .grupo { display: flex; align-items: center; gap: 6px; }
+  .grupo > span { font-size: 9px; font-weight: 900; letter-spacing: .2em; text-transform: uppercase; color: rgba(255,255,255,.34); margin-right: 2px; }
+  .barraTopo button {
+    border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.04); color: rgba(255,255,255,.62);
+    border-radius: 999px; cursor: pointer; padding: 5px 11px; font: inherit; font-size: 11px; font-weight: 700; transition: all 140ms ease;
+  }
+  .barraTopo button:hover { color: #fff; border-color: rgba(255,255,255,.24); }
+  .barraTopo button[aria-pressed="true"] { background: rgba(255,214,120,.16); border-color: rgba(255,214,120,.5); color: #ffe6a8; }
+
+  .pilha { display: flex; flex-direction: column; gap: 32px; padding: 26px 20px; align-items: center; }
+  .caso { width: 100%; max-width: 940px; }
+  .rotulo { display: flex; align-items: baseline; gap: 9px; margin: 0 0 8px 2px; }
+  .rotulo b { font-size: 10px; font-weight: 900; letter-spacing: .26em; text-transform: uppercase; color: #c9a34e; }
+  .rotulo span { font-size: 10px; color: rgba(255,255,255,.36); }
+  .palco { display: flex; justify-content: center; }
+  .medida { margin: 8px 0 0; text-align: center; font-size: 9px; color: rgba(255,255,255,.3); font-variant-numeric: tabular-nums; letter-spacing: .06em; }
+  .tabular { font-variant-numeric: tabular-nums; }
+  .serif { font-family: Cinzel, Georgia, "Times New Roman", serif; }
+
+  /*
+   * A TINTA METALICA.
+   * O texto nao tem cor: tem um gradiente recortado na forma das letras. E o que
+   * faz a letra parecer chapa polida — e so funciona em serif pesada, porque o
+   * brilho precisa de area para atravessar.
+   */
+  .metalico {
+    background: linear-gradient(103deg, var(--m2) 2%, var(--m1) 26%, #fff8ea 44%, var(--m1) 62%, var(--m2) 88%, var(--m1) 100%);
+    background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,.75));
+  }
+
+  /* ============================================================ A — hoje */
+  .v-a {
+    position: relative; overflow: hidden; border-radius: 18px; padding: 12px; border: 1.5px solid transparent;
+    background:
+      radial-gradient(circle at 12% 0%, rgba(255,230,150,.16), transparent 32%) padding-box,
+      linear-gradient(160deg, #17212a 0%, #0b1118 48%, #030608 100%) padding-box,
+      linear-gradient(147deg, #f7e7b0 0%, #c9a34e 15%, #705523 34%, #e4cd88 52%, #7d6029 72%, #c6a052 88%, #f7e7b0 100%) border-box;
+    box-shadow: 0 18px 36px rgba(0,0,0,.46), inset 0 1px 0 rgba(255,244,203,.24);
+  }
+  .v-a .topo { display: grid; grid-template-columns: 72px minmax(0,1fr) 72px; gap: 12px; align-items: center; }
+  .v-a .av { position: relative; width: 64px; height: 64px; border-radius: 999px; background: linear-gradient(150deg,#2a3541,#10161d); border: 2px solid rgba(237,196,96,.96); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 900; color: rgba(255,255,255,.5); }
+  .v-a .nv { position: absolute; right: -4px; bottom: -4px; width: 32px; height: 32px; border-radius: 999px; background: #070a0d; border: 1px solid rgba(255,230,150,.85); display: flex; align-items: center; justify-content: center; font-size: .82rem; font-weight: 900; }
+  .v-a .kicker { margin: 0; font-size: 7px; font-weight: 900; letter-spacing: .24em; text-transform: uppercase; color: rgba(255,230,150,.65); }
+  .v-a .nome { margin: 4px 0 0; font-size: 1.22rem; font-weight: 900; text-transform: uppercase; line-height: 1; overflow-wrap: anywhere; }
+  .v-a .patente { margin: 7px 0 0; font-size: 9.5px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; color: rgba(240,249,255,.76); }
+  .v-a .cla { margin: 4px 0 0; font-size: 8.5px; font-weight: 600; color: rgba(255,255,255,.58); }
+  .v-a .selo { width: 72px; height: 72px; border-radius: 999px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1.5px solid transparent;
+    background: radial-gradient(circle at 34% 26%, rgba(255,239,181,.16), rgba(8,14,19,.96) 62%) padding-box, linear-gradient(150deg,#f2dda0,#b8934a 26%,#6a5122 52%,#ddc17f 78%,#f2dda0) border-box; }
+  .v-a .selo small { font-size: 5.5px; font-weight: 900; text-transform: uppercase; color: rgba(255,230,150,.64); }
+  .v-a .selo strong { font-size: 1.9rem; font-weight: 900; line-height: 1; }
+  .v-a .metricas { margin-top: 13px; display: grid; grid-template-columns: repeat(4,1fr); border-radius: 9px; padding: 7px 0; background: linear-gradient(180deg, rgba(0,0,0,.34), rgba(0,0,0,.12)); }
+  .v-a .metricas div { text-align: center; }
+  .v-a .metricas div + div { border-left: 1px solid rgba(255,246,214,.12); }
+  .v-a .metricas small { display: block; font-size: 6.5px; font-weight: 900; letter-spacing: .2em; text-transform: uppercase; color: rgba(255,255,255,.44); }
+  .v-a .metricas strong { display: block; margin-top: 3px; font-size: 1.05rem; font-weight: 900; }
+
+  /* ============================================================ PLACA — base */
+  .placa {
+    position: relative; overflow: hidden; border-radius: 6px;
+    padding: 16px 20px;
+    background:
+      repeating-linear-gradient(118deg, rgba(255,255,255,.028) 0 1px, transparent 1px 7px),
+      radial-gradient(ellipse at 50% 0%, var(--brilho), transparent 62%),
+      var(--campo);
+    box-shadow: 0 24px 50px rgba(0,0,0,.66), inset 0 1px 0 rgba(255,255,255,.07);
+  }
+  /* Moldura dupla de cantos cortados — a assinatura da referência. */
+  .placa::before, .placa::after {
+    content: ''; position: absolute; pointer-events: none; z-index: 5;
+    clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%, 0 calc(100% - 14px), 0 14px);
+  }
+  .placa::before { inset: 4px; border: 2px solid var(--ouro-forte); }
+  .placa::after  { inset: 9px; border: 1px solid var(--ouro-fraco); }
+
+  .placa .corpo { position: relative; z-index: 2; display: flex; align-items: center; gap: 18px; }
+
+  /* A identidade: nome, patente entre fios, clã. */
+  .placa .identidade { min-width: 0; text-align: center; flex: 1 1 auto; }
+  .placa .nome { margin: 0; font-size: 2.1rem; font-weight: 700; line-height: 1; letter-spacing: .05em; white-space: nowrap; }
+  .placa .linhaPatente { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 9px; }
+  .placa .linhaPatente i { flex: 0 1 46px; height: 1px; background: linear-gradient(90deg, transparent, var(--ouro-fraco)); }
+  .placa .linhaPatente i:last-child { background: linear-gradient(90deg, var(--ouro-fraco), transparent); }
+  .placa .patente { margin: 0; font-size: .92rem; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; white-space: nowrap; }
+  .placa .cla { margin: 5px 0 0; font-size: .72rem; font-weight: 400; color: rgba(255,255,255,.62); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* As placas menores, com o mesmo recorte de canto da grande. */
+  .placa .chapa {
+    position: relative; flex-shrink: 0; padding: 12px 14px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    background: radial-gradient(ellipse at 50% 0%, var(--brilho), transparent 70%), var(--chapa);
+    clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+  }
+  .placa .chapa::after {
+    content: ''; position: absolute; inset: 4px; border: 1px solid var(--ouro-fraco); pointer-events: none;
+    clip-path: polygon(7px 0, calc(100% - 7px) 0, 100% 7px, 100% calc(100% - 7px), calc(100% - 7px) 100%, 7px 100%, 0 calc(100% - 7px), 0 7px);
+  }
+  .placa .chapa small { font-size: 7.5px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; color: var(--ouro-texto); }
+  .placa .chapa .valor { font-size: 2rem; font-weight: 700; line-height: 1; }
+  .placa .chapa .pontos { font-size: .82rem; font-weight: 600; color: rgba(255,255,255,.66); }
+
+  /* Os quatro números: rótulo à direita, valor à esquerda, como na referência. */
+  .placa .numeros { flex-shrink: 0; display: grid; gap: 4px 16px; align-items: baseline; }
+  .placa .numeros small { font-size: 8.5px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--ouro-texto); text-align: right; white-space: nowrap; }
+  .placa .numeros strong { font-size: 1.22rem; font-weight: 700; line-height: 1.1; white-space: nowrap; }
+
+  /*
+   * A CONTA QUE NAO FECHA EM 368px.
+   *
+   * Numa fileira unica cabem: chapa do nivel 68px + os quatro numeros 149px +
+   * chapa do patamar 76px = 293px, e o campo util de uma placa de 368 e 328. O
+   * nome fica com 35px — ou seja, com nada: medido, ele era espremido a ZERO e
+   * sumia da placa.
+   *
+   * Nao ha aperto de fonte que resolva isso; e largura que falta. Entao abaixo
+   * de 420px as variantes de uma fileira caem para dois andares — identidade em
+   * cima, as tres chapas embaixo. A placa engorda, e essa e a troca honesta:
+   * placa alta e pior que placa sem nome.
+   */
+  .estreita .corpo { flex-direction: column; gap: 12px; }
+  .estreita .trio, .estreita .corpo { width: 100%; }
+  .estreita.p2 .corpo, .estreita.p3 .corpo { display: flex; }
+  .estreita.p2 .identidade, .estreita.p3 .identidade { order: -1; width: 100%; text-align: center; }
+  .estreita.p3 .linhaPatente { justify-content: center; }
+  .estreita.p3 .linhaPatente i:first-child { display: block; }
+  .estreita .chapa { order: 1; }
+  .estreita .numeros { order: 1; }
+
+  /* P1 — dois andares: identidade em cima, as três chapas embaixo. */
+  .p1 .corpo { flex-direction: column; gap: 14px; }
+  .p1 .trio { display: flex; align-items: stretch; justify-content: center; gap: 18px; width: 100%; }
+  .p1 .numeros { grid-template-columns: auto auto; }
+
+  /* P2 — um andar: nível, identidade, números, patamar, lado a lado. */
+  .p2 .numeros { grid-template-columns: auto auto auto auto; gap: 3px 12px; }
+  .p2 .nome { font-size: 1.72rem; }
+  .p2 .patente { font-size: .8rem; }
+
+  /* P3 — o mais achatado: números em fileira única, identidade à esquerda. */
+  .p3 .identidade { text-align: left; }
+  .p3 .linhaPatente { justify-content: flex-start; }
+  .p3 .linhaPatente i:first-child { display: none; }
+  .p3 .nome { font-size: 1.54rem; }
+  .p3 .patente { font-size: .74rem; }
+  .p3 .numeros { grid-template-columns: repeat(4, auto); gap: 2px 14px; }
+  .p3 .numeros small { text-align: center; }
+  .p3 .numeros strong { text-align: center; font-size: 1.1rem; }
+  .p3 .chapa { padding: 10px 12px; }
+  .p3 .chapa .valor { font-size: 1.62rem; }
+</style>
+
+<div class="barraTopo">
+  <div class="grupo" id="presets"><span>Dado</span></div>
+  <div class="grupo" id="modos"><span>Selo</span></div>
+  <div class="grupo" id="larguras"><span>Largura</span></div>
+  <div class="grupo" id="cores"><span>Cor</span></div>
+</div>
+
+<div class="pilha" id="pilha"></div>
+
+<script>
+/*
+ * A PALETA SEGUE O PATAMAR.
+ *
+ * O card de ciclo ja funciona assim, e a referencia que voce mandou e a de
+ * patamar B: campo vinho. Herdando isso, o patamar vira uma COISA e nao uma
+ * letra — de longe, sem ler nada, da para ver em que degrau a pessoa esta.
+ */
+const PALETAS = {
+  ferro: { campo:'linear-gradient(168deg,#191b20 0%,#0d0f12 58%,#050607 100%)', chapa:'linear-gradient(168deg,#23262c,#101215)',
+           brilho:'rgba(210,218,228,.1)', ouroForte:'rgba(206,214,224,.62)', ouroFraco:'rgba(206,214,224,.3)',
+           ouroTexto:'rgba(206,214,224,.66)', m1:'#dfe6ee', m2:'#8d97a3' },
+  vinho: { campo:'linear-gradient(168deg,#2e1020 0%,#1b0813 55%,#0b0308 100%)', chapa:'linear-gradient(168deg,#3a1428,#170710)',
+           brilho:'rgba(255,196,150,.12)', ouroForte:'rgba(226,182,120,.75)', ouroFraco:'rgba(226,182,120,.38)',
+           ouroTexto:'rgba(233,199,146,.78)', m1:'#f3ddb2', m2:'#b9873f' },
+  ouro:  { campo:'linear-gradient(168deg,#2a2110 0%,#171105 55%,#080501 100%)', chapa:'linear-gradient(168deg,#3a2d13,#171105)',
+           brilho:'rgba(255,220,140,.14)', ouroForte:'rgba(240,208,132,.8)', ouroFraco:'rgba(240,208,132,.4)',
+           ouroTexto:'rgba(244,215,150,.8)', m1:'#fbeec6', m2:'#c8a04e' },
+  violeta:{campo:'linear-gradient(168deg,#241433 0%,#150b20 55%,#07040c 100%)', chapa:'linear-gradient(168deg,#301a45,#150b20)',
+           brilho:'rgba(214,180,255,.14)', ouroForte:'rgba(214,184,250,.7)', ouroFraco:'rgba(214,184,250,.34)',
+           ouroTexto:'rgba(214,184,250,.76)', m1:'#f0e2ff', m2:'#a87fdd' },
+  esmeralda:{campo:'linear-gradient(168deg,#0d2a20 0%,#071a13 55%,#020806 100%)', chapa:'linear-gradient(168deg,#123829,#071a13)',
+           brilho:'rgba(150,255,206,.13)', ouroForte:'rgba(150,226,186,.7)', ouroFraco:'rgba(150,226,186,.34)',
+           ouroTexto:'rgba(160,232,194,.76)', m1:'#dcf7e9', m2:'#5aa885' },
+  safira:{ campo:'linear-gradient(168deg,#0e1f3a 0%,#071228 55%,#020510 100%)', chapa:'linear-gradient(168deg,#152b4e,#071228)',
+           brilho:'rgba(150,196,255,.14)', ouroForte:'rgba(150,190,246,.7)', ouroFraco:'rgba(150,190,246,.34)',
+           ouroTexto:'rgba(162,198,250,.78)', m1:'#dbe9ff', m2:'#5d86c8' },
+  rubi:  { campo:'linear-gradient(168deg,#331016 0%,#1e070c 55%,#0b0204 100%)', chapa:'linear-gradient(168deg,#43151d,#1e070c)',
+           brilho:'rgba(255,164,164,.13)', ouroForte:'rgba(236,158,152,.72)', ouroFraco:'rgba(236,158,152,.35)',
+           ouroTexto:'rgba(240,170,164,.78)', m1:'#ffe0da', m2:'#c06a62' },
+  onix:  { campo:'linear-gradient(168deg,#16181c 0%,#0a0b0d 55%,#030304 100%)', chapa:'linear-gradient(168deg,#1e2126,#0a0b0d)',
+           brilho:'rgba(255,255,255,.07)', ouroForte:'rgba(236,238,242,.5)', ouroFraco:'rgba(236,238,242,.22)',
+           ouroTexto:'rgba(236,238,242,.6)', m1:'#f2f4f8', m2:'#7d838c' },
+};
+
+/*
+ * A COR E ESCOLHA, E O PATAMAR E SO O PADRAO.
+ *
+ * Derivar a cor do patamar tem uma virtude — de longe da para ver em que degrau
+ * a pessoa esta — e um defeito: quem esta em D fica com a placa cinza e nao
+ * pode fazer nada a respeito, num objeto que existe justamente para ser
+ * mostrado. Com o seletor as duas coisas convivem: "Patamar" segue o degrau, e
+ * as outras sao da pessoa.
+ */
+const PATAMAR_PALETA = { SS:'violeta', S:'violeta', A:'ouro', B:'vinho', C:'vinho', D:'ferro', E:'ferro' };
+const NOME_DA_COR = { auto:'Patamar', vinho:'Vinho', ouro:'Ouro', violeta:'Violeta', esmeralda:'Esmeralda', safira:'Safira', rubi:'Rubi', ferro:'Ferro', onix:'Ônix' };
+
+/* Cada preset existe porque quebra alguma coisa. */
+const PRESETS = {
+  veterano: { rotulo:'Veterano', nick:'misterxhermit', patente:'Príncipe', cla:'Vanguarda', nivel:94, patamar:'B', score:80, ciclos:5, carga:'630h', acoes:55, dias:35, registro:'16/09/2026' },
+  lenda:    { rotulo:'Lenda', nick:'Aurelius', patente:'Imperador', cla:'Coroa de Ferro', nivel:100, patamar:'SS', score:97, ciclos:41, carga:'4.820h', acoes:2183, dias:1147, registro:'02/03/2029' },
+  nomeLongo:{ rotulo:'Nome longo', nick:'constanciadeferro_2026', patente:'Grão-Duque', cla:'Irmandade do Amanhecer', nivel:71, patamar:'A', score:88, ciclos:12, carga:'1.204h', acoes:612, dias:288, registro:'11/11/2027' },
+  solo:     { rotulo:'Sem clã', nick:'ninguem', patente:'Vagante', cla:'', nivel:58, patamar:'D', score:64, ciclos:3, carga:'92h', acoes:41, dias:27, registro:'04/01/2026' },
+  novato:   { rotulo:'Primeiro dia', nick:'recemchegado', patente:'Vagante', cla:'', nivel:50, patamar:'E', score:0, ciclos:0, carga:'0h', acoes:0, dias:0, registro:'—' },
+};
+
+const LARGURAS = { cena: 368, media: 520, larga: 700, faixa: 900 };
+let estado = { preset: 'veterano', modo: 'patamar', largura: 'larga', cor: 'auto' };
+
+const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+const quatro = (d) => [['Ações', d.acoes], ['Carga', d.carga], ['Ciclos', d.ciclos], ['Dias', d.dias]];
+
+const variaveis = (d) => {
+  const escolhida = estado.cor === 'auto' ? (PATAMAR_PALETA[d.patamar] || 'ferro') : estado.cor;
+  const p = PALETAS[escolhida] || PALETAS.ferro;
+  return `--campo:${p.campo};--chapa:${p.chapa};--brilho:${p.brilho};--ouro-forte:${p.ouroForte};--ouro-fraco:${p.ouroFraco};--ouro-texto:${p.ouroTexto};--m1:${p.m1};--m2:${p.m2}`;
+};
+
+const chapaNivel = (d) => `
+  <div class="chapa">
+    <small>Nível</small>
+    <span class="valor serif metalico tabular">${esc(d.nivel)}</span>
+  </div>`;
+
+const chapaPatamar = (d, m) => m === 'registro'
+  ? `<div class="chapa"><small>Registro</small><span class="serif metalico" style="font-size:.96rem;font-weight:700;line-height:1.3;text-align:center">${esc(d.registro)}</span></div>`
+  : `<div class="chapa">
+       <small>Patamar</small>
+       <span class="valor serif metalico">${esc(d.patamar)}</span>
+       <span class="pontos serif tabular">${esc(d.score)}</span>
+     </div>`;
+
+/*
+ * O CLA PERDEU A LINHA, NAO O LUGAR.
+ *
+ * Ele ocupava um terceiro andar so para si, e um andar e caro numa placa que
+ * precisa ser baixa — era a maior fatia de altura da P1. Agora ele entra na
+ * mesma linha da patente, separado por ponto: "PRINCIPE · VANGUARDA". A placa
+ * perde a linha e nao perde o dado.
+ */
+const identidade = (d) => `
+  <div class="identidade">
+    <h2 class="nome serif metalico">${esc(d.nick)}</h2>
+    <div class="linhaPatente"><i></i><p class="patente serif metalico">${esc(d.patente)}${d.cla ? ` · ${esc(d.cla)}` : ''}</p><i></i></div>
+  </div>`;
+
+/* Rótulo à direita, valor à esquerda — o alinhamento da referência. */
+const numerosPares = (d) => `
+  <div class="numeros">${quatro(d).map(([r, v]) => `<small>${r}</small><strong class="serif metalico tabular">${esc(v)}</strong>`).join('')}</div>`;
+
+/* Rótulo em cima, valor embaixo — para a fileira única. */
+const numerosFileira = (d) => `
+  <div class="numeros">
+    ${quatro(d).map(([r]) => `<small>${r}</small>`).join('')}
+    ${quatro(d).map(([, v]) => `<strong class="serif metalico tabular">${esc(v)}</strong>`).join('')}
+  </div>`;
+
+const VARIANTES = [
+  { id: 'A', nome: 'Hoje', nota: 'o que está no app', render: (d, m) => `
+    <div class="v-a">
+      <div class="topo">
+        <div class="av">${esc(d.nick.slice(0,2).toUpperCase())}<div class="nv tabular">${esc(d.nivel)}</div></div>
+        <div style="min-width:0">
+          <p class="kicker">Placa do Legado</p><h2 class="nome">${esc(d.nick)}</h2>
+          <p class="patente">${esc(d.patente)}</p><p class="cla">${d.cla ? esc(d.cla) : 'Jornada individual'}</p>
+        </div>
+        <div class="selo"><small>${m === 'registro' ? 'Reg.' : 'Patamar'}</small><strong>${m === 'registro' ? '' : esc(d.patamar)}</strong></div>
+      </div>
+      <div class="metricas">${quatro(d).map(([r, v]) => `<div><small>${r}</small><strong class="tabular">${esc(v)}</strong></div>`).join('')}</div>
+    </div>` },
+
+  { id: 'P1', nome: 'Dois andares', nota: 'a referência sem o título e sem o rodapé', render: (d, m) => `
+    <div class="placa p1 ${LARGURAS[estado.largura] <= 420 ? 'estreita' : ''}" style="${variaveis(d)}">
+      <div class="corpo">
+        ${identidade(d)}
+        <div class="trio">${chapaNivel(d)}${numerosPares(d)}${chapaPatamar(d, m)}</div>
+      </div>
+    </div>` },
+
+  { id: 'P2', nome: 'Um andar', nota: 'as três chapas e a identidade lado a lado', render: (d, m) => `
+    <div class="placa p2 ${LARGURAS[estado.largura] <= 420 ? 'estreita' : ''}" style="${variaveis(d)}">
+      <div class="corpo">
+        ${chapaNivel(d)}
+        ${identidade(d)}
+        ${numerosPares(d)}
+        ${chapaPatamar(d, m)}
+      </div>
+    </div>` },
+
+  { id: 'P3', nome: 'Achatada', nota: 'identidade à esquerda, números em fileira', render: (d, m) => `
+    <div class="placa p3 ${LARGURAS[estado.largura] <= 420 ? 'estreita' : ''}" style="${variaveis(d)}">
+      <div class="corpo">
+        ${chapaNivel(d)}
+        ${identidade(d)}
+        ${numerosFileira(d)}
+        ${chapaPatamar(d, m)}
+      </div>
+    </div>` },
+];
+
+function botoes(container, opcoes, chave) {
+  container.querySelectorAll('button').forEach((b) => b.remove());
+  opcoes.forEach(([valor, rotulo]) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = rotulo;
+    b.setAttribute('aria-pressed', String(estado[chave] === valor));
+    // No seletor de cor, a amostra vem junto: escolher cor lendo nome de cor e
+    // o unico caso em que a etiqueta e pior que a coisa.
+    if (chave === 'cor' && PALETAS[valor]) {
+      const amostra = document.createElement('span');
+      amostra.style.cssText = `display:inline-block;width:9px;height:9px;border-radius:999px;margin-right:6px;vertical-align:-1px;background:${PALETAS[valor].chapa};box-shadow:0 0 0 1px ${PALETAS[valor].ouroForte}`;
+      b.prepend(amostra);
+    }
+    b.onclick = () => { estado[chave] = valor; desenhar(); };
+    container.appendChild(b);
+  });
+}
+
+/*
+ * A PLACA NAO CRESCE PARA CIMA: A LETRA ENCOLHE.
+ *
+ * "Nao coube" tem duas saidas — quebrar linha ou diminuir a fonte. Quebrar
+ * engorda a placa, que e o que estamos tentando evitar; sobra diminuir. O
+ * navegador desenha, a gente pergunta se transbordou e encolhe meio ponto ate
+ * caber.
+ *
+ * Degrau por numero de caracteres nao serve: "WWWW" e "iiii" tem quatro letras
+ * e larguras muito diferentes, e Cinzel e serif larga.
+ */
+function ajustar() {
+  document.querySelectorAll('.placa').forEach((placa) => {
+    const encolher = (el, piso) => {
+      if (!el) return;
+      el.style.fontSize = '';
+      let t = parseFloat(getComputedStyle(el).fontSize);
+      while (t > piso && el.scrollWidth > el.clientWidth + 1) {
+        t -= 0.5; el.style.fontSize = `${t}px`;
+      }
+    };
+    encolher(placa.querySelector('.nome'), 12);
+    encolher(placa.querySelector('.patente'), 7.5);
+
+    // Se a fileira de números não couber, ela cede tamanho — nunca linha.
+    const numeros = placa.querySelector('.numeros');
+    if (!numeros) return;
+    const valores = numeros.querySelectorAll('strong');
+    const rotulos = numeros.querySelectorAll('small');
+    valores.forEach((s) => { s.style.fontSize = ''; });
+    rotulos.forEach((s) => { s.style.fontSize = ''; });
+    const baseValor = parseFloat(getComputedStyle(valores[0]).fontSize);
+    const baseRotulo = parseFloat(getComputedStyle(rotulos[0]).fontSize);
+
+    // As chapas de nivel e patamar tambem entram na conta: na largura da cena
+    // elas sozinhas comem metade da barra, e encolher so os numeros nao resolve.
+    const chapas = [...placa.querySelectorAll('.chapa')];
+    const baseChapa = chapas.map((c) => ({
+      valor: parseFloat(getComputedStyle(c.querySelector('.valor, .serif')).fontSize),
+      padX: parseFloat(getComputedStyle(c).paddingLeft),
+      padY: parseFloat(getComputedStyle(c).paddingTop),
+    }));
+
+    const transborda = () => numeros.scrollWidth > numeros.clientWidth + 1
+      || placa.scrollWidth > placa.clientWidth + 1
+      || placa.querySelector('.corpo').scrollWidth > placa.querySelector('.corpo').clientWidth + 1;
+
+    valores.forEach((s) => { s.style.fontSize = ''; });
+    rotulos.forEach((s) => { s.style.fontSize = ''; });
+    chapas.forEach((c) => { c.style.padding = ''; c.querySelector('.valor, .serif').style.fontSize = ''; });
+
+    let escala = 1;
+    while (escala > 0.56 && transborda()) {
+      escala -= 0.04;
+      valores.forEach((s) => { s.style.fontSize = `${baseValor * escala}px`; });
+      rotulos.forEach((s) => { s.style.fontSize = `${baseRotulo * escala}px`; });
+      chapas.forEach((c, i) => {
+        c.style.padding = `${baseChapa[i].padY * escala}px ${baseChapa[i].padX * escala}px`;
+        c.querySelector('.valor, .serif').style.fontSize = `${baseChapa[i].valor * escala}px`;
+      });
+    }
+  });
+}
+
+function desenhar() {
+  botoes(document.getElementById('presets'), Object.entries(PRESETS).map(([k, v]) => [k, v.rotulo]), 'preset');
+  botoes(document.getElementById('modos'), [['patamar', 'Patamar'], ['registro', 'Registro']], 'modo');
+  botoes(document.getElementById('larguras'), Object.keys(LARGURAS).map((k) => [k, `${LARGURAS[k]}px`]), 'largura');
+  botoes(document.getElementById('cores'), Object.entries(NOME_DA_COR), 'cor');
+
+  const d = PRESETS[estado.preset];
+  const largura = LARGURAS[estado.largura];
+  document.getElementById('pilha').innerHTML = VARIANTES.map((v) => `
+    <div class="caso">
+      <p class="rotulo"><b>${v.id} · ${v.nome}</b><span>${v.nota}</span></p>
+      <div class="palco"><div style="width:${largura}px;max-width:100%">${v.render(d, estado.modo)}</div></div>
+      <p class="medida"></p>
+    </div>`).join('');
+
+  ajustar();
+
+  document.querySelectorAll('.caso').forEach((caso) => {
+    const alvo = caso.querySelector('.palco > div > div');
+    const r = alvo.getBoundingClientRect();
+    caso.querySelector('.medida').textContent =
+      `${Math.round(r.width)} × ${Math.round(r.height)} px  ·  ${(r.width / r.height).toFixed(1)} : 1`;
+  });
+}
+
+desenhar();
+addEventListener('resize', desenhar);
+</script>

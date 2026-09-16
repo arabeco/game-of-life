@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ciclos · Prata e ouro</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 35% 30%,#17222b55,transparent 50%),#080b0f;color:#dedbd5;font-family:Georgia,'Times New Roman',serif}main{max-width:810px;margin:auto;padding:48px 24px 36px}header{text-align:center;margin-bottom:40px}.eyebrow{font:10px/1.5 system-ui,sans-serif;letter-spacing:.32em;color:#8b959e}h1{font-size:clamp(26px,4vw,38px);font-weight:400;margin:15px 0 19px}header .line{height:1px;max-width:470px;margin:auto;background:linear-gradient(90deg,transparent,#75838c66,transparent)}.tagline{font-size:9px;letter-spacing:.35em;color:#a3a5a7;margin-top:16px}.pair{display:grid;grid-template-columns:repeat(2,minmax(0,280px));gap:30px;justify-content:center}.sample{min-width:0;--pale:#e4eff4;--mid:#859ea9;--dark:#293c48;--shine:#b8edff;--tint:#152a36;--deep:#071017}.sample.gold{--pale:#f7e0a7;--mid:#b79861;--dark:#503b29;--shine:#ffdfa0;--tint:#2a1828;--deep:#100c13}.label{text-align:center;margin:0 0 17px;color:var(--mid);font-size:10px;letter-spacing:.35em;font-weight:bold}.plate{position:relative;aspect-ratio:280/610;filter:drop-shadow(0 18px 24px #0009)}.frame{position:absolute;inset:0;width:100%;height:100%}.content{position:absolute;inset:6.1% 12% 7%;display:flex;flex-direction:column;text-align:center}.cycle{font-size:clamp(12px,2vw,17px);letter-spacing:.06em;color:#d8d9d8}.date{font-size:clamp(9px,1.6vw,12px);margin-top:7px;color:#9ba9b4;letter-spacing:.035em}.gold .date{color:#b1a49f}.hero{position:relative;aspect-ratio:1/1.03;margin:6% -7% 0;display:flex;flex-direction:column;align-items:center;justify-content:center}.laurel{position:absolute;inset:0;width:100%;height:100%;overflow:visible}.grade{font-size:clamp(52px,10vw,94px);line-height:.97;letter-spacing:-.075em;padding-right:.075em;font-weight:600;background:linear-gradient(120deg,var(--mid) 3%,var(--pale) 35%,#fff 47%,var(--mid) 76%,var(--pale));background-clip:text;-webkit-background-clip:text;color:transparent;filter:drop-shadow(0 3px 2px #000);z-index:1}.gold .grade{background-image:linear-gradient(125deg,#b38c46,#f9e6b2 42%,#d8b16b 65%,#806033)}.score{font-size:clamp(21px,4vw,32px);color:var(--pale);margin-top:2px;text-shadow:0 2px 3px #000}.title{font-size:clamp(16px,2.9vw,23px);font-weight:400;margin:7% 0 0;padding:0 0 8%;position:relative}.title:after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--mid),transparent);opacity:.4}.title:before{content:'◆';position:absolute;bottom:-4px;left:calc(50% - 3px);font-size:7px;color:var(--mid)}.stats{display:grid;grid-template-columns:1fr 1fr;text-align:left;flex:1;margin-top:9%;position:relative;min-height:0}.stats:before{content:'';position:absolute;left:50%;top:0;bottom:0;width:1px;background:linear-gradient(transparent,#899aaa30,transparent)}.stat{display:flex;flex-direction:column;justify-content:center;padding:8% 9%;gap:3px}.stat:nth-child(n+3){border-top:1px solid #94a3b624}.stat span{font-size:clamp(9px,1.6vw,12px);color:#93a4b0}.stat strong{font-size:clamp(15px,2.8vw,21px);color:var(--pale);font-weight:400}.gold .stat span{color:#ad9f9e}footer{text-align:center;font:11px/1.7 system-ui,sans-serif;color:#737b84;margin-top:34px}@media(max-width:520px){main{padding:28px 12px}.pair{gap:13px}header{margin-bottom:28px}.tagline{font-size:8px;letter-spacing:.21em}.content{inset:6.1% 11% 7%}.date{margin-top:4px}.label{font-size:9px;margin-bottom:12px}.stat{gap:2px}footer{font-size:10px}}
+
+/* Readable text stays in HTML; only the ornament uses the PNG. */
+body{font-family:Arial,Helvetica,sans-serif}
+h1{font-family:Georgia,'Times New Roman',serif}
+.cycle{font-size:16px;font-weight:700;letter-spacing:.07em;color:#f0f2f5}
+.date,.gold .date{font-size:13px;font-weight:500;color:#c8cdd4;letter-spacing:0;line-height:1.4}
+.hero{margin-top:8%;aspect-ratio:1/1.03}
+.laurel{object-fit:contain;filter:drop-shadow(0 2px 2px #0009);opacity:.9}
+.gold .laurel{filter:sepia(.85) saturate(1.45) hue-rotate(355deg) drop-shadow(0 2px 2px #0009)}
+.grade{font-family:Georgia,'Times New Roman',serif;font-size:76px;line-height:1.05;letter-spacing:-.06em}
+.score{font-family:Arial,Helvetica,sans-serif;font-weight:600;font-size:27px;line-height:1.2;color:#eff4f8;margin-top:4px}
+.gold .score{color:#f5dfb0}
+.title{font-family:Arial,Helvetica,sans-serif;font-size:21px;font-weight:600;line-height:1.35;color:#f0f2f5}
+.stat{gap:6px;padding:10% 9%}.stat span,.gold .stat span{font-size:13px;line-height:1.3;color:#c2cbd5;font-weight:500}
+.stat strong{font-size:22px;font-weight:600;line-height:1.2;color:#edf4fa;font-variant-numeric:tabular-nums}
+.gold .stat strong{color:#f5e4be}.label{font:600 11px/1.4 Arial,Helvetica,sans-serif;letter-spacing:.17em}
+@media(max-width:520px){.pair{grid-template-columns:minmax(0,280px);gap:30px}.cycle{font-size:16px}.date{font-size:13px}.grade{font-size:76px}.score{font-size:27px}.title{font-size:21px}.stat span{font-size:13px}.stat strong{font-size:22px}.label{font-size:11px}}
+
+/* Wider, shorter plates with an editorial serif cycle title. */
+.pair{grid-template-columns:repeat(2,minmax(0,320px))}
+.plate{aspect-ratio:320/530}
+.content{inset:30px 32px 32px}
+.date{margin-top:0}
+.hero{height:230px;flex:none;aspect-ratio:auto;margin:8px 0 0}
+.title{font-family:Georgia,'Times New Roman',serif;font-size:26px;font-weight:400;line-height:1.25;letter-spacing:.01em;margin:7px 0 0;padding-bottom:18px;color:#ece7df}
+.stats{margin-top:12px}.stat{padding:10px 12px;gap:5px}
+@media(max-width:620px){.pair{grid-template-columns:minmax(0,320px);gap:30px}}
+@media(max-width:350px){.content{inset:26px 27px}.hero{height:205px}.title{font-size:24px;padding-bottom:14px}.stat{padding:8px 10px}}
+.stat{align-items:center;text-align:center}
+</style>
+</head>
+<body><main>
+<header><p class="eyebrow">GLYPH / PLACAS DE CICLO</p><h1>Mesma essência, mais elegância.</h1><div class="line"></div><p class="tagline">METAL ESCOVADO · LOUROS · LUZ CONTIDA</p></header>
+<section class="pair" aria-label="Comparação dos ciclos médio e máximo"></section>
+<footer>Estudo visual · médio (B) e fodão (SS)</footer>
+</main>
+<script>
+const outline=(i)=>`${18+i},${i} ${302-i},${i} ${320-i},${18+i} ${320-i},${512-i} ${302-i},${530-i} ${18+i},${530-i} ${i},${512-i} ${i},${18+i}`;
+function frame(id){return `<svg class="frame" viewBox="0 0 320 530" aria-hidden="true"><defs>
+<linearGradient id="metal-${id}" x1="0" y1="0" x2="1" y2=".8"><stop stop-color="var(--dark)"/><stop offset=".08" stop-color="var(--pale)"/><stop offset=".13" stop-color="var(--dark)"/><stop offset=".4" stop-color="var(--mid)"/><stop offset=".51" stop-color="var(--pale)"/><stop offset=".56" stop-color="var(--dark)"/><stop offset=".85" stop-color="var(--mid)"/><stop offset="1" stop-color="var(--pale)"/></linearGradient>
+<radialGradient id="face-${id}" cx=".45" cy=".22" r=".85"><stop stop-color="var(--tint)"/><stop offset=".7" stop-color="var(--deep)"/><stop offset="1" stop-color="#070a0e"/></radialGradient>
+<radialGradient id="glint-${id}"><stop stop-color="#fff" stop-opacity=".95"/><stop offset=".15" stop-color="var(--shine)" stop-opacity=".7"/><stop offset="1" stop-color="var(--shine)" stop-opacity="0"/></radialGradient>
+<filter id="grain-${id}"><feTurbulence type="fractalNoise" baseFrequency=".7" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".045"/></feComponentTransfer></filter>
+<clipPath id="clip-${id}"><polygon points="${outline(14)}"/></clipPath></defs>
+<polygon points="${outline(1)}" fill="#05080c" stroke="var(--dark)" stroke-width="2"/>
+<polygon points="${outline(4)}" fill="url(#metal-${id})"/>
+<polygon points="${outline(9)}" fill="#060a10" stroke="var(--dark)" stroke-width="2"/>
+<polygon points="${outline(14)}" fill="url(#face-${id})" stroke="url(#metal-${id})" stroke-width="2"/>
+<polygon points="${outline(19)}" fill="none" stroke="var(--mid)" stroke-opacity=".22"/>
+<rect x="14" y="14" width="292" height="502" filter="url(#grain-${id})" clip-path="url(#clip-${id})"/>
+<ellipse cx="157" cy="6" rx="57" ry="9" fill="url(#glint-${id})"/><ellipse cx="175" cy="518" rx="72" ry="9" fill="url(#glint-${id})" opacity=".5"/>
+<path d="M7 30V112 M313 360V500" stroke="var(--pale)" opacity=".4"/>
+</svg>`}
+function laurel(id){return '<img class="laurel" src="./assets/cycle-laurel-silver-v2.png" alt="" width="1254" height="1254">'}
+document.querySelector('.pair').innerHTML=['B','SS'].map((rank,i)=>`<div class="sample ${i?'gold':''}"><p class="label">${i?'FODÃO · SS':'MÉDIO · B'}</p><article class="plate" aria-label="Ciclo de maio, ${rank}, nota ${i?100:83}">${frame(rank)}<div class="content"><div class="date">26 MAI — 31 MAI</div><div class="hero">${laurel(rank)}<div class="grade">${rank}</div><div class="score">${i?100:83}</div></div><h2 class="title">Ciclo de maio</h2><div class="stats">${[['Ações','50/54'],['Carga','46h'],['Metas',i?'9/9':'6/9'],['Progresso','7 dias']].map(([label,value])=>`<div class="stat"><span>${label}</span><strong>${value}</strong></div>`).join('')}</div></div></article></div>`).join('');
+</script></body></html>

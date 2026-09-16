@@ -1,3 +1,4 @@
+import { getLegacyCycleGrade } from '../utils/cycleGrade.js';
 import React from 'react';
 import { formatDate, getScoreGrade } from '../utils/dateUtils';
 import { getEraRibbonSkin } from './EraRibbon';
@@ -34,7 +35,7 @@ export const EraCycleStrip: React.FC<EraCycleStripProps> = ({ cycles, skinId, er
 
             <div className="hide-scrollbar flex gap-3 overflow-x-auto pb-1">
                 {cycles.map((cycle, index) => {
-                    const scoreInfo = getScoreGrade(cycle.score);
+                    const scoreInfo = getLegacyCycleGrade(cycle);
                     const isFirst = index === 0;
                     const isLast = index === cycles.length - 1;
                     return (

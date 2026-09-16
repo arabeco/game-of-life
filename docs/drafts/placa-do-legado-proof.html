@@ -1,0 +1,297 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Placa do Legado — folha de provas</title>
+<!--
+  FOLHA DE PROVAS DA PLACA DO LEGADO
+
+  A variante A e o desenho que esta no app hoje, recriado com os mesmos valores
+  de LegacyGrandPlaque.tsx (mesmos gradientes de borda, mesmas sombras, mesmas
+  medidas) para servir de referencia honesta — se ela nao bater com o app, as
+  outras nao valem comparacao.
+
+  As demais sao DIRECOES, nao acabamentos. Cada uma muda uma decisao de fundo,
+  e nao a cor de um detalhe:
+    B  o retrato deixa de ser um circulo ao lado e vira o eixo da placa
+    C  a placa para de ser cartao e vira documento, com numeros em serie
+    D  a placa vira monumento vertical, feita para ocupar a tela
+
+  Mesmos dados nas quatro, de proposito: o que muda entre elas e so a forma.
+-->
+<style>
+  :root {
+    --ouro-claro: #f7e7b0;
+    --ouro: #c9a34e;
+    --ouro-escuro: #705523;
+    --texto: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 28px 20px 60px;
+    background: #0a0c10;
+    color: #fff;
+    font-family: Inter, "Segoe UI", system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 34px;
+  }
+  .caso { width: 100%; max-width: 640px; }
+  .rotulo {
+    display: flex; align-items: baseline; gap: 10px;
+    margin: 0 0 10px 2px;
+  }
+  .rotulo b { font-size: 11px; font-weight: 900; letter-spacing: .28em; text-transform: uppercase; color: var(--ouro); }
+  .rotulo span { font-size: 11px; color: rgba(255,255,255,.42); }
+
+  /* ------------------------------------------------ A — o desenho de hoje */
+  .placa-a {
+    position: relative; isolate: isolate; overflow: hidden;
+    border-radius: 18px; padding: 12px; min-height: 132px;
+    border: 1.5px solid transparent;
+    background:
+      radial-gradient(circle at 12% 0%, rgba(255,230,150,.16), transparent 32%) padding-box,
+      radial-gradient(circle at 96% 100%, rgba(47,125,159,.18), transparent 34%) padding-box,
+      linear-gradient(118deg, rgba(255,255,255,.07), transparent 24%, rgba(255,255,255,.025) 52%, transparent 74%) padding-box,
+      linear-gradient(160deg, #17212a 0%, #0b1118 48%, #030608 100%) padding-box,
+      linear-gradient(147deg, #f7e7b0 0%, #c9a34e 15%, #705523 34%, #e4cd88 52%, #7d6029 72%, #c6a052 88%, #f7e7b0 100%) border-box;
+    box-shadow: 0 18px 36px rgba(0,0,0,.46), 0 2px 6px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,244,203,.24), inset 0 -22px 38px rgba(0,0,0,.34);
+  }
+  .placa-a::before {
+    content: ''; position: absolute; inset: 5px; border-radius: 13px; pointer-events: none;
+    border: 1px solid rgba(238,214,150,.24);
+    box-shadow: inset 0 1px 0 rgba(255,246,214,.14), 0 1px 0 rgba(0,0,0,.55);
+  }
+  .placa-a .grade { position: relative; z-index: 1; display: grid; grid-template-columns: 88px minmax(0,1fr) 96px; gap: 16px; align-items: center; }
+  .avatar {
+    position: relative; width: 78px; height: 78px; border-radius: 999px;
+    background: linear-gradient(150deg, #2a3541, #10161d);
+    border: 2px solid rgba(237,196,96,.96);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 900; color: rgba(255,255,255,.5);
+  }
+  .nivel {
+    position: absolute; right: -4px; bottom: -4px; width: 40px; height: 40px; border-radius: 999px;
+    background: #070a0d; border: 1px solid rgba(255,230,150,.85);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    box-shadow: 0 5px 12px rgba(0,0,0,.55), 0 0 0 2px rgba(8,10,12,.88);
+  }
+  .nivel small { font-size: 5px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,230,150,.6); }
+  .nivel strong { font-size: 1rem; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
+  .kicker { font-size: 7px; font-weight: 900; letter-spacing: .24em; text-transform: uppercase; color: rgba(255,230,150,.65); margin: 0; }
+  .nome { margin: 4px 0 0; font-size: 1.5rem; font-weight: 900; text-transform: uppercase; line-height: 1; text-shadow: 0 2px 3px rgba(0,0,0,.65); }
+  .regua { height: 1px; margin-top: 6px; background: linear-gradient(90deg, rgba(255,230,150,.8), rgba(255,246,214,.18), transparent); }
+  .patente { margin: 8px 0 0; font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; color: rgba(240,249,255,.76); }
+  .cla { margin: 4px 0 0; font-size: 9px; font-weight: 600; color: rgba(255,255,255,.58); }
+  .selo {
+    position: relative; width: 86px; height: 86px; border-radius: 999px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    border: 1.5px solid transparent;
+    background:
+      radial-gradient(circle at 34% 26%, rgba(255,239,181,.16), rgba(8,14,19,.96) 62%) padding-box,
+      linear-gradient(150deg, #f2dda0 0%, #b8934a 26%, #6a5122 52%, #ddc17f 78%, #f2dda0 100%) border-box;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.16), inset 0 -6px 12px rgba(0,0,0,.4), 0 8px 20px rgba(0,0,0,.38);
+  }
+  .selo small { font-size: 6px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,230,150,.64); }
+  .selo strong { font-size: 2.45rem; font-weight: 900; line-height: 1; }
+  .selo span { font-size: 10px; font-weight: 900; font-variant-numeric: tabular-nums; color: rgba(255,246,214,.74); }
+  .metricas {
+    position: relative; z-index: 1; margin-top: 16px; display: grid; grid-template-columns: repeat(4, 1fr);
+    border-radius: 9px; overflow: hidden; padding: 8px 0;
+    background: linear-gradient(180deg, rgba(0,0,0,.34), rgba(0,0,0,.12));
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.6), inset 0 -1px 0 rgba(255,244,203,.09);
+  }
+  .metricas div { text-align: center; }
+  .metricas div + div { border-left: 1px solid rgba(255,246,214,.12); }
+  .metricas small { display: block; font-size: 7px; font-weight: 900; letter-spacing: .22em; text-transform: uppercase; color: rgba(255,255,255,.44); }
+  .metricas strong { display: block; margin-top: 3px; font-size: 1.25rem; font-weight: 900; font-variant-numeric: tabular-nums; }
+
+  /* ------------------------------------------------ B — retrato no eixo */
+  .placa-b {
+    position: relative; overflow: hidden; border-radius: 20px; padding: 20px 18px 16px;
+    border: 1.5px solid transparent;
+    background:
+      radial-gradient(ellipse at 50% -10%, rgba(255,226,150,.2), transparent 55%) padding-box,
+      linear-gradient(180deg, #131a22 0%, #080c11 55%, #020304 100%) padding-box,
+      linear-gradient(180deg, #e9d295 0%, #6d5426 50%, #e9d295 100%) border-box;
+    box-shadow: 0 22px 46px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,244,203,.2);
+    text-align: center;
+  }
+  .placa-b .halo {
+    position: absolute; left: 50%; top: -58px; width: 260px; height: 160px; transform: translateX(-50%);
+    background: radial-gradient(ellipse at 50% 100%, rgba(255,214,120,.22), transparent 70%);
+    pointer-events: none;
+  }
+  .placa-b .avatar { width: 92px; height: 92px; margin: 0 auto; font-size: 26px; }
+  .placa-b .nivel { right: -2px; bottom: -2px; }
+  .placa-b .nome { font-size: 1.6rem; margin-top: 14px; letter-spacing: -.01em; }
+  .placa-b .patente { margin-top: 6px; color: var(--ouro); }
+  .placa-b .fita {
+    display: inline-flex; align-items: center; gap: 8px; margin-top: 12px;
+    padding: 5px 14px; border-radius: 999px;
+    border: 1px solid rgba(255,230,150,.3);
+    background: linear-gradient(180deg, rgba(255,230,150,.14), rgba(255,230,150,.04));
+    font-size: 10px; font-weight: 900; letter-spacing: .18em; text-transform: uppercase; color: rgba(255,240,200,.9);
+  }
+  .placa-b .metricas { margin-top: 18px; background: none; box-shadow: none; padding: 0; gap: 8px; }
+  .placa-b .metricas div {
+    border: 1px solid rgba(255,246,214,.12); border-radius: 12px; padding: 9px 4px;
+    background: rgba(0,0,0,.35);
+  }
+  .placa-b .metricas div + div { border-left: 1px solid rgba(255,246,214,.12); }
+
+  /* ------------------------------------------------ C — documento */
+  .placa-c {
+    position: relative; overflow: hidden; border-radius: 10px; padding: 16px 18px 14px;
+    border: 1px solid rgba(214,182,110,.42);
+    background:
+      repeating-linear-gradient(56deg, rgba(255,226,150,.05) 0 1px, transparent 1px 7px),
+      repeating-linear-gradient(-56deg, rgba(255,226,150,.04) 0 1px, transparent 1px 9px),
+      linear-gradient(180deg, #121821 0%, #070a0e 100%);
+    box-shadow: 0 16px 34px rgba(0,0,0,.5), inset 0 0 0 4px rgba(255,255,255,.02);
+    font-family: "SF Mono", ui-monospace, "Cascadia Mono", Menlo, monospace;
+  }
+  .placa-c .topo { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .placa-c .serie { font-size: 8px; letter-spacing: .2em; color: rgba(214,182,110,.7); }
+  .placa-c .nome {
+    font-family: Inter, system-ui, sans-serif; font-size: 1.44rem; margin-top: 10px; letter-spacing: .02em;
+  }
+  .placa-c .linhas { margin-top: 14px; border-top: 1px solid rgba(214,182,110,.26); }
+  .placa-c .linha {
+    display: grid; grid-template-columns: 96px 1fr auto; align-items: baseline; gap: 12px;
+    padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,.05);
+    font-size: 11px;
+  }
+  .placa-c .linha em { font-style: normal; font-size: 8px; letter-spacing: .2em; text-transform: uppercase; color: rgba(255,255,255,.34); }
+  .placa-c .linha i { font-style: normal; border-bottom: 1px dotted rgba(255,255,255,.12); height: 1px; }
+  .placa-c .linha b { font-variant-numeric: tabular-nums; font-weight: 700; color: #fff; }
+  .placa-c .carimbo {
+    position: absolute; right: 16px; bottom: 12px; width: 74px; height: 74px; border-radius: 999px;
+    border: 2px solid rgba(214,182,110,.5); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; transform: rotate(-11deg);
+    color: rgba(255,240,200,.82);
+  }
+  .placa-c .carimbo strong { font-size: 1.7rem; line-height: 1; font-family: Inter, sans-serif; }
+  .placa-c .carimbo small { font-size: 7px; letter-spacing: .16em; }
+
+  /* ------------------------------------------------ D — monumento */
+  .placa-d {
+    position: relative; overflow: hidden; width: 300px; margin: 0 auto;
+    border-radius: 6px 6px 22px 22px; padding: 26px 20px 20px;
+    border: 1.5px solid transparent;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(255,226,150,.16), transparent 46%) padding-box,
+      linear-gradient(180deg, #1a232c 0%, #0a1016 42%, #010203 100%) padding-box,
+      linear-gradient(180deg, #f0d99f 0%, #8a6c30 40%, #3b2e13 100%) border-box;
+    box-shadow: 0 30px 60px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,244,203,.22);
+    text-align: center;
+  }
+  .placa-d .coroa {
+    width: 40px; height: 40px; margin: 0 auto 12px; transform: rotate(45deg);
+    border: 1.5px solid rgba(255,230,150,.55);
+    background: linear-gradient(140deg, rgba(255,230,150,.2), transparent 70%);
+  }
+  .placa-d .nome { font-size: 1.24rem; line-height: 1.05; }
+  .placa-d .patente { color: var(--ouro); margin-top: 8px; }
+  .placa-d .pilha { margin-top: 18px; display: flex; flex-direction: column; gap: 1px; }
+  .placa-d .pilha div {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 9px 12px; background: rgba(0,0,0,.34);
+    border-left: 2px solid rgba(255,230,150,.28);
+  }
+  .placa-d .pilha div:nth-child(odd) { background: rgba(255,255,255,.028); }
+  .placa-d .pilha small { font-size: 8px; font-weight: 900; letter-spacing: .2em; text-transform: uppercase; color: rgba(255,255,255,.42); }
+  .placa-d .pilha strong { font-size: 1.1rem; font-weight: 900; font-variant-numeric: tabular-nums; }
+  .placa-d .base {
+    margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255,230,150,.22);
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+  .placa-d .base strong { font-size: 2rem; font-weight: 900; line-height: 1; }
+  .placa-d .base small { font-size: 8px; letter-spacing: .22em; text-transform: uppercase; color: rgba(255,230,150,.6); text-align: left; }
+</style>
+
+<div class="caso">
+  <p class="rotulo"><b>A · hoje</b><span>o que está no app — referência</span></p>
+  <div class="placa-a">
+    <div class="grade">
+      <div style="position:relative">
+        <div class="avatar">MI<div class="nivel"><small>Nível</small><strong>94</strong></div></div>
+      </div>
+      <div>
+        <p class="kicker">Placa do Legado</p>
+        <h2 class="nome">misterxhermit</h2>
+        <div class="regua"></div>
+        <p class="patente">Príncipe</p>
+        <p class="cla">Vanguarda</p>
+      </div>
+      <div class="selo"><small>Patamar</small><strong>B</strong><span>80</span></div>
+    </div>
+    <div class="metricas">
+      <div><small>Ciclos</small><strong>5</strong></div>
+      <div><small>Carga</small><strong>630h</strong></div>
+      <div><small>Ações</small><strong>55</strong></div>
+      <div><small>Dias ativos</small><strong>35</strong></div>
+    </div>
+  </div>
+</div>
+
+<div class="caso">
+  <p class="rotulo"><b>B · retrato no eixo</b><span>o rosto deixa de ser detalhe lateral</span></p>
+  <div class="placa-b">
+    <div class="halo"></div>
+    <div style="position:relative;display:inline-block">
+      <div class="avatar">MI<div class="nivel"><small>Nível</small><strong>94</strong></div></div>
+    </div>
+    <h2 class="nome">misterxhermit</h2>
+    <p class="patente">Príncipe · Vanguarda</p>
+    <div class="fita">Patamar B · 80</div>
+    <div class="metricas">
+      <div><small>Ciclos</small><strong>5</strong></div>
+      <div><small>Carga</small><strong>630h</strong></div>
+      <div><small>Ações</small><strong>55</strong></div>
+      <div><small>Dias</small><strong>35</strong></div>
+    </div>
+  </div>
+</div>
+
+<div class="caso">
+  <p class="rotulo"><b>C · documento</b><span>registro oficial, não cartão</span></p>
+  <div class="placa-c">
+    <div class="topo">
+      <div>
+        <div class="serie">REGISTRO DE SOBERANIA</div>
+        <div class="serie" style="margin-top:3px;color:rgba(255,255,255,.3)">Nº GL-0094-VG</div>
+      </div>
+      <div class="serie" style="text-align:right">EMITIDO<br>16 · 09 · 2026</div>
+    </div>
+    <h2 class="nome">misterxhermit</h2>
+    <div class="linhas">
+      <div class="linha"><em>Patente</em><i></i><b>Príncipe</b></div>
+      <div class="linha"><em>Ordem</em><i></i><b>Vanguarda</b></div>
+      <div class="linha"><em>Ciclos</em><i></i><b>05</b></div>
+      <div class="linha"><em>Carga</em><i></i><b>630 h</b></div>
+      <div class="linha"><em>Ações</em><i></i><b>55</b></div>
+      <div class="linha"><em>Dias ativos</em><i></i><b>35</b></div>
+    </div>
+    <div class="carimbo"><strong>B</strong><small>80</small></div>
+  </div>
+</div>
+
+<div class="caso">
+  <p class="rotulo"><b>D · monumento</b><span>vertical, feita pra ocupar a tela</span></p>
+  <div class="placa-d">
+    <div class="coroa"></div>
+    <h2 class="nome">misterxhermit</h2>
+    <p class="patente">Príncipe · Nível 94</p>
+    <div class="pilha">
+      <div><small>Ciclos</small><strong>5</strong></div>
+      <div><small>Carga</small><strong>630h</strong></div>
+      <div><small>Ações</small><strong>55</strong></div>
+      <div><small>Dias ativos</small><strong>35</strong></div>
+    </div>
+    <div class="base">
+      <strong>B</strong>
+      <small>Patamar<br>médio 80</small>
+    </div>
+  </div>
+</div>

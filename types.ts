@@ -1,4 +1,4 @@
-export interface CodexLevel {
+﻿export interface CodexLevel {
   level: number;
   title: string;
   description: string;
@@ -529,6 +529,12 @@ export interface UserProfile {
   level: number;
   backgroundUrl: string;
   bannerUrl?: string; // Flamula-style banner
+  /**
+   * A cor escolhida para a Placa do Legado, ou `auto` para seguir o patamar.
+   * Guardar `auto` em vez da cor calculada faz a placa subir junto quando a
+   * pessoa muda de degrau.
+   */
+  legacyPlaqueColor?: string;
   isOnline: boolean;
   visibleWidgets: string[];
   checklistItems?: { date?: string; items?: ChecklistItem[] } | ChecklistItem[];
@@ -1155,6 +1161,20 @@ export interface SeasonQuest {
 // --- Hall of Fame / Feed Types ---
 export type FeedEventType = 'MILESTONE_COMPLETED' | 'ARENA_COMPLETED' | 'CYCLE_COMPLETED' | 'PLAYER_RANK_UP' | 'CLAN_RANK_UP' | 'LEVEL_UP' | 'QUEST_COMPLETED' | 'REPORT_COMPLETED' | 'COMPETITION_COMPLETED';
 
+export interface DailyFeedSnapshot {
+  version: 1;
+  date: string;
+  dateLabel: string;
+  completed: number;
+  total: number;
+  minutes: number;
+  xp: number;
+  bayCount: number;
+  reading?: string;
+  comparisonLabel?: string;
+  actions: { id: string; name: string; icon: string; completed: boolean; background?: string }[];
+}
+
 export interface FeedEvent {
   id: string;
   userId: string;
@@ -1181,12 +1201,20 @@ export interface FeedEvent {
     actionCount?: number;
     deliveries?: number;
     days?: number;
-    assetId?: string;
-    seasonId?: string;
-    exp?: number;
-    minutes?: number;
+      dailySummary?: DailyFeedSnapshot;
+      /** Origin saved with the post; never inferred from another player's arenas. */
+      assetId?: string;
+      seasonId?: string;
+      exp?: number;
+      minutes?: number;
   };
   timestamp: string;
+  /**
+   * Quantas curtidas o feito tem, e se a minha esta entre elas.
+   *
+   * Ausentes quando a base ainda nao tem a tabela de curtidas: nesse caso o
+   * cartao desenha sem o botao, em vez de mostrar um zero que nao e zero.
+   */
   likes?: number;
   likedByMe?: boolean;
 }

@@ -1,0 +1,52 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import { PGlite } from '@electric-sql/pglite';
+const db = new PGlite();
+try {
+    await db.exec(`create role anon; create role authenticated; create role service_role;
+      create schema auth; create table auth.users(id uuid primary key);
+      create function auth.uid() returns uuid language sql as $$select nullif(current_setting('qa.uid',true),'')::uuid$$;
+      create table user_profiles(id uuid primary key,email text,role text);
+      create table actions(id text primary key,user_id uuid,action_type text,duration numeric);
+      create table scheduled_tasks(user_id uuid,action_id text,date date,start_time int,duration numeric,completed boolean);
+    `);
+    await db.exec(await fs.readFile(new URL('../supabase/migrations/20260915120000_daily_comparison.sql', import.meta.url), 'utf8'));
+    const id = n => `00000000-0000-0000-0000-${String(n).padStart(12,'0')}`;
+    const date = (await db.query(`select ((now() at time zone 'America/Sao_Paulo' - interval '4 hours')::date-1)::text d`)).rows[0].d;
+    for (let i=1;i<=100;i++) {
+        await db.query('insert into auth.users values($1)',[id(i)]);
+        await db.query('insert into user_profiles values($1,$2,$3)',[id(i),`player${i}@real.invalid`,'user']);
+        await db.query('insert into actions values($1,$2,$3,30)',[`a${i}`,id(i),'Rotina']);
+        await db.query('insert into scheduled_tasks values($1,$2,$3,600,30,true)',[id(i),`a${i}`,date]);
+    }
+    await db.query(`select set_config('qa.uid',$1,false)`,[id(1)]);
+    const read = async d => (await db.query('select get_daily_comparison($1) result',[d||date])).rows[0].result;
+    let result = await read();
+    assert.equal(result.cohortSize,100);
+    assert.equal(result.actionsTopPercent,100,'Tied cohort must not become top 1%');
+    assert.equal(result.provisional,false);
+    await db.query('insert into scheduled_tasks values($1,$2,$3::date+1,120,30,true)',[id(1),'a1',date]);
+    result = await read();
+    assert.equal(result.actions,2,'2am is previous operational day');
+    assert.equal(result.actionsTopPercent,1);
+    assert.equal(result.xp,60);
+    await db.query("update actions set action_type='Livre' where id='a1'");
+    result = await read(); assert.equal(result.xp,0); assert.equal(result.xpTopPercent,null);
+    await db.query("update user_profiles set email='codex-mega-x@example.com' where id=$1",[id(100)]);
+    assert.equal(await read(),null,'99 real participants: no badge');
+    await db.query("update user_profiles set email='player100@real.invalid' where id=$1",[id(100)]);
+    await db.query('insert into daily_comparison_exclusions values($1)',[id(100)]);
+    assert.equal(await read(),null,'Explicit QA exclusion');
+    await db.exec('delete from daily_comparison_exclusions');
+    await db.exec(await fs.readFile(new URL('../supabase/migrations/20260915130000_daily_comparison_minimum_10.sql', import.meta.url), 'utf8'));
+    await db.query('update scheduled_tasks set completed=false where user_id > $1', [id(10)]);
+    result = await read();
+    assert.equal(result.cohortSize,10);
+    assert.equal(result.actionsTopPercent,10,'First of ten is top 10%, not top 1%');
+    await db.query('insert into daily_comparison_exclusions values($1)',[id(10)]);
+    assert.equal(await read(),null,'Nine eligible participants remain hidden');
+    assert.equal(await read('2000-01-01'),null,'Bounded query window');
+    await db.exec("select set_config('qa.uid','',false)");
+    assert.equal(await read(),null,'Authentication required');
+    console.log('PASS local SQL: original migration plus 10-player update, ties, own-only aggregate, 4am rollover, Free XP, exclusions, date window, auth. Not deployed.');
+} finally { await db.close(); }

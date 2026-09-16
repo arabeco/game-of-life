@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Portal } from './Portal';
+import { ShareIcon } from './Icons';
+import { shareElementWithFeedback } from './Share';
 import { AssetPentagon } from './AssetPentagon';
 import { useGame } from '../contexts/GameContext';
 import { supabase } from '../supabaseClient';
@@ -62,7 +64,7 @@ export const MasteryResultModal: React.FC<{
      */
     retratoAnteriorDaBancada?: Retrato;
 }> = ({ onClose, retratoAnteriorDaBancada }) => {
-    const { assets, userProfile } = useGame();
+    const { assets, userProfile, showToast } = useGame();
     const [anterior, setAnterior] = useState<Retrato | null>(null);
     const [carregando, setCarregando] = useState(true);
     const estiloDaPlaca = DIRECOES.B;
@@ -135,7 +137,7 @@ export const MasteryResultModal: React.FC<{
                         style={{ background: `radial-gradient(circle at 50% 0%, rgba(${TOM_DA_MAESTRIA},.82) 0%, transparent 70%)` }}
                     />
 
-                    <div className="relative z-10 flex min-h-0 flex-1 flex-col justify-center text-center">
+                    <div id="mastery-result-capture" className="relative z-10 flex min-h-0 flex-1 flex-col justify-center text-center">
                         <p
                             className="text-[9px] font-black uppercase tracking-[0.32em]"
                             style={{ color: `rgba(${TOM_DA_MAESTRIA},.72)` }}
@@ -204,7 +206,8 @@ export const MasteryResultModal: React.FC<{
                     </div>
 
                     <div className="relative z-10 mt-auto pt-4">
-                        <div className="flex justify-center">
+                        <div className="flex items-center justify-center gap-3">
+                            <button type="button" aria-label="Compartilhar maestria" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/25 bg-black/30 text-white" onClick={() => void shareElementWithFeedback(showToast, 'mastery-result-capture', {title: 'Minha maestria'})}><ShareIcon className="h-5 w-5" /></button>
                             <button
                                 type="button"
                                 onClick={onClose}

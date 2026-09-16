@@ -1,4 +1,4 @@
-import React, { Suspense, useMemo, useState, useRef, useEffect } from 'react';
+﻿import React, { Suspense, useMemo, useState, useRef, useEffect } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { GlassCard } from '../components/GlassCard';
 import { EditIcon, CheckIcon, PlusIcon, XIcon, ShareIcon, CrownIcon, ImageIcon, StarIcon } from '../components/Icons';
@@ -347,7 +347,9 @@ export const ShareableProfileCard: React.FC<{
     clanName: string;
     clanRank: ClanRank | undefined;
     assets: Asset[];
-}> = ({ id, userProfile, clanName, clanRank, assets }) => {
+    /** Soma das curtidas recebidas. `null` = a base nao conta curtidas. */
+    curtidasRecebidas?: number | null;
+}> = ({ id, userProfile, clanName, clanRank, assets, curtidasRecebidas = null }) => {
     const selectedBorder = [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === userProfile.border);
     const activeAssetCount = assets.filter((asset) => asset.id !== 'geral').length;
     const totalArenas = assets.reduce((sum, asset) => sum + asset.arenas.length, 0);
@@ -460,9 +462,20 @@ export const ShareableProfileCard: React.FC<{
                             <div className="mt-1 text-xl font-black text-white">{totalArenas}</div>
                         </div>
                     </div>
-                    <div className="mt-1.5 rounded-2xl border border-white/8 bg-black/24 px-3 py-2 text-center">
-                        <div className="text-[8px] font-bold uppercase tracking-[0.22em] text-gray-500">Maestria média</div>
-                        <div className="mt-1 text-lg font-black text-white">Nível {masteryAverageLevel}</div>
+                    <div className={`mt-1.5 grid gap-1.5 ${curtidasRecebidas === null ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                        <div className="rounded-2xl border border-white/8 bg-black/24 px-3 py-2 text-center">
+                            <div className="text-[8px] font-bold uppercase tracking-[0.22em] text-gray-500">Maestria média</div>
+                            <div className="mt-1 text-lg font-black text-white">Nível {masteryAverageLevel}</div>
+                        </div>
+                        {/* A celula so aparece quando ha numero de verdade. Em base sem a
+                            tabela de curtidas o contexto devolve null, e um "0" ali seria
+                            "ninguem curtiu" onde a verdade e "ninguem contou". */}
+                        {curtidasRecebidas !== null && (
+                            <div className="rounded-2xl border border-white/8 bg-black/24 px-3 py-2 text-center">
+                                <div className="text-[8px] font-bold uppercase tracking-[0.22em] text-gray-500">Curtidas</div>
+                                <div className="mt-1 text-lg font-black text-white">{curtidasRecebidas}</div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -490,7 +503,19 @@ export const ShareableProfileCard: React.FC<{
 }
 
 export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile }> = ({ onClose, profile }) => {
-    const { userProfile, assets, friends, inventory, updateUserProfile, clan, clanRanks, getUserPublicData, cycleProgress, showToast } = useGame();
+    const { userProfile, assets, friends, inventory, updateUserProfile, clan, clanRanks, getUserPublicData, cycleProgress, showToast, fetchLikesReceived } = useGame();
+    /**
+     * `undefined` = ainda buscando; `null` = a base nao conta curtidas; numero =
+     * numero. Os tres estados sao diferentes e a tela trata os dois primeiros do
+     * mesmo jeito: nao desenha nada, porque nao ha o que dizer.
+     */
+    const [curtidasRecebidas, setCurtidasRecebidas] = useState<number | null>(null);
+
+    useEffect(() => {
+        let vivo = true;
+        void fetchLikesReceived().then((total) => { if (vivo) setCurtidasRecebidas(total); });
+        return () => { vivo = false; };
+    }, [fetchLikesReceived]);
     type ProfileTab = 'widgets' | 'summary' | 'mastery';
 
     const isOwnProfile = !profile || profile.id === userProfile.id;
@@ -758,6 +783,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                     clanName={clanName}
                     clanRank={currentClanRank}
                     assets={profileAssets}
+                    curtidasRecebidas={curtidasRecebidas}
                 />
             </div>
             <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center animate-fade-in p-4" onClick={onClose}>
@@ -1047,6 +1073,15 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                                     <div className="text-2xl font-bold text-white">{masteryAverageLevel.toFixed(1).replace('.', ',')}</div>
                                                 </div>
                                             </div>
+                                            {/* Curtidas recebidas. So aparece quando ha numero: em base
+                                                sem a tabela o contexto devolve null, e "0" ali diria
+                                                "ninguem curtiu" onde a verdade e "ninguem contou". */}
+                                            {isOwnProfile && curtidasRecebidas !== null && (
+                                                <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
+                                                    <div className="text-[8px] uppercase tracking-[0.22em] text-gray-500">Curtidas recebidas</div>
+                                                    <div className="text-2xl font-bold text-white">{curtidasRecebidas}</div>
+                                                </div>
+                                            )}
                                             <div className="bg-black/20 p-2 rounded-xl border border-white/5 space-y-1.5">
                                                 <div className="flex items-center justify-between gap-3">
                                                     <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">

@@ -6,6 +6,7 @@ import sharp from 'sharp';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const catalogRoot = path.join(repoRoot, 'public', 'assets', 'catalog');
+const manifestOnly = process.argv.includes('--manifest-only');
 
 const listFiles = async (directory) => {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -27,7 +28,7 @@ let bytesBefore = 0;
 let bytesAfter = 0;
 let optimizedFiles = 0;
 
-for (const filePath of imagePaths.filter((candidate) => candidate.toLowerCase().endsWith('.png'))) {
+for (const filePath of imagePaths.filter((candidate) => !manifestOnly && candidate.toLowerCase().endsWith('.png'))) {
   const input = await readFile(filePath);
   const relativePath = relativeCatalogPath(filePath);
   const isLargeGlyphPlate = /^avatars\/glyphs\/PLACA_/i.test(relativePath);
@@ -73,5 +74,5 @@ await writeFile(
 );
 
 console.log(
-  `Optimized ${optimizedFiles} PNG files: ${(bytesBefore / 1024 / 1024).toFixed(2)} MB -> ${(bytesAfter / 1024 / 1024).toFixed(2)} MB. Catalog total: ${(totalBytes / 1024 / 1024).toFixed(2)} MB.`,
+  manifestOnly ? `Manifest rebuilt for ${assets.length} images; image files unchanged.` : `Optimized ${optimizedFiles} PNG files: ${(bytesBefore / 1024 / 1024).toFixed(2)} MB -> ${(bytesAfter / 1024 / 1024).toFixed(2)} MB. Catalog total: ${(totalBytes / 1024 / 1024).toFixed(2)} MB.`,
 );

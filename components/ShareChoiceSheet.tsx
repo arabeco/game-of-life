@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { Portal } from './Portal';
 import { GlassCard } from './GlassCard';
 import { ImageIcon, MessageIcon, XIcon } from './Icons';
@@ -10,7 +10,7 @@ interface ShareChoiceSheetProps {
     imageLabel?: string;
     feedLabel?: string;
     onShareImage: () => void;
-    onPostToFeed: () => void;
+    onPostToFeed: () => void | boolean | Promise<void | boolean>;
     onClose: () => void;
 }
 
@@ -18,12 +18,14 @@ export const ShareChoiceSheet: React.FC<ShareChoiceSheetProps> = ({
     isOpen,
     title = 'Compartilhar',
     subtitle = 'Escolha como quer mostrar esse resultado.',
-    imageLabel = 'Compartilhar imagem',
+    imageLabel = 'Exportar imagem',
     feedLabel = 'Compartilhar em Feitos',
     onShareImage,
     onPostToFeed,
     onClose,
 }) => {
+    const postingRef = useRef(false);
+    const [posting, setPosting] = useState(false);
     if (!isOpen) return null;
 
     const handleShareImage = () => {
@@ -31,9 +33,17 @@ export const ShareChoiceSheet: React.FC<ShareChoiceSheetProps> = ({
         onShareImage();
     };
 
-    const handlePostToFeed = () => {
-        onClose();
-        onPostToFeed();
+    const handlePostToFeed = async () => {
+        if (postingRef.current) return;
+        postingRef.current = true;
+        setPosting(true);
+        try {
+            const published = await onPostToFeed();
+            if (published !== false) onClose();
+        } finally {
+            postingRef.current = false;
+            setPosting(false);
+        }
     };
 
     return (
@@ -64,6 +74,7 @@ export const ShareChoiceSheet: React.FC<ShareChoiceSheetProps> = ({
 
                     <div className="space-y-3 px-5 py-5">
                         <button
+                            disabled={posting}
                             onClick={handleShareImage}
                             className="flex w-full items-center gap-3 rounded-[22px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] px-4 py-4 text-left transition-all hover:border-[var(--skin-accent-color)]/26 hover:bg-[var(--skin-accent-color)]/10"
                         >
@@ -72,11 +83,12 @@ export const ShareChoiceSheet: React.FC<ShareChoiceSheetProps> = ({
                             </div>
                             <div className="min-w-0">
                                 <div className="text-sm font-black text-white">{imageLabel}</div>
-                                <div className="mt-1 text-xs text-white/55">Gera uma imagem pronta para compartilhar fora do app.</div>
                             </div>
                         </button>
 
                         <button
+                            disabled={posting}
+                            aria-busy={posting}
                             onClick={handlePostToFeed}
                             className="flex w-full items-center gap-3 rounded-[22px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] px-4 py-4 text-left transition-all hover:border-[var(--skin-accent-color)]/26 hover:bg-[var(--skin-accent-color)]/10"
                         >
@@ -84,8 +96,7 @@ export const ShareChoiceSheet: React.FC<ShareChoiceSheetProps> = ({
                                 <MessageIcon className="h-5 w-5" />
                             </div>
                             <div className="min-w-0">
-                                <div className="text-sm font-black text-white">{feedLabel}</div>
-                                <div className="mt-1 text-xs text-white/55">Pública esse resultado na aba Feitos do app.</div>
+                                <div className="text-sm font-black text-white">{posting ? 'Publicando…' : feedLabel}</div>
                             </div>
                         </button>
                     </div>

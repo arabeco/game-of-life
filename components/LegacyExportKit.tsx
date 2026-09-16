@@ -1,3 +1,4 @@
+import { getLegacyCycleGrade } from '../utils/cycleGrade.js';
 import React, { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
 import type { ReportIdentitySnapshot } from '../types';
 import { formatDate, getScoreGrade } from '../utils/dateUtils';
@@ -160,7 +161,7 @@ export const LegacyExportKit = forwardRef<LegacyExportKitHandle, LegacyExportKit
                 const skin = getEraRibbonSkin(era.skinId);
                 return (era.cycles || []).map((cycle, cycleIndex) => {
                     const slideId = `legacy-kit-cycle-${eraIndex + 1}-${cycleIndex + 1}-${cycle.id}`;
-                    const scoreInfo = getScoreGrade(cycle.score);
+                    const scoreInfo = getLegacyCycleGrade(cycle);
 
                     return (
                         <div
@@ -204,7 +205,7 @@ export const LegacyExportKit = forwardRef<LegacyExportKitHandle, LegacyExportKit
                                             { label: 'Inicio', value: formatDate(cycle.startDate) },
                                             { label: 'Fecho', value: formatDate(cycle.endDate) },
                                         ]}
-                                        className="w-full max-w-[760px]"
+                                        className="w-full max-w-[440px]"
                                     />
                                 </div>
 

@@ -42,7 +42,7 @@ const MEDAL_CENTER = 40;
 export const NobilityLadder: React.FC = () => {
     const { userProfile, nobilityRanks } = useGame();
     const { trigger } = useSensoryFeedback();
-    const [openRankId, setOpenRankId] = useState<string | null>(null);
+    const [openRankId, setOpenRankId] = useState<string | null | undefined>(undefined);
 
     const currentIndex = Math.max(0, nobilityRanks.findIndex((rank) => rank.id === userProfile.nobility?.rankId));
     const currentRank = nobilityRanks[currentIndex];
@@ -72,7 +72,7 @@ export const NobilityLadder: React.FC = () => {
     const num = (value: number) => Math.round(value).toLocaleString('pt-BR');
 
     const handleToggle = (rankId: string, alcancada: boolean) => {
-        const abrindo = openRankId !== rankId;
+        const abrindo = (openRankId === undefined ? nextRank?.id : openRankId) !== rankId;
         // Degrau fechado responde diferente de degrau aberto, e degrau que ainda
         // nao e seu responde como parede. Tres estados, tres toques.
         trigger(abrindo ? (alcancada ? 'click_soft' : 'impact') : 'click_crisp');
@@ -120,7 +120,8 @@ export const NobilityLadder: React.FC = () => {
                 {nobilityRanks.map((rank, index) => {
                     const alcancada = index <= currentIndex;
                     const atual = index === currentIndex;
-                    const aberta = openRankId === rank.id;
+                    const proximo = index === currentIndex + 1;
+                    const aberta = (openRankId === undefined ? nextRank?.id : openRankId) === rank.id;
                     const proximaAlcancada = index + 1 <= currentIndex;
                     const insignia = ITEMS_DB.find((item) => item.id === 'insignia_rank_' + (index + 1) + '_' + rank.id);
                     const recompensas = RANK_REWARDS[rank.id] || [];
@@ -180,6 +181,7 @@ export const NobilityLadder: React.FC = () => {
                                 <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(6,7,10,0.94)_0%,rgba(6,7,10,0.82)_46%,rgba(6,7,10,0.42)_100%)]" />
 
                                 <div className="relative px-3 py-3">
+                                    {proximo && <p className="mb-2 text-[11px] font-bold text-[#f3d591]">PRÓXIMO DESBLOQUEIO · faltam {num(Math.max(0, rank.expTotalRequired - exp))} XP</p>}
                                     <div className="flex items-baseline justify-between gap-2">
                                         <span className="truncate text-[15px] font-black uppercase tracking-[0.04em] text-white">
                                             {rank.name}

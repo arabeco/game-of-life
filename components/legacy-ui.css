@@ -620,3 +620,16 @@
   margin-top: 0.06rem !important;
   font-size: 0.48rem !important;
 }
+
+/* O quadro final do legado: fundo proprio porque ele nasce para virar imagem, e
+   uma imagem com fundo transparente vira retangulo branco no aplicativo de quem
+   recebe. */
+.legacy-final-card {
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.12), transparent 42%),
+    linear-gradient(180deg, #0b0e14 0%, #05070a 58%, #020304 100%);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}

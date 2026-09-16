@@ -3,7 +3,10 @@ import { FeedEvent, FeedEventType } from '../types';
 import type { GlassCardVariant } from './GlassCard';
 import { useGame } from '../contexts/GameContext';
 import { useConfirmation } from '../hooks/useConfirmation';
-import { ArrowRightIcon, CheckCircleIcon, CrownIcon, SparklesIcon, StarIcon, TrashIcon, TrophyIcon, ZapIcon } from './Icons';
+import { ArrowRightIcon, CheckCircleIcon, CrownIcon, ShareIcon, SparklesIcon, StarIcon, TrashIcon, TrophyIcon, ZapIcon } from './Icons';
+import { shareElementWithFeedback } from './Share';
+import { DailySummaryCard } from './DailySummaryCard';
+import { readDailyFeedSnapshot } from '../utils/dailyFeedSnapshot';
 import { getFeedAppearance } from '../utils/feedAppearance';
 import './feed-cards.css';
 
@@ -197,6 +200,17 @@ export const FeedEventCard: React.FC<{ event: FeedEvent }> = ({ event }) => {
         try { await deleteFeedEvent(event.id); } finally { setRemovendo(false); }
     };
 
+    const botaoDeRemover = souOAutor ? (
+        <button
+            type="button"
+            className="feed-share-control"
+            aria-label="Tirar este feito do mural"
+            disabled={removendo}
+            onClick={() => void removerDoMural()}
+        >
+            <TrashIcon className="h-4 w-4" /> {removendo ? 'Tirando…' : 'Tirar do mural'}
+        </button>
+    ) : null;
     const allUsers = [userProfile, ...friends];
     const author = allUsers.find((user) => user.id === event.userId);
     const authorName = event.authorNickname || author?.nickname || 'Soberano';
@@ -221,6 +235,26 @@ export const FeedEventCard: React.FC<{ event: FeedEvent }> = ({ event }) => {
         { value: event.content.exp, label: 'EXP ganhos' },
         { value: event.content.minutes, label: 'min registrados' },
     ].filter((stat) => typeof stat.value === 'number' && Number.isFinite(stat.value) && stat.value >= 0);
+    const dailySnapshot = readDailyFeedSnapshot(event.content.dailySummary);
+    if (dailySnapshot) return (
+        <div className="feed-daily-post">
+            <div id={`feed-event-${event.id}`}>
+                <div className="feed-daily-author"><strong>{authorName}</strong><span> · {dailySnapshot.dateLabel}</span></div>
+                <div className="daily-review daily-postcard-layout" style={{height: 480}}>
+                    <DailySummaryCard snapshot={dailySnapshot} />
+                </div>
+            </div>
+            <div className="feed-daily-controls">
+                <button className="feed-share-control" aria-label="Compartilhar cartão diário" onClick={() => void shareElementWithFeedback(showToast, `feed-event-${event.id}`, {title: `Dia de ${authorName} — GLYPH`})}>
+                    <ShareIcon className="h-4 w-4" /> Compartilhar imagem
+                </button>
+                {botaoDeCurtir}
+                {botaoDeRemover}
+            </div>
+            {confirmationElement}
+        </div>
+    );
+
     return (
         <>
             <article id={`feed-event-${event.id}`} className="feed-achievement-card" data-feat-type={event.type} style={getFeedAppearance(event)}>
@@ -239,7 +273,7 @@ export const FeedEventCard: React.FC<{ event: FeedEvent }> = ({ event }) => {
                     </div>
                 </div>
                 <div className="feat-body">
-                    <div className="feat-category"><span />{presentation.message}<span /></div>
+                    <div className="feat-category"><span className="feat-category-line" aria-hidden="true" /><span className="feat-category-label">{presentation.message}</span><span className="feat-category-line" aria-hidden="true" /></div>
                     <h3 className="feed-achievement-title">{presentation.title}</h3>
                     {numerosDoFeito.length > 0 && <dl className="feat-details">{numerosDoFeito.map(stat => <div key={stat.label}><dd>{stat.value!.toLocaleString('pt-BR')}</dd><dt>{stat.label}</dt></div>)}</dl>}
                 </div>

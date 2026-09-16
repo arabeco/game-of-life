@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { createAnonClient } from '../_smoke.supabase.mjs';
 const require=createRequire(import.meta.url);
 export const root=path.resolve(import.meta.dirname,'../..');
@@ -9,6 +11,9 @@ export const output=path.join(root,'docs/reports/mega-journey',new Date().toISOS
 export const accounts=[];
 export const results=[];
 fs.mkdirSync(output,{recursive:true});
+const buildIndex=path.join(root,'dist/index.html');
+const environment={startedAt:new Date().toISOString(),url:process.env.SMOKE_URL||'http://127.0.0.1:4180/',version:JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')).version,revision:execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),builtIndexSha256:fs.existsSync(buildIndex)?createHash('sha256').update(fs.readFileSync(buildIndex)).digest('hex'):null};
+fs.writeFileSync(path.join(output,'environment.json'),JSON.stringify(environment,null,2));
 const save=()=>{fs.mkdirSync(path.dirname(privatePath),{recursive:true});fs.writeFileSync(privatePath,JSON.stringify(accounts.map(({label,email,password,userId,session,nickname,deleted})=>({label,email,password,userId,session,nickname,deleted}))));};
 export async function createPlayer(label){
  if(!accounts.length && fs.existsSync(privatePath))throw Error('Há contas de uma execução interrompida. Execute npm run smoke:journey:cleanup antes de continuar.');

@@ -1015,6 +1015,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                                                 <button
                                                     key={aba}
                                                     type="button"
+                                                    aria-pressed={painelDiarioAba === aba}
                                                     onClick={() => setPainelDiarioAba(aba)}
                                                     className={`rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] transition-colors ${
                                                         painelDiarioAba === aba

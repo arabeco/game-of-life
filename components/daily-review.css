@@ -1,0 +1,121 @@
+/* A readable dark sheet across skins, including light outer backgrounds. */
+#daily-panel-embedded-card,
+.daily-review-modal {
+  background: linear-gradient(145deg, #23221f, #121416 65%) !important;
+  color: #f6f3eb !important;
+  border: 1px solid #777064 !important;
+}
+:is(#daily-panel-embedded-card, .daily-review-modal) :is(h2, h3, .text-white) {
+  color: #f6f3eb !important;
+}
+.daily-review { color: #f6f3eb; font-size: 13px; }
+.daily-review :is(.core-label, [class*="text-gray-"], [class*="text-white/"]) {
+  color: #c6c4bd !important;
+}
+.daily-review .core-label { font-size: 11px; letter-spacing: .045em; }
+.daily-review :is(.accent-text, [class*="text-[var(--skin-accent-color)]"]) {
+  color: #efcf88 !important;
+  -webkit-text-fill-color: #efcf88;
+}
+.daily-review .daily-panel-neutral {
+  background: #1b1e20;
+  border-color: #474a4b;
+  box-shadow: none;
+}
+.daily-review-overview { padding: 4px 0 12px; border-bottom: 1px solid #484943; flex-shrink: 0; }
+.daily-review-headline { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.daily-review-eyebrow { color: #d1cbbf !important; font-size: 12px; }
+.daily-review-count { color: #f8f5ed !important; font-size: 38px; line-height: 1.15; font-weight: 750; font-variant-numeric: tabular-nums; }
+.daily-review-count span { color: #c6c4bd; font-size: 19px; font-weight: 500; }
+.daily-review-caption { color: #d1cbbf !important; font-size: 12px; }
+.daily-review-duration { display: flex; flex-direction: column; text-align: right; }
+.daily-review-duration strong { color: #f6f3eb !important; font-size: 22px; font-variant-numeric: tabular-nums; }
+.daily-review-duration span { color: #c6c4bd; font-size: 11px; }
+.daily-review-progress { height: 5px; margin: 14px 0 8px; border-radius: 9px; background: #484a47; overflow: hidden; }
+.daily-review-progress > span { display: block; height: 100%; background: linear-gradient(90deg, #b88d40, #f5dda1); border-radius: inherit; }
+.daily-review-detail { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: #c6c4bd; }
+.daily-review-detail strong { color: #efcf88 !important; }
+.daily-review-bank { margin-top: 8px; font-size: 11px; color: #c6c4bd !important; line-height: 1.5; }
+.daily-review-history > .flex { display: grid; grid-template-columns: 1fr; }
+.daily-review-history > .flex > span { border-radius: 10px; padding: 9px 10px; background: #202427; font-size: 12px; }
+.daily-review-history > .flex > span > span:first-child { max-width: none; flex: 1; }
+.daily-review-history [class*="text-[10px]"] { font-size: 12px; }
+.daily-review button { min-height: 40px; }
+#daily-panel-embedded-card button { color: #e7e1d2 !important; }
+#daily-panel-embedded-card button[aria-pressed="true"] { color: #ffe3a3 !important; background: #51452e; }
+#daily-panel-embedded-card button[aria-pressed] { font-size: 12px; min-height: 36px; letter-spacing: .035em; }
+.daily-review-modal #daily-summary-capture-area { border: 0; padding: 0; background: transparent; box-shadow: none; }
+.daily-review-modal #daily-summary-capture-area > .pointer-events-none { display: none; }
+.daily-review-date-nav { display: flex; justify-content: space-between; gap: 8px; padding: 8px 16px 0; flex-shrink: 0; }
+.daily-review-date-nav button { color: #f0d497 !important; padding: 8px; min-height: 40px; font-size: 12px; border-radius: 10px; }
+.daily-review-date-nav button:hover { background: #34322c; }
+.daily-review-date-nav button:disabled { color: #b3b1a9 !important; cursor: default; }
+.daily-review-history .truncate { white-space: normal; overflow: visible; max-width: none; overflow-wrap: anywhere; }
+.daily-review :is(.daily-panel-neutral, .daily-review-overview) { flex-shrink: 0; }
+.daily-review .daily-panel-neutral p { font-size: 12px; }
+
+/* One bounded capture surface; controls are deliberately outside the image. */
+.daily-postcard-layout { height: 100%; min-height: 0; display: flex; flex-direction: column; gap: 8px; overflow: hidden; container-type: size; }
+.daily-review .daily-postcard {
+  flex: 1; min-height: 0; display: flex; flex-direction: column; gap: clamp(5px, 1.8cqh, 12px);
+  padding: clamp(10px, 3cqh, 20px); border: 1px solid #706044; border-radius: 20px;
+  background: radial-gradient(ellipse at 85% 0%, #49402a 0%, transparent 56%), linear-gradient(150deg, #252725, #101719);
+  color: #f6f1e7; overflow: hidden; box-shadow: inset 0 1px 0 #ffffff16;
+}
+.daily-postcard-header, .daily-postcard-section-label, .daily-postcard-footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-shrink: 0; }
+.daily-postcard-header time { font-size: 11px; color: #d2cabc; }
+.daily-postcard-brand { font-size: 13px; letter-spacing: .18em; color: #f1d595; font-weight: 800; }
+.daily-postcard-brand span { display: block; font-size: 8px; letter-spacing: .2em; color: #d2cabc; margin-top: 3px; }
+.daily-postcard-hero { text-align: center; flex-shrink: 0; }
+.daily-postcard-hero p { font-size: 12px; color: #d2cabc; }
+.daily-postcard-number { font-size: clamp(28px, 9cqh, 52px); font-weight: 750; line-height: 1.15; color: #fff1cd; font-variant-numeric: tabular-nums; }
+.daily-postcard-number span { font-size: .43em; font-weight: 500; color: #c9c3b5; }
+.daily-postcard-stats { display: flex; justify-content: center; border-block: 1px solid #ffffff24; padding: 7px 0; flex-shrink: 0; }
+.daily-postcard-stats > div { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.daily-postcard-stats > div + div { border-left: 1px solid #ffffff24; }
+.daily-postcard-stats strong { font-size: 18px; color: #f0d599; }
+.daily-postcard-stats span { font-size: 10px; color: #d2cabc; }
+.daily-postcard-section-label { font-size: 10px; color: #d2cabc; margin-bottom: 7px; }
+.daily-postcard-actions { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.daily-postcard-grid { display: grid; grid-template-columns: repeat(auto-fill, 2.35rem); grid-auto-rows: calc(2.35rem + 15px); gap: 5px; flex: 1; min-height: 0; align-content: start; justify-content: center; overflow: hidden; }
+.daily-postcard-tile { min-width: 0; text-align: center; display: flex; flex-direction: column; align-items: center; }
+.daily-postcard-tile-art { position: relative; width: 2.35rem; height: 2.35rem; flex-shrink: 0; display: grid; place-items: center; border: 1px solid #858579; border-radius: 8px; box-shadow: inset 0 1px 0 #ffffff25; }
+.daily-postcard-tile-art > :not(.daily-postcard-check) { max-width: 80%; max-height: 80%; }
+.daily-postcard-tile.is-complete .daily-postcard-tile-art { border-color: #e5c27a; }
+.daily-postcard-check { position: absolute; right: -3px; bottom: -2px; width: 14px; height: 14px; border-radius: 50%; background: #ead49f; color: #17201a; font-size: 10px; font-weight: 900; }
+.daily-postcard-tile-name { display: block; max-width: 100%; flex-shrink: 0; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #e2dcd0; font-size: 9px; line-height: 12px; }
+.daily-postcard-reading { flex-shrink: 0; margin: auto 0 0; font-size: 12px; line-height: 1.45; color: #e4dece; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.daily-postcard-footer { margin-top: auto; font-size: 10px; color: #d2cabc; }
+.daily-postcard-empty { padding: 10px 0; text-align: center; color: #d2cabc; font-size: 12px; }
+.daily-postcard-controls { flex-shrink: 0; display: flex; justify-content: flex-end; gap: 8px; }
+.daily-postcard-controls button { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; font-size: 12px; }
+@container (max-height: 390px) {
+  .daily-postcard-reading { display: none; }
+
+  .daily-postcard-hero p { font-size: 10px; }
+  .daily-postcard-stats { padding: 4px 0; }
+}
+
+.daily-postcard-tile-art { background: linear-gradient(145deg, #3e4646, #182125); }
+.daily-comparison-badge { color: #f4dda7; background: #353020; border: 1px solid #7d6b43; border-radius: 9px; padding: 5px 8px; font-size: 11px; flex-shrink: 0; }
+
+/* Shared reward-plate material; compact daily content keeps the bay tile size. */
+.daily-review .daily-postcard { border-radius: 0; padding: clamp(19px, 4cqh, 25px); }
+.daily-postcard-header { padding: 2px 0 8px; border-bottom: 1px solid #52504a; }
+.daily-postcard-brand { font-size: 10px; letter-spacing: .23em; color: #d3c6a8; }
+.daily-postcard-header time { color: #d4d4d6; }
+.daily-postcard-number { font-size: clamp(34px, 10cqh, 58px); font-weight: 800; color: #f0d595; text-shadow: 0 2px 3px #000; }
+.daily-postcard-hero { padding: 3px 0; }
+.daily-postcard-stats { gap: 10px; border: 0; padding: 0; }
+.daily-postcard-stats > div { padding: 8px; border: 1px solid #45423b; background: linear-gradient(145deg,#ffffff08,#00000026); box-shadow: inset 0 1px #ffffff0a; }
+.daily-postcard-stats > div + div { border-left: 1px solid #45423b; }
+.daily-postcard-reading { border-top: 1px solid #49453c; padding-top: 9px; -webkit-line-clamp: 3; }
+.daily-postcard-footer { justify-content: center; }
+.daily-postcard-number { font-family: Georgia, serif; background:linear-gradient(180deg,#fffdf6 0%,#e7dcc5 38%,#aa8748 72%,#f1eadb 100%);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 2px 1px #000d);text-shadow:none; }
+.daily-postcard-stats > div {background:radial-gradient(circle at 50% 0,rgba(184,146,82,.16),transparent 54%),linear-gradient(155deg,rgba(184,146,82,.065),#0d0e11 58%,#08090b);border-color:rgba(184,146,82,.28);}
+.daily-postcard-reading {border:1px solid #b8925242;border-left:3px solid #b89252;background:linear-gradient(90deg,#b8925219,#0f1013e0 44%);padding:9px 11px;}
+.daily-share-button {border:1px solid #b8925260;background:#151619;color:#eadfc8;padding:7px 12px;border-radius:9px;font-size:11px;}
+.daily-postcard-footer { justify-content: space-between; min-height: 40px; gap: 12px; }
+.daily-postcard-share { width:40px; height:40px; min-height:40px; flex-shrink:0; display:grid; place-items:center; border:1px solid #b8925260; border-radius:10px; background:#ffffff08; color:#eee5d4; }
+.daily-postcard-share:hover {background:#ffffff12;}
+.daily-postcard-share:focus-visible {outline:2px solid #e5c27a;outline-offset:2px;}

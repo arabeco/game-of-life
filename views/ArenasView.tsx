@@ -1,3 +1,4 @@
+import { FloatingActionDock } from '../components/FloatingActionDock';
 import './arena-groups.css';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
@@ -2705,15 +2706,18 @@ export const ArenasView: React.FC = () => {
                     )}
                 </div>
 
+                <FloatingActionDock>
                 <button
                     ref={fabRef}
                     id="new-action-button"
                     data-onboarding-id="new-arena-button"
+                    aria-label="Nova arena"
                     onClick={handleOpenCreateArena}
-                    className={`fixed bottom-[calc(4.25rem+var(--safe-area-bottom))] right-4 z-[500] w-12 h-12 rounded-full luxe-skin-button flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform ${isCreateArenaFabHidden ? 'opacity-0 pointer-events-none' : ''}`}
+                    className={`w-12 h-12 rounded-full luxe-skin-button flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform ${isCreateArenaFabHidden ? 'opacity-0 pointer-events-none' : ''}`}
                 >
                     <PlusIcon className="w-6 h-6 text-black" />
                 </button>
+                </FloatingActionDock>
             </div>
             {selectedArena && (
                 <ArenaDetailModal

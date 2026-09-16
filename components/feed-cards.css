@@ -10,7 +10,10 @@
   border: 1px solid rgba(var(--feat-rgb), .65);
   border-radius: 15px;
   color: #f5f0e7;
-  background: linear-gradient(118deg, transparent 18%, rgba(218, 223, 230, .022) 39%, transparent 53%), radial-gradient(ellipse at 9% 15%, color-mix(in srgb, var(--feat-hue) 11%, transparent), transparent 82%), radial-gradient(ellipse at 86% 90%, color-mix(in srgb, var(--feat-hue-secondary) 7%, transparent), transparent 86%), linear-gradient(120deg, #030405, #08090b 42%, #020304 76%, #070809);
+  background:
+    linear-gradient(116deg, transparent 9%, rgba(240, 244, 250, .025) 21%, rgba(240, 244, 250, .10) 28%, transparent 37%, rgba(0, 0, 0, .4) 54%, transparent 73%),
+    radial-gradient(ellipse at 4% 0%, color-mix(in srgb, var(--feat-hue) 36%, #c6cbd2) 0%, color-mix(in srgb, var(--feat-hue) 45%, #08090b) 18%, transparent 58%),
+    linear-gradient(128deg, color-mix(in srgb, var(--feat-hue) 28%, #030405), #020304 48%, color-mix(in srgb, var(--feat-hue-secondary) 27%, #060709) 78%, #020304);
   box-shadow: inset 0 0 0 3px #0c0e10, inset 0 0 0 4px rgba(var(--feat-rgb), .11), 0 5px 22px #0003;
 }
 .feed-achievement-card::before {
@@ -37,9 +40,9 @@
 .feat-remove:disabled { opacity: .4; }
 .feed-achievement-card button:focus-visible { outline: 2px solid var(--feat-accent); outline-offset: 3px; }
 .feat-body { padding: 0 14px 8px; text-align: center; }
-.feat-category { display: flex; align-items: center; justify-content: center; gap: 14px; color: var(--feat-accent); font-size: 10px; line-height: 14px; font-weight: 500; letter-spacing: .13em; text-transform: uppercase; }
-.feat-category > span { flex: 0 1 30px; min-width: 10px; width: 30px; height: 1px; background: linear-gradient(90deg, transparent, rgba(var(--feat-rgb), .5)); }
-.feat-category > span:last-child { transform: rotate(180deg); }
+.feat-category { display: grid; grid-template-columns: minmax(14px, 1fr) minmax(0, auto) minmax(14px, 1fr); align-items: center; column-gap: 14px; max-width: 360px; margin: -7px auto 7px; color: var(--feat-accent); font-size: 10px; line-height: 14px; font-weight: 500; letter-spacing: .13em; text-transform: uppercase; }
+.feat-category-line { display: block; width: 100%; height: 1px; background: linear-gradient(90deg, transparent, rgba(var(--feat-rgb), .5)); }
+.feat-category-line:last-child { transform: rotate(180deg); }
 .feed-achievement-title { margin: 3px 0 0; color: #f7f2e9; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(21px, 4.8vw, 25px); font-weight: 400; line-height: 1.15; letter-spacing: -.025em; white-space: normal; overflow-wrap: anywhere; text-wrap: balance; }
 .feat-details { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 14px; margin: 5px 0 0; padding-top: 4px; line-height: 16px; border-top: 1px solid rgba(var(--feat-rgb), .13); }
 .feat-details > div { display: flex; align-items: baseline; gap: 4px; }
@@ -53,7 +56,7 @@
   .feat-time { margin-right: 0; font-size: 9px; }
   .feat-body { padding: 0 12px 7px; }
   .feat-category { letter-spacing: .08em; gap: 8px; font-size: 10px; }
-  .feat-category > span { width: 28px; }
+  .feat-category-label { text-wrap: balance; }
   .feat-details { gap: 5px 12px; }
 }
 .feed-daily-post { background: linear-gradient(145deg, #2f2b22, #11191d 70%); border: 1px solid #766b51; color: #f3ecdc; border-radius: 20px; overflow: hidden; }

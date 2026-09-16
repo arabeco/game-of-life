@@ -1,3 +1,5 @@
+import { getScoreGrade } from './cycleGrade.js';
+
 const MINUTES_PER_UNIT = 30;
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -229,20 +231,10 @@ export const buildFairScoreFromTasks = ({
     const measurementStatus = planLoadUnits < 2 || plannedMetas === 0 || (plannedTaskCount < 2 && planLoadUnits < 4)
         ? 'low_signal'
         : 'scored';
-    const canBeS = (
-        measurementStatus === 'scored'
-        && historyConfidence === 'stable'
-        && honoredLoadUnits >= 8
-        && metaPts >= 15
-        && planLoadRatio >= 0.55
-    );
-
-    let grade = 'E';
-    if (fairScore >= 92 && canBeS) grade = 'S';
-    else if (fairScore >= 84) grade = 'A';
-    else if (fairScore >= 70) grade = 'B';
-    else if (fairScore >= 55) grade = 'C';
-    else if (fairScore >= 40) grade = 'D';
+    const grade = getScoreGrade(fairScore, {
+        measurementStatus, historyConfidence, honoredLoadUnits, planLoadRatio,
+        scoreBreakdown: { metaPts },
+    }).grade;
 
     return {
         fairScore,

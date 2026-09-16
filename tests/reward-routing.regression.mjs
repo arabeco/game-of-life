@@ -96,7 +96,11 @@ assert.match(context, /if \(missaoDeSistemaAtiva && substituir\)[\s\S]{0,320}?ac
 
 // E o botao do Oraculo tem de dizer QUEM ocupa: mostrar "Escolher missao" com o
 // slot cheio faria a pessoa tocar para levar uma recusa.
-assert.match(oracleChat, /activeArenaPact \|\| missaoDeSistemaAtiva/, 'o botao reconhece as duas familias');
-assert.match(oracleChat, /missaoDeSistemaAtiva\s*\n?\s*\?\s*missaoDeSistemaAtiva\.title/, 'o botao mostra o titulo da de sistema');
+const missionPanel = read('components/OracleMissionPanel.tsx');
+assert.match(oracleChat, /section === 'mission'[\s\S]{0,40}<OracleMissionPanel/, 'o chat usa o painel de missao');
+assert.match(missionPanel, /if \(!pact\) return/, 'a missao de arena ocupa o painel quando existe');
+assert.match(missionPanel, /missaoDeSistemaAtiva\?\.title/, 'o painel mostra o titulo da missao de sistema');
+assert.match(missionPanel, /missaoDeSistemaAtiva && <button[^>]*onClick=\{onOpenMissions\}/, 'a missao de sistema oferece acesso aos detalhes');
+assert.match(missionPanel, /!missaoDeSistemaAtiva && missaoIndividualDisponivel && <button/, 'escolher missao exige slot livre');
 
 console.log('Slot: uma missao individual por vez, de arena ou de sistema, com saida nos dois lados.');

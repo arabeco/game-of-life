@@ -88,9 +88,9 @@ const pentagonoDaProva = () => {
     const c = constantesDoGrafico();
     const maximo = Number(telaDaMaestria().degrau) * 10;
     const areas = [
-        ['PROPÓSITO', 14], ['RELAÇÕES', 8], ['TRABALHO', 16], ['LAZER', 10], ['SAÚDE', 12],
+        ['PROPÓSITO', 7], ['RELAÇÕES', 4], ['TRABALHO', 8], ['LAZER', 5], ['SAÚDE', 6],
     ];
-    const indice = areas.reduce((soma, [, v]) => soma + v, 0);
+    const indice = 50 + areas.reduce((soma, [, v]) => soma + v, 0);
     const ponto = (i, magnitude) => {
         const ang = ((Math.PI * 2) / areas.length) * i - Math.PI / 2;
         return { x: c.centro + Math.cos(ang) * magnitude, y: c.centro + Math.sin(ang) * magnitude, ang };
@@ -528,7 +528,7 @@ mesmo objeto que o componente aplica, não uma imitação.</p>
     <tr>
       <td>Escala</td>
       <td class="n">${esc(telaDaMaestria().escala || '—')} · ${esc(telaDaMaestria().degrau || '?')} pontos por degrau</td>
-      <td>A avaliação continua tendo dez degraus; o gráfico mostra de 0 a 20 para as cinco pontas somarem exatamente os 100 do Índice no centro, sem a pessoa ter de fazer a conta.</td>
+      <td>A avaliação continua tendo dez degraus; o gráfico mostra de 0 a 10 por área. O Índice central usa sua própria escala, de 50 a 100.</td>
     </tr>
     <tr>
       <td>Primeira vez</td>
@@ -660,3 +660,4 @@ fs.writeFileSync(saidaVisual, visual, 'utf8');
 console.log(`os-modais: ${path.relative(raiz, saidaVisual)} (prova visual · pentágono e botão redesenhados do código)`);
 console.log(`os-modais-dados: ${path.relative(raiz, saida)} (${(html.length / 1024).toFixed(0)} KB)`);
 console.log(`  ${ACONTECIMENTOS.length} acontecimentos · ${Object.keys(DIRECOES).length} direções · ${medidasDoMiolo().filter((m) => m.padrao).length}/${medidasDoMiolo().length} medidas encontradas`);
+

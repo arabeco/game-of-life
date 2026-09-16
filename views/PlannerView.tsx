@@ -1,4 +1,5 @@
-﻿import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
+import { FloatingActionDock } from '../components/FloatingActionDock';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, PlusIcon, SquareCheckIcon, PanelIcon, FlameIcon, ArchiveBoxIcon, ZapIcon } from '../components/Icons';
 import { Search as SearchIcon } from 'lucide-react';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
@@ -2039,7 +2040,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                                     </span>
                                 )}
                             </button>
-                            <button id="daily-panel-button" onClick={() => setIsDailyPanelVisible(true)} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white transition-colors" title="Resumo diário">
+                            <button id="daily-panel-button" onClick={() => { setDailyPanelDate(formatLocalDateString(currentDate)); setIsDailyPanelVisible(true); }} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white transition-colors" title="Resumo diário">
                                 <PanelIcon className="h-3.5 w-3.5" />
                             </button>
                         </div>
@@ -2227,7 +2228,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             )}
 
             {/* Floating Action Button */}
-            <div className="fixed bottom-[calc(4.4rem+var(--safe-area-bottom))] right-4 z-20 flex flex-col items-center space-y-2">
+            <FloatingActionDock>
 
                 <div className="planner-floating-stack flex flex-col items-center bg-black/45 backdrop-blur-lg border border-white/8 rounded-full p-0.5 shadow-[0_10px_24px_rgba(0,0,0,0.22)]">
                     <button
@@ -2242,7 +2243,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     </button>
                 </div>
                 <button aria-label="Nova ação" onClick={() => setIsActionModalOpen(true)} className="w-12 h-12 rounded-full luxe-skin-button flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform"><PlusIcon className="w-6 h-6 text-black" /></button>
-            </div>
+            </FloatingActionDock>
             {isChecklistVisible && <ChecklistModal onClose={() => setChecklistVisible(false)} />}
             {isDailyPanelVisible && <DailyPanelModal selectedDate={dailyPanelDate} onClose={() => setIsDailyPanelVisible(false)} />}
             {isActionModalOpen && <ActionModal arenaId={defaultPlannerArenaId} action={null} initialMode="edit" onClose={() => setIsActionModalOpen(false)} />}

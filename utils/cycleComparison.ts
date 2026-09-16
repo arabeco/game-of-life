@@ -79,7 +79,7 @@ const READERS: Array<{
 }> = [
   {
     id: 'execucao',
-    label: 'Execucao',
+    label: 'Execução',
     suffix: '%',
     lowerIsBetter: false,
     tolerance: 5,
@@ -111,7 +111,7 @@ const READERS: Array<{
   },
   {
     id: 'pontuacao',
-    label: 'Pontuacao',
+    label: 'Pontuação',
     suffix: '',
     lowerIsBetter: false,
     tolerance: 4,

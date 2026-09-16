@@ -360,95 +360,92 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     const showComparisonSlide = Boolean(comparison && comparison.metrics.length > 0);
     const closingLine = comparison ? buildComparisonClosingLine(comparison) : null;
 
-    const renderComparisonSlide = () => (
-        <div className="relative flex flex-col h-full p-6 pt-16">
-            {/* O brilho puxa a cor da skin de quem le, nao uma cor fixa: a tela e
-                sobre a pessoa contra ela mesma, entao ela aparece nela. */}
-            <div
-                className="pointer-events-none absolute inset-0"
-                style={{
-                    background: `radial-gradient(circle at 50% 0%, ${skinColor}22 0%, transparent 58%)`,
-                }}
-            />
-            <div
-                className="pointer-events-none absolute inset-x-10 top-14 h-px"
-                style={{ background: `linear-gradient(90deg, transparent, ${skinColor}90, transparent)` }}
-            />
-            <div className="relative z-10 text-center">
-                <div className="mb-2 flex items-center justify-center gap-2">
-                    <h3 className="text-2xl font-black uppercase tracking-[0.3em] text-white">Contra você</h3>
-                    <span
-                        className="rounded-full px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.18em]"
-                        style={{
-                            color: skinColor,
-                            borderWidth: 1,
-                            borderStyle: 'solid',
-                            borderColor: `${skinColor}66`,
-                            background: `${skinColor}14`,
-                            boxShadow: `0 0 14px ${skinColor}30`,
-                        }}
-                    >
-                        Platinum
-                    </span>
-                </div>
-                <div className="report-rule" />
-                <p className="mt-3 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
-                    Mediana de {comparison?.sampleSize} ciclos fechados
-                </p>
-            </div>
+    /*
+     * CONTRA VOCE: O QUADRO DO PLATINUM.
+     *
+     * Conceitualmente este ja era o melhor slide da serie — e o unico que conta
+     * uma HISTORIA em vez de listar numeros: o ciclo contra a mediana dos ciclos
+     * fechados da propria pessoa. Mas era o ultimo a falar o dialeto antigo:
+     * fileiras cinzas arredondadas sobre preto, sem moldura e sem acabamento,
+     * justamente na tela que precisa parecer valer uma assinatura.
+     *
+     * Duas coisas alem do estilo:
+     *
+     * AS LINHAS NULAS SAEM. Num ciclo sem sequencia e sem falha, tres das cinco
+     * fileiras eram "0, seu normal: 0, = 0" — ruido ocupando o lugar do que
+     * mudou. Comparacao que compara nada nao e comparacao.
+     *
+     * O SINAL DE ESTAVEL DEIXA DE SER "=". Ao lado do numero saia "= 3", que se
+     * le como igualdade e nao como variacao. Estavel vira um ponto.
+     */
+    const renderComparisonSlide = () => {
+        const metricas = (comparison?.metrics || []).filter(
+            (metric) => !(Number(metric.current) === 0 && Number(metric.baseline) === 0),
+        );
 
-            <div className="relative z-10 mt-6 flex-1 space-y-2 overflow-y-auto">
-                {(comparison?.metrics || []).map((metric) => {
-                    const favourable = isFavourable(metric);
-                    const stable = metric.direction === 'estavel';
-                    const arrow = stable ? '=' : metric.delta > 0 ? '▲' : '▼';
-                    const toneClass = stable
-                        ? 'text-gray-400'
-                        : favourable ? 'text-emerald-300' : 'text-amber-300';
-
-                    return (
-                        <div
-                            key={metric.id}
-                            className="flex items-center justify-between gap-3 rounded-2xl border border-white/[0.08] bg-black/40 px-4 py-3"
-                        >
-                            <div className="min-w-0">
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">{metric.label}</p>
-                                <p className="mt-0.5 text-[10px] text-gray-600">
-                                    seu normal: {metric.baseline}{metric.suffix}
-                                </p>
-                            </div>
-                            <div className="flex items-baseline gap-2 shrink-0">
-                                <span className="text-2xl font-black tracking-tight text-white tabular-nums">
-                                    {metric.current}{metric.suffix}
-                                </span>
-                                <span className={`text-[11px] font-black tabular-nums ${toneClass}`}>
-                                    {arrow} {Math.abs(metric.delta)}{metric.suffix}
-                                </span>
-                            </div>
+        return (
+            <SlideCartaz
+                rank={scoreInfo.grade}
+                titulo="Contra você"
+                figura={(
+                    <div className="w-full space-y-2">
+                        <div className="mb-3 flex items-center justify-center">
+                            <span
+                                className="rounded-full px-2.5 py-0.5 text-[8px] font-black uppercase tracking-[0.22em]"
+                                style={{
+                                    color: skinColor,
+                                    border: `1px solid ${skinColor}66`,
+                                    background: `${skinColor}14`,
+                                    boxShadow: `0 0 14px ${skinColor}30`,
+                                }}
+                            >
+                                Platinum
+                            </span>
                         </div>
-                    );
-                })}
-            </div>
 
-            <div className="relative z-10 mt-4 space-y-2">
-                {comparison?.headline && (
-                    <p className="text-center text-[11px] leading-relaxed text-white/70 italic">
-                        {comparison.headline}
-                    </p>
-                )}
-                {closingLine && (
-                    <p
-                        className="text-center text-[12px] font-bold leading-relaxed"
-                        style={{ color: skinColor }}
-                    >
-                        {closingLine}
-                    </p>
-                )}
-            </div>
-        </div>
-    );
+                        {metricas.map((metric) => {
+                            const estavel = metric.direction === 'estavel';
+                            const favoravel = isFavourable(metric);
+                            const sinal = estavel ? '·' : metric.delta > 0 ? '▲' : '▼';
+                            const tom = estavel
+                                ? 'text-gray-500'
+                                : favoravel ? 'text-emerald-300' : 'text-amber-300';
 
-    // Slide 4: Veredito
+                            return (
+                                <div
+                                    key={metric.id}
+                                    className="flex items-center justify-between gap-3 rounded-2xl border border-white/[0.07] bg-black/40 px-4 py-2.5"
+                                >
+                                    <div className="min-w-0 text-left">
+                                        <p className="m-0 truncate text-[9px] font-black uppercase tracking-[0.18em] text-gray-500">
+                                            {metric.label}
+                                        </p>
+                                        <p className="m-0 truncate text-[9px] text-gray-600">
+                                            seu normal: {metric.baseline}{metric.suffix}
+                                        </p>
+                                    </div>
+                                    <div className="flex shrink-0 items-baseline gap-2">
+                                        <span
+                                            className="text-[1.35rem] font-bold leading-none tabular-nums text-white"
+                                            style={{ fontFamily: 'Cinzel, Georgia, serif' }}
+                                        >
+                                            {metric.current}{metric.suffix}
+                                        </span>
+                                        <span className={`text-[10px] font-black tabular-nums ${tom}`}>
+                                            {sinal} {estavel ? '' : Math.abs(metric.delta)}{estavel ? '' : metric.suffix}
+                                        </span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+                rotulo={`mediana de ${comparison?.sampleSize} ciclos fechados`}
+                remate={closingLine || comparison?.headline || undefined}
+            />
+        );
+    };
+
     /*
      * VEREDITO: O CLIMAX, E ELE E UMA LETRA.
      *

@@ -1,0 +1,10 @@
+GLYPH 1.0.94 (94)
+Package: life.glyph.app
+Target SDK: 36
+Commit: e3dbb35
+Artifact: C:\Users\Afonso\Downloads\GOL1.006\android\app\release\Glyph-1.0.94-release.aab
+SHA256: 331A97BB0F13BB1FAE86BEDA8289CD2CEE1CD205F0BB92C809397DE8B0E784F0
+Build: npm run build; npx cap sync android; android\gradlew.bat :app:bundleRelease --console=plain
+Verification: Gradle BUILD SUCCESSFUL; jarsigner -verify => "jar verified" (exit 0); chunk game-data sem import do legacy (o ciclo que derrubava o 1.0.93)
+Motivo: 1.0.93 nao abria — ReferenceError: Cannot access 'Aa' before initialization
+Upload: Play Console upload not performed in this session

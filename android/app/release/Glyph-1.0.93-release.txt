@@ -1,0 +1,9 @@
+GLYPH 1.0.93 (93)
+Package: life.glyph.app
+Target SDK: 36
+Commit: 60cb9b7
+Artifact: C:\Users\Afonso\Downloads\GOL1.006\android\app\release\Glyph-1.0.93-release.aab
+SHA256: 5DB31CDBA20EE9237C74115759B06C5466AC35EFE796565C66B3C942A70C385F
+Build: npm run build; npx cap sync android; android\gradlew.bat :app:bundleRelease --console=plain
+Verification: Gradle BUILD SUCCESSFUL; signed release bundle; jarsigner exit 0
+Upload: Play Console upload not performed in this session

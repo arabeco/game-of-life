@@ -16,6 +16,14 @@ import { getContentVisualPalette, resolveCampaignVisualFamily } from '../utils/c
 import { UserCodex } from '../types';
 import { CodexCoverArt as SharedCodexCoverArt } from './CodexCoverArt';
 import { filterTasksAfterFreeProgressReset } from '../utils/freeProgressScope';
+import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
+
+/* O mesmo chanfro de oito cantos da placa de ciclo, da placa do legado e do card
+   da campanha na loja. */
+const CANTO_DO_DOSSIE = 18;
+const recorteDoDossie = {
+    clipPath: `polygon(${CANTO_DO_DOSSIE}px 0, calc(100% - ${CANTO_DO_DOSSIE}px) 0, 100% ${CANTO_DO_DOSSIE}px, 100% calc(100% - ${CANTO_DO_DOSSIE}px), calc(100% - ${CANTO_DO_DOSSIE}px) 100%, ${CANTO_DO_DOSSIE}px 100%, 0 calc(100% - ${CANTO_DO_DOSSIE}px), 0 ${CANTO_DO_DOSSIE}px)`,
+};
 
 interface CampaignsCodexProps {
     onClose: () => void;
@@ -447,6 +455,25 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
             return indexA - indexB;
         })
         : [];
+
+    /*
+     * O TOM DA CAMPANHA VEM DAS ARENAS QUE ELA REUNE.
+     *
+     * A mesma regra do card na loja e a mesma fonte que pinta os Feitos. Assim a
+     * campanha tem UMA cor, do catalogo ao dossie, e ela nao e escolhida: e o
+     * dado que a campanha ja carrega. Sem arena com `assetId`, um aco neutro.
+     */
+    const arenaComCor = sortedArenas.find((arena) => arena.assetId && ASSET_ACCENT_COLORS[arena.assetId as keyof typeof ASSET_ACCENT_COLORS]);
+    const tomDaCampanha = (arenaComCor?.assetId && ASSET_ACCENT_COLORS[arenaComCor.assetId as keyof typeof ASSET_ACCENT_COLORS]) || '#687380';
+    const tintaDaCampanha: React.CSSProperties = {
+        /* Mesma sequencia de paradas da placa: passa pelo tom, mas TERMINA claro.
+           Fechar no tom escuro apaga as letras das pontas do titulo. */
+        background: `linear-gradient(103deg, ${tomDaCampanha} 2%, #e9edf2 26%, #fff8ea 46%, #e9edf2 66%, ${tomDaCampanha} 88%, #e9edf2 100%)`,
+        backgroundClip: 'text',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        filter: 'drop-shadow(0 2px 3px rgba(0,0,0,.8))',
+    };
 
     const campaignArenaStates = useMemo(() => {
         if (!selectedCampaign) return {};
@@ -884,12 +911,18 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="min-w-0">
-                                            <div className="mb-1 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-white/62">
+                                            {/* O selo era uma pilula em linha propria acima do titulo,
+                                                empurrando o nome da campanha para baixo. Agora ele e
+                                                uma marca miuda, na cor da campanha, sem caixa. */}
+                                            <div
+                                                className="mb-0.5 text-[8.5px] font-black uppercase tracking-[0.22em]"
+                                                style={{ color: `${tomDaCampanha}` }}
+                                            >
                                                 {previewMeta?.badgeLabel || 'Campanha'}
                                             </div>
                                             <h1
-                                                className="text-left font-black uppercase tracking-[0.05em] text-[17px] leading-[0.94] text-[color:var(--skin-accent-color)]"
-                                                style={{ overflowWrap: 'anywhere', wordBreak: 'normal' }}
+                                                className="text-left text-[17px] font-black uppercase leading-[0.94] tracking-[0.05em]"
+                                                style={{ overflowWrap: 'anywhere', wordBreak: 'normal', ...tintaDaCampanha }}
                                             >
                                                 {displayCampaignTitle}
                                             </h1>
@@ -952,22 +985,31 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                         {displayCampaignDescription || 'Sem descrição.'}
                                     </p>
 
-                                    {previewMeta?.note && (
-                                        <div className="mt-1.5 rounded-xl border border-white/8 bg-white/5 px-2.5 py-2 text-[10px] leading-relaxed text-white/62">
-                                            {previewMeta.note}
-                                        </div>
-                                    )}
-
-                                    <div className="mt-1.5 flex flex-wrap gap-1.5">
-                                        <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/64">
-                                            {sortedArenas.length} arenas
-                                        </span>
-                                        <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/64">
-                                            {previewActionCount} acoes
-                                        </span>
-                                        <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/64">
-                                            {renderedPhaseRows.filter((row) => row.arenas.length > 0).length} fases
-                                        </span>
+                                    {/*
+                                      * A FRASE DE APOIO SAIU, E AS PILULAS VIRARAM UMA LINHA.
+                                      *
+                                      * O `note` dizia "Ao adquirir, entra nas suas campanhas e
+                                      * tenta instalar na hora" — uma caixa com borda, fundo e
+                                      * duas linhas de texto para explicar o que o proprio botao
+                                      * de comprar faz. Frase que narra o botao ao lado nao
+                                      * informa: ocupa.
+                                      *
+                                      * E os tres numeros vinham cada um dentro de uma pilula
+                                      * `rounded-full border-white/10 bg-white/5`, tres caixas
+                                      * para tres palavras curtas. Numero com rotulo nao precisa
+                                      * de moldura — precisa de alinhamento.
+                                      */}
+                                    <div className="mt-2 flex items-center gap-4">
+                                        {([
+                                            { valor: sortedArenas.length, rotulo: sortedArenas.length === 1 ? 'arena' : 'arenas' },
+                                            { valor: previewActionCount, rotulo: previewActionCount === 1 ? 'ação' : 'ações' },
+                                            { valor: renderedPhaseRows.filter((row) => row.arenas.length > 0).length, rotulo: 'fases' },
+                                        ]).map((item) => (
+                                            <div key={item.rotulo} className="flex items-baseline gap-1">
+                                                <span className="text-[13px] font-black leading-none text-white">{item.valor}</span>
+                                                <span className="text-[8.5px] font-black uppercase tracking-[0.16em] text-white/38">{item.rotulo}</span>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
@@ -1132,7 +1174,13 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                                 {`Fase ${phase + 1}`}
                                             </div>
                                         )}
-                                        <div className={`flex ${isPreviewCampaign ? 'min-h-[6.9rem]' : 'min-h-[7.1rem]'} gap-3 overflow-x-auto rounded-[1rem] border border-white/6 pb-2 pr-1 hide-scrollbar ${isEditing ?'bg-black/15 p-2' : isPreviewCampaign ? 'bg-black/10 p-1.5' : ''}`}>
+                                        {/* MODAL DENTRO DE MODAL, NAO.
+                                            Cada fase desenhava a propria caixa — borda, fundo e
+                                            recheio — dentro do dossie, que ja e uma caixa. Duas
+                                            molduras aninhadas para separar o que o rotulo "Fase 2"
+                                            ja separa. A borda e o fundo so aparecem no modo de
+                                            edicao, onde servem para marcar o alvo do arraste. */}
+                                        <div className={`flex ${isPreviewCampaign ? 'min-h-[6.9rem]' : 'min-h-[7.1rem]'} gap-3 overflow-x-auto pb-2 pr-1 hide-scrollbar ${isEditing ? 'rounded-[1rem] border border-white/6 bg-black/15 p-2' : ''}`}>
                                         {arenas.map((arena) => {
                                             const index = sortedArenas.findIndex(item => item.id === arena.id);
                                     const locked = isArenaLocked(arena.id);

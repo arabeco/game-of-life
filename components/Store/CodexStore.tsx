@@ -480,35 +480,85 @@ export const CodexStore: React.FC = () => {
                                             onClick={() => setCampaignPreview(preview)}
                                             className="flex flex-1 flex-col overflow-hidden rounded-lg border border-white/8 bg-black/25 text-left transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.04]"
                                         >
-                                            <div className="relative h-[4.75rem] shrink-0 overflow-hidden bg-black/30">
-                                                <SharedCodexCoverArt cover={coverVisual} title={codex.title} />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-                                                <div className="absolute inset-x-2 bottom-2 line-clamp-2 text-[12px] font-black uppercase leading-tight tracking-[0.05em] text-white drop-shadow-lg">
+                                            {/*
+                                              * A HIERARQUIA DO CARD ESTAVA DE CABECA PARA BAIXO.
+                                              *
+                                              * O maior elemento era uma arte de emoji de 4.75rem — o
+                                              * que menos informa. Logo abaixo, tres numeros do mesmo
+                                              * peso (dias, acoes, arenas), nenhum protagonista. E a
+                                              * DESCRICAO, que e o unico texto que responde "isto
+                                              * serve para mim?", vinha por ultimo, em 9px cinza,
+                                              * cortada em duas linhas no meio da frase.
+                                              *
+                                              * Aqui o emoji vira selo do tamanho de um selo, ao lado
+                                              * do titulo; a descricao ganha o corpo e o espaco que
+                                              * ela merece; as arenas viram lista com nome, que e a
+                                              * prova do que vem dentro; e a exigencia — dias e acoes
+                                              * — cabe numa linha, porque numero que qualifica nao
+                                              * precisa de bloco proprio.
+                                              */}
+                                            <div className="flex items-start gap-2 px-2 pt-2">
+                                                <div
+                                                    className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg"
+                                                    style={{ background: `linear-gradient(160deg, ${tomDaCampanha}2e, rgba(0,0,0,0.35))` }}
+                                                >
+                                                    <SharedCodexCoverArt cover={coverVisual} title={codex.title} emojiSize="cover-sm" />
+                                                </div>
+                                                <div
+                                                    className="min-w-0 flex-1 text-[12px] font-black uppercase leading-[1.05] tracking-[0.04em]"
+                                                    style={{
+                                                        /* A sequencia de paradas e a mesma da placa: comeca
+                                                           e passa pelo tom, mas TERMINA claro. Fechar no tom
+                                                           escuro apagava as letras das pontas — "RESET"
+                                                           entrava sumindo. */
+                                                        background: `linear-gradient(103deg, ${tomDaCampanha} 2%, #e9edf2 26%, #fff8ea 46%, #e9edf2 66%, ${tomDaCampanha} 88%, #e9edf2 100%)`,
+                                                        backgroundClip: 'text',
+                                                        WebkitBackgroundClip: 'text',
+                                                        WebkitTextFillColor: 'transparent',
+                                                        filter: 'drop-shadow(0 2px 2px rgba(0,0,0,.75))',
+                                                    }}
+                                                >
                                                     {codex.title}
                                                 </div>
                                             </div>
 
-                                            <div className="grid grid-cols-3 divide-x divide-white/8 border-b border-white/8 bg-black/20 py-2 text-center">
-                                                <div>
-                                                    <div className="text-[12px] font-black text-white">{codex.duration_days}</div>
-                                                    <div className="text-[7px] font-black uppercase tracking-[0.1em] text-white/40">dias</div>
-                                                </div>
-                                                <div>
-                                                    <div className="text-[12px] font-black text-white">{actionCount}</div>
-                                                    <div className="text-[7px] font-black uppercase tracking-[0.1em] text-white/40">ações</div>
-                                                </div>
-                                                <div>
-                                                    <div className="text-[12px] font-black text-white">{preview.arenas.length}</div>
-                                                    <div className="text-[7px] font-black uppercase tracking-[0.1em] text-white/40">arenas</div>
-                                                </div>
-                                            </div>
-
-                                            <div className="line-clamp-2 min-h-[2.4rem] px-2 pt-2 text-[9px] leading-relaxed text-white/55">
+                                            <div className="px-2 pt-2 text-[10px] leading-[1.45] text-white/72">
                                                 {codex.description || template.description}
                                             </div>
 
-                                            <div className="mt-auto px-2 pb-2 pt-1">
-                                                <CampaignArenaStack arenas={preview.arenas} size="xs" actions={preview.actions} />
+                                            <div className="mt-auto space-y-1.5 px-2 pb-2 pt-2.5">
+                                                <div className="space-y-1">
+                                                    {preview.arenas.slice(0, 3).map((arena) => {
+                                                        const quantas = preview.actions.filter((action) => action.arenaId === arena.id).length;
+                                                        return (
+                                                            <div key={arena.id} className="flex items-center gap-1.5">
+                                                                <span className="text-[11px] leading-none" aria-hidden>{arena.icon || '◇'}</span>
+                                                                <span className="min-w-0 flex-1 truncate text-[9px] font-black uppercase tracking-[0.08em] text-white/62">
+                                                                    {arena.name}
+                                                                </span>
+                                                                {quantas > 0 && (
+                                                                    <span className="shrink-0 text-[9px] font-black tabular-nums text-white/34">{quantas}</span>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                    {preview.arenas.length > 3 && (
+                                                        <div className="text-[8.5px] font-black uppercase tracking-[0.14em] text-white/28">
+                                                            + {preview.arenas.length - 3} arenas
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div
+                                                    className="flex items-baseline gap-1 pt-1 text-[8.5px] font-black uppercase tracking-[0.14em] text-white/34"
+                                                    style={{ borderTop: `1px solid ${tomDaCampanha}22` }}
+                                                >
+                                                    <span className="text-[11px] leading-none text-white/80">{codex.duration_days}</span>
+                                                    <span>dias</span>
+                                                    <span className="px-1 text-white/20">·</span>
+                                                    <span className="text-[11px] leading-none text-white/80">{actionCount}</span>
+                                                    <span>{actionCount === 1 ? 'ação' : 'ações'}</span>
+                                                </div>
                                             </div>
                                         </button>
 

@@ -31,7 +31,25 @@ export default defineConfig(({ mode }) => {
               normalizedId.includes('/utils/legacyRenderPayload') ||
               normalizedId.includes('/scripts/legacy-render-worker')
             ) return 'legacy';
+            /*
+             * `lifeAreas` TEM CASA FIXA, E A CASA E ESTA.
+             *
+             * Ele nao estava em regra nenhuma, entao o Rollup o punha onde desse —
+             * e passou a pousar dentro de `legacy`, porque LegacyGrandPlaque o
+             * importa. So que `GMboard` tambem importa, e GMboard e game-data:
+             * os dois chunks passaram a depender um do outro.
+             *
+             * Ciclo entre chunks nao quebra o build nem o dev, onde cada modulo e
+             * um arquivo e a ordem se resolve sozinha. Quebra o app INTEIRO em
+             * producao, na primeira linha que roda:
+             *
+             *   ReferenceError: Cannot access 'Aa' before initialization
+             *
+             * — tela branca, sem console, sem pista. A taxonomia de areas e dado
+             * de jogo; declarar isso aqui tira a decisao das maos do empacotador.
+             */
             if (
+              normalizedId.includes('/constants/lifeAreas') ||
               normalizedId.includes('/constants/GMboard') ||
               normalizedId.includes('/constants/items') ||
               normalizedId.includes('/constants/nobility') ||

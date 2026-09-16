@@ -283,6 +283,8 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
             legenda={[
                 { rotulo: 'Semanas', valor: `${weeklyAtlas.length}` },
                 { rotulo: 'Dias ativos', valor: `${metrics.consistencyDays || 0}/${totalDays}` },
+                { rotulo: 'Feitas', valor: `${metrics.actionsCompleted}/${metrics.totalPlannedActions}` },
+                { rotulo: 'Carga', valor: `${metrics.totalHours}h` },
             ]}
         />
     );
@@ -416,71 +418,73 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
      * le como igualdade e nao como variacao. Estavel vira um ponto.
      */
     const renderComparisonSlide = () => {
+        /*
+         * O PROTAGONISTA E O LUGAR DESTE CICLO NA SUA PROPRIA FILA.
+         *
+         * A tela mostrava so as variacoes contra a mediana. Util, mas sem
+         * manchete: uma lista de setinhas — e num ciclo tranquilo restavam tres
+         * linhas magras depois de tirar as que comparavam zero com zero.
+         *
+         * "2o melhor de 6" responde numa olhada o que a pessoa quer saber ao
+         * fechar um ciclo, e e a unica coisa desta apresentacao que SO existe
+         * para quem tem historico guardado — que e exatamente o que a assinatura
+         * paga. As variacoes viram a legenda: elas explicam a posicao em vez de
+         * concorrer com ela.
+         *
+         * Empate conta a favor: dois ciclos com a mesma nota ocupam a mesma
+         * posicao, e nao uma atras da outra. Quem repetiu o melhor resultado nao
+         * caiu para segundo.
+         */
+        const notas = (reports || [])
+            .map((outro) => Number(outro.performanceScore || 0))
+            .filter((nota) => Number.isFinite(nota));
+        const minhaNota = Number(report.performanceScore || 0);
+        const posicao = notas.filter((nota) => nota > minhaNota).length + 1;
+        const temFila = notas.length > 1;
+
         const metricas = (comparison?.metrics || []).filter(
             (metric) => !(Number(metric.current) === 0 && Number(metric.baseline) === 0),
         );
+
+        const legenda = metricas.map((metric) => {
+            const estavel = metric.direction === 'estavel';
+            const favoravel = isFavourable(metric);
+            const variacao = estavel
+                ? 'no seu normal'
+                : `${metric.delta > 0 ? '▲' : '▼'} ${Math.abs(metric.delta)}${metric.suffix} · normal ${metric.baseline}${metric.suffix}`;
+            return {
+                rotulo: metric.label,
+                valor: `${metric.current}${metric.suffix}`,
+                nota: variacao,
+                tom: (estavel ? 'normal' : favoravel ? 'bom' : 'alerta') as 'normal' | 'bom' | 'alerta',
+            };
+        });
 
         return (
             <SlideCartaz
                 rank={scoreInfo.grade}
                 titulo="Contra você"
-                figura={(
-                    <div className="w-full space-y-2">
-                        <div className="mb-3 flex items-center justify-center">
-                            <span
-                                className="rounded-full px-2.5 py-0.5 text-[8px] font-black uppercase tracking-[0.22em]"
-                                style={{
-                                    color: skinColor,
-                                    border: `1px solid ${skinColor}66`,
-                                    background: `${skinColor}14`,
-                                    boxShadow: `0 0 14px ${skinColor}30`,
-                                }}
-                            >
-                                Platinum
-                            </span>
-                        </div>
-
-                        {metricas.map((metric) => {
-                            const estavel = metric.direction === 'estavel';
-                            const favoravel = isFavourable(metric);
-                            const sinal = estavel ? 'igual' : metric.delta > 0 ? '▲' : '▼';
-                            const tom = estavel
-                                ? 'text-gray-500'
-                                : favoravel ? 'text-emerald-300' : 'text-amber-300';
-
-                            return (
-                                <div
-                                    key={metric.id}
-                                    className="flex items-center justify-between gap-3 rounded-2xl border border-white/[0.07] bg-black/40 px-4 py-2.5"
-                                >
-                                    <div className="min-w-0 text-left">
-                                        <p className="m-0 truncate text-[9px] font-black uppercase tracking-[0.18em] text-gray-500">
-                                            {metric.label}
-                                        </p>
-                                        <p className="m-0 truncate text-[9px] text-gray-600">
-                                            seu normal: {metric.baseline}{metric.suffix}
-                                        </p>
-                                    </div>
-                                    <div className="flex shrink-0 items-baseline gap-2">
-                                        <span
-                                            className="text-[1.35rem] font-bold leading-none tabular-nums text-white"
-                                            style={{ fontFamily: 'Cinzel, Georgia, serif' }}
-                                        >
-                                            {metric.current}{metric.suffix}
-                                        </span>
-                                        <span className={`text-[10px] font-black tabular-nums ${tom}`}>
-                                            {/* Estavel escreve "igual": um simbolo solto ao lado do numero
-                                                — "76 ·" — fica orfao, e o "=" que havia antes se lia
-                                                como igualdade, e nao como variacao. */}
-                                            {sinal}{estavel ? '' : ` ${Math.abs(metric.delta)}${metric.suffix}`}
-                                        </span>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
+                /* O selo e a razao de esta tela existir: ela e a unica que so
+                   funciona com historico guardado. Ele voltou para o lado do
+                   titulo quando as metricas viraram legenda. */
+                selo={(
+                    <span
+                        className="rounded-full px-2.5 py-0.5 text-[8px] font-black uppercase tracking-[0.22em]"
+                        style={{
+                            color: skinColor,
+                            border: `1px solid ${skinColor}66`,
+                            background: `${skinColor}14`,
+                            boxShadow: `0 0 14px ${skinColor}30`,
+                        }}
+                    >
+                        Platinum
+                    </span>
                 )}
-                rotulo={`mediana de ${comparison?.sampleSize} ciclos fechados`}
+                numero={temFila ? `${posicao}º` : `${metricas.length}`}
+                rotulo={temFila
+                    ? `melhor dos seus ${notas.length} ciclos fechados`
+                    : `medidas contra a mediana de ${comparison?.sampleSize} ciclos`}
+                legenda={legenda}
                 remate={closingLine || comparison?.headline || undefined}
             />
         );

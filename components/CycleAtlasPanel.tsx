@@ -113,6 +113,11 @@ export const CycleAtlasPanel: React.FC<CycleAtlasPanelProps> = ({ weeks, semMold
             </div>
             )}
 
+            {/* As quatro pilulas saem junto com o cabecalho: dentro do cartaz elas
+                repetiam, em caixinhas cinzas do estilo antigo, os mesmos numeros
+                que a legenda do quadro ja carrega — e eram o unico pedaco da
+                apresentacao que ainda falava o dialeto anterior. */}
+            {!semMoldura && (
             <div className="grid grid-cols-4 gap-3 text-center">
                 <div className="bg-white/[0.03] border border-white/[0.05] rounded-2xl p-3">
                     <p className="text-[8px] text-gray-500 uppercase tracking-[0.18em]">Dias</p>
@@ -131,20 +136,31 @@ export const CycleAtlasPanel: React.FC<CycleAtlasPanelProps> = ({ weeks, semMold
                     <p className="text-lg font-black text-white">{totalCompletedHours}</p>
                 </div>
             </div>
+            )}
 
             <div className="bg-white/[0.03] rounded-[28px] border border-white/[0.05] overflow-hidden shadow-[0_18px_40px_rgba(0,0,0,0.24)] flex-1 min-h-0">
-                <div className="px-4 py-3 border-b border-white/[0.05] flex items-center justify-between gap-3 bg-black/30">
+                <div className={`flex items-center justify-between gap-3 border-b border-white/[0.05] bg-black/30 ${semMoldura ? 'px-3 py-1.5' : 'px-4 py-3'}`}>
                     <div>
                         {/* "Deslize na horizontal para atravessar o ciclo inteiro" nao
                             cabia na faixa e saia cortado em "...atravessar o ci". A
                             instrucao que aparece pela metade nao instrui ninguem. */}
-                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-[0.22em]">Registro continuo</p>
-                        <p className="text-[11px] font-bold text-white">Deslize para o lado</p>
+                        {/* Dentro do cartaz o titulo ja foi dito la em cima; aqui basta
+                            a dica do gesto, que e a unica coisa que a grade nao conta
+                            sozinha. */}
+                        {!semMoldura && (
+                            <p className="text-[9px] font-black text-gray-500 uppercase tracking-[0.22em]">Registro continuo</p>
+                        )}
+                        <p className={`font-bold text-white ${semMoldura ? 'text-[9px] uppercase tracking-[0.18em] text-white/50' : 'text-[11px]'}`}>Deslize para o lado</p>
                     </div>
-                    <p className="text-[9px] text-gray-500 uppercase tracking-[0.16em]">{weeks.length} semanas</p>
+                    <p className="text-[9px] uppercase tracking-[0.16em] text-gray-500">{weeks.length} semanas</p>
                 </div>
 
-                <div ref={scrollRef} className="overflow-auto h-full max-h-[460px] bg-[#090909]">
+                {/* Dentro do cartaz a grade cede: com 460px ela sozinha ja passava da
+                    area do slide, e o quadro inteiro — titulo, dica e legenda —
+                    era reduzido a 79% para caber. 300px ainda mostram meio dia de
+                    uma vez, e a rolagem interna continua sendo o jeito de
+                    atravessar o resto. */}
+                <div ref={scrollRef} className={`overflow-auto h-full bg-[#090909] ${semMoldura ? 'max-h-[300px]' : 'max-h-[460px]'}`}>
                     <div className="min-w-max flex p-2">
                         <div className="sticky left-0 z-30 w-12 flex-shrink-0 pt-[4.85rem] bg-[#090909] border-r border-white/[0.05]">
                             {HOURS.map((hour) => (

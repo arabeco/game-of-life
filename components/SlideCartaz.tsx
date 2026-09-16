@@ -18,6 +18,8 @@ export interface BarraDoCartaz {
 
 interface SlideCartazProps {
     titulo: string;
+    /** Uma marca ao lado do titulo — o selo do Platinum, por exemplo. */
+    selo?: React.ReactNode;
     /**
      * O protagonista quando ele e um DESENHO — um radar, um mapa, uma grade.
      *
@@ -78,6 +80,7 @@ const TONS: Record<NonNullable<LegendaDoCartaz['tom']>, string> = {
  */
 export const SlideCartaz: React.FC<SlideCartazProps> = ({
     titulo,
+    selo,
     figura,
     numero,
     sufixo,
@@ -141,12 +144,15 @@ export const SlideCartaz: React.FC<SlideCartazProps> = ({
                 style={{ border: `1px solid ${acabamento.mid}44`, ...recorte }}
             />
 
-            <p
-                className="relative z-[3] m-0 text-[10px] font-black uppercase tracking-[0.42em]"
-                style={{ color: `${acabamento.pale}88` }}
-            >
-                {titulo}
-            </p>
+            <div className="relative z-[3] flex items-center justify-center gap-2.5">
+                <p
+                    className="m-0 text-[10px] font-black uppercase tracking-[0.42em]"
+                    style={{ color: `${acabamento.pale}88` }}
+                >
+                    {titulo}
+                </p>
+                {selo}
+            </div>
 
             <div className={`relative z-[3] flex flex-col items-center ${figura ? 'w-full flex-1 justify-center' : ''}`}>
                 {/* O halo pega o acabamento do patamar, e nao a cor do tema: o

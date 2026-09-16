@@ -42,6 +42,14 @@ interface ReportResultCarouselProps {
     onDelete?: () => void;        // Added for delete action
     autoPlay?: boolean;
     startAtEnd?: boolean;
+    /**
+     * Avisa quando a apresentacao CHEGA ao ultimo quadro.
+     *
+     * A tela de recompensas do ciclo e o fecho da apresentacao, e nao um desvio
+     * atras de um botao. Quem decide o que mostrar la e a ReportsView — este
+     * componente so diz que a serie terminou.
+     */
+    onReachEnd?: () => void;
 }
 
 const ChestVisual: React.FC<{ type: ChestType }> = ({ type }) => {
@@ -93,6 +101,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     onDelete,
     autoPlay = true,
     startAtEnd = false,
+    onReachEnd,
 }) => {
     const REWARD_CARD_CAPTURE_ID = 'report-metal-card-capture';
     const preferNativeShare = shouldPreferNativeShare();
@@ -514,8 +523,21 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
 
     // Slide 5: Resumo do Relatorio
     const renderRewardSlide = () => {
+        /*
+         * A PLACA MOSTRA VALORES. ITEM E COM O QUADRADINHO.
+         *
+         * Aqui entravam o bau e ate tres insignias como BADGE DE TEXTO — uma
+         * caixinha escrita "Insignia / Insignia de Relatorio de Ciclo". Item no
+         * app tem uma forma: o quadrado com a borda e o degrade da raridade, a
+         * arte dentro e o nome na cor dela. Essa forma existe no RewardPackBody
+         * e e onde os itens deste ciclo aparecem — a tela de recompensas, que
+         * agora fecha a apresentacao.
+         *
+         * Entao a divisao e limpa: a placa carrega o que e NUMERO (EXP,
+         * fragmentos, ouro), e o que e OBJETO vai para a tela que sabe desenhar
+         * objeto.
+         */
         const rewardBadges = [
-            chest ? { label: 'Bau', value: chest } : null,
             ((report.expGained || expGained) && (report.expGained || expGained) > 0)
                 ? { label: 'XP', value: `+${report.expGained || expGained}` }
                 : null,
@@ -525,10 +547,6 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
             ((report.metrics.goldGained || 0) > 0)
                 ? { label: 'Ouro', value: `+${report.metrics.goldGained}` }
                 : null,
-            ...(insignias || []).slice(0, 3).map((insigniaId) => ({
-                label: 'Insignia',
-                value: resolveItemDef(insigniaId)?.name || insigniaId.replace(/_/g, ' '),
-            })),
         ].filter(Boolean) as { label: string; value?: string }[];
 
         return (
@@ -619,6 +637,21 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
             emitAppSensoryCue('report_chapter');
         }
     }, [currentSlide, isRewardSlide, totalSlides]);
+
+    /*
+     * O AVISO SAI UMA VEZ POR RELATORIO.
+     *
+     * A pessoa pode voltar ao ultimo quadro pelo "Rever" quantas vezes quiser; a
+     * cerimonia do fim acontece na primeira. Sem a trava, cada ida e volta
+     * reabriria a tela de recompensas por cima da apresentacao.
+     */
+    const fimAvisadoRef = React.useRef<string | null>(null);
+    useEffect(() => {
+        if (!isRewardSlide || !onReachEnd) return;
+        if (fimAvisadoRef.current === report.id) return;
+        fimAvisadoRef.current = report.id;
+        onReachEnd();
+    }, [isRewardSlide, onReachEnd, report.id]);
 
     useEffect(() => {
         if (!isRewardSlide) {
@@ -754,7 +787,12 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                               */
                             <div className="w-full space-y-2">
                                 {(onDelete || (onStartNewCycle && (onContinueFromHere || true))) && (
-                                    <div className="flex items-center justify-center gap-2">
+                                    /* `flex-wrap`: no fechamento de ciclo esta linha
+                                       chega a quatro — Rever, Apagar, Sair e Continuar —
+                                       e 341px de botao nao cabem nos 302 da faixa. Sem
+                                       isso, Rever saia cortado a esquerda e Continuar a
+                                       direita. */
+                                    <div className="flex flex-wrap items-center justify-center gap-1.5">
                                         {/* O ULTIMO SLIDE TAMBEM TEM VOLTA.
                                             O rodape do fim trocava as setas pelas chamadas de
                                             encerramento, e com isso a apresentacao virava rua sem

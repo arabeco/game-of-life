@@ -1,4 +1,4 @@
-import { loadCatalogRows } from '../utils/networkEfficiency.js';
+﻿import { loadCatalogRows } from '../utils/networkEfficiency.js';
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Asset, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, SequenceItem, DailyProofStreak, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RelationshipCompetitionChallenge, RelationshipCompetitionProposal, RelationshipMentorshipOffer, RewardModalPayload, UserBlock, ModerationReportInput, PlannerMatrixQuadrant } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
@@ -604,6 +604,71 @@ const mapFeedEventFromDbRow = (row: any): FeedEvent => ({
     timestamp: row.created_at ?? row.createdAt ?? new Date().toISOString(),
 });
 
+/**
+ * AS CURTIDAS VEM DEPOIS, E SEPARADAS.
+ *
+ * Nao entram no `select` do feed de proposito. Numa base sem a migracao das
+ * curtidas, um join com a tabela ausente derruba a consulta INTEIRA — o Hall da
+ * Fama ficaria vazio por causa de um contador. Assim, se esta consulta falhar,
+ * ela devolve null, o feed continua de pe e os cartoes simplesmente nao
+ * desenham o botao.
+ *
+ * Sao duas idas curtas: a contagem por feito (agregada pelo PostgREST, sem
+ * trazer linha nenhuma) e as MINHAS curtidas entre os feitos da tela — no
+ * maximo uma linha por cartao.
+ */
+const buscarCurtidasDoFeed = async (eventIds: string[], userId: string) => {
+    if (!eventIds.length) return { contagem: new Map<string, number>(), minhas: new Set<string>() };
+
+    const [agregado, proprias] = await Promise.all([
+        supabase.from('social_feed_events').select('id,social_feed_likes(count)').in('id', eventIds),
+        supabase.from('social_feed_likes').select('event_id').eq('user_id', userId).in('event_id', eventIds),
+    ]);
+
+    // Se nem as MINHAS curtidas voltam, a tabela nao existe nesta base: curtida
+    // desligada, e o cartao nao desenha o botao.
+    if (proprias.error) return null;
+
+    const contagem = new Map<string, number>();
+
+    if (!agregado.error) {
+        (agregado.data || []).forEach((linha: any) => {
+            const bruto = Array.isArray(linha.social_feed_likes) ? linha.social_feed_likes[0]?.count : linha.social_feed_likes?.count;
+            contagem.set(String(linha.id), Number(bruto) || 0);
+        });
+    } else {
+        /*
+         * PLANO B: CONTAR NO CLIENTE.
+         *
+         * A contagem de cima e agregada pelo PostgREST (`social_feed_likes(count)`),
+         * que nao traz linha nenhuma pela rede — e o jeito certo. Mas funcoes de
+         * agregacao sao um interruptor do lado do servidor, e numa base onde ele
+         * esteja desligado a consulta erra inteira.
+         *
+         * Sem este plano B, esse erro apagaria o botao de curtir de todo mundo — e
+         * o sintoma seria "o recurso nao existe", nao "a contagem falhou", que e
+         * justamente o tipo de falha que ninguem vai investigar.
+         *
+         * Aqui ele busca as linhas e conta na mao. Custa mais rede e so vale
+         * enquanto o volume for pequeno; se algum dia doer, o certo e ligar o
+         * agregado no servidor, nao aumentar este limite.
+         */
+        const cru = await supabase
+            .from('social_feed_likes')
+            .select('event_id')
+            .in('event_id', eventIds)
+            .limit(4000);
+        if (cru.error) return null;
+        eventIds.forEach((id) => contagem.set(id, 0));
+        (cru.data || []).forEach((linha: any) => {
+            const id = String(linha.event_id);
+            contagem.set(id, (contagem.get(id) || 0) + 1);
+        });
+    }
+
+    return { contagem, minhas: new Set((proprias.data || []).map((linha: any) => String(linha.event_id))) };
+};
+
 export interface CodexCatalogItem {
     id: string;
     title: string;
@@ -796,11 +861,26 @@ export interface GameContextType {
     setAchievementUnlocked: (achievement: { type: FeedEventType; data: any; } | null) => void;
     updateLevelUnlocks: (next: LevelUnlocks) => void;
     grantUserUnlock: (category: UnlockCategory, itemId: string) => void;
+    /*
+     * ESTA FUNCAO EXISTIA E NAO SAIA DAQUI.
+     *
+     * `grantInventoryItem` era definida no provider e usada so por dentro; o tipo
+     * nao a declarava e o `value` nao a entregava. Quem chamava de fora recebia
+     * `undefined` e estourava "grantInventoryItem is not a function" — e o estouro
+     * acontecia no MEIO da entrega das recompensas do ciclo, depois da EXP e dos
+     * fragmentos e ANTES do bau. Ou seja: todo ciclo que dava insignia tambem
+     * perdia o bau, em silencio, porque o catch la fora so mostrava um toast.
+     */
+    grantInventoryItem: (itemId: string, silent?: boolean) => Promise<unknown>;
     acceptSeasonQuest: (questId: string) => void;
     abortSeasonQuest: (questId: string) => Promise<void>;
     addProfileFlag: (flag: string) => void;
     feed: FeedEvent[];
-    addFeedEvent: (eventData: Pick<FeedEvent, 'type' | 'content'>) => void;
+    addFeedEvent: (eventData: Pick<FeedEvent, 'type' | 'content'>) => Promise<boolean>;
+    /** Remove um feito do feed. So o autor consegue; a RLS e quem decide. */
+    deleteFeedEvent: (eventId: string) => Promise<boolean>;
+    toggleFeedLike: (eventId: string) => Promise<boolean>;
+    fetchLikesReceived: () => Promise<number | null>;
     getArenas: () => Arena[];
     activeArenaPact: ArenaPact | null;
     arenaPactProgress: { current: number; goal: number; percent: number; completed: boolean; windowEnded?: boolean } | null;
@@ -3253,7 +3333,137 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
 
-        setFeed((data || []).map(mapFeedEventFromDbRow));
+        const eventos = (data || []).map(mapFeedEventFromDbRow);
+        setFeed(eventos);
+
+        const curtidas = await buscarCurtidasDoFeed(eventos.map((evento) => evento.id), userId);
+        if (!curtidas) return;
+        setFeed((anteriores) => anteriores.map((evento) => (
+            curtidas.contagem.has(evento.id)
+                ? { ...evento, likes: curtidas.contagem.get(evento.id) || 0, likedByMe: curtidas.minhas.has(evento.id) }
+                : evento
+        )));
+    }, [getSupabaseUserId]);
+
+    /**
+     * Quantas curtidas os meus feitos receberam, somadas.
+     *
+     * Devolve `null` — e nao zero — quando a base nao tem a tabela: zero e um
+     * numero, "nao sei" nao e, e a tela precisa distinguir os dois para nao
+     * anunciar um placar que nunca foi contado.
+     *
+     * `head: true` traz so a contagem; nenhuma linha de curtida atravessa a rede.
+     */
+    const fetchLikesReceived = useCallback(async (): Promise<number | null> => {
+        const userId = getSupabaseUserId();
+        if (!userId || !isUuid(userId)) return null;
+
+        const { count, error } = await supabase
+            .from('social_feed_likes')
+            .select('event_id,social_feed_events!inner(user_id)', { count: 'exact', head: true })
+            .eq('social_feed_events.user_id', userId);
+
+        if (error) return null;
+        return count ?? 0;
+    }, [getSupabaseUserId]);
+
+    /**
+     * UMA IDA POR VEZ, POR FEITO — e no fim vale o que a pessoa quis.
+     *
+     * Curtir e descurtir sao o mesmo toque, e quem decide e o banco numa
+     * transacao so (`toggle_feed_like`): em duas chamadas, dois toques rapidos
+     * leriam ambos "nao curtido" e o segundo quebraria na chave primaria.
+     *
+     * So que disparar uma ida por toque tem um problema proprio. Cinco toques
+     * viram cinco chamadas, e respostas HTTP nao voltam na ordem em que sairam:
+     * basta a do quarto toque chegar depois da do quinto para a estrela ficar
+     * acesa logo depois de a pessoa a ter apagado. O servidor termina certo — sao
+     * toggles, e o resultado so depende de quantos foram — mas a TELA termina
+     * errada, e e a tela que a pessoa ve.
+     *
+     * Entao aqui so existe uma ida em voo por feito. Enquanto ela nao volta, o
+     * toque seguinte apenas atualiza a tela e anota o que a pessoa passou a
+     * querer. Quando a ida volta, se o banco nao estiver no estado desejado, sai
+     * UMA correcao. Uma rajada de vinte toques vira no maximo duas chamadas, e o
+     * estado final e sempre o ultimo que a pessoa pediu.
+     *
+     * Isto nao e economia de trafego — cada toque custa uns 1,5 KB e o limite
+     * livre e de gigabytes. E correcao.
+     */
+    const curtidaEmVooRef = useRef(new Map<string, { emVoo: boolean; alvo: boolean | null }>());
+
+    const toggleFeedLike = useCallback(async (eventId: string): Promise<boolean> => {
+        const userId = getSupabaseUserId();
+        if (!userId || !isUuid(userId)) return false;
+
+        let anterior: { likes: number; likedByMe: boolean } | null = null;
+        let alvo = false;
+        setFeed((eventos) => eventos.map((evento) => {
+            if (evento.id !== eventId) return evento;
+            const curtido = Boolean(evento.likedByMe);
+            anterior = { likes: Number(evento.likes) || 0, likedByMe: curtido };
+            alvo = !curtido;
+            return {
+                ...evento,
+                likedByMe: alvo,
+                likes: Math.max(0, (Number(evento.likes) || 0) + (curtido ? -1 : 1)),
+            };
+        }));
+
+        const estado = curtidaEmVooRef.current.get(eventId) || { emVoo: false, alvo: null };
+        if (estado.emVoo) {
+            // Ja ha uma ida no ar para este feito: ela e quem vai reconciliar.
+            estado.alvo = alvo;
+            curtidaEmVooRef.current.set(eventId, estado);
+            return true;
+        }
+        estado.emVoo = true;
+        estado.alvo = null;
+        curtidaEmVooRef.current.set(eventId, estado);
+
+        const reverter = () => {
+            if (!anterior) return;
+            const estadoAnterior = anterior as { likes: number; likedByMe: boolean };
+            setFeed((eventos) => eventos.map((evento) => (
+                evento.id === eventId ? { ...evento, ...estadoAnterior } : evento
+            )));
+        };
+
+        // O teto existe para uma resposta teimosa nao virar laco infinito. Quatro
+        // rodadas so acontecem se alguem estiver tocando durante a correcao.
+        const executar = async (rodada: number): Promise<boolean> => {
+            const { data, error } = await supabase.rpc('toggle_feed_like', { p_event_id: eventId });
+
+            if (error || !data) {
+                if (error) console.error('Error toggling feed like:', error.message);
+                reverter();
+                return false;
+            }
+
+            const resposta = data as { liked?: boolean; likes?: number };
+            const curtidoAgora = Boolean(resposta.liked);
+            const pendente = curtidaEmVooRef.current.get(eventId);
+
+            if (pendente && pendente.alvo !== null && pendente.alvo !== curtidoAgora && rodada < 4) {
+                pendente.alvo = null;
+                return executar(rodada + 1);
+            }
+            if (pendente) pendente.alvo = null;
+
+            setFeed((eventos) => eventos.map((evento) => (
+                evento.id === eventId
+                    ? { ...evento, likedByMe: curtidoAgora, likes: Number(resposta.likes) || 0 }
+                    : evento
+            )));
+            return true;
+        };
+
+        try {
+            return await executar(0);
+        } finally {
+            const finalizado = curtidaEmVooRef.current.get(eventId);
+            if (finalizado) finalizado.emVoo = false;
+        }
     }, [getSupabaseUserId]);
 
     useEffect(() => {
@@ -7748,31 +7958,22 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         };
     }, [assets, hasHydratedFromSupabase, isProfileLoaded, session?.user.id, userCodexes]);
 
-    const addFeedEvent = (eventData: Pick<FeedEvent, 'type' | 'content'>) => {
-        // O feito so sai do aparelho se o jogador permitiu em Configuracoes > Arenas do ativo.
-        // 'nobody' nao publica nada; 'friends' e 'all' definem quem le (aplicado pela RLS).
-        if (userProfile.featsVisibility === 'nobody') return;
-
-        const localEvent: FeedEvent = {
-            id: `feed_${Date.now()}`,
-            userId: userProfile.id,
-            authorNickname: userProfile.nickname,
-            authorAvatarUrl: userProfile.avatarUrl,
-            authorClanName: userProfile.clanName,
-            authorClanIcon: userProfile.clanIcon,
-            timestamp: new Date().toISOString(),
-            type: eventData.type,
-            content: eventData.content
-        };
-
+    const feedPublicationsInFlight = useRef(new Set<string>());
+    const addFeedEvent = async (eventData: Pick<FeedEvent, 'type' | 'content'>): Promise<boolean> => {
+        if (userProfile.featsVisibility === 'nobody') {
+            showToast('Seus feitos estão privados. Ajuste a visibilidade para publicar em Feitos.', 'info');
+            return false;
+        }
         const userId = getSupabaseUserId();
         if (!userId || !isUuid(userId)) {
-            setFeed(prev => [localEvent, ...prev]);
-            return;
+            showToast('Entre na sua conta para publicar em Feitos.', 'warning');
+            return false;
         }
-
-        void (async () => {
-            const { error } = await supabase.from('social_feed_events').insert({
+        const key = JSON.stringify([userId, eventData.type, eventData.content]);
+        if (feedPublicationsInFlight.current.has(key)) return false;
+        feedPublicationsInFlight.current.add(key);
+        try {
+            const { data, error } = await supabase.from('social_feed_events').insert({
                 user_id: userId,
                 event_type: eventData.type,
                 content: eventData.content,
@@ -7780,21 +7981,59 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 author_avatar_url: userProfile.avatarUrl || null,
                 author_clan_name: userProfile.clanName || null,
                 author_clan_icon: userProfile.clanIcon || null,
-            });
+            }).select('id,user_id,event_type,author_nickname,author_avatar_url,author_clan_name,author_clan_icon,content,created_at').single();
+            if (error || !data?.id) throw error || new Error('Publicação sem confirmação');
+            const saved = mapFeedEventFromDbRow(data);
+            setFeed(previous => [saved, ...previous.filter(event => event.id !== saved.id)].slice(0, 80));
+            return true;
+        } catch (error) {
+            console.error('Error publishing feed event:', error);
+            showToast('Não foi possível confirmar a publicação. Confira a aba Feitos antes de tentar novamente.', 'error');
+            return false;
+        } finally {
+            feedPublicationsInFlight.current.delete(key);
+        }
+    };
 
-            if (error) {
-                const message = String(error.message || '');
-                if (message.includes('social_feed_events')) {
-                    setFeed(prev => [localEvent, ...prev]);
-                    return;
-                }
-                console.error('Error creating feed event:', error.message);
-                setFeed(prev => [localEvent, ...prev]);
-                return;
-            }
+    /**
+     * APAGAR O PROPRIO FEITO DO FEED.
+     *
+     * A politica "Users can delete own social feed events" existe desde a
+     * migracao do feed — `for delete using (auth.uid() = user_id)`. O que nao
+     * existia era caminho no app: so havia addFeedEvent. Publicou, ficou.
+     *
+     * Isso ficou pior agora que publicar virou escolha explicita: a pessoa
+     * decide postar e nao pode desfazer o proprio gesto. O banco ja permitia; so
+     * faltava a porta.
+     *
+     * Confirma pelo retorno do delete, e nao pela ausencia de erro: a RLS de
+     * outra pessoa nao levanta excecao, ela simplesmente nao apaga linha
+     * nenhuma. Sem o `.select()`, apagar o post alheio pareceria ter funcionado.
+     */
+    const deleteFeedEvent = async (eventId: string): Promise<boolean> => {
+        const userId = getSupabaseUserId();
+        if (!userId || !isUuid(userId)) return false;
 
-            await fetchSocialFeed();
-        })();
+        const { data, error } = await supabase
+            .from('social_feed_events')
+            .delete()
+            .eq('id', eventId)
+            .eq('user_id', userId)
+            .select('id');
+
+        if (error) {
+            console.error('Error deleting feed event:', error.message);
+            showToast('Nao foi possivel remover agora.', 'error');
+            return false;
+        }
+        if (!data || data.length === 0) {
+            showToast('Esse feito nao e seu para remover.', 'warning');
+            return false;
+        }
+
+        setFeed(previous => previous.filter(event => event.id !== eventId));
+        showToast('Removido do seu mural.', 'success');
+        return true;
     };
 
     const openChest = async (chestType: ChestType): Promise<ChestOpenResult | null> => {
@@ -8925,6 +9164,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'level',
                 'backgroundUrl',
                 'bannerUrl',
+                'legacyPlaqueColor',
                 'isOnline',
                 'visibleWidgets',
                 'sequenceItems',
@@ -12421,12 +12661,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 : {}),
         });
 
-        if (grant.feedTitle) {
-            addFeedEvent({
-                type: 'QUEST_COMPLETED',
-                content: { title: grant.feedTitle, icon: grant.feedIcon || '\u{1F4DD}', score: addedExp },
-            });
-        }
 
         const allEarnedItems: string[] = [...new Set(earnedItemIds)];
         const chestForModal = chestGranted ? grant.chest : null;
@@ -12508,6 +12742,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         await grantMissionReward({
             completionId: questId,
             origem: 'quest_temporada',
+            seasonId: quest.season_id || activeRuntimeSeasonId,
             title: quest.title,
             xp: quest.rewards.xp,
             chest: earnedChest,
@@ -12833,7 +13068,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         handleCompetitionArenaCompletion: resolveCompetitionChallengeOutcome,
         onDailyProofActionCompleted: registerDailyProofAction,
         setAchievementUnlocked,
-        addFeedEvent,
         getLocalDateString,
         mapToSnakeCase,
         addProfileFlag,
@@ -14707,9 +14941,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     return (
         <GameContext.Provider value={{
             session,
-            getSharedActionPoolProgress, isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, sequenceItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, upcomingCycle, dailyCommitment, judgedOperationalDates, judgedTaskIdsByDate, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, acceptSeasonQuest,
+            getSharedActionPoolProgress, isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, sequenceItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, upcomingCycle, dailyCommitment, judgedOperationalDates, judgedTaskIdsByDate, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, grantInventoryItem, acceptSeasonQuest,
             abortSeasonQuest,
-            roundExpBonus, addProfileFlag, feed, addFeedEvent, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, ensureTasksLoadedThrough, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, addSequenceItem, updateSequenceItem, markSequenceItemToday, adjustSequenceItemDays, resetSequenceItem, deleteSequenceItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, recordMoodEntry, fetchMoodHistory, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, respondToClanInvite, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
+            roundExpBonus, addProfileFlag, feed, addFeedEvent, deleteFeedEvent, toggleFeedLike, fetchLikesReceived, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, ensureTasksLoadedThrough, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, addSequenceItem, updateSequenceItem, markSequenceItemToday, adjustSequenceItemDays, resetSequenceItem, deleteSequenceItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, recordMoodEntry, fetchMoodHistory, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, respondToClanInvite, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
             directMessages, dmConversations, blockedUsers, blockedUserIds, sendDirectMessage, markDMAsRead, fetchDMs, blockUser, unblockUser, submitModerationReport,
             addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, isProfileLoaded, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, donateItem, craftItem, buyChestWithFragments, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, createCompetitionInvite, respondToRelationshipInvite, endRelationshipLink, renewRelationshipLink, offerMentorshipArena, respondMentorshipOffer, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, respondCompetitionChallenge, cancelCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,

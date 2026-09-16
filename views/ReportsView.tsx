@@ -1182,9 +1182,11 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 title: report.cycleName || activeCycle?.name || 'um ciclo',
                 score: report.performanceScore,
                 deliveries: report.metrics?.actionsCompleted,
+                exp: report.expGained ?? report.metrics?.expGained,
+                days: report.metrics?.consistencyDays,
             },
         });
-        if (published) showToast('Resultado do ciclo postado no feed.', 'success');
+        if (published) showToast('Resultado do ciclo postado em Feitos.', 'success');
         return published;
     };
 
@@ -1349,22 +1351,35 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         buildCycleFinalizedNotificationContent,
     ]);
 
+    /*
+     * A ENTREGA NAO DEPENDE DE HAVER BAU.
+     *
+     * A guarda era `if (!earnedChest) return`, e com isso um ciclo que rendeu EXP
+     * e insignias mas nenhum bau nunca mostrava a tela de recompensas — ela so
+     * existia para quem tirou bau. Agora quem manda e haver ALGO a entregar; o
+     * bau, quando vem, e mais uma linha dentro dela.
+     */
     const handleOpenPostCycleChest = useCallback(async () => {
-        if (!earnedChest || postCycleChestOpened || isOpeningPostCycleChest) return;
+        if (postCycleChestOpened || isOpeningPostCycleChest) return;
+        const temAlgoAEntregar = Boolean(earnedChest)
+            || expGained > 0
+            || fragmentsGained > 0
+            || grantedInsignias.length > 0;
+        if (!temAlgoAEntregar) return;
 
         setIsOpeningPostCycleChest(true);
         try {
             const rewardState = await ensurePostCycleRewardsGranted({ suppressToast: true });
             let chestReady = rewardState.chestReady;
 
-            if (!chestReady && !postCycleChestPrepared) {
+            if (earnedChest && !chestReady && !postCycleChestPrepared) {
                 chestReady = Boolean(await addChest(earnedChest));
                 if (chestReady) {
                     setPostCycleChestPrepared(true);
                 }
             }
 
-            if (!chestReady) {
+            if (earnedChest && !chestReady) {
                 showToast('Não foi possível guardar o baú deste ciclo.', 'error');
                 return;
             }
@@ -1396,6 +1411,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         }
     }, [
         earnedChest,
+        expGained,
+        fragmentsGained,
+        grantedInsignias,
         postCycleChestOpened,
         isOpeningPostCycleChest,
         postCycleChestPrepared,
@@ -1403,6 +1421,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         addChest,
         openChest,
         showToast,
+        selectedReport,
     ]);
 
     const handleStartNewCycleFromResults = async () => {
@@ -3076,6 +3095,19 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         chestOpened={postCycleChestOpened}
                         isOpeningChest={isOpeningPostCycleChest}
                         startAtEnd={selectedReportStartsAtEnd}
+                        /*
+                          * A TELA DE RECOMPENSAS E O FIM DA APRESENTACAO.
+                          *
+                          * Ela vivia atras de um botao no ultimo quadro: quem nao
+                          * tocasse — ou quem saisse por Sair, Novo Ciclo ou o X —
+                          * tinha as recompensas concedidas EM SILENCIO e nunca via o
+                          * que tinha ganhado. Um ciclo sem bau nem botao tinha.
+                          *
+                          * Agora a serie termina nela: o carrossel avisa quando chega
+                          * ao ultimo quadro e a entrega acontece ali, uma vez. O botao
+                          * continua existindo para reabrir.
+                          */
+                        onReachEnd={isPostCycleFlow ? () => { void handleOpenPostCycleChest(); } : undefined}
                     />
                 ) : <p>Erro ao carregar relat\u00F3rio.</p>;
             case 'comparing':

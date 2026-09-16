@@ -1424,6 +1424,33 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         selectedReport,
     ]);
 
+    /*
+     * A ENTREGA ESPERA AS RECOMPENSAS EXISTIREM.
+     *
+     * A primeira tentativa disparava isto no `onComplete` do selo, logo antes de
+     * trocar a view. Nao funcionava: quem calcula o que o ciclo rendeu e o
+     * `onFinish`, e os valores entram por ESTADO — no tique seguinte o callback
+     * ainda enxergava `expGained: 0`, `earnedChest: null` e nenhuma insignia,
+     * caia na guarda de "nao ha nada a entregar" e a tela nunca abria.
+     *
+     * Entao quem manda e o efeito: assim que a apresentacao esta no ar E os
+     * valores chegaram, a entrega acontece. Uma vez por ciclo, pela trava —
+     * senao cada reconciliacao reabriria a tela por cima do slideshow.
+     */
+    const entregaDoCicloRef = useRef<string | null>(null);
+    useEffect(() => {
+        if (view !== 'results' || !isPostCycleFlow) return;
+        const chave = selectedReport?.id || null;
+        if (!chave || entregaDoCicloRef.current === chave) return;
+        const temAlgoAEntregar = Boolean(earnedChest)
+            || expGained > 0
+            || fragmentsGained > 0
+            || grantedInsignias.length > 0;
+        if (!temAlgoAEntregar) return;
+        entregaDoCicloRef.current = chave;
+        void handleOpenPostCycleChest();
+    }, [view, isPostCycleFlow, selectedReport?.id, earnedChest, expGained, fragmentsGained, grantedInsignias, handleOpenPostCycleChest]);
+
     const handleStartNewCycleFromResults = async () => {
         setShowNewCycleSetup(true);
 
@@ -2719,6 +2746,20 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 if (oraclePreferences?.animationsEnabled && !scanError) {
                     return (
                         <Suspense fallback={<div className="flex flex-col items-center justify-center h-full space-y-4 animate-fade-in text-center mt-20"><p className="text-gray-400 font-mono animate-pulse uppercase tracking-[0.2em] text-[10px]">Gerando Relatório...</p></div>}>
+                            {/*
+                              * A RECOMPENSA E CONSEQUENCIA DO ATO, E NAO DA NARRATIVA.
+                              *
+                              * Ela ja esteve atras de um botao no ultimo quadro, e depois
+                              * abrindo sozinha quando a apresentacao terminava. Nos dois
+                              * casos sobravam DOIS finais disputando: a tela de recompensa
+                              * e a placa do resumo, uma cobrindo a outra.
+                              *
+                              * Agora ela vem aqui: acabou o selo, a primeira coisa que
+                              * aparece e o que aquele ciclo pagou. So depois comeca a
+                              * apresentacao, que passa a ter um fim so — a placa, que e o
+                              * objeto que se compartilha e onde moram o compartilhar, o
+                              * rever e as saidas.
+                              */}
                             <ReportGenerationModal
                                 onFinish={finalizeReportGeneration}
                                 onComplete={() => setView('results')}
@@ -3095,19 +3136,11 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         chestOpened={postCycleChestOpened}
                         isOpeningChest={isOpeningPostCycleChest}
                         startAtEnd={selectedReportStartsAtEnd}
-                        /*
-                          * A TELA DE RECOMPENSAS E O FIM DA APRESENTACAO.
-                          *
-                          * Ela vivia atras de um botao no ultimo quadro: quem nao
-                          * tocasse — ou quem saisse por Sair, Novo Ciclo ou o X —
-                          * tinha as recompensas concedidas EM SILENCIO e nunca via o
-                          * que tinha ganhado. Um ciclo sem bau nem botao tinha.
-                          *
-                          * Agora a serie termina nela: o carrossel avisa quando chega
-                          * ao ultimo quadro e a entrega acontece ali, uma vez. O botao
-                          * continua existindo para reabrir.
-                          */
-                        onReachEnd={isPostCycleFlow ? () => { void handleOpenPostCycleChest(); } : undefined}
+                        /* A apresentacao nao corre atras da tela de recompensas. Ela
+                           monta por baixo enquanto o modal esta aberto, e sem isto os
+                           quadros iam passando sozinhos — quando a pessoa fechasse a
+                           recompensa, o slideshow ja teria acontecido. */
+                        autoPlay={!reportRewardPayload}
                     />
                 ) : <p>Erro ao carregar relat\u00F3rio.</p>;
             case 'comparing':

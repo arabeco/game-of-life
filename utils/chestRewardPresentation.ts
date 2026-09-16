@@ -52,7 +52,8 @@ export const buildCycleRewardPayload = (premio: {
     summary: premio.chestType
       ? 'A EXP já entrou no seu perfil e o baú está esperando no Arsenal.'
       : 'A EXP já entrou no seu perfil.',
-    buttonLabel: 'Continuar',
+    // O botao diz para onde ele leva: daqui comeca a apresentacao do ciclo.
+    buttonLabel: 'Ver o relatório',
     rewardHighlightsTitle: 'Entregue agora',
     rewardHighlights,
     itemSectionTitle: 'Insígnias do ciclo',

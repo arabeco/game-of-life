@@ -42,14 +42,6 @@ interface ReportResultCarouselProps {
     onDelete?: () => void;        // Added for delete action
     autoPlay?: boolean;
     startAtEnd?: boolean;
-    /**
-     * Avisa quando a apresentacao CHEGA ao ultimo quadro.
-     *
-     * A tela de recompensas do ciclo e o fecho da apresentacao, e nao um desvio
-     * atras de um botao. Quem decide o que mostrar la e a ReportsView — este
-     * componente so diz que a serie terminou.
-     */
-    onReachEnd?: () => void;
 }
 
 const ChestVisual: React.FC<{ type: ChestType }> = ({ type }) => {
@@ -101,7 +93,6 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     onDelete,
     autoPlay = true,
     startAtEnd = false,
-    onReachEnd,
 }) => {
     const REWARD_CARD_CAPTURE_ID = 'report-metal-card-capture';
     const preferNativeShare = shouldPreferNativeShare();
@@ -637,21 +628,6 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
             emitAppSensoryCue('report_chapter');
         }
     }, [currentSlide, isRewardSlide, totalSlides]);
-
-    /*
-     * O AVISO SAI UMA VEZ POR RELATORIO.
-     *
-     * A pessoa pode voltar ao ultimo quadro pelo "Rever" quantas vezes quiser; a
-     * cerimonia do fim acontece na primeira. Sem a trava, cada ida e volta
-     * reabriria a tela de recompensas por cima da apresentacao.
-     */
-    const fimAvisadoRef = React.useRef<string | null>(null);
-    useEffect(() => {
-        if (!isRewardSlide || !onReachEnd) return;
-        if (fimAvisadoRef.current === report.id) return;
-        fimAvisadoRef.current = report.id;
-        onReachEnd();
-    }, [isRewardSlide, onReachEnd, report.id]);
 
     useEffect(() => {
         if (!isRewardSlide) {

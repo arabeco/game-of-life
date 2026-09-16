@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { DMConversation, DirectMessage, UserProfile } from '../types';
-import { SendIcon, MessageIcon, ChevronLeftIcon, SparklesIcon, UsersIcon, XCircleIcon } from './Icons';
+import { SendIcon, MessageIcon, ChevronLeftIcon, SparklesIcon, UsersIcon, XCircleIcon, FlagIcon, BanIcon } from './Icons';
 import { UserAvatar } from './UserAvatar';
 import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
 import { ConfirmationModal } from './ConfirmationModal';
@@ -304,8 +304,8 @@ export const DirectMessages: React.FC<{ initialParticipantId?: string | null }> 
                 ) : (
                     <>
                         {/* Chat Header */}
-                        <div className="flex-none p-4 border-b border-white/5 bg-black/40 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
+                        <div className="flex flex-none items-center justify-between gap-2 border-b border-white/5 bg-black/40 px-3 py-3">
+                            <div className="flex min-w-0 items-center gap-3">
                                 {selectedConversation && (
                                     <>
                                         <div className="relative">
@@ -320,8 +320,8 @@ export const DirectMessages: React.FC<{ initialParticipantId?: string | null }> 
                                                 <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-black rounded-full animate-pulse" />
                                             )}
                                         </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-bold text-white leading-tight">
+                                        <div className="flex min-w-0 flex-col">
+                                            <span className="truncate text-sm font-bold leading-tight text-white">
                                                 {'profile' in selectedConversation ? selectedConversation.profile.nickname : (selectedConversation as UserProfile).nickname}
                                             </span>
                                             <div className="flex items-center gap-1.5">
@@ -334,26 +334,40 @@ export const DirectMessages: React.FC<{ initialParticipantId?: string | null }> 
                                 )}
                             </div>
                             
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-none items-center gap-1.5">
                                 {selectedParticipantId && (
                                     <>
+                                        {/*
+                                          * DENUNCIAR E BLOQUEAR VIRAM SIMBOLO.
+                                          *
+                                          * Escritos por extenso, as duas pilulas mais o botao de
+                                          * voltar nao cabiam ao lado do apelido num telefone de
+                                          * 360dp: "BLOQUEAR" era cortado pela borda direita. Sao
+                                          * acoes raras e graves — o lugar delas e reconhecivel e
+                                          * discreto, nao largo. O nome vai no `title` e no
+                                          * `aria-label`, que e onde ele continua servindo.
+                                          */}
                                         <button
                                             type="button"
                                             onClick={() => setReportTarget({ type: 'user' })}
-                                            className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/72 transition-colors hover:border-white/20 hover:text-white"
+                                            title="Denunciar usuário"
+                                            aria-label="Denunciar usuário"
+                                            className="flex h-9 w-9 flex-none items-center justify-center rounded-full border border-white/10 bg-black/20 text-white/60 transition-colors hover:border-white/25 hover:text-white"
                                         >
-                                            Denunciar
+                                            <FlagIcon className="h-4 w-4" />
                                         </button>
                                         <button
                                             type="button"
                                             onClick={() => setShowBlockConfirm(true)}
-                                            className={`rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] transition-colors ${
+                                            title={isSelectedUserBlocked ? 'Desbloquear usuário' : 'Bloquear usuário'}
+                                            aria-label={isSelectedUserBlocked ? 'Desbloquear usuário' : 'Bloquear usuário'}
+                                            className={`flex h-9 w-9 flex-none items-center justify-center rounded-full border transition-colors ${
                                                 isSelectedUserBlocked
                                                     ? 'border-emerald-500/30 bg-emerald-500/12 text-emerald-200 hover:border-emerald-400/45'
                                                     : 'border-red-500/25 bg-red-500/10 text-red-200 hover:border-red-400/40'
                                             }`}
                                         >
-                                            {isSelectedUserBlocked ? 'Desbloquear' : 'Bloquear'}
+                                            <BanIcon className="h-4 w-4" />
                                         </button>
                                     </>
                                 )}
@@ -427,13 +441,25 @@ export const DirectMessages: React.FC<{ initialParticipantId?: string | null }> 
                                                     )}
                                                 </div>
                                             </div>
+                                            {/*
+                                              * DENUNCIAR UMA MENSAGEM E EXCECAO, E NAO LEGENDA.
+                                              *
+                                              * Isto era "DENUNCIAR MENSAGEM" em caixa alta sob CADA
+                                              * mensagem recebida — mais destacado que o proprio texto
+                                              * que a pessoa veio ler, repetido conversa abaixo. Vira
+                                              * um simbolo miudo ao lado da bolha, com o nome no
+                                              * `title`: continua a um toque de distancia para quem
+                                              * precisar, e some do caminho de quem so quer conversar.
+                                              */}
                                             {!isMe && (
                                                 <button
                                                     type="button"
                                                     onClick={() => setReportTarget({ type: 'message', message: msg })}
-                                                    className="mt-1 mr-1 text-[10px] font-black uppercase tracking-[0.14em] text-white/60 transition-colors hover:text-red-200"
+                                                    title="Denunciar mensagem"
+                                                    aria-label="Denunciar mensagem"
+                                                    className="mt-1 flex h-7 w-7 items-center justify-center rounded-full text-white/25 transition-colors hover:bg-white/5 hover:text-red-300"
                                                 >
-                                                    Denunciar mensagem
+                                                    <FlagIcon className="h-3.5 w-3.5" />
                                                 </button>
                                             )}
                                         </div>
@@ -460,7 +486,9 @@ export const DirectMessages: React.FC<{ initialParticipantId?: string | null }> 
                                     value={inputValue}
                                     onChange={(e) => setInputValue(e.target.value)}
                                     onKeyDown={handleKeyDown}
-                                    placeholder="Escreva sua mensagem..."
+                                    /* "Escreva sua mensagem..." quebrava em duas linhas no campo
+                                       estreito e a segunda saia cortada pela altura de uma linha. */
+                                    placeholder="Mensagem"
                                     rows={1}
                                     className="custom-scrollbar max-h-32 w-full resize-none rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-[13px] text-white transition-all placeholder-gray-400 focus:border-[var(--skin-accent-color)]/50 focus:bg-white/10 focus:outline-none"
                                     style={{ height: 'auto' }}

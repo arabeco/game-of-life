@@ -1,4 +1,4 @@
-import { FloatingActionDock } from '../components/FloatingActionDock';
+﻿import { FloatingActionDock } from '../components/FloatingActionDock';
 import './arena-groups.css';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
@@ -13,7 +13,6 @@ import { MiniCycleHUD } from '../components/MiniCycleHUD';
 import { useCodexBuilder } from '../contexts/CodexBuilderContext';
 import { IconPickerModal } from '../components/IconPickerModal';
 import { FolderDetailModal } from '../components/FolderDetailModal';
-import { CampaignDetailModal } from '../components/CampaignDetailModal';
 import { CampaignsCodex } from '../components/CampaignsCodex';
 import { CreateCampaignModal } from '../components/CreateCampaignModal';
 import { CampaignArenaStack } from '../components/CampaignArenaStack';

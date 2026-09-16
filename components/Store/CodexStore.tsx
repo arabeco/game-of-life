@@ -9,7 +9,14 @@ import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../../util
 import { getCampaignPriceForProfile } from '../../utils/premiumAccess';
 import { CampaignArenaStack } from '../CampaignArenaStack';
 import { CodexCoverArt as SharedCodexCoverArt } from '../CodexCoverArt';
+import { ASSET_ACCENT_COLORS } from '../../constants/assetVisuals';
 import { CampaignRecommendationQuizModal } from './CampaignRecommendationQuizModal';
+
+/* O mesmo chanfro de oito cantos da placa de ciclo e da placa do legado. */
+const CANTO_DO_CARD = 14;
+const recorteDoCard = {
+    clipPath: `polygon(${CANTO_DO_CARD}px 0, calc(100% - ${CANTO_DO_CARD}px) 0, 100% ${CANTO_DO_CARD}px, 100% calc(100% - ${CANTO_DO_CARD}px), calc(100% - ${CANTO_DO_CARD}px) 100%, ${CANTO_DO_CARD}px 100%, 0 calc(100% - ${CANTO_DO_CARD}px), 0 ${CANTO_DO_CARD}px)`,
+};
 import { hasCompletedFreeCampaignQuiz } from '../../utils/campaignQuiz';
 import {
     CATEGORY_LABELS,
@@ -45,6 +52,10 @@ type CatalogEntry = {
     template: any;
     preview: CodexCampaignPreview;
     goldPrice: number;
+    /* O preco de tabela, antes do desconto do Platinum. O card compara os dois
+       para dizer de quanto foi o abatimento — sem ele, o beneficio pago some
+       justamente na tela da compra. */
+    listPrice: number;
     isFree: boolean;
     actionCount: number;
     coverVisual?: string;
@@ -417,21 +428,57 @@ export const CodexStore: React.FC = () => {
                 {filteredEntries.length > 0 ? (
                     <div className="grid grid-cols-2 gap-3">
                         {filteredEntries.map(({ codex, template, preview, coverVisual, actionCount, goldPrice, listPrice, isFree }) => {
+                            /*
+                             * A COR DA CAMPANHA VEM DAS ARENAS QUE ELA REUNE.
+                             *
+                             * Nao ha paleta nova a inventar nem escolha a pedir: arena ja
+                             * tem `assetId`, e `ASSET_ACCENT_COLORS` e a MESMA fonte que
+                             * pinta os Feitos. Assim a familia fecha — a placa e pintada
+                             * pelo patamar, o Feito pela arena, e a campanha pelas arenas
+                             * que ela junta. Sem nenhuma declarada, cai num aco neutro.
+                             */
+                            const arenaComCor = preview.arenas.find((arena) => arena.assetId && ASSET_ACCENT_COLORS[arena.assetId as keyof typeof ASSET_ACCENT_COLORS]);
+                            const tomDaCampanha = (arenaComCor?.assetId && ASSET_ACCENT_COLORS[arenaComCor.assetId as keyof typeof ASSET_ACCENT_COLORS]) || '#687380';
                             const ownedCodex = userCodexes.find((userCodex) => userCodex.catalog_id === codex.id || userCodex.name === codex.title) || null;
                             const isOwned = Boolean(ownedCodex);
                             const isInstalled = Boolean(ownedCodex && installedCodexIds.has(ownedCodex.id));
 
                             return (
-                                <GlassCard
+                                /*
+                                 * O CARD DA CAMPANHA NA GRAMATICA DAS PLACAS.
+                                 *
+                                 * Era um `GlassCard` arredondado com borda de 1px — o dialeto
+                                 * anterior, o mesmo que os quadros do ciclo falavam antes de
+                                 * entrarem na familia. Agora usa o chanfro de oito cantos e a
+                                 * moldura de `border-image` que corre do escuro ao claro varias
+                                 * vezes, igual a placa de ciclo e a do legado.
+                                 */
+                                <div
                                     key={codex.id}
-                                    variant="neutral"
-                                    className={`relative min-h-[17rem] overflow-hidden border-white/10 p-2 ${!isFree ? 'bg-[radial-gradient(circle_at_top,rgba(168,36,36,0.12),transparent_58%),linear-gradient(180deg,rgba(26,16,18,0.98),rgba(11,10,12,0.98))]' : ''}`}
+                                    className="relative flex min-h-[17rem] flex-col gap-2 overflow-hidden p-2"
+                                    style={{
+                                        background: [
+                                            `radial-gradient(ellipse at 50% 0%, ${tomDaCampanha}26, transparent 62%)`,
+                                            'linear-gradient(180deg, rgba(14,14,16,0.98), rgba(8,8,10,0.98))',
+                                        ].join(', '),
+                                        ...recorteDoCard,
+                                    }}
                                 >
+                                    <span
+                                        aria-hidden="true"
+                                        className="pointer-events-none absolute inset-[3px] z-[2]"
+                                        style={{
+                                            border: '1px solid transparent',
+                                            borderImageSource: `linear-gradient(135deg, ${tomDaCampanha}cc 0%, ${tomDaCampanha}44 26%, ${tomDaCampanha}aa 52%, rgba(255,255,255,0.12) 78%, ${tomDaCampanha}88 100%)`,
+                                            borderImageSlice: 1,
+                                            ...recorteDoCard,
+                                        }}
+                                    />
                                     <div className="relative z-10 flex h-full flex-col gap-2">
                                         <button
                                             type="button"
                                             onClick={() => setCampaignPreview(preview)}
-                                            className="flex flex-1 flex-col overflow-hidden rounded-xl border border-white/10 bg-black/18 text-left transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.04]"
+                                            className="flex flex-1 flex-col overflow-hidden rounded-lg border border-white/8 bg-black/25 text-left transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.04]"
                                         >
                                             <div className="relative h-[4.75rem] shrink-0 overflow-hidden bg-black/30">
                                                 <SharedCodexCoverArt cover={coverVisual} title={codex.title} />
@@ -465,6 +512,19 @@ export const CodexStore: React.FC = () => {
                                             </div>
                                         </button>
 
+                                        {/* O selo do desconto: legivel, e dizendo de onde vem.
+                                            Riscado dentro do botao ninguem lia; aqui a conta
+                                            aparece inteira — quanto era, quanto e, e por que. */}
+                                        {!isFree && !isOwned && !isInstalled && listPrice > goldPrice && (
+                                            <div
+                                                className="flex items-center justify-center gap-1.5 rounded-md px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em]"
+                                                style={{ background: `${tomDaCampanha}18`, color: `${tomDaCampanha}` }}
+                                            >
+                                                <span className="text-white/40 line-through">{listPrice}</span>
+                                                <span>Platinum · −{Math.round((1 - goldPrice / listPrice) * 100)}%</span>
+                                            </div>
+                                        )}
+
                                         <div className="flex items-center justify-between gap-2 border-t border-white/6 pt-1.5">
                                             {isInstalled ? (
                                                 <div className="inline-flex h-9 flex-1 items-center justify-center gap-1 rounded-xl border border-green-500/30 bg-green-500/12 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.14em] text-green-400">
@@ -490,11 +550,25 @@ export const CodexStore: React.FC = () => {
                                                     disabled={!!purchasing}
                                                     className="luxe-skin-button inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl px-3 text-[10px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
+                                                    {/*
+                                                      * NO BOTAO, SO O NUMERO E O OURO.
+                                                      *
+                                                      * Aqui vinha o preco de tabela riscado. Em 10px,
+                                                      * branco a 45% e com um risco vermelho de 2px por
+                                                      * cima, ele nao se lia como preco: virava um borrao
+                                                      * de tres, dois ou um pontinho conforme a
+                                                      * quantidade de digitos.
+                                                      *
+                                                      * O desconto NAO sumiu — ele e o beneficio do
+                                                      * Platinum (20%), e esconde-lo no momento da compra
+                                                      * seria o pior lugar possivel. Ele so saiu de
+                                                      * dentro do botao, onde era ilegivel e roubava a
+                                                      * largura do preco, e virou um selo proprio acima
+                                                      * da faixa — onde cabe dizer de quanto e e de onde
+                                                      * vem.
+                                                      */}
                                                     {purchasing === codex.id ? '...' : isFree ? 'Gratis' : (
                                                         <>
-                                                            {listPrice > goldPrice && (
-                                                                <span className="mr-1 text-white/45 line-through decoration-red-400/80 decoration-2">{listPrice}</span>
-                                                            )}
                                                             <span>{goldPrice}</span>
                                                             <span aria-hidden>{'\u{1FA99}'}</span>
                                                         </>
@@ -520,16 +594,14 @@ export const CodexStore: React.FC = () => {
                                                 </button>
                                             )}
 
-                                            <button
-                                                type="button"
-                                                onClick={() => setCampaignPreview(preview)}
-                                                className="h-9 flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[9px] font-black uppercase tracking-[0.16em] text-white/82 transition-all hover:border-[var(--skin-accent-color)]/30 hover:bg-white/10"
-                                            >
-                                                Ver
-                                            </button>
+                                            {/* O "VER" SAIU.
+                                                O card inteiro ja abre o dossie ao toque — o botao
+                                                repetia, ocupando um terco da faixa, a acao que a
+                                                tela toda ja fazia, e espremia o preco, que e o
+                                                unico ali que precisa de espaco. */}
                                         </div>
                                     </div>
-                                </GlassCard>
+                                </div>
                             );
                         })}
                     </div>

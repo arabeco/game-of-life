@@ -572,7 +572,11 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                         className={`rounded-xl border px-5 py-2.5 text-[10px] font-black uppercase tracking-[0.18em] transition-all ${chestOpened || isOpeningChest ? 'cursor-default border-white/[0.04] bg-white/[0.03] text-gray-600' : 'border-[var(--skin-accent-color)]/40 bg-[var(--skin-accent-color)]/10 text-[var(--skin-accent-color)] hover:bg-[var(--skin-accent-color)]/16'}`}
                         title={chestOpened ? 'Recompensas ja entregues' : 'Ver o que este ciclo rendeu'}
                     >
-                        {isOpeningChest ? 'Entregando...' : chestOpened ? 'Recompensas entregues' : 'Abrir o bau do ciclo'}
+                        {/* NAO diz "abrir". O bau e concedido e guardado FECHADO no
+                            Arsenal — abrir ali encadeava o video do selo com o video
+                            do bau e fazia a tela falar com vocabulario de compra. O
+                            botao promete o que ele faz: mostrar o que o ciclo rendeu. */}
+                        {isOpeningChest ? 'Entregando...' : chestOpened ? 'Recompensas entregues' : 'Ver o que este ciclo rendeu'}
                     </button>
                 )}
 

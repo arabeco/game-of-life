@@ -1,9 +1,11 @@
-import React from 'react';
+﻿import React, { useState } from 'react';
 import { FeedEvent, FeedEventType } from '../types';
-import { GlassCard, GlassCardVariant } from './GlassCard';
+import type { GlassCardVariant } from './GlassCard';
 import { useGame } from '../contexts/GameContext';
-import { ArrowRightIcon, CheckCircleIcon, CrownIcon, ShareIcon, SparklesIcon, TrophyIcon, ZapIcon } from './Icons';
-import { shareElementWithFeedback } from './Share';
+import { useConfirmation } from '../hooks/useConfirmation';
+import { ArrowRightIcon, CheckCircleIcon, CrownIcon, SparklesIcon, StarIcon, TrashIcon, TrophyIcon, ZapIcon } from './Icons';
+import { getFeedAppearance } from '../utils/feedAppearance';
+import './feed-cards.css';
 
 type FeedTone = 'major' | 'social' | 'progress';
 
@@ -35,20 +37,18 @@ const getFeedPresentation = (event: FeedEvent): FeedEventPresentation => {
     const title = event.content.title?.trim() || 'Feito sem título';
     const score = event.content.score ?? null;
     const rankName = event.content.rankName?.trim() || 'Novo patamar';
-    const fallbackGlyph = event.content.icon ? (
-        <span className="text-lg leading-none">{event.content.icon}</span>
-    ) : null;
+    // Vector symbols inherit the metal color; color emoji cannot do that.
 
     const iconByType: Record<FeedEventType, React.ReactNode> = {
-        MILESTONE_COMPLETED: fallbackGlyph ?? <TrophyIcon className="h-5 w-5" />,
-        ARENA_COMPLETED: fallbackGlyph ?? <CheckCircleIcon className="h-5 w-5" />,
-        CYCLE_COMPLETED: fallbackGlyph ?? <SparklesIcon className="h-5 w-5" />,
-        PLAYER_RANK_UP: fallbackGlyph ?? <CrownIcon className="h-5 w-5" />,
-        CLAN_RANK_UP: fallbackGlyph ?? <CrownIcon className="h-5 w-5" />,
-        LEVEL_UP: fallbackGlyph ?? <ZapIcon className="h-5 w-5" />,
-        QUEST_COMPLETED: fallbackGlyph ?? <ArrowRightIcon className="h-5 w-5" />,
-        REPORT_COMPLETED: fallbackGlyph ?? <SparklesIcon className="h-5 w-5" />,
-        COMPETITION_COMPLETED: fallbackGlyph ?? <TrophyIcon className="h-5 w-5" />,
+        MILESTONE_COMPLETED: <TrophyIcon className="h-5 w-5" />,
+        ARENA_COMPLETED: <CheckCircleIcon className="h-5 w-5" />,
+        CYCLE_COMPLETED: <SparklesIcon className="h-5 w-5" />,
+        PLAYER_RANK_UP: <CrownIcon className="h-5 w-5" />,
+        CLAN_RANK_UP: <CrownIcon className="h-5 w-5" />,
+        LEVEL_UP: <ZapIcon className="h-5 w-5" />,
+        QUEST_COMPLETED: <ArrowRightIcon className="h-5 w-5" />,
+        REPORT_COMPLETED: <SparklesIcon className="h-5 w-5" />,
+        COMPETITION_COMPLETED: <TrophyIcon className="h-5 w-5" />,
     };
 
     switch (event.type) {
@@ -92,7 +92,7 @@ const getFeedPresentation = (event: FeedEvent): FeedEventPresentation => {
             return {
                 title: rankName,
                 message: 'subiu de patente pessoal',
-                badge: 'Ascensao',
+                badge: 'Ascensão',
                 tone: 'major',
                 variant: 'gold',
                 icon: iconByType[event.type],
@@ -110,7 +110,7 @@ const getFeedPresentation = (event: FeedEvent): FeedEventPresentation => {
             return {
                 title,
                 message: 'evoluiu de nível',
-                badge: 'Nivel',
+                badge: 'Nível',
                 tone: 'progress',
                 variant: 'accent',
                 icon: iconByType[event.type],
@@ -118,8 +118,8 @@ const getFeedPresentation = (event: FeedEvent): FeedEventPresentation => {
         case 'QUEST_COMPLETED':
             return {
                 title,
-                message: 'fechou uma quest',
-                badge: 'Quest',
+                message: event.content.seasonId ? 'concluiu uma missão de temporada' : 'concluiu uma missão',
+                badge: event.content.seasonId ? 'Missão de temporada' : 'Missão',
                 tone: 'progress',
                 variant: 'accent',
                 icon: iconByType[event.type],
@@ -140,36 +140,68 @@ const getFeedPresentation = (event: FeedEvent): FeedEventPresentation => {
                 badge: 'Feito',
                 tone: 'progress',
                 variant: 'neutral',
-                icon: fallbackGlyph ?? <SparklesIcon className="h-5 w-5" />,
+                icon: <SparklesIcon className="h-5 w-5" />,
             };
     }
 };
 
-const toneClasses: Record<FeedTone, { badge: string; iconWrap: string; title: string }> = {
-    major: {
-        badge: 'border-amber-400/30 bg-amber-400/12 text-amber-200',
-        iconWrap: 'border-amber-400/20 bg-amber-400/12 text-amber-100',
-        title: 'text-amber-50',
-    },
-    social: {
-        badge: 'border-sky-400/30 bg-sky-400/12 text-sky-100',
-        iconWrap: 'border-sky-400/20 bg-sky-400/12 text-sky-100',
-        title: 'text-white',
-    },
-    progress: {
-        badge: 'border-emerald-400/30 bg-emerald-400/12 text-emerald-100',
-        iconWrap: 'border-emerald-400/20 bg-emerald-400/12 text-emerald-100',
-        title: 'text-white',
-    },
-};
-
 export const FeedEventCard: React.FC<{ event: FeedEvent }> = ({ event }) => {
-    const { friends, userProfile, showToast } = useGame();
+    const { friends, userProfile, showToast, deleteFeedEvent, toggleFeedLike } = useGame();
+    const { confirm, confirmationElement } = useConfirmation();
+    const [removendo, setRemovendo] = useState(false);
+
+    /**
+     * O botao so existe quando a base sabe contar curtidas.
+     *
+     * `likes` chega indefinido em base sem a tabela — e ai o cartao desenha sem o
+     * botao, em vez de mostrar um zero que na verdade e "nao sei".
+     */
+    const temCurtidas = typeof event.likes === 'number';
+    const curtidas = Number(event.likes) || 0;
+    const curtido = Boolean(event.likedByMe);
+
+    /* QUEM CURTIU NAO APARECE, e isso e escolha, nao limitacao: o numero diz
+       "alguem viu e achou bom", e basta. A lista diria "fulano viu e beltrano
+       nao", e transformaria o Hall num lugar de cobrar presenca. */
+    const botaoDeCurtir = temCurtidas ? (
+        <button
+            type="button"
+            onClick={() => void toggleFeedLike(event.id)}
+            aria-pressed={curtido}
+            aria-label={curtido ? `Tirar curtida. ${curtidas} no total` : `Curtir. ${curtidas} no total`}
+            className={`feed-like-button ${curtido ? 'is-curtido' : ''}`}
+            data-html2canvas-ignore
+        >
+            <StarIcon className="h-3.5 w-3.5" />
+            <span className="feed-like-count">{curtidas}</span>
+        </button>
+    ) : null;
+    /**
+     * So o autor apaga, e a decisao final e da RLS.
+     *
+     * Este booleano decide o que DESENHAR. Quem decide o que acontece e a
+     * politica no banco — o botao escondido nunca foi seguranca, e a checagem
+     * la continua valendo mesmo que esta aqui erre.
+     */
+    const souOAutor = Boolean(userProfile?.id) && event.userId === userProfile.id;
+
+    const removerDoMural = async () => {
+        if (removendo) return;
+        if (!(await confirm({
+            title: 'Tirar do mural',
+            message: 'Este feito sai do seu mural e da aba Feitos. A conquista em si continua sua.',
+            confirmLabel: 'TIRAR',
+            variant: 'danger',
+        }))) return;
+        setRemovendo(true);
+        try { await deleteFeedEvent(event.id); } finally { setRemovendo(false); }
+    };
+
     const allUsers = [userProfile, ...friends];
     const author = allUsers.find((user) => user.id === event.userId);
     const authorName = event.authorNickname || author?.nickname || 'Soberano';
-    const authorAvatar = event.authorAvatarUrl || author?.avatarUrl || '';
-    const authorClanName = event.authorClanName?.trim() || author?.clanName || '';
+
+
 
     if (!author && !event.authorNickname) return null;
 
@@ -183,116 +215,36 @@ export const FeedEventCard: React.FC<{ event: FeedEvent }> = ({ event }) => {
      * mentira; nao ter o dado e so nao ter o dado.
      */
     const numerosDoFeito = [
-        event.content.deliveries ? `${event.content.deliveries} ${event.content.deliveries === 1 ? 'entrega' : 'entregas'}` : null,
-        event.content.actionCount ? `${event.content.actionCount} ${event.content.actionCount === 1 ? 'ação' : 'ações'}` : null,
-        event.content.days ? `${event.content.days} ${event.content.days === 1 ? 'dia' : 'dias'}` : null,
-    ].filter((parte): parte is string => Boolean(parte));
-    const palette = toneClasses[presentation.tone];
-
+        { value: event.content.actionCount, label: 'ações' },
+        { value: event.content.deliveries, label: 'entregas' },
+        { value: event.content.days, label: 'dias ativos' },
+        { value: event.content.exp, label: 'EXP ganhos' },
+        { value: event.content.minutes, label: 'min registrados' },
+    ].filter((stat) => typeof stat.value === 'number' && Number.isFinite(stat.value) && stat.value >= 0);
     return (
-        <GlassCard
-            id={`feed-event-${event.id}`}
-            variant={presentation.variant}
-            className="animate-fade-in overflow-hidden p-0"
-        >
-            <div className="relative overflow-hidden">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.12),transparent_45%)]" />
-                {/* Eram TRES blocos empilhados com respiro de 4, e o do meio repetia a
-                    estrutura do de cima: outro icone de 44px so para carregar um
-                    titulo. Autor-e-acao numa linha e o objeto em outra, cada uma com
-                    seu proprio icone grande, davam quase 200px por evento — quatro
-                    eventos nao cabiam numa tela.
-
-                    Agora o objeto entra como uma FAIXA de uma linha, com o icone
-                    pequeno: continua sendo o destaque do cartao, sem ser um cartao
-                    dentro do cartao. */}
-                {/* O feito no centro, o resto na margem.
-                    Alinhado a esquerda, o titulo terminava no meio do cartao e o
-                    que sobrava a direita lia como espaco esquecido. Centralizado,
-                    a mesma largura vira moldura — e num feed de AVANCOS o item
-                    concluido merece ser apresentado como placa, nao como linha de
-                    registro.
-                    Tudo que e secundario — autor, acao, horario e os dois botoes —
-                    desce para uma unica linha miuda por cima. Os icones estavam
-                    quebrando a simetria do centro so para ficarem ao lado do
-                    titulo, e nenhum dos dois e o motivo do cartao existir. */}
-                <div className="relative space-y-1 px-3 py-2.5">
-                    <div className="flex items-center gap-2">
-                        {authorAvatar ? (
-                            <img
-                                src={authorAvatar}
-                                alt={authorName}
-                                className="h-5 w-5 shrink-0 rounded-full border border-white/15 object-cover"
-                            />
-                        ) : (
-                            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[8px] font-semibold text-white/80">
-                                {authorName.slice(0, 2).toUpperCase()}
-                            </div>
+        <>
+            <article id={`feed-event-${event.id}`} className="feed-achievement-card" data-feat-type={event.type} style={getFeedAppearance(event)}>
+                <div className="feat-topline">
+                    <div className="feat-medallion" aria-hidden="true">{presentation.icon}</div>
+                    <p className="feat-author"><strong>{authorName}</strong></p>
+                    <div className="feat-controls">
+                        <time dateTime={event.timestamp} className="feat-time">{timeAgo(new Date(event.timestamp))}</time>
+                        {botaoDeCurtir}
+                        {souOAutor && (
+                            <button type="button" aria-label="Tirar este feito do mural" disabled={removendo}
+                                onClick={() => void removerDoMural()} className="feat-remove" data-html2canvas-ignore>
+                                <TrashIcon className="h-4 w-4" />
+                            </button>
                         )}
-
-                        <p className="min-w-0 flex-1 truncate text-[10px] leading-tight text-white/40">
-                            <span className="font-semibold text-white/70">{authorName}</span>
-                            <span> · {presentation.message}</span>
-                        </p>
-
-                        <span className="shrink-0 text-[9px] uppercase tracking-[0.12em] text-white/25">
-                            {timeAgo(new Date(event.timestamp))}
-                        </span>
-
-                        {/* Coroa decorativa, nao botao.
-                            Estava escrita como <button> sem onClick nenhum: recebia foco,
-                            era anunciada como botao para leitor de tela e nao fazia nada.
-                            Botao que nao age e pior do que icone parado, porque promete um
-                            toque que nao existe. Os estilos de hover ficaram — sao herança
-                            de quando ela ia fazer algo — e nada mais muda na tela. */}
-                        <span
-                            aria-hidden="true"
-                            className="inline-flex shrink-0 rounded-full p-1 text-white/20"
-                            data-html2canvas-ignore
-                        >
-                            <CrownIcon className="h-3.5 w-3.5" />
-                        </span>
-                        <button
-                            onClick={() => {
-                                void shareElementWithFeedback(showToast, `feed-event-${event.id}`, {
-                                    title: `Conquista de ${authorName} - Life OS`,
-                                    preparingMessage: 'Preparando compartilhamento da conquista...',
-                                    sharedMessage: 'Conquista compartilhada.',
-                                    cancelledMessage: 'Compartilhamento cancelado.',
-                                    errorMessage: 'Não foi possível preparar a conquista para compartilhar.',
-                                });
-                            }}
-                            className="shrink-0 rounded-full p-1 text-white/20 transition-colors hover:bg-white/5 hover:text-white"
-                            data-html2canvas-ignore
-                        >
-                            <ShareIcon className="h-3.5 w-3.5" />
-                        </button>
                     </div>
-
-                    <p className={`flex items-center justify-center gap-2 text-center text-[17px] font-black leading-tight ${palette.title}`}>
-                        <span className="shrink-0 text-xl leading-none" aria-hidden>{presentation.icon}</span>
-                        <span className="truncate">{presentation.title}</span>
-                    </p>
-
-                    {/* Os numeros do feito, quando o evento os gravou.
-                        "Concluiu Academia" nao deixa ninguem se achar no proprio
-                        feito: cinco acoes em tres dias e trinta e quatro entregas em
-                        vinte e um dias sao historias diferentes com o mesmo titulo.
-                        Eventos antigos nao tem esses campos e simplesmente nao
-                        mostram a linha — instantaneo que nao foi tirado nao se
-                        inventa depois. */}
-                    {numerosDoFeito.length > 0 && (
-                        <p className="flex items-center justify-center gap-2 pb-0.5 text-center text-[10px] font-bold uppercase tracking-[0.1em] text-white/35">
-                            {numerosDoFeito.map((parte, indice) => (
-                                <span key={parte} className="flex items-center gap-2">
-                                    {indice > 0 && <span className="text-white/15">·</span>}
-                                    {parte}
-                                </span>
-                            ))}
-                        </p>
-                    )}
                 </div>
-            </div>
-        </GlassCard>
+                <div className="feat-body">
+                    <div className="feat-category"><span />{presentation.message}<span /></div>
+                    <h3 className="feed-achievement-title">{presentation.title}</h3>
+                    {numerosDoFeito.length > 0 && <dl className="feat-details">{numerosDoFeito.map(stat => <div key={stat.label}><dd>{stat.value!.toLocaleString('pt-BR')}</dd><dt>{stat.label}</dt></div>)}</dl>}
+                </div>
+            </article>
+            {confirmationElement}
+        </>
     );
 };

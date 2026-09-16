@@ -205,28 +205,31 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
      */
     const primaryButtonClass = 'luxe-skin-button luxe-brilho flex min-w-[13rem] items-center justify-center gap-3 px-10 py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-transform active:scale-[0.97]';
 
-    const handlePostToFeed = () => {
-        if (!canShareAchievement) return;
+    const handlePostToFeed = async () => {
+        if (!canShareAchievement) return false;
 
         let content;
         switch (achievement.type) {
             case 'MILESTONE_COMPLETED':
             case 'ARENA_COMPLETED':
-                content = { title: achievement.data.name, icon: achievement.data.icon };
+                content = { title: achievement.data.name, icon: achievement.data.icon, assetId: achievement.data.assetId, actionCount: achievement.data.actionCount, deliveries: achievement.data.deliveries, days: achievement.data.days, minutes: achievement.data.minutes };
                 break;
             case 'PLAYER_RANK_UP':
             case 'CLAN_RANK_UP':
-                content = { rankName: achievement.data.name, icon };
+                content = { title: achievement.data.name, rankName: achievement.data.name, icon };
                 break;
             case 'QUEST_COMPLETED':
+                content = { title: achievement.data.title || 'Missão concluída', icon, seasonId: achievement.data.seasonId, exp: achievement.data.reward?.exp };
+                break;
             case 'REPORT_COMPLETED':
                 content = { title: achievement.data.title || 'Relatório de Ciclo', icon };
                 break;
             default:
                 content = { title: 'Feito notável' };
         }
-        addFeedEvent({ type: achievement.type, content });
-        handleClose();
+        const published = await addFeedEvent({ type: achievement.type, content });
+        if (published) { showToast('Feito publicado em Feitos.', 'success'); handleClose(); }
+        return published;
     };
 
     const handleClose = () => {
@@ -387,7 +390,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                                         {canShareAchievement && (
                                             <button
                                                 type="button"
-                                                aria-label="Compartilhar no Feed"
+                                                aria-label="Compartilhar em Feitos"
                                                 onClick={handlePostToFeed}
                                                 className="absolute right-0 grid h-11 w-11 shrink-0 place-items-center border border-white/15 bg-white/[0.045] text-white/68 transition-colors hover:border-white/28 hover:bg-white/[0.08] hover:text-white"
                                             >

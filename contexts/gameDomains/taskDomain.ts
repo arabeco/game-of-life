@@ -83,7 +83,6 @@ interface CreateTaskDomainParams {
     handleCompetitionArenaCompletion?: (arenaId: string) => Promise<void>;
     onDailyProofActionCompleted?: (payload: { task: ScheduledTask; action?: Action; tasksAfterChange: ScheduledTask[] }) => void;
     setAchievementUnlocked: (achievement: AchievementState) => void;
-    addFeedEvent: (eventData: Pick<FeedEvent, 'type' | 'content'>) => void;
     getLocalDateString: (date?: Date) => string;
     mapToSnakeCase: (value: any) => any;
     addProfileFlag: (flag: string) => void;
@@ -125,7 +124,6 @@ export const createTaskDomain = ({
     handleCompetitionArenaCompletion,
     onDailyProofActionCompleted,
     setAchievementUnlocked,
-    addFeedEvent,
     getLocalDateString,
     mapToSnakeCase,
     addProfileFlag,
@@ -401,16 +399,6 @@ export const createTaskDomain = ({
             entregasDaArena.map((task) => getTaskOperationalDateString(task)).filter(Boolean),
         );
 
-        addFeedEvent({
-            type: 'ARENA_COMPLETED',
-            content: {
-                title: arena.name,
-                icon: arena.icon || '🏟️',
-                actionCount: arenaActions.length,
-                deliveries: entregasDaArena.length,
-                days: diasDaArena.size,
-            }
-        });
 
         setAchievementUnlocked({
             type: 'ARENA_COMPLETED',
@@ -418,8 +406,10 @@ export const createTaskDomain = ({
                 name: arena.name,
                 icon: arena.icon || '🏛️',
                 arenaId: arena.id,
+                assetId: arena.assetId,
                 actionCount: arenaActions.length,
                 deliveries: entregasDaArena.length,
+                minutes: entregasDaArena.reduce((sum, task) => sum + Math.max(0, task.duration || 0), 0),
                 days: diasDaArena.size,
             }
         });
@@ -876,11 +866,7 @@ export const createTaskDomain = ({
 
         if (updatedTask.completed && action.actionType === 'Marco') {
             setAchievementUnlocked({ type: 'MILESTONE_COMPLETED', data: action });
-            addFeedEvent({
-                type: 'MILESTONE_COMPLETED',
-                content: { title: action.name, icon: action.icon }
-            });
-        }
+            }
 
         const arena = getArenas().find(item => item.id === action.arenaId);
         const userId = getSupabaseUserId();
@@ -1270,10 +1256,6 @@ export const createTaskDomain = ({
         maybePromptDailyPanelFollowUp(newTask, action);
         onDailyProofActionCompleted?.({ task: newTask, action, tasksAfterChange: [...tasks, newTask] });
         setAchievementUnlocked({ type: 'MILESTONE_COMPLETED', data: action });
-        addFeedEvent({
-            type: 'MILESTONE_COMPLETED',
-            content: { title: action.name, icon: action.icon }
-        });
     };
 
     const deleteTask = (taskId: string) => {

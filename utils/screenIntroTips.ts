@@ -132,10 +132,10 @@ export const SCREEN_INTRO_TIPS: Record<ScreenIntroTipId, ScreenIntroTipDef> = {
   },
   hall: {
     id: 'hall',
-    label: 'Hall',
+    label: 'Feitos',
     title: 'Sua vitrine de legado.',
-    summary: 'Aqui aparecem conquistas, reputacao e sinais publicos do que você construiu.',
-    items: ['olhe como seu perfil aparece para fora.'],
+    summary: 'Em Feitos, você acompanha as conquistas compartilhadas por você e pelos outros jogadores.',
+    items: ['use Compartilhar em Feitos no resultado de uma conquista para publicá-la aqui.'],
   },
   store: {
     id: 'store',

@@ -426,7 +426,7 @@ export const DailyPanelContent: React.FC<{
                 score: dayProgress,
             },
         });
-        showToast('Resumo diário postado no feed.', 'success');
+        showToast('Resumo diário postado em Feitos.', 'success');
     };
 
     // Quantas linhas cabem sem rolagem. Numero fixo porque a altura disponivel
@@ -880,7 +880,7 @@ export const DailyPanelContent: React.FC<{
             <ShareChoiceSheet
                 isOpen={isShareChoiceOpen}
                 title="Resumo diário"
-                subtitle="Escolha se quer compartilhar a imagem ou publicar esse resumo no feed."
+                subtitle="Escolha se quer compartilhar a imagem ou publicar esse resumo em Feitos."
                 onShareImage={handleShareImage}
                 onPostToFeed={handlePostToFeed}
                 onClose={() => setIsShareChoiceOpen(false)}

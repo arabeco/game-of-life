@@ -1181,8 +1181,14 @@ export interface FeedEvent {
     actionCount?: number;
     deliveries?: number;
     days?: number;
+    assetId?: string;
+    seasonId?: string;
+    exp?: number;
+    minutes?: number;
   };
   timestamp: string;
+  likes?: number;
+  likedByMe?: boolean;
 }
 
 export type RelationshipLinkType = 'mentoria' | 'parceria' | 'competicao';

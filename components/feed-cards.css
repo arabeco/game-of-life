@@ -1,0 +1,117 @@
+/* Feitos: typography, fine metal edges and breathing room. No image assets. */
+.feed-achievement-card {
+  --feat-accent: #e9c981;
+  --feat-rgb: 233, 201, 129;
+  --feat-hue: #87744e;
+  --feat-hue-secondary: #514535;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid rgba(var(--feat-rgb), .65);
+  border-radius: 15px;
+  color: #f5f0e7;
+  background: linear-gradient(118deg, transparent 18%, rgba(218, 223, 230, .022) 39%, transparent 53%), radial-gradient(ellipse at 9% 15%, color-mix(in srgb, var(--feat-hue) 11%, transparent), transparent 82%), radial-gradient(ellipse at 86% 90%, color-mix(in srgb, var(--feat-hue-secondary) 7%, transparent), transparent 86%), linear-gradient(120deg, #030405, #08090b 42%, #020304 76%, #070809);
+  box-shadow: inset 0 0 0 3px #0c0e10, inset 0 0 0 4px rgba(var(--feat-rgb), .11), 0 5px 22px #0003;
+}
+.feed-achievement-card::before {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--feat-accent), transparent);
+  box-shadow: 0 0 8px rgba(var(--feat-rgb), .4);
+}
+.feat-topline { display: flex; align-items: center; gap: 12px; padding: 4px 12px 0; }
+.feat-medallion { display: flex; align-items: center; justify-content: center; flex: 0 0 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(var(--feat-rgb), .6); color: var(--feat-accent); background: linear-gradient(145deg, rgba(var(--feat-rgb), .13), transparent 65%); box-shadow: inset 0 0 0 3px #0c0e10, inset 0 0 0 4px rgba(var(--feat-rgb), .09); }
+.feat-author { min-width: 0; flex: 1; margin: 0; font-size: 10px; line-height: 1.4; }
+.feat-author strong { display: block; color: var(--feat-accent); font-family: Georgia, 'Times New Roman', serif; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.feat-controls { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.feat-time { color: #bcb8b0; font-size: 10px; margin-right: 5px; font-variant-numeric: tabular-nums; }
+.feed-achievement-card .feed-like-button { min-width: 44px; min-height: 44px; justify-content: center; border: 1px solid rgba(var(--feat-rgb), .5); color: var(--feat-accent); background: linear-gradient(135deg, rgba(var(--feat-rgb), .1), transparent); padding: 5px 8px; }
+.feed-achievement-card .feed-like-button.is-curtido { background: rgba(var(--feat-rgb), .18); color: var(--feat-accent); }
+.feat-remove { min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; justify-content: center; color: #ccd0d7; border-radius: 50%; }
+.feat-remove:hover { color: #f1f3f7; background: #ffffff0a; }
+.feat-remove:disabled { opacity: .4; }
+.feed-achievement-card button:focus-visible { outline: 2px solid var(--feat-accent); outline-offset: 3px; }
+.feat-body { padding: 0 14px 8px; text-align: center; }
+.feat-category { display: flex; align-items: center; justify-content: center; gap: 14px; color: var(--feat-accent); font-size: 10px; line-height: 14px; font-weight: 500; letter-spacing: .13em; text-transform: uppercase; }
+.feat-category > span { flex: 0 1 30px; min-width: 10px; width: 30px; height: 1px; background: linear-gradient(90deg, transparent, rgba(var(--feat-rgb), .5)); }
+.feat-category > span:last-child { transform: rotate(180deg); }
+.feed-achievement-title { margin: 3px 0 0; color: #f7f2e9; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(21px, 4.8vw, 25px); font-weight: 400; line-height: 1.15; letter-spacing: -.025em; white-space: normal; overflow-wrap: anywhere; text-wrap: balance; }
+.feat-details { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 14px; margin: 5px 0 0; padding-top: 4px; line-height: 16px; border-top: 1px solid rgba(var(--feat-rgb), .13); }
+.feat-details > div { display: flex; align-items: baseline; gap: 4px; }
+.feat-details dd { margin: 0; font-family: Georgia, serif; font-size: 15px; color: var(--feat-accent); font-variant-numeric: tabular-nums; }
+.feat-details dt { color: #bdb9b1; font-size: 9px; }
+@media (max-width: 380px) {
+  .feat-topline { padding: 3px 10px 0; gap: 6px; }
+  .feat-medallion { flex-basis: 28px; height: 28px; }
+  .feat-author strong { font-size: 13px; }
+  .feat-controls { gap: 0; }
+  .feat-time { margin-right: 0; font-size: 9px; }
+  .feat-body { padding: 0 12px 7px; }
+  .feat-category { letter-spacing: .08em; gap: 8px; font-size: 10px; }
+  .feat-category > span { width: 28px; }
+  .feat-details { gap: 5px 12px; }
+}
+.feed-daily-post { background: linear-gradient(145deg, #2f2b22, #11191d 70%); border: 1px solid #766b51; color: #f3ecdc; border-radius: 20px; overflow: hidden; }
+.feed-share-control { min-width: 40px; min-height: 40px; color: #f1d599; }
+.feed-daily-post { padding: 12px; }
+.feed-daily-author { font-size: 12px; padding: 0 2px 10px; color: #d7cfbf; }
+.feed-share-control { display: flex; align-items: center; gap: 8px; margin-left: auto; font-size: 12px; padding: 8px; }
+
+/* A linha de controles do cartao do dia. Compartilhar e, para o autor, tirar do
+   mural. Os dois lado a lado; em tela estreita, um embaixo do outro. */
+.feed-daily-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.feed-daily-controls .feed-share-control {
+  flex: 1 1 auto;
+  min-width: 10rem;
+  justify-content: center;
+}
+
+/* A CURTIDA.
+   Mesma altura dos outros controles do cartao para a fileira nao serrilhar, e
+   `tabular-nums` no contador para o botao nao mudar de largura quando passa de
+   9 para 10 — largura que dança a cada toque le como instabilidade. */
+.feed-like-button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.28rem;
+  border-radius: 999px;
+  padding: 0.2rem 0.5rem 0.2rem 0.42rem;
+  color: rgba(255, 255, 255, 0.34);
+  transition: color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+
+.feed-like-button:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.feed-like-button.is-curtido {
+  color: var(--skin-accent-color);
+  background-color: color-mix(in srgb, var(--skin-accent-color) 12%, transparent);
+}
+
+.feed-like-button.is-curtido svg {
+  fill: currentColor;
+}
+
+.feed-like-button:active {
+  transform: scale(0.94);
+}
+
+.feed-like-count {
+  font-size: 0.68rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}

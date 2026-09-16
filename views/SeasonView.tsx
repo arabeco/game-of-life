@@ -1,8 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { useGame, PROFILE_FLAG_TUTORIAL_COMPLETED } from '../contexts/GameContext';
 import { GlassCard } from '../components/GlassCard';
 import { ConfirmationModal } from '../components/ConfirmationModal';
-import { ChevronRightIcon, UsersIcon, CheckIcon, XIcon } from '../components/Icons';
+import { ChevronRightIcon, ChevronDownIcon, UsersIcon, CheckIcon, XIcon } from '../components/Icons';
 import { SeasonMission, SeasonQuest } from '../types';
 import { MissionDetailModal, QuestDetailModal, SeasonDetailModal, SeasonTransitionModal } from '../components/SeasonDetailModal';
 import { calculateArenaProgress } from '../utils/progressUtils';
@@ -41,20 +41,32 @@ const formatMissionReward = (mission: SeasonMission): string => {
     return category === 'ornament' ? 'Ornamento · insígnia' : 'Insígnia';
 };
 
+/**
+ * Um grupo de missoes: da temporada, de escolha propria, ou do grupo.
+ *
+ * O CABECALHO SO EXISTE QUANDO HA MAIS DE UM GRUPO. Com um grupo so, a tela
+ * mostrava dois titulos empilhados para um unico card — "MINHAS MISSOES" e logo
+ * abaixo "DA TEMPORADA" —, e a segunda linha nao separava nada de nada. Titulo
+ * de secao serve para dividir; sem divisao, ele so ocupa.
+ *
+ * A dica tambem voltou para junto do titulo. Alinhada a direita da linha, longe
+ * da palavra que ela qualifica, "Atribuidas" parecia legenda de outra coisa.
+ */
 const MissionSection: React.FC<{
     title: string;
     hint: string;
     count: number;
+    mostrarCabecalho?: boolean;
     children: React.ReactNode;
-}> = ({ title, hint, count, children }) => (
+}> = ({ title, hint, count, mostrarCabecalho = true, children }) => (
     <section className="space-y-2">
-        <div className="flex items-baseline justify-between px-1">
-            <div className="flex items-center gap-2">
+        {mostrarCabecalho && (
+            <div className="flex items-baseline gap-2 px-1">
                 <h4 className="text-[10px] font-black uppercase tracking-[0.16em] text-white/62">{title}</h4>
                 <span className="text-[9px] font-bold text-white/28">{count}</span>
+                <span className="text-[9px] text-white/32">· {hint}</span>
             </div>
-            <span className="text-[9px] text-white/32">{hint}</span>
-        </div>
+        )}
         <div className="space-y-2">{children}</div>
     </section>
 );
@@ -516,6 +528,18 @@ export const SeasonView: React.FC = () => {
         + activeClanQuests.length
         + (activeArenaPact ? 1 : 0);
 
+    /*
+     * Quantos grupos de missao a tela vai desenhar.
+     *
+     * Com um so, o cabecalho dele repete o titulo da pagina para um card unico —
+     * entao ele nao aparece. Com dois ou mais, ele volta a fazer o que titulo de
+     * secao faz: dividir.
+     */
+    const gruposDeMissaoVisiveis = (automaticSeasonMissions.length > 0 ? 1 : 0)
+        + ((individualSlotCount > 0 || missaoIndividualDisponivel) ? 1 : 0)
+        + (activeClanQuests.length > 0 ? 1 : 0);
+    const mostrarCabecalhoDeGrupo = gruposDeMissaoVisiveis > 1;
+
     const isGenesis = isGenesisSeason(activeSeason);
     const activeSeasonBackground = resolveSeasonBackgroundUrl(activeSeason);
     const activeSeasonLore = resolveSeasonLoreText(activeSeason);
@@ -600,8 +624,22 @@ export const SeasonView: React.FC = () => {
                         <div className="flex items-center justify-between border-b border-white/10 px-1 pb-2">
                             <div className="flex items-center gap-2.5">
                                 <h3 className="text-sm font-black uppercase tracking-[0.12em] text-white/82">Minhas missões</h3>
+                                {/*
+                                  * O NUMERO CONTA O QUE ESTA NA TELA.
+                                  *
+                                  * Aqui vinha `chosenMissionCount`, que exclui de proposito as
+                                  * missoes da temporada — a intencao e boa, elas sao atribuidas
+                                  * e nao escolhidas. So que o titulo ao lado diz "Minhas
+                                  * missoes", e a missao da temporada E da pessoa, esta em curso
+                                  * e aparece logo abaixo. O resultado era um "0" cravado em
+                                  * cima de uma missao visivel.
+                                  *
+                                  * `activeMissionCount` ja existia tres linhas adiante e inclui
+                                  * as duas origens. Quem separa escolhida de atribuida sao os
+                                  * grupos abaixo, que e onde a distincao significa algo.
+                                  */}
                                 <span className="flex h-5 min-w-5 items-center justify-center rounded-full border border-white/10 bg-white/7 px-1.5 text-[9px] font-black text-white/55">
-                                    {chosenMissionCount}
+                                    {activeMissionCount}
                                 </span>
                             </div>
                             <button
@@ -614,7 +652,7 @@ export const SeasonView: React.FC = () => {
                         </div>
                         <div className="space-y-5">
                             {automaticSeasonMissions.length > 0 && (
-                                <MissionSection title="Da temporada" hint="Atribuídas" count={automaticSeasonMissions.length}>
+                                <MissionSection title="Da temporada" hint="Atribuídas" count={automaticSeasonMissions.length} mostrarCabecalho={mostrarCabecalhoDeGrupo}>
                                     {automaticSeasonMissions.map((mission) => (
                                         <SeasonQuestCard
                                             key={mission.id}
@@ -636,6 +674,7 @@ export const SeasonView: React.FC = () => {
                                     title="Sua escolha"
                                     hint={`${individualSlotCount}/1 missão`}
                                     count={individualSlotCount}
+                                    mostrarCabecalho={mostrarCabecalhoDeGrupo}
                                 >
                                     {activeSystemQuests.map((quest) => (
                                         <SeasonQuestCard
@@ -696,7 +735,7 @@ export const SeasonView: React.FC = () => {
                             )}
 
                             {activeClanQuests.length > 0 && (
-                                <MissionSection title="Do grupo" hint="Progresso coletivo" count={activeClanQuests.length}>
+                                <MissionSection title="Do grupo" hint="Progresso coletivo" count={activeClanQuests.length} mostrarCabecalho={mostrarCabecalhoDeGrupo}>
                                     {activeClanQuests.map((quest) => (
                                         <SeasonQuestCard
                                             key={quest.id}
@@ -725,24 +764,35 @@ export const SeasonView: React.FC = () => {
                             )}
                         </div>
 
+                        {/*
+                          * O COLAPSO PARECIA CABECALHO, E NAO CONTROLE.
+                          *
+                          * A faixa tinha borda e fundo proprios — mais moldura que as secoes
+                          * acima dela —, entao lia como titulo de mais uma secao em vez de
+                          * algo que se aperta. E dizia "Ver" num canto, palavra que no resto
+                          * desta tela e o botao que ABRE UMA MISSAO.
+                          *
+                          * Agora ela usa a mesma casca das secoes acima e a seta diz sozinha o
+                          * que acontece: apontando para baixo, abre; girada, fecha. Nenhuma
+                          * palavra disputando sentido com outra.
+                          */}
                         {completedEntries.length > 0 && (
-                            <div className="rounded-xl border border-white/8 bg-white/[0.02]">
+                            <div>
                                 <button
                                     type="button"
                                     onClick={() => setCompletedOpen((open) => !open)}
-                                    className="flex w-full items-center justify-between px-3 py-2.5"
+                                    aria-expanded={isCompletedOpen}
+                                    className="flex w-full items-baseline gap-2 px-1 py-1 text-left"
                                 >
-                                    <div className="flex items-center gap-2">
-                                        <CheckIcon className="h-3.5 w-3.5 text-green-400/80" />
-                                        <span className="text-[10px] font-black uppercase tracking-[0.14em] text-white/58">Concluídas</span>
-                                        <span className="text-[9px] font-bold text-white/32">{completedEntries.length}</span>
-                                    </div>
-                                    <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-white/38">
-                                        {isCompletedOpen ? 'Ocultar' : 'Ver'}
-                                    </span>
+                                    <CheckIcon className="h-3.5 w-3.5 shrink-0 translate-y-0.5 text-green-400/80" />
+                                    <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/62">Concluídas</span>
+                                    <span className="text-[9px] font-bold text-white/28">{completedEntries.length}</span>
+                                    <ChevronDownIcon
+                                        className={`ml-auto h-3.5 w-3.5 shrink-0 translate-y-0.5 text-white/38 transition-transform duration-200 ${isCompletedOpen ? 'rotate-180' : ''}`}
+                                    />
                                 </button>
                                 {isCompletedOpen && (
-                                    <div className="space-y-1 px-2.5 pb-2.5">
+                                    <div className="mt-2 space-y-1">
                                         {completedEntries.map((entry) => (
                                             <div key={entry.id} className="flex items-center gap-2.5 rounded-lg border border-white/6 bg-black/20 px-2.5 py-2">
                                                 <span className="text-sm" aria-hidden="true">{entry.icon || '📜'}</span>

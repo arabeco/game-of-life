@@ -2,6 +2,7 @@
 import type { LegacyRenderPayload } from '../types';
 import { LegacyProjectionScene } from '../components/LegacyProjectionScene';
 import { LegacyGrandPlaque } from '../components/LegacyGrandPlaque';
+import { LegacyFinalCard } from '../components/LegacyFinalCard';
 
 const parseLegacyRenderPayload = (rawPayload: string | null): LegacyRenderPayload | null => {
     if (!rawPayload) return null;
@@ -41,6 +42,10 @@ export const LegacyRenderView: React.FC = () => {
     const payload = useMemo(() => parseLegacyRenderPayload(params.get('payload')), [params]);
     const captureMode = params.get('capture') === '1';
     const plaqueOnly = params.get('plaque') === '1';
+    // O quadro final sozinho. E a imagem que o compartilhar do legado exporta;
+    // poder abri-la por caminho deixa o worker headless gerar o mesmo PNG sem
+    // percorrer a cena inteira antes.
+    const finalOnly = params.get('final') === '1';
 
     if (!payload) {
         return (
@@ -56,6 +61,19 @@ export const LegacyRenderView: React.FC = () => {
         );
     }
 
+    if (finalOnly) {
+        return (
+            <div className="flex min-h-screen items-center justify-center overflow-hidden bg-[#050505] p-4 text-white">
+                <LegacyFinalCard
+                    eras={payload.eras}
+                    sovereignName={payload.sovereignName}
+                    identity={payload.fallbackIdentity}
+                    width={390}
+                />
+            </div>
+        );
+    }
+
     if (plaqueOnly) {
         return (
             <div className="flex min-h-screen items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(212,175,55,0.1),_transparent_34%),linear-gradient(180deg,_#10161d,_#030506)] p-4 text-white sm:p-8">
@@ -64,7 +82,6 @@ export const LegacyRenderView: React.FC = () => {
                         eras={payload.eras}
                         sovereignName={payload.sovereignName}
                         identity={payload.fallbackIdentity}
-                        identityMode="current"
                     />
                 </div>
             </div>

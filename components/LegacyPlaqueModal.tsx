@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Portal } from './Portal';
 import { GlassCard } from './GlassCard';
 import { exportElementAsImage, shareElementWithFeedback, shouldPreferNativeShare } from './Share';
@@ -84,7 +84,6 @@ export const LegacyPlaqueModal: React.FC<LegacyPlaqueModalProps> = ({ eras, sove
                                 eras={eras}
                                 sovereignName={sovereignName}
                                 identity={identity}
-                                identityMode="current"
                             />
                             </div>
                         </div>

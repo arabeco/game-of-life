@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { Portal } from './Portal';
 import { GlassCard } from './GlassCard';
 import { LegacyGrandPlaque } from './LegacyGrandPlaque';
@@ -104,7 +104,6 @@ export const LegacyPlaqueForgeModal: React.FC<LegacyPlaqueForgeModalProps> = ({ 
                                     eras={eras}
                                     sovereignName={sovereignName}
                                     identity={identity}
-                                    identityMode="current"
                                     compact={true}
                                     className={`mx-auto transition-all duration-500 ${isClosing ? 'scale-[1.02] blur-[1px]' : 'scale-100'}`}
                                 />

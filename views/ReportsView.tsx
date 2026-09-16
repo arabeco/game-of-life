@@ -1,4 +1,4 @@
-import './readability-fixes.css';
+﻿import './readability-fixes.css';
 
 
 
@@ -15,6 +15,7 @@ import { SupabaseService } from '../services/SupabaseService';
 import type { LegacyEraSummary } from '../components/LegacyExportDocument';
 import { LegacyPlaqueArtifact } from '../components/LegacyPlaqueArtifact';
 import { LegacyGrandPlaque } from '../components/LegacyGrandPlaque';
+import { PlacaEmEscala, LARGURA_OFICIAL_DA_PLACA, ALTURA_OFICIAL_DA_PLACA } from '../components/PlacaEmEscala';
 import { EraRibbon, ERA_RIBBON_SKINS, getEraRibbonSkin } from '../components/EraRibbon';
 import { MetalReportCard } from '../components/MetalReportCard';
 import { Portal } from '../components/Portal';
@@ -115,7 +116,50 @@ type InlineEraEditorState = {
     eraIndex: number;
 };
 
-const OFFICIAL_COMPACT_HISTORY_CARD_CLASS = 'mx-auto w-[14.15rem] max-w-full';
+/*
+ * A PLACA NAO TEM `max-w-full`.
+ *
+ * Com ele a placa encolhia para caber no slot do carrossel — e so a LARGURA
+ * encolhia, porque a altura vem do conteudo. O resultado eram 140x328 (proporcao
+ * 0.43) onde deveriam estar 226x382 (0.59): a mesma placa, espremida.
+ *
+ * Quem precisa dela menor usa `PlacaEmEscala`, que reduz as duas medidas juntas.
+ */
+const OFFICIAL_COMPACT_HISTORY_CARD_CLASS = 'mx-auto w-[14.15rem]';
+
+/*
+ * O SLOT DO CARROSSEL E EM PIXELS, E NAO EM PORCENTAGEM.
+ *
+ * Para centralizar o card do meio, o vao de cada lado tem de ser
+ * (largura da trilha - largura do card) / 2. Com `w-[68%]` + `px-[16%]` essa
+ * conta NUNCA fecha: a largura do card resolve contra a caixa de CONTEUDO da
+ * trilha e o padding resolve contra a caixa de PADDING dela, que ja inclui o
+ * proprio padding. O card ficava 31px a esquerda do centro, e era isso que
+ * fazia o carrossel parecer torto.
+ *
+ * Com a largura em pixels, `calc((100% - 188px) / 2)` da o vao certo em qualquer
+ * tela.
+ *
+ * 188 e o teto que a tela comporta: a placa cheia mede 382 de altura, o ciclo em
+ * andamento ainda carrega duas barras de progresso abaixo dela, e o rodape tem o
+ * botao de encerrar. Acima disso a trilha empurra o botao para fora.
+ */
+/*
+ * O RECUO DOS VIZINHOS FICA POR DENTRO DA VAGA, e nao na vaga.
+ *
+ * O `scale` estava na propria vaga do carrossel. Como `scroll-snap-type` e
+ * `mandatory`, o navegador reavalia os pontos de encaixe enquanto a transicao
+ * de 300ms roda — e encaixava na geometria do meio do caminho. O resultado era
+ * o card parando 56px fora do centro e ficando la, porque depois da transicao
+ * ninguem reencaixa.
+ *
+ * Com a vaga de 188px fixa e imune a transform, os pontos de encaixe nao se
+ * mexem, e a conta da rolagem sempre acerta. `origin-top` ainda alinha os topos:
+ * encolhendo pelo centro, o vizinho descia e a fileira ficava em degrau.
+ */
+const RECUO_DO_VIZINHO = 'origin-top transition-[opacity,transform] duration-300';
+const LARGURA_DA_PLACA_NA_TRILHA = 188;
+const VAO_LATERAL_DA_TRILHA = 'calc((100% - ' + LARGURA_DA_PLACA_NA_TRILHA + 'px) / 2)';
 
 const buildHistoryDuplicateKey = (report: Report) => {
     const normalizedCycleName = String(report.cycleName || 'ciclo')
@@ -206,28 +250,55 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle; onEdit: (cycle: Cycle) => voi
                         </button>
                     </>
                 )}
+                {/*
+                  * O PROGRESSO NAO ENTRA NA PLACA.
+                  *
+                  * `dualProgress` desenhava duas barras DENTRO do card, e so o ciclo
+                  * em andamento as tem — o que fazia a placa dele nascer mais alta que
+                  * a dos ciclos fechados na mesma trilha. A saida obvia era esticar as
+                  * outras para igualar, e essa saida custa a proporcao, que e fixa em
+                  * todo lugar por decisao.
+                  *
+                  * Entao o extra vive FORA: a placa e identica a todas as outras, e o
+                  * que existe so no ciclo aberto aparece abaixo dela, onde pode ocupar
+                  * a altura que precisar sem mexer em nada.
+                  */}
                 <MetalReportCard
                     rank={scoreInfo.grade}
                     score={currentScore}
                     title={cycle.name || 'Ciclo ativo'}
                     subtitle={`${formatDate(cycle.startDate)} - ${formatDate(cycle.endDate)} · ${cycleTiming.totalDays} dias`}
-                    dualProgress={{
-                        progress: cycleProgress,
-                        time: cycleTiming.timeProgress,
-                        progressLabel: 'Progresso',
-                        progressValue: `${completedActionCount}/${totalActionCount} · ${Math.round(cycleProgress)}%`,
-                        timeLabel: 'Tempo',
-                        timeValue: cycleTiming.statusLabel,
-                    }}
                     metrics={[
-                        { label: 'Acoes', value: `${completedActionCount}/${totalActionCount}` },
+                        { label: 'Ações', value: `${completedActionCount}/${totalActionCount}` },
                         { label: 'Carga', value: `${totalHours}h` },
                         { label: 'Metas', value: `${fairScoreResult.fairness.sealedMetas}/${fairScoreResult.fairness.plannedMetas}` },
-                        { label: 'Presenca', value: `${fairScoreResult.fairness.activeDays} dias` },
+                        { label: 'Presença', value: `${fairScoreResult.fairness.activeDays} dias` },
                     ]}
                     compact
                     className={OFFICIAL_COMPACT_HISTORY_CARD_CLASS}
                 />
+
+                {showControls === false && (
+                    <div className={`${OFFICIAL_COMPACT_HISTORY_CARD_CLASS} mt-2 space-y-1.5`}>
+                        {([
+                            { rotulo: 'Progresso', valor: `${completedActionCount}/${totalActionCount} · ${Math.round(cycleProgress)}%`, pct: cycleProgress, cor: 'var(--skin-accent-color)' },
+                            { rotulo: 'Tempo', valor: cycleTiming.statusLabel, pct: cycleTiming.timeProgress, cor: 'rgba(255,255,255,0.42)' },
+                        ]).map((barra) => (
+                            <div key={barra.rotulo}>
+                                <div className="flex items-baseline justify-between gap-2">
+                                    <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white/40">{barra.rotulo}</span>
+                                    <span className="text-[10px] font-bold tabular-nums text-white/72">{barra.valor}</span>
+                                </div>
+                                <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-white/10">
+                                    <div
+                                        className="h-full rounded-full transition-[width] duration-500"
+                                        style={{ width: `${Math.max(0, Math.min(100, barra.pct))}%`, background: barra.cor }}
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -598,10 +669,10 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
                     title={report.cycleName || 'Ciclo'}
                     subtitle={`${startDate} - ${endDate}`}
                     metrics={[
-                        { label: 'Acoes', value: `${report.metrics.actionsCompleted || 0}/${report.metrics.totalPlannedActions || 0}` },
+                        { label: 'Ações', value: `${report.metrics.actionsCompleted || 0}/${report.metrics.totalPlannedActions || 0}` },
                         { label: 'Carga', value: `${report.metrics.totalHours || 0}h` },
                         { label: 'Metas', value: `${sealedMetas}/${plannedMetas}` },
-                        { label: 'Presenca', value: `${presenceDays} dias` },
+                        { label: 'Presença', value: `${presenceDays} dias` },
                     ]}
                     compact
                     className={OFFICIAL_COMPACT_HISTORY_CARD_CLASS}
@@ -1104,15 +1175,17 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     }, [deleteCycleFromReports, showToast]);
     const handleStartCompare = () => { if (reports.length >= 2) { setReportsToCompare([reports[0], reports[1]]); setView('comparing'); } };
 
-    const handlePostToFeed = (report: Report) => {
-        addFeedEvent({
+    const handlePostToFeed = async (report: Report) => {
+        const published = await addFeedEvent({
             type: 'CYCLE_COMPLETED',
             content: {
                 title: report.cycleName || activeCycle?.name || 'um ciclo',
                 score: report.performanceScore,
+                deliveries: report.metrics?.actionsCompleted,
             },
         });
-        showToast('Resultado do ciclo postado no feed.', 'success');
+        if (published) showToast('Resultado do ciclo postado no feed.', 'success');
+        return published;
     };
 
     const buildCycleFinalizedNotificationContent = useCallback((report: Report) => {
@@ -1486,8 +1559,14 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             segmentReports.forEach((report) => {
                 const completedByArena = new Map<string, number>();
                 (report.metrics.weeklyAtlas || []).forEach((week) => {
-                    week.days.forEach((day) => {
-                        day.arenaBuckets.forEach((bucket) => {
+                    (week.days || []).forEach((day) => {
+                        /* O atlas vem do BANCO, e o tipo nao vale la.
+                           `arenaBuckets` so existe a partir da v2 do snapshot; um
+                           relatorio gravado antes disso derruba a tela inteira com
+                           "Cannot read properties of undefined (reading 'forEach')"
+                           — e quem tem historico antigo e justamente quem mais tem
+                           o que ver aqui. */
+                        (day.arenaBuckets || []).forEach((bucket) => {
                             const arenaName = bucket.arenaName?.trim() || 'Sem arena dominante';
                             completedByArena.set(arenaName, (completedByArena.get(arenaName) || 0) + Math.max(0, bucket.completed || 0));
                         });
@@ -1554,6 +1633,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     startDate: report.startDate,
                     endDate: report.endDate,
                     score: report.performanceScore,
+                deliveries: report.metrics?.actionsCompleted,
                     grade: getScoreGrade(report.performanceScore, report.metrics?.fairness).grade,
                     focusArena: report.highlight?.mostFocusedArena?.trim() || dominantArena,
                     signatureAction: report.metrics.top3Actions?.[0]?.name || report.highlight?.mostRepeatedAction || 'Nenhuma',
@@ -1722,6 +1802,19 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         return bands;
     }, [displayedEraByReportIndex, sortedReports]);
 
+    /*
+     * A TRILHA TEM UMA PARADA A MAIS DO QUE RELATORIOS.
+     *
+     * Depois dos ciclos fechados vem SEMPRE mais uma: o ciclo em andamento, o que
+     * esta por comecar, ou — quando nao ha nenhum — a vaga vazia que convida a
+     * abrir um. Toda a aritmetica daqui contava so os relatorios:
+     * a trilha abria centrada no ultimo ciclo FECHADO, e a seta da direita ja
+     * nascia desabilitada ali — ou seja, nao havia como chegar ao ciclo atual,
+     * que e justamente onde a tela deveria abrir.
+     */
+    const totalDeParadas = sortedReports.length + 1;
+    const ultimaParada = Math.max(0, totalDeParadas - 1);
+
     /**
      * A trilha abre no fim, onde esta o ciclo atual.
      *
@@ -1732,20 +1825,41 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     useEffect(() => {
         const strip = cycleStripRef.current;
         if (!strip) return;
-        const alvo = stripIndex ?? Math.max(0, sortedReports.length - 1);
+        const alvo = stripIndex ?? ultimaParada;
         const card = strip.children[alvo] as HTMLElement | undefined;
         if (!card) return;
+
+        const centro = () => card.offsetLeft - (strip.clientWidth - card.clientWidth) / 2;
+
         // Centraliza o card em foco. Abrir no ultimo e proposital: a trilha le da
         // esquerda para a direita e termina no agora.
-        strip.scrollTo({
-            left: card.offsetLeft - (strip.clientWidth - card.clientWidth) / 2,
-            behavior: stripIndex === null ? 'auto' : 'smooth',
-        });
-    }, [sortedReports.length, stripIndex]);
+        strip.scrollTo({ left: centro(), behavior: stripIndex === null ? 'auto' : 'smooth' });
+
+        /*
+         * E CONFERE SE A ROLAGEM CHEGOU.
+         *
+         * Trocar de parada muda o layout no MESMO commit: o botao de encerrar
+         * entra ou sai conforme o ciclo em foco. Esse reflow acontece com a
+         * rolagem suave no meio do caminho e a aborta — o card parava 56px fora
+         * do centro e ficava la, porque, terminada a animacao, ninguem reencaixa.
+         *
+         * Nao da para prever quando o reflow assenta, entao em vez de adivinhar
+         * um atraso, isto confere o resultado e corrige de uma vez se preciso. A
+         * correcao so dispara quando a rolagem de fato nao chegou; quando ela
+         * chega — o caso normal — nada acontece e a animacao fica intacta.
+         */
+        const conferir = window.setTimeout(() => {
+            if (Math.abs(strip.scrollLeft - centro()) > 2) {
+                strip.scrollTo({ left: centro(), behavior: 'auto' });
+            }
+        }, 420);
+
+        return () => window.clearTimeout(conferir);
+    }, [totalDeParadas, ultimaParada, stripIndex]);
 
     const moveStrip = (delta: number) => {
-        const atual = stripIndex ?? Math.max(0, sortedReports.length - 1);
-        setStripIndex(Math.min(sortedReports.length - 1, Math.max(0, atual + delta)));
+        const atual = stripIndex ?? ultimaParada;
+        setStripIndex(Math.min(ultimaParada, Math.max(0, atual + delta)));
     };
 
     const legacyFallbackIdentity = useMemo(() => ({
@@ -2165,9 +2279,12 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const renderLegacySummaryCard = () => {
         return (
             <button id="legacy-export-plaque-entry" type="button" onClick={handleStartLegacyExport}
-                className="reports-legacy-plaque mx-auto block w-full max-w-[340px] overflow-hidden rounded-[22px] text-left">
+                /* Ela e o resumo de tudo e abre a tela: 340px a deixava do tamanho
+                   de um card de ciclo. Sem `compact` ela desenha na tipografia
+                   cheia, que e o que uma placa de titulo pede. */
+                className="reports-legacy-plaque mx-auto block w-full max-w-[420px] overflow-hidden rounded-[22px] text-left">
                 <LegacyGrandPlaque eras={eraSummaries} sovereignName={sovereignName}
-                    identity={legacyFallbackIdentity} identityMode="current" banner hideSovereignName compact className="w-full" />
+                    identity={legacyFallbackIdentity} banner hideSovereignName className="w-full" />
             </button>
         );
     };
@@ -2618,26 +2735,32 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             <div className="p-3 bg-blue-900/30 rounded-lg text-center text-sm mb-6">Selecione um relatório para comparar com o ciclo de {formatDate(reportForComparison.startDate)}.</div>
                         )}
 
-                        {visibleActiveCycle && (
-                            <GlassCard variant="neutral" className="reports-active-cycle mb-2 px-3 py-2">
-                                <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--skin-accent-color)]">Ciclo atual</p>
-                                    </div>
-                                </div>
-                                <div
-                                    className="mt-3 cursor-pointer"
-                                    onClick={() => {
-                                        setCycleBeingEdited(visibleActiveCycle);
-                                    }}
-                                >
-                                    <SimplifiedCycleHUD cycle={visibleActiveCycle} onEdit={setCycleBeingEdited} showTimelineMarker={false} showControls={false} />
-                                </div>
-                                <div className="mt-3">
-                                    <button id="end-cycle-button" onClick={handleEndCycle} className="w-full py-3 luxe-bico luxe-skin-button shadow-lg shadow-[var(--skin-accent-color)]/20">ENCERRAR CICLO ATUAL</button>
-                                </div>
-                            </GlassCard>
-                        )}
+                        {/*
+                          * O LEGADO VEM PRIMEIRO, E O CICLO ATUAL LOGO ABAIXO.
+                          *
+                          * A ordem antiga era: ciclo atual, legado, e a trilha com os
+                          * ciclos de novo — a pessoa via uma placa de ciclo, uma de
+                          * legado, e placas de ciclo outra vez. O legado e o resumo de
+                          * TUDO; ele ser a segunda coisa da tela invertia a leitura.
+                          *
+                          * Agora: o resumo no alto, o ciclo em andamento em seguida, e a
+                          * trilha arrastavel com os ja fechados por ultimo.
+                          */}
+                        {renderLegacySummaryCard()}
+
+                        {/*
+                          * O CICLO EM ANDAMENTO VIVE NA TRILHA, com os outros.
+                          *
+                          * Ele tinha um bloco proprio aqui em cima, com uma placa
+                          * achatada so dele — um terceiro desenho de ciclo no app. A
+                          * pessoa via esse card inventado e, logo abaixo, as placas de
+                          * verdade dos ciclos fechados: o mesmo assunto desenhado de
+                          * dois jeitos na mesma tela.
+                          *
+                          * Agora ha uma trilha so. Ela abre no ciclo atual e arrasta
+                          * para o lado ate a origem. O encerrar fica aqui embaixo,
+                          * ligado ao ciclo em andamento e nao ao que estiver no centro.
+                          */}
 
                         {!visibleActiveCycle && visibleUpcomingCycle && (
                             <div className="cursor-pointer" onClick={() => setCycleBeingEdited(visibleUpcomingCycle)}>
@@ -2645,7 +2768,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             </div>
                         )}
 
-                        {renderLegacySummaryCard()}
 
 
                         {renderEraControls()}
@@ -2677,7 +2799,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     );
                                 })}
                             </div>
-                        ) : sortedReports.length > 0 && (
+                        ) : (sortedReports.length > 0 || visibleActiveCycle || visibleUpcomingCycle) && (
                             /*
                              * A trilha horizontal.
                              *
@@ -2691,16 +2813,16 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                              * esta olhando, e o toque nele abre o relatório. Os vizinhos ficam
                              * espiando nas bordas para a faixa não parecer uma tela so.
                              */
-                            <div className="reports-cycle-timeline relative mt-2">
+                            <div className="reports-cycle-timeline relative mt-5">
                                 {/* Setas no lugar do arrastar. A tela e grande e o gesto de
                                     rolar nela parecia lista; seta diz que ha um em foco e
                                     outros ao lado. Elas so aparecem quando ha para onde ir. */}
-                                {sortedReports.length > 1 && (
+                                {totalDeParadas > 1 && (
                                     <>
                                         <button
                                             type="button"
                                             onClick={() => moveStrip(-1)}
-                                            disabled={(stripIndex ?? sortedReports.length - 1) <= 0}
+                                            disabled={(stripIndex ?? ultimaParada) <= 0}
                                             aria-label="Ciclo anterior"
                                             className="absolute left-0 top-1/2 z-20 -translate-y-1/2 rounded-full border border-white/12 bg-black/55 p-2 text-white/70 backdrop-blur-sm transition-colors hover:border-[var(--skin-accent-color)]/40 hover:text-white disabled:opacity-0"
                                         >
@@ -2709,7 +2831,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                         <button
                                             type="button"
                                             onClick={() => moveStrip(1)}
-                                            disabled={(stripIndex ?? sortedReports.length - 1) >= sortedReports.length - 1}
+                                            disabled={(stripIndex ?? ultimaParada) >= ultimaParada}
                                             aria-label="Próximo ciclo"
                                             className="absolute right-0 top-1/2 z-20 -translate-y-1/2 rounded-full border border-white/12 bg-black/55 p-2 text-white/70 backdrop-blur-sm transition-colors hover:border-[var(--skin-accent-color)]/40 hover:text-white disabled:opacity-0"
                                         >
@@ -2723,20 +2845,52 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                        Sem ele o primeiro e o ultimo card nao conseguem
                                        chegar ao centro — encostam na borda e ficam
                                        torto justamente o ciclo atual, que e o que abre. */
-                                    className="scrollbar-hide relative flex snap-x snap-mandatory gap-3 overflow-x-auto px-[16%] pb-2 sm:px-[27%] lg:px-[34%]"
-                                    style={{ scrollPaddingLeft: '16%', scrollPaddingRight: '16%' }}
+                                    /*
+                                     * `items-start`, NAO `items-stretch`.
+                                     *
+                                     * Ja esteve em `items-stretch` com `h-full` nos cards, para
+                                     * igualar alturas: o ciclo em andamento carregava duas barras
+                                     * de progresso que os fechados nao tem, e a trilha virava um
+                                     * serrilhado. So que o SVG da placa usa
+                                     * `preserveAspectRatio="none"` — ele ACOMPANHA a altura
+                                     * imposta em vez de recusa-la, entao igualar alturas esticava
+                                     * a placa e quebrava a unica coisa que tem de ser igual em
+                                     * todo lugar, que e a proporcao dela.
+                                     *
+                                     * As barras sairam de dentro da placa (ver SimplifiedCycleHUD)
+                                     * e viraram duas linhas abaixo dela. Sem o extra la dentro as
+                                     * alturas ja nascem iguais, e ninguem precisa esticar nada.
+                                     *
+                                     * O vao subiu de 12 para 20px: com 12 os vizinhos encostavam,
+                                     * e duas placas de moldura dourada coladas leem como uma placa
+                                     * so, partida no meio.
+                                     */
+                                    className="scrollbar-hide relative flex snap-x snap-mandatory items-start gap-5 overflow-x-auto pb-2"
+                                    style={{
+                                        paddingLeft: VAO_LATERAL_DA_TRILHA,
+                                        paddingRight: VAO_LATERAL_DA_TRILHA,
+                                        scrollPaddingLeft: VAO_LATERAL_DA_TRILHA,
+                                        scrollPaddingRight: VAO_LATERAL_DA_TRILHA,
+                                    }}
                                 >
                                     {[...sortedReports].reverse().map((report, indexFromStart) => {
                                         const isCurrent = indexFromStart === sortedReports.length - 1;
                                         return (
                                             <div
                                                 key={`strip-${report.id}`}
-                                                className={`w-[68%] shrink-0 snap-center transition-[opacity,transform] duration-300 sm:w-[46%] lg:w-[32%] ${
-                                                    indexFromStart === (stripIndex ?? sortedReports.length - 1)
-                                                        ? 'opacity-100'
-                                                        : 'scale-[0.94] opacity-45'
-                                                }`}
+                                                /* Carrossel: o do centro em tamanho cheio, os vizinhos
+                                                   recuados e apagados. 0.94/45% era recuo de menos —
+                                                   duas placas quase do mesmo tamanho, lado a lado,
+                                                   disputam a atencao em vez de uma emoldurar a outra. */
+                                                className="shrink-0 snap-center"
+                                                style={{ width: `${LARGURA_DA_PLACA_NA_TRILHA}px` }}
                                             >
+                                                <div className={`${RECUO_DO_VIZINHO} ${
+                                                    indexFromStart === (stripIndex ?? ultimaParada)
+                                                        ? 'scale-100 opacity-100'
+                                                        : 'scale-[0.82] opacity-30'
+                                                }`}>
+                                                <PlacaEmEscala largura={LARGURA_DA_PLACA_NA_TRILHA}>
                                                 <TimelineCard
                                                     report={report}
                                                     isLatest={isCurrent}
@@ -2760,78 +2914,143 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                        de quem so queria abrir o relatorio. */
                                                     onDelete={isEditingHistoryCycles ? () => { void handleDeleteReportCycle(report); } : undefined}
                                                 />
-                                                <p className={`mt-1.5 text-center text-[9px] font-black uppercase tracking-[0.18em] ${isCurrent ? 'text-[var(--skin-accent-color)]' : 'text-white/28'}`}>
-                                                    {isCurrent ? 'mais recente' : `ciclo ${indexFromStart + 1}`}
+                                                </PlacaEmEscala>
+                                                <p className="mt-1.5 text-center text-[9px] font-black uppercase tracking-[0.18em] text-white/28">
+                                                    {`ciclo ${indexFromStart + 1}`}
                                                 </p>
+                                                </div>
                                             </div>
                                         );
                                     })}
+
+                                    {/*
+                                      * A ULTIMA PARADA E O CICLO EM ANDAMENTO.
+                                      *
+                                      * A trilha le da esquerda para a direita e termina no agora,
+                                      * entao o ciclo aberto e o fim dela — e nao um card separado
+                                      * acima. Mesma largura, mesmo encaixe, mesma placa: o que
+                                      * muda e so o rotulo embaixo e o fato de nao dar para
+                                      * excluir o que ainda esta acontecendo.
+                                      */}
+                                    {visibleActiveCycle && (
+                                        <div className="shrink-0 snap-center" style={{ width: `${LARGURA_DA_PLACA_NA_TRILHA}px` }}>
+                                            <div className={`${RECUO_DO_VIZINHO} ${
+                                                (stripIndex ?? ultimaParada) >= sortedReports.length ? 'scale-100 opacity-100' : 'scale-[0.82] opacity-30'
+                                            }`}>
+                                            <PlacaEmEscala largura={LARGURA_DA_PLACA_NA_TRILHA}>
+                                            <div className="cursor-pointer" onClick={() => setCycleBeingEdited(visibleActiveCycle)}>
+                                                <SimplifiedCycleHUD
+                                                    cycle={visibleActiveCycle}
+                                                    onEdit={setCycleBeingEdited}
+                                                    showTimelineMarker={false}
+                                                    showControls={false}
+                                                />
+                                            </div>
+                                            </PlacaEmEscala>
+                                            <p className="mt-1.5 text-center text-[9px] font-black uppercase tracking-[0.18em] text-[var(--skin-accent-color)]">
+                                                em andamento
+                                            </p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {!visibleActiveCycle && visibleUpcomingCycle && (
+                                        <div className="shrink-0 snap-center" style={{ width: `${LARGURA_DA_PLACA_NA_TRILHA}px` }}>
+                                            <PlacaEmEscala largura={LARGURA_DA_PLACA_NA_TRILHA}>
+                                            <div className="cursor-pointer" onClick={() => setCycleBeingEdited(visibleUpcomingCycle)}>
+                                                <UpcomingCycleCard cycle={visibleUpcomingCycle} onEdit={setCycleBeingEdited} />
+                                            </div>
+                                            </PlacaEmEscala>
+                                            <p className="mt-1.5 text-center text-[9px] font-black uppercase tracking-[0.18em] text-white/40">
+                                                a comecar
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {/*
+                                      * SEM CICLO ABERTO, A VAGA CONTINUA NA TRILHA.
+                                      *
+                                      * O botao de abrir ciclo vivia solto abaixo da trilha, e
+                                      * quem chegava aqui sem ciclo via a trilha terminar no
+                                      * ultimo fechado — como se o historico fosse o presente.
+                                      *
+                                      * A vaga vazia diz as duas coisas de uma vez: nao ha ciclo
+                                      * agora, E ha ciclos atras, porque ela ocupa o mesmo lugar
+                                      * que um ciclo ocuparia, com os vizinhos espiando ao lado.
+                                      * Mesma largura e mesma proporcao das placas, para a trilha
+                                      * nao mudar de altura quando um ciclo abre ou fecha.
+                                      */}
+                                    {!visibleActiveCycle && !visibleUpcomingCycle && (
+                                        <div className="shrink-0 snap-center" style={{ width: `${LARGURA_DA_PLACA_NA_TRILHA}px` }}>
+                                            <div
+                                                className="flex flex-col items-center justify-center gap-3 rounded-[14px] border border-dashed border-white/14 bg-white/[0.02] px-3 text-center"
+                                                style={{ aspectRatio: `${LARGURA_OFICIAL_DA_PLACA} / ${ALTURA_OFICIAL_DA_PLACA}` }}
+                                            >
+                                                <p className="m-0 text-[9px] font-black uppercase tracking-[0.2em] text-white/34">
+                                                    Sem ciclo
+                                                    <br />
+                                                    em andamento
+                                                </p>
+                                                <button
+                                                    id="start-new-cycle-button"
+                                                    type="button"
+                                                    onClick={() => setShowNewCycleSetup(true)}
+                                                    className="luxe-bico luxe-skin-button w-full px-2 py-2.5 text-[10px] shadow-lg shadow-[var(--skin-accent-color)]/20"
+                                                >
+                                                    INICIAR CICLO
+                                                </button>
+                                            </div>
+                                            <p className="mt-1.5 text-center text-[9px] font-black uppercase tracking-[0.18em] text-white/28">
+                                                agora
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/*
-                                 * As eras, embaixo: elas sao o chao sob os ciclos, nao um titulo
-                                 * sobre eles. Cada faixa cobre exatamente os cards do periodo, e
-                                 * usa a mesma pele da fita vertical (getEraRibbonSkin) para as
-                                 * duas leituras do mesmo dado nao parecerem coisas diferentes.
-                                 *
-                                 * A largura acompanha a dos cards: n cards mais os vaos entre
-                                 * eles. Enquanto os cards tiverem largura igual, a faixa alinha
-                                 * sozinha sem medir nada em tempo de execucao.
-                                 */}
-                                {eraStripBands.length > 0 && (
-                                    <div
-                                        className="scrollbar-hide -mt-1 flex gap-3 overflow-x-hidden"
-                                        style={{ paddingLeft: 0 }}
+                                  * O ENCERRAR SO APARECE COM O CICLO ABERTO EM FOCO.
+                                  *
+                                  * Ele mora fora da trilha, entao ficava ali enquanto a pessoa
+                                  * passeava pelos ciclos FECHADOS — um botao de encerrar logo
+                                  * abaixo de um ciclo que acabou ha meses, agindo sobre outro
+                                  * que nem esta na tela. Agora ele acompanha o foco: aparece
+                                  * quando a parada centralizada e a do ciclo em andamento.
+                                  */}
+                                {visibleActiveCycle && (stripIndex ?? ultimaParada) >= sortedReports.length && (
+                                    <button
+                                        id="end-cycle-button"
+                                        onClick={handleEndCycle}
+                                        className="mt-3 w-full py-3 luxe-bico luxe-skin-button shadow-lg shadow-[var(--skin-accent-color)]/20"
                                     >
-                                        {eraStripBands.map((band) => {
-                                            const skin = getEraRibbonSkin(band.skinId);
-                                            const selecionavel = isEditingEras && Boolean(band.slotId);
-                                            return (
-                                                <button
-                                                    key={`era-band-${band.key}`}
-                                                    type="button"
-                                                    disabled={!selecionavel}
-                                                    onClick={() => band.slotId && setActiveDraftEraId(band.slotId)}
-                                                    className={`shrink-0 text-left transition-all ${selecionavel ? 'cursor-pointer' : 'cursor-default'} ${band.isActive ? 'scale-[1.02]' : ''}`}
-                                                    style={{ width: `calc(${band.count} * 82% + ${band.count - 1} * 0.75rem)` }}
-                                                >
-                                                    <div
-                                                        className={`w-full rounded-full transition-all ${band.isActive ? 'h-[5px]' : 'h-[3px]'}`}
-                                                        style={{
-                                                            background: `linear-gradient(90deg, ${skin.edge} 0%, ${skin.glow} 50%, ${skin.metal} 100%)`,
-                                                            boxShadow: band.isActive ? `0 0 14px ${skin.glow}` : undefined,
-                                                        }}
-                                                    />
-                                                    <p
-                                                        className="mt-1 truncate text-[9px] font-black uppercase tracking-[0.2em]"
-                                                        style={{ color: skin.glow, opacity: band.isActive || !isEditingEras ? 1 : 0.5 }}
-                                                    >
-                                                        {band.label}
-                                                    </p>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
+                                        ENCERRAR CICLO ATUAL
+                                    </button>
                                 )}
+
+                                {/*
+                                  * A FAIXA DE ERAS SAIU DAQUI.
+                                  *
+                                  * Ela desenhava uma barrinha colorida sob os cards de cada era, e
+                                  * a largura era calculada sem medir nada: `count * 82% + vaos`.
+                                  * So que o card mede 68%, nao 82%, e o vao mudou — ou seja, ela
+                                  * ja nascia desalinhada e so piorou. Pior: o container dela nao
+                                  * rola junto com a trilha, entao mesmo com a conta certa ela so
+                                  * baterig no scroll zero.
+                                  *
+                                  * E era informacao repetida. Cada card ja recebe `eraLabel` e
+                                  * `eraSkinId` e mostra a era a que pertence — a barrinha dizia a
+                                  * mesma coisa, de um jeito que nao acompanhava a tela.
+                                  */}
                             </div>
                         )}
 
-                        {/* O comeco de ciclo fica no fim da tela, nao no meio dela.
-                            No meio ele partia a leitura em duas: placa em cima, trilha
-                            embaixo, e um botao grande atravessado no caminho. */}
-                        {!visibleActiveCycle && !visibleUpcomingCycle && (
-                            <div className="reports-cycle-start relative z-20 mt-2">
-                                {reports.length < 1 && (
-                                    <p className="mb-3 text-center text-sm italic text-gray-500">Sem legado fechado ainda. Inicie sua jornada.</p>
-                                )}
-                                <button
-                                    id="start-new-cycle-button"
-                                    onClick={() => setShowNewCycleSetup(true)}
-                                    className="w-full luxe-bico py-3 luxe-skin-button shadow-lg shadow-[var(--skin-accent-color)]/20"
-                                >
-                                    INICIAR NOVO CICLO
-                                </button>
-                            </div>
+                        {/* O convite a comecar mora DENTRO da trilha, na vaga vazia do
+                            ciclo atual — aqui embaixo ele repetia o mesmo botao. So a
+                            primeira vez, quando nao ha nem historico, ainda ganha uma
+                            linha de boas-vindas. */}
+                        {!visibleActiveCycle && !visibleUpcomingCycle && reports.length < 1 && (
+                            <p className="reports-cycle-start relative z-20 mt-2 text-center text-sm italic text-gray-500">
+                                Sem legado fechado ainda. Inicie sua jornada.
+                            </p>
                         )}
                     </div>
                 );
@@ -2936,7 +3155,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         </div>
 
                     </div>
-                    <div ref={hubViewportRef} className={`reports-content flex-grow min-h-0 relative ${view === "hub" && !isEditingEras ? "overflow-hidden" : "overflow-y-auto"}`}>
+                    <div ref={hubViewportRef} className={`reports-content flex-grow min-h-0 relative ${view === "hub" && !isEditingEras ? "reports-hub-viewport overflow-y-auto" : "overflow-y-auto"}`}>
                         {renderContent()}
                     </div>
                 </div>
@@ -2991,6 +3210,11 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             {showLegacyProjectionModal && (
                 <LegacyProjectionModal
                     eras={eraSummaries}
+                    plaqueColorId={userProfile.legacyPlaqueColor}
+                    /* Salvo no perfil, e nao no aparelho: a cor da placa e
+                       identidade — precisa vir junto no quadro final, no PNG
+                       compartilhado e no proximo celular. */
+                    onChangePlaqueColor={(colorId) => updateUserProfile({ legacyPlaqueColor: colorId })}
                     sovereignName={sovereignName}
                     fallbackIdentity={legacyFallbackIdentity}
                     onToast={showToast}

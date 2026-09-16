@@ -53,13 +53,13 @@ interface MetalReportCardProps {
 const METAL_RANKS: Record<MetalReportRank, MetalRankPalette> = {
   SS: {
     rank: 'SS',
-    label: 'Regalia prisma',
-    base: '#6432a3',
-    baseDeep: '#12051f',
-    highlight: '#cf9dff',
+    label: 'Rubi imperial',
+    base: '#9f1738',
+    baseDeep: '#240610',
+    highlight: '#f09aaf',
     edge: '#ffd86b',
     trim: '#fff5d0',
-    glow: 'rgba(207, 157, 255, 0.42)',
+    glow: 'rgba(180, 35, 65, 0.32)',
     text: '#fbf2ff',
   },
   S: {
@@ -76,8 +76,8 @@ const METAL_RANKS: Record<MetalReportRank, MetalRankPalette> = {
   A: {
     rank: 'A',
     label: 'Ouro selado',
-    base: '#926f1e',
-    baseDeep: '#1a1204',
+    base: '#c49b27',
+    baseDeep: '#231a07',
     highlight: '#f1cb68',
     edge: '#ffe29a',
     trim: '#fff5d2',
@@ -135,33 +135,21 @@ export const getMetalRankPalette = (rank: string): MetalRankPalette => {
   return METAL_RANKS[normalized] || METAL_RANKS.D;
 };
 
-const hexToRgb = (hex: string) => {
-  const value = hex.replace('#', '');
-  const normalized = value.length === 3
-    ? value.split('').map((char) => char + char).join('')
-    : value;
-
-  const parsed = Number.parseInt(normalized, 16);
-  return {
-    r: (parsed >> 16) & 255,
-    g: (parsed >> 8) & 255,
-    b: parsed & 255,
-  };
+// Finishes belong to the plate; the shared rank palette also serves other legacy UI.
+const PLATE_FINISHES: Record<MetalReportRank, { mid: string; pale: string; dark: string; face: string; filter: string }> = {
+  E: { mid: '#81756b', pale: '#d0c7bd', dark: '#302c29', face: '#191613', filter: 'sepia(.3) saturate(.6) brightness(.8)' },
+  D: { mid: '#68899e', pale: '#c1dce9', dark: '#283d4d', face: '#101f2c', filter: 'sepia(.3) saturate(1.2) hue-rotate(155deg)' },
+  C: { mid: '#b07c54', pale: '#f2c39b', dark: '#4b3223', face: '#291a13', filter: 'sepia(.8) saturate(1.7) hue-rotate(340deg) brightness(.9)' },
+  B: { mid: '#859ea9', pale: '#e4eff4', dark: '#293c48', face: '#152a36', filter: 'brightness(1)' },
+  A: { mid: '#d8ae42', pale: '#fff1b8', dark: '#725620', face: '#705513', filter: 'sepia(.85) saturate(1.45) hue-rotate(355deg)' },
+  S: { mid: '#c6a05c', pale: '#ffe5ab', dark: '#604421', face: '#4a2169', filter: 'sepia(.85) saturate(1.45) hue-rotate(355deg)' },
+  // O rubi do SS lia mais claro que todos os outros acabamentos: o vermelho e a
+  // cor mais luminosa da familia em igualdade de luminancia, entao #68122b
+  // saltava ao lado do violeta do S (#4a2169) mesmo com valor parecido. Escurecido
+  // para o topo da escada parecer profundo, e nao aceso.
+  SS: { mid: '#c39a51', pale: '#ffe4a2', dark: '#64401f', face: '#3f0a18', filter: 'sepia(.85) saturate(1.45) hue-rotate(355deg)' },
 };
-
-const mixHex = (from: string, to: string, amount: number) => {
-  const start = hexToRgb(from);
-  const end = hexToRgb(to);
-  const weight = Math.min(1, Math.max(0, amount));
-  const mixChannel = (a: number, b: number) => Math.round(a + ((b - a) * weight));
-  const mixed = [mixChannel(start.r, end.r), mixChannel(start.g, end.g), mixChannel(start.b, end.b)];
-  return `#${mixed.map((value) => value.toString(16).padStart(2, '0')).join('')}`;
-};
-
-const withAlpha = (hex: string, alpha: number) => {
-  const { r, g, b } = hexToRgb(hex);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
+const plateOutline = (i: number) => `${18+i},${i} ${302-i},${i} ${320-i},${18+i} ${320-i},${512-i} ${302-i},${530-i} ${18+i},${530-i} ${i},${512-i} ${i},${18+i}`;
 
 export const MetalReportCard: React.FC<MetalReportCardProps> = ({
   rank,
@@ -179,129 +167,88 @@ export const MetalReportCard: React.FC<MetalReportCardProps> = ({
   className = '',
 }) => {
   const palette = getMetalRankPalette(rank);
-  const surfacePalette = compact
-    ? {
-        ...palette,
-        base: mixHex(palette.base, '#111317', 0.42),
-        baseDeep: mixHex(palette.baseDeep, '#010203', 0.36),
-        highlight: mixHex(palette.highlight, '#636b76', 0.12),
-        edge: mixHex(palette.edge, '#edf3fb', 0.1),
-        trim: mixHex(palette.trim, '#ffffff', 0.1),
-        glow: withAlpha(mixHex(palette.highlight, '#0f1114', 0.2), 0.2),
-        text: mixHex(palette.text, '#ffffff', 0.04),
-      }
-    : palette;
-
-  const uid = useId().replace(/:/g, '');
-  const gradientId = `metal-gradient-${uid}`;
-  const brushId = `metal-brush-${uid}`;
-  const noiseId = `metal-noise-${uid}`;
+  const finish = PLATE_FINISHES[palette.rank];
+  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const frameId = `metal-frame-${uid}`;
-  const railId = `metal-rail-${uid}`;
-  const innerGlowId = `metal-inner-glow-${uid}`;
-
-  const visibleMetrics = metrics.slice(0, compact ? 4 : 4);
+  const faceId = `metal-face-${uid}`;
+  const glintId = `metal-glint-${uid}`;
+  const visibleMetrics = metrics.slice(0, 4);
   const visibleBadges = badges.slice(0, compact ? 2 : 4);
-  const railLeft = subtitle || 'Ciclo consolidado';
-  const railRight = dateRange || '';
+  // Older callers put the date in subtitle. Never manufacture a cycle number.
+  const dateLabel = dateRange || subtitle;
 
   return (
     <div
       id={captureId}
+      data-rank={palette.rank}
       className={`metal-report-card ${compact ? 'metal-report-card--compact' : ''} ${entryFlash ? 'metal-report-card--entry-flash' : ''} ${className}`.trim()}
       style={{
-        ['--metal-base' as string]: surfacePalette.base,
-        ['--metal-base-deep' as string]: surfacePalette.baseDeep,
-        ['--metal-highlight' as string]: surfacePalette.highlight,
-        ['--metal-edge' as string]: surfacePalette.edge,
-        ['--metal-trim' as string]: surfacePalette.trim,
-        ['--metal-glow' as string]: surfacePalette.glow,
-        ['--metal-text' as string]: surfacePalette.text,
+        ['--metal-base' as string]: palette.base,
+        ['--metal-base-deep' as string]: palette.baseDeep,
+        ['--metal-highlight' as string]: palette.highlight,
+        ['--metal-edge' as string]: palette.edge,
+        ['--metal-trim' as string]: palette.trim,
+        ['--metal-glow' as string]: palette.glow,
+        ['--metal-text' as string]: palette.text,
+        ['--plate-mid' as string]: finish.mid,
+        ['--plate-pale' as string]: finish.pale,
+        ['--plate-dark' as string]: finish.dark,
+        ['--plate-face' as string]: finish.face,
+        ['--laurel-filter' as string]: finish.filter,
       }}
     >
-      <svg className="metal-report-card__svg" viewBox="0 0 720 980" preserveAspectRatio="none" aria-hidden="true">
+      <svg className="metal-report-card__svg" viewBox="0 0 320 530" preserveAspectRatio="none" aria-hidden="true">
         <defs>
-          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor={surfacePalette.highlight} stopOpacity={compact ? '0.12' : '0.28'} />
-            <stop offset="12%" stopColor={surfacePalette.base} stopOpacity="1" />
-            <stop offset="52%" stopColor={surfacePalette.baseDeep} stopOpacity="1" />
-            <stop offset="88%" stopColor={surfacePalette.base} stopOpacity="0.98" />
-            <stop offset="100%" stopColor={surfacePalette.highlight} stopOpacity={compact ? '0.14' : '0.3'} />
+          <linearGradient id={frameId} x1="0" y1="0" x2="1" y2=".8">
+            <stop stopColor={finish.dark}/><stop offset=".08" stopColor={finish.pale}/>
+            <stop offset=".13" stopColor={finish.dark}/><stop offset=".4" stopColor={finish.mid}/>
+            <stop offset=".51" stopColor={finish.pale}/><stop offset=".56" stopColor={finish.dark}/>
+            <stop offset=".85" stopColor={finish.mid}/><stop offset="1" stopColor={finish.pale}/>
           </linearGradient>
-          <linearGradient id={frameId} x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor={surfacePalette.edge} stopOpacity="0.18" />
-            <stop offset="50%" stopColor={surfacePalette.trim} stopOpacity="0.95" />
-            <stop offset="100%" stopColor={surfacePalette.edge} stopOpacity="0.18" />
-          </linearGradient>
-          <linearGradient id={railId} x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor={surfacePalette.baseDeep} stopOpacity="0.68" />
-            <stop offset="50%" stopColor={surfacePalette.highlight} stopOpacity="0.16" />
-            <stop offset="100%" stopColor={surfacePalette.baseDeep} stopOpacity="0.68" />
-          </linearGradient>
-          <radialGradient id={innerGlowId} cx="50%" cy="0%" r="90%">
-            <stop offset="0%" stopColor={surfacePalette.highlight} stopOpacity={compact ? '0.08' : '0.16'} />
-            <stop offset="55%" stopColor={surfacePalette.base} stopOpacity="0" />
+          <radialGradient id={faceId} cx=".45" cy=".22" r=".85">
+            <stop stopColor={finish.face}/><stop offset=".7" stopColor={palette.baseDeep}/><stop offset="1" stopColor="#070a0e"/>
           </radialGradient>
-          <pattern id={brushId} width="20" height="20" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <rect width="20" height="20" fill="transparent" />
-            <rect x="0" y="0" width="20" height="2" fill="rgba(255,255,255,0.035)" />
-            <rect x="0" y="9" width="20" height="1" fill="rgba(0,0,0,0.09)" />
-          </pattern>
-          <filter id={noiseId} x="-20%" y="-20%" width="140%" height="140%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="11" result="noise" />
-            <feColorMatrix in="noise" type="saturate" values="0" result="mono" />
-            <feComponentTransfer in="mono" result="grain">
-              <feFuncA type="table" tableValues="0 0.05" />
-            </feComponentTransfer>
-            <feSpecularLighting in="mono" surfaceScale="2.2" specularConstant="0.5" specularExponent="22" lightingColor="#ffffff" result="specular">
-              <feDistantLight azimuth="228" elevation="44" />
-            </feSpecularLighting>
-            <feBlend in="SourceGraphic" in2="grain" mode="overlay" result="metal" />
-            <feBlend in="metal" in2="specular" mode="screen" />
-          </filter>
+          <radialGradient id={glintId}>
+            <stop stopColor="#fff" stopOpacity=".95"/><stop offset=".15" stopColor={finish.pale} stopOpacity=".7"/>
+            <stop offset="1" stopColor={finish.pale} stopOpacity="0"/>
+          </radialGradient>
         </defs>
-
-        <rect x="10" y="10" width="700" height="960" rx="42" fill={`url(#${gradientId})`} filter={`url(#${noiseId})`} />
-        <rect x="18" y="18" width="684" height="944" rx="36" fill={`url(#${brushId})`} opacity="0.3" />
-        <rect x="18" y="18" width="684" height="944" rx="36" fill="none" stroke={`url(#${frameId})`} strokeWidth="2.5" />
-        <rect x="40" y="42" width="640" height="96" rx="24" fill={`url(#${railId})`} stroke={surfacePalette.edge} strokeOpacity="0.18" strokeWidth="1.2" />
-        <rect x="64" y="164" width="592" height="250" rx="34" fill={`url(#${innerGlowId})`} opacity="0.88" />
-        <rect x="64" y="164" width="592" height="250" rx="34" fill="none" stroke={surfacePalette.edge} strokeOpacity="0.14" strokeWidth="1.5" />
-        <path d="M84 494 H636" stroke={surfacePalette.edge} strokeOpacity="0.16" strokeWidth="1.5" />
-        <path d="M84 802 H636" stroke={surfacePalette.edge} strokeOpacity="0.12" strokeWidth="1.5" />
-        <rect x="54" y="54" width="612" height="872" rx="30" fill="none" stroke={surfacePalette.trim} strokeOpacity="0.08" strokeWidth="1" />
+        <polygon points={plateOutline(1)} fill="#05080c" stroke={finish.dark} strokeWidth="2"/>
+        <polygon points={plateOutline(4)} fill={`url(#${frameId})`}/>
+        <polygon points={plateOutline(9)} fill="#060a10" stroke={finish.dark} strokeWidth="2"/>
+        <polygon points={plateOutline(14)} fill={`url(#${faceId})`} stroke={`url(#${frameId})`} strokeWidth="2"/>
+        <polygon points={plateOutline(19)} fill="none" stroke={finish.mid} strokeOpacity=".22"/>
+        <ellipse cx="157" cy="6" rx="57" ry="9" fill={`url(#${glintId})`}/>
+        <ellipse cx="175" cy="518" rx="72" ry="9" fill={`url(#${glintId})`} opacity=".5"/>
+        <path d="M7 30V112 M313 360V500" stroke={finish.pale} opacity=".4"/>
       </svg>
 
-      <div className="metal-report-card__sheen" aria-hidden="true" />
-
       <div className="metal-report-card__content">
-        <div className="metal-report-card__rail engraved-panel">
-          <span className="metal-report-card__rail-label engraved-text-soft">{railLeft}</span>
-          {railRight ? <span className="metal-report-card__rail-value engraved-text-soft">{railRight}</span> : null}
-        </div>
-
+        {dateLabel ? <div className="metal-report-card__rail">{dateLabel}</div> : null}
         <div className="metal-report-card__hero">
-          <div className="metal-report-card__seal engraved-panel" aria-hidden="true">
-            <span className="metal-report-card__seal-core" />
-            <span className="metal-report-card__seal-mark" />
-          </div>
+          <img className="metal-report-card__laurel" src="/assets/cycles/laurel-silver.png" alt="" width="1254" height="1254" />
           <div className="metal-report-card__rank-cluster">
-            <div className="metal-report-card__rank engraved-text">{surfacePalette.rank}</div>
-            {typeof score === 'number' ? <div className="metal-report-card__score engraved-text-soft">Score {score}</div> : null}
+            <div className="metal-report-card__rank">{palette.rank}</div>
+            {typeof score === 'number' ? (
+              <div className="metal-report-card__score">
+                <span className="metal-report-card__score-label">Nota</span>
+                <span className="metal-report-card__score-value">{score}</span>
+              </div>
+            ) : null}
           </div>
         </div>
 
         <div className="metal-report-card__title-stack">
-          <h3 className="metal-report-card__title engraved-text">{title}</h3>
-          {summary ? <p className="metal-report-card__summary engraved-text-soft">{summary}</p> : null}
+          <h3 className="metal-report-card__title">{title}</h3>
+          {summary ? <p className="metal-report-card__summary">{summary}</p> : null}
         </div>
 
         {dualProgress ? (
-          <div className="metal-report-card__dual-progress engraved-panel">
+          <div className="metal-report-card__dual-progress">
             <div className="metal-report-card__dual-progress-row">
               <div className="metal-report-card__dual-progress-meta">
                 <span className="metal-report-card__dual-progress-label">{dualProgress.progressLabel || 'Progresso'}</span>
-                <span className="metal-report-card__dual-progress-value engraved-text-soft">{dualProgress.progressValue || `${Math.round(dualProgress.progress)}%`}</span>
+                <span className="metal-report-card__dual-progress-value">{dualProgress.progressValue || `${Math.round(dualProgress.progress)}%`}</span>
               </div>
               <div className="metal-report-card__dual-progress-track">
                 <div
@@ -313,7 +260,7 @@ export const MetalReportCard: React.FC<MetalReportCardProps> = ({
             <div className="metal-report-card__dual-progress-row">
               <div className="metal-report-card__dual-progress-meta">
                 <span className="metal-report-card__dual-progress-label">{dualProgress.timeLabel || 'Tempo'}</span>
-                <span className="metal-report-card__dual-progress-value engraved-text-soft">{dualProgress.timeValue || `${Math.round(dualProgress.time)}%`}</span>
+                <span className="metal-report-card__dual-progress-value">{dualProgress.timeValue || `${Math.round(dualProgress.time)}%`}</span>
               </div>
               <div className="metal-report-card__dual-progress-track">
                 <div
@@ -328,9 +275,9 @@ export const MetalReportCard: React.FC<MetalReportCardProps> = ({
         {visibleMetrics.length > 0 && (
           <div className="metal-report-card__metrics">
             {visibleMetrics.map((metric) => (
-              <div key={`${metric.label}-${metric.value}`} className="metal-report-card__metric engraved-panel">
+              <div key={`${metric.label}-${metric.value}`} className="metal-report-card__metric">
                 <span className="metal-report-card__metric-label">{metric.label}</span>
-                <span className="metal-report-card__metric-value engraved-text">{metric.value}</span>
+                <span className={`metal-report-card__metric-value ${metric.value.length > 12 ? 'metal-report-card__metric-value--long' : ''}`}>{metric.value}</span>
               </div>
             ))}
           </div>
@@ -339,9 +286,9 @@ export const MetalReportCard: React.FC<MetalReportCardProps> = ({
         {visibleBadges.length > 0 && (
           <div className="metal-report-card__badges">
             {visibleBadges.map((badge) => (
-              <span key={`${badge.label}-${badge.value || ''}`} className="metal-report-card__badge engraved-panel">
+              <span key={`${badge.label}-${badge.value || ''}`} className="metal-report-card__badge">
                 <span className="metal-report-card__badge-label">{badge.label}</span>
-                {badge.value ? <span className="metal-report-card__badge-value engraved-text-soft">{badge.value}</span> : null}
+                {badge.value ? <span className="metal-report-card__badge-value">{badge.value}</span> : null}
               </span>
             ))}
           </div>

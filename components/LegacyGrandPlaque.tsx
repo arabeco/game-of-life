@@ -1,161 +1,321 @@
-import React from 'react';
-import { isClanEmblemImage } from './ClanEmblem';
+﻿import React from 'react';
 import type { ReportIdentitySnapshot } from '../types';
 import type { LegacyEraSummary } from './LegacyExportDocument';
 import { buildLegacyPlaqueSummary } from './LegacyPlaqueArtifact';
 import { UserAvatar } from './UserAvatar';
 import { getDisplayLevel } from '../constants/lifeAreas';
+import { getLegacyPlaqueColor } from '../constants/legacyPlaqueColors';
 
 interface LegacyGrandPlaqueProps {
     eras: LegacyEraSummary[];
     sovereignName: string;
     identity?: ReportIdentitySnapshot;
-    identityMode?: 'historical' | 'current';
     className?: string;
     compact?: boolean;
     banner?: boolean;
     hideSovereignName?: boolean;
     portrait?: boolean;
+    /**
+     * Cor escolhida no perfil, ou `auto`/ausente para acompanhar o patamar.
+     * Ausente tambem cobre a placa de outra pessoa, que nao tem escolha nossa.
+     */
+    plaqueColorId?: string;
 }
 
 export const LegacyGrandPlaque: React.FC<LegacyGrandPlaqueProps> = ({
     eras,
     sovereignName,
     identity,
-    identityMode = 'current',
     className = '',
     compact = false,
+    plaqueColorId,
 }) => {
     const { totalCycles, totalHours, totalActions, activeDays, weightedAverageScore, averageGrade } = buildLegacyPlaqueSummary(eras);
     const nickname = identity?.nickname?.trim() || sovereignName || 'Usuario';
     const patent = identity?.nobilityRankName || identity?.title || 'Vagante';
-    const clanName = identity?.clanName?.trim() || '';
-    const clanRank = identity?.clanRankName?.trim() || '';
     // O snapshot guarda a soma crua das areas; o numero que se mostra e o Indice
     // Glyph, o mesmo do cabecalho. A placa mostrava metade do que o cabecalho
     // mostrava para a mesma pessoa.
     const level = getDisplayLevel(identity?.level);
+    /*
+     * A COR DA PLACA E ESCOLHA, nao consequencia.
+     *
+     * Ela nao le patamar, nivel nem desempenho: e enfeite, e enfeite e escolha.
+     * Ausente, cai no padrao.
+     *
+     * A paleta entra por valor e nao por classe: o desenho da placa e um
+     * empilhamento de gradientes que precisa de VALORES, e trocar a cor por
+     * classe exigiria uma copia do empilhamento inteiro por cor.
+     */
+    const cor = getLegacyPlaqueColor(plaqueColorId);
     const formattedHours = `${Number.isInteger(totalHours) ? totalHours : totalHours.toFixed(1)}h`;
-    const capturedAt = identity?.capturedAt ? new Date(identity.capturedAt) : null;
-    const capturedDate = capturedAt && !Number.isNaN(capturedAt.getTime())
-        ? capturedAt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-        : '';
     const titleSize = nickname.length > 22 ? 'text-[0.86rem]' : nickname.length > 16 ? 'text-[0.98rem]' : 'text-[1.12rem]';
+    /*
+     * A ORDEM E DE LEITURA, nao de importancia.
+     *
+     * Dois por linha: ciclos e acoes em cima, dias e carga embaixo. Quantidade
+     * a esquerda, tempo a direita — o olho desce por uma coluna de contagens e
+     * por uma de duracoes, em vez de alternar entre as duas a cada linha.
+     */
     const metricItems = [
         { label: 'Ciclos', value: totalCycles },
-        { label: 'Carga', value: formattedHours },
         { label: 'Acoes', value: totalActions },
-        { label: 'Dias ativos', value: activeDays },
+        { label: 'Dias', value: activeDays },
+        { label: 'Carga', value: formattedHours },
     ];
+
+    /*
+     * O DESENHO E A P1 DA BANCADA (docs/drafts/placa-do-legado-lab.html).
+     *
+     * Campo de cor cheia, moldura DUPLA de cantos cortados, serif com tinta
+     * metalica, e tres chapas menores dentro da grande: nivel, os quatro
+     * numeros, patamar. Saiu o que so enchia altura — o rotulo "Placa do
+     * Legado" no alto (o contexto ja diz o que e) e a linha solta do cla, que
+     * agora entra junto da patente.
+     *
+     * A TINTA METALICA nao e cor de texto: e um gradiente recortado na forma
+     * das letras (`background-clip: text`). So funciona em serif pesada, porque
+     * o brilho precisa de area para atravessar — por isso o nome e a nota usam
+     * Cinzel e os rotulos pequenos continuam em Inter.
+     *
+     * A placa e HORIZONTAL por encaixe, nao por gosto: ela mora no topo da cena
+     * do legado, do quadro final e da tela de conclusao, sempre ocupando a
+     * largura e cedendo a altura para o que vem abaixo.
+     */
+    const molduraCortada = (canto: number) => ({
+        clipPath: `polygon(${canto}px 0, calc(100% - ${canto}px) 0, 100% ${canto}px, 100% calc(100% - ${canto}px), calc(100% - ${canto}px) 100%, ${canto}px 100%, 0 calc(100% - ${canto}px), 0 ${canto}px)`,
+    });
+    const tintaMetalica: React.CSSProperties = {
+        background: `linear-gradient(103deg, ${cor.metalMid} 2%, ${cor.metalLight} 26%, #fff8ea 44%, ${cor.metalLight} 62%, ${cor.metalMid} 88%, ${cor.metalLight} 100%)`,
+        backgroundClip: 'text',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        filter: 'drop-shadow(0 2px 2px rgba(0,0,0,.75))',
+    };
+    /*
+     * SO A PATENTE.
+     *
+     * O cla saiu da placa. Ela e o registro da JORNADA — ciclos, carga, dias,
+     * patamar —, e cla e vinculo do momento: entra, sai, troca de nome. Numa
+     * unica linha sob o titulo, ele disputava espaco com a unica coisa ali que
+     * a pessoa construiu sozinha.
+     */
+    const subtitulo = patent;
+
+    /*
+     * OS ROTULOS TEM PISO DE 8px.
+     *
+     * Estavam em 6.5px: num palco de 390px de largura, num aparelho de verdade,
+     * isso e textura e nao palavra — da para ver que ha algo escrito ali e nao
+     * da para ler o que e. A placa e feita para ser olhada de perto e
+     * compartilhada, entao o que esta escrito precisa sobreviver a uma captura
+     * de tela reduzida.
+     */
+    const chapa = (rotulo: string, conteudo: React.ReactNode, extra?: React.ReactNode) => (
+        <div
+            className={`relative z-[3] flex shrink-0 flex-col items-center justify-center gap-0.5 ${compact ? 'px-2.5 py-2' : 'px-3.5 py-3'}`}
+            style={{
+                background: `radial-gradient(ellipse at 50% 0%, ${cor.glow}, transparent 70%), ${cor.plate}`,
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,.08)',
+                ...molduraCortada(9),
+            }}
+        >
+            <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-[4px]"
+                style={{ border: `1px solid ${cor.trimSoft}`, ...molduraCortada(6) }}
+            />
+            <span className={`${compact ? 'text-[8px]' : 'text-[7.5px]'} font-semibold uppercase tracking-[0.2em]`} style={{ color: cor.label }}>
+                {rotulo}
+            </span>
+            {conteudo}
+            {extra}
+        </div>
+    );
+
+    const chapaDoNivel = chapa(
+        'Nível',
+        <span
+            className={`${compact ? 'text-[1.72rem]' : 'text-[2rem]'} font-bold leading-none tabular-nums`}
+            style={{ fontFamily: 'Cinzel, Georgia, serif', ...tintaMetalica }}
+        >
+            {level}
+        </span>,
+    );
+
+    /*
+     * A DIREITA E A NOTA, SEMPRE.
+     *
+     * Havia aqui um `identityMode`: na cena do legado, enquanto se anda pelos
+     * ciclos, esta chapa virava "Registro" e mostrava a data da captura. O
+     * carimbo tomava o lugar da unica letra da placa — e ainda deixava as duas
+     * pontas tortas, porque "16/09/2026" e tres vezes mais largo que "A".
+     *
+     * Nivel a esquerda, nota a direita: dois numeros do mesmo peso, um em cada
+     * ponta. A data ja esta na regua do tempo da cena, que e onde data se le.
+     */
+    const chapaDaNota = chapa(
+        'Patamar',
+        <span
+            className={`${compact ? 'text-[2.05rem]' : 'text-[2.4rem]'} font-bold leading-none`}
+            style={{ fontFamily: 'Cinzel, Georgia, serif', ...tintaMetalica }}
+        >
+            {averageGrade}
+        </span>,
+    );
+
+    const bloqueDoNome = (
+        <div className="min-w-0 max-w-full text-center">
+            <h2
+                className={`m-0 truncate font-bold leading-none ${compact ? titleSize : 'text-[1.9rem]'}`}
+                style={{ fontFamily: 'Cinzel, Georgia, serif', letterSpacing: '.05em', ...tintaMetalica }}
+                title={nickname}
+            >
+                {nickname}
+            </h2>
+            <div className={`flex items-center justify-center gap-2.5 ${compact ? 'mt-1.5' : 'mt-2'}`}>
+                <span className="h-px w-8 shrink-0" style={{ background: `linear-gradient(90deg, transparent, ${cor.trimSoft})` }} />
+                <p
+                    className={`m-0 truncate font-semibold uppercase ${compact ? 'text-[0.72rem]' : 'text-[0.82rem]'}`}
+                    style={{ fontFamily: 'Cinzel, Georgia, serif', letterSpacing: '.2em', ...tintaMetalica }}
+                    title={subtitulo}
+                >
+                    {subtitulo}
+                </p>
+                <span className="h-px w-8 shrink-0" style={{ background: `linear-gradient(90deg, ${cor.trimSoft}, transparent)` }} />
+            </div>
+        </div>
+    );
+
+    /*
+     * OS QUATRO NUMEROS EM DOIS PARES, E O SCORE POR BAIXO.
+     *
+     * Em quatro linhas de um so, o bloco ficava alto e estreito e empurrava a
+     * placa para cima. Em dois pares ele fica largo e baixo, que e a forma da
+     * placa.
+     *
+     * O SCORE desceu da chapa do patamar para ca, e cresceu. La ele era um
+     * numero miudo debaixo da letra — legenda de um simbolo. A letra e o
+     * resumo; o score e o dado, e dado mora com dado.
+     */
+    const grade = (
+        <div
+            className={`grid w-full min-w-0 items-baseline overflow-hidden ${compact ? 'gap-x-2 gap-y-1' : 'gap-x-3 gap-y-1.5'}`}
+            /* minmax(0,auto) e o que deixa a coluna encolher: com `auto` puro
+               ela trava no tamanho do conteudo, a grade transborda a faixa e os
+               rotulos passam por baixo das chapas. */
+            style={{ gridTemplateColumns: 'repeat(4, minmax(0, auto))', justifyContent: 'center' }}
+        >
+            {metricItems.map((item) => (
+                <React.Fragment key={item.label}>
+                    <span
+                        className={`${compact ? 'text-[8px]' : 'text-[8px]'} truncate text-right font-semibold uppercase tracking-[0.1em]`}
+                        style={{ color: cor.label }}
+                    >
+                        {item.label}
+                    </span>
+                    <span
+                        className={`${compact ? 'text-[1.05rem]' : 'text-[1.08rem]'} whitespace-nowrap font-bold leading-tight tabular-nums`}
+                        style={{ fontFamily: 'Cinzel, Georgia, serif', ...tintaMetalica }}
+                    >
+                        {item.value}
+                    </span>
+                </React.Fragment>
+            ))}
+
+            <div
+                className={`flex items-baseline justify-center gap-2 ${compact ? 'mt-1 pt-1' : 'mt-1.5 pt-1.5'}`}
+                style={{ gridColumn: '1 / -1', borderTop: `1px solid ${cor.trimSoft}` }}
+            >
+                <span
+                    className={`${compact ? 'text-[8.5px]' : 'text-[8.5px]'} font-semibold uppercase tracking-[0.2em]`}
+                    style={{ color: cor.label }}
+                >
+                    Score
+                </span>
+                <span
+                    className={`${compact ? 'text-[1.5rem]' : 'text-[1.7rem]'} font-bold leading-none tabular-nums`}
+                    style={{ fontFamily: 'Cinzel, Georgia, serif', ...tintaMetalica }}
+                >
+                    {weightedAverageScore}
+                </span>
+            </div>
+        </div>
+    );
 
     return (
         <section
-            className={`relative isolate w-full overflow-hidden rounded-[18px] px-3 pb-3 pt-3 text-white ${compact ? 'min-h-[132px]' : 'min-h-[196px] px-5 pb-4 pt-4'} ${className}`}
+            className={`legacy-plaque relative isolate w-full overflow-hidden text-white ${compact ? 'rounded-[6px] px-4 py-3' : 'rounded-[8px] px-5 py-4'} ${className}`}
             style={{
-                border: '1.5px solid transparent',
                 background: [
-                    'radial-gradient(circle at 12% 0%, rgba(255,230,150,0.16), transparent 32%) padding-box',
-                    'radial-gradient(circle at 96% 100%, rgba(47,125,159,0.18), transparent 34%) padding-box',
-                    'linear-gradient(118deg, rgba(255,255,255,0.07), transparent 24%, rgba(255,255,255,0.025) 52%, transparent 74%) padding-box',
-                    'linear-gradient(160deg, #17212a 0%, #0b1118 48%, #030608 100%) padding-box',
-                    'linear-gradient(147deg, #f7e7b0 0%, #c9a34e 15%, #705523 34%, #e4cd88 52%, #7d6029 72%, #c6a052 88%, #f7e7b0 100%) border-box',
+                    'repeating-linear-gradient(118deg, rgba(255,255,255,.028) 0 1px, transparent 1px 7px)',
+                    `radial-gradient(ellipse at 50% 0%, ${cor.glow}, transparent 62%)`,
+                    cor.field,
                 ].join(', '),
-                boxShadow: '0 18px 36px rgba(0,0,0,0.46), 0 2px 6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,244,203,0.24), inset 0 -22px 38px rgba(0,0,0,0.34)',
+                boxShadow: '0 24px 50px rgba(0,0,0,.66), inset 0 1px 0 rgba(255,255,255,.07)',
             }}
         >
-            <div
-                className="pointer-events-none absolute inset-[5px] rounded-[13px]"
+            {/*
+              * A MOLDURA E A MESMA GRAMATICA DA PLACA DE CICLO.
+              *
+              * La (MetalReportCard) o chanfro e desenhado em SVG e a borda e um
+              * gradiente que corre do escuro ao claro varias vezes — e o que faz
+              * a moldura parecer metal torneado em vez de linha pintada. Aqui a
+              * mesma sequencia de paradas entra por `border-image`, sobre o
+              * mesmo recorte de cantos.
+              *
+              * Sem isso as duas placas do app pareciam de produtos diferentes: a
+              * do ciclo com moldura viva, a do legado com um traco chapado.
+              */}
+            <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-[4px] z-[5]"
                 style={{
-                    border: '1px solid rgba(238,214,150,0.24)',
-                    boxShadow: 'inset 0 1px 0 rgba(255,246,214,0.14), 0 1px 0 rgba(0,0,0,0.55)',
+                    border: '2px solid transparent',
+                    borderImageSource: `linear-gradient(135deg, ${cor.metalMid} 0%, ${cor.metalLight} 8%, ${cor.metalMid} 13%, ${cor.trim} 40%, ${cor.trim} 85%, ${cor.metalLight} 100%)`,
+                    borderImageSlice: 1,
+                    ...molduraCortada(14),
                 }}
             />
-            <div
-                className="pointer-events-none absolute inset-0 opacity-[0.14] mix-blend-overlay"
-                style={{ background: 'repeating-linear-gradient(101deg, rgba(255,255,255,0.5) 0px, rgba(255,255,255,0) 2px, rgba(255,255,255,0) 5px)' }}
+            <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-[9px] z-[5]"
+                style={{ border: `1px solid ${cor.trimSoft}`, ...molduraCortada(11) }}
             />
-            <div className="pointer-events-none absolute inset-x-5 top-[8px] h-px bg-gradient-to-r from-transparent via-amber-200/75 to-transparent" />
-            <div className="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rotate-12 border border-amber-200/10" />
-            <div className="pointer-events-none absolute bottom-0 left-[27%] h-20 w-px rotate-[28deg] bg-gradient-to-b from-transparent via-white/8 to-transparent" />
-            {([
-                'left-[9px] top-[9px] border-l border-t',
-                'right-[9px] top-[9px] border-r border-t',
-                'left-[9px] bottom-[9px] border-b border-l',
-                'right-[9px] bottom-[9px] border-b border-r',
-            ]).map((corner) => (
-                <div key={corner} className={`pointer-events-none absolute h-2.5 w-2.5 border-amber-100/45 ${corner}`} />
-            ))}
-
-            <div className={`relative z-10 grid items-center ${compact ? 'grid-cols-[58px_minmax(0,1fr)_58px] gap-2' : 'grid-cols-[64px_minmax(0,1fr)_64px] gap-2 sm:grid-cols-[88px_minmax(0,1fr)_96px] sm:gap-4'}`}>
-                <div className="relative flex items-center justify-center">
-                    <div className={`absolute -bottom-1 right-0 z-20 flex flex-col items-center justify-center rounded-full border border-amber-200/85 bg-[#070a0d] shadow-[0_5px_12px_rgba(0,0,0,0.55),0_0_0_2px_rgba(8,10,12,0.88)] ${compact ? 'h-7 w-7' : 'h-8 w-8 sm:h-10 sm:w-10'}`} aria-label={`Nível ${level}`}>
-                        <span className={`${compact ? 'text-[4px]' : 'text-[5px]'} font-black uppercase tracking-[0.08em] text-amber-200/60`}>Nivel</span>
-                        <strong className={`${compact ? 'text-[0.72rem]' : 'text-[0.86rem] sm:text-[1rem]'} font-black leading-none tabular-nums text-white`}>{level}</strong>
+            {/*
+              * DUAS ARRUMACOES, E O QUE MANDA E A LARGURA QUE SOBRA.
+              *
+              * COMPACTA (a cena): as pontas correm a altura inteira e o nome vai
+              * para dentro da coluna do meio. Antes o nome ficava numa faixa por
+              * cima e as chapas comecavam so abaixo dele — elas ocupavam o terco
+              * de baixo, e o nivel e a nota, que sao os dois numeros grandes,
+              * liam-se afundados, fora do centro da placa.
+              *
+              * CHEIA (o historico): o nome fica por cima, como sempre esteve. Ele
+              * desenha a 1.9rem, e ladeado pelas duas chapas sobraria menos de
+              * 210px para ele — um apelido de treze letras ja entraria cortado.
+              * O ganho de centralizar os numeros nao paga cortar o nome de quem e
+              * dono da placa.
+              */}
+            {compact ? (
+                <div className="relative z-[2] flex w-full items-stretch justify-center gap-2.5">
+                    {chapaDoNivel}
+                    <div className="flex min-w-0 flex-1 flex-col items-center justify-center gap-2.5">
+                        {bloqueDoNome}
+                        {grade}
                     </div>
-                    <UserAvatar
-                        avatarUrl={identity?.avatarUrl}
-                        nickname={nickname}
-                        borderId={identity?.borderId}
-                        className={compact ? 'h-[52px] w-[52px]' : 'h-[58px] w-[58px] sm:h-[78px] sm:w-[78px]'}
-                        borderColor="rgba(237,196,96,0.96)"
-                        showBorder
-                    />
+                    {chapaDaNota}
                 </div>
-
-                <div className="min-w-0 self-center">
-                    <p className={`${compact ? 'text-[5px]' : 'text-[7px]'} font-black uppercase tracking-[0.24em] text-amber-200/65`}>
-                        Placa do Legado
-                    </p>
-                    <h2 className={`mt-1 truncate font-black uppercase leading-none text-white drop-shadow-[0_2px_3px_rgba(0,0,0,0.65)] ${compact ? titleSize : 'text-[1.1rem] sm:text-[1.5rem]'}`} title={nickname}>
-                        {nickname}
-                    </h2>
-                    <div className="mt-1.5 h-px w-full bg-gradient-to-r from-amber-200/80 via-amber-100/18 to-transparent" />
-                    <p className={`${compact ? 'mt-1 text-[7px]' : 'mt-2 text-[10px]'} truncate font-black uppercase tracking-[0.08em] text-sky-50/76`} title={patent}>
-                        {patent}
-                    </p>
-                    <p className={`${compact ? 'mt-0.5 text-[6px]' : 'mt-1 text-[9px]'} truncate font-semibold text-white/58`} title={clanName || 'Sem clã neste registro'}>
-                        {clanName ? `${identity?.clanIcon && !isClanEmblemImage(identity.clanIcon) ? `${identity.clanIcon} ` : ''}${clanName}${clanRank ? ` - ${clanRank}` : ''}` : 'Jornada individual'}
-                    </p>
-                </div>
-
-                <div
-                    className={`relative flex flex-col items-center justify-center rounded-full text-center ${compact ? 'h-[54px] w-[54px]' : 'h-[60px] w-[60px] sm:h-[86px] sm:w-[86px]'}`}
-                    style={{
-                        border: '1.5px solid transparent',
-                        background: [
-                            'radial-gradient(circle at 34% 26%, rgba(255,239,181,0.16), rgba(8,14,19,0.96) 62%) padding-box',
-                            'linear-gradient(150deg, #f2dda0 0%, #b8934a 26%, #6a5122 52%, #ddc17f 78%, #f2dda0 100%) border-box',
-                        ].join(', '),
-                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -6px 12px rgba(0,0,0,0.4), 0 8px 20px rgba(0,0,0,0.38)',
-                    }}
-                >
-                    <span className={`${compact ? 'text-[4px]' : 'text-[6px]'} font-black uppercase tracking-[0.1em] text-amber-200/64`}>{identityMode === 'historical' ? 'Registro' : 'Patamar'}</span>
-                    {identityMode === 'historical' ? (
-                        <strong className={`${compact ? 'mt-1 text-[7px]' : 'mt-1.5 text-[10px]'} max-w-[80%] font-black leading-tight text-white`}>{capturedDate || 'Ciclo fechado'}</strong>
-                    ) : (
-                        <>
-                            <strong className={`${compact ? 'text-[1.45rem]' : 'text-[2.45rem]'} font-black leading-none text-white`}>{averageGrade}</strong>
-                            <span className={`${compact ? 'text-[7px]' : 'text-[10px]'} font-black tabular-nums text-amber-100/74`}>{weightedAverageScore}</span>
-                        </>
-                    )}
-                </div>
-            </div>
-
-            <div
-                className={`relative z-10 mt-2 grid grid-cols-4 divide-x divide-amber-100/12 overflow-hidden rounded-[9px] ${compact ? 'py-1.5' : 'mt-4 py-2'}`}
-                style={{
-                    background: 'linear-gradient(180deg, rgba(0,0,0,0.34), rgba(0,0,0,0.12))',
-                    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.6), inset 0 -1px 0 rgba(255,244,203,0.09)',
-                }}
-            >
-                <div className="pointer-events-none absolute inset-x-2 top-0 h-px bg-gradient-to-r from-transparent via-amber-200/45 to-transparent" />
-                {metricItems.map((item) => (
-                    <div key={item.label} className="flex min-w-0 flex-col items-center justify-center px-1 text-center">
-                        <span className={`${compact ? 'text-[4.5px]' : 'text-[6px]'} truncate font-black uppercase tracking-[0.1em] text-amber-100/48`}>{item.label}</span>
-                        <strong className={`${compact ? 'mt-0.5 text-[9px]' : 'mt-1 text-[14px]'} font-black tabular-nums text-white/92`}>{item.value}</strong>
+            ) : (
+                <div className="relative z-[2] flex flex-col items-center gap-3.5">
+                    {bloqueDoNome}
+                    <div className="flex w-full items-stretch justify-center gap-4">
+                        {chapaDoNivel}
+                        <div className="flex min-w-0 flex-1 items-center">{grade}</div>
+                        {chapaDaNota}
                     </div>
-                ))}
-            </div>
+                </div>
+            )}
         </section>
     );
 };

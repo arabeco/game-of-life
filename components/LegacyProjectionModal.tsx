@@ -1,11 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReportIdentitySnapshot } from '../types';
 import { Portal } from './Portal';
 import { LegacyProjectionScene } from './LegacyProjectionScene';
+import { LegacyFinalCard } from './LegacyFinalCard';
 import { buildLegacyPlaqueSummary } from './LegacyPlaqueArtifact';
 import { LegacyGrandPlaque } from './LegacyGrandPlaque';
 import { LegacyProjectionConfirmModal } from './LegacyProjectionConfirmModal';
-import { LegacyExportKit, type LegacyExportKitHandle } from './LegacyExportKit';
 import type { LegacyEraSummary } from './LegacyExportDocument';
 import { getGoldMechanicPrice } from '../constants/goldCatalog';
 import { DEFAULT_LEGACY_BACKDROP_SKIN_ID, getLegacyBackdropSkin, type LegacyBackdropSkinId } from '../constants/legacyBackdropSkins';
@@ -20,6 +20,10 @@ import './legacy-ui.css';
 
 interface LegacyProjectionModalProps {
     eras: LegacyEraSummary[];
+    /** Cor da placa escolhida no perfil, ou `auto` para acompanhar o patamar. */
+    plaqueColorId?: string;
+    /** Ausente = o seletor de cor nao aparece (ex.: placa de outra pessoa). */
+    onChangePlaqueColor?: (colorId: string) => void;
     sovereignName: string;
     isPremium: boolean;
     showLayoutEditors?: boolean;
@@ -38,7 +42,7 @@ interface LegacyProjectionModalProps {
     confirmButtonLabel?: string;
 }
 
-const LEGACY_PROJECTION_CAPTURE_ID = 'legacy-projection-capture';
+const LEGACY_FINAL_CARD_ID = 'legacy-final-card';
 const LEGACY_PREVIEW_BACKDROP_URL = '/legacy-skins/10.jpg';
 const LEGACY_SCENE_GOLD_COST = getGoldMechanicPrice('legacy_projection_scene', 50);
 const LEGACY_PREVIEW_STAGE_WIDTH = 390;
@@ -78,6 +82,8 @@ const LayoutSlider: React.FC<{
 
 export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
     eras,
+    plaqueColorId,
+    onChangePlaqueColor,
     sovereignName,
     isPremium,
     showLayoutEditors = false,
@@ -111,7 +117,6 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
         width: typeof window !== 'undefined' ? window.innerWidth : LEGACY_PREVIEW_STAGE_WIDTH,
         height: typeof window !== 'undefined' ? window.innerHeight : LEGACY_PREVIEW_STAGE_HEIGHT,
     }));
-    const exportKitRef = useRef<LegacyExportKitHandle | null>(null);
     const previewLayoutCopyTimeoutRef = useRef<number | null>(null);
 
     const summary = useMemo(() => buildLegacyPlaqueSummary(eras), [eras]);
@@ -219,9 +224,18 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
         try {
             const { exportElementAsImage, shouldPreferNativeShare } = await import('./Share');
             const preferShare = shouldPreferNativeShare();
-            const result = await exportElementAsImage(LEGACY_PROJECTION_CAPTURE_ID, {
-                fileName: `glyph-cena-do-legado-${new Date().toISOString().slice(0, 10)}.png`,
-                title: `Cena do Legado - ${sovereignName}`,
+            /*
+             * Sai o panorama, entra o quadro final.
+             *
+             * A cena de captura enfileira os cards de ciclo lado a lado numa faixa
+             * de 1720px com overflow escondido: passando de umas nove voltas, o
+             * resto era cortado sem aviso — quem tinha mais legado exportava menos.
+             * O quadro final cabe inteiro por construcao, porque cada ciclo e uma
+             * barra e nao um card.
+             */
+            const result = await exportElementAsImage(LEGACY_FINAL_CARD_ID, {
+                fileName: `glyph-legado-${new Date().toISOString().slice(0, 10)}.png`,
+                title: `Legado - ${sovereignName}`,
                 backgroundColor: '#050505',
                 preferShare,
                 pixelRatio: 3,
@@ -313,7 +327,6 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
                                 eras={eras}
                                 sovereignName={sovereignName}
                                 identity={fallbackIdentity}
-                                identityMode="current"
                                 compact
                                 portrait
                             />
@@ -375,34 +388,26 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
                         style={{ width: `${LEGACY_PREVIEW_STAGE_WIDTH}px`, height: `${LEGACY_PREVIEW_STAGE_HEIGHT}px`, transform: `scale(${completionStageScale})`, transformOrigin: 'top left' }}
                     >
                         <div className="relative z-10 flex h-full flex-col items-center">
-                            <div className="mt-[92px] rounded-full border border-[var(--skin-accent-color)]/24 bg-black/42 px-4 py-2 text-[10px] font-black uppercase tracking-[0.28em] text-amber-200/90 backdrop-blur-xl">
+                            {/* 92px de topo eram o respiro de quando a placa vinha logo
+                                abaixo. Com o quadro final no lugar dela a conta nao fecha
+                                mais: o rodape com os botoes saia do palco. */}
+                            <div className="mt-[34px] rounded-full border border-[var(--skin-accent-color)]/24 bg-black/42 px-4 py-2 text-[10px] font-black uppercase tracking-[0.28em] text-amber-200/90 backdrop-blur-xl">
                                 Sequência concluida
                             </div>
 
-                            <div
-                                className="mt-4 mx-auto w-full"
-                                style={{
-                                    width: `${previewPlaqueWidth}px`,
-                                    maxWidth: `${LEGACY_PREVIEW_STAGE_WIDTH - 36}px`,
-                                    transform: 'scale(1.12)',
-                                    transformOrigin: 'top center',
-                                }}
-                            >
-                                <LegacyGrandPlaque
+                            {/* O quadro final substitui o paragrafo que dizia que a cena
+                                terminou. Ele mostra a jornada inteira — uma barra por
+                                ciclo — e e exatamente o que o botao de compartilhar
+                                exporta: o que se ve e o que se manda. */}
+                            <div className="mt-3 w-full max-w-[356px]">
+                                <LegacyFinalCard
+                                    id={LEGACY_FINAL_CARD_ID}
                                     eras={eras}
                                     sovereignName={sovereignName}
                                     identity={fallbackIdentity}
-                                    identityMode="current"
-                                    compact
-                                    portrait
+                                    plaqueColorId={plaqueColorId}
+                                    width={356}
                                 />
-                            </div>
-
-                            <div className="mt-4 w-full max-w-[332px] rounded-[24px] border border-white/10 bg-black/34 px-4 py-4 text-center shadow-[0_18px_42px_rgba(0,0,0,0.32)] backdrop-blur-md">
-                                <h2 className="text-[1.28rem] font-black tracking-tight text-white">Legado projetado com sucesso</h2>
-                                <p className="mt-2 text-sm leading-relaxed text-gray-300">
-                                    A cena terminou. Agora você pode exportar o quadro ou seguir para a placa final.
-                                </p>
                             </div>
 
                             <div className="mt-auto w-full max-w-[320px] space-y-2 pb-4">
@@ -439,26 +444,16 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
         </div>
     );
 
-    const hiddenCaptureScene = (
-        <div className="pointer-events-none fixed left-[-20000px] top-0 z-[-1]" aria-hidden="true">
-            <LegacyProjectionScene
-                id={LEGACY_PROJECTION_CAPTURE_ID}
-                eras={eras}
-                sovereignName={sovereignName}
-                projectionActive
-                showLayoutEditor={showLayoutEditors}
-                fallbackIdentity={fallbackIdentity}
-                backdropSkinId={selectedBackdropSkinId}
-            />
-            <LegacyExportKit
-                ref={exportKitRef}
-                eras={eras}
-                sovereignName={sovereignName}
-                fallbackIdentity={fallbackIdentity}
-                backdropSkinId={selectedBackdropSkinId}
-            />
-        </div>
-    );
+    /*
+     * A CENA ESCONDIDA DE CAPTURA SAIU.
+     *
+     * Ela montava, fora da tela, uma segunda LegacyProjectionScene de 1720px mais
+     * o LegacyExportKit inteiro — toda vez que o legado abria, so para existir
+     * caso alguem exportasse. Quem exportava era o botao de compartilhar, e ele
+     * agora captura o quadro final, que esta na propria tela.
+     *
+     * Nao sobrou ninguem lendo `exportKitRef`: ele era atribuido e nunca usado.
+     */
 
     return (
         <Portal>
@@ -492,6 +487,11 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
                                     projectionActive
                                     interactive
                                     showLayoutEditor={showLayoutEditors}
+                                    /* Slideshow, nao filme. A cena TEM o modo automatico
+                                       (autoAdvance) e ele continua servindo a captura, onde
+                                       ninguem toca na tela. Aqui quem vira o ciclo e a pessoa:
+                                       filme que anda sozinho briga com quem quer parar e olhar,
+                                       e a briga aparecia como toque comido e volta sozinha. */
                                     autoAdvance={false}
                                     enteringProjection={isProjectionTransitioning}
                                     fallbackIdentity={fallbackIdentity}
@@ -513,6 +513,8 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
                 {showProjectionConfirm && (
                     <LegacyProjectionConfirmModal
                         selectedSkinId={selectedBackdropSkinId}
+                        selectedPlaqueColorId={plaqueColorId}
+                        onSelectPlaqueColor={onChangePlaqueColor}
                         sceneGoldCost={sceneGoldCost}
                         isProcessing={isPurchasingProjection}
                         kickerLabel={confirmKickerLabel}
@@ -525,7 +527,6 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
                     />
                 )}
 
-                {hiddenCaptureScene}
             </div>
         </Portal>
     );

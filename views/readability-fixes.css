@@ -9,10 +9,13 @@
 [data-skin="GOLD"] .theme-dark #settings-container .settings-tab-strip button { color: #d6cba9 !important; }
 .assets-detail-root { padding-bottom: calc(76px + var(--safe-area-bottom, 0px)); }
 .assets-detail-root .asset-current-mastery p { color: #f4f2ee !important; }
+/* Sem respiro no topo: a placa do legado abre a tela e nao precisa recuar. */
 .reports-hub-content { margin: 0 auto; padding: 0 3px 4px; }
-.reports-hub-content > .reports-legacy-plaque { margin-bottom: 4px; }
+/* 4px + 5px = a trilha encostando na placa do legado. O `mt-5` que a trilha
+   pede no JSX perdia para esta regra, que vinha depois na folha. */
+.reports-hub-content > .reports-legacy-plaque { margin-bottom: 0; }
 .reports-legacy-plaque { border: 0; background: transparent; }
-.reports-cycle-timeline { margin-top: 5px; }
+.reports-cycle-timeline { margin-top: 18px; }
 .reports-hub-content .reports-cycle-start { margin-top: 8px; }
 @media (max-height: 740px) {
   .assets-detail-root .asset-current-mastery { padding: 7px 10px; }
@@ -20,15 +23,77 @@
   .assets-detail-root section { padding-top: 7px; padding-bottom: 7px; }
 }
 
-/* Keep the current cycle horizontal so it does not crowd out the history. */
-.reports-hub-content .reports-active-cycle .metal-report-card { width: 100%; min-height: 0; }
-.reports-hub-content .reports-active-cycle .metal-report-card__content { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 5px 9px; }
-.reports-active-cycle .metal-report-card__rail,
-.reports-active-cycle .metal-report-card__metrics { grid-column: 1 / -1; }
-.reports-active-cycle .metal-report-card__hero { grid-column: 1; grid-row: 2 / 4; justify-content: center; }
-.reports-active-cycle .metal-report-card__seal { display: none; }
-.reports-active-cycle .metal-report-card__title-stack,
-.reports-active-cycle .metal-report-card__dual-progress { grid-column: 2; }
-.reports-active-cycle .metal-report-card__metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.reports-active-cycle .metal-report-card__title { font-size: 12px; }
+/*
+ * O CICLO ATUAL USA A MESMA PLACA DE TODOS OS OUTROS.
+ *
+ * Aqui havia um bloco que achatava a placa do ciclo em andamento numa grade
+ * deitada propria. Era um TERCEIRO desenho de ciclo no app — nem a placa do
+ * historico, nem a do encerramento — e a tela do historico acabava mostrando
+ * esse card inventado em cima e as placas de verdade logo abaixo.
+ *
+ * Um desenho so. O ciclo em andamento e o primeiro da trilha; os fechados vem
+ * arrastando para o lado.
+ */
 .reports-active-cycle #end-cycle-button { padding-top: 7px; padding-bottom: 7px; font-size: 12px; }
+
+/*
+ * O MUNDO NO GOLD ESCURO.
+ *
+ * Mesma doenca que o Config tinha: a pele GOLD traz tokens de placa que sao
+ * escuros por natureza — eles nasceram para texto sobre metal claro. No tema
+ * escuro isso vira cinza sobre preto, e a aba inteira fica na faixa de 2:1 de
+ * contraste, abaixo do minimo legivel.
+ *
+ * O conserto e o mesmo: dentro de `#social-container`, e SO na combinacao
+ * GOLD + escuro, os tons voltam para a familia clara. Nada disso vale no tema
+ * claro nem nas outras peles, onde os tokens originais estao certos.
+ *
+ * A escala do Tailwind e remapeada em bloco em vez de caso a caso porque a aba
+ * tem dezenas de rotulos pequenos espalhados — arrumar um por um deixaria
+ * sempre um esquecido, que e exatamente o que aconteceu ate aqui.
+ */
+[data-skin="GOLD"] .theme-dark #social-container .glass-card {
+  --ui-card-text: #f4f1e9;
+  --ui-card-text-soft: #c9c5ba;
+}
+[data-skin="GOLD"] .theme-dark #social-container :is(h1, h2, h3, h4, strong, .text-white) { color: #f4f1e9 !important; }
+[data-skin="GOLD"] .theme-dark #social-container .text-gray-300 { color: #ddd8cc !important; }
+[data-skin="GOLD"] .theme-dark #social-container .text-gray-400 { color: #c9c5ba !important; }
+[data-skin="GOLD"] .theme-dark #social-container :is(.text-gray-500, .text-gray-600) { color: #aaa599 !important; }
+[data-skin="GOLD"] .theme-dark #social-container .mundo-social-subnav button { color: #d6cba9 !important; }
+[data-skin="GOLD"] .theme-dark #social-container .mundo-social-subnav button[aria-selected="true"] { color: #f6ead0 !important; }
+[data-skin="GOLD"] .theme-dark #social-container input::placeholder { color: #a8a396 !important; }
+
+/*
+ * A PLACA TEM PROPORCAO FIXA, E ELA NAO NEGOCIA.
+ *
+ * Aqui havia um `height: 100%` que esticava a placa para igualar as alturas da
+ * trilha. Igualava mesmo — deformando a unica coisa que precisava ficar igual
+ * em toda parte, que e o formato. Uma placa e um objeto de colecao: se ela muda
+ * de proporcao conforme a vizinhanca, deixa de ser a mesma placa.
+ *
+ * O que sobrava de altura era o progresso do ciclo em andamento, que as
+ * fechadas nao tem. Ele saiu de DENTRO da placa e virou uma barra abaixo dela
+ * (ver SimplifiedCycleHUD): o extra fica fora, e a placa continua a mesma.
+ */
+.reports-hub-content #end-cycle-button { margin-top: 14px; }
+
+/*
+ * O VAZIO DE BAIXO DO HISTORICO.
+ *
+ * A tela reserva a altura inteira do aparelho e o conteudo — placa do legado,
+ * trilha e o encerrar — e mais curto que isso. A sobra ficava toda embaixo, o
+ * que dava a impressao de que faltava alguma coisa ali.
+ *
+ * `margin: auto 0` reparte essa sobra em cima e embaixo, centralizando o bloco.
+ * E o idioma seguro para isso: quando o conteudo PASSA da altura disponivel, a
+ * margem automatica colapsa sozinha e o bloco volta a comecar no topo, com a
+ * rolagem funcionando. `justify-content: center` faria o oposto — cortaria o
+ * topo, sem jeito de alcancar.
+ *
+ * Por isso o `overflow-hidden` do miolo virou `overflow-y-auto` no mesmo passo:
+ * centralizar sem poder rolar e a receita de conteudo inalcancavel em tela
+ * pequena.
+ */
+.reports-hub-viewport { display: flex; flex-direction: column; }
+.reports-hub-viewport > .reports-hub-content { margin: auto 0; width: 100%; }

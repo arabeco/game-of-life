@@ -1,5 +1,6 @@
 ﻿import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { SlideAjustado } from './SlideAjustado';
+import { SlideCartaz } from './SlideCartaz';
 import { useGame } from '../contexts/GameContext';
 import { Portal } from './Portal';
 import { SKINS_DATA } from '../constants/GMboard';
@@ -181,80 +182,51 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         fullMark: 100
     }));
 
-    // Slide 1: Execucao
-    const renderExecutionSlide = () => (
-        <div className="flex flex-col h-full space-y-8 p-6">
-            <div className="text-center">
-                <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">Execucao</h3>
-                <div className="report-rule" />
-            </div>
-
-            <div className="space-y-6">
-                <div className="report-panel p-4">
-                    <div className="flex justify-between text-[10px] text-gray-500 mb-3 font-black tracking-widest uppercase">
-                        <span>Acoes</span>
-                        <span className="text-white">{metrics.actionsCompleted} <span className="text-gray-600">/</span> {metrics.totalPlannedActions}</span>
-                    </div>
-                    <div className="report-track">
-                        <div
-                            className="h-full bg-gradient-to-r from-[var(--skin-accent-color)] to-white transition-all duration-1000 shadow-[0_0_10px_var(--skin-accent-color)]"
-                            style={{ width: `${Math.min((metrics.actionsCompleted / Math.max(metrics.totalPlannedActions, 1)) * 100, 100)}%` }}
-                        />
-                    </div>
-                </div>
-
-                <div className="report-panel p-4">
-                    <div className="flex justify-between text-[10px] text-gray-500 mb-3 font-black tracking-widest uppercase">
-                        <span>Tempo</span>
-                        <span className="text-white">{duration} <span className="text-gray-600">/</span> {plannedDuration} <span className="text-gray-600 text-[8px]">DIAS</span></span>
-                    </div>
-                    <div className="report-track">
-                        <div
-                            className="h-full bg-gradient-to-r from-red-500 to-red-400 transition-all duration-1000 shadow-[0_0_10px_rgba(239,68,68,0.5)]"
-                            style={{ width: `${timePercentage}%` }}
-                        />
-                    </div>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-                <div className="report-panel report-panel-hover p-6 text-center group">
-                    <p className="text-3xl font-black text-white mb-1 tracking-tighter">{metrics.totalHours}</p>
-                    <p className="report-micro">Horas Totais</p>
-                </div>
-                <div className="report-panel report-panel-hover p-6 text-center group">
-                    <p className="text-3xl font-black text-white mb-1 tracking-tighter">{metrics.avgHoursPerDay ?? (metrics.totalHours / totalDays).toFixed(1)}</p>
-                    <p className="report-micro">Média h/dia</p>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-                <div className="report-panel report-panel-hover p-6 text-center group">
-                    <p className="text-3xl font-black text-white mb-1 tracking-tighter">{zeroDays}</p>
-                    <p className="report-micro">Dias Zerados</p>
-                    <p className="text-[9px] text-gray-600 mt-1">{metrics.consistencyDays || 0}/{totalDays} dias ativos</p>
-                </div>
-                <div className="report-panel report-panel-hover p-6 text-center group">
-                    <p className={`text-3xl font-black mb-1 tracking-tighter ${paceColor}`}>{paceDelta > 0 ? `+${paceDelta}` : paceDelta}</p>
-                    <p className="report-micro">Ritmo</p>
-                    <p className="text-[9px] text-gray-600 mt-1">{paceLabel} - exec {executionPercentage}% x tempo {timeElapsedPercentage}%</p>
-                </div>
-            </div>
-
-            <div className="report-panel p-4">
-                <div className="flex justify-between text-[10px] text-gray-500 mb-3 font-black tracking-widest uppercase">
-                    <span>Consistencia</span>
-                    <span className="text-white">{metrics.consistencyDays || 0} <span className="text-gray-600">/</span> {totalDays} <span className="text-gray-600 text-[8px]">DIAS</span></span>
-                </div>
-                <div className="report-track">
-                    <div
-                        className="h-full bg-gradient-to-r from-[var(--skin-accent-color)] to-white/80 transition-all duration-1000 shadow-[0_0_10px_var(--skin-accent-color)]"
-                        style={{ width: `${consistencyPct}%` }}
-                    />
-                </div>
-            </div>
-        </div>
-    );
+    /*
+     * EXECUCAO: O PROTAGONISTA E O QUANTO SAIU DO PAPEL.
+     *
+     * Este slide empilhava sete blocos do mesmo peso — barra de acoes, barra de
+     * tempo, quatro caixas de numero e uma barra de consistencia — em 706px de
+     * conteudo para 626px de tela. Nao havia o que olhar primeiro, e ainda
+     * encolhia 16% para caber.
+     *
+     * O numero e a porcentagem de execucao porque e ela que responde a pergunta
+     * do ciclo: do que voce prometeu, quanto virou feito. Carga, ritmo e presenca
+     * qualificam essa resposta — elas nao sao a resposta.
+     */
+    const renderExecutionSlide = () => {
+        const diasSemNada = Math.max(0, totalDays - (metrics.consistencyDays || 0));
+        return (
+        <SlideCartaz
+            titulo="Execução"
+            numero={executionPercentage}
+            sufixo="%"
+            rotulo="das ações planejadas viraram feito"
+            progresso={executionPercentage}
+            legenda={[
+                { rotulo: 'Ações', valor: `${metrics.actionsCompleted}/${metrics.totalPlannedActions}` },
+                { rotulo: 'Carga', valor: `${metrics.totalHours}h`, nota: `${metrics.avgHoursPerDay ?? (metrics.totalHours / totalDays).toFixed(1)}h por dia` },
+                {
+                    rotulo: 'Presença',
+                    valor: `${metrics.consistencyDays || 0}/${totalDays}`,
+                    /* A nota vem da SUBTRACAO, e nao de `daysWithoutCompletion`.
+                       Aquele campo chega zerado em relatorio antigo, e o slide
+                       dizia "nenhum dia zerado" logo ao lado de "24/28" — duas
+                       afirmacoes contrarias na mesma linha. O que a pessoa ve tem
+                       de fechar com o que ela ve. */
+                    nota: diasSemNada > 0 ? `${diasSemNada} ${diasSemNada === 1 ? 'dia zerado' : 'dias zerados'}` : 'nenhum dia zerado',
+                    tom: diasSemNada === 0 ? 'bom' : 'normal',
+                },
+                {
+                    rotulo: 'Ritmo',
+                    valor: paceDelta > 0 ? `+${paceDelta}` : `${paceDelta}`,
+                    nota: paceLabel.toLowerCase(),
+                    tom: paceDelta >= 5 ? 'bom' : paceDelta <= -5 ? 'alerta' : 'normal',
+                },
+            ]}
+        />
+        );
+    };
 
     // Slide 2: Territorio
     const renderAtlasSlide = () => (
@@ -306,78 +278,48 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         </div>
     );
 
-    // Slide 3: Conquistas
+    /*
+     * CONQUISTAS: O PROTAGONISTA E O QUE O CICLO RENDEU.
+     *
+     * Este era o deserto da apresentacao: 376px de conteudo numa area de 626,
+     * com 250px de preto embaixo — e, quando o ciclo nao selava meta nenhuma,
+     * virava um X apagado e uma frase no meio do vazio.
+     *
+     * A EXP e o unico numero que existe em todo ciclo, inclusive no ciclo ruim:
+     * ela mede o que foi feito, e nao o que foi prometido. Entao e ela que ocupa
+     * o lugar do protagonista, e metas e desafios viram o detalhe que ela pede.
+     * Um ciclo sem meta selada passa a ter o que mostrar em vez de um vazio.
+     */
     const renderAchievementsSlide = () => {
-        const hasAchievements = sealedMetas > 0 || (metrics.questsCompleted || 0) > 0 || (report.clanPoints || 0) > 0;
+        const expDoCiclo = report.expGained || expGained || metrics.expGained || 0;
+        const semNada = sealedMetas === 0 && (metrics.questsCompleted || 0) === 0 && expDoCiclo === 0;
+
+        const legenda: { rotulo: string; valor: string; nota?: string; tom?: 'normal' | 'bom' | 'alerta' }[] = [
+            {
+                rotulo: 'Metas',
+                valor: plannedMetas > 0 ? `${sealedMetas}/${plannedMetas}` : `${sealedMetas}`,
+                nota: plannedMetas > 0 && sealedMetas === plannedMetas ? 'todas seladas' : undefined,
+                tom: plannedMetas > 0 && sealedMetas === plannedMetas ? 'bom' : 'normal',
+            },
+            { rotulo: 'Desafios', valor: `${metrics.questsCompleted || 0}` },
+        ];
+
+        if ((report.clanPoints || 0) > 0) {
+            legenda.push({ rotulo: 'Clã', valor: `${report.clanPoints}`, nota: 'pontos levados' });
+        }
+        if ((metrics.goldGained || 0) > 0) {
+            legenda.push({ rotulo: 'Ouro', valor: `+${metrics.goldGained}` });
+        }
 
         return (
-            <div className="flex flex-col h-full space-y-6 p-6">
-                <div className="text-center">
-                    <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">Conquistas</h3>
-                    <div className="report-rule" />
-                </div>
-
-                {hasAchievements ? (
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="report-panel p-4 flex flex-col items-center group hover:bg-white/[0.05] transition-all">
-                                <TrophyIcon className="w-5 h-5 text-[var(--skin-accent-color)] mb-2 filter drop-shadow-[0_0_8px_var(--skin-accent-color)]" />
-                                <span className="text-2xl font-black text-[var(--skin-accent-color)] tabular-nums">{plannedMetas > 0 ? `${sealedMetas}/${plannedMetas}` : sealedMetas}</span>
-                                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Metas</span>
-                            </div>
-                            <div className="report-panel p-4 flex flex-col items-center group hover:bg-white/[0.05] transition-all">
-                                <CrownIcon className="w-5 h-5 text-purple-500 mb-2 filter drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
-                                <span className="text-2xl font-black text-purple-500 tabular-nums">{metrics.questsCompleted || 0}</span>
-                                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Desafios</span>
-                            </div>
-                        </div>
-
-                        {/* Best Day + Max Streak */}
-                        <div className="grid grid-cols-2 gap-3">
-                            {metrics.bestDay && (
-                                <div className="report-panel p-4 flex flex-col items-center hover:bg-white/[0.05] transition-all">
-                                    <span className="text-2xl font-black text-white tabular-nums">{metrics.bestDayCount || 0}</span>
-                                    <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Melhor Dia</span>
-                                    <span className="text-[9px] text-gray-600 font-mono mt-0.5">{formatDate(metrics.bestDay)}</span>
-                                </div>
-                            )}
-                            {(metrics.maxStreak ?? 0) > 0 && (
-                                <div className="report-panel p-4 flex flex-col items-center hover:bg-white/[0.05] transition-all">
-                                    <span className="text-2xl font-black text-white tabular-nums">{metrics.maxStreak}</span>
-                                    <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Maior Streak</span>
-                                    <span className="text-[9px] text-gray-600 font-mono mt-0.5">dias</span>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="text-center mt-4 p-6 bg-white/[0.02] rounded-[32px] border border-white/[0.03]">
-                            <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] mb-2">Total Acumulado</p>
-                            <p className="text-5xl font-black text-white tracking-tighter">
-                                <span className="text-[var(--skin-accent-color)] opacity-50">+</span>{report.expGained || expGained || 0}<span className="text-xs ml-1 opacity-30 tracking-widest">XP</span>
-                            </p>
-                            {(fragmentsGained || 0) > 0 && (
-                                <p className="mt-3 text-lg font-black tracking-[0.14em] text-cyan-300">
-                                    +{fragmentsGained} FRAG
-                                </p>
-                            )}
-                            {(metrics.goldGained || 0) > 0 && (
-                                <p className="mt-3 text-lg font-black tracking-[0.14em] text-amber-300">
-                                    +{metrics.goldGained} OURO
-                                </p>
-                            )}
-                        </div>
-                    </div>
-                ) : (
-                    <div className="flex flex-col items-center justify-center flex-1 text-center py-12">
-                        <div className="w-20 h-20 rounded-full bg-white/[0.02] border border-white/[0.05] mb-6 flex items-center justify-center shadow-inner opacity-40">
-                            <XIcon className="w-10 h-10 text-gray-700" />
-                        </div>
-                        <p className="text-gray-500 text-xs font-black uppercase tracking-[0.2em] leading-relaxed max-w-[200px] opacity-60">
-                            "Nenhuma meta selada. <br />O ciclo ainda pede forma."
-                        </p>
-                    </div>
-                )}
-            </div>
+            <SlideCartaz
+                titulo="Conquistas"
+                numero={semNada ? '0' : `+${expDoCiclo}`}
+                sufixo="EXP"
+                rotulo={semNada ? 'este ciclo não depositou nada' : 'depositados na sua nobreza'}
+                legenda={legenda}
+                remate={semNada ? 'Nenhuma meta selada. O ciclo ainda pede forma.' : undefined}
+            />
         );
     };
 

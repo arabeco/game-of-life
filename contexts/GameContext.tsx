@@ -9059,8 +9059,20 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const oldRankIndex = nobilityRanks.findIndex(r => r.id === oldRankId);
             const newRankIndex = nobilityRanks.findIndex(r => r.id === newRankId);
 
-            // MODIFICACAO: So dispara se subiu de fato e nao e o carregamento inicial (oldRankIndex !== -1)
-            // E tambem nao dispara se o novo rank for o inicial (Vagante) para evitar aviso no login para nivel 1
+            // So dispara se subiu de fato e nao e o carregamento inicial
+            // (oldRankIndex !== -1).
+            //
+            // `newRankIndex > 0` exclui o Vagante de proposito, e nao e bug:
+            // ninguem e PROMOVIDO a Vagante, entra-se nele. Sem esta guarda o
+            // primeiro login abriria um modal de promocao para um degrau que a
+            // pessoa nunca subiu.
+            //
+            // A consequencia e que as recompensas de Vagante nao podem depender
+            // deste caminho — elas nunca chegariam a ninguem. Quem as entrega e
+            // o starter pack do sql/new_player_bootstrap_rewards, no cadastro,
+            // e as duas listas precisam continuar iguais: RANK_REWARDS.vagante
+            // e o que a NobilityLadder mostra, e mostrar o que nao se recebe e
+            // pior do que nao mostrar nada.
             if (newRankIndex > oldRankIndex && oldRankIndex !== -1 && newRankIndex > 0) {
                 if (newRank) {
                     const rankInsigniaId = `insignia_rank_${newRankIndex + 1}_${newRankId}`;

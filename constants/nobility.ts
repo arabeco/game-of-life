@@ -66,17 +66,33 @@ export const NOBILITY_RANKS: NobilityRank[] = [
  * que nenhum degrau entregava: sete cabelos cobrindo os tiers 1 a 5, uma borda e
  * um banner tier 3. Era arte paga que ninguem nunca ia ver.
  *
- * Distribuidas por tier, a curva vira:
+ * O CABELO SAIU DAQUI, e a conta acima nao vale mais.
  *
- *   4, 4, 5, 6, 8, 8, 8, 11, 12, 20
+ * Cabelo e corpo sao APARENCIA, nao inventario: o jogador entra com os oito
+ * penteados e as 26 variantes de cor, como entra com os oito corpos. Quem manda
+ * nisso e o filtro de posse do SovereignCustomizer, que libera a categoria
+ * inteira, e o ciclador de corpo, que le o BODY_DB direto sem olhar posse.
  *
- * Nao decrescente do primeiro ao ultimo degrau, e ninguem perdeu nada: todo item
- * que ja era de um degrau continua nele.
+ * Os sete cabelos entao nao tapavam buraco nenhum — anunciavam, com modal de
+ * promocao, uma peca que a pessoa ja tinha desde o primeiro minuto. A curva que
+ * eles maquiavam era esta, contando so o que de fato muda de mao:
  *
- * O QUE CONTINUA TORTO e nao da para consertar aqui: os seis temas de UI acabam
- * no Conde. Duque, Principe, Rei e Soberano — os quatro degraus mais caros — nao
- * ganham a categoria mais visivel do jogo, porque so existem seis temas. Isso e
- * conteudo a produzir, nao distribuicao a corrigir.
+ *   vagante 5 · escudeiro 4 · cavaleiro 4 · lorde 3 · barao 3
+ *   conde 3 · duque 3 · principe 2 · rei 3 · soberano 3
+ *
+ * O buraco do Barao continua aberto, e o Principe esta pior ainda. Nao da para
+ * fechar os dois aqui: nao sobrou peca sem dono no catalogo. E conteudo a
+ * produzir — as skins novas nascem para estes degraus, nao para o comeco.
+ *
+ * O QUE TAMBEM CONTINUA TORTO: os seis temas de UI acabam no Conde. Duque,
+ * Principe, Rei e Soberano — os quatro degraus mais caros — nao ganham a
+ * categoria mais visivel do jogo, porque so existem seis temas.
+ *
+ * O VAGANTE NAO E ENTREGUE AQUI. Ninguem e promovido a Vagante: entra-se nele.
+ * Quem entrega essa lista e o starter pack do sql/new_player_bootstrap_rewards,
+ * no cadastro. A lista fica declarada neste arquivo porque a NobilityLadder a
+ * exibe, e porque o degrau zero ter conteudo visivel e o que ensina que a escada
+ * existe.
  */
 export const RANK_REWARDS: Record<string, { category: UnlockCategory; itemId: string; name: string }[]> = {
     vagante: [
@@ -85,14 +101,17 @@ export const RANK_REWARDS: Record<string, { category: UnlockCategory; itemId: st
         { category: 'skins', itemId: 'item_skin_1_001', name: 'Náufrago' },
         { category: 'skins', itemId: 'item_skin_1_002', name: 'Casual' },
         { category: 'skins', itemId: 'item_skin_1_005', name: 'Caçador' },
+        // O Casual 2 desceu do Escudeiro para ca. Nao e generosidade: a primeira
+        // promocao custa 100 horas, e ate la o vestuario era o unico lugar do
+        // jogo onde a pessoa se ve. Tres roupas mais o "nenhuma" davam um
+        // ciclador de quatro posicoes — perto demais de um uniforme.
+        { category: 'skins', itemId: 'item_skin_1_006', name: 'Casual 2' },
         { category: 'insignias', itemId: 'insignia_rank_1_vagante', name: 'Insígnia: Vagante' },
     ],
     escudeiro: [
         { category: 'ui_skins', itemId: 'CYBER', name: 'Tema: Cyberpunk' },
         { category: 'skins', itemId: 'item_skin_1_004', name: 'Street' },
-        { category: 'skins', itemId: 'item_skin_1_006', name: 'Casual 2' },
         { category: 'borders', itemId: 'item_border_t1_aprendiz', name: 'Borda: Aprendiz' },
-        { category: 'hairStyles', itemId: 'cachos', name: 'Cabelo: Cachos' },
         { category: 'insignias', itemId: 'insignia_rank_2_escudeiro', name: 'Insígnia: Escudeiro' },
     ],
     cavaleiro: [
@@ -100,22 +119,21 @@ export const RANK_REWARDS: Record<string, { category: UnlockCategory; itemId: st
         { category: 'artifacts', itemId: 'item_artifact_1_005', name: 'Trio Café' },
         { category: 'skins', itemId: 'item_skin_2_003', name: 'Acadêmico' },
         { category: 'banners', itemId: 'item_banner_t1_aprendiz', name: 'Banner: Aprendiz' },
-        { category: 'hairStyles', itemId: 'medio_reto', name: 'Cabelo: Médio Reto' },
         { category: 'insignias', itemId: 'insignia_rank_3_cavaleiro', name: 'Insígnia: Cavaleiro' },
     ],
     lorde: [
         { category: 'ui_skins', itemId: 'EMBER', name: 'Tema: Chama Viva' },
         { category: 'glyphs', itemId: 'item_glyph_2_002', name: 'Granito Rúnico' },
         { category: 'skins', itemId: 'item_skin_2_002', name: 'Tático' },
-        { category: 'hairStyles', itemId: 'textured_crop', name: 'Cabelo: Texturizado' },
         { category: 'insignias', itemId: 'insignia_rank_4_lorde', name: 'Insígnia: Lorde' },
     ],
     barao: [
         { category: 'ui_skins', itemId: 'GOLD', name: 'Tema: Ouro Soberano' },
+        // O degrau que cai. Mil horas entregam um orbe tier 2, menos que o Lorde
+        // por metade do preco. O cabelo que tapava isto era aparencia que a
+        // pessoa ja tinha; tirado ele, o buraco esta a vista de novo e so fecha
+        // com peca nova.
         { category: 'orbs', itemId: 'item_orb_2_002', name: 'Orbe Sombrio' },
-        // O degrau que caia. Mil horas entregavam um orbe tier 2, menos que o
-        // Lorde por metade do preco.
-        { category: 'hairStyles', itemId: 'dreads', name: 'Cabelo: Dreads' },
         { category: 'borders', itemId: 'item_border_vanguarda_01', name: 'Borda: Vanguarda' },
         { category: 'insignias', itemId: 'insignia_rank_5_barao', name: 'Insígnia: Barão' },
     ],
@@ -123,7 +141,6 @@ export const RANK_REWARDS: Record<string, { category: UnlockCategory; itemId: st
         { category: 'ui_skins', itemId: 'VOID', name: 'Tema: Vazio Primordial' },
         { category: 'skins', itemId: 'item_skin_2_001', name: 'Executivo' },
         { category: 'borders', itemId: 'item_border_t2_veterano', name: 'Borda: Veterano' },
-        { category: 'hairStyles', itemId: 'anime_spikes', name: 'Cabelo: Anime Spiky' },
         { category: 'insignias', itemId: 'insignia_rank_6_conde', name: 'Insígnia: Conde' },
     ],
     duque: [
@@ -135,7 +152,7 @@ export const RANK_REWARDS: Record<string, { category: UnlockCategory; itemId: st
     principe: [
         { category: 'skins', itemId: 'item_skin_4_002', name: 'Mago Círculo' },
         { category: 'orbs', itemId: 'item_orb_4_001', name: 'Orbe de Diamante' },
-        { category: 'hairStyles', itemId: 'mullet_topete', name: 'Cabelo: Mullet Top' },
+        // Dois itens em 7.000 horas: o degrau mais magro da escada inteira.
         { category: 'insignias', itemId: 'insignia_rank_8_principe', name: 'Insígnia: Príncipe' },
     ],
     rei: [
@@ -148,7 +165,6 @@ export const RANK_REWARDS: Record<string, { category: UnlockCategory; itemId: st
         { category: 'glyphs', itemId: 'item_glyph_5_001', name: 'A FORJA' },
         { category: 'skins', itemId: 'item_skin_5_001', name: 'Entidade de Luz' },
         { category: 'orbs', itemId: 'item_orb_5_001', name: 'Orbe Gênese' },
-        { category: 'hairStyles', itemId: 'fluxo_espiritual', name: 'Cabelo: Fluxo Espiritual' },
         { category: 'insignias', itemId: 'insignia_rank_10_soberano', name: 'Insígnia: Soberano' },
     ],
 };

@@ -23,7 +23,13 @@ begin
   if p_item_id like 'item_aura_%' then return 'auras'; end if;
   if p_item_id like 'item_theme_%' then return 'ui_skins'; end if;
   if p_item_id in ('BASIC', 'GOLD', 'FROST', 'EMBER', 'CYBER', 'AURORA', 'VOID') then return 'ui_skins'; end if;
-  if p_item_id in ('cachos', 'medio_reto', 'grunge_longo', 'textured_crop', 'dreads', 'mullet_topete', 'anime_spikes', 'princesa', 'fluxo_espiritual') then return 'hairStyles'; end if;
+  if p_item_id like 'insignia_%' then return 'insignias'; end if;
+
+  -- Cabelo NAO tem ramo aqui, e corpo tambem nao: sao aparencia, nao
+  -- inventario. O jogador entra com os oito penteados, as 26 variantes de cor e
+  -- os oito corpos — o filtro de posse do SovereignCustomizer libera a
+  -- categoria inteira e o ciclador de corpo le o BODY_DB direto. Conceder um
+  -- deles gastava uma linha de inventario para dar o que ja era de todos.
 
   return null;
 end;
@@ -300,6 +306,7 @@ declare
   v_is_ouro boolean := false;
   v_chest_type text := 'Comum';
   v_starter_marker text := 'starter_pack_v2';
+  v_topup_marker text := 'starter_pack_v3_itens';
   v_ouro_marker text := 'invite_ouro_pack_v1';
   v_starter_was_granted boolean := false;
   v_ouro_pack_granted boolean := false;
@@ -308,19 +315,44 @@ declare
   v_artifact_ids text[];
   v_orb_ids text[];
   v_plate_ids text[];
+  -- O QUE O JOGADOR NOVO RECEBE.
+  --
+  -- Esta lista e a entrega do degrau Vagante. Ninguem e promovido a Vagante —
+  -- entra-se nele — entao o caminho de promocao do GameContext pula o degrau
+  -- zero, e sem esta lista as recompensas do RANK_REWARDS.vagante nunca
+  -- chegariam a ninguem. As duas precisam continuar iguais: a NobilityLadder
+  -- mostra o que esta la, e mostrar o que nao se recebe e pior do que nao
+  -- mostrar nada.
+  --
+  -- Saiu daqui: cachos, medio_reto, textured_crop e grunge_longo. Os tres
+  -- primeiros sao cabelo, que e aparencia e ja vem liberado para todo mundo; o
+  -- quarto nunca existiu no catalogo — era uma concessao para um id inventado.
+  --
+  -- Entrou: o Cacador, o glifo e o tema, que o Vagante ja declarava e ninguem
+  -- nunca viu. Com eles o vestuario inicial vai de duas para tres roupas, que e
+  -- a diferenca entre ter escolha e ter um uniforme.
   v_starter_items text[] := array[
     'item_skin_1_001',
     'item_skin_1_002',
-    'cachos',
-    'medio_reto',
-    'grunge_longo',
-    'textured_crop',
+    'item_skin_1_005',
+    'item_skin_1_006',
+    'item_glyph_1_001',
     'item_artifact_1_001',
     'item_garden_stone_1',
     'item_garden_plant_1',
     'item_orb_1_002',
     'item_plate_1_001',
-    'BASIC'
+    'insignia_rank_1_vagante',
+    'BASIC',
+    'FROST'
+  ];
+  -- O que o starter_pack_v2 nao dava. Ver o bloco do v_topup_marker.
+  v_starter_topup text[] := array[
+    'item_skin_1_005',
+    'item_skin_1_006',
+    'item_glyph_1_001',
+    'insignia_rank_1_vagante',
+    'FROST'
   ];
   v_artifact_pool text[] := array[
     'item_artifact_1_002',
@@ -380,6 +412,20 @@ begin
     perform public.grant_chest(p_user_id, v_chest_type);
     perform public._starter_reward_mark_purchase(p_user_id, 'starter_pack', v_starter_marker, false);
     v_starter_was_granted := true;
+  end if;
+
+  -- A diferenca para quem ja recebeu o starter_pack_v2.
+  --
+  -- Marcador proprio, e sem bau: subir o marcador do pacote inteiro daria um
+  -- segundo bau a todo mundo que ja tinha entrado, e o que falta e item, nao
+  -- bau. Para quem entra agora isto nao faz nada — a lista de cima ja entregou
+  -- tudo, e a concessao e idempotente.
+  if not public._starter_reward_has_purchase_marker(p_user_id, 'starter_pack', v_topup_marker) then
+    foreach v_item_id in array v_starter_topup loop
+      perform public._starter_reward_grant_inventory_item_once(p_user_id, v_item_id);
+    end loop;
+
+    perform public._starter_reward_mark_purchase(p_user_id, 'starter_pack', v_topup_marker, false);
   end if;
 
   if v_is_ouro and not public._starter_reward_has_purchase_marker(p_user_id, 'invite_ouro_pack', v_ouro_marker) then

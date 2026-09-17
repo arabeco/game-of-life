@@ -1,0 +1,45 @@
+{
+  "generatedFrom": "tree.glb / rock.glb (preserved inputs)",
+  "models": {
+    "tree-full": {
+      "triangles": 16782,
+      "geometryBytes": 303913,
+      "textures": [
+        "shared-591d2771e38fb18a.webp",
+        "shared-68b864d1e0714a17.webp",
+        "shared-3765cdf7232885ed.webp",
+        "shared-5e8dde04edaa07f7.webp",
+        "shared-016e866d0fcce2db.webp",
+        "shared-b5cd90b231ee3c8e.webp",
+        "shared-b025f4e50f6a97d9.webp",
+        "shared-c5ccd2ce81de63b7.webp",
+        "shared-64dce27a025219b2.webp"
+      ],
+      "totalBytes": 461159
+    },
+    "rock-light": {
+      "triangles": 7054,
+      "geometryBytes": 65183,
+      "textures": [
+        "shared-a20a4f072fc3ff85.webp",
+        "shared-6ab9492a5cbc0e51.webp",
+        "shared-45791e9fe2969c3c.webp"
+      ],
+      "totalBytes": 150517
+    }
+  },
+  "textures": {
+    "shared-591d2771e38fb18a.webp": 19618,
+    "shared-68b864d1e0714a17.webp": 37602,
+    "shared-3765cdf7232885ed.webp": 9984,
+    "shared-5e8dde04edaa07f7.webp": 6402,
+    "shared-016e866d0fcce2db.webp": 14252,
+    "shared-b5cd90b231ee3c8e.webp": 9424,
+    "shared-b025f4e50f6a97d9.webp": 18662,
+    "shared-c5ccd2ce81de63b7.webp": 37284,
+    "shared-64dce27a025219b2.webp": 4018,
+    "shared-a20a4f072fc3ff85.webp": 18194,
+    "shared-6ab9492a5cbc0e51.webp": 58794,
+    "shared-45791e9fe2969c3c.webp": 8346
+  }
+}

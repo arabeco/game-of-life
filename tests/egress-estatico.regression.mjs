@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -47,10 +48,6 @@ const PERMITIDOS = new Map([
     ['constants/catalogAssets.ts', 'reescreve URL antiga do bucket para o caminho local'],
     ['scripts/download-static-catalog-assets.ts', 'o script que faz a migracao bucket -> public'],
     ['utils/profileBackgrounds.ts', 'os 15 fundos sao locais; o bucket fica como fallback e para fundo novo ainda nao empacotado'],
-    // PENDENTE — item 1 da lista de egress. As nove faixas precisam virar Opus
-    // e ir para public/audio/. Quando isso acontecer, esta linha sai e o teste
-    // cobra que ela saia.
-    ['components/FocusAudioPlayer.tsx', 'PENDENTE: 20,1 MB de audio ainda servidos do bucket'],
 ]);
 
 const varrer = (dir, saida = []) => {
@@ -125,7 +122,10 @@ const varrer = (dir, saida = []) => {
     const orcamentos = [
         ['public/assets/backgrounds', 4],
         ['public/assets/catalog', 12],
-        ['public/garden-experiment', 14],
+        // Only the approved full tree and compact sand now ship in the experiment.
+        ['public/garden-experiment', 2],
+        // Nine complete Opus loops at constrained VBR 72k: 6.62 MB decimal.
+        ['public/audio', 7],
         ['public/videos', 6],
     ];
 
@@ -139,4 +139,33 @@ const varrer = (dir, saida = []) => {
     }
 }
 
+// Every selectable loop must be present locally, with its expected Ogg/Opus header.
+{
+    const player = fs.readFileSync(path.join(root, 'components/FocusAudioPlayer.tsx'), 'utf8');
+    assert.ok(player.includes('`${import.meta.env.BASE_URL}audio/`'));
+    const files = [...player.matchAll(/url: '([^']+\.ogg)'/g)].map(match => match[1]);
+    assert.equal(files.length, 9);
+    const manifest = JSON.parse(fs.readFileSync(path.join(root, 'public/audio/manifest.json'), 'utf8'));
+    assert.deepEqual(files.slice().sort(), manifest.tracks.map(track => track.file).sort());
+    for (const name of files) {
+        const data = fs.readFileSync(path.join(root, 'public/audio', name));
+        assert.equal(data.toString('ascii', 0, 4), 'OggS', name);
+        assert.ok(data.subarray(0, 100).includes(Buffer.from('OpusHead')), name);
+        const record = manifest.tracks.find(track => track.file === name);
+        assert.equal(createHash('sha256').update(data).digest('hex'), record.sha256, name);
+        assert.equal(data.length, record.bytes, name);
+    }
+}
+// Prevent reintroducing unused comparison GLBs or the discarded tree in the build.
+{
+    const assets = path.join(root, 'public/garden-experiment/assets');
+    if (fs.existsSync(assets)) {
+        assert.ok(!fs.readdirSync(assets).some(name => /\.(glb|jpg)$/.test(name)));
+        assert.ok(!fs.readdirSync(path.join(assets, 'light')).some(name => name.includes('lean')));
+    }
+    const sand = JSON.parse(fs.readFileSync(path.join(root, 'tools/zen-quality/assets/sand/compact/report.json'), 'utf8'));
+    const bytes = sand.textures.reduce((sum, texture) => sum + fs.statSync(path.join(root, 'tools/zen-quality/assets/sand/compact', texture.file)).size, 0);
+    assert.equal(bytes, sand.totalBytes);
+    assert.ok(bytes < 150_000, 'Compact sand textures exceed 150 KB');
+}
 console.log('egress-estatico: ok');

@@ -52,6 +52,7 @@ sql/items_catalog_seed.sql
 
 # Generated isolated garden document; rebuilt by dev/build.
 /public/garden3d/
+/public/garden-experiment/
 
 # Saidas temporarias de typecheck do jardim 3D. Diagnostico, nao fonte.
 temp-garden-typecheck*.txt

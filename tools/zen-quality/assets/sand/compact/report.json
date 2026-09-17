@@ -1,0 +1,27 @@
+{
+  "textures": [
+    {
+      "name": "diff",
+      "file": "diff.webp",
+      "size": 512,
+      "bytes": 37398,
+      "sourceBytes": 485088
+    },
+    {
+      "name": "nor_gl",
+      "file": "nor_gl.webp",
+      "size": 512,
+      "bytes": 58494,
+      "sourceBytes": 877821
+    },
+    {
+      "name": "rough",
+      "file": "rough.webp",
+      "size": 256,
+      "bytes": 1256,
+      "sourceBytes": 189667
+    }
+  ],
+  "totalBytes": 97148,
+  "sourceBytes": 1552576
+}

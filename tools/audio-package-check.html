@@ -1,0 +1,34 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>Verificação do áudio local</title>
+<style>body{font:16px system-ui;padding:30px;background:#f3f1e9;color:#243b31}button{padding:14px}pre{white-space:pre-wrap}</style>
+<h1>Áudio do Foco · verificação local</h1><p>Decodifica as nove faixas e testa reprodução, pausa e repetição sem emitir som.</p>
+<button id="run">Verificar nove faixas</button><pre id="result" role="status">Aguardando.</pre>
+<script type="module">
+const button=document.querySelector('#run'),result=document.querySelector('#result');
+button.onclick=async()=>{
+  button.disabled=true;const lines=[];let player;const context=new AudioContext();
+  try{
+    const manifest=await(await fetch('/audio/manifest.json')).json();
+    for(const track of manifest.tracks){
+      const response=await fetch('/audio/'+track.file);if(!response.ok)throw Error('HTTP '+response.status);
+      const decoded=await context.decodeAudioData(await response.arrayBuffer());
+      if(Math.abs(decoded.duration-track.seconds)>.15)throw Error('Duração incorreta: '+track.file);
+      player=new Audio('/audio/'+track.file);player.muted=true;player.loop=true;
+      await player.play();
+      await new Promise((resolve,reject)=>{
+        const timeout=setTimeout(()=>{cleanup();reject(Error('Sem avanço/repetição: '+track.file));},8000);
+        let reachedEnd=false;
+        const update=()=>{if(player.currentTime>decoded.duration-.5)reachedEnd=true;if(reachedEnd&&player.currentTime>.04&&player.currentTime<.8){cleanup();resolve();}};
+        const fail=()=>{cleanup();reject(Error('Falha de reprodução: '+track.file));};
+        function cleanup(){clearTimeout(timeout);player.removeEventListener('timeupdate',update);player.removeEventListener('error',fail);}
+        player.addEventListener('timeupdate',update);player.addEventListener('error',fail);
+        player.currentTime=Math.max(0,decoded.duration-.16);
+      });
+      player.pause();if(!player.paused)throw Error('Pausa falhou');player.removeAttribute('src');player.load();
+      lines.push('PASS '+track.file+' · '+decoded.duration.toFixed(2)+' s · '+decoded.numberOfChannels+' canal(is)');
+      result.textContent=lines.join('\n');
+    }
+    result.textContent+='\nPASS 9/9 · decode, reprodução, loop e pausa locais.';
+  }catch(error){result.textContent=lines.join('\n')+'\nFAIL '+error.message;}
+  finally{player?.pause();await context.close();button.disabled=false;}
+};
+</script></html>

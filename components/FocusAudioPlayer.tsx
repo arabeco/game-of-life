@@ -3,7 +3,7 @@ import { PlayIcon, PauseIcon } from './Icons';
 import { useGame } from '../contexts/GameContext';
 import { clearActiveMediaHint, persistActiveMediaHint } from '../utils/mediaResumeHint';
 
-const BASE_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/audio/';
+const BASE_URL = `${import.meta.env.BASE_URL}audio/`;
 
 interface Track {
     id: string;
@@ -14,15 +14,15 @@ interface Track {
 }
 
 const FOCUS_TRACKS: Track[] = [
-    { id: 'brown', emoji: '🌫️', url: 'brown-noise.mp3', isPremium: false, title: 'O Vazio' }, // névoa
-    { id: 'rain', emoji: '⛈️', url: 'rain.mp3', isPremium: false, title: 'Tempestade no Feudo' },
-    { id: '528', emoji: '✨', url: '528-healing.mp3', isPremium: false, title: 'Frequência Divina 528Hz' },
-    { id: '432', emoji: '🌀', url: '432-focus.mp3', isPremium: false, title: 'Ressonância 432Hz' },
-    { id: 'temple', emoji: '🎐', url: 'tibetan.mp3', isPremium: false, title: 'Templo Etéreo' },
-    { id: 'pub', emoji: '🕯️', url: 'pub.mp3', isPremium: false, title: 'Taverna do Clã' },
-    { id: 'fireplace', emoji: '🪵', url: 'fireplace.mp3', isPremium: false, title: 'Lareira do Arquiteto' },
-    { id: 'hacker', emoji: '⌨️', url: 'lo-fi.mp3', isPremium: false, title: 'Foco Hacker' },
-    { id: 'city', emoji: '🌙', url: 'quiet-city.mp3', isPremium: false, title: 'Vigília Urbana' },
+    { id: 'brown', emoji: '🌫️', url: 'brown-noise.ogg', isPremium: false, title: 'O Vazio' }, // névoa
+    { id: 'rain', emoji: '⛈️', url: 'rain.ogg', isPremium: false, title: 'Tempestade no Feudo' },
+    { id: '528', emoji: '✨', url: '528-healing.ogg', isPremium: false, title: 'Frequência Divina 528Hz' },
+    { id: '432', emoji: '🌀', url: '432-focus.ogg', isPremium: false, title: 'Ressonância 432Hz' },
+    { id: 'temple', emoji: '🎐', url: 'tibetan.ogg', isPremium: false, title: 'Templo Etéreo' },
+    { id: 'pub', emoji: '🕯️', url: 'pub.ogg', isPremium: false, title: 'Taverna do Clã' },
+    { id: 'fireplace', emoji: '🪵', url: 'fireplace.ogg', isPremium: false, title: 'Lareira do Arquiteto' },
+    { id: 'hacker', emoji: '⌨️', url: 'lo-fi.ogg', isPremium: false, title: 'Foco Hacker' },
+    { id: 'city', emoji: '🌙', url: 'quiet-city.ogg', isPremium: false, title: 'Vigília Urbana' },
 ];
 
 export const FocusAudioPlayer: React.FC = () => {
@@ -128,7 +128,7 @@ export const FocusAudioPlayer: React.FC = () => {
                 showToast(`Fluxo de áudio [${track.title}] estabelecido.`, "success");
             }).catch((e) => {
                 console.error("Audio playback failed:", e);
-                showToast("Falha na conexão de áudio. Verifique sua rede ou interaja com a página.", "warning");
+                showToast("Não foi possível tocar o áudio. Tente selecionar a faixa novamente.", "warning");
             });
         }
 

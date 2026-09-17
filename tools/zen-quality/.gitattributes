@@ -1,0 +1,4 @@
+# Generated reports measure exact byte counts; preserve those bytes on Windows checkout.
+assets/light/*.gltf text eol=lf
+assets/light/*.json text eol=lf
+assets/sand/compact/*.json text eol=lf

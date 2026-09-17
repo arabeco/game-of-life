@@ -457,6 +457,8 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         let cancelled = false;
 
         void CapacitorApp.addListener('backButton', () => {
+            const experiment = document.querySelector<HTMLDialogElement>('dialog[data-garden-experiment][open]');
+            if (experiment) { experiment.dispatchEvent(new Event('cancel', { cancelable: true })); return; }
             if (isReportsVisible) { setReportsVisible(false); return; }
             if (isProfileVisible) { setProfileVisible(false); return; }
             if (currentView !== 'assets') { handleSetView('assets'); return; }

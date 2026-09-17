@@ -1,0 +1,5 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": { "strict": true, "noEmit": true, "incremental": false },
+  "include": ["./main.ts", "./vite.config.ts", "../../vite-env.d.ts"]
+}

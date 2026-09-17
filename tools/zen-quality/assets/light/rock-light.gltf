@@ -1,0 +1,255 @@
+{
+  "asset": {
+    "generator": "glTF-Transform v4.5.0",
+    "version": "2.0"
+  },
+  "accessors": [
+    {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 21162,
+      "normalized": false,
+      "byteOffset": 0,
+      "bufferView": 0
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5120,
+      "count": 5159,
+      "normalized": true,
+      "byteOffset": 0,
+      "bufferView": 1
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5122,
+      "count": 5159,
+      "max": [
+        22722,
+        17958,
+        32767
+      ],
+      "min": [
+        -22722,
+        -17958,
+        -32767
+      ],
+      "normalized": true,
+      "byteOffset": 0,
+      "bufferView": 2
+    },
+    {
+      "type": "VEC2",
+      "componentType": 5123,
+      "count": 5159,
+      "normalized": true,
+      "byteOffset": 0,
+      "bufferView": 3
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 1,
+      "byteOffset": 0,
+      "byteLength": 42324,
+      "target": 34963,
+      "extensions": {
+        "EXT_meshopt_compression": {
+          "buffer": 0,
+          "byteOffset": 0,
+          "byteLength": 7770,
+          "mode": "TRIANGLES",
+          "byteStride": 2,
+          "count": 21162
+        }
+      }
+    },
+    {
+      "buffer": 1,
+      "byteOffset": 42324,
+      "byteLength": 20636,
+      "target": 34962,
+      "byteStride": 4,
+      "extensions": {
+        "EXT_meshopt_compression": {
+          "buffer": 0,
+          "byteOffset": 7772,
+          "byteLength": 10677,
+          "mode": "ATTRIBUTES",
+          "filter": "OCTAHEDRAL",
+          "byteStride": 4,
+          "count": 5159
+        }
+      }
+    },
+    {
+      "buffer": 1,
+      "byteOffset": 62960,
+      "byteLength": 41272,
+      "target": 34962,
+      "byteStride": 8,
+      "extensions": {
+        "EXT_meshopt_compression": {
+          "buffer": 0,
+          "byteOffset": 18452,
+          "byteLength": 25409,
+          "mode": "ATTRIBUTES",
+          "byteStride": 8,
+          "count": 5159
+        }
+      }
+    },
+    {
+      "buffer": 1,
+      "byteOffset": 104232,
+      "byteLength": 20636,
+      "target": 34962,
+      "byteStride": 4,
+      "extensions": {
+        "EXT_meshopt_compression": {
+          "buffer": 0,
+          "byteOffset": 43864,
+          "byteLength": 16495,
+          "mode": "ATTRIBUTES",
+          "byteStride": 4,
+          "count": 5159
+        }
+      }
+    }
+  ],
+  "samplers": [
+    {
+      "magFilter": 9729,
+      "minFilter": 9987,
+      "wrapS": 10497,
+      "wrapT": 10497
+    }
+  ],
+  "textures": [
+    {
+      "sampler": 0,
+      "extensions": {
+        "EXT_texture_webp": {
+          "source": 1
+        }
+      }
+    },
+    {
+      "sampler": 0,
+      "extensions": {
+        "EXT_texture_webp": {
+          "source": 0
+        }
+      }
+    },
+    {
+      "sampler": 0,
+      "extensions": {
+        "EXT_texture_webp": {
+          "source": 2
+        }
+      }
+    }
+  ],
+  "images": [
+    {
+      "name": "boulder_01_nor_gl",
+      "mimeType": "image/webp",
+      "uri": "shared-a20a4f072fc3ff85.webp"
+    },
+    {
+      "name": "boulder_01_diff",
+      "mimeType": "image/webp",
+      "uri": "shared-6ab9492a5cbc0e51.webp"
+    },
+    {
+      "name": "boulder_01_rough",
+      "mimeType": "image/webp",
+      "uri": "shared-45791e9fe2969c3c.webp"
+    }
+  ],
+  "buffers": [
+    {
+      "uri": "rock-light-0.bin",
+      "byteLength": 60360
+    },
+    {
+      "byteLength": 124868,
+      "extensions": {
+        "EXT_meshopt_compression": {
+          "fallback": true
+        }
+      }
+    }
+  ],
+  "materials": [
+    {
+      "name": "boulder_01",
+      "doubleSided": true,
+      "pbrMetallicRoughness": {
+        "metallicFactor": 0,
+        "baseColorTexture": {
+          "index": 0
+        },
+        "metallicRoughnessTexture": {
+          "index": 2
+        }
+      },
+      "normalTexture": {
+        "index": 1
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "name": "rock_PROXY_5m.002",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 1,
+            "POSITION": 2,
+            "TEXCOORD_0": 3
+          },
+          "mode": 4,
+          "material": 0,
+          "indices": 0
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "boulder_01",
+      "translation": [
+        -0.1112540111187661,
+        0.42849558485267725,
+        -0.03349679854727583
+      ],
+      "scale": [
+        0.9149436936058919,
+        0.9149436936058919,
+        0.9149436936058919
+      ],
+      "mesh": 0
+    }
+  ],
+  "scenes": [
+    {
+      "name": "Scene",
+      "nodes": [
+        0
+      ]
+    }
+  ],
+  "scene": 0,
+  "extensionsUsed": [
+    "EXT_meshopt_compression",
+    "EXT_texture_webp",
+    "KHR_mesh_quantization"
+  ],
+  "extensionsRequired": [
+    "EXT_meshopt_compression",
+    "EXT_texture_webp",
+    "KHR_mesh_quantization"
+  ]
+}

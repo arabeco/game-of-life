@@ -1,0 +1,83 @@
+{
+  "codec": "Opus",
+  "container": "Ogg",
+  "targetBitrate": 72000,
+  "vbr": "constrained",
+  "source": "Existing MP3 loops; no WAV/FLAC originals found in tools/public.",
+  "sourceBytes": 20967352,
+  "totalBytes": 6614615,
+  "tracks": [
+    {
+      "file": "brown-noise.ogg",
+      "sourceBytes": 1713675,
+      "sourceSeconds": 53.52,
+      "seconds": 53.48,
+      "bytes": 488388,
+      "sha256": "b0c8392aad2ae2f4505a01ff9a51c0486855877e1e1d2d3e1cbfd71d7232f895"
+    },
+    {
+      "file": "rain.ogg",
+      "sourceBytes": 2054445,
+      "sourceSeconds": 64.18,
+      "seconds": 64.17,
+      "bytes": 586153,
+      "sha256": "ca66182b90821e9472356fadc073be6cb01e212964fd895799d0c13be6295d78"
+    },
+    {
+      "file": "528-healing.ogg",
+      "sourceBytes": 2177612,
+      "sourceSeconds": 68.02,
+      "seconds": 68.02,
+      "bytes": 620992,
+      "sha256": "0cc95e37bab3a758240810710a766b437843b22c60ae229d21d3846004724ec8"
+    },
+    {
+      "file": "432-focus.ogg",
+      "sourceBytes": 2888142,
+      "sourceSeconds": 90.23,
+      "seconds": 90.22,
+      "bytes": 823960,
+      "sha256": "5d595090b03e4e0909cb114b6b3236ed0447005176dd2045ea4ab178e8f99f46"
+    },
+    {
+      "file": "tibetan.ogg",
+      "sourceBytes": 2623533,
+      "sourceSeconds": 81.96000000000001,
+      "seconds": 81.96000000000001,
+      "bytes": 748271,
+      "sha256": "ba0271517fb3ead51efe3dbf9a99023db5fac65de9d56551409f470d599b28f8"
+    },
+    {
+      "file": "pub.ogg",
+      "sourceBytes": 1835085,
+      "sourceSeconds": 91.73,
+      "seconds": 91.71000000000001,
+      "bytes": 837390,
+      "sha256": "98e1d2b1c1372c4f7ac74181a831837d436792c66ec93b8eba271d36a7f49a4b"
+    },
+    {
+      "file": "fireplace.ogg",
+      "sourceBytes": 2935340,
+      "sourceSeconds": 91.7,
+      "seconds": 91.68,
+      "bytes": 837568,
+      "sha256": "9baca153fbfafc00fd03ae7e5565cb085a8fd982cf2cdd71aadecbb63ff7fbb5"
+    },
+    {
+      "file": "lo-fi.ogg",
+      "sourceBytes": 2868916,
+      "sourceSeconds": 89.63,
+      "seconds": 89.62,
+      "bytes": 818547,
+      "sha256": "0f645c67cc5597bcf140cc43fd8d933d85a5965f57da528ccd07d3af5a9b711f"
+    },
+    {
+      "file": "quiet-city.ogg",
+      "sourceBytes": 1870604,
+      "sourceSeconds": 93.5,
+      "seconds": 93.44,
+      "bytes": 853346,
+      "sha256": "79a2cbc5bd31c78f665e5f0f29c274f5266bfdd287f3b023d33f7fcf1b53e34e"
+    }
+  ]
+}

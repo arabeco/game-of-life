@@ -198,12 +198,44 @@ export const buildProfileBackgroundPublicUrl = (fileName: string): string => {
     return `${PROFILE_BACKGROUND_STORAGE_BASE_URL}/${PROFILE_BACKGROUND_BUCKET_FOLDER}/${fileName}`;
 };
 
+/** Onde moram as copias empacotadas, dentro do app. */
+export const PROFILE_BACKGROUND_LOCAL_ROOT = '/assets/backgrounds';
+
+/**
+ * Os fundos que viajam DENTRO do app.
+ *
+ * Fundo de perfil e conteudo fixo — o mesmo arquivo para todo mundo — e estava
+ * saindo do bucket com `cache-control: no-cache`, o que significa que cada
+ * abertura de perfil rebaixava a imagem inteira. Num app com cla e lista de
+ * amigos, perfil e a tela mais vista que existe; era o segundo maior gasto de
+ * egress do projeto, atras so do audio do Foco.
+ *
+ * Sao os 15 que TEM arte. Os outros 21 basenames declarados aqui nao tem
+ * arquivo em lugar nenhum e caem no gradiente — por isso a lista e explicita e
+ * nao derivada: emitir caminho local para quem nao tem arquivo trocaria um 404
+ * remoto por um 404 local, sem ganho.
+ *
+ * O bucket continua na lista, depois do local. Isso mantem vivo o fluxo de
+ * subir um JPG novo na pasta e ve-lo aparecer sem release — o
+ * BackgroundImageSelectionModal ainda lista a pasta. Fundo novo comeca remoto e
+ * so vira local quando alguem o empacotar aqui.
+ */
+const FUNDOS_EMPACOTADOS = new Set([
+    '16', '19', '22', 'animeback', 'autunback', 'blackback', 'blueback',
+    'darkblueback', 'goldback', 'pinkback', 'purpleback', 'rubiback',
+    'silverback', 'violetback', 'whiteback',
+]);
+
 const buildProfileBackgroundSources = (basename: string): string[] => {
-    return [
+    const remotos = [
         buildProfileBackgroundPublicUrl(`${basename}.jpg`),
         buildProfileBackgroundPublicUrl(`${basename}.png`),
         buildProfileBackgroundPublicUrl(`${basename}.jpeg`),
     ];
+
+    return FUNDOS_EMPACOTADOS.has(basename)
+        ? [`${PROFILE_BACKGROUND_LOCAL_ROOT}/${basename}.jpg`, ...remotos]
+        : remotos;
 };
 
 const buildProfileBackgroundAliases = (): Record<string, string> => {

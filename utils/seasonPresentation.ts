@@ -1,7 +1,13 @@
 import { ACTIVE_SEASON_ID, ERA_CALENDAR, SEASON_ARCHIVE_LOG, SEASON_ORDER, SEASONS, type SeasonConfig } from '../constants/seasonContent';
+import { CATALOG_ASSET_ROOT } from '../constants/catalogAssets';
 import { Season } from '../types';
 
-const ROOT_IMAGES_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images';
+// Sobra da migracao que trouxe a arte do catalogo para dentro do app: o
+// constants/seasonContent.ts ja aponta para CATALOG_ASSET_ROOT, e este arquivo
+// ficou para tras apontando para o bucket. O genesis.png esta em
+// public/assets/catalog desde entao — era o mesmo arquivo sendo baixado do
+// Supabase, por usuario, tendo uma copia local empacotada ao lado.
+const ROOT_IMAGES_URL = CATALOG_ASSET_ROOT;
 const GENESIS_SEASON_IDS = new Set(['season-genesis-0', 'season_0']);
 
 export const GENESIS_SEASON_IMAGE_URL = `${ROOT_IMAGES_URL}/genesis.png`;

@@ -61,7 +61,11 @@ export function createBaseKit(tree: T.Group, rock: T.Group, instanceModel: Insta
     new T.Vector3(...p), new T.Quaternion().setFromAxisAngle(new T.Vector3(0,1,0), yaw), new T.Vector3(...s));
 
   // The approved tree remains the focal point; the rock file supplies all larger rocks.
-  const treeGroup=instanceModel(tree, [{ p:[-2.7,.03,-1.4], s:[1,.94,1], r:.35, tint:'#ffffff' }], true);
+  const treeGroup=instanceModel(tree, [
+    { p:[-2.7,.03,-1.4], s:[1,.94,1], r:.35, tint:'#ffffff' },
+    { p:[-7.5,.03,-5.6], s:[.58,.62,.58], r:2.1, tint:'#d6e1c4' },
+    { p:[7.2,.03,5.7], s:[.46,.53,.46], r:4.8, tint:'#c5d7b4' },
+  ], true);
   if(style.foliage) treeGroup.traverse(object=>{
     if(!(object instanceof T.Mesh)||!(object.material instanceof T.MeshStandardMaterial)||!object.material.name.includes('leaves'))return;
     const material=object.material.clone(),tint=new T.Color(style.foliage!);
@@ -89,15 +93,18 @@ export function createBaseKit(tree: T.Group, rock: T.Group, instanceModel: Insta
 
   // A compact garden edge gives the composition a readable footprint.
   const borderTransforms: T.Matrix4[] = [];
-  for (let i=0;i<18;i++) for (const z of [-4.45,4.45]) borderTransforms.push(matrix([-5.1+i*.6,.015,z],[.575,.14,.18]));
-  for (let i=0;i<14;i++) for (const x of [-5.4,5.4]) borderTransforms.push(matrix([x,.015,-3.9+i*.6],[.18,.14,.575]));
+  // The new footprint is about four times the original area: the central
+  // composition keeps its intimacy while the outer margin gives the arrival
+  // camera and the smaller trees room to breathe.
+  for (let i=0;i<36;i++) for (const z of [-8.9,8.9]) borderTransforms.push(matrix([-10.5+i*.6,.015,z],[.575,.14,.18]));
+  for (let i=0;i<30;i++) for (const x of [-10.8,10.8]) borderTransforms.push(matrix([x,.015,-8.7+i*.6],[.18,.14,.575]));
   batch(new T.BoxGeometry(1,1,1), edge, borderTransforms);
 
   // One beveled slab mesh repeated along a gentle path.
   const slab = new T.Shape([new T.Vector2(-.48,-.28),new T.Vector2(-.31,-.43),new T.Vector2(.33,-.38),new T.Vector2(.49,-.15),new T.Vector2(.39,.35),new T.Vector2(-.32,.4)]);
   const slabGeometry = new T.ExtrudeGeometry(slab,{depth:.07,bevelEnabled:true,bevelThickness:.04,bevelSize:.05,bevelSegments:2,steps:1});
   slabGeometry.rotateX(-Math.PI/2);
-  const steps = [[-.5,3.85],[-.85,2.85],[-1,1.85],[-1.3,.85],[-1.65,-.15],[-1.6,-1.2],[-.9,-2.15],[.1,-2.65],[1.2,-2.75]];
+  const steps = [[-.5,3.85],[-.85,2.85],[-1,1.85],[-1.3,.85],[-1.65,-.15],[-1.6,-1.2],[-.9,-2.15],[.1,-2.65],[1.2,-2.75],[2.2,-3.55],[3.2,-4.55],[4.15,-5.55],[5.2,-6.45]];
   batch(slabGeometry,stone,steps.map(([x,z],i)=>matrix([x,.015,z],[1+(i%3)*.06,1,.83],Math.sin(i*.9)*.3)));
 
   // Pool: shallow rippled geometry, a dark bed and a shared-stone shoreline.

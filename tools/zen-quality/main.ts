@@ -84,7 +84,7 @@ const sun = new T.DirectionalLight('#fff0d5', 3.2);
 sun.position.set(-6, 9, 5);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
-Object.assign(sun.shadow.camera, { left: -9, right: 9, top: 9, bottom: -9, near: .5, far: 35 });
+Object.assign(sun.shadow.camera, { left: -17, right: 17, top: 17, bottom: -17, near: .5, far: 58 });
 sun.shadow.normalBias = .025;
 sun.shadow.bias = -.00015;
 sun.shadow.radius = 3;
@@ -103,7 +103,32 @@ const targets = {
 } satisfies Record<string, { position: number[]; target: number[] }>;
 type View = keyof typeof targets;
 let transition: { from: T.Vector3; aim: T.Vector3; to: T.Vector3; target: T.Vector3; start: number } | null = null;
+let aerial = true;
+const aerialIntro = document.querySelector<HTMLElement>('#aerial-intro')!;
+const enterGarden = document.querySelector<HTMLButtonElement>('#enter-garden')!;
+function showAerial() {
+  aerial = true;
+  aerialIntro.hidden = false;
+  controls.autoRotate = true;
+  motionButton.setAttribute('aria-pressed', 'true');
+  motionButton.textContent = 'Parar movimento';
+  camera.position.set(18, 16, 24);
+  controls.target.set(0, 0, 0);
+  controls.maxDistance = 50;
+  controls.update();
+  needsRender = true;
+}
+function enterGardenView() {
+  aerial = false;
+  aerialIntro.hidden = true;
+  controls.autoRotate = false;
+  motionButton.setAttribute('aria-pressed', 'false');
+  motionButton.textContent = 'Testar movimento';
+  setView('all');
+}
+enterGarden.addEventListener('click', enterGardenView);
 function setView(view: View, instant = false) {
+  if (aerial) { aerial = false; aerialIntro.hidden = true; controls.autoRotate = false; }
   document.body.dataset.view = view;
   const preset = targets[view];
   const to = new T.Vector3(...preset.position);
@@ -132,7 +157,7 @@ document.querySelector<HTMLInputElement>('#light')!.addEventListener('input', ev
   sun.intensity = 3.4 - amount * .7;
   needsRender = true;
 });
-setView('all', true);
+showAerial();
 
 function normalizeModel(root: T.Group, dimension: 'x' | 'y', size: number, position: T.Vector3) {
   const bounds = new T.Box3().setFromObject(root);
@@ -341,7 +366,7 @@ async function createGarden() {
   sandPatch = sand;
   scene.add(sand);
   showComposition();
-  setView('all', true);
+  showAerial();
 
   label.textContent = 'Jardim pronto';
   loading.classList.add('ready');

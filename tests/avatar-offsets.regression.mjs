@@ -316,7 +316,7 @@ const {
     const guardado = AVATAR_OFFSETS[PECA];
     AVATAR_OFFSETS[PECA] = {
         x: 3, y: 7, scale: 1.02, cobre: ['pernas'],
-        porCorpo: { 'body_fem_5.png': { x: 2, y: -4, scale: 0.95 } },
+        porCorpo: { 'body_fem_4.png': { x: 2, y: -4, scale: 0.95 } },
     };
 
     const semCorpo = getAvatarOffset(`/x/${PECA}`);
@@ -327,7 +327,7 @@ const {
     assert.equal(outroCorpo.x, 3, 'corpo sem override nao muda a base');
     assert.equal(outroCorpo.y, 7);
 
-    const comOverride = getAvatarOffset(`/x/${PECA}`, '/y/body_fem_5.png');
+    const comOverride = getAvatarOffset(`/x/${PECA}`, '/y/body_fem_4.png');
     assert.equal(comOverride.x, 5, 'x tem de somar: 3 + 2');
     assert.equal(comOverride.y, 3, 'y tem de somar: 7 + (-4)');
     assert.ok(Math.abs(comOverride.scale - 1.02 * 0.95) < 1e-9, 'a escala multiplica');
@@ -340,6 +340,43 @@ const {
 
     if (guardado === undefined) delete AVATAR_OFFSETS[PECA];
     else AVATAR_OFFSETS[PECA] = guardado;
+}
+
+// 12a. Os dois generos tem a mesma contagem de tons, e todo corpo declarado
+// existe no disco.
+//
+// A troca de genero procura o MESMO toneId do outro lado e, nao achando, cai no
+// primeiro corpo daquele genero. Com 3 masculinos contra 5 femininos, quem
+// estava num tom escuro do feminino virava o masculino mais claro que existe —
+// a pele mudava sozinha no meio da customizacao, sem nada na tela explicando.
+//
+// E um corpo declarado sem arquivo nao falha em lugar nenhum: o getBodyUrl
+// devolve a URL, a imagem nao carrega, e o avatar aparece sem corpo.
+{
+    const { BODY_DB } = await empacota('constants/skins.ts', 'skins-check.mjs');
+    const porGenero = BODY_DB.reduce((acc, b) => {
+        (acc[b.gender] = acc[b.gender] || []).push(b);
+        return acc;
+    }, {});
+
+    const contagens = Object.entries(porGenero).map(([g, lista]) => [g, lista.length]);
+    const [[, primeira]] = contagens;
+    for (const [genero, quantos] of contagens) {
+        assert.equal(quantos, primeira, `${genero} tem ${quantos} tons; os generos precisam empatar`);
+    }
+
+    for (const [genero, lista] of Object.entries(porGenero)) {
+        const tons = lista.map((b) => Number(b.toneId)).sort((a, b) => a - b);
+        assert.deepEqual(
+            tons, tons.map((_, i) => i + 1),
+            `os tons de ${genero} precisam ser 1..${lista.length} sem buraco`,
+        );
+    }
+
+    for (const corpo of BODY_DB) {
+        const arquivo = path.join(root, 'public', 'assets', 'catalog', 'avatars', corpo.filename);
+        assert.ok(fs.existsSync(arquivo), `${corpo.id} declara ${corpo.filename}, que nao esta no disco`);
+    }
 }
 
 // 12b. O ajuste de um corpo vale para todos os TONS dele.
@@ -357,7 +394,7 @@ const {
     const guardado = AVATAR_OFFSETS[PECA];
     AVATAR_OFFSETS[PECA] = { x: 1, y: 2, porCorpo: { 'body_fem': { x: 10, y: 20 } } };
 
-    for (const tom of ['body_fem_1', 'body_fem_2', 'body_fem_3', 'body_fem_4', 'body_fem_5']) {
+    for (const tom of ['body_fem_1', 'body_fem_2', 'body_fem_3', 'body_fem_4']) {
         const r = getAvatarOffset(`/x/${PECA}`, `/y/${tom}.png`);
         assert.equal(r.x, 11, `${tom} tinha de receber o ajuste da familia`);
         assert.equal(r.y, 22, `${tom} tinha de receber o ajuste da familia`);
@@ -374,7 +411,7 @@ const {
     // Tabela antiga, chaveada pelo arquivo de um tom, continua valendo para a
     // familia inteira: converter a mao 300 linhas nao e requisito para o app
     // desenhar certo.
-    AVATAR_OFFSETS[PECA] = { x: 1, y: 2, porCorpo: { 'body_fem_5.png': { x: 10, y: 20 } } };
+    AVATAR_OFFSETS[PECA] = { x: 1, y: 2, porCorpo: { 'body_fem_4.png': { x: 10, y: 20 } } };
     const legado = getAvatarOffset(`/x/${PECA}`, '/y/body_fem_2.png');
     assert.equal(legado.x, 11, 'chave antiga tem de alcancar os irmaos de tom');
     assert.equal(legado.y, 22);

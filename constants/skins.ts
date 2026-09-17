@@ -22,15 +22,32 @@ export interface BodyDefinition {
 
 export const AVATAR_BASE_URL = CATALOG_AVATAR_ROOT;
 
+/**
+ * Quatro tons por genero, e os dois generos com a mesma contagem.
+ *
+ * Contagens diferentes quebravam a troca de genero: ela procura o MESMO toneId
+ * do outro lado e, nao achando, cai no primeiro corpo — entao quem estava num
+ * tom escuro do feminino virava o masculino mais claro que existe, e a pele
+ * mudava sozinha no meio da customizacao.
+ *
+ * Cada genero e UM desenho em quatro tons, gerados pelo
+ * scripts/gerar-tons-do-corpo.mjs: o tom 1 e a arte como foi desenhada e os
+ * outros tres sao recolorizacoes dela. Os oito medem 0/0/0 no gabarito, o que e
+ * a condicao para uma tabela de encaixe so servir cabelo e roupa nos oito.
+ *
+ * O body_fem_5 saiu. Ele era o unico corpo feminino que batia no gabarito e por
+ * isso virou a base do desenho — o que sobrevive dele e o tom 1 de hoje, nao o
+ * slot. Config antiga apontando para ele precisa de remapeamento no banco.
+ */
 export const BODY_DB: BodyDefinition[] = [
     { id: 'body_masc_1', gender: 'male', toneId: '1', filename: 'body_masc_1.png' },
     { id: 'body_masc_2', gender: 'male', toneId: '2', filename: 'body_masc_2.png' },
     { id: 'body_masc_3', gender: 'male', toneId: '3', filename: 'body_masc_3.png' },
+    { id: 'body_masc_4', gender: 'male', toneId: '4', filename: 'body_masc_4.png' },
     { id: 'body_fem_1', gender: 'female', toneId: '1', filename: 'body_fem_1.png' },
     { id: 'body_fem_2', gender: 'female', toneId: '2', filename: 'body_fem_2.png' },
     { id: 'body_fem_3', gender: 'female', toneId: '3', filename: 'body_fem_3.png' },
     { id: 'body_fem_4', gender: 'female', toneId: '4', filename: 'body_fem_4.png' },
-    { id: 'body_fem_5', gender: 'female', toneId: '5', filename: 'body_fem_5.png' },
 ];
 
 export const HAIR_DB: SkinItem[] = [

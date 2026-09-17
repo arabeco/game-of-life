@@ -36,7 +36,9 @@ import type { Valor } from '../components/ValorIcon';
 
 const roupas = ITEMS_DB.filter((i) => i.category === 'skin' && i.imageUrl).map((i) => i.id);
 const cabelos = HAIR_DB.map((h) => h.id);
-const corpos = ['body_masc_1', 'body_masc_3', 'body_fem_5'];
+// Um claro e um escuro de cada genero: o que quebra encaixe e a silhueta, e ela
+// nao muda entre tons do mesmo genero — os quatro saem do mesmo desenho.
+const corpos = ['body_masc_1', 'body_masc_4', 'body_fem_1', 'body_fem_4'];
 
 const Celula: React.FC<{ corpo: string; outfit: string; hair: string; rotulo: string }> = ({
     corpo, outfit, hair, rotulo,

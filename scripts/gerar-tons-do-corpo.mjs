@@ -28,9 +28,13 @@ import { createRequire } from 'node:module';
  * que concordam entre si dentro de 4%. Assim a escada nova cai na mesma familia
  * de marrons do resto do catalogo.
  *
+ * O alvo pode INCLUIR a propria base: o desenho e lido inteiro para a memoria
+ * antes de qualquer gravacao, entao `body_fem_1 body_fem_1..4` reescreve o
+ * proprio arquivo de origem com o degrau 1 sem se morder.
+ *
  * Uso:
- *   node scripts/gerar-tons-do-corpo.mjs body_fem_5 body_fem_1..5
- *   node scripts/gerar-tons-do-corpo.mjs body_fem_5 body_fem_1..5 --conferir
+ *   node scripts/gerar-tons-do-corpo.mjs body_masc_1 body_masc_1..4
+ *   node scripts/gerar-tons-do-corpo.mjs body_fem_1 body_fem_1..4 --conferir
  */
 
 const require = createRequire(import.meta.url);
@@ -40,19 +44,42 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PASTA = path.join(root, 'public', 'assets', 'catalog', 'avatars');
 
 /**
- * Multiplicadores de cada degrau, do mais claro ao mais escuro.
+ * Os tres pontos medidos da escada de pele, do claro ao escuro.
  *
- * O degrau 1 e o proprio desenho, sem toque. Os degraus 3 e 5 sao as razoes
- * medidas nos tons 2 e 3 das familias que ja existiam; 2 e 4 ficam no meio, de
- * modo que a escada suba parelha em vez de dar um salto no fim.
+ * Nao sao chute nem gosto: sao a razao media entre os tons que o jogo ja
+ * aceitava — body_masc_1 -> _2 -> _3 e o trio feminino antigo — que concordam
+ * entre si dentro de 4%. O primeiro e o proprio desenho, sem toque.
+ *
+ * Ficam como ANCORAS e nao como lista fechada porque o numero de tons por
+ * genero e decisao de produto, nao da arte: com quatro alvos a escada e claro
+ * mais tres marrons, com cinco ela ganha um degrau no meio, e nos dois casos o
+ * mais escuro tem de cair no mesmo lugar. Interpolar entre as ancoras mantem
+ * isso; uma lista fixa por contagem faria o tom mais escuro mudar conforme
+ * quantos tons existem.
  */
-const DEGRAUS = [
+const ANCORAS = [
     [1.000, 1.000, 1.000],
-    [0.880, 0.820, 0.740],
     [0.798, 0.684, 0.562],
-    [0.640, 0.540, 0.460],
     [0.508, 0.418, 0.374],
 ];
+
+/**
+ * Os multiplicadores de `quantos` degraus, andando sobre as ancoras.
+ *
+ * Interpola em linha entre as ancoras vizinhas. Em RGB, e nao em matiz: a
+ * medicao ja veio em razao de canal, e passar por um espaco de cor para voltar
+ * ao mesmo lugar so acrescentaria erro.
+ */
+const degrausPara = (quantos) => {
+    if (quantos === 1) return [ANCORAS[0]];
+    const ultima = ANCORAS.length - 1;
+    return Array.from({ length: quantos }, (_, i) => {
+        const t = (i / (quantos - 1)) * ultima;
+        const passo = Math.min(Math.floor(t), ultima - 1);
+        const u = t - passo;
+        return ANCORAS[passo].map((v, c) => v + u * (ANCORAS[passo + 1][c] - v));
+    });
+};
 
 const paraHsv = (r, g, b) => {
     r /= 255; g /= 255; b /= 255;
@@ -115,10 +142,7 @@ if (!base || !alvos.length) {
     console.error('uso: node scripts/gerar-tons-do-corpo.mjs <base> <alvo1..alvoN> [--conferir]');
     process.exit(1);
 }
-if (alvos.length > DEGRAUS.length) {
-    console.error(`ha ${DEGRAUS.length} degraus definidos e ${alvos.length} alvos pedidos.`);
-    process.exit(1);
-}
+const DEGRAUS = degrausPara(alvos.length);
 
 const arquivoBase = path.join(PASTA, `${base}.png`);
 if (!fs.existsSync(arquivoBase)) {

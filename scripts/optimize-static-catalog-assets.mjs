@@ -33,6 +33,19 @@ for (const filePath of imagePaths.filter((candidate) => !manifestOnly && candida
   const relativePath = relativeCatalogPath(filePath);
   const isLargeGlyphPlate = /^avatars\/glyphs\/PLACA_/i.test(relativePath);
 
+  // Os corpos ficam de fora da quantizacao.
+  //
+  // A regra abaixo vale porque arte de catalogo e ilustracao chapada, que
+  // quantiza bem. Corpo nao e: e pele com gradiente suave, e a paleta reduzida
+  // troca o degrade por pontilhado — visivel no rosto, que e justamente onde se
+  // olha. Medindo, os oito corpos caem de 507 KB para 165 KB, e 342 KB nao
+  // pagam granulado na cara de todo mundo.
+  if (/^avatars\/body_[a-z]+_\d+\.png$/i.test(relativePath)) {
+    bytesBefore += input.length;
+    bytesAfter += input.length;
+    continue;
+  }
+
   let pipeline = sharp(input);
   if (isLargeGlyphPlate) {
     pipeline = pipeline.resize({ width: 512, height: 512, fit: 'inside', withoutEnlargement: true });

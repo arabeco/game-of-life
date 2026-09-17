@@ -1,6 +1,6 @@
 {
   "totalFiles": 168,
-  "totalBytes": 9007127,
+  "totalBytes": 9183584,
   "assets": [
     {
       "path": "aurora_i.png",
@@ -114,43 +114,43 @@
     },
     {
       "path": "avatars/body_fem_1.png",
-      "bytes": 21731,
-      "sha256": "58ed07a8e61d4ca986c7cfe506551027ffcc8aeeac481876913ba047ad787fa9"
+      "bytes": 95230,
+      "sha256": "1e1dc303c6d86f235a2090fb50fc1156b96dd4fe9a596a8db50be81913744e49"
     },
     {
       "path": "avatars/body_fem_2.png",
-      "bytes": 22470,
-      "sha256": "e8c1a01c4f5ec57f90eb94fe548a73f84de2590e3cfa1b430e7fbbb2c1551b97"
+      "bytes": 90858,
+      "sha256": "af1acc68726620309ee99416c7d1b97f0fce408c7a9cb7e02009d4a208b9c619"
     },
     {
       "path": "avatars/body_fem_3.png",
-      "bytes": 21783,
-      "sha256": "378d2abb04add45e43b8ac92c7e7ee44a20cb6bc061f57933638523cb574cffe"
+      "bytes": 86022,
+      "sha256": "8062f5c68757d1c18291ede7e2dffeea0461d5f98ea84d1f98fd16f32e16b41f"
     },
     {
       "path": "avatars/body_fem_4.png",
-      "bytes": 99039,
-      "sha256": "357464dc816034d32d6bce5ac0b279748cfecc0b470ada7cd34c5774bb8892f6"
-    },
-    {
-      "path": "avatars/body_fem_5.png",
-      "bytes": 98867,
-      "sha256": "35dd789f6990c66372d372663493d55b7941e78e282df37702397170c3bb67c3"
+      "bytes": 79075,
+      "sha256": "68d3dee1649755215fbc7663dc2d7f55bd09b8fe0a32a4ebff903597c302df03"
     },
     {
       "path": "avatars/body_masc_1.png",
-      "bytes": 27117,
-      "sha256": "17f554fa6e4e87af894599b0ca7b04d85774ef56dc931ad7128956c11de4401f"
+      "bytes": 41743,
+      "sha256": "8cbb0b9f52157c51f26434fd483ff4072b646faf8bea2d5a90b61af650df2bd3"
     },
     {
       "path": "avatars/body_masc_2.png",
-      "bytes": 26941,
-      "sha256": "1f95f763018ffd32f447220a574fca5119147652c5d1b6c112c2d4e62d77800d"
+      "bytes": 41859,
+      "sha256": "f9de032670c273ec777064ba74bf1b80bc1b515098b0f2b4ebf776c585a53b42"
     },
     {
       "path": "avatars/body_masc_3.png",
-      "bytes": 24290,
-      "sha256": "286440b6f27226469043c5955d02dbd120991b0e8c77a2fccaee99473b96c9ff"
+      "bytes": 41941,
+      "sha256": "2f938dc320d5f3091b957ae4b516f0d69e3ceb8194659d734d4893eb85cd30db"
+    },
+    {
+      "path": "avatars/body_masc_4.png",
+      "bytes": 41967,
+      "sha256": "b8a247ff82096070d4f30671dc395c3376016416d1db25934ad5fe8d3386be62"
     },
     {
       "path": "avatars/glyphs/MOLDE_T1_LAJOTA_CALCARIO.png",

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { videoAsset } from '../constants/catalogAssets';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
 import { VideoPlayer } from './VideoPlayer';
@@ -16,13 +17,13 @@ interface RewardVideoPreviewModalProps {
 const PREVIEWS: Record<PreviewKind, { label: string; src: string; duration: number; placeholder: string }> = {
     levelup: {
         label: 'Level up',
-        src: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/levelup.mp4`,
+        src: videoAsset('levelup.mp4'),
         duration: 4000,
         placeholder: 'Level up...',
     },
     report: {
         label: 'Relatorio',
-        src: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/report_seal.mp4`,
+        src: videoAsset('report_seal.mp4'),
         duration: 5000,
         placeholder: 'Selando relatório...',
     },

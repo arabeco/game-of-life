@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { videoAsset } from '../constants/catalogAssets';
 import { useGame } from '../contexts/GameContext';
 import { ShareIcon } from './Icons';
 import { FeedEventType } from '../types';
@@ -359,10 +360,10 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                         <button type="button" aria-label="Pular animação" onClick={triggerReveal} className={`relative aspect-[9/16] w-full overflow-hidden bg-black transition-all duration-300 ease-out ${isVideoFading ?'scale-[0.985] opacity-0' : 'scale-100 opacity-100'}`}>
                             <VideoPlayer
                                 src={isRankUp
-                                    ?`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/levelup.mp4`
+                                    ? videoAsset('levelup.mp4')
                                     : isReportComplete
-                                        ?`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/report_seal.mp4`
-                                        : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/quest.mp4`}
+                                        ? videoAsset('report_seal.mp4')
+                                        : videoAsset('quest.mp4')}
                                 onEnd={triggerReveal}
                                 className="h-full w-full object-cover"
                                 videoClassName="scale-[1.08]"

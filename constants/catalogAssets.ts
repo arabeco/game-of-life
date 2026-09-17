@@ -4,6 +4,21 @@ export const CATALOG_GLYPH_ROOT = `${CATALOG_AVATAR_ROOT}/glyphs`;
 export const CATALOG_INTERFACE_ROOT = `${CATALOG_ASSET_ROOT}/interface`;
 
 /**
+ * Os videos de celebracao, empacotados com o app.
+ *
+ * Vinham do bucket, montados com `${VITE_SUPABASE_URL}/storage/v1/...` em tres
+ * componentes diferentes. Sao conteudo fixo — o mesmo arquivo para todo mundo —
+ * e o endpoint publico serve tudo com `max-age=3600`, que nao da para alongar
+ * pelo metadata do objeto. Uma hora de cache para um video que nunca muda
+ * significa rebaixar 2 MB por subida de nivel, indefinidamente.
+ *
+ * O caminho monta aqui, e nao em cada componente, porque a URL montada com a
+ * variavel de ambiente nao contem "supabase.co" — e foi assim que estes tres
+ * escaparam do tests/egress-estatico.regression.mjs na primeira versao dele.
+ */
+export const videoAsset = (nome: string): string => `/videos/${nome}`;
+
+/**
  * A arte do bau fechado, pelo tipo.
  *
  * O tipo tem oito valores — Comum, Incomum, Raro, Epico, Lendario, Season,

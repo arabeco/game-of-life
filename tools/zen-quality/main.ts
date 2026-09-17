@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import './style.css';
-import { createBaseKit, KIT_THEMES, type KitTheme } from './baseKit';
+import { createBaseKit, KIT_THEMES, KIT_LAYOUTS, type KitTheme, type KitLayout } from './baseKit';
 
 // All imported assets stay in this standalone study, outside the app's public directory.
 import sandColorUrl from './assets/sand/compact/diff.webp?url';
@@ -32,7 +32,15 @@ const metrics = document.querySelector<HTMLOutputElement>('#metrics')!;
 const sharingInfo = document.querySelector<HTMLElement>('#sharing-info')!;
 let grove: T.Group | undefined;
 let composition = 'kit';
-const kitCache = new Map<KitTheme, T.Group>();
+const kitCache = new Map<string, T.Group>();
+let kitLayout: KitLayout = 'pond';
+const layoutLabel = document.createElement('label');
+layoutLabel.className = 'kit-view'; layoutLabel.htmlFor = 'kit-layout'; layoutLabel.textContent = 'MODELO';
+const layoutSelect = document.createElement('select');
+layoutSelect.id = 'kit-layout'; layoutSelect.className = 'kit-view'; layoutSelect.disabled = true;
+for(const [value,name] of Object.entries(KIT_LAYOUTS)) layoutSelect.add(new Option(name,value));
+layoutSelect.value = kitLayout;
+document.querySelector('label[for="kit-theme"]')!.before(layoutLabel,layoutSelect);
 let kitTheme: KitTheme = 'serene';
 const themeSelect = document.querySelector<HTMLSelectElement>('#kit-theme')!;
 let activeKit: T.Group | undefined;
@@ -139,7 +147,8 @@ function setView(view: View, instant = false) {
     if (innerWidth < 650) to.set(24, 18, 35); else to.set(16, 12, 20);
   }
   if (composition === 'kit') {
-    if (view === 'all') { target.set(0,1.4,0); if(innerWidth<650)to.set(18,17,25);else to.set(12,11,16); }
+    if (view === 'all') { target.set(0,1.4,0); if(innerWidth<650)to.set(23,25,34);else to.set(18,17,24); }
+    if (view === 'water' && kitLayout === 'river') { target.set(4,.3,1.5);to.set(9,6,9); }
     if (view === 'tree') { target.set(-2.7,2.7,-1.4); to.set(3.5,4,7); }
     if (view === 'rock') { target.set(-3.3,.8,2.6); to.set(1.2,3.2,7.8); }
   }
@@ -285,8 +294,13 @@ function showComposition() {
   activeModels.forEach(model => { scene.remove(model); });
   if (composition === 'single') activeModels.forEach(model => scene.add(model));
   else if (composition === 'kit') {
-    activeKit = kitCache.get(kitTheme);
-    if (!activeKit) { activeKit = createBaseKit(activeModels[0],activeModels[1],instanceModel,kitTheme);kitCache.set(kitTheme,activeKit); }
+    const key = `${kitLayout}:${kitTheme}`;
+    activeKit = kitCache.get(key);
+    if (!activeKit) {
+      // Bound procedural GPU resources while the imported models stay shared.
+      if(kitCache.size>=3){const oldest=kitCache.keys().next().value!;kitCache.get(oldest)!.userData.dispose();kitCache.delete(oldest);}
+      activeKit = createBaseKit(activeModels[0],activeModels[1],instanceModel,kitTheme,kitLayout);kitCache.set(key,activeKit);
+    }
     scene.add(activeKit);
   }
   else {
@@ -311,6 +325,9 @@ function showComposition() {
   document.querySelector('header p')!.textContent = composition === 'kit' ? `COLEÇÃO / ${KIT_THEMES[kitTheme].name.toLocaleUpperCase('pt-BR')}` : 'Areia, árvore e pedra. Um estudo de luz e natureza.';
   if (sandPatch) sandPatch.visible = composition !== 'kit';
   document.body.dataset.composition = composition;
+  document.body.dataset.layout = kitLayout;
+  document.querySelector<HTMLButtonElement>('[data-view="water"]')!.hidden = composition==='kit' && !['pond','river'].includes(kitLayout);
+  if(composition==='kit')document.querySelector('header p')!.textContent = `${KIT_LAYOUTS[kitLayout]} · ${KIT_THEMES[kitTheme].name}`;
   document.querySelector<HTMLButtonElement>('[data-view="rock"]')!.textContent = composition === 'kit' ? 'Peça exclusiva' : 'A pedra';
   needsRender = true;
   // Reflection-map preparation can reset renderer statistics during its first frame.
@@ -322,6 +339,7 @@ compositionSelect.addEventListener('change', () => {
   setView('all');
 });
 themeSelect.addEventListener('change',()=>{kitTheme=themeSelect.value as KitTheme;showComposition();});
+layoutSelect.addEventListener('change',()=>{kitLayout=layoutSelect.value as KitLayout;showComposition();setView('all');});
 
 async function createGarden() {
   const manager = new T.LoadingManager();
@@ -373,6 +391,7 @@ async function createGarden() {
   loading.setAttribute('aria-hidden', 'true');
   compositionSelect.disabled = false;
   themeSelect.disabled = false;
+  layoutSelect.disabled = false;
   qualityInfo.textContent = profiles.full.label;
   needsRender = true;
 }

@@ -14,8 +14,13 @@ export const KIT_THEMES = {
   genesis: {name:'Gênesis',palette:{...BASE_PALETTE,stone:'#686475',edge:'#4c4659',bamboo:'#595567',node:'#9983aa',leaf:'#796091',water:'#423e60',bronze:'#756382',light:'#d4b3ff'},foliage:'#9565b2'},
 };
 export type KitTheme = keyof typeof KIT_THEMES;
+export const KIT_LAYOUTS = {
+  open: 'Pátio do silêncio', pond: 'Espelho do bosque',
+  river: 'Margens do refúgio', path: 'Caminho antigo',
+};
+export type KitLayout = keyof typeof KIT_LAYOUTS;
 
-export function createBaseKit(tree: T.Group, rock: T.Group, instanceModel: InstanceModel, theme: KitTheme = 'serene') {
+export function createBaseKit(tree: T.Group, rock: T.Group, instanceModel: InstanceModel, theme: KitTheme = 'serene', layout: KitLayout = 'pond') {
   const style=KIT_THEMES[theme],palette=style.palette;
   const kit = new T.Group(); kit.name = style.name;
   const geometries = new Set<T.BufferGeometry>(), materials = new Set<T.Material>();
@@ -104,7 +109,12 @@ export function createBaseKit(tree: T.Group, rock: T.Group, instanceModel: Insta
   const slab = new T.Shape([new T.Vector2(-.48,-.28),new T.Vector2(-.31,-.43),new T.Vector2(.33,-.38),new T.Vector2(.49,-.15),new T.Vector2(.39,.35),new T.Vector2(-.32,.4)]);
   const slabGeometry = new T.ExtrudeGeometry(slab,{depth:.07,bevelEnabled:true,bevelThickness:.04,bevelSize:.05,bevelSegments:2,steps:1});
   slabGeometry.rotateX(-Math.PI/2);
-  const steps = [[-.5,3.85],[-.85,2.85],[-1,1.85],[-1.3,.85],[-1.65,-.15],[-1.6,-1.2],[-.9,-2.15],[.1,-2.65],[1.2,-2.75],[2.2,-3.55],[3.2,-4.55],[4.15,-5.55],[5.2,-6.45]];
+  const steps = layout === 'path'
+    ? Array.from({length:23},(_,i)=>{const t=i/22;return [-5.2-1.3*Math.sin(t*Math.PI*2),7.8-t*15.6];})
+    : layout === 'river'
+      ? Array.from({length:16},(_,i)=>[-6.7+i*.95,1.5]).filter(([x])=>x<1.5||x>5.3)
+      : layout === 'open' ? [[-.5,7.8],[-.8,6.8],[-1,5.8]]
+      : [[-.5,3.85],[-.85,2.85],[-1,1.85],[-1.3,.85],[-1.65,-.15],[-1.6,-1.2],[-.9,-2.15],[.1,-2.65],[1.2,-2.75],[2.2,-3.55],[3.2,-4.55],[4.15,-5.55],[5.2,-6.45]];
   batch(slabGeometry,stone,steps.map(([x,z],i)=>matrix([x,.015,z],[1+(i%3)*.06,1,.83],Math.sin(i*.9)*.3)));
 
   // Pool: shallow rippled geometry, a dark bed and a shared-stone shoreline.
@@ -133,14 +143,39 @@ export function createBaseKit(tree: T.Group, rock: T.Group, instanceModel: Insta
   const sky=new T.DataTexture(skyPixels,128,64);sky.colorSpace=T.SRGBColorSpace;sky.mapping=T.EquirectangularReflectionMapping;sky.needsUpdate=true;
   const water = new T.MeshPhysicalMaterial({color:palette.water,roughness:.17,metalness:.05,clearcoat:1,clearcoatRoughness:.1,envMap:sky,envMapIntensity:1.5});
   materials.add(water);
-  const surface=mesh(waterGeometry,water,kit,poolCenter.toArray()); surface.castShadow=false;
+  const pond = new T.Group();
+  if(layout==='pond') kit.add(pond);
+  const surface=mesh(waterGeometry,water,pond,poolCenter.toArray()); surface.castShadow=false;
   const pebbles = Array.from({length:46},(_,i)=>{const angle=i/46*Math.PI*2,p=shore(angle,1.035);return matrix([poolCenter.x+p.x,.08,poolCenter.z+p.y],[.21+(i%3)*.035,.12,.18+(i%4)*.022],angle);});
-  batch(new T.DodecahedronGeometry(1,1),stone,pebbles);
+  batch(new T.DodecahedronGeometry(1,1),stone,pebbles,pond);
   // Delicate ripple accents keep water readable without continuous animation/rendering.
   const rippleMaterial=new T.MeshBasicMaterial({color:'#bdc8b3',transparent:true,opacity:.24,depthWrite:false,side:T.DoubleSide});materials.add(rippleMaterial);
   for(const radius of [.23,.36,.52]) {
-    const ring=mesh(new T.RingGeometry(radius,radius+.008,48),rippleMaterial,kit,[2.45,.079,1.3],[1, .65,1]);
+    const ring=mesh(new T.RingGeometry(radius,radius+.008,48),rippleMaterial,pond,[2.45,.079,1.3],[1, .65,1]);
     ring.rotation.x=-Math.PI/2;ring.castShadow=false;ring.receiveShadow=false;
+  }
+
+  if(layout==='river') {
+    // A continuous strip and banks are generated from one centreline; no new assets.
+    const riverX=(z:number)=>4+.55*Math.sin(z*.42);
+    const vertices:number[]=[], faces:number[]=[], banks:T.Matrix4[]=[];
+    for(let i=0;i<=80;i++) {
+      const z=-8.6+i/80*17.2,x=riverX(z),width=.76+.1*Math.cos(z*.7);
+      vertices.push(x-width,.055,z,x+width,.055,z);
+      if(i<80){const a=i*2;faces.push(a,a+2,a+1,a+1,a+2,a+3);}
+      for(const side of [-1,1])banks.push(matrix([x+side*(width+.12),.05,z],[.21,.12,.17],i*.8));
+    }
+    const riverGeometry=new T.BufferGeometry();riverGeometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));riverGeometry.setIndex(faces);riverGeometry.computeVertexNormals();
+    mesh(riverGeometry,water,kit).castShadow=false;
+    batch(new T.DodecahedronGeometry(1,0),stone,banks);
+    const bridge=new T.Group();bridge.position.set(riverX(1.5),0,1.5);kit.add(bridge);
+    const wood=new T.MeshStandardMaterial({color:theme==='genesis'?'#514454':'#79634b',roughness:.86});materials.add(wood);
+    const planks:T.Matrix4[]=[],posts:T.Matrix4[]=[];
+    for(let i=0;i<15;i++) {const x=-1.55+i*3.1/14,y=.16+.18*Math.cos(x/1.55*Math.PI/2);planks.push(matrix([x,y,0],[.205,.12,1.25]));}
+    batch(new T.BoxGeometry(1,1,1),wood,planks,bridge);
+    for(const x of [-1.5,-.75,0,.75,1.5])for(const z of [-.65,.65])posts.push(matrix([x,.65,z],[.08,1.05,.08]));
+    batch(new T.BoxGeometry(1,1,1),bronze,posts,bridge);
+    for(const z of [-.65,.65])mesh(new T.BoxGeometry(3.2,.075,.075),wood,bridge,[0,1.15,z]);
   }
 
   // Bamboo uses shared segment/node/leaf meshes instead of one model per stem.
@@ -208,6 +243,7 @@ export function createBaseKit(tree: T.Group, rock: T.Group, instanceModel: Insta
 
   kit.userData.dispose = () => {
     kit.traverse(object=>{if(object instanceof T.InstancedMesh)object.dispose();});
+    if(!pond.parent)pond.traverse(object=>{if(object instanceof T.InstancedMesh)object.dispose();});
     geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());
     sky.dispose();
     // Borrowed tree/rock geometry and image textures remain owned by the scene cache.

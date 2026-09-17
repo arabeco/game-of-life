@@ -21,6 +21,12 @@ para **2 MiB**, verificada por `test:egress-estatico`. Bytes de modelos não inc
 
 ## Coleções e compartilhamento
 
+O seletor **Modelo** oferece Pátio do silêncio (areia livre), Espelho do bosque
+(lago), Margens do refúgio (riacho contínuo e ponte) e Caminho antigo (pedras na
+ lateral). Cada base combina com os três temas abaixo, totalizando 12 opções.
+Ponte, margens e caminhos são procedurais. As trocas não baixam novos modelos ou
+imagens; o cache guarda até três composições e libera os recursos próprios das antigas.
+
 - **Sereno:** árvore aprovada, totem de três pedras, caminho, água, bambu e lanternas.
 - **Pátio dourado:** folhagem dourada, pedra clara/bronze e guardião esculpido estilizado.
 - **Gênesis:** folhagem violeta, pedra escura e relicário com ametista e arcos.

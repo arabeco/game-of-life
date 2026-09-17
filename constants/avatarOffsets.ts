@@ -105,6 +105,11 @@ export interface AvatarOffset {
      *
      * `cobre` e `cabelo` ficam de fora de proposito: sao decisoes sobre a ROUPA
      * (ela tem manopla? tem elmo?), e isso nao muda conforme quem a veste.
+     *
+     * A chave pode ser um arquivo (`body_fem_3.png`) ou uma familia inteira
+     * (`body_fem`). Os tons de um mesmo genero sao o MESMO desenho recolorido
+     * pelo scripts/gerar-tons-do-corpo.mjs, entao um ajuste medido contra um
+     * deles vale para os outros — ver `ajusteDoCorpo`.
      */
     porCorpo?: Record<string, Pick<AvatarOffset, 'x' | 'y' | 'scale'>>;
 }
@@ -130,9 +135,13 @@ export const REGIOES_DO_CORPO: Record<RegiaoDoCorpo, Array<[number, number, numb
  * O corpo contra o qual toda arte nova deve ser desenhada.
  *
  * Escolhido por ser o mais consistente do conjunto: os tres masculinos diferem
- * entre si em 1,1% a 3,9% da silhueta, enquanto os femininos chegam a 16,1%
- * entre fem_1 e fem_2 — sinal de que foram gerados separados em vez de
+ * entre si em 1,1% a 3,9% da silhueta, enquanto os femininos chegavam a 16,1%
+ * entre fem_1 e fem_2 — sinal de que tinham sido gerados separados em vez de
  * recoloridos a partir de um so.
+ *
+ * Os cinco femininos deixaram de ser cinco desenhos: hoje saem todos do
+ * body_fem_5 pelo scripts/gerar-tons-do-corpo.mjs e medem 0/0/0 contra este
+ * gabarito. Tom de pele novo se gera, nao se desenha.
  *
  * As medidas sao do alpha de body_masc_1.png e servem de gabarito para conferir
  * corpo novo: node scripts/check-avatar-geometry.mjs
@@ -169,13 +178,13 @@ export const AVATAR_OFFSETS: Record<string, AvatarOffset> = {
     'CABELO_T1_MEDIO_RETO_bran.png': { x: -2, y: 5, scale: 1.01 },
     'CABELO_T1_MEDIO_RETO_cast.png': { x: -2, y: 7 },
     'CABELO_T1_MEDIO_RETO_pre.png': { x: -1, y: 3, scale: 0.98 },
-    'CABELO_T2_TEXTURED_CROP_bran.png': { x: -2, y: 18, scale: 1.02, porCorpo: { 'body_fem_5.png': { x: -1, y: -2 } } },
+    'CABELO_T2_TEXTURED_CROP_bran.png': { x: -2, y: 18, scale: 1.02, porCorpo: { 'body_fem': { x: -1, y: -2 } } },
     'CABELO_T2_TEXTURED_CROP_pre.png': { x: -2, y: 68, scale: 1.26 },
     'CABELO_T2_TEXTURED_CROP_ver.png': { x: -2, y: 13, scale: 0.98 },
     'CABELO_T3_DREADS_bran.png': { x: -3, y: 13 },
     'CABELO_T3_DREADS_cast.png': { x: -2, y: 13 },
     'CABELO_T3_DREADS_pre.png': { x: -2, y: 12, scale: 1.03 },
-    'CABELO_T3_MULLET_TOPETE_ama.png': { x: -2, y: 3, porCorpo: { 'body_fem_5.png': { y: 2 } } },
+    'CABELO_T3_MULLET_TOPETE_ama.png': { x: -2, y: 3, porCorpo: { 'body_fem': { y: 2 } } },
     'CABELO_T3_MULLET_TOPETE_bra.png': { x: -1, y: 5 },
     'CABELO_T3_MULLET_TOPETE_cast.png': { x: -1, y: 6 },
     'CABELO_T3_MULLET_TOPETE_verm.png': { x: -4, y: 6 },
@@ -192,13 +201,13 @@ export const AVATAR_OFFSETS: Record<string, AvatarOffset> = {
     'CABELO_T5_FLUXO_ESPIRITUAL_verm.png': { x: -4, y: 9 },
     'SKIN_QUEST_GUARDIAO_AURORA.png': { x: 2, y: 4, scale: 1.24 },
     'SKIN_SEASON_CRIADOR.png': { y: 1, scale: 1.08, cobre: ['bracos', 'pernas', 'pes'] },
-    'SKIN_T1_CACADOR.png': { x: 1, scale: 1.18, porCorpo: { 'body_fem_5.png': { x: -1, y: 3 } } },
-    'SKIN_T1_CASUAL.png': { x: 4, y: -3, cobre: ['pernas', 'pes'], porCorpo: { 'body_fem_5.png': { x: -2, y: 3, scale: 1.01 } } },
-    'SKIN_T1_CASUAL_2.png': { x: 5, y: -6, scale: 1.15, recortes: [[280, 115, 17, 198], [194, 115, 18, 211]], porCorpo: { 'body_fem_5.png': { x: -3, y: 1, scale: 0.96 } } },
-    'SKIN_T1_GYM_RAT.png': { x: 1, cobre: ['pes'], recortes: [[194, 232, 48, 71]], porCorpo: { 'body_fem_5.png': { x: -4, y: 7, scale: 1.04 } } },
+    'SKIN_T1_CACADOR.png': { x: 1, scale: 1.18, porCorpo: { 'body_fem': { x: -1, y: 3 } } },
+    'SKIN_T1_CASUAL.png': { x: 4, y: -3, cobre: ['pernas', 'pes'], porCorpo: { 'body_fem': { x: -2, y: 3, scale: 1.01 } } },
+    'SKIN_T1_CASUAL_2.png': { x: 5, y: -6, scale: 1.15, recortes: [[280, 115, 17, 198], [194, 115, 18, 211]], porCorpo: { 'body_fem': { x: -3, y: 1, scale: 0.96 } } },
+    'SKIN_T1_GYM_RAT.png': { x: 1, cobre: ['pes'], recortes: [[194, 232, 48, 71]], porCorpo: { 'body_fem': { x: -4, y: 7, scale: 1.04 } } },
     'SKIN_T1_NAUFRAGO.png': { x: -3, scale: 1.04 },
     'SKIN_T1_STREET.png': { x: 2, y: -6, cobre: ['pernas', 'pes'], recortes: [[192, 212, 29, 97]], cabelo: 'porBaixo' },
-    'SKIN_T2_ACADEMICO.png': { x: 2, y: 2, scale: 1.02, cobre: ['pernas', 'pes'], recortes: [[168, 165, 159, 74]], porCorpo: { 'body_fem_5.png': { x: 1, y: 4 } } },
+    'SKIN_T2_ACADEMICO.png': { x: 2, y: 2, scale: 1.02, cobre: ['pernas', 'pes'], recortes: [[168, 165, 159, 74]], porCorpo: { 'body_fem': { x: 1, y: 4 } } },
     'SKIN_T2_EXECUTIVO.png': { x: 3, y: 7, scale: 1.02, cobre: ['pernas', 'pes'], recortes: [[180, 170, 147, 61], [194, 217, 16, 83]] },
     'SKIN_T2_TATICO.png': { y: 1, cobre: ['pernas', 'pes'], recortes: [[175, 173, 154, 55], [188, 238, 114, 29]] },
     'SKIN_T3_ALQUIMISTA.png': { x: 1, y: -9, cobre: ['bracos', 'pernas', 'pes'], cabelo: 'porBaixo' },
@@ -212,6 +221,40 @@ export const AVATAR_OFFSETS: Record<string, AvatarOffset> = {
 const semExtensao = (caminho: string): string => {
     const barra = caminho.lastIndexOf('/');
     return barra >= 0 ? caminho.slice(barra + 1) : caminho;
+};
+
+/** A familia de um corpo: `body_fem_3.png` vira `body_fem`. */
+const familiaDoCorpo = (arquivo: string): string => arquivo.replace(/_\d+\.png$/i, '');
+
+/**
+ * O ajuste que vale para ESTE corpo dentro de `porCorpo`.
+ *
+ * Tenta o arquivo exato e, nao achando, qualquer irmao do mesmo genero. O
+ * motivo e que os tons de pele nao sao desenhos diferentes: os cinco corpos
+ * femininos saem todos do body_fem_5 pelo scripts/gerar-tons-do-corpo.mjs e
+ * medem igual no gabarito, ate o pixel. Um ajuste afinado contra um tom esta,
+ * por construcao, afinado contra os cinco.
+ *
+ * Exigir a chave exata ja custou caro: a ferramenta grava o corpo que estava na
+ * tela, a tabela acabou so com `body_fem_5.png`, e o cabelo encaixava naquele
+ * corpo e saia do lugar nos outros quatro — que eram, na epoca, arte de outro
+ * dia com o cranio 7px acima. Hoje a arte esta unificada e a chave exata so
+ * reintroduziria o mesmo buraco na proxima vez que alguem afinasse olhando um
+ * tom diferente.
+ */
+const ajusteDoCorpo = (
+    porCorpo: NonNullable<AvatarOffset['porCorpo']>,
+    arquivoDoCorpo: string,
+): Pick<AvatarOffset, 'x' | 'y' | 'scale'> | undefined => {
+    if (porCorpo[arquivoDoCorpo]) return porCorpo[arquivoDoCorpo];
+
+    const familia = familiaDoCorpo(arquivoDoCorpo);
+    // Ordenado para que duas chaves da mesma familia — que nao deveriam existir
+    // — escolham sempre a mesma, em vez de depender da ordem do objeto.
+    const irmao = Object.keys(porCorpo).sort().find((chave) => (
+        chave === familia || familiaDoCorpo(chave) === familia
+    ));
+    return irmao ? porCorpo[irmao] : undefined;
 };
 
 /**
@@ -235,7 +278,7 @@ export const getAvatarOffset = (
     // delta pequeno no outro; substituindo, cada corpo exigiria a coordenada
     // inteira de novo e as duas sairiam do lugar quando so uma fosse mexida.
     if (!base.porCorpo || !urlDoCorpo) return base;
-    const doCorpo = base.porCorpo[semExtensao(decodeURIComponent(urlDoCorpo.split('?')[0]))];
+    const doCorpo = ajusteDoCorpo(base.porCorpo, semExtensao(decodeURIComponent(urlDoCorpo.split('?')[0])));
     if (!doCorpo) return base;
 
     return {

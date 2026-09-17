@@ -342,6 +342,62 @@ const {
     else AVATAR_OFFSETS[PECA] = guardado;
 }
 
+// 12b. O ajuste de um corpo vale para todos os TONS dele.
+//
+// Os cinco corpos femininos deixaram de ser cinco desenhos: saem todos do
+// body_fem_5 pelo scripts/gerar-tons-do-corpo.mjs e medem 0/0/0 no gabarito.
+// Um ajuste afinado contra um tom esta, por construcao, afinado contra os cinco.
+//
+// Antes disso a chave era o arquivo exato, a ferramenta gravava o corpo que
+// estava na tela, e a tabela acabou so com `body_fem_5.png`: o cabelo encaixava
+// naquele corpo e saia do lugar nos outros quatro. Foi o bug que originou tudo
+// isto, e ele volta sozinho no dia em que alguem afinar olhando outro tom.
+{
+    const PECA = 'SKIN_TESTE_FAMILIA.png';
+    const guardado = AVATAR_OFFSETS[PECA];
+    AVATAR_OFFSETS[PECA] = { x: 1, y: 2, porCorpo: { 'body_fem': { x: 10, y: 20 } } };
+
+    for (const tom of ['body_fem_1', 'body_fem_2', 'body_fem_3', 'body_fem_4', 'body_fem_5']) {
+        const r = getAvatarOffset(`/x/${PECA}`, `/y/${tom}.png`);
+        assert.equal(r.x, 11, `${tom} tinha de receber o ajuste da familia`);
+        assert.equal(r.y, 22, `${tom} tinha de receber o ajuste da familia`);
+    }
+
+    // A familia nao vaza para o outro genero — que e todo o motivo de porCorpo
+    // existir. Se vazasse, afinar no feminino torceria o masculino em silencio.
+    for (const tom of ['body_masc_1', 'body_masc_2', 'body_masc_3']) {
+        const r = getAvatarOffset(`/x/${PECA}`, `/y/${tom}.png`);
+        assert.equal(r.x, 1, `${tom} nao pode receber ajuste do corpo feminino`);
+        assert.equal(r.y, 2);
+    }
+
+    // Tabela antiga, chaveada pelo arquivo de um tom, continua valendo para a
+    // familia inteira: converter a mao 300 linhas nao e requisito para o app
+    // desenhar certo.
+    AVATAR_OFFSETS[PECA] = { x: 1, y: 2, porCorpo: { 'body_fem_5.png': { x: 10, y: 20 } } };
+    const legado = getAvatarOffset(`/x/${PECA}`, '/y/body_fem_2.png');
+    assert.equal(legado.x, 11, 'chave antiga tem de alcancar os irmaos de tom');
+    assert.equal(legado.y, 22);
+
+    if (guardado === undefined) delete AVATAR_OFFSETS[PECA];
+    else AVATAR_OFFSETS[PECA] = guardado;
+}
+
+// 12c. A ferramenta grava na mesma chave que o app le.
+//
+// A avatar-align.html tem a propria copia da conta, e o valor so chega ao app
+// por copiar-e-colar. Divergindo, a pessoa afina ate ficar bonito na ferramenta
+// e ve outra coisa no jogo — sem nenhum erro no meio que indique o motivo.
+{
+    const fonte = fs.readFileSync(path.join(root, 'tools', 'avatar-align.html'), 'utf8');
+    assert.match(fonte, /function familiaDoCorpo/, 'a ferramenta nao conhece familia de corpo');
+    assert.match(
+        fonte,
+        /base\.porCorpo\[chaveDoCorpo\(\)\] = \{/,
+        'a ferramenta precisa gravar o ajuste na chave da familia',
+    );
+}
+
 // 13. O CanvasAvatar informa qual corpo esta em cena.
 //
 // O helper pode estar certo e o componente nunca passar o corpo, e ai todo

@@ -305,6 +305,27 @@
   function corpoAtual() { return nomeArquivo(els.corpo.value || GABARITO.corpo); }
   function noGabarito() { return corpoAtual() === GABARITO.corpo; }
 
+  // A familia do corpo em cena: body_fem_3.png -> body_fem.
+  //
+  // Os tons de pele de um genero sao o MESMO desenho recolorido pelo
+  // scripts/gerar-tons-do-corpo.mjs, e medem igual no gabarito ate o pixel.
+  // Gravar o ajuste no arquivo exato faria o cabelo encaixar so no tom que
+  // estava aberto aqui — que foi exatamente o que aconteceu: a tabela ficou so
+  // com body_fem_5.png e o cabelo saia do lugar nos outros quatro corpos.
+  function familiaDoCorpo(arquivo) { return arquivo.replace(/_\d+\.png$/i, ''); }
+  function chaveDoCorpo() { return familiaDoCorpo(corpoAtual()); }
+
+  // O ajuste gravado que vale para o corpo em cena: o da familia, ou o de
+  // qualquer irmao dela, para ler tabela antiga sem precisar converter.
+  function ajusteDoCorpo(base) {
+    if (!base.porCorpo) return null;
+    if (base.porCorpo[chaveDoCorpo()]) return base.porCorpo[chaveDoCorpo()];
+    var irmao = Object.keys(base.porCorpo).sort().filter(function (k) {
+      return familiaDoCorpo(k) === chaveDoCorpo();
+    })[0];
+    return irmao ? base.porCorpo[irmao] : null;
+  }
+
   // Onde x, y e escala vao ser gravados.
   //
   // No corpo de referencia, no proprio ajuste. Em qualquer outro, num bloco
@@ -315,14 +336,16 @@
     var base = off(url);
     if (noGabarito()) return base;
     if (!base.porCorpo) base.porCorpo = {};
-    if (!base.porCorpo[corpoAtual()]) base.porCorpo[corpoAtual()] = { x: 0, y: 0, scale: 1 };
-    return base.porCorpo[corpoAtual()];
+    var existente = ajusteDoCorpo(base);
+    if (existente) return existente;
+    base.porCorpo[chaveDoCorpo()] = { x: 0, y: 0, scale: 1 };
+    return base.porCorpo[chaveDoCorpo()];
   }
 
   // O que o desenho usa: a base somada ao ajuste do corpo, igual ao app.
   function efetivo(url) {
     var base = off(url);
-    var extra = base.porCorpo && base.porCorpo[corpoAtual()];
+    var extra = ajusteDoCorpo(base);
     if (!extra) return base;
     return {
       x: (base.x || 0) + (extra.x || 0),
@@ -596,7 +619,7 @@
     } else {
       els.destino.className = 'destino override';
       els.destino.textContent = 'Fora da referência: o ajuste vai para porCorpo['
-        + corpoAtual() + '] e SOMA ao valor base, sem sobrescrevê-lo.';
+        + chaveDoCorpo() + '] — vale para todos os tons deste corpo — e SOMA ao valor base, sem sobrescrevê-lo.';
     }
 
     var mexidas = Object.keys(offsets).filter(function (k) { return mexida(offsets[k]); }).sort();
@@ -793,8 +816,13 @@
         cabelo: antigo.cabelo, porCorpo: antigo.porCorpo, recortes: antigo.recortes,
       };
     } else {
+      // Some com a familia inteira, e nao so com a chave da familia: tabela
+      // antiga pode ter gravado o arquivo do tom, e deixar esse resto vivo faria
+      // o "zerar" nao zerar nada na proxima vez que o desenho fosse lido.
       var base = off(atual.url);
-      if (base.porCorpo) delete base.porCorpo[corpoAtual()];
+      if (base.porCorpo) Object.keys(base.porCorpo).forEach(function (k) {
+        if (k === chaveDoCorpo() || familiaDoCorpo(k) === chaveDoCorpo()) delete base.porCorpo[k];
+      });
     }
     desenhar();
   }

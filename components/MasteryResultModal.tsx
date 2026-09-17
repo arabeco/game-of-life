@@ -211,7 +211,11 @@ export const MasteryResultModal: React.FC<{
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="luxe-skin-button luxe-brilho flex min-w-[13rem] items-center justify-center px-10 py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-transform active:scale-[0.97]"
+                                /* Largura, e nao piso: aqui o compartilhar e irmao
+                                   de flex com `shrink-0`, entao um `min-w` no OK
+                                   nao encolhe — a linha estoura o cartao e o
+                                   simbolo sai pela borda em tela estreita. */
+                                className="luxe-skin-button luxe-brilho flex w-[min(13rem,100%)] min-w-0 items-center justify-center px-10 py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-transform active:scale-[0.97]"
                                 style={{ ...estiloDaPlaca.botao, borderWidth: 2 }}
                             >
                                 OK

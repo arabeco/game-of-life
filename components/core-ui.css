@@ -147,17 +147,10 @@
   pointer-events: none;
 }
 
-.planner-floating-vitals__shell::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 0.34rem;
-  bottom: 0.34rem;
-  width: 1px;
-  transform: translateX(-50%);
-  background: linear-gradient(180deg, transparent, rgba(255,255,255,0.18), transparent);
-  pointer-events: none;
-}
+/* O FIO DO MEIO SAIU.
+   Ele separava os dois orbes — EXP e sequencia. A sequencia foi aposentada e
+   sobrou um orbe so, entao o fio deixou de dividir alguma coisa e passou a
+   riscar o numero da EXP pelo meio. */
 
 .planner-vital-orb {
   position: relative;

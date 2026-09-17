@@ -80,7 +80,9 @@ const CENARIOS: Cenario[] = [
     {
         id: 'arena', rotulo: 'Arena concluída', nota: 'sem vídeo',
         type: 'ARENA_COMPLETED',
-        data: { name: 'Academia e dieta', icon: '💪' },
+        // Com os numeros que o taskDomain grava de verdade. Sem eles a placa
+        // aparecia com zeros aqui e escondia justamente o que ela mostra.
+        data: { name: 'Academia e dieta', icon: '💪', actionCount: 3, deliveries: 34, minutes: 1290, days: 21 },
     },
     {
         id: 'venceu', rotulo: 'Desafio vencido', nota: 'competição',

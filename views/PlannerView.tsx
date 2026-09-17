@@ -788,7 +788,7 @@ const DailyView: React.FC<{ tasks: ScheduledTask[], actions: Action[], scaleFact
     );
 };
 
-const PlannerFloatingVitals: React.FC<{ expSnapshot: PlannerExpSnapshot; cycleExpBanked: number }> = ({ expSnapshot, cycleExpBanked }) => {
+const PlannerFloatingVitals: React.FC<{ expSnapshot: PlannerExpSnapshot }> = ({ expSnapshot }) => {
     const { userProfile } = useGame();
     // O pulso da sequencia saiu junto com o contador: ele acendia um brilho
     // no orbe que nao existe mais. E o sinal que ele escutava, daily_streak, nao
@@ -796,7 +796,10 @@ const PlannerFloatingVitals: React.FC<{ expSnapshot: PlannerExpSnapshot; cycleEx
     // falante, ao lado do streak_milestone.
 
     return (
-        <div className="planner-floating-vitals pointer-events-none absolute bottom-[calc(0.15rem+var(--safe-area-bottom))] left-1/2 z-40 w-[min(9.35rem,calc(100%-10rem))] -translate-x-1/2">
+        /* 9,35rem era a largura de DOIS orbes lado a lado. Sobrou um, e a caixa
+           continuou do tamanho de dois: centrada, ela alcancava o dock flutuante
+           e comia o botao de zoom. Agora mede o que carrega. */
+        <div className="planner-floating-vitals pointer-events-none absolute bottom-[calc(0.15rem+var(--safe-area-bottom))] left-1/2 z-40 w-[min(5.4rem,calc(100%-11rem))] -translate-x-1/2">
             <div className="planner-floating-vitals__shell">
                 <div className="grid grid-cols-1 items-center gap-2">
                     <AnimatedExpCounter snapshot={expSnapshot} />
@@ -816,17 +819,13 @@ const PlannerFloatingVitals: React.FC<{ expSnapshot: PlannerExpSnapshot; cycleEx
                         E o "melhor streak" do legado nunca veio daqui: sai de
                         report.metrics.maxStreak, calculado no fecho de cada ciclo. */}
                 </div>
-                {cycleExpBanked > 0 && (
-                    // Banked, not credited: this EXP only reaches the profile when the
-                    // cycle closes. Reading as "Ciclo +150" made it look already earned,
-                    // so a permanent badge plus an unchanged profile read as lost EXP.
-                    <div
-                        className="mt-1 truncate text-center text-[7px] font-black uppercase tracking-[0.12em] text-white/38"
-                        title={`${cycleExpBanked} EXP guardada para quando o ciclo fechar`}
-                    >
-                        +{cycleExpBanked} ao fechar
-                    </div>
-                )}
+                {/* A EXP GUARDADA DO CICLO SAIU DAQUI.
+
+                    Ela nao se perde: quem paga e o endCycle, somando
+                    `cycleExpBonus + premiumBonusExp` no fecho, e o numero continua
+                    a vista no Painel Diario como "EXP guardada". O que saiu foi a
+                    segunda linha em cima do planner, que empurrava a caixa para a
+                    largura de dois orbes e roubava espaco do dock. */}
                 </div>
         </div>
     );
@@ -2215,7 +2214,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 </div>
             </div>
 
-            <PlannerFloatingVitals expSnapshot={plannerExpSnapshot} cycleExpBanked={cycleExpBonus || 0} />
+            <PlannerFloatingVitals expSnapshot={plannerExpSnapshot} />
 
             {modalData && (
                 <ActionModal

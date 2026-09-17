@@ -92,7 +92,7 @@ export const RewardPackModal: React.FC<RewardPackModalProps> = ({
           <div className="mt-[17px] flex shrink-0 justify-center">
             <button
               onClick={onClose}
-              className="luxe-skin-button luxe-brilho h-12 min-w-[13rem] px-10 text-[11px] font-black uppercase tracking-[0.24em]"
+              className="luxe-skin-button luxe-brilho h-12 w-[min(13rem,100%)] px-10 text-[11px] font-black uppercase tracking-[0.24em]"
               style={{ ...estilo.botao, borderWidth: 2 }}
             >
               {payload?.buttonLabel || fallbackButtonLabel}

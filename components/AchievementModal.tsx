@@ -52,12 +52,36 @@ const FEITOS_QUE_VIRAM_IMAGEM: ReadonlySet<FeedEventType> = new Set<FeedEventTyp
 /** Um alvo estavel para a captura da imagem. */
 const ID_DA_PLACA = 'achievement-plate-capture';
 
+/** Minutos na forma que o resto do app usa: "45 min", "2h", "2h 30m". */
+const formatarDuracao = (valor: number): string => {
+    const total = Math.max(0, Math.round(valor));
+    const horas = Math.floor(total / 60);
+    const minutos = total % 60;
+    if (horas === 0) return `${minutos} min`;
+    if (minutos === 0) return `${horas}h`;
+    return `${horas}h ${minutos}m`;
+};
+
 const getAchievementDetails = (type: FeedEventType, data: any) => {
     switch (type) {
         case 'MILESTONE_COMPLETED':
             return { title: 'Conquista concluída!', subtitle: data.name, icon: data.icon || '\u{1F3C1}', message: 'Este marco foi registrado no seu perfil.' };
         case 'ARENA_COMPLETED':
-            return { title: 'Arena concluída!', subtitle: data.name, icon: data.icon || '\u{1F3DF}\uFE0F', message: 'Todos os dados desta arena foram consolidados.' };
+        {
+            // "Todos os dados desta arena foram consolidados" nao dizia nada a
+            // quem acabou de fechar a arena — descrevia o que o banco fez, nao o
+            // que a pessoa fez. Os dias ja vinham no evento e nao apareciam em
+            // lugar nenhum; aqui eles cabem sem disputar espaco com os cartoes.
+            const dias = Math.max(0, Number(data.days || 0));
+            return {
+                title: 'Arena concluída!',
+                subtitle: data.name,
+                icon: data.icon || '\u{1F3DF}\uFE0F',
+                message: dias > 0
+                    ? `Fechada em ${dias} ${dias === 1 ? 'dia' : 'dias'} de trabalho.`
+                    : 'Arena fechada e registrada no seu histórico.',
+            };
+        }
         case 'PLAYER_RANK_UP':
             return { title: 'Nova patente!', subtitle: data.name, icon: '\u{1F451}', message: 'Sua nova patente e as recompensas correspondentes foram liberadas.' };
         case 'QUEST_COMPLETED': {
@@ -190,10 +214,28 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
             ...payloadBase,
             itemIds: [],
             rewardHighlights: [],
+            /*
+             * DOIS NUMEROS, E OS DOIS SOBRE O QUE A PESSOA FEZ.
+             *
+             * Eram tres, e o primeiro era "Tipos de ação": quantas acoes a arena
+             * TEM cadastradas. Isso e configuracao da arena, nao feito de
+             * ninguem — quem fechou uma arena de uma acao lia "1" e ficava sem
+             * saber o que aquilo elogiava. E tres cartoes numa grade de duas
+             * colunas quebram em duas fileiras, com a terceira cortada e a placa
+             * ganhando barra de rolagem.
+             *
+             * O que entrou no lugar ja vinha no evento e nunca era mostrado: os
+             * MINUTOS. O proprio taskDomain, ao gravar isto, explica por que
+             * importa — "quatro acoes em tres dias e trinta e quatro entregas em
+             * vinte e um dias sao historias diferentes com o mesmo titulo". O
+             * tempo e o que separa as duas.
+             *
+             * Os dias saem dos cartoes e vao para a frase, onde nao competem por
+             * espaco e dizem a mesma coisa.
+             */
             metricCards: [
-                { label: 'Tipos de ação', value: String(Number(achievement.data.actionCount || 0)) },
                 { label: 'Ações concluídas', simbolo: 'acoes' as const, value: String(Number(achievement.data.deliveries || 0)) },
-                { label: 'Dias ativos', value: String(Number(achievement.data.days || 0)) },
+                { label: 'Tempo dedicado', value: formatarDuracao(Number(achievement.data.minutes || 0)) },
             ],
         }
         : isCompetitionResult
@@ -236,15 +278,24 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
      * ar em volta do unico botao que a pessoa precisa tocar.
      */
     /*
-     * O `max-w` existe por causa do botao de compartilhar.
+     * UMA LARGURA SO, E NAO UM PISO COM TETO.
      *
-     * Ele fica `absolute right-0` de proposito — assim aparecer ou sumir nao move
-     * o botao principal, que e onde a pessoa ja esta mirando. Mas o principal
-     * tinha `min-w-[13rem]` e nenhum teto: num cartao estreito ele crescia
-     * centralizado ate encostar nos 44px do compartilhar, e os dois se
-     * espremiam. O teto garante folga dos dois lados sem tirar o OK do centro.
+     * O compartilhar fica `absolute right-0` de proposito — assim aparecer ou
+     * sumir nao move o botao principal, que e onde a pessoa ja esta mirando. Para
+     * o OK nao invadir os 44px dele, aqui havia `min-w-[13rem]` com
+     * `max-w-[calc(100%-6.5rem)]`.
+     *
+     * Nao funcionava, e a razao e do proprio CSS: `min-width` GANHA de
+     * `max-width`. Num celular de 360px a placa tem ~272px uteis, o teto vira
+     * 168px, o piso continua 208px — e o piso vence. O OK crescia centralizado
+     * para 208px, chegava a 12px de dentro do compartilhar, e o simbolo ficava
+     * desenhado por cima do ouro. Em tela larga nada disso aparecia, que e por
+     * que passou.
+     *
+     * `min()` resolve na largura, e nao na cascata: o valor escolhido ja e o
+     * menor dos dois, entao nao ha o que um sobrepor no outro.
      */
-    const primaryButtonClass = 'luxe-skin-button luxe-brilho flex min-w-[13rem] max-w-[calc(100%-6.5rem)] items-center justify-center gap-3 px-10 py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-transform active:scale-[0.97]';
+    const primaryButtonClass = 'luxe-skin-button luxe-brilho flex w-[min(13rem,calc(100%-6.5rem))] items-center justify-center gap-3 px-10 py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-transform active:scale-[0.97]';
 
     const handlePostToFeed = async () => {
         if (!canShareAchievement) return false;
@@ -408,13 +459,6 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
 
                             <div className={`relative z-10 mt-auto ${isCompetitionResult ? 'p-5 pt-3' : 'p-6 pt-4'}`}>
                                 <div className="space-y-3">
-                                    {(isArenaComplete || isQuestComplete || isReportComplete) && (
-                                        <button type="button" onClick={handleDisableCelebrations} className="flex w-full items-center gap-2 border border-white/10 bg-black/25 px-3 py-2.5 text-left text-[9px] font-bold uppercase tracking-[0.13em] text-white/52 transition-colors hover:border-white/20 hover:text-white/75">
-                                            <span className="grid h-4 w-4 shrink-0 place-items-center border border-white/25 bg-black/40" aria-hidden="true" />
-                                            Não mostrar novamente
-                                        </button>
-                                    )}
-
                                     {/* O OK fica no CENTRO DA PLACA, e nao no centro
                                         do que sobrou: o simbolo de compartilhar sai
                                         do fluxo, encostado na direita. Assim ele
@@ -447,6 +491,24 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                                             </button>
                                         )}
                                     </div>
+
+                                    {/* DEPOIS DO OK, E EM VOZ BAIXA.
+                                        Estava acima e do tamanho de um botao, com
+                                        borda e fundo proprios: a primeira coisa que
+                                        a placa oferecia era desligar a placa. Aqui
+                                        embaixo continua a um toque de distancia para
+                                        quem se cansou, e some do caminho de quem so
+                                        quer fechar. */}
+                                    {(isArenaComplete || isQuestComplete || isReportComplete) && (
+                                        <button
+                                            type="button"
+                                            onClick={handleDisableCelebrations}
+                                            className="mx-auto flex items-center gap-1.5 pt-0.5 text-[8px] font-bold uppercase tracking-[0.12em] text-white/32 transition-colors hover:text-white/60"
+                                        >
+                                            <span className="grid h-2.5 w-2.5 shrink-0 place-items-center border border-white/22" aria-hidden="true" />
+                                            Não mostrar novamente
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>

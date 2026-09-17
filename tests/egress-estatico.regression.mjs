@@ -23,7 +23,16 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
  * estava empacotada ao lado.
  */
 
-const ANFITRIAO = 'supabase.co/storage/v1/object/public';
+/**
+ * Duas formas de apontar para o bucket, e a segunda quase escapou.
+ *
+ * A primeira e o hostname cravado no codigo. A segunda monta a URL a partir do
+ * `VITE_SUPABASE_URL`, e por isso nao contem "supabase.co" em lugar nenhum —
+ * foi assim que quatro videos (levelup, quest, report_seal e os de bau) ficaram
+ * invisiveis para a primeira versao deste teste. O que denuncia os dois e o
+ * caminho da API de storage, que nenhum arquivo local tem motivo para citar.
+ */
+const ANFITRIAO = '/storage/v1/object/public';
 
 /**
  * Quem pode citar o bucket, e por que.
@@ -41,7 +50,15 @@ const PERMITIDOS = new Map([
     // PENDENTE — item 1 da lista de egress. As nove faixas precisam virar Opus
     // e ir para public/audio/. Quando isso acontecer, esta linha sai e o teste
     // cobra que ela saia.
-    ['components/FocusAudioPlayer.tsx', 'PENDENTE: 20,1 MB de audio ainda servidos do bucket com no-cache'],
+    ['components/FocusAudioPlayer.tsx', 'PENDENTE: 20,1 MB de audio ainda servidos do bucket'],
+
+    // PENDENTE — os videos montam a URL pelo VITE_SUPABASE_URL, e por isso
+    // escaparam da primeira versao deste teste. Sao ~4 MB de conteudo fixo:
+    // levelup.mp4 (2,0 MB), quest.mp4 (1,2 MB) e report_seal.mp4 (0,76 MB),
+    // este ultimo tocando a cada ciclo fechado.
+    ['components/AchievementModal.tsx', 'PENDENTE: levelup.mp4, quest.mp4 e report_seal.mp4 vindos do bucket'],
+    ['components/ReportGenerationModal.tsx', 'PENDENTE: report_seal.mp4 vindo do bucket'],
+    ['components/RewardVideoPreviewModal.tsx', 'PENDENTE: levelup.mp4 e report_seal.mp4 vindos do bucket'],
 ]);
 
 const varrer = (dir, saida = []) => {

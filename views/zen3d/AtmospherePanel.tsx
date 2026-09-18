@@ -1,7 +1,7 @@
 import { ENVIRONMENTS, type EnvironmentId } from './Sanctuary';
 
 export const ATMOSPHERES = [
-  {id:'morning',name:'Manhã suave',description:'Luz clara e acolhedora',sky:'#b4b9ac',fill:'#e4e9dd',sun:'#ffe2b6',ambient:1.3,intensity:2.3,fogNear:22},
+  {id:'morning',name:'Manhã suave',description:'Luz clara e acolhedora',sky:'#e5dfce',fill:'#e5eff7',sun:'#fff0d5',ambient:2.2,intensity:3.2,fogNear:26},
   {id:'sunset',name:'Entardecer',description:'Dourado quente sobre a areia',sky:'#b3a39b',fill:'#ebd8d0',sun:'#ffc18b',ambient:1.15,intensity:2.1,fogNear:22},
   {id:'overcast',name:'Dia de névoa',description:'Tons frios e luz delicada',sky:'#a5b3bb',fill:'#dae5f0',sun:'#d7e5fa',ambient:1.5,intensity:1.1,fogNear:14},
 ] as const;

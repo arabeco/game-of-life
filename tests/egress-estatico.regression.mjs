@@ -124,6 +124,8 @@ const varrer = (dir, saida = []) => {
         ['public/assets/catalog', 12],
         // Only the approved full tree and compact sand now ship in the experiment.
         ['public/garden-experiment', 2],
+        // Integrated renderer includes the shared full tree, rock and sand detail.
+        ['public/garden3d/assets', 2],
         // Nine complete Opus loops at constrained VBR 72k: 6.62 MB decimal.
         ['public/audio', 7],
         ['public/videos', 6],

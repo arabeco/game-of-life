@@ -17,7 +17,6 @@ import { Portal } from '../components/Portal';
 import { ProfileBackgroundSurface } from '../components/ProfileBackgroundSurface';
 import { ProfileAssetsPreview } from '../components/ProfileAssetsPreview';
 import { Garden3DModal } from '../components/Garden3DModal';
-import { GardenExperimentModal } from '../components/GardenExperimentModal';
 import { ITEMS_DB, resolveItemDef } from '../constants/items';
 import { resolveCatalogAssetUrl } from '../constants/catalogAssets';
 import { APP_NAVIGATE_EVENT } from '../utils/arenaAttention';
@@ -528,7 +527,6 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
     const [isBorderModalOpen, setBorderModalOpen] = useState(false);
     const [isBackgroundModalOpen, setBackgroundModalOpen] = useState(false);
     const [isGardenOpen, setGardenOpen] = useState(false);
-    const [isGardenExperimentOpen, setGardenExperimentOpen] = useState(false);
     const [isBannerModalOpen, setBannerModalOpen] = useState(false);
     const [isClanModalOpen, setClanModalOpen] = useState(false);
     const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
@@ -1161,21 +1159,6 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                 title={isOwnProfile ? 'Meu jardim' : `Jardim de ${displayProfile.nickname || 'jogador'}`}
                             />
                         )}
-                        {/*
-                          Mora DENTRO do cartao, colado no orbe do jardim.
-                          Fora dele o botao ficava irmao do `fixed inset-0
-                          z-[9999]` que e o perfil inteiro, sem posicionamento
-                          proprio — no DOM, visivel pelo CSS, e pintado por
-                          baixo do proprio perfil. Nenhum pixel chegava na tela.
-                        */}
-                        {isOwnProfile && (
-                            <button
-                                onClick={() => setGardenExperimentOpen(true)}
-                                className="mx-auto my-3 flex min-h-12 items-center justify-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-950/40 px-5 py-3 text-sm font-semibold text-emerald-100"
-                            >
-                                <span aria-hidden="true">🌿</span> Jardim experimental
-                            </button>
-                        )}
 
                         {/* Unified Sovereign Display */}
                         {displayProfile.sovereign && (
@@ -1202,7 +1185,6 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                     </GlassCard>
                 </div>
             </div>
-            {isGardenExperimentOpen && <GardenExperimentModal onClose={() => setGardenExperimentOpen(false)} />}
             {isAvatarModalOpen && <AvatarUploadModal currentAvatar={editableProfile.avatarUrl} onSave={handleAvatarSelect} onClose={() => setIsAvatarModalOpen(false)} />}
             {isBorderModalOpen && (
                 <Portal>

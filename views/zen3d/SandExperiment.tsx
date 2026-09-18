@@ -13,11 +13,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, type ThreeEvent } from '@react-three/fiber';
 import { ACESFilmicToneMapping, PCFShadowMap, Plane, Vector3 } from 'three';
 import { GardenCamera, Joystick, type GardenView, type Motion } from './GardenControls';
-import { GardenInstances, PerformanceProbe, Scenery, StaticShadows } from './GardenObjects';
+import { PerformanceProbe, Scenery, StaticShadows } from './GardenObjects';
+import { QualityGardenObjects, QualityGardenProvider } from './QualityGardenObjects';
 import { ArtifactStand, artifactFits, artifactObstacle, artifactUrl, type PlacedArtifact } from './ArtifactStands';
 import { ARTIFACTS } from './artifactCatalog';
 import { BASES, FINISHES, LEGACY_OBSTACLES, templateObjects, type BaseId, type Finish } from './gardenTemplates';
-import { Sanctuary, BotanicalTree, ENVIRONMENTS, type EnvironmentId } from './Sanctuary';
+import { Sanctuary, ENVIRONMENTS, type EnvironmentId } from './Sanctuary';
 import { GardenBorder } from './GardenBorder';
 import { WaterGarden } from './WaterGarden';
 import { LegacyStone } from './LegacyStone';
@@ -42,13 +43,13 @@ export default function SandExperiment({skinId='BASIC',theme='dark'}:GardenMenuP
   const [objects,setObjects]=useState<GardenObject[]>(()=>{const b=BASES.find(b=>b.id===(initial?.base??'open'))!;configureGarden(b.width/2,b.depth/2,b.roundness);return initial?.objects??templateObjects('open','rustic');});
   const fixed=useMemo(()=>[...objects,...LEGACY_OBSTACLES],[objects]);
   const [collectionFilter,setCollectionFilter]=useState('all'),[collectionSearch,setCollectionSearch]=useState('');
-  const [environment,setEnvironment]=useState<EnvironmentId>(initial?.environment??'cloister');
+  const [environment,setEnvironment]=useState<EnvironmentId>(initial?.environment??'mist');
   const [atmosphere,setAtmosphere]=useState<AtmosphereId>(initial?.atmosphere??'morning');
   const lighting=ATMOSPHERES.find(a=>a.id===atmosphere)!;
   // Visita comeca — e fica — em 'explore'. E a unica diferenca estrutural entre
   // o dono e o visitante: todo o resto da tela ja e condicionado a 'build'.
   const [mode,setMode]=useState<GardenMode>(readOnly?'explore':'build'),[tool,setTool]=useState<SandTool>('rake');
-  const [settings,setSettings]=useState<RakeSettings>({style:1,spacing:1,pressure:1}),[sand,setSand]=useState(initial?.sand??0),[options,setOptions]=useState(false);
+  const [settings,setSettings]=useState<RakeSettings>({style:1,spacing:1,pressure:1}),[sand,setSand]=useState(initial?.sand??1),[options,setOptions]=useState(false);
   const [view,setView]=useState(VIEW),[undo,setUndo]=useState(false);
   const [artifacts,setArtifacts]=useState<PlacedArtifact[]>(initial?.artifacts??[]),[draft,setDraft]=useState<PlacedArtifact|null>(null),[selected,setSelected]=useState<string|null>(null),[gallery,setGallery]=useState(false),[artNotice,setArtNotice]=useState('Escolha uma arte para o canto superior.');
   const decor=useDecoration(objects,setObjects,[...LEGACY_OBSTACLES,...artifacts.map(artifactObstacle)],kit,id=>{decor.cancel();setTool('artifacts');chooseArtifact(id);},()=>{gesture.current=false;setDrawerCollapsed(false);setTool('decor');setDraft(null);setSelected(null);});
@@ -87,18 +88,17 @@ export default function SandExperiment({skinId='BASIC',theme='dark'}:GardenMenuP
   });
   return <main data-object-count={objects.length} className={`zen3d-app zen3d-${mode} sand-experiment glyph-garden`} style={gardenMenuStyle(skinId,theme)}>
     <div className="zen3d-scene" aria-label="Areia do Jardim Zen">
-      <Canvas frameloop="demand" dpr={mode==='explore'?[1,1.5]:1} shadows={{type:PCFShadowMap}} gl={{antialias:false,alpha:false,powerPreference:'low-power',toneMapping:ACESFilmicToneMapping}}
+      <Canvas frameloop="demand" dpr={[1,1.5]} shadows={{type:PCFShadowMap}} gl={{antialias:true,alpha:false,powerPreference:'low-power',toneMapping:ACESFilmicToneMapping}}
         onCreated={({invalidate,gl})=>{wake.current=invalidate;gl.toneMappingExposure=1.05;}}
-        fallback={<div className="zen3d-fallback">Este teste precisa de WebGL para mostrar a areia.</div>}>
+        fallback={<div className="zen3d-fallback">O jardim precisa de WebGL para mostrar a paisagem.</div>}>
         <color attach="background" args={[lighting.sky]}/><fog attach="fog" args={[lighting.sky,lighting.fogNear,65]}/>
         <hemisphereLight args={[lighting.fill,'#68745c',lighting.ambient]}/>
         <directionalLight position={[-9,8,5]} color={lighting.sun} intensity={lighting.intensity} castShadow shadow-mapSize={[1024,1024]} shadow-camera-left={-12} shadow-camera-right={12} shadow-camera-top={13} shadow-camera-bottom={-13} shadow-camera-far={40} shadow-normalBias={.04}/>
-        <group key={sceneRevision}>
+        <QualityGardenProvider onError={setSaveNotice}><group key={sceneRevision}>
         {mode==='build'&&(tool==='decor'||tool==='artifacts'||tool==='shop')&&<PreviewStudio key={decor.previewKit} kit={decor.previewKit}/>}
         <Scenery plain/><StaticShadows objects={obstacles} quality={`${finish}-${environment}-${kit}`}/><PerformanceProbe/>
         <Sanctuary environment={environment}/><GardenBorder finish={finish} kit={kit}/><WaterGarden objects={displayedObjects} select={(id,e)=>{if(mode==='build'&&(tool==='decor'||tool==='artifacts')){setTool('decor');setDraft(null);setSelected(null);decor.select(id,e);}}}/>
-        {displayedObjects.filter(o=>o.type==='pine'||o.type==='maple').map(o=><group key={o.id} rotation={[0,0,0]} onClick={e=>{if(mode==='build'&&(tool==='decor'||tool==='artifacts')){setTool('decor');setDraft(null);setSelected(null);decor.select(o.id,e);}}}><group position={o.position} rotation={[0,o.rotation,0]}><BotanicalTree x={0} z={0} seed={o.variant+1} kit={o.kit??kit} kind={o.type==='pine'?'pine':'maple'}/></group></group>)}
-        <GardenInstances objects={displayedObjects.filter(o=>o.type!=='pine'&&o.type!=='maple')} select={(id,e)=>{if(mode==='build'&&(tool==='decor'||tool==='artifacts')){setTool('decor');setDraft(null);setSelected(null);decor.select(id,e);}}} shadows palette={finish==='ornate'?'autumn':'serene'}/>
+        <QualityGardenObjects objects={displayedObjects} select={(id,e)=>{if(mode==='build'&&(tool==='decor'||tool==='artifacts')){setTool('decor');setDraft(null);setSelected(null);decor.select(id,e);}}}/>
         <SandSurface gestureOwner={gestureOwner} onReady={setSandReady} onLoadError={setSaveNotice} initialDrawing={sceneRevision===0?initial?.drawing:undefined} tool={tool} settings={settings} sandColor={SAND_COLORS[sand].color} enabled={mode==='build'&&!drawerCollapsed&&!help&&!legacy&&tool!=='artifacts'&&tool!=='bases'&&tool!=='decor'&&tool!=='shop'} objects={obstacles} actions={actions} onChange={onSandChange}/>
         {mode==='build'&&tool==='decor'&&<DragPlacement item={decor.active} moving={!!decor.draft} onMove={decor.setDraft} canDrop={decor.fits} onDrop={decor.drop} onCancel={()=>decor.setDraft(null)}/>}
         {tool==='decor'&&displayedObjects.filter(o=>o.id===decor.active?.id||(decor.kit&&o.fixed)).map(o=><mesh key={`ring-${o.id}`} position={[o.position[0],.10,o.position[2]]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[.65,.74,40]}/><meshBasicMaterial color={decor.draft&&!decor.valid?'#f08070':'#f3d58c'} depthTest={false}/></mesh>)}
@@ -110,7 +110,7 @@ export default function SandExperiment({skinId='BASIC',theme='dark'}:GardenMenuP
         {mode==='build'&&tool==='artifacts'&&<mesh position={[0,.02,0]} rotation={[-Math.PI/2,0,0]} onClick={stageArtifact}><planeGeometry args={[30,40]}/><meshBasicMaterial transparent opacity={0} depthWrite={false}/></mesh>}
         {mode==='build'&&itemSelected&&selectedPosition&&<SelectionAnchor position={selectedPosition} element={selectionMenu}/>}
         <GardenCamera gestureOwner={gestureOwner} sandEditing={!drawerCollapsed&&(tool==='rake'||tool==='smooth')} mode={mode} objects={obstacles} motion={motion} view={view} onView={onView} gesture={gesture} buildNavigation={!legacy&&!help&&!pendingModel&&!itemSelected}/>
-        </group>
+        </group></QualityGardenProvider>
       </Canvas>
     </div>
     {pendingModel&&<ModelChangeDialog id={pendingModel} onCancel={()=>setPendingModel(null)} onApply={applyModel}/>}

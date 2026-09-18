@@ -115,7 +115,7 @@ export function createBaseKit(tree: T.Group, rock: T.Group, instanceModel: Insta
       ? Array.from({length:16},(_,i)=>[-6.7+i*.95,1.5]).filter(([x])=>x<1.5||x>5.3)
       : layout === 'open' ? [[-.5,7.8],[-.8,6.8],[-1,5.8]]
       : [[-.5,3.85],[-.85,2.85],[-1,1.85],[-1.3,.85],[-1.65,-.15],[-1.6,-1.2],[-.9,-2.15],[.1,-2.65],[1.2,-2.75],[2.2,-3.55],[3.2,-4.55],[4.15,-5.55],[5.2,-6.45]];
-  batch(slabGeometry,stone,steps.map(([x,z],i)=>matrix([x,.015,z],[1+(i%3)*.06,1,.83],Math.sin(i*.9)*.3)));
+  batch(slabGeometry,stone,steps.map(([x,z],i)=>matrix([x,.015,z],[1+(i%3)*.06,1,.83],Math.sin(i*.9)*.3))).name='quality-path';
 
   // Pool: shallow rippled geometry, a dark bed and a shared-stone shoreline.
   const poolCenter = new T.Vector3(2,.065,1.5);
@@ -168,7 +168,7 @@ export function createBaseKit(tree: T.Group, rock: T.Group, instanceModel: Insta
     const riverGeometry=new T.BufferGeometry();riverGeometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));riverGeometry.setIndex(faces);riverGeometry.computeVertexNormals();
     mesh(riverGeometry,water,kit).castShadow=false;
     batch(new T.DodecahedronGeometry(1,0),stone,banks);
-    const bridge=new T.Group();bridge.position.set(riverX(1.5),0,1.5);kit.add(bridge);
+    const bridge=new T.Group();bridge.name='quality-bridge';bridge.position.set(riverX(1.5),0,1.5);kit.add(bridge);
     const wood=new T.MeshStandardMaterial({color:theme==='genesis'?'#514454':'#79634b',roughness:.86});materials.add(wood);
     const planks:T.Matrix4[]=[],posts:T.Matrix4[]=[];
     for(let i=0;i<15;i++) {const x=-1.55+i*3.1/14,y=.16+.18*Math.cos(x/1.55*Math.PI/2);planks.push(matrix([x,y,0],[.205,.12,1.25]));}
@@ -201,14 +201,15 @@ export function createBaseKit(tree: T.Group, rock: T.Group, instanceModel: Insta
       }
     }
   }
-  batch(new T.CylinderGeometry(.86,1,1,7,1),bamboo,stems);
-  batch(new T.CylinderGeometry(1,1,1,8,1),node,nodes);
-  batch(new T.CylinderGeometry(.45,1,1,5,1),bamboo,branches);
+  const bambooGroup=new T.Group();bambooGroup.name='quality-bamboo';kit.add(bambooGroup);
+  batch(new T.CylinderGeometry(.86,1,1,7,1),bamboo,stems,bambooGroup);
+  batch(new T.CylinderGeometry(1,1,1,8,1),node,nodes,bambooGroup);
+  batch(new T.CylinderGeometry(.45,1,1,5,1),bamboo,branches,bambooGroup);
   const leafShape = new T.Shape();leafShape.moveTo(0,0);leafShape.quadraticCurveTo(.65,.35,0,1);leafShape.quadraticCurveTo(-.32,.35,0,0);
-  batch(new T.ShapeGeometry(leafShape,3),leaf,leaves);
+  batch(new T.ShapeGeometry(leafShape,3),leaf,leaves,bambooGroup);
 
   // Reusable lantern: weathered stone, open chamber, bronze details and warm core.
-  const lantern = new T.Group();kit.add(lantern);lantern.position.set(-.05,0,.05);
+  const lantern = new T.Group();lantern.name='quality-lantern';kit.add(lantern);lantern.position.set(-.05,0,.05);
   const lathe=(profile:number[][],segments=12)=>new T.LatheGeometry(profile.map(p=>new T.Vector2(...p)),segments);
   mesh(lathe([[0,0],[.39,0],[.42,.07],[.36,.15],[.22,.2],[.16,.3],[.14,.9],[.22,1],[.33,1.05],[.33,1.12],[0,1.12]]),stone,lantern);
   const barGeometry=new T.BoxGeometry(.055,.44,.055);

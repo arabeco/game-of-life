@@ -67,12 +67,12 @@ export const Scenery = memo(function Scenery({plain=false}:{plain?:boolean}) {
   },[]);
   useEffect(()=>()=>Object.values(assets).forEach(a=>a.dispose()),[assets]);
   return <group>
-    <mesh rotation={[-Math.PI/2,0,0]} position={[0,-.4,0]}><planeGeometry args={[160,160]}/><meshStandardMaterial color="#6f8779" roughness={1}/></mesh>
+    <mesh rotation={[-Math.PI/2,0,0]} position={[0,-.4,0]}><planeGeometry args={[160,160]}/><meshStandardMaterial color={plain?'#d8ceb6':'#6f8779'} roughness={1}/></mesh>
     {!plain&&<mesh position={[0,-.3,0]} scale={[GARDEN_X+.28,.32,GARDEN_Z+.28]}><sphereGeometry args={[1,64,12]}/><meshStandardMaterial color="#73816a" roughness={1}/></mesh>}
     <mesh rotation={[-Math.PI/2,0,0]} geometry={assets.surface} receiveShadow><meshStandardMaterial map={assets.texture} roughness={1}/></mesh>
     {!plain&&<mesh geometry={assets.ringGeometry} receiveShadow><meshStandardMaterial color="#b6ad92" roughness={1}/></mesh>}
-    <mesh geometry={assets.rimGeometry} receiveShadow><meshStandardMaterial color="#788960" roughness={1}/></mesh>
-    <mesh geometry={assets.grassGeometry}><meshStandardMaterial color="#8b9b71" side={THREE.DoubleSide} roughness={1}/></mesh>
+    {!plain&&<mesh geometry={assets.rimGeometry} receiveShadow><meshStandardMaterial color="#788960" roughness={1}/></mesh>}
+    {!plain&&<mesh geometry={assets.grassGeometry}><meshStandardMaterial color="#8b9b71" side={THREE.DoubleSide} roughness={1}/></mesh>}
     {!plain&&Array.from({length:9},(_,i)=><mesh key={i} position={[(i-4)*12,-4,-37-i%2*8]} scale={[12,6+i%3*2,12]}><sphereGeometry args={[1,16,10]}/><meshStandardMaterial color={i%2?'#7e978a':'#93a497'} roughness={1}/></mesh>)}
   </group>;
 });

@@ -5,6 +5,7 @@ import { CanvasTexture, Color, LinearFilter, Plane, Raycaster, SRGBColorSpace, V
 import { chaseFactor, roundedCorner } from './sandSmoothing';
 import { rakeBrush, type RakeSettings } from './sandOptions';
 import { GARDEN_X, GARDEN_Z, inGarden, type GardenObject } from './model';
+import { useQualityLibrary } from './QualityGardenObjects';
 
 export type SandTool = 'rake'|'smooth'|'camera'|'artifacts'|'bases' | 'decor' | 'shop';
 export interface SandActions { clear:()=>void; undo:()=>void; snapshot:()=>{color:string;height:string} }
@@ -13,9 +14,11 @@ const referenceColor=new Color('#d9cdb0');
 // Fixed-size texture memory: no mesh subdivision, stroke list, or growing history.
 export function SandSurface({gestureOwner,tool,settings,sandColor,enabled,actions,onChange,initialDrawing,onReady,onLoadError}:{gestureOwner:MutableRefObject<'sand'|'camera'|null>;onReady?:(ready:boolean)=>void;onLoadError?:(message:string)=>void;initialDrawing?:{color:string;height:string};tool:SandTool;settings:RakeSettings;sandColor:string;enabled:boolean;objects:GardenObject[];actions:MutableRefObject<SandActions|null>;onChange:(undo:boolean)=>void}) {
   const {gl,camera,invalidate}=useThree();
+  const quality=useQualityLibrary();
   const geometry=useMemo(()=>gardenSurface(),[]);
   useEffect(()=>()=>geometry.dispose(),[geometry]);
   const dirty=useRef(true);
+  const drawingChanged=useRef(false);
   const [restored,setRestored]=useState(!initialDrawing);
   useEffect(()=>{onReady?.(restored);},[restored,onReady]);
   const assets=useMemo(()=>{
@@ -42,8 +45,8 @@ export function SandSurface({gestureOwner,tool,settings,sandColor,enabled,action
   },[initialDrawing,assets,invalidate,onLoadError]);
   const history=useRef<{color:ImageData;height:ImageData}|null>(null);
   useEffect(()=>{
-    const save=()=>{history.current={color:assets.c.getImageData(0,0,W,H),height:assets.h.getImageData(0,0,W,H)};onChange(true);};
-    actions.current={snapshot:()=>{if(!restored)throw Error('A areia salva ainda não pôde ser carregada. Reabra o jardim.');return {color:assets.color.toDataURL('image/png'),height:assets.height.toDataURL('image/png')};},clear:()=>{save();assets.c.putImageData(assets.base,0,0);assets.h.fillStyle='#808080';assets.h.fillRect(0,0,W,H);dirty.current=true;invalidate();},undo:()=>{if(!history.current)return;assets.c.putImageData(history.current.color,0,0);assets.h.putImageData(history.current.height,0,0);history.current=null;onChange(false);dirty.current=true;invalidate();}};
+    const save=()=>{drawingChanged.current=true;history.current={color:assets.c.getImageData(0,0,W,H),height:assets.h.getImageData(0,0,W,H)};onChange(true);};
+    actions.current={snapshot:()=>{if(!restored)throw Error('A areia salva ainda não pôde ser carregada. Reabra o jardim.');if(!drawingChanged.current&&initialDrawing)return initialDrawing;return {color:assets.color.toDataURL('image/png'),height:assets.height.toDataURL('image/png')};},clear:()=>{save();assets.c.putImageData(assets.base,0,0);assets.h.fillStyle='#808080';assets.h.fillRect(0,0,W,H);dirty.current=true;invalidate();},undo:()=>{if(!history.current)return;assets.c.putImageData(history.current.color,0,0);assets.h.putImageData(history.current.height,0,0);history.current=null;onChange(false);dirty.current=true;invalidate();}};
     return()=>{actions.current=null;};
   },[assets,actions,invalidate,onChange,restored]);
   useEffect(()=>{
@@ -59,7 +62,7 @@ export function SandSurface({gestureOwner,tool,settings,sandColor,enabled,action
       if(!p||!inGarden(p.x,p.z,margin+.1))return null;
       return new Vector2((p.x/GARDEN_X*.5+.5)*W,(p.z/GARDEN_Z*.5+.5)*H);
     };
-    const save=()=>{if(saved)return;saved=true;history.current={color:assets.c.getImageData(0,0,W,H),height:assets.h.getImageData(0,0,W,H)};onChange(true);};
+    const save=()=>{if(saved)return;saved=true;drawingChanged.current=true;history.current={color:assets.c.getImageData(0,0,W,H),height:assets.h.getImageData(0,0,W,H)};onChange(true);};
     const line=(ctx:CanvasRenderingContext2D,a:Vector2,b:Vector2,n:Vector2,offset:number,width:number,color:string)=>{ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(a.x+(normal??n).x*offset,a.y+(normal??n).y*offset);ctx.lineTo(b.x+n.x*offset,b.y+n.y*offset);ctx.stroke();};
     const paint=(p:Vector2)=>{
       if(tool==='smooth') {save();for(const [ctx,color] of [[assets.c,'#d9cdb0'],[assets.h,'#808080']] as const){const fade=ctx.createRadialGradient(p.x,p.y,7,p.x,p.y,16);fade.addColorStop(0,color);fade.addColorStop(1,color+'00');ctx.fillStyle=fade;ctx.beginPath();ctx.arc(p.x,p.y,16,0,Math.PI*2);ctx.fill();}mark();return;}
@@ -123,6 +126,14 @@ export function SandSurface({gestureOwner,tool,settings,sandColor,enabled,action
   useFrame(()=>{if(dirty.current){assets.map.needsUpdate=true;assets.bump.needsUpdate=true;dirty.current=false;}});
   useEffect(()=>()=>{assets.map.dispose();assets.bump.dispose();},[assets]);
   return <mesh position={[0,.045,0]} rotation={[-Math.PI/2,0,0]} geometry={geometry} receiveShadow>
-    <meshStandardMaterial color={sandColor} onBeforeCompile={shader=>{shader.uniforms.uSandReference={value:referenceColor};shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nuniform vec3 uSandReference;').replace('#include <map_fragment>','#include <map_fragment>\ndiffuseColor.rgb /= uSandReference;');}} map={assets.map} bumpMap={assets.bump} bumpScale={.035} roughness={1}/>
+    <meshStandardMaterial key={quality?'quality':'loading'} color={sandColor} roughnessMap={quality?.rough} onBeforeCompile={shader=>{
+      shader.uniforms.uSandReference={value:referenceColor};
+      shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nuniform vec3 uSandReference;').replace('#include <map_fragment>','#include <map_fragment>\ndiffuseColor.rgb /= uSandReference;');
+      if(quality?.sand){
+        shader.uniforms.uSandDetail={value:quality.sand};
+        shader.fragmentShader='uniform sampler2D uSandDetail;\n'+shader.fragmentShader;
+        shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>','#include <map_fragment>\nfloat grain=dot(texture2D(uSandDetail,vMapUv*vec2(12.,18.)).rgb,vec3(.2126,.7152,.0722));diffuseColor.rgb*=.9+grain*.22;');
+      }
+    }} map={assets.map} bumpMap={assets.bump} bumpScale={.035} roughness={1}/>
   </mesh>;
 }

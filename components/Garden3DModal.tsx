@@ -134,7 +134,7 @@ export function Garden3DModal({ onClose, profile }: { onClose: () => void; profi
     return () => window.removeEventListener('message', requestExit);
   }, [ready,state,owned,ownGarden,dirty,onClose,exitSaving]);
 
-  return <Portal><dialog ref={mountDialog} aria-label={ownGarden?'Jardim 3D':`Jardim de ${nomeDono}`} onCancel={e => { e.preventDefault(); if(exitSaving||buying)return; ownGarden&&dirty ? setClosing(true) : onClose(); }}
+  return <Portal><dialog data-garden ref={mountDialog} aria-label={ownGarden?'Jardim 3D':`Jardim de ${nomeDono}`} onCancel={e => { e.preventDefault(); if(exitSaving||buying)return; ownGarden&&dirty ? setClosing(true) : onClose(); }}
     style={telaCheia
       ? { position:'fixed',inset:0,width:'100%',maxWidth:'none',height:'100dvh',maxHeight:'none',margin:0,padding:0,border:0,background:'#090d12',color:'#e6edf5' }
       : { width:'min(92vw, 440px)',maxWidth:'none',height:'min(62vh, 480px)',maxHeight:'none',padding:0,border:'1px solid rgba(255,255,255,0.16)',borderRadius:20,overflow:'hidden',background:'#090d12',color:'#e6edf5' }}>

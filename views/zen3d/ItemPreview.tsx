@@ -3,8 +3,7 @@ import { createPortal, useFrame, useThree } from '@react-three/fiber';
 import { Box3, Color, Group, OrthographicCamera, Scene, SRGBColorSpace, Vector3, WebGLRenderTarget } from 'three';
 import { CATALOG, type ObjectKind } from './model';
 import { KITS, type KitId } from './kits';
-import { getObjectGeometry, opaqueMaterial } from './procedural';
-import { BotanicalTree } from './Sanctuary';
+import { QualityGardenObjects, useQualityLibrary } from './QualityGardenObjects';
 const cache=new Map<string,string>(),listeners=new Set<()=>void>();
 const keyOf=(type:ObjectKind,kit:KitId)=>`${kit}:${type}`;
 const subscribe=(fn:()=>void)=>{listeners.add(fn);return()=>{listeners.delete(fn);};};
@@ -14,13 +13,14 @@ export function ItemPreview({type,kit}:{type:ObjectKind;kit:KitId}){
 }
 // One small render target on the existing renderer; cards are ordinary cached PNG images.
 export function PreviewStudio({kit}:{kit:KitId}){
+ const quality=useQualityLibrary();
  const {gl,invalidate}=useThree(),[index,setIndex]=useState(0),group=useRef<Group>(null),rendered=useRef('');
  const queue=useMemo(()=>[kit,...KITS.map(k=>k.id).filter(id=>id!==kit)].flatMap(id=>CATALOG.filter(o=>o.category!=='Água').map(o=>({type:o.type,kit:id}))),[kit]),entry=queue[index],type=entry?.type,previewKit=entry?.kit??kit;
  const assets=useMemo(()=>{const target=new WebGLRenderTarget(144,144);target.texture.colorSpace=SRGBColorSpace;return {scene:new Scene(),camera:new OrthographicCamera(-2,2,2,-2,.01,50),target};},[]);
  useEffect(()=>{setIndex(0);rendered.current='';invalidate();},[kit,invalidate]);
  useEffect(()=>()=>assets.target.dispose(),[assets]);
  useFrame(()=>{
-  if(!type||!group.current)return;const key=keyOf(type,previewKit);if(rendered.current===key)return;
+  if(!quality||!type||!group.current)return;const key=keyOf(type,previewKit);if(rendered.current===key)return;
   if(!cache.has(key)){
    group.current.updateWorldMatrix(true,true);const box=new Box3().setFromObject(group.current);if(box.isEmpty()){invalidate();return;}
    const center=box.getCenter(new Vector3()),size=box.getSize(new Vector3()),span=Math.max(size.x,size.y,size.z)*.83+.12,c=assets.camera;
@@ -36,6 +36,6 @@ export function PreviewStudio({kit}:{kit:KitId}){
   rendered.current=key;setIndex(i=>i+1);invalidate();
  },-1);
  return type?createPortal(<><ambientLight intensity={1.4}/><directionalLight position={[3,6,5]} intensity={3}/><group ref={group} key={`${previewKit}-${type}`}>
-  {type==='pine'||type==='maple'?<BotanicalTree x={0} z={0} seed={2} kind={type} kit={previewKit}/>:<mesh geometry={getObjectGeometry(type,1,'serene',previewKit)} material={opaqueMaterial} dispose={null}/>}
+  <QualityGardenObjects objects={[{id:'preview',type,kit:previewKit,position:[0,0,0],rotation:0,variant:1}]} select={()=>{}}/>
  </group></>,assets.scene):null;
 }

@@ -18,27 +18,20 @@ import type { GardenSnapshot } from '../views/zen3d/gardenAccount';
  *
  * O \`?v=\` existe por causa disso: caminho fixo com upsert significa que a URL
  * nao muda quando o desenho muda, e o navegador continuaria mostrando o desenho
- * velho. O parametro troca a cada gravacao e e a unica parte variavel da URL.
+ * velho. O parametro so troca quando o conteudo muda.
  */
 const BUCKET = 'garden-sand';
 
 /**
  * Uma impressao digital do desenho, para saber se ele mudou.
  *
- * FNV-1a sobre as duas data URLs. Nao precisa ser criptografico: a pergunta e
- * "e o mesmo desenho de antes?", e colisao aqui significaria no maximo nao
- * re-subir uma areia que mudou — nao ha segredo em jogo. Precisa ser rapido,
- * porque roda sobre algumas centenas de KB de base64 a cada salvamento.
+ * SHA-256 sobre as duas data URLs, com 64 bits em decimal para a versao da URL.
+ * O formato numerico e compativel com o validador SQL ja publicado.
  */
-const impressaoDoDesenho = (color: string, height: string): string => {
-    let h = 0x811c9dc5;
-    for (const texto of [color, height]) {
-        for (let i = 0; i < texto.length; i += 1) {
-            h ^= texto.charCodeAt(i);
-            h = Math.imul(h, 0x01000193);
-        }
-    }
-    return (h >>> 0).toString(36);
+export const impressaoDoDesenho = async (color: string, height: string): Promise<string> => {
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${color}\n${height}`));
+    // 64 bits in decimal fit the deployed SQL's numeric ?v= (at most 20 digits).
+    return new DataView(digest).getBigUint64(0).toString(10);
 };
 
 /**
@@ -86,7 +79,7 @@ export const uploadGardenSand = async (userId: string, state: GardenSnapshot): P
     const desenho = state.drawing;
     if (!desenho || !desenho.color.startsWith('data:')) return state;
 
-    const impressao = impressaoDoDesenho(desenho.color, desenho.height);
+    const impressao = await impressaoDoDesenho(desenho.color, desenho.height);
 
     // Desenho igual ao do ultimo envio: reaproveita as URLs e nao encosta no
     // bucket. E o caso comum — quem entra no jardim para mexer num objeto nao

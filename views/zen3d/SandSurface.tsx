@@ -1,3 +1,4 @@
+import { expandedDrawingBounds, drawingRect, type DrawingBounds } from './gardenTerrain';
 import { gardenSurface } from './gardenSurface';
 import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
@@ -8,14 +9,19 @@ import { GARDEN_X, GARDEN_Z, inGarden, type GardenObject } from './model';
 import { useQualityLibrary } from './QualityGardenObjects';
 
 export type SandTool = 'rake'|'smooth'|'camera'|'artifacts'|'bases' | 'decor' | 'shop';
-export interface SandActions { clear:()=>void; undo:()=>void; snapshot:()=>{color:string;height:string} }
+export interface SandActions { bounds:DrawingBounds; clear:()=>void; undo:()=>void; snapshot:()=>{color:string;height:string} }
 const W=512,H=1024;
 const referenceColor=new Color('#d9cdb0');
 // Fixed-size texture memory: no mesh subdivision, stroke list, or growing history.
-export function SandSurface({gestureOwner,tool,settings,sandColor,enabled,actions,onChange,initialDrawing,onReady,onLoadError}:{gestureOwner:MutableRefObject<'sand'|'camera'|null>;onReady?:(ready:boolean)=>void;onLoadError?:(message:string)=>void;initialDrawing?:{color:string;height:string};tool:SandTool;settings:RakeSettings;sandColor:string;enabled:boolean;objects:GardenObject[];actions:MutableRefObject<SandActions|null>;onChange:(undo:boolean)=>void}) {
+export function SandSurface({gestureOwner,tool,settings,sandColor,enabled,actions,onChange,initialDrawing,drawingBounds,onReady,onLoadError}:{gestureOwner:MutableRefObject<'sand'|'camera'|null>;onReady?:(ready:boolean)=>void;onLoadError?:(message:string)=>void;initialDrawing?:{color:string;height:string};drawingBounds?:DrawingBounds;tool:SandTool;settings:RakeSettings;sandColor:string;enabled:boolean;objects:GardenObject[];actions:MutableRefObject<SandActions|null>;onChange:(undo:boolean)=>void}) {
   const {gl,camera,invalidate}=useThree();
   const quality=useQualityLibrary();
-  const geometry=useMemo(()=>gardenSurface(),[]);
+  const bounds=useMemo(()=>expandedDrawingBounds(drawingBounds,{x:GARDEN_X,z:GARDEN_Z}),[]);
+  const geometry=useMemo(()=>{
+    const g=gardenSurface(),p=g.attributes.position,uv=g.attributes.uv;
+    for(let i=0;i<p.count;i++)uv.setXY(i,.5+p.getX(i)/(2*bounds.x),.5+p.getY(i)/(2*bounds.z));
+    return g;
+  },[bounds]);
   useEffect(()=>()=>geometry.dispose(),[geometry]);
   const dirty=useRef(true);
   const drawingChanged=useRef(false);
@@ -40,15 +46,15 @@ export function SandSurface({gestureOwner,tool,settings,sandColor,enabled,action
     // passa a lancar SecurityError — a pessoa abriria o jardim e nunca mais
     // conseguiria salvar. Data URL ignora a propriedade, entao serve para as duas.
     const load=(src:string)=>new Promise<HTMLImageElement>((resolve,reject)=>{const img=new Image();img.crossOrigin='anonymous';img.onload=()=>img.width===W&&img.height===H?resolve(img):reject(Error('Invalid sand size'));img.onerror=()=>reject(Error('Invalid sand image'));img.src=src;});
-    Promise.all([load(initialDrawing.color),load(initialDrawing.height)]).then(([c,h])=>{if(cancelled)return;assets.c.drawImage(c,0,0);assets.h.drawImage(h,0,0);dirty.current=true;setRestored(true);invalidate();}).catch(()=>{if(!cancelled)onLoadError?.('Não foi possível restaurar a areia salva. Reabra o jardim; seu desenho não foi alterado.');});
+    Promise.all([load(initialDrawing.color),load(initialDrawing.height)]).then(([c,h])=>{if(cancelled)return;const source=drawingBounds??bounds,r=drawingRect(source,bounds,W,H);assets.c.drawImage(c,r.x,r.y,r.width,r.height);assets.h.drawImage(h,r.x,r.y,r.width,r.height);drawingChanged.current=source.x!==bounds.x||source.z!==bounds.z;dirty.current=true;setRestored(true);invalidate();}).catch(()=>{if(!cancelled)onLoadError?.('Não foi possível restaurar a areia salva. Reabra o jardim; seu desenho não foi alterado.');});
     return()=>{cancelled=true;};
-  },[initialDrawing,assets,invalidate,onLoadError]);
+  },[initialDrawing,drawingBounds,bounds,assets,invalidate,onLoadError]);
   const history=useRef<{color:ImageData;height:ImageData}|null>(null);
   useEffect(()=>{
     const save=()=>{drawingChanged.current=true;history.current={color:assets.c.getImageData(0,0,W,H),height:assets.h.getImageData(0,0,W,H)};onChange(true);};
-    actions.current={snapshot:()=>{if(!restored)throw Error('A areia salva ainda não pôde ser carregada. Reabra o jardim.');if(!drawingChanged.current&&initialDrawing)return initialDrawing;return {color:assets.color.toDataURL('image/png'),height:assets.height.toDataURL('image/png')};},clear:()=>{save();assets.c.putImageData(assets.base,0,0);assets.h.fillStyle='#808080';assets.h.fillRect(0,0,W,H);dirty.current=true;invalidate();},undo:()=>{if(!history.current)return;assets.c.putImageData(history.current.color,0,0);assets.h.putImageData(history.current.height,0,0);history.current=null;onChange(false);dirty.current=true;invalidate();}};
+    actions.current={bounds,snapshot:()=>{if(!restored)throw Error('A areia salva ainda não pôde ser carregada. Reabra o jardim.');if(!drawingChanged.current&&initialDrawing)return initialDrawing;return {color:assets.color.toDataURL('image/png'),height:assets.height.toDataURL('image/png')};},clear:()=>{save();assets.c.putImageData(assets.base,0,0);assets.h.fillStyle='#808080';assets.h.fillRect(0,0,W,H);dirty.current=true;invalidate();},undo:()=>{if(!history.current)return;assets.c.putImageData(history.current.color,0,0);assets.h.putImageData(history.current.height,0,0);history.current=null;onChange(false);dirty.current=true;invalidate();}};
     return()=>{actions.current=null;};
-  },[assets,actions,invalidate,onChange,restored]);
+  },[assets,actions,invalidate,onChange,restored,initialDrawing,bounds]);
   useEffect(()=>{
     if(!enabled||!restored||tool==='camera')return;
     const canvas=gl.domElement,ray=new Raycaster(),uv=new Vector2(),plane=new Plane(new Vector3(0,1,0),-.045);
@@ -60,7 +66,7 @@ export function SandSurface({gestureOwner,tool,settings,sandColor,enabled,action
     const mark=()=>{dirty.current=true;invalidate();};
     const point=(e:PointerEvent)=>{const r=canvas.getBoundingClientRect();uv.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(uv,camera);const p=ray.ray.intersectPlane(plane,new Vector3());
       if(!p||!inGarden(p.x,p.z,margin+.1))return null;
-      return new Vector2((p.x/GARDEN_X*.5+.5)*W,(p.z/GARDEN_Z*.5+.5)*H);
+      return new Vector2((p.x/bounds.x*.5+.5)*W,(p.z/bounds.z*.5+.5)*H);
     };
     const save=()=>{if(saved)return;saved=true;drawingChanged.current=true;history.current={color:assets.c.getImageData(0,0,W,H),height:assets.h.getImageData(0,0,W,H)};onChange(true);};
     const line=(ctx:CanvasRenderingContext2D,a:Vector2,b:Vector2,n:Vector2,offset:number,width:number,color:string)=>{ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(a.x+(normal??n).x*offset,a.y+(normal??n).y*offset);ctx.lineTo(b.x+n.x*offset,b.y+n.y*offset);ctx.stroke();};
@@ -79,7 +85,7 @@ export function SandSurface({gestureOwner,tool,settings,sandColor,enabled,action
     const sample=(p:Vector2)=>{
       if(tool==='rake'&&previous&&previous.distanceTo(p)<.35)return;
       // Keep strokes continuous underneath objects; only the garden boundary clips the brush.
-      if(previous){const from=previous.clone(),steps=Math.ceil(from.distanceTo(p)/3);for(let i=1;i<=steps;i++){const q=from.clone().lerp(p,i/steps);const x=(q.x/W-.5)*2*GARDEN_X,z=(q.y/H-.5)*2*GARDEN_Z;if(!inGarden(x,z,margin+.1)){previous=null;normal=null;continue;}paint(q);previous=q;}}
+      if(previous){const from=previous.clone(),steps=Math.ceil(from.distanceTo(p)/3);for(let i=1;i<=steps;i++){const q=from.clone().lerp(p,i/steps);const x=(q.x/W-.5)*2*bounds.x,z=(q.y/H-.5)*2*bounds.z;if(!inGarden(x,z,margin+.1)){previous=null;normal=null;continue;}paint(q);previous=q;}}
       else {paint(p);previous=p;}
     };
     const curve=(a:Vector2,b:Vector2,c:Vector2)=>{
@@ -91,7 +97,7 @@ export function SandSurface({gestureOwner,tool,settings,sandColor,enabled,action
     };
     const screenPoint=(p:Vector2)=>{
       const r=canvas.getBoundingClientRect();
-      const world=new Vector3((p.x/W-.5)*2*GARDEN_X,.045,(p.y/H-.5)*2*GARDEN_Z).project(camera);
+      const world=new Vector3((p.x/W-.5)*2*bounds.x,.045,(p.y/H-.5)*2*bounds.z).project(camera);
       return new Vector2(world.x*r.width/2,world.y*r.height/2);
     };
     const tick=(now:number)=>{

@@ -17,7 +17,7 @@ function mineral(){
  }
  const t=new T.DataTexture(data,size,size);t.colorSpace=T.SRGBColorSpace;t.wrapS=t.wrapT=T.RepeatWrapping;t.needsUpdate=true;return t;
 }
-export function Sanctuary({environment}:{environment:EnvironmentId}){
+export function Sanctuary({environment,island=false}:{environment:EnvironmentId;island?:boolean}){
  const assets=useMemo(()=>{
   const stones:T.BufferGeometry[]=[],moss:T.BufferGeometry[]=[],far:T.BufferGeometry[]=[];
   const block=(x:number,y:number,z:number,w:number,h:number,d:number,angle=0,seed=0)=>{
@@ -37,36 +37,36 @@ export function Sanctuary({environment}:{environment:EnvironmentId}){
    const g=new T.IcosahedronGeometry(1,1).scale(.18+randomAt(8,i)*.09,.07,.15+randomAt(9,i)*.06).rotateY(i).translate(x,.03,z);
    const c=new T.Color('#8a8d79');g.setAttribute('color',new T.Float32BufferAttribute(Array.from({length:g.attributes.position.count},()=>[c.r,c.g,c.b]).flat(),3));stones.push(g);
   }
-  if(environment!=='mist'){
+  if(!island&&environment!=='mist'){
    const height=environment==='cloister'?7:4;
    // Masonry piers with real open arches, large enough to read from the garden.
    for(let pier=-3;pier<=3;pier++){
     const x=pier*3.2;
-    for(let row=0;row<height;row++)block(x,.22+row*.44,-11.8,.95,.415,.95,0,pier*7+row);
-    block(x,height*.44,-11.8,1.17,.20,1.12,0,pier);
+    for(let row=0;row<height;row++)block(x,.22+row*.44,(-GARDEN_Z-2.65),.95,.415,.95,0,pier*7+row);
+    block(x,height*.44,(-GARDEN_Z-2.65),1.17,.20,1.12,0,pier);
    }
    for(let bay=-3;bay<3;bay++){
     const cx=bay*3.2+1.6;
     for(let k=0;k<13;k++){
      if(environment==='ruins'&&(bay%2===0&&k>5))continue;
      const a=k/12*Math.PI,r=1.6;
-     block(cx+Math.cos(a)*r,height*.44+Math.sin(a)*r,-11.8,.41,.47,.8,a-Math.PI/2,k+bay*17);
+     block(cx+Math.cos(a)*r,height*.44+Math.sin(a)*r,(-GARDEN_Z-2.65),.41,.47,.8,a-Math.PI/2,k+bay*17);
     }
    }
    for(let i=0;i<24;i++){
-    const x=(randomAt(71,i)-.5)*22,z=-12.4-randomAt(73,i)*3;
+    const x=(randomAt(71,i)-.5)*22,z=-GARDEN_Z-3.25-randomAt(73,i)*3;
     const g=new T.IcosahedronGeometry(1,1).scale(.3+randomAt(1,i)*.7,.17+randomAt(2,i)*.5,.4).rotateY(i).translate(x,0,z);
     const color=new T.Color('#686c55'),arr=Array.from({length:g.attributes.position.count},()=>[color.r,color.g,color.b]).flat();g.setAttribute('color',new T.Float32BufferAttribute(arr,3));stones.push(g);
    }
   }
-  for(let i=0;i<75;i++){
-   const x=(randomAt(90,i)-.5)*24,z=-10.5-randomAt(30,i)*5;
+  for(let i=0;!island&&i<75;i++){
+   const x=(randomAt(90,i)-.5)*24,z=-GARDEN_Z-1.35-randomAt(30,i)*5;
    moss.push(new T.IcosahedronGeometry(1,0).scale(.25+randomAt(9,i)*.6,.035,.23).translate(x,.015,z));
   }
-  for(let i=0;i<22;i++)far.push(new T.IcosahedronGeometry(1,1).scale(4+randomAt(4,i)*5,3+randomAt(6,i)*8,3).rotateY(i).translate((i-11)*4,-2,-29-randomAt(8,i)*12));
-  const merge=(list:T.BufferGeometry[])=>{const g=mergeGeometries(list)!;list.forEach(p=>p.dispose());return g;};
+  for(let i=0;!island&&i<22;i++)far.push(new T.IcosahedronGeometry(1,1).scale(4+randomAt(4,i)*5,3+randomAt(6,i)*8,3).rotateY(i).translate((i-11)*4,-2,-29-randomAt(8,i)*12));
+  const merge=(list:T.BufferGeometry[])=>{const g=list.length?mergeGeometries(list)!:new T.BufferGeometry();list.forEach(p=>p.dispose());return g;};
   return {stone:merge(stones),moss:merge(moss),far:merge(far),texture:mineral()};
- },[environment]);
+ },[environment,island]);
  useEffect(()=>()=>{Object.values(assets).forEach(a=>a.dispose());},[assets]);
  return <group>
   <mesh geometry={assets.stone} castShadow receiveShadow><meshStandardMaterial vertexColors map={assets.texture} bumpMap={assets.texture} bumpScale={.065} roughness={.94}/></mesh>
@@ -92,7 +92,7 @@ export function BotanicalTree({x,z,seed=1,kind='maple',kit='starter'}:{x:number;
     g.rotateX(randomAt(k+19,j)*1.6).rotateY(a).translate(p.x,p.y,p.z);g.computeVertexNormals();const c=new T.Color((kit==='genesis'?['#654085','#8052a2','#a575c1','#c298d8']:kit==='luxury'?['#b39347','#d0b969','#958547','#dccb80']:pine?['#304b3c','#45604a','#627854','#3b583c']:['#796333','#98904e','#687647','#b09452'])[j%4]);g.setAttribute('color',new T.Float32BufferAttribute(Array.from({length:12},()=>[c.r,c.g,c.b]).flat(),3));leaves.push(g);
    }
   }
-  const merge=(list:T.BufferGeometry[])=>{const g=mergeGeometries(list)!;list.forEach(a=>a.dispose());return g;};return {wood:merge(wood),leaves:merge(leaves)};
+  const merge=(list:T.BufferGeometry[])=>{const g=list.length?mergeGeometries(list)!:new T.BufferGeometry();list.forEach(a=>a.dispose());return g;};return {wood:merge(wood),leaves:merge(leaves)};
  },[seed,kind,kit]);
  useEffect(()=>()=>{geo.wood.dispose();geo.leaves.dispose();},[geo]);
  return <group position={[x,0,z]}><mesh geometry={geo.wood} castShadow receiveShadow><meshStandardMaterial color={kit==='genesis'?'#665574':kit==='luxury'?'#7b694b':'#66503b'} roughness={1}/></mesh><mesh geometry={geo.leaves} castShadow receiveShadow><meshStandardMaterial vertexColors side={T.DoubleSide} roughness={.85}/></mesh></group>;

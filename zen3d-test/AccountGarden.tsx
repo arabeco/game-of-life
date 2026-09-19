@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import SandExperiment from '../views/zen3d/SandExperiment';
-import { GardenAccountContext, validateGardenSnapshot, type GardenAccount } from '../views/zen3d/gardenAccount';
+import { GardenAccountContext, validateGardenSnapshot, validGardenPlaque, type GardenAccount } from '../views/zen3d/gardenAccount';
 import { setGardenArtifacts } from '../views/zen3d/artifactCatalog';
 
 export function AccountGarden({skinId,theme}:{skinId:string;theme:'light'|'dark'}) {
@@ -13,12 +13,13 @@ export function AccountGarden({skinId,theme}:{skinId:string;theme:'light'|'dark'
       const d=event.data;
       if(d?.type==='glyph-garden-init'&&Array.isArray(d.owned)&&Array.isArray(d.artifacts)&&(!d.state||validateGardenSnapshot(d.state))){
         setGardenArtifacts(d.artifacts);
-        setAccount({owned:d.owned,initial:d.state,products:d.products??[],readOnly:d.readOnly===true,markDirty:dirty=>send({type:'glyph-garden-dirty',dirty}),buy:id=>send({type:'glyph-garden-buy',id}),save:state=>new Promise<void>((resolve,reject)=>{
+        setAccount({legacyPlaque:validGardenPlaque(d.legacyPlaque)?d.legacyPlaque:undefined,previewHour:['127.0.0.1','localhost'].includes(location.hostname)&&typeof d.previewHour==='number'&&Number.isFinite(d.previewHour)?d.previewHour:undefined,owned:d.owned,initial:d.state,products:d.products??[],readOnly:d.readOnly===true,markDirty:dirty=>send({type:'glyph-garden-dirty',dirty}),buy:id=>send({type:'glyph-garden-buy',id}),save:state=>new Promise<void>((resolve,reject)=>{
           if(pending.current){reject(Error('Aguarde o salvamento atual.'));return;}
           const id=crypto.randomUUID();const timer=window.setTimeout(()=>{pending.current=null;reject(Error('Sem confirmação do servidor. Reabra o jardim antes de tentar novamente.'));},30000);
           pending.current={id,resolve,reject,timer};send({type:'glyph-garden-save',id,state});
         })});
       }
+      if(d?.type==='glyph-garden-legacy'&&validGardenPlaque(d.plaque))setAccount(a=>a?{...a,legacyPlaque:d.plaque}:a);
       if(d?.type==='glyph-garden-inventory'&&Array.isArray(d.owned)){setAccount(a=>a?{...a,owned:d.owned}:a);}
       if(d?.type==='glyph-garden-saved'&&pending.current?.id===d.id){const p=pending.current!;pending.current=null;clearTimeout(p.timer);d.error?p.reject(Error(d.error)):p.resolve();}
     };

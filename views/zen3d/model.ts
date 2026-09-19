@@ -13,7 +13,7 @@ export const EYE_HEIGHT = 1.58;
 export let GARDEN_X = 5.15;
 export let GARDEN_Z = 9.15;
 export let GARDEN_ROUNDNESS = 2;
-// Only changed by an accepted model replacement, before remounting the isolated scene.
+// Configure before remounting the scene for an accepted terrain/model change.
 export function configureGarden(x:number,z:number,roundness:number){GARDEN_X=x;GARDEN_Z=z;GARDEN_ROUNDNESS=roundness;}
 export function gardenBoundary(angle:number,margin=0):[number,number]{const c=Math.cos(angle),s=Math.sin(angle);return [Math.sign(c)*Math.abs(c)**(2/GARDEN_ROUNDNESS)*(GARDEN_X+margin),Math.sign(s)*Math.abs(s)**(2/GARDEN_ROUNDNESS)*(GARDEN_Z+margin)];}
 export const CATEGORIES: Category[] = ['Pedras', 'Caminhos', 'Água', 'Plantas', 'Luz'];

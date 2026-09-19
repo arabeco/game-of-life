@@ -20,6 +20,10 @@ interface LegacyGrandPlaqueProps {
      * Ausente tambem cobre a placa de outra pessoa, que nao tem escolha nossa.
      */
     plaqueColorId?: string;
+    /** Visits can show the current plaque without inventing private history totals. */
+    metricsAvailable?: boolean;
+    /** SVG foreignObject captures do not consistently preserve CSS border-image. */
+    captureSafe?: boolean;
 }
 
 export const LegacyGrandPlaque: React.FC<LegacyGrandPlaqueProps> = ({
@@ -29,6 +33,8 @@ export const LegacyGrandPlaque: React.FC<LegacyGrandPlaqueProps> = ({
     className = '',
     compact = false,
     plaqueColorId,
+    metricsAvailable = true,
+    captureSafe = false,
 }) => {
     const { totalCycles, totalHours, totalActions, activeDays, weightedAverageScore, averageGrade } = buildLegacyPlaqueSummary(eras);
     const nickname = identity?.nickname?.trim() || sovereignName || 'Usuario';
@@ -172,7 +178,7 @@ export const LegacyGrandPlaque: React.FC<LegacyGrandPlaqueProps> = ({
             className={`${compact ? 'text-[2.05rem]' : 'text-[2.4rem]'} font-bold leading-none`}
             style={{ fontFamily: 'Cinzel, Georgia, serif', ...tintaMetalica }}
         >
-            {averageGrade}
+            {metricsAvailable ? averageGrade : '—'}
         </span>,
     );
 
@@ -230,7 +236,7 @@ export const LegacyGrandPlaque: React.FC<LegacyGrandPlaqueProps> = ({
                         className={`${compact ? 'text-[1.05rem]' : 'text-[1.08rem]'} whitespace-nowrap font-bold leading-tight tabular-nums`}
                         style={{ fontFamily: 'Cinzel, Georgia, serif', ...tintaMetalica }}
                     >
-                        {item.value}
+                        {metricsAvailable ? item.value : '—'}
                     </span>
                 </React.Fragment>
             ))}
@@ -249,7 +255,7 @@ export const LegacyGrandPlaque: React.FC<LegacyGrandPlaqueProps> = ({
                     className={`${compact ? 'text-[1.5rem]' : 'text-[1.7rem]'} font-bold leading-none tabular-nums`}
                     style={{ fontFamily: 'Cinzel, Georgia, serif', ...tintaMetalica }}
                 >
-                    {weightedAverageScore}
+                    {metricsAvailable ? weightedAverageScore : '—'}
                 </span>
             </div>
         </div>
@@ -286,6 +292,7 @@ export const LegacyGrandPlaque: React.FC<LegacyGrandPlaqueProps> = ({
                     border: '2px solid transparent',
                     borderImageSource: `linear-gradient(135deg, ${cor.metalMid} 0%, ${cor.metalLight} 8%, ${cor.metalMid} 13%, ${cor.trim} 40%, ${cor.trim} 85%, ${cor.metalLight} 100%)`,
                     borderImageSlice: 1,
+                    ...(captureSafe ? {borderImageSource:'none',borderColor:cor.trim} : {}),
                     ...molduraCortada(14),
                 }}
             />

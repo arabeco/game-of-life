@@ -5,6 +5,7 @@ import type { BaseId } from './gardenTemplates';
 import type { KitId } from './kits';
 import type { EnvironmentId } from './Sanctuary';
 import type { AtmosphereId } from './AtmospherePanel';
+import type { GardenTerrain, DrawingBounds } from './gardenTerrain';
 
 export const GARDEN_UNLOCKS = {
   luxury:'garden_kit_luxury', genesis:'garden_kit_genesis',
@@ -14,8 +15,13 @@ export interface GardenSnapshot {
   version:1; base:BaseId; objects:GardenObject[]; artifacts:PlacedArtifact[];
   sand:number; environment:EnvironmentId; atmosphere:AtmosphereId;
   drawing?:{color:string;height:string};
+  terrain?:GardenTerrain;
+  drawingBounds?:DrawingBounds;
 }
 export interface GardenAccount {
+  /** Dev fixture only; never persisted in a garden document. */
+  previewHour?:number;
+  legacyPlaque?:{image:string;aspect:number};
   /**
    * VISITA. O jardim carrega, mas nao e seu para mexer.
    *
@@ -33,6 +39,10 @@ export interface GardenAccount {
 }
 export const GardenAccountContext = createContext<GardenAccount|null>(null);
 export const useGardenAccount=()=>useContext(GardenAccountContext);
+export const validGardenPlaque=(value:unknown):value is {image:string;aspect:number}=>{
+  const p=value as {image?:unknown;aspect?:unknown}|null;
+  return !!p&&typeof p.image==='string'&&p.image.length<3000000&&/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(p.image)&&typeof p.aspect==='number'&&Number.isFinite(p.aspect)&&p.aspect>=1&&p.aspect<=8;
+};
 export const ownsKit=(account:GardenAccount|null,id:KitId)=>!account||id==='starter'||account.owned.includes(GARDEN_UNLOCKS[id]);
 export const ownsBase=(account:GardenAccount|null,id:BaseId)=>!account||id==='open'||account.owned.includes(GARDEN_UNLOCKS[id]);
 
@@ -57,6 +67,8 @@ export function validateGardenSnapshot(value:unknown):value is GardenSnapshot {
   const finite=(n:unknown)=>typeof n==='number'&&Number.isFinite(n)&&Math.abs(n)<1000;
   const text=(v:unknown)=>typeof v==='string'&&v.length>0&&v.length<100;
   return s.version===1&&['open','pond','river','path'].includes(s.base)
+    &&(s.terrain===undefined||!!s.terrain&&['classic','square','ellipse','circle'].includes(s.terrain.shape)&&['standard','spacious'].includes(s.terrain.size))
+    &&(s.drawingBounds===undefined||!!s.drawingBounds&&[s.drawingBounds.x,s.drawingBounds.z].every(n=>finite(n)&&n>=1&&n<=32))
     &&['cloister','ruins','mist'].includes(s.environment)&&['morning','sunset','overcast'].includes(s.atmosphere)
     &&Number.isInteger(s.sand)&&s.sand>=0&&s.sand<3
     &&Array.isArray(s.objects)&&s.objects.length<=64&&s.objects.every(o=>o&&text(o.id)&&['garden-planter','garden-river','medieval-lamp','bridge','maple','pine','rock','pebble','rock-cluster','path-straight','path-curve','path-wild','pond','stream-straight','stream-curve','lantern','bamboo'].includes(o.type)

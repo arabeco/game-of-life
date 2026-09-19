@@ -1,15 +1,21 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { GardenLegacyCapture, type GardenPlaqueImage } from './GardenLegacyCapture';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Portal } from './Portal';
 import { useGame } from '../contexts/GameContext';
 import { supabase } from '../supabaseClient';
 import { ITEMS_DB, resolveItemDef } from '../constants/items';
 import { validateGardenSnapshot, type GardenSnapshot } from '../views/zen3d/gardenAccount';
 import { uploadGardenSand } from '../utils/gardenSand';
-import type { UserProfile } from '../types';
+import type { Report, UserProfile } from '../types';
+
+const NO_REPORTS:Report[]=[];
+const NO_BOUNDARIES:string[]=[];
 
 /** The 3D document owns its CSS/WebGL; this shell owns account context and dismissal. */
 export function Garden3DModal({ onClose, profile }: { onClose: () => void; profile?: UserProfile }) {
-  const { userProfile, activeTheme, inventory, buyStoreItem } = useGame();
+  const { userProfile, activeTheme, inventory, buyStoreItem, reports } = useGame();
+  const [legacyBoundaries,setLegacyBoundaries]=useState<string[]|null>(null);
+  const plaque=useRef<GardenPlaqueImage|undefined>(undefined);
   const [state,setState]=useState<GardenSnapshot|null>(null),[ready,setReady]=useState(false),[error,setError]=useState('');
   const [owned,setOwned]=useState<string[]>([]);
   const [dirty,setDirty]=useState(false);
@@ -33,6 +39,17 @@ export function Garden3DModal({ onClose, profile }: { onClose: () => void; profi
   const [loaded, setLoaded] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   const frame = useRef<HTMLIFrameElement>(null);
+  const onPlaqueReady=useCallback((image:GardenPlaqueImage)=>{
+    plaque.current=image;frame.current?.contentWindow?.postMessage({type:'glyph-garden-legacy',plaque:image},location.origin);
+  },[]);
+  useEffect(()=>{
+    if(profile&&profile.id!==userProfile.id)return;
+    let cancelled=false;
+    supabase.from('era_boundaries').select('after_report_id').eq('user_id',ownerId).then(({data,error})=>{
+      if(!cancelled&&!error)setLegacyBoundaries((data??[]).map(r=>r.after_report_id));
+    });
+    return()=>{cancelled=true;};
+  },[ownerId,userProfile.id]);
   const ownGarden = !profile || profile.id === userProfile.id;
   const telaCheia = ownGarden || entrou;
   const nomeDono = profile?.nickname || 'um amigo';
@@ -103,7 +120,7 @@ export function Garden3DModal({ onClose, profile }: { onClose: () => void; profi
         // No jardim proprio, arte reciclada ou removida nao pode continuar de pe;
         // na visita o documento e mostrado como esta, sem reescrever nada.
         const initial=state?(ownGarden?{...state,artifacts:state.artifacts.filter(a=>artifacts.some(i=>i.id===a.artifact))}:state):null;
-        send({type:'glyph-garden-init',owned,artifacts,products,state:initial,readOnly:!ownGarden});
+        send({type:'glyph-garden-init',owned,artifacts,products,state:initial,readOnly:!ownGarden,legacyPlaque:plaque.current});
       }
       if(d?.type==='glyph-garden-buy'&&products.some(p=>p.id===d.id)&&!owned.includes(d.id))setPurchase(d.id);
       if(d?.type==='glyph-garden-save'&&ownGarden){
@@ -138,24 +155,17 @@ export function Garden3DModal({ onClose, profile }: { onClose: () => void; profi
     style={telaCheia
       ? { position:'fixed',inset:0,width:'100%',maxWidth:'none',height:'100dvh',maxHeight:'none',margin:0,padding:0,border:0,background:'#090d12',color:'#e6edf5' }
       : { width:'min(92vw, 440px)',maxWidth:'none',height:'min(62vh, 480px)',maxHeight:'none',padding:0,border:'1px solid rgba(255,255,255,0.16)',borderRadius:20,overflow:'hidden',background:'#090d12',color:'#e6edf5' }}>
-    <div inert={closing||!!purchase} style={{display:'flex',flexDirection:'column',height:'100%',paddingTop:telaCheia?'var(--safe-area-top, env(safe-area-inset-top, 0px))':0}}>
-      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 px-4 py-2">
-        {/* Na visita o cabecalho diz UMA coisa: de quem e o jardim. */}
-        {ownGarden
-          ? <div><b className="text-xs uppercase tracking-widest">Jardim 3D</b><p className="text-[10px] text-gray-400">{dirty?'Alterações não salvas':'Seu jardim · salve quando terminar'}</p></div>
-          : <b className="truncate text-xs uppercase tracking-widest">Jardim de {nomeDono}</b>}
-        {ownGarden
-          ? <button className="min-h-11 rounded-xl border border-white/20 px-4 text-xs font-bold" onClick={() => dirty ? setClosing(true) : onClose()}>Voltar ao app</button>
-          : <div className="flex shrink-0 gap-2">
-              {!entrou&&ready&&!error&&<button className="luxe-skin-button min-h-11 rounded-xl px-4 text-xs font-bold" onClick={()=>setEntrou(true)}>Entrar</button>}
-              <button className="min-h-11 rounded-xl border border-white/20 px-4 text-xs font-bold" onClick={()=>entrou?setEntrou(false):onClose()}>{entrou?'Voltar':'Sair'}</button>
-            </div>}
-      </header>
+    <div inert={closing||!!purchase} style={{position:'relative',zIndex:0,display:'flex',flexDirection:'column',height:'100%',paddingTop:telaCheia?'var(--safe-area-top, env(safe-area-inset-top, 0px))':0}}>
+      <div style={{position:'absolute',zIndex:5,top:telaCheia?'calc(var(--safe-area-top, env(safe-area-inset-top, 0px)) + 12px)':12,right:12,display:'flex',gap:8}}>
+        {!ownGarden&&!entrou&&ready&&!error&&<button className="luxe-skin-button min-h-11 rounded-full px-4 text-xs font-bold" onClick={()=>setEntrou(true)}>Entrar</button>}
+        <button aria-label={ownGarden?'Sair do jardim':entrou?'Voltar à prévia':'Sair do jardim'} className="min-h-11 rounded-full border border-white/20 bg-gray-950/75 px-4 text-xs font-bold shadow-lg backdrop-blur-md" onClick={()=>ownGarden?(dirty?setClosing(true):onClose()):entrou?setEntrou(false):onClose()}>{!ownGarden&&entrou?'Voltar':'Sair'}{ownGarden&&dirty&&<span aria-label="Alterações não salvas" className="ml-2 inline-block h-1.5 w-1.5 rounded-full bg-amber-200"/>}</button>
+      </div>
       {error?<div role="alert" className="p-6">{error}<button className="ml-3 min-h-11 rounded-lg border border-white/20 px-3" onClick={()=>setRetry(n=>n+1)}>Tentar novamente</button></div>:!ready?<p role="status" className="p-6">Carregando jardim…</p>:<>
         {!loaded && <p role="status" className="p-4 text-sm">Preparando o jardim…</p>}
         <iframe ref={frame} title={ownGarden?'Meu Jardim Zen 3D':'Jardim Zen 3D visitado'} src={src} onLoad={() => setLoaded(true)} style={{flex:1,width:'100%',minHeight:0,border:0}}/>
       </>}
     </div>
+    <GardenLegacyCapture profile={ownGarden?userProfile:profile!} reports={ownGarden?reports:NO_REPORTS} boundaries={legacyBoundaries??NO_BOUNDARIES} available={ownGarden&&legacyBoundaries!==null} onReady={onPlaqueReady}/>
     {purchase && <div className="absolute inset-0 flex items-center justify-center bg-black/80 p-5" role="alertdialog" aria-modal="true" aria-label="Comprar item do jardim"><div className="max-w-sm rounded-2xl border border-white/20 bg-gray-950 p-5"><h2>Comprar {products.find(p=>p.id===purchase)?.name}?</h2><p className="my-4 text-sm">Custo: {products.find(p=>p.id===purchase)?.price} ouro. O desbloqueio vai para seu inventário.</p><div className="flex gap-3"><button autoFocus disabled={buying} className="min-h-11 flex-1" onClick={()=>setPurchase(null)}>Cancelar</button><button disabled={buying} className="luxe-skin-button min-h-11 flex-1 rounded-xl" onClick={async()=>{setBuying(true);try{await buyStoreItem(purchase,'exclusive');setPurchase(null);}finally{setBuying(false);}}}>{buying?'Aguarde…':'Comprar'}</button></div></div></div>}
     {closing && <div className="absolute inset-0 flex items-center justify-center bg-black/80 p-5" role="alertdialog" aria-modal="true" aria-labelledby="garden-exit-title">
       <div className="w-full max-w-sm rounded-2xl border border-white/20 bg-gray-950 p-5">

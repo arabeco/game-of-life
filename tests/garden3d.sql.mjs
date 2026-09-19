@@ -70,4 +70,12 @@ assert.equal(opened.success,true);assert.equal(opened.tier,5);assert.match(opene
 await db.exec('reset role');
 assert.equal(Number(await scalar('select count(*) from user_inventory where user_id=$1 and item_id=$2',[B,opened.item_id])),1);
 console.log('Garden SQL: migration repeat, save/reopen, stale revision, ownership, RLS, atomic purchase, no duplicate charge and actual legendary chest grant passed.');
+// The deployed storage-era save retains optional terrain metadata verbatim.
+const storageMigration=readFileSync(new URL('../supabase/migrations/20260909230000_garden3d_sand_to_storage.sql',import.meta.url),'utf8');
+await db.exec(storageMigration.slice(storageMigration.indexOf('create or replace function public.save_garden_3d'),storageMigration.lastIndexOf('commit;')));
+await login(A);
+const expanded={...state,objects:[rock],terrain:{shape:'circle',size:'spacious'},drawingBounds:{x:11.4375,z:11.4375},drawing:{color:`https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/garden-sand/${A}/color.png?v=123`,height:`https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/garden-sand/${A}/height.png?v=123`}};
+assert.equal(Number(await save(expanded,3)),4);
+assert.deepEqual(await scalar('select state from user_gardens_3d where user_id=$1',[A]),expanded);
+console.log('Garden terrain SQL: existing save function preserves shape, size, drawing bounds, objects and storage URLs without a migration (local PostgreSQL).');
 await db.close();

@@ -19,7 +19,7 @@ export function GardenCamera({gestureOwner,mode,objects,motion,view,onView,gestu
       const halfWidth=aspect<1?Math.max(GARDEN_X+.75,GARDEN_Z*aspect+.8)*view.zoom:Math.max(10.3,GARDEN_Z+1)*aspect*view.zoom;
       const halfHeight=halfWidth/aspect;
       c.left=-halfWidth;c.right=halfWidth;c.top=halfHeight;c.bottom=-halfHeight;
-      c.position.set(view.x+Math.sin(view.angle)*17,24,view.z+Math.cos(view.angle)*17);c.lookAt(view.x,0,view.z);c.updateProjectionMatrix();
+      c.position.set(view.x+Math.sin(view.angle)*23,21,view.z+Math.cos(view.angle)*23);c.lookAt(view.x,-1,view.z);c.updateProjectionMatrix();
     } else {
       const c=cameras.explore;c.aspect=aspect;c.updateProjectionMatrix();
       if(lastMode.current!=='explore') {const entry=findEntrance(latestObjects.current);if(entry)c.position.set(...entry);look.current={yaw:0,pitch:-.07};c.rotation.set(-.07,0,0,'YXZ');}
@@ -41,7 +41,7 @@ export function GardenCamera({gestureOwner,mode,objects,motion,view,onView,gestu
       if(!gesture.current&&Math.hypot(e.clientX-previous.startX,e.clientY-previous.startY)<7)return;
       gesture.current=true;
       const dx=e.clientX-previous.x,dy=e.clientY-previous.y;pointers.set(e.pointerId,{...previous,x:e.clientX,y:e.clientY});
-      if(pointers.size===1)onView(v=>{if(e.shiftKey)return {...v,angle:v.angle+dx*.008};const scale=(cameras.build.right-cameras.build.left)/size.width;return {...v,x:Math.max(-4,Math.min(4,v.x-dx*scale*Math.cos(v.angle)-dy*scale*Math.sin(v.angle)*1.25)),z:Math.max(-7,Math.min(7,v.z+dx*scale*Math.sin(v.angle)-dy*scale*Math.cos(v.angle)*1.25))};});
+      if(pointers.size===1)onView(v=>{if(e.shiftKey)return {...v,angle:v.angle+dx*.008};const scale=(cameras.build.right-cameras.build.left)/size.width;return {...v,x:Math.max(-4,Math.min(4,v.x-dx*scale*Math.cos(v.angle)-dy*scale*Math.sin(v.angle)*1.45)),z:Math.max(-7,Math.min(7,v.z+dx*scale*Math.sin(v.angle)-dy*scale*Math.cos(v.angle)*1.45))};});
       if(pointers.size===2){const next=pair();const ratio=distance/Math.max(20,next.distance),delta=Math.atan2(Math.sin(next.angle-angle),Math.cos(next.angle-angle));onView(v=>({...v,zoom:Math.max(.55,Math.min(1.65,v.zoom*ratio)),angle:v.angle+delta}));distance=next.distance;angle=next.angle;}
     };
     const up=(e:PointerEvent)=>{pointers.delete(e.pointerId);if(!pointers.size&&gestureOwner?.current==='camera')gestureOwner.current=null;};

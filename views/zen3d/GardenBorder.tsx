@@ -2,14 +2,17 @@ import type { KitId } from './kits';
 import { useEffect, useMemo } from 'react';
 import { BoxGeometry, BufferGeometry, Float32BufferAttribute, IcosahedronGeometry } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { GARDEN_X,GARDEN_Z,gardenBoundary,randomAt } from './model';
+import { GARDEN_X,GARDEN_Z,GARDEN_ROUNDNESS,randomAt } from './model';
 import type { Finish } from './gardenTemplates';
 export function GardenBorder({finish,kit='starter'}:{finish:Finish;kit?:KitId}){
   const assets=useMemo(()=>{
     const stones:BufferGeometry[]=[],grasses:BufferGeometry[]=[],flowers:BufferGeometry[]=[];
-    for(let i=0;i<82;i++){
-      const a=i/82*Math.PI*2;if(a>1.33&&a<1.81)continue;
-      const [x,z]=gardenBoundary(a,.04),h=finish==='rustic'?.09:.12;
+    // Polar sampling avoids bunching every stone at the corners of a square.
+    const count=Math.ceil(4*(GARDEN_X+GARDEN_Z)/.42);
+    for(let i=0;i<count;i++){
+      const a=i/count*Math.PI*2;if(a>1.33&&a<1.81)continue;
+      const c=Math.cos(a),s=Math.sin(a),r=(Math.abs(c/(GARDEN_X+.04))**GARDEN_ROUNDNESS+Math.abs(s/(GARDEN_Z+.04))**GARDEN_ROUNDNESS)**(-1/GARDEN_ROUNDNESS);
+      const x=c*r,z=s*r,h=finish==='rustic'?.09:.12;
       const stone=new IcosahedronGeometry(1,1).scale(.24+randomAt(1,i)*.06,h,.28+randomAt(2,i)*.07).rotateY(-a);
       stone.translate(x,h-.04,z);stones.push(stone);
       for(let j=0;j<6;j++){

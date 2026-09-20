@@ -18,6 +18,28 @@ Se aparece uma patente (`5 Barão`), é prêmio daquele degrau. `loja` é só ou
 
 ---
 
+## Decisões de 20/09/2026
+
+Conversadas tópico a tópico. O que está aqui ainda **não virou código** — é o
+combinado, escrito antes.
+
+| # | Tópico | Decidido |
+|---|---|---|
+| 1 | Roupa | ~11 roupas novas, chegando a **30**. Para engordar o pacote inicial e dar uma boa por patente. |
+| 2 | Cabelo | Fica como está: livre para todos. |
+| 3 | Aura | Não cria agora. Uma nova para o degrau 8 é opcional e barata (é código, não desenho). |
+| 4 | Borda | A maioria passa a ser **desbloqueável ou secreta**, não comprável. Exceção possível: as de patente. |
+| 5 | Banner | Igual à borda. |
+| 6 | Insígnia | Fica como está. |
+| 7 | Skin de UI | Uma por **patente ímpar**. O pacote inicial passa a dar **BASIC + GOLD**. |
+| 8 | Artefato | **Tirar o jardim 2D antigo** (9 peças aposentadas) e trazer os kits do jardim novo para cá. |
+| 9 | Tábua / wallpaper | Sai de "tudo na loja": vira prêmio de patente. |
+| 10 | Jardim | Ver se dá para vender as peças do kit separadas, e o que a variação de tema cria de fato. |
+
+Em aberto, ligado ao 4 e ao 5: **o baú poder dar dois itens.**
+
+---
+
 ## Roupa — 19
 
 **comum** (6)
@@ -89,6 +111,14 @@ Se aparece uma patente (`5 Barão`), é prêmio daquele degrau. `loja` é só ou
 - Pedra da Lua — 9 Rei · SEM ARTE
 - Multiverso — 10 Soberano · SEM ARTE
 
+> **"SEM ARTE" aqui engana.** A aura não é PNG: ela é desenhada no canvas por
+> , seis cores por aura (core, bloom, haze, ring, spark,
+> shadow). No avatar ela aparece. O emoji só sai na miniatura da loja e do
+> inventário, que procuram um arquivo.
+>
+> Existe uma nona aura já codificada — **Fênix Dourada** — sem item nenhum
+> apontando para ela.
+
 ## Borda — 17
 
 **comum** (2)
@@ -155,7 +185,7 @@ Se aparece uma patente (`5 Barão`), é prêmio daquele degrau. `loja` é só ou
 **comum** (3)
 - Insígnia do Vagante — 1 Vagante
 - Insígnia do Escudeiro — 2 Escudeiro
-- Insígnia de Relatório de Ciclo — SEM PORTA
+- Insígnia de Relatório de Ciclo — entregue no fecho do ciclo, direto no código
 
 **incomum** (2)
 - Insígnia do Cavaleiro — 3 Cavaleiro
@@ -164,7 +194,7 @@ Se aparece uma patente (`5 Barão`), é prêmio daquele degrau. `loja` é só ou
 **raro** (3)
 - Insígnia do Lorde — 4 Lorde
 - Insígnia de Missão de Temporada — missão
-- Insígnia de Patente Rara — SEM PORTA
+- Insígnia de Patente Rara — entregue a cada promoção, direto no código
 
 **épico** (2)
 - Insígnia do Barão — 5 Barão

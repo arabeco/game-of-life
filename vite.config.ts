@@ -69,10 +69,6 @@ export default defineConfig(({ mode }) => {
               normalizedId.includes('/services/SupabaseService') ||
               normalizedId.includes('/services/SimpleRateLimiter')
             ) return 'game-core';
-            if (
-              normalizedId.includes('/node_modules/@ai-sdk/') ||
-              normalizedId.includes('/node_modules/ai/')
-            ) return 'oracle-ai';
             if (normalizedId.includes('/node_modules/react-easy-crop/')) return 'cropper';
 
             if (id.includes('node_modules')) {

@@ -1280,7 +1280,26 @@ export const ArenasView: React.FC = () => {
                 clanQuests: getClanQuestsForArena(arena, arenaActions),
                 getClanQuestProgress,
                 getSharedActionPoolProgress,
-                forceSharedPool: relationshipLinkTypeByArenaId.has(arena.id) ? true : undefined,
+                /*
+                 * A PORCENTAGEM DA SUA ARENA E A SUA — tambem aqui.
+                 *
+                 * Isto marcava `true`: com vinculo, o contador trocava o seu
+                 * historico pessoal pelo pool compartilhado, e a miniatura passava
+                 * a mostrar o numero do PAR. A mesma arena dizia 100% por dentro e
+                 * 73% no cartao, e nenhum dos dois estava errado — eram perguntas
+                 * diferentes respondidas no mesmo lugar.
+                 *
+                 * O ArenaCard ja tinha sido consertado para `false` pelo mesmo
+                 * motivo, com o mesmo comentario. Este mapa ficou para tras, e e
+                 * ele que a lista de arenas usa: o card recebe `progressPercent`
+                 * pronto e nem chega a fazer a propria conta.
+                 *
+                 * `false`, e nao `undefined`, porque o auto-detect do motor liga o
+                 * pool assim que o par completa qualquer coisa — o mesmo sumico
+                 * entrando pela porta do lado. Como o par esta indo aparece no
+                 * cartao de Vinculos, que e onde essa pergunta e feita.
+                 */
+                forceSharedPool: relationshipLinkTypeByArenaId.has(arena.id) ? false : undefined,
             });
 
             map.set(arena.id, progress.progressPercent);

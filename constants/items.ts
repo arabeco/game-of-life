@@ -186,7 +186,7 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_skin_4_001', name: 'Armadura Placa', category: 'skin', tier: 4, rarity: 'epic', icon: '🛡️', imageUrl: avatarPngAsset('SKIN_T4_ARMADURA_PLACA'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_4_001 },
     { id: 'item_skin_4_002', name: 'Mago Círculo', category: 'skin', tier: 4, rarity: 'epic', icon: '🧙', imageUrl: avatarPngAsset('SKIN_T4_MAGO_CIRCULO'), isRankExclusive: true },
     // T5 (Lendário)
-    catalogItem('skin', { id: 'item_skin_5_001', name: 'Entidade de Luz', tier: 5, rarity: 'legendary', icon: '✨', isRankExclusive: true }),
+    catalogItem('skin', { id: 'item_skin_5_001', name: 'Soberano', tier: 5, rarity: 'legendary', icon: '✨', isRankExclusive: true }),
     avatarItem('skin', { id: 'item_skin_5_002', name: 'Vestido Real', tier: 6, rarity: 'mythic', icon: '\uD83D\uDC57', asset: 'SKIN_T5_VESTIDO_REAL.png', isSeasonExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'skin', description: 'Traje lendário reservado aos baús mais raros do inventário.' }),
 
     // Season

@@ -172,7 +172,7 @@ export const RANK_REWARDS: Record<string, { category: UnlockCategory; itemId: st
         { category: 'insignias', itemId: 'insignia_rank_9_rei', name: 'Insígnia: Rei' },
     ],
     soberano: [
-        { category: 'skins', itemId: 'item_skin_5_001', name: 'Entidade de Luz' },
+        { category: 'skins', itemId: 'item_skin_5_001', name: 'Soberano' },
         { category: 'borders', itemId: 'item_border_4_002', name: 'Borda: Soberano' },
         { category: 'auras', itemId: 'item_aura_5_002', name: 'Aura: Multiverso' },
         { category: 'insignias', itemId: 'insignia_rank_10_soberano', name: 'Insígnia: Soberano' },

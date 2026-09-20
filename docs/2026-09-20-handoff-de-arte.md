@@ -1,69 +1,79 @@
 # Handoff de arte — o que desenhar, e por quê
 
 Saiu da conversa por tópico de 20/09/2026, cruzada com o `ITEMS_DB` de verdade.
-As contas são do catálogo depois que o glifo, o orbe e o jardim 2D saíram:
-**125 itens**.
+São **125 itens** no catálogo, depois que o glifo, o orbe e o jardim 2D saíram.
 
-**21 desenhos, mais quatro peças de jardim.** Roupa 13, cabelo 4, wallpaper 4,
-jardim 4 (modelo 3D).
+**26 desenhos.** Roupa 14, cabelo 4, wallpaper 4, jardim 4.
 
-Aura não entra: ela é código, não arte. Ver a nota no fim.
+Aura não entra: ela é código, não arte. Borda e banner também não: têm 33 peças
+desenhadas e o problema delas é porta. Ver *O que NÃO é desenho*.
 
 ---
 
-## 1 · Roupa — 19 hoje, 30 depois
+## 1 · Roupa — as nove da escada
 
-**13 desenhos: 11 roupas novas e 2 que já existem sem arte.**
+**A regra nova resolve sozinha uma pergunta velha.** A roupa de cada degrau passa
+a ser **a roupa do nome do degrau**. Escudeiro veste de escudeiro, Rei veste de
+rei. Ninguém precisa explicar por que aquela roupa está ali.
 
-### As 2 que já existem e estão sem desenho
+E o que é esquisito — Náufrago, Nômade, Alquimista, Mago Círculo — sai da escada
+e vai para o baú e a loja, que é onde variedade vale.
 
-| Item | Raridade | Onde |
+| Degrau | Roupa a desenhar | Raridade |
 |---|---|---|
-| **Entidade de Luz** | lendária | **prêmio do 10 Soberano** |
-| Empreendedor | épica | só baú |
+| 2 Escudeiro | **Escudeiro** | comum |
+| 3 Cavaleiro | **Cavaleiro** | incomum |
+| 4 Lorde | **Lorde** | incomum |
+| 5 Barão | **Barão** | incomum |
+| 6 Conde | **Conde** | raro |
+| 7 Duque | **Duque** | raro |
+| 8 Príncipe | **Príncipe** | épico |
+| 9 Rei | **Rei** | épico |
+| 10 Soberano | **Soberano** | lendário |
 
-A Entidade de Luz é a mais cara de deixar como está: é o último degrau da escada,
-o prêmio que mais gente vai perseguir. Quem chegar lá hoje recebe `✨`, o emoji
-do sistema, que muda de desenho em cada Android.
+**Nove desenhos.** Oito são itens novos; o décimo já existe como
+`item_skin_5_001` — chamava-se *Entidade de Luz* e foi renomeado, porque sob a
+regra nova o décimo degrau veste de Soberano. A arte dele nunca existiu, então
+renomear não jogou nada fora.
 
-### As 11 novas, e onde cada uma entra
+**O Soberano é o mais caro de errar.** É o último degrau, o prêmio que mais gente
+vai perseguir e menos gente vai ver. Quem chega lá hoje recebe `✨`, o emoji do
+sistema, que muda de desenho em cada Android. E ele tem de ler como **acima de um
+rei** — não é o rei mais enfeitado, é outra coisa.
 
-**Três para o pacote inicial** — comuns. Hoje ele dá quatro (Náufrago, Casual,
-Caçador, Casual 2) e a primeira promoção custa 100 horas. Até lá o guarda-roupa
-é o único lugar do jogo onde a pessoa se vê, e quatro peças mais o "nenhuma"
-fazem um ciclador de cinco posições. Sete tira o ar de uniforme.
+### Mais cinco, fora da escada
 
-**Uma para o 5 Barão** — incomum. É o único degrau sem roupa. Era a Militar, que
-foi tirada de propósito em 06/09.
+**O pacote inicial fica mais generoso.** Hoje ele dá quatro roupas — Náufrago,
+Casual, Caçador e Casual 2 — e a primeira promoção custa 6.000 EXP, que na régua
+de um EXP por minuto são **100 horas**. Até lá o guarda-roupa é o único lugar do
+jogo onde a pessoa se vê, e quatro peças mais o "nenhuma" fazem um ciclador de
+cinco posições: perto demais de um uniforme.
 
-**Três para trocar as que se pode comprar.** Estes três degraus entregam hoje uma
-roupa que também está na loja, ou seja: dá para comprar o que se ganharia.
+| Item | Raridade | Onde | Por quê |
+|---|---|---|---|
+| **quatro comuns novas** | comum | pacote inicial | passa de 4 para 8, mais o Street que desce da escada |
+| **Empreendedor** | épica | só baú | existe no catálogo e nunca foi desenhada |
 
-| Degrau | Dá hoje | Também custa |
-|---|---|---|
-| 3 Cavaleiro | Acadêmico | 35 ouro |
-| 7 Duque | Nômade | 70 ouro |
-| 9 Rei | Armadura Placa | 190 ouro |
+O nome de cada uma das quatro deve dizer o que ela é antes de a pessoa clicar.
 
-As três atuais continuam na loja; o degrau passa a dar peça exclusiva.
-
-**Quatro livres** — para baú, missão ou temporada, onde fizer falta depois.
+**Total da roupa: 14 desenhos.**
 
 ---
 
 ## 2 · Cabelo — 8 hoje, 12 depois
 
 **4 desenhos.** Continuam livres para todos: o `SovereignCustomizer` libera a
-categoria inteira, não passam por inventário.
+categoria inteira, não passam por inventário, e há teste proibindo o pacote
+inicial de conceder cabelo.
 
 O que existe hoje, para não repetir silhueta:
 
 Cachos · Médio Reto · Texturizado · Dreads · Mullet com Topete · Anime Spiky ·
 Princesa · Fluxo Espiritual
 
-Cada um tem **26 variantes de cor** geradas por recolorização, então um desenho
-novo vira 26 peças. Ver `constants/avatarOffsets.ts`: o encaixe é medido em
-pixels a 500×500, que é o tamanho da arte.
+Cada um tem **26 variantes de cor** por recolorização, então um desenho novo vira
+26 peças. Ver `constants/avatarOffsets.ts`: o encaixe é medido em pixels a
+500×500, que é o tamanho da arte.
 
 ---
 
@@ -82,22 +92,22 @@ Hoje são as `PLACA_*` e todas as seis só saem por ouro:
 | Placa Ouro | lendária | 340 |
 | Placa Gelo | lendária | 360 |
 
-**A categoria se chama `plate` no código e "Placa" na tela.** Fica combinado
-chamar de *wallpaper*: é o que ela é — o fundo em que o avatar fica em cima, e a
-única coisa do perfil que aparece atrás de tudo.
+A categoria se chama `plate` no código e "Placa" na tela. Fica combinado chamar
+de **wallpaper**: é o fundo em que o avatar fica em cima, e a única coisa do
+perfil que aparece atrás de tudo.
 
-As quatro novas fecham os dez degraus. A escada de raridade hoje pula: comum,
-incomum, rara, épica, lendária, lendária — falta corpo no meio.
+A escada de raridade hoje pula — comum, incomum, rara, épica, lendária, lendária.
+Falta corpo no meio.
 
 ---
 
-## 4 · Jardim — peças para um sexto kit
+## 4 · Jardim — quatro peças para o sexto kit
 
-**Quantidade a combinar. É modelo 3D, não PNG.**
+**Modelo 3D, não PNG.**
 
-O jardim tem 18 peças. Tirando as 3 de água (que vêm do terreno, não de kit) e
-as 3 de assinatura (uma por coleção), sobram **12 para os kits** — e 12 dividem
-em cinco kits, com o último saindo curto:
+O jardim tem 18 peças. Tirando as 3 de água (que vêm do terreno, não de kit) e as
+3 de assinatura (uma por coleção), sobram **12 para os kits** — e 12 dividem em
+cinco, com o último saindo curto.
 
 | Kit | Pedra | Caminho | Planta | Luz |
 |---|---|---|---|---|
@@ -109,7 +119,7 @@ em cinco kits, com o último saindo curto:
 
 **Falta um sexto.** Cada kit tem de levar um pouco de cada família — senão a
 pessoa compra um e fica com um jardim só de pedra —, então o sexto pede pelo
-menos **uma pedra, um caminho, uma planta e uma luz**: quatro peças novas.
+menos **uma pedra, um caminho, uma planta e uma luz**.
 
 O que já existe, para não repetir silhueta:
 
@@ -120,8 +130,8 @@ O que já existe, para não repetir silhueta:
 - **Assinatura** — Totem das três pedras, Guardião do pátio, Relicário de ametista
 
 Cada peça é desenhada **uma vez e recolorida por tema**: a mesma geometria vira
-"de rio", "de calcário" e "de basalto". Então quatro peças novas viram doze
-aparições. Ver `views/zen3d/collections.ts`.
+"de rio", "de calcário" e "de basalto". Quatro peças novas viram doze aparições.
+Ver `views/zen3d/collections.ts`.
 
 ---
 
@@ -131,29 +141,26 @@ aparições. Ver `views/zen3d/collections.ts`.
 
 Nenhuma aura é arquivo. São **seis cores por aura** em `utils/auraVisuals.ts` —
 core, bloom, haze, ring, spark, shadow — que o `drawAuraCanvasEffect` pinta no
-canvas do avatar. Criar uma aura nova custa seis linhas.
+canvas. Criar uma aura nova custa seis linhas.
 
-A **Eclipse** (épica, 8 Príncipe) foi criada assim em 20/09. E existe uma nona já
+A **Eclipse** (épica, 8 Príncipe) foi criada assim em 20/09. Existe uma nona já
 escrita e sem item nenhum apontando para ela: a **Fênix Dourada**.
 
 Para ver todas: `tools/as-auras.html`.
 
-O que a aura não tem é **miniatura**. Na loja e no inventário ela sai como emoji,
-porque essas telas procuram um arquivo. Se um dia isso incomodar, a saída barata
-é a grade desenhar a aura em CSS com o mesmo `getAuraBackground` da folha — não
-precisa de PNG.
+O que a aura não tem é **miniatura**: na loja e no inventário ela sai como emoji,
+porque essas telas procuram um arquivo. A saída barata, se incomodar, é a grade
+desenhar a aura em CSS com o mesmo `getAuraBackground` da folha.
 
-### Borda e banner — não faltam, sobram, e nenhuma nova entra
+### Borda e banner — não faltam, sobram
 
-17 e 16, todas com arte menos a Borda Soberano. O problema delas não é desenho, é
-**porta**: 8 bordas e 10 banners só saem por ouro.
+17 e 16, todas com arte menos a Borda Soberano. O problema delas é **porta**.
 
-Ficou decidido em 20/09 que **não se desenha nenhuma nova**. Chegou a estar em
-cima da mesa uma por patente — vinte peças — e caiu: já há coisa demais. Só a
-Borda Soberano fica na escada, no degrau 10. As outras 32 vão sair por regra,
-com quest invisível e modal.
-
-A Borda Aprendiz e o Banner Aprendiz passam a vir no pacote inicial.
+Ficou decidido em 20/09 que **não se desenha nenhuma nova**. Chegou a estar na
+mesa uma por patente — vinte peças — e caiu. Só a Borda Soberano fica na escada,
+no degrau 10; a Borda e o Banner Aprendiz vão para o pacote inicial; as outras
+saem por **11 regras**, com quest invisível e modal. As regras estão em
+`docs/os-133-itens.md`.
 
 ### Insígnia — está pronta
 
@@ -165,11 +172,15 @@ A Borda Aprendiz e o Banner Aprendiz passam a vir no pacote inicial.
 
 | Categoria | Hoje | Depois | Desenhos |
 |---|---|---|---|
-| Roupa | 19 | 30 | **13** |
+| **Roupa** | 19 | 28 | **14** |
 | Cabelo | 8 | 12 | **4** |
 | Wallpaper | 6 | 10 | **4** |
 | Jardim (3D) | 15 peças | 19 | **4** |
-| | | | **25** |
+| | | | **26** |
 
-O caso mais urgente dos 25 é um só: **a Entidade de Luz**. Os outros vinte e
-quatro melhoram o jogo; esse conserta uma promessa quebrada no topo da escada.
+A ordem, se for em partes:
+
+1. **Soberano** — o topo da escada entrega um emoji hoje
+2. **as outras oito da escada** — é o que faz a regra dos nomes existir
+3. **as quatro do pacote inicial** — as primeiras 100 horas de todo mundo
+4. o resto

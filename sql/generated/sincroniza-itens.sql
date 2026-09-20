@@ -1,6 +1,6 @@
 -- Sincroniza public.items com constants/items.ts
 --
--- Gerado por scripts/build-items-sync.mjs em 20/09/2026, 20:21, commit 93ffde4.
+-- Gerado por scripts/build-items-sync.mjs em 20/09/2026, 20:24, commit d2149c2.
 -- 125 itens. Nao edite a mao: a proxima geracao apaga.
 --
 -- O codigo manda em: nome, categoria, tier, raridade, arte, preco e as flags de
@@ -45,7 +45,7 @@ values
   ('item_skin_3_003', 'Híbrido', 'skin', 3, 'rare', '/assets/catalog/avatars/SKIN_T3_HIBRIDO.png', 95, false, false, false, false, false, false, null, null, 100, 400, true),
   ('item_skin_4_001', 'Armadura Placa', 'skin', 4, 'epic', '/assets/catalog/avatars/SKIN_T4_ARMADURA_PLACA.png', 190, false, false, false, false, false, false, null, null, 300, 1200, true),
   ('item_skin_4_002', 'Mago Círculo', 'skin', 4, 'epic', '/assets/catalog/avatars/SKIN_T4_MAGO_CIRCULO.png', null, true, false, false, false, false, false, null, null, 300, 1200, true),
-  ('item_skin_5_001', 'Entidade de Luz', 'skin', 5, 'legendary', null, null, true, false, false, false, false, false, null, null, 1000, 4000, true),
+  ('item_skin_5_001', 'Soberano', 'skin', 5, 'legendary', null, null, true, false, false, false, false, false, null, null, 1000, 4000, true),
   ('item_skin_5_002', 'Vestido Real', 'skin', 6, 'mythic', '/assets/catalog/avatars/SKIN_T5_VESTIDO_REAL.png', null, false, false, true, false, false, false, 'genesis_legacy', 'skin', 0, 0, true),
   ('item_skin_season_001', 'O Criador', 'skin', 4, 'epic', '/assets/catalog/avatars/SKIN_SEASON_CRIADOR.png', null, false, false, false, false, false, false, null, null, 300, 1200, true),
   ('item_skin_aurora_1_2026', 'Guardião Aurora', 'skin', 6, 'mythic', '/assets/catalog/avatars/SKIN_QUEST_GUARDIAO_AURORA.png', null, false, false, true, false, false, false, 'aurora_1_2026', 'skin', 0, 0, true),

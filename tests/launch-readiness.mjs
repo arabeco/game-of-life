@@ -14,9 +14,23 @@ const repoRoot = path.resolve(__dirname, '..');
 const nodeBin = process.execPath;
 const npmBin = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const defaultReportPath = path.join(repoRoot, 'LAUNCH_READINESS_REPORT.md');
+/**
+ * O que nenhum teste daqui cobre, e por que.
+ *
+ * "PIX/Ouro real ponta a ponta" saiu: a compra no Android nao passa mais por
+ * PIX. Ela vai pelo Google Play Billing — purchaseNativeStoreProduct manda o
+ * recibo para a edge function google-play-purchase, que valida e libera. O
+ * MercadoPago continua no codigo como caminho web, e nao e o que se testa antes
+ * de publicar na Play.
+ *
+ * "GM Panel com e-mail real" saiu porque deixou de ser assunto de lancamento.
+ *
+ * Os dois que ficam sao os que dependem de aparelho e conta de verdade: nenhum
+ * navegador headless assina uma compra na Play nem carrega o premium em dois
+ * telefones ao mesmo tempo.
+ */
 const manualQaNotes = [
-  'PIX/Ouro real ponta a ponta',
-  'GM Panel com e-mail real',
+  'Compra real pela Google Play (recibo validado na edge function)',
   'Premium remoto em 2 aparelhos',
   'Passada final em aparelho real',
 ];

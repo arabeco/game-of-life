@@ -65,14 +65,37 @@ Quebrado como conversado, viram **13 lugares, 9 conquistáveis**:
 | O quê | Quantos | Grátis no começo |
 |---|---|---|
 | Cenas (bases de terreno) | 4 | 1 (a aberta) |
-| Kits de peça | 6 | 2 (Pedras e Caminhos) |
+| Kits de peça | 5 | 1 (o Básico) |
 | Temas de cor | 3 | 1 (Refúgio natural) |
 
-Os seis kits saem sozinhos das cinco categorias que já existem no
-`views/zen3d/model.ts`, com a Luz partida em duas:
+### Os kits são por NÍVEL, não por família
 
-Pedras (3 peças) · Caminhos (3) · Água (3) · Plantas (4) · Lanternas (2) ·
-Assinaturas (3, uma por coleção)
+Agrupar por família estava errado: alguém compraria o kit de pedra e ficaria com
+um jardim só de pedra. Cada kit leva **um pouco de cada família**, então qualquer
+kit sozinho já monta um jardim que se olha.
+
+As 18 peças do `views/zen3d/model.ts` se dividem assim:
+
+- **3 são água** — e água não é peça de kit, vem do terreno. Quem escolhe a base
+  "Espelho do bosque" ganha o lago; quem escolhe "Margens do refúgio" ganha o
+  riacho e a ponte.
+- **3 são assinatura** — uma por coleção, hoje presas ao tema.
+- **12 sobram** para os kits.
+
+| Kit | Pedra | Caminho | Planta | Luz |
+|---|---|---|---|---|
+| **Básico** · grátis | Pedra avulsa | Caminho reto | Pinheiro | — |
+| **Kit 2** | Rocha musgosa | Caminho curvo | — | Lanterna de pedra |
+| **Kit 3** | Conjunto natural | Passos livres | Bordo japonês | — |
+| **Gourmet** | — | — | Bambuzal, Jardineira | Lanterna suspensa |
+| **Extras** | as 3 assinaturas: Totem das três pedras, Guardião do pátio, Relicário de ametista |
+
+O Básico dá pedra, caminho e árvore — o mínimo que faz um jardim parecer jardim.
+A luz só chega no Kit 2, e é o que faz o segundo kit valer a pena.
+
+O **Extras** é o único que não é seção transversal, e tudo bem: são as peças de
+exibir. Hoje elas vêm de graça junto com o tema; soltá-las é o que cria o quinto
+kit.
 
 **O tema não é um kit.** Ele acende a versão colorida de toda peça que a pessoa
 já tem — vale mais quanto mais ela já jogou.

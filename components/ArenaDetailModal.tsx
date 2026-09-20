@@ -232,6 +232,22 @@ export const ArenaDetailModal: React.FC<{
         return getActionsForArena(arena.id) || [];
     }, [actionsOverride, arena.id, getActionsForArena]);
 
+    /**
+     * A ARENA DA JORNADA NAO RECEBE ACAO NOVA.
+     *
+     * Ela nao foi criada pela pessoa: nasce no acceptSeasonQuest, com o nome da
+     * missao e uma acao so, e se recolhe sozinha quando a jornada acaba ou a
+     * temporada vira. Deixar acrescentar acao ali cria duas coisas ruins de uma
+     * vez — um trabalho proprio dentro de um recipiente que vai ser arquivado
+     * sem aviso, e uma arena que diz "O Andarilho" e guarda outra coisa.
+     *
+     * Quem quer construir em cima cria a arena dele, que e de graca e nao some.
+     */
+    const isArenaDeJornada = useMemo(
+        () => allActions.some((candidate) => Boolean(candidate?.sourceQuestId)),
+        [allActions],
+    );
+
     const clanQuests = useMemo(() => {
         if (!arena || typeof getClanQuestsForArena !== 'function') return [];
         return getClanQuestsForArena(arena, allActions) || [];
@@ -809,7 +825,7 @@ export const ArenaDetailModal: React.FC<{
                                             relationshipLinkType={effectiveRelationshipType as RelationshipLinkType | null}
                                         />
                                     ))}
-                                    {!previewMode && !isReadOnlyArena && (
+                                    {!previewMode && !isReadOnlyArena && !isArenaDeJornada && (
                                         <button aria-label="Nova ação" id="add-action-button" ref={newActionRef} onClick={openNewAction} className="w-24 h-24 flex-shrink-0 border-2 border-dashed border-[var(--skin-accent-color)] rounded-xl flex flex-col items-center justify-center hover:border-[var(--skin-accent-color)] transition-colors text-gray-500 hover:text-white">
                                             <PlusIcon className="w-8 h-8" />
                                         </button>

@@ -12459,9 +12459,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
      * lista e volta com um toque em "mostrar arquivadas" — e o proprio
      * acceptSeasonQuest ja desarquiva ao reaceitar.
      *
-     * NAO MEXE EM ARENA QUE A PESSOA ADOTOU. Se ela acrescentou outras acoes
-     * ali, a arena deixou de ser da jornada e passou a ser dela; recolher isso
-     * seria tirar da mao de alguem uma coisa que estava sendo usada.
+     * A GUARDA DE ARENA ADOTADA E PARA O PASSADO. O ArenaDetailModal nao
+     * oferece mais "nova acao" numa arena de jornada, entao daqui para a frente
+     * ela so tem a acao da missao. Mas quem acrescentou antes desse fecho tem
+     * trabalho proprio ali dentro, e recolher a arena seria tirar da mao de
+     * alguem uma coisa em uso — o estrago apareceria dias depois, sem nada na
+     * tela explicando para onde foi.
      */
     const recolherArenaDaJornada = useCallback(async (quest: SeasonQuest, motivo: 'concluida' | 'encerrada') => {
         const { arena, action } = findSeasonQuestArenaAndAction(quest);

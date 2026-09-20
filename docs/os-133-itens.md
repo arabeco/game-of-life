@@ -122,6 +122,44 @@ cumprida e o `BorderSelectionModal` já lê `completedSeasonMissions` para liber
 borda. O que falta é a condição sair do ciclo em vez da temporada, e a quest ser
 invisível até cumprir.
 
+### As 11 regras de borda e banner
+
+Borda e banner **vêm em par**: 14 nomes existem dos dois lados. Uma regra
+desbloqueia os dois, então 32 peças não pedem 32 regras.
+
+E dos 18 nomes, sete já têm porta e não pedem regra nenhuma: **Aprendiz** vai
+para o pacote inicial, **Soberano** fica no degrau 10, **Aurora II** e
+**Gênesis** são de temporada, **GM / Grão Mestre** é de staff, e **Origem** está
+aposentado.
+
+**Sobram 11.** Os nomes já dizem a regra; falta o jogo saber medir.
+
+| Nome | Raridade | Regra que o nome pede | O jogo já mede? |
+|---|---|---|---|
+| Disciplinado | comum | fechar um ciclo sem falhar um dia | **sim** — `streakBad` por ação |
+| Popular | incomum | ter 5 vínculos ativos ao mesmo tempo | **sim** — os vínculos de arena |
+| Veterano | incomum | 100 dias de conta | **sim** — `createdAt` |
+| Imparável | raro | 30 dias de sequência sem quebrar | **sim** — `streakGood` |
+| Vanguarda | raro | ter entrado antes de uma data | **sim** — `createdAt` |
+| Místico | raro | 2 arenas de espiritualidade no mesmo ciclo | **não** — falta cruzar arena com área |
+| Transcendente | raro | fechar um ciclo com nota máxima | **sim** — a nota do relatório |
+| Celestial | épico | uma arena fechada em cada uma das 5 áreas | **não** — falta a mesma leitura |
+| Guardiã | épico | uma mentoria concluída como mentor | **sim** — o tipo do vínculo |
+| Oráculo | épico | fechar 10 relatórios de ciclo | **sim** — os relatórios |
+| Lenda Viva | épico | 1.000 ações concluídas | **sim** — a contagem de ações |
+
+**Nove das onze o jogo já sabe medir.** Só duas precisam de leitura nova, e é a
+mesma leitura: *quantas arenas de tal área foram fechadas neste ciclo*. Uma
+função serve para as duas.
+
+As cinco áreas são propósito, relações, trabalho, lazer e saúde — estão em
+`constants/lifeAreas.ts`.
+
+**A entrega já existe.** O `SKIN_SEASON_UNLOCKS` liga item a condição cumprida e
+o `BorderSelectionModal` já o consulta. Hoje ele tem **uma** linha:
+`{ GOLD: ['sm_3'] }`. A tabela é a mesma; o que falta são as outras onze linhas e
+as condições que as alimentam.
+
 ### A raridade não pode sair do preço
 
 Hoje ela sai. No jardim é literal:

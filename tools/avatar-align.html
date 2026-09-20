@@ -204,6 +204,7 @@
       <button id="copiar" style="width:auto;padding:5px 12px">Copiar bloco</button>
       <button id="limpar" style="width:auto;padding:5px 12px">Limpar tudo</button>
       <button id="aplicar" style="width:auto;padding:5px 12px">Aplicar bloco colado</button>
+      <button id="recarregar" style="width:auto;padding:5px 12px" title="Descarta o ajuste deste navegador e volta ao que esta no constants/avatarOffsets.ts">Recarregar do arquivo</button>
     </div>
 <!-- Gavetas fechadas: o palco e a parte que precisa de altura. Com a ajuda e o
      bloco sempre abertos, o canvas de 500px nao cabia e o topo — a cabeca, que e
@@ -245,12 +246,64 @@
   ['corpo','roupa','cabelo','extra','camadas','selNome','selX','selY','selE','saida',
    'estado','guias','zoom','copiar','zerar','limpar','ciclarCorpo',
    'menos','mais','faixa','cobre','ajudaCobre','modoCabelo','ajudaCabelo',
-   'destino','aplicar','recortar','listaRecortes'].forEach(function (id) {
+   'destino','aplicar','recarregar','recortar','listaRecortes'].forEach(function (id) {
     els[id] = document.getElementById(id);
   });
 
+  /*
+   * A FERRAMENTA ABRIA CEGA.
+   *
+   * Ela so lia o localStorage. Num navegador limpo — outra maquina, aba anonima,
+   * cache apagado — tudo aparecia em 0/0, como se nenhum ajuste existisse. Mas o
+   * app nao le localStorage nenhum: ele le o constants/avatarOffsets.ts, que
+   * estava cheio o tempo todo. As duas telas discordavam e a ferramenta parecia
+   * ter perdido o trabalho.
+   *
+   * Pior que confundir: "Copiar bloco" exporta o objeto INTEIRO. Abrir zerado,
+   * mexer em duas pecas e colar o bloco apagava as outras quarenta.
+   *
+   * Agora o arquivo e a verdade de partida. O modulo no fim da pagina importa o
+   * AVATAR_OFFSETS de verdade — o Vite compila o TS e entrega o objeto pronto,
+   * sem ninguem parsear texto — e chama semearDoArquivo().
+   *
+   * (E nao se escreve a tag de fechamento de script aqui dentro, nem em
+   * comentario: o HTML encerra o bloco onde a ve, e o resto do arquivo vira
+   * texto solto. Foi o que aconteceu na primeira versao disto.)
+   */
   var offsets = {};
-  try { offsets = JSON.parse(localStorage.getItem(CHAVE_LOCAL) || '{}') || {}; } catch (e) { offsets = {}; }
+  var offsetsLocais = null;
+  try { offsetsLocais = JSON.parse(localStorage.getItem(CHAVE_LOCAL) || 'null'); } catch (e) { offsetsLocais = null; }
+  if (offsetsLocais && Object.keys(offsetsLocais).length) offsets = offsetsLocais;
+
+  // Normaliza uma entrada do arquivo para a forma que a ferramenta manipula.
+  function normalizar(o) {
+    o = o || {};
+    return {
+      x: o.x || 0, y: o.y || 0,
+      scale: o.scale === undefined ? 1 : o.scale,
+      cobre: o.cobre || [], cabelo: o.cabelo,
+      porCorpo: o.porCorpo, recortes: o.recortes,
+    };
+  }
+
+  window.semearDoArquivo = function (doArquivo, forcar) {
+    if (!doArquivo) return;
+    var tinhaLocal = offsetsLocais && Object.keys(offsetsLocais).length;
+    if (tinhaLocal && !forcar) {
+      // Trabalho em andamento neste navegador tem precedencia: sobrescrever
+      // sem avisar apagaria o que a pessoa ajustou e ainda nao colou no arquivo.
+      if (els.estado) {
+        els.estado.textContent = 'usando o ajuste deste navegador · o arquivo tem '
+          + Object.keys(doArquivo).length + ' pecas (botao "Recarregar do arquivo")';
+      }
+      return;
+    }
+    offsets = {};
+    Object.keys(doArquivo).forEach(function (k) { offsets[k] = normalizar(doArquivo[k]); });
+    try { localStorage.setItem(CHAVE_LOCAL, JSON.stringify(offsets)); } catch (e) { /* aba anonima */ }
+    if (els.estado) els.estado.textContent = Object.keys(offsets).length + ' pecas lidas do avatarOffsets.ts';
+    if (typeof desenhar === 'function') desenhar();
+  };
 
   var camadas = [];        // [{ url, nome, papel }]
   var selecionada = 0;
@@ -889,6 +942,25 @@
   // aba anonima, cache limpo, outro computador — nao havia como recarregar o que
   // ja estava no constants/avatarOffsets.ts, e a passada inteira teria de ser
   // refeita a mao. Agora e so colar o bloco do arquivo aqui e aplicar.
+  /*
+   * A saida de emergencia: volta ao que esta no arquivo.
+   *
+   * Existe porque a semente automatica NAO sobrescreve trabalho em andamento —
+   * quem tem ajuste neste navegador continua com ele. Sem este botao, so dava
+   * para voltar ao arquivo limpando o armazenamento do navegador na mao.
+   */
+  if (els.recarregar) {
+    els.recarregar.onclick = function () {
+      var doArquivo = window.__offsetsDoArquivo;
+      if (!doArquivo) { els.estado.textContent = 'o arquivo ainda nao chegou'; return; }
+      var quantos = Object.keys(doArquivo).length;
+      if (!confirm('Descartar o ajuste deste navegador e voltar as ' + quantos + ' pecas do avatarOffsets.ts?')) return;
+      guardarDesfazer();
+      window.semearDoArquivo(doArquivo, true);
+      montar();
+    };
+  }
+
   els.aplicar.onclick = function () {
     var texto = els.saida.value;
     var i = texto.indexOf('{');
@@ -1118,6 +1190,23 @@
     ].join('\n');
   });
 })();
+</script>
+
+<!--
+  A PONTE COM O ARQUIVO.
+
+  Modulo separado de proposito: o script acima e classico e nao pode importar. Um
+  type="module" e deferido, entao ele roda DEPOIS da ferramenta montar — que e
+  exatamente o momento certo para semear.
+
+  O Vite compila o .ts e entrega o objeto pronto. Nada de parsear texto: se o
+  formato do arquivo mudar, isto continua valendo ou quebra alto, e nao em
+  silencio.
+-->
+<script type="module">
+  import { AVATAR_OFFSETS } from '../constants/avatarOffsets';
+  window.__offsetsDoArquivo = AVATAR_OFFSETS;
+  if (typeof window.semearDoArquivo === 'function') window.semearDoArquivo(AVATAR_OFFSETS, false);
 </script>
 </body>
 </html>

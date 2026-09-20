@@ -31,7 +31,9 @@ export default defineConfig({
     // o modulo nao carrega.
     envDir: fileURLToPath(new URL('.', import.meta.url)),
     server: {
-        port: 3010,
+        // A porta vem do ambiente quando o preview a atribui; 3010 e so o padrao
+        // de quem roda `npm run bancada` a mao.
+        port: Number(process.env.PORT) || 3010,
         host: '0.0.0.0',
         fs: {
             // Os componentes e o index.css moram FORA da raiz desta bancada.

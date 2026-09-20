@@ -77,17 +77,17 @@ export const recordOracleDecision = (decision: OracleDecision): void => {
  * diagnostica nada.
  */
 export const formatOracleDecisionLog = (entries: OracleDecisionLogEntry[]): string => {
-    if (entries.length === 0) return 'Sem decisoes registradas ainda.';
+    if (entries.length === 0) return 'Sem decisões registradas ainda.';
 
     return entries.map((entrada) => {
         const quando = entrada.at.slice(0, 16).replace('T', ' ');
-        const cabecalho = `${quando} · presenca ${entrada.presence} · corte ${entrada.threshold} · tom ${entrada.tone}`;
+        const cabecalho = `${quando} · presença ${entrada.presence} · corte ${entrada.threshold} · tom ${entrada.tone}`;
         const linhas = entrada.rows
             .map((row) => `   ${row.score.toFixed(1).padStart(5)} ${row.type}${row.arenaId ? ` (${row.arenaId.slice(0, 6)})` : ''} — ${row.outcome}`)
             .join('\n');
         const fecho = entrada.chosen
             ? `   => ${entrada.chosen}: "${entrada.line}"`
-            : '   => silencio';
+            : '   => silêncio';
         return [cabecalho, linhas, fecho].filter(Boolean).join('\n');
     }).join('\n\n');
 };

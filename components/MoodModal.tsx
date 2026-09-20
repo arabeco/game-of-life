@@ -172,7 +172,7 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         value={dailyCommitment.operationalScratch || ''}
                         onChange={(event) => updateOperationalScratch(event.target.value)}
                         rows={4}
-                        placeholder="Anotacoes rapidas, pendencias, lembretes do dia..."
+                        placeholder="Anotações rapidas, pendencias, lembretes do dia..."
                         className="w-full resize-none rounded-2xl border border-white/12 bg-black/55 px-3 py-3 text-sm text-white/88 placeholder:text-white/25 focus:outline-none focus:border-[var(--skin-accent-color)]"
                     />
                 </div>

@@ -291,7 +291,7 @@ export const LegacyFinalCard: React.FC<LegacyFinalCardProps> = ({
 
                 <div className="mt-3 grid w-full grid-cols-3 gap-2">
                     {[
-                        { rotulo: 'Score medio', valor: String(resumo.medio) },
+                        { rotulo: 'Score médio', valor: String(resumo.medio) },
                         { rotulo: 'Melhor ciclo', valor: String(Math.round(Number(resumo.melhor.cycle.score) || 0)) },
                         { rotulo: 'Sequencia', valor: `${resumo.sequencia}d` },
                     ].map((item) => (

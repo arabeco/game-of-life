@@ -86,7 +86,7 @@ export const BillingCheckoutGate: React.FC<BillingCheckoutGateProps> = (props) =
                 setAndroidStatus(status);
 
                 if (!status.available || !status.connected || !status.canMakePayments) {
-                    setAndroidError(status.reason || 'Google Play Billing indisponivel neste aparelho.');
+                    setAndroidError(status.reason || 'Google Play Billing indisponível neste aparelho.');
                     return;
                 }
 
@@ -172,7 +172,7 @@ export const BillingCheckoutGate: React.FC<BillingCheckoutGateProps> = (props) =
 
             if (error || !(data as any)?.success) {
                 console.error('Google Play membership validation failed:', error || data);
-                throw new Error('Plano não validado pela Google Play. Se houve cobranca, me avise para conciliar.');
+                throw new Error('Plano não validado pela Google Play. Se houve cobrança, me avise para conciliar.');
             }
 
             updateUserProfile({
@@ -193,8 +193,8 @@ export const BillingCheckoutGate: React.FC<BillingCheckoutGateProps> = (props) =
 
     const handleIosPlaceholderAction = (action: 'purchase' | 'restore') => {
         const nextMessage = action === 'purchase'
-            ? 'A compra iOS ja esta preparada nesta tela. No Mac/Xcode, vamos plugar o StoreKit exatamente neste botao.'
-            : 'A restauracao de compras iOS ja esta prevista aqui. Falta conectar o StoreKit e a conciliacao no backend.';
+            ? 'A compra iOS já esta preparada nesta tela. No Mac/Xcode, vamos plugar o StoreKit exatamente neste botão.'
+            : 'A restauracao de compras iOS já esta prevista aqui. Falta conectar o StoreKit e a conciliacao no backend.';
 
         setIosStatusMessage(nextMessage);
         showToast(nextMessage, 'info');
@@ -241,7 +241,7 @@ export const BillingCheckoutGate: React.FC<BillingCheckoutGateProps> = (props) =
                                     {!isLoadingAndroidProduct && !androidError && androidProduct && (
                                         <>
                                             <p className="font-bold text-white">{androidProduct.title || productSummary}</p>
-                                            <p>{androidProduct.description || 'Compra processada com seguranca pela Google Play.'}</p>
+                                            <p>{androidProduct.description || 'Compra processada com segurança pela Google Play.'}</p>
                                         </>
                                     )}
                                     {!isLoadingAndroidProduct && !androidError && !androidProduct && (
@@ -256,7 +256,7 @@ export const BillingCheckoutGate: React.FC<BillingCheckoutGateProps> = (props) =
                                 <div className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-100">Estado da App Store</div>
                                 <div className="mt-2 space-y-2 text-[12px] leading-relaxed text-slate-100/90">
                                     <p className="font-bold text-white">{productSummary}</p>
-                                    <p>A compra pela App Store será liberada na versao iOS.</p>
+                                    <p>A compra pela App Store será liberada na versão iOS.</p>
                                     {iosStatusMessage && (
                                         <p className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[11px] leading-relaxed text-slate-50">
                                             {iosStatusMessage}

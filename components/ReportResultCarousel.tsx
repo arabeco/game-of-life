@@ -620,7 +620,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                         onClick={onOpenChest}
                         disabled={chestOpened || isOpeningChest}
                         className={`rounded-xl border px-5 py-2.5 text-[10px] font-black uppercase tracking-[0.18em] transition-all ${chestOpened || isOpeningChest ? 'cursor-default border-white/[0.04] bg-white/[0.03] text-gray-600' : 'border-[var(--skin-accent-color)]/40 bg-[var(--skin-accent-color)]/10 text-[var(--skin-accent-color)] hover:bg-[var(--skin-accent-color)]/16'}`}
-                        title={chestOpened ? 'Recompensas ja entregues' : 'Ver o que este ciclo rendeu'}
+                        title={chestOpened ? 'Recompensas já entregues' : 'Ver o que este ciclo rendeu'}
                     >
                         {/* NAO diz "abrir". O bau e concedido e guardado FECHADO no
                             Arsenal — abrir ali encadeava o video do selo com o video
@@ -630,7 +630,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                     </button>
                 )}
 
-                {/* A legenda que ensinava "compartilhe o card ou sele o proximo ciclo"
+                {/* A legenda que ensinava "compartilhe o card ou sele o próximo ciclo"
                     saiu: ela narrava os botoes que estao logo abaixo, ja escritos com
                     todas as letras, e custava 40px da placa — que e o que a pessoa
                     veio ver. */}
@@ -876,10 +876,10 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
             </div>
             <ShareChoiceSheet
                 isOpen={isShareChoiceOpen}
-                title={isRewardSlide ? 'Compartilhar resultado do ciclo' : 'Compartilhar relatorio'}
+                title={isRewardSlide ? 'Compartilhar resultado do ciclo' : 'Compartilhar relatório'}
                 subtitle={isRewardSlide
                     ? 'Escolha se quer compartilhar a imagem do fechamento ou publicar esse resultado em Feitos.'
-                    : 'Escolha se quer compartilhar a imagem do relatorio ou publicar esse resultado em Feitos.'}
+                    : 'Escolha se quer compartilhar a imagem do relatório ou publicar esse resultado em Feitos.'}
                 onShareImage={handleShareImageChoice}
                 onPostToFeed={onPostToFeed}
                 onClose={() => setIsShareChoiceOpen(false)}

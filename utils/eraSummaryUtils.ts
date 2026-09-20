@@ -9,10 +9,10 @@
 };
 
 const getScoreMood = (score: number) => {
-    if (score >= 90) return 'uma fase de dominio alto e execucao muito consistente';
-    if (score >= 75) return 'uma fase de boa cadencia e consolidacao real';
-    if (score >= 60) return 'uma fase de construcao com progresso perceptivel';
-    if (score >= 45) return 'uma fase de reorganizacao com oscilacao de ritmo';
+    if (score >= 90) return 'uma fase de domínio alto e execução muito consistente';
+    if (score >= 75) return 'uma fase de boa cadência e consolidacao real';
+    if (score >= 60) return 'uma fase de construção com progresso perceptivel';
+    if (score >= 45) return 'uma fase de reorganizacao com oscilação de ritmo';
     return 'uma fase mais crua, marcada por tentativa, ajuste e pouca tracao';
 };
 
@@ -32,9 +32,9 @@ const getActionPhrase = (actions: { name: string; count: number }[]) => {
 };
 
 const getStreakPhrase = (bestStreak: number) => {
-    if (bestStreak >= 10) return `com pico de constancia em ${bestStreak} dias seguidos`;
-    if (bestStreak >= 5) return `com streak maxima de ${bestStreak} dias`;
-    if (bestStreak > 0) return `com lampejos de constancia chegando a ${bestStreak} dias`;
+    if (bestStreak >= 10) return `com pico de constância em ${bestStreak} dias seguidos`;
+    if (bestStreak >= 5) return `com streak máxima de ${bestStreak} dias`;
+    if (bestStreak > 0) return `com lampejos de constância chegando a ${bestStreak} dias`;
     return 'ainda sem streak relevante registrada';
 };
 
@@ -46,5 +46,5 @@ export const buildEraAiSummary = ({
     topActions,
 }: EraNarrativeInput) => {
     const cyclesLabel = cycleCount === 1 ? '1 ciclo' : `${cycleCount} ciclos`;
-    return `${cyclesLabel}, score medio ${avgScore}: ${getScoreMood(avgScore)}, ${getArenaPhrase(dominantArena)}, ${getActionPhrase(topActions)} e ${getStreakPhrase(bestStreak)}.`;
+    return `${cyclesLabel}, score médio ${avgScore}: ${getScoreMood(avgScore)}, ${getArenaPhrase(dominantArena)}, ${getActionPhrase(topActions)} e ${getStreakPhrase(bestStreak)}.`;
 };

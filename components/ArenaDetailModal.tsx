@@ -255,7 +255,7 @@ export const ArenaDetailModal: React.FC<{
 
     const isClanQuestArena = useMemo(() => {
         if (!PRODUCT_FEATURES.clanMissions) return false;
-        return (clanQuests && clanQuests.length > 0) || normalizedArena.includes('quests - cla');
+        return (clanQuests && clanQuests.length > 0) || normalizedArena.includes('quests - clã');
     }, [clanQuests, normalizedArena]);
 
     const isSeasonQuestArena = useMemo(() => normalizedArena.includes('quests - season'), [normalizedArena]);
@@ -267,9 +267,9 @@ export const ArenaDetailModal: React.FC<{
     const isReceivedCodexArena = sourceCodex?.source_type === 'gift_link' || sourceCodex?.source_type === 'gift_in_app';
     const isArenaEditLocked = isSpecialArena || isReceivedCodexArena;
     const arenaEditLockMessage = isSeasonQuestArena
-        ? 'Missoes de temporada sao travadas e nao podem ser editadas.'
+        ? 'Missões de temporada são travadas e não podem ser editadas.'
         : isSpecialArena
-            ? 'Essa arena especial nao pode ser editada por aqui.'
+            ? 'Essa arena especial não pode ser editada por aqui.'
             : isReceivedCodexArena
                 ? 'Campanha recebida fica protegida. So campanha comprada ou autoral pode ser adaptada.'
                 : null;
@@ -353,7 +353,7 @@ export const ArenaDetailModal: React.FC<{
     const canDeleteOwnArena = localArenaExists && !isArenaEditLocked && !isRelationshipArena;
     const canDeleteArenaFromModal = !isReadOnlyArena && (canDeleteOwnArena || allowRelationshipArenaDelete);
     const deleteDialogTitle = isSpecialArena
-        ? 'Sair da Missao'
+        ? 'Sair da Missão'
         : arena.isArchived
             ? 'Excluir arena'
         : effectiveRelationshipType === 'competicao'
@@ -366,21 +366,21 @@ export const ArenaDetailModal: React.FC<{
     const deleteDialogMessage = isSpecialArena
         ? 'Ao sair, sua participacao e removida e esta arena e apagada de vez. Tem certeza?'
         : arena.isArchived
-            ? 'Esta arena ja esta arquivada. Excluir agora apaga esse registro de forma definitiva. Tem certeza?'
+            ? 'Esta arena já esta arquivada. Excluir agora apaga esse registro de forma definitiva. Tem certeza?'
         : effectiveRelationshipType === 'competicao'
-            ? 'Essa arena pertence a um duelo selado. Ela fica disponivel apenas para consulta e historico.'
+            ? 'Essa arena pertence a um duelo selado. Ela fica disponível apenas para consulta e histórico.'
             : effectiveRelationshipType === 'parceria'
-                ? 'Voce esta retirando esta arena da vitrine da parceria. A arena continua sua e o parceiro perde o acesso imediato.'
+                ? 'Você esta retirando esta arena da vitrine da parceria. A arena continua sua e o parceiro perde o acesso imediato.'
                 : effectiveRelationshipType === 'mentoria'
-                    ? 'O mentor deixara de acompanhar esta arena. A arena, as acoes e todo o progresso continuam na sua conta.'
-                    : 'Tem certeza que deseja excluir esta arena? Todo o progresso registrado nela sera perdido.';
+                    ? 'O mentor deixara de acompanhar esta arena. A arena, as ações e todo o progresso continuam na sua conta.'
+                    : 'Tem certeza que deseja excluir esta arena? Todo o progresso registrado nela será perdido.';
     const handleEditToggle = async () => {
         if (isReadOnlyArena) {
             showToast('Essa arena compartilhada abre aqui apenas para leitura.', 'warning');
             return;
         }
         if (isArenaEditLocked) {
-            showToast(arenaEditLockMessage || 'Essa arena nao pode ser editada.', 'warning');
+            showToast(arenaEditLockMessage || 'Essa arena não pode ser editada.', 'warning');
             return;
         }
         if (isEditing) {
@@ -404,7 +404,7 @@ export const ArenaDetailModal: React.FC<{
 
                 if (error) {
                     console.error('Supabase collaborative arena update error:', error.message);
-                    showToast('Nao foi possivel atualizar essa arena vinculada.', 'error');
+                    showToast('Não foi possível atualizar essa arena vinculada.', 'error');
                     return;
                 }
 
@@ -440,8 +440,8 @@ export const ArenaDetailModal: React.FC<{
                 const message = String(error?.message || '');
                 showToast(
                     message.includes('delete_linked_relationship_arena')
-                        ? 'Essa base ainda nao recebeu o SQL novo para permitir remover arenas de mentoria.'
-                        : 'Nao foi possivel remover essa arena vinculada.',
+                        ? 'Essa base ainda não recebeu o SQL novo para permitir remover arenas de mentoria.'
+                        : 'Não foi possível remover essa arena vinculada.',
                     'error'
                 );
                 return;
@@ -483,7 +483,7 @@ export const ArenaDetailModal: React.FC<{
             showToast(
                 isReceivedCodexArena
                     ? 'Campanha recebida fica protegida. So campanha comprada ou autoral pode ser adaptada.'
-                    : 'Essa arena especial recebe missoes pelo menu de Missoes.',
+                    : 'Essa arena especial recebe missões pelo menu de Missões.',
                 'warning'
             );
             return;
@@ -631,7 +631,7 @@ export const ArenaDetailModal: React.FC<{
                                             ?'border-green-500/50 bg-green-500/20 hover:bg-green-500/30'
                                             : 'border-white/14 bg-black/30 hover:bg-black/40'
                                             }`}
-                                        title={arena.description?.includes('[SHARED]') ? 'Arena compartilhada' : 'Compartilhar arena para o cla'}
+                                        title={arena.description?.includes('[SHARED]') ? 'Arena compartilhada' : 'Compartilhar arena para o clã'}
                                     >
                                         <UsersIcon className={`w-4 h-4 ${arena.description?.includes('[SHARED]') ?'text-green-400' : 'text-gray-400'}`} />
                                     </button>
@@ -716,7 +716,7 @@ export const ArenaDetailModal: React.FC<{
                                 eyebrow="ATO IRREVERSIVEL"
                                 variant="danger"
                                 icon={<Trash2Icon className="h-5 w-5" />}
-                                confirmLabel={isSpecialArena ? 'SAIR DA MISSAO' : 'EXCLUIR ARENA'}
+                                confirmLabel={isSpecialArena ? 'SAIR DA MISSÃO' : 'EXCLUIR ARENA'}
                                 cancelLabel="VOLTAR"
                                 onConfirm={handleDeleteArena}
                                 onCancel={() => setShowDeleteConfirmation(false)}
@@ -768,7 +768,7 @@ export const ArenaDetailModal: React.FC<{
                                     </div>
                                 </>
                             ) : (
-                                <p className="text-sm text-gray-500 pt-1">{arena.description || 'Sem descricao.'}</p>
+                                <p className="text-sm text-gray-500 pt-1">{arena.description || 'Sem descrição.'}</p>
                             )}
                         </div>
 
@@ -846,7 +846,7 @@ export const ArenaDetailModal: React.FC<{
                             )}
                                 <p className="text-sm font-bold text-gray-300 text-center">
                                 {!hasMeasurableProgress
-                                    ? (allActions.length > 0 ? 'Acoes livres' : 'Sem acoes')
+                                    ? (allActions.length > 0 ? 'Ações livres' : 'Sem ações')
                                     : isClanQuestArena
                                     ?`${clanQuestTotals.totalProgress}/${clanQuestTotals.totalGoal}`
                                     : isSharedPool

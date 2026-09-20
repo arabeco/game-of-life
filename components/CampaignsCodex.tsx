@@ -282,7 +282,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
     );
     const handleInstallLibraryCampaign = async (codex: UserCodex) => {
         if (installedCodexIds.has(codex.id)) {
-            showToast('Essa campanha ja esta em uso.', 'info');
+            showToast('Essa campanha já esta em uso.', 'info');
             return;
         }
 
@@ -790,7 +790,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                     <LightbulbIcon className="h-3.5 w-3.5" /> Descobrir campanhas
                                 </button>
                             </div>
-                            <div className="mt-2 text-center text-[10px] text-white/48">Escolha uma pronta ou acompanhe as que ja estão em uso.</div>
+                            <div className="mt-2 text-center text-[10px] text-white/48">Escolha uma pronta ou acompanhe as que já estão em uso.</div>
                         </div>
                         
                         <div className="overflow-y-auto p-4">
@@ -1411,7 +1411,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                 coverImage: libraryPreviewCodex?.template?.coverImage,
                                 badgeLabel: 'Guardada',
                                 author: libraryPreviewCodex?.author || 'Autor desconhecido',
-                                note: 'Essa campanha ja e sua e pode ser iniciada a qualquer momento.',
+                                note: 'Essa campanha já e sua e pode ser iniciada a qualquer momento.',
                                 installLabel: installedCodexIds.has(libraryPreviewCodex?.id || '') ? 'Em uso' : 'Iniciar',
                                 installDisabled: installedCodexIds.has(libraryPreviewCodex?.id || ''),
                                 onInstall: libraryPreviewCodex

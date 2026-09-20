@@ -446,7 +446,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase();
 
-      return assetLabel.includes('espaco mental') || assetLabel.includes('mental');
+      return assetLabel.includes('espaço mental') || assetLabel.includes('mental');
     })?.name || 'Espaço Mental';
 
     const pendingToday = tasks.filter((task) => {
@@ -481,12 +481,12 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     }
 
     if (lowerCmd.startsWith('!criar-acao')) {
-      return 'Eu não crio ações pelo chat. Abra a arena, toque no + e use o formulario direto; posso ajudar a escolher uma meta realista antes disso.';
+      return 'Eu não crio ações pelo chat. Abra a arena, toque no + e use o formulário direto; posso ajudar a escolher uma meta realista antes disso.';
     }
     
     // Help Command
     if (lowerCmd === '?ajuda' || lowerCmd === '?help') {
-        return "**Como eu posso ajudar**\n\nPergunte sobre seu ciclo, suas arenas ou o que fazer hoje. Eu leio o progresso, aponto riscos e ajudo você a decidir. Para criar ou editar algo, use os botoes do proprio app.";
+        return "**Como eu posso ajudar**\n\nPergunte sobre seu ciclo, suas arenas ou o que fazer hoje. Eu leio o progresso, aponto riscos e ajudo você a decidir. Para criar ou editar algo, use os botões do próprio app.";
     }
 
     // Explanation Commands (?)
@@ -609,7 +609,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
       case 'disabled':
         return 'Ative a IA do Oráculo para gerar cards informativos no chat.';
       case 'daily_limit':
-        return `Os temas de hoje ja foram entregues (${oracleFeedStatus.combinedSentToday}/${oracleFeedStatus.dailyLimit}). Amanhã cada tema fica disponivel novamente.`;
+        return `Os temas de hoje já foram entregues (${oracleFeedStatus.combinedSentToday}/${oracleFeedStatus.dailyLimit}). Amanhã cada tema fica disponível novamente.`;
       case 'cooldown':
         return `Novo card manual em ${formatCooldownLabel(cooldownMs || 0)}.`;
       case 'error':

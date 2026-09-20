@@ -37,8 +37,8 @@ export const resolveOracleSpeechTone = (tone: string | null | undefined): Oracle
 export const ORACLE_PREMIUM_TONES: readonly OracleSpeechTone[] = ['coach', 'reflexivo', 'calmo'];
 
 export const ORACLE_TONE_LABELS: Record<OracleSpeechTone, { name: string; hint: string }> = {
-    neutro: { name: 'Neutro', hint: 'Equilibrado e direto. O padrao, sem assinatura.' },
-    coach: { name: 'Coach', hint: 'Solta dica e sugestao. Aponta o proximo movimento.' },
+    neutro: { name: 'Neutro', hint: 'Equilibrado e direto. O padrão, sem assinatura.' },
+    coach: { name: 'Coach', hint: 'Solta dica e sugestão. Aponta o próximo movimento.' },
     reflexivo: { name: 'Reflexivo', hint: 'Devolve uma pergunta em vez de um elogio.' },
     calmo: { name: 'Calmo', hint: 'Sereno, sem pressa. Tira peso em vez de cobrar.' },
 };
@@ -148,7 +148,7 @@ export const ORACLE_SPEECH_LIBRARY: Record<OracleSpeechEvent, ToneVariants> = {
             '{count} ações reais hoje.',
         ],
         calmo: [
-            '{count} ações hoje. O dia já tem peso proprio.',
+            '{count} ações hoje. O dia já tem peso próprio.',
             '{count} entregas. Dá para seguir devagar a partir daqui.',
             '{count} hoje. Esse é o tamanho de um dia que se sustenta.',
         ],
@@ -480,20 +480,20 @@ export const ORACLE_GREETINGS: Record<OracleGreetingPeriod, Record<OracleSpeechT
     manha: {
         neutro: ['Bom dia.', 'Dia novo. O painel esta aqui.'],
         coach: ['Bom dia. Comece pela menor.', 'Dia novo: escolha uma e puxe.'],
-        reflexivo: ['Bom dia. O que merece o comeco de hoje?', 'Dia novo. Que peso voce quer nao carregar hoje?'],
+        reflexivo: ['Bom dia. O que merece o começo de hoje?', 'Dia novo. Que peso você quer não carregar hoje?'],
         calmo: ['Bom dia. Sem pressa.', 'Dia novo. Ele cabe do jeito que vier.'],
     },
     tarde: {
         neutro: ['Boa tarde.', 'Metade do dia. O painel esta aqui.'],
         coach: ['Boa tarde. Ainda da tempo de uma.', 'Metade do dia: uma entrega ainda cabe.'],
-        reflexivo: ['Boa tarde. O dia foi como voce imaginou?', 'Metade do dia. O que mudou desde de manha?'],
-        calmo: ['Boa tarde. O que veio ate aqui ja conta.', 'Metade do dia, e tudo bem se foi devagar.'],
+        reflexivo: ['Boa tarde. O dia foi como você imaginou?', 'Metade do dia. O que mudou desde de manhã?'],
+        calmo: ['Boa tarde. O que veio ate aqui já conta.', 'Metade do dia, e tudo bem se foi devagar.'],
     },
     noite: {
         neutro: ['Boa noite.', 'Fim do dia. O painel esta aqui.'],
         coach: ['Boa noite. Registre o que fez antes de fechar.', 'Fim do dia: deixe o registro pronto.'],
-        reflexivo: ['Boa noite. O que hoje ensinou?', 'Fim do dia. Vale olhar antes de virar a pagina.'],
-        calmo: ['Boa noite. Pode encerrar.', 'Fim do dia. Nao precisa fechar tudo.'],
+        reflexivo: ['Boa noite. O que hoje ensinou?', 'Fim do dia. Vale olhar antes de virar a página.'],
+        calmo: ['Boa noite. Pode encerrar.', 'Fim do dia. Não precisa fechar tudo.'],
     },
 };
 

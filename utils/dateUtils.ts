@@ -35,7 +35,7 @@ export const getCycleTimingSummary = (startDateStr: string, endDateStr: string, 
         isUpcoming,
         daysUntilStart,
         statusLabel: isUpcoming
-            ? (daysUntilStart === 1 ? 'Comeca amanha' : `Comeca em ${daysUntilStart} dias`)
+            ? (daysUntilStart === 1 ? 'Começa amanhã' : `Começa em ${daysUntilStart} dias`)
             : `Dia ${displayDay}/${totalDays}`,
         inclusiveLabel: 'Conta o dia inicial e o dia final.',
     };

@@ -141,7 +141,7 @@ const buildHeadline = (metrics: CycleMetricComparison[], sampleSize: number): st
   if (worse > better) {
     return `Na maior parte das medidas este ciclo ficou abaixo de ${referencia}.`;
   }
-  return `Este ciclo ficou no seu padrao: nem acima nem abaixo de ${referencia}.`;
+  return `Este ciclo ficou no seu padrão: nem acima nem abaixo de ${referencia}.`;
 };
 
 /**
@@ -161,15 +161,15 @@ export const buildComparisonClosingLine = (comparison: CycleComparison): string 
   const total = comparison.metrics.length;
 
   if (favoraveis === total) {
-    return 'Você não competiu com ninguem aqui. Superou a sua propria média, e isso conta diferente.';
+    return 'Você não competiu com ninguém aqui. Superou a sua própria média, e isso conta diferente.';
   }
   if (favoraveis === 0) {
     return 'Um ciclo abaixo do seu normal continua sendo um ciclo. O que ele mostra vale para o próximo.';
   }
   if (favoraveis >= total / 2) {
-    return 'Nem tudo subiu, e não precisava. O que segurou o ciclo esta acima do seu padrao.';
+    return 'Nem tudo subiu, e não precisava. O que segurou o ciclo esta acima do seu padrão.';
   }
-  return 'A maior parte cedeu, mas não tudo. O que resistiu e por onde comecar da próxima vez.';
+  return 'A maior parte cedeu, mas não tudo. O que resistiu e por onde começar da próxima vez.';
 };
 
 export const buildCycleComparison = (

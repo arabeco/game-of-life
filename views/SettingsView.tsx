@@ -217,9 +217,9 @@ const PrivacyPreferencesModal: React.FC<{
     if (!open) return null;
 
     const legalRows = [
-        'Conta e perfil: usamos o mínimo para autenticacao, sincronizacao e seguranca.',
-        'Social e uploads: o que você compartilhar pode aparecer para vinculos, grupos e links.',
-        'Compras e exclusao: pagamentos passam por parceiro e a conta pode ser apagada sob solicitacao.',
+        'Conta e perfil: usamos o mínimo para autenticacao, sincronização e segurança.',
+        'Social e uploads: o que você compartilhar pode aparecer para vínculos, grupos e links.',
+        'Compras e exclusão: pagamentos passam por parceiro e a conta pode ser apagada sob solicitação.',
     ];
 
     return (
@@ -294,7 +294,7 @@ const PrivacyPreferencesModal: React.FC<{
                             onChange={onAssetsVisibilityChange}
                         />
                         <VisibilityScopeControl
-                            label="Arvore de maestria"
+                            label="Árvore de maestria"
                             value={masteryVisibility}
                             onChange={onMasteryVisibilityChange}
                         />
@@ -602,7 +602,7 @@ const TutorialSettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
         }));
         showToast(
             enabled
-                ? 'Dicas iniciais ligadas para as proximas telas ainda não vistas.'
+                ? 'Dicas iniciais ligadas para as próximas telas ainda não vistas.'
                 : 'Dicas iniciais desligadas.',
             'info',
         );
@@ -2067,7 +2067,7 @@ const PreferenciasTab: React.FC = () => {
         const { data: sessionData } = await supabase.auth.getSession();
         const userId = sessionData.session?.user?.id;
         if (!userId) {
-            throw new Error('Sua sessao não foi encontrada para resgatar o código.');
+            throw new Error('Sua sessão não foi encontrada para resgatar o código.');
         }
 
         const result = await SupabaseService.redeemRewardCode(code, userId);

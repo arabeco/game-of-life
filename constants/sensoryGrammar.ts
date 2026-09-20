@@ -28,7 +28,7 @@ export const SENSORY_WEIGHT_INTENT: Record<SensoryWeight, string> = {
     toque: 'Registrou. Leve e seco, quase nada — acontece dezenas de vezes por dia.',
     fecho: 'Alguma coisa terminou. Duplo curto, reconhecivel sem ser evento.',
     marco: 'Isto foi grande. Longo, com cauda.',
-    marco_raro: 'Isto quase nunca acontece. Reservado aos marcos de sequencia.',
+    marco_raro: 'Isto quase nunca acontece. Reservado aos marcos de sequência.',
 };
 
 /**

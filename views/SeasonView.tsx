@@ -184,7 +184,7 @@ const SeasonQuestCard: React.FC<{
 
                     {/* Sempre visivel, mesmo em zero. Uma lista de cartoes sem
                         progresso e uma lista de nomes: e o progresso que responde
-                        "para que serve este cartao". */}
+                        "para que serve este cartão". */}
                     {!isCompleted && (
                         <div className="mt-1.5 flex items-center gap-2">
                             <div className="relative h-1 flex-1 overflow-hidden rounded-full bg-[var(--ui-core-pill-bg)]">
@@ -429,7 +429,7 @@ export const SeasonView: React.FC = () => {
         // O slot e um so, e pode estar com uma missao individual DE ARENA. Aceitar
         // por aqui sem olhar deixaria a pessoa com duas em andamento.
         if (activeArenaPact) {
-            showToast(`Voce ja tem "${activeArenaPact.title}" em andamento. Encerre-a antes de aceitar esta.`, 'warning');
+            showToast(`Você já tem "${activeArenaPact.title}" em andamento. Encerre-a antes de aceitar esta.`, 'warning');
             return;
         }
 

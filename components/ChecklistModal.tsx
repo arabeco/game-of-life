@@ -384,7 +384,7 @@ export const ChecklistModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
                             <div className="flex gap-2">
                                 <input
                                     type="text"
-                                    placeholder="Nova tarefa... (ex: 2L de agua)"
+                                    placeholder="Nova tarefa... (ex: 2L de água)"
                                     value={newItemText}
                                     onChange={(event) => setNewItemText(event.target.value)}
                                     onKeyDown={(event) => event.key === 'Enter' && handleAddChecklistItem()}

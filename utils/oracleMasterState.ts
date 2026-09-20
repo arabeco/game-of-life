@@ -104,8 +104,8 @@ export const deriveOracleMasterState = (context: OracleContext): OracleMasterDia
   // independentemente de quem abre a leitura.
   if (atrasado) modificadores.push(`ciclo atrasado (${progresso}% contra ${esperado}% esperado)`);
   if (!conta.fecha) modificadores.push(`ritmo exigido acima do melhor dia (${conta.melhorDia})`);
-  if (retomada) modificadores.push(`retomada em ${retomada.arenaName} apos ${retomada.trendPauseDays ?? '?'} dias`);
-  if (context.pendingActionsToday === 0 && context.hasCycle) modificadores.push('dia de hoje sem pendencia');
+  if (retomada) modificadores.push(`retomada em ${retomada.arenaName} após ${retomada.trendPauseDays ?? '?'} dias`);
+  if (context.pendingActionsToday === 0 && context.hasCycle) modificadores.push('dia de hoje sem pendência');
   if ((context.pendingActionsToday || 0) >= 6) modificadores.push(`${context.pendingActionsToday} pendencias so hoje`);
   if (context.cyclePace === 'adiantado') modificadores.push('ritmo adiantado');
 
@@ -115,13 +115,13 @@ export const deriveOracleMasterState = (context: OracleContext): OracleMasterDia
   if (context.needsFirstArena || context.needsFirstAction || context.needsFirstTask || !context.hasArenas) {
     return {
       estado: 'sem_dados',
-      motivo: 'ainda nao existe estrutura suficiente para diagnosticar',
+      motivo: 'ainda não existe estrutura suficiente para diagnosticar',
       modificadores,
       // Sem dados, TODA leitura de ritmo e invencao.
       proibidos: [
         'coach:on-pace', 'coach:ahead', 'coach:behind', 'coach:deriva', 'coach:conta-nao-fecha',
         // Observacao sobre o passado do ciclo exige passado de ciclo.
-        'coach:dia-concentrado', 'coach:volume-x-constancia',
+        'coach:dia-concentrado', 'coach:volume-x-constância',
       ],
       bonus: { 'coach:first-arena': 40, 'coach:start-cycle': 30 },
     };
@@ -133,7 +133,7 @@ export const deriveOracleMasterState = (context: OracleContext): OracleMasterDia
   if (retomada) {
     return {
       estado: 'retomando',
-      motivo: `${retomada.arenaName} voltou apos ${retomada.trendPauseDays ?? 'varios'} dias parada`,
+      motivo: `${retomada.arenaName} voltou após ${retomada.trendPauseDays ?? 'varios'} dias parada`,
       modificadores,
       // Cobrar compensacao ou elogiar ritmo, aqui, sao os dois erros opostos.
       proibidos: ['coach:on-pace', 'coach:ahead', 'coach:deriva'],
@@ -152,7 +152,7 @@ export const deriveOracleMasterState = (context: OracleContext): OracleMasterDia
       // que importa e o numero que nao fecha.
       proibidos: [
         'coach:on-pace', 'coach:ahead', 'coach:deriva',
-        'coach:dia-concentrado', 'coach:volume-x-constancia',
+        'coach:dia-concentrado', 'coach:volume-x-constância',
       ],
       bonus: { 'coach:conta-nao-fecha': 40 },
     };
@@ -162,7 +162,7 @@ export const deriveOracleMasterState = (context: OracleContext): OracleMasterDia
   if (context.cycleDaysRemaining === 0 && pendentes > 0) {
     return {
       estado: 'ultimo_dia',
-      motivo: `ultimo dia do ciclo com ${pendentes} pendente(s)`,
+      motivo: `último dia do ciclo com ${pendentes} pendente(s)`,
       modificadores,
       proibidos: ['coach:on-pace', 'coach:ahead', 'coach:deriva'],
       bonus: { 'coach:last-day': 40 },

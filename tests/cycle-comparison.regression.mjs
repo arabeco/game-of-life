@@ -89,7 +89,10 @@ const quaseIgual = buildCycleComparison(
 );
 const execIgual = quaseIgual.metrics.find((metric) => metric.id === 'execucao');
 assert.equal(execIgual.direction, 'estavel', '2 pontos de execucao nao e mudanca');
-assert.match(quaseIgual.headline, /no seu padrao/);
+// A manchete e TEXTO DE TELA e passou a ser acentuada. A trava guarda a frase
+// que a pessoa le, entao ela acompanha — o que importa e continuar dizendo que
+// o ciclo ficou no padrao, nao a grafia antiga.
+assert.match(quaseIgual.headline, /no seu padrão/);
 
 // --- leitura de ciclo abaixo aponta causa, nao culpa ----------------------
 const abaixo = buildCycleComparison(

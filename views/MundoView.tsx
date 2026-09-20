@@ -339,8 +339,8 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
             return (
                 <div className="rounded-[26px] border border-dashed border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-4 py-8 text-center">
                     <div className="text-[10px] font-black uppercase tracking-[0.24em] text-[color:var(--ui-card-text-soft)]">Solicitacoes</div>
-                    <div className="mt-2 text-sm font-semibold text-[color:var(--ui-card-text)]">Nenhuma solicitacao pendente.</div>
-                    <div className="mt-1 text-xs text-[color:var(--ui-card-text-soft)]">Amizades, vinculos e pedidos de grupo vao aparecer aqui.</div>
+                    <div className="mt-2 text-sm font-semibold text-[color:var(--ui-card-text)]">Nenhuma solicitação pendente.</div>
+                    <div className="mt-1 text-xs text-[color:var(--ui-card-text-soft)]">Amizades, vínculos e pedidos de grupo vão aparecer aqui.</div>
                 </div>
             );
         }
@@ -351,7 +351,7 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
                     <div className="rounded-[22px] border border-[var(--skin-accent-color)]/16 bg-[linear-gradient(180deg,rgba(255,208,0,0.08)_0%,rgba(0,0,0,0.18)_100%)] px-3 py-3">
                         <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[color:var(--ui-card-text-soft)]">Para você</div>
                         <div className="mt-1 text-2xl font-black text-[color:var(--ui-card-text)]">{incomingRequestCount}</div>
-                        <div className="text-[11px] text-[color:var(--ui-card-text-soft)]">amizades, vinculos e grupos</div>
+                        <div className="text-[11px] text-[color:var(--ui-card-text-soft)]">amizades, vínculos e grupos</div>
                     </div>
                     <div className="rounded-[22px] border border-[var(--ui-core-surface-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.04)_0%,rgba(0,0,0,0.18)_100%)] px-3 py-3">
                         <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[color:var(--ui-card-text-soft)]">Em aberto</div>
@@ -410,7 +410,7 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
                             const senderId = String(invite.metadata?.senderId || invite.metadata?.inviterId || '');
                             const senderProfile = friends.find(friend => friend.id === senderId) || {
                                 ...buildFallbackProfile(senderId || `clan-invite-${invite.id}`),
-                                nickname: String(invite.metadata?.senderNickname || 'Lider do grupo'),
+                                nickname: String(invite.metadata?.senderNickname || 'Líder do grupo'),
                             };
                             return (
                                 <SocialCard

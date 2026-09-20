@@ -214,7 +214,7 @@ export const LIFE_AREAS: readonly LifeAreaDefinition[] = [
       'Sinto-me isolado ou preso em relações que me fazem mal.',
       'Tenho contatos, mas pouca intimidade, apoio ou segurança emocional.',
       'Começo a perceber padrões e a buscar relações mais honestas.',
-      'Pratico escuta, presença e limites, ainda com bastante oscilação.',
+      'Prático escuta, presença e limites, ainda com bastante oscilação.',
       'Cultivo algumas relações verdadeiras e consigo pedir ou oferecer apoio.',
       'Minhas relações importantes recebem atenção e comunicação frequentes.',
       'Tenho vínculos saudáveis, limites claros e espaço para vulnerabilidade.',
@@ -264,7 +264,7 @@ export const LIFE_AREAS: readonly LifeAreaDefinition[] = [
     levelDescriptions: [
       'Não tenho lazer nenhum, e já nem sinto falta. Descansar virou só cair no sono.',
       'Minha rotina deixa pouco espaço para descanso, prazer ou recuperação mental.',
-      'Descanso de modo passivo, mas raramente termino realmente renovado.',
+      'Descanso de modo passivo, mas raramente término realmente renovado.',
       'Experimento formas de lazer e bem-estar, ainda sem regularidade.',
       'Já protejo alguns momentos de descanso, hobby ou silêncio durante a semana.',
       'Tenho atividades que me dão prazer e ajudam a recuperar minha energia.',

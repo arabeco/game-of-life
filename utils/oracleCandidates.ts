@@ -99,52 +99,52 @@ export const ORACLE_CANDIDATE_WEIGHTS: Record<OracleCandidateType, OracleCandida
   streak_marco: {
     importance: 4, urgency: 3, novelty: 4, actionability: 0,
     cooldownDays: 0, // Zero: cada marco e um numero diferente, e so pode acontecer uma vez cada.
-    why: 'Novidade 4 e não 5 porque marco e PREVISIVEL: quem esta no dia 6 sabe que amanha e 7. Uma retomada surpreende, um marco chega marcado. E o que faz o dia 7 perder para uma arena parada ha nove dias enquanto o dia 100 ganha — a diferenca vem do boost, não da base. Urgencia 3 porque comemoracao adiada e comemoracao perdida. Acionabilidade zero de proposito: pedir alguma coisa aqui estragaria o unico momento do app em que a pessoa não deve nada.',
+    why: 'Novidade 4 e não 5 porque marco e PREVISIVEL: quem esta no dia 6 sabe que amanhã e 7. Uma retomada surpreende, um marco chega marcado. E o que faz o dia 7 perder para uma arena parada ha nove dias enquanto o dia 100 ganha — a diferença vem do boost, não da base. Urgência 3 porque comemoracao adiada e comemoracao perdida. Acionabilidade zero de propósito: pedir alguma coisa aqui estragaria o único momento do app em que a pessoa não deve nada.',
   },
   streak_em_risco: {
     importance: 4, urgency: 5, novelty: 3, actionability: 5,
     cooldownDays: 0, // Zero: cada noite e um risco novo, e nao avisar porque avisou ontem seria deixar morrer por elegancia.
-    why: 'A unica coisa no app que morre sozinha se ninguem disser nada. Uma arena fechada continua fechada daqui a vinte minutos; um streak de 23 dias vira 0 na virada. Vence ate a estrutura inflada — a conta que não fecha continua não fechando amanha de manha, e a sequência não.',
+    why: 'A única coisa no app que morre sozinha se ninguém disser nada. Uma arena fechada continua fechada daqui a vinte minutos; um streak de 23 dias vira 0 na virada. Vence ate a estrutura inflada — a conta que não fecha continua não fechando amanhã de manhã, e a sequência não.',
   },
   meta_inflada: {
     importance: 5, urgency: 3, novelty: 4, actionability: 5,
     cooldownDays: 3, // Tres dias: a estrutura nao muda sozinha, e repetir todo dia vira cobranca sobre algo que ela ja ouviu.
-    why: 'A nota mais alta da tabela, inclusive acima de "sumiu" — de proposito, porque costuma ser a CAUSA de ter sumido. E o unico caso em que o problema não e a pessoa: ela pode se esforcar o mes inteiro e continuar falhando, porque a conta não fecha. Acionabilidade maxima: baixar a repeticao resolve na hora.',
+    why: 'A nota mais alta da tabela, inclusive acima de "sumiu" — de propósito, porque costuma ser a CAUSA de ter sumido. E o único caso em que o problema não e a pessoa: ela pode se esforcar o mês inteiro e continuar falhando, porque a conta não fecha. Acionabilidade máxima: baixar a repetição resolve na hora.',
   },
   ausente: {
     importance: 4, urgency: 5, novelty: 3, actionability: 3,
     cooldownDays: 1, // Um dia: se ela voltou a sumir amanha, isso e um fato novo.
-    why: 'Quem sumiu pode não voltar. E a unica situacao em que o silencio do app decide o desfecho, entao urgencia maxima.',
+    why: 'Quem sumiu pode não voltar. E a única situacao em que o silêncio do app decide o desfecho, então urgência máxima.',
   },
   arena_retomada: {
     importance: 4, urgency: 2, novelty: 5, actionability: 2,
     cooldownDays: 2, // Dois dias: retomada e um momento, nao um estado. Repetir transforma reconhecimento em bajulacao.
-    why: 'Novidade maxima: e a unica coisa que a pessoa NÃO ve na tela, porque a tela mostra o estado e não a mudanca. Vence a queixa sobre a mesma arena de proposito — dizer "reduza a meta" no dia em que ela voltou a andar e o pior erro que o Oráculo pode cometer.',
+    why: 'Novidade máxima: e a única coisa que a pessoa NÃO ve na tela, porque a tela mostra o estado e não a mudança. Vence a queixa sobre a mesma arena de propósito — dizer "reduza a meta" no dia em que ela voltou a andar e o pior erro que o Oráculo pode cometer.',
   },
   sem_ciclo: {
     importance: 4, urgency: 3, novelty: 2, actionability: 5,
     cooldownDays: 2, // Dois dias: com um, quem esta sem ciclo ouvia sobre ciclo dia sim dia nao — e a solucao proposta e sempre a mesma, entao repetir nao acrescenta.
-    why: 'Sem ciclo nada mais funciona, e resolver e um toque. Acionabilidade maxima, urgencia média porque não piora sozinho.',
+    why: 'Sem ciclo nada mais funciona, e resolver e um toque. Acionabilidade máxima, urgência média porque não piora sozinho.',
   },
   ciclo_longo: {
     importance: 3, urgency: 2, novelty: 2, actionability: 4,
     cooldownDays: 3, // Tres dias: ciclo arrastado leva dias para mudar, entao nao ha o que dizer de novo antes disso.
-    why: 'Ciclo arrastado e problema estrutural: importa, mas não muda nada dizer hoje em vez de amanha.',
+    why: 'Ciclo arrastado e problema estrutural: importa, mas não muda nada dizer hoje em vez de amanhã.',
   },
   sem_entrega: {
     importance: 4, urgency: 4, novelty: 2, actionability: 3,
     cooldownDays: 1, // Um dia: cada dia a mais sem entrega e um fato diferente do dia anterior.
-    why: 'Tres dias sem entregar e o comeco do padrao que vira abandono. Ainda da para interromper.',
+    why: 'Três dias sem entregar e o começo do padrão que vira abandono. Ainda da para interromper.',
   },
   arena_atrasada: {
     importance: 3, urgency: 2, novelty: 1, actionability: 3,
     cooldownDays: 2, // Dois dias, o maior entre as queixas de arena: e a fala mais repetivel do banco e a que mais rapido vira papel de parede.
-    why: 'Atraso de arena e comum e a pessoa ja ve na tela. Novidade baixa de proposito: anunciar o obvio gasta a fala do dia.',
+    why: 'Atraso de arena e comum e a pessoa já ve na tela. Novidade baixa de propósito: anunciar o obvio gasta a fala do dia.',
   },
   arena_parada: {
     importance: 4, urgency: 3, novelty: 2, actionability: 4,
     cooldownDays: 2, // Dois dias: sete dias parada nao vira nada em vinte e quatro horas.
-    why: 'Sete dias e zero conclusao e mais grave que atraso: a arena parou de existir na pratica, e ainda da para reanimar.',
+    why: 'Sete dias e zero conclusão e mais grave que atraso: a arena parou de existir na pratica, e ainda da para reanimar.',
   },
   ciclo_atrasado: {
     importance: 3, urgency: 3, novelty: 1, actionability: 2,
@@ -154,17 +154,17 @@ export const ORACLE_CANDIDATE_WEIGHTS: Record<OracleCandidateType, OracleCandida
   prioridade: {
     importance: 2, urgency: 3, novelty: 1, actionability: 5,
     cooldownDays: 1, // Um dia: a acao prioritaria muda de um dia para o outro, entao amanha costuma ser outra frase.
-    why: 'Sozinha não e grande coisa, mas e a unica que entrega o próximo movimento pronto. E o eixo de acionabilidade que a carrega.',
+    why: 'Sozinha não e grande coisa, mas e a única que entrega o próximo movimento pronto. E o eixo de acionabilidade que a carrega.',
   },
   ja_entregou: {
     importance: 2, urgency: 1, novelty: 2, actionability: 0,
     cooldownDays: 0, // Zero: elogiar o que ela fez hoje e sobre HOJE. So nao pode sair duas vezes no mesmo dia.
-    why: 'Elogio de rotina. Nota baixa de proposito: elogio inflacionado destroi o valor do elogio de marco.',
+    why: 'Elogio de rotina. Nota baixa de propósito: elogio inflacionado destroi o valor do elogio de marco.',
   },
   estrutura_enxuta: {
     importance: 2, urgency: 1, novelty: 3, actionability: 3,
     cooldownDays: 3, // Tres dias: estrutura pequena nao e defeito e nao tem pressa nenhuma.
-    why: 'Quase nunca dispara, entao quando dispara e informacao nova. Nenhuma pressa: estrutura pequena não e defeito.',
+    why: 'Quase nunca dispara, então quando dispara e informação nova. Nenhuma pressa: estrutura pequena não e defeito.',
   },
 };
 

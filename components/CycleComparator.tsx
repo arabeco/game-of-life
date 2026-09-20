@@ -123,8 +123,8 @@ const ArenaBattleSlide: React.FC<{ analysis: any }> = ({ analysis }) => {
                 {!arena.current && <span className="text-[10px] font-bold bg-gray-500/20 text-gray-400 px-1.5 rounded">INATIVA</span>}
               </div>
               <div className="text-xs mt-2 space-y-2">
-                <p><strong>Acoes/dia:</strong> {currentActionsPerDay.toFixed(1)} vs {pastActionsPerDay.toFixed(1)} <span className={change > 0 ? 'text-green-400' : 'text-red-400'}>({change > 0 ? '+' : ''}{change.toFixed(0)}%)</span></p>
-                <p><strong>Taxa de conclusao:</strong> {currentCompletion.toFixed(0)}% vs {pastCompletion.toFixed(0)}%</p>
+                <p><strong>Ações/dia:</strong> {currentActionsPerDay.toFixed(1)} vs {pastActionsPerDay.toFixed(1)} <span className={change > 0 ? 'text-green-400' : 'text-red-400'}>({change > 0 ? '+' : ''}{change.toFixed(0)}%)</span></p>
+                <p><strong>Taxa de conclusão:</strong> {currentCompletion.toFixed(0)}% vs {pastCompletion.toFixed(0)}%</p>
                 {(arena.current?.completedMilestones || 0) > 0 && <p><strong>Marcos concluidos:</strong> {arena.current?.completedMilestones}</p>}
               </div>
             </GlassCard>

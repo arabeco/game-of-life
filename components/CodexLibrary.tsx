@@ -182,7 +182,7 @@ const CodexCard: React.FC<{
   const sourceDescription = kind === 'created'
     ? 'Campanha autoral da sua forja.'
     : codex.source_type === 'catalog'
-      ? 'Comprada na loja. Pode ser adaptada na sua execucao.'
+      ? 'Comprada na loja. Pode ser adaptada na sua execução.'
       : 'Recebida de outro soberano. Mantida em modo protegido.';
 
   return (
@@ -326,7 +326,7 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
       title={activeTab === 'created' ? 'Nenhuma campanha criada ainda' : 'Nenhuma campanha recebida ainda'}
       description={activeTab === 'created'
         ? 'Use a forja para montar suas campanhas autorais.'
-        : 'Presentes de amigos e compras da loja vao aparecer aqui automaticamente.'}
+        : 'Presentes de amigos e compras da loja vão aparecer aqui automaticamente.'}
     />
   ) : (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -405,7 +405,7 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
         <p className="mt-2 text-sm text-gray-300">
           {activeTab === 'created'
             ? 'So campanhas autorais podem ser compartilhadas. Campanha comprada ou recebida não entra na forja como produto revendavel.'
-            : 'Campanha comprada pode ser adaptada na sua execucao. Campanha recebida entra como biblioteca protegida e não abre edicao.'}
+            : 'Campanha comprada pode ser adaptada na sua execução. Campanha recebida entra como biblioteca protegida e não abre edição.'}
         </p>
       </GlassCard>
 
@@ -454,7 +454,7 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
             author: previewCodex?.author || 'Autor desconhecido',
             note: activeTab === 'created'
               ? 'Sua campanha esta pronta para ser instalada ou refinada.'
-              : 'Você ja possui esta campanha na biblioteca e pode explorar a trilha completa.',
+              : 'Você já possui esta campanha na biblioteca e pode explorar a trilha completa.',
           }}
         />
       )}

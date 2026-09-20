@@ -273,7 +273,7 @@ export const ItemsStore: React.FC = () => {
                                     {RARITY_LABELS[item.rarity] || item.rarity}
                                 </div>
 
-                                {/* "Ja possui" era um BOTAO desabilitado numa faixa
+                                {/* "Já possui" era um BOTAO desabilitado numa faixa
                                     propria embaixo do card: uma linha inteira, em todo
                                     item que voce ja tem, para dizer que nao ha nada a
                                     fazer. Item que voce tem nao precisa de botao — precisa

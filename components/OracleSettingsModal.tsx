@@ -41,7 +41,7 @@ const ORACLE_PRESENCE_LEVELS = ORACLE_PRESENCE_ORDER.map((value) => ORACLE_PRESE
 
 
 const PUSH_PERMISSION_LABEL: Record<AppPushPermission, string> = {
-    prompt: 'Aguardando permissao',
+    prompt: 'Aguardando permissão',
     granted: 'Permitido no aparelho',
     denied: 'Bloqueado no aparelho',
     unsupported: 'Sem suporte neste aparelho',
@@ -61,9 +61,9 @@ const getRemotePushFailureMessage = (result: AppPushSyncResult): string => {
 
     switch (result.status) {
         case 'not_signed_in':
-            return 'Push local ativado, mas a sessao expirou antes do registro remoto.';
+            return 'Push local ativado, mas a sessão expirou antes do registro remoto.';
         case 'permission_denied':
-            return 'Push local ativado, mas este aparelho não liberou notificacoes.';
+            return 'Push local ativado, mas este aparelho não liberou notificações.';
         case 'missing_public_key':
             return 'Push local ativado, mas a chave pública do push remoto não entrou neste build.';
         case 'unsupported':
@@ -75,13 +75,13 @@ const getRemotePushFailureMessage = (result: AppPushSyncResult): string => {
         case 'native_permission_denied':
             return 'Push nativo negado no aparelho.';
         case 'native_permission_prompt':
-            return 'O aparelho ainda não liberou a permissao de push.';
+            return 'O aparelho ainda não liberou a permissão de push.';
         case 'native_register_failed':
             return `${nativePlatform === 'ios' ? 'O iPhone' : 'O Android'} não conseguiu registrar o push nativo${result.detail ? `: ${result.detail}` : '.'}`;
         case 'native_backend_register_failed':
             return `O aparelho gerou o token nativo, mas o backend ainda não conseguiu salvar esse aparelho${result.detail ? `: ${result.detail}` : '.'}`;
         case 'native_remote_pending':
-            return `O aparelho ja gerou o token nativo. Falta concluir a trilha ${providerLabel}/backend para o push remoto chegar com o app fechado.`;
+            return `O aparelho já gerou o token nativo. Falta concluir a trilha ${providerLabel}/backend para o push remoto chegar com o app fechado.`;
         case 'native_ok':
             return 'Push nativo do aparelho pronto para entrega remota.';
         default:
@@ -202,7 +202,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
 
         if (permission !== 'granted') {
             await updateOraclePreferences({ pushEnabled: false });
-            showToast('Permissao de push negada. Os avisos continuam dentro do app.', 'warning');
+            showToast('Permissão de push negada. Os avisos continuam dentro do app.', 'warning');
             return;
         }
 
@@ -260,7 +260,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
         // parece defeito, nao ajuste. Quem quer o Oraculo calado usa a presenca:
         // tema escolhe SOBRE O QUE ele fala, nao SE ele fala.
         if (current.length <= 1 && current.includes(category)) {
-            showToast('Precisa de pelo menos um tema. Para calar o Oráculo, use a presenca.', 'info');
+            showToast('Precisa de pelo menos um tema. Para calar o Oráculo, use a presença.', 'info');
             return;
         }
         const next = current.includes(category)
@@ -461,7 +461,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                                     {renderSwitchRow({
                                         icon: 'DM',
                                         label: 'Mensagens e convites',
-                                        description: 'Independem do jeito de falar e da presenca do Oráculo.',
+                                        description: 'Independem do jeito de falar e da presença do Oráculo.',
                                         enabled: Boolean(oraclePreferences.dmNotificationsEnabled),
                                         onToggle: () => handleToggle('dmNotificationsEnabled'),
                                         accentClass: 'bg-sky-500/70',
@@ -481,7 +481,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                                     {renderSwitchRow({
                                         icon: '✨',
                                         label: 'Animacoes',
-                                        description: 'Mantem glows, sheens e transicoes do sistema.',
+                                        description: 'Mantém glows, sheens e transicoes do sistema.',
                                         enabled: Boolean(oraclePreferences.animationsEnabled),
                                         onToggle: () => handleToggle('animationsEnabled'),
                                     })}

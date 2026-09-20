@@ -516,7 +516,7 @@ export const DirectMessages: React.FC<{ initialParticipantId?: string | null }> 
                     title={isSelectedUserBlocked ? 'Desbloquear usuário' : 'Bloquear usuário'}
                     message={isSelectedUserBlocked
                         ? 'Deseja permitir contato novamente nesta conversa?'
-                        : 'As mensagens dessa pessoa serão ocultadas e a conversa ficara bloqueada para envio.'}
+                        : 'As mensagens dessa pessoa serão ocultadas e a conversa ficará bloqueada para envio.'}
                     onConfirm={() => void handleToggleBlock()}
                     onCancel={() => setShowBlockConfirm(false)}
                     confirmLabel={isSelectedUserBlocked ? 'DESBLOQUEAR' : 'BLOQUEAR'}

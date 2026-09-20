@@ -404,9 +404,9 @@ export const ActionModal: React.FC<ActionModalProps> = ({
         return effectiveTaskPool.find(task => task.actionId === action.id && !task.completed) || null;
     }, [action, effectiveTaskPool]);
     const lockedEditMessage = arenaFlags.isSeasonQuest
-        ? 'Missões de temporada sao fixas e não podem ser editadas.'
+        ? 'Missões de temporada são fixas e não podem ser editadas.'
         : isInstalledCampaignAction
-            ? 'Campanhas mantem o conteúdo protegido. Aqui você ajusta so a execucao local.'
+            ? 'Campanhas mantém o conteúdo protegido. Aqui você ajusta so a execução local.'
             : null;
 
     const isOfficeMode = PRODUCT_FEATURES.clanSharedActions && clan?.clanType === 'Office';
@@ -949,7 +949,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
         }
 
         if (isEditingTaskInstance) {
-            showToast('A arena fica travada nesta ocorrencia. Para trocar, edite a ação base.', 'warning');
+            showToast('A arena fica travada nesta ocorrência. Para trocar, edite a ação base.', 'warning');
             return;
         }
 
@@ -1033,7 +1033,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
         const permission = await requestLocalNotificationPermission();
         if (permission !== 'granted') {
-            showToast('Permita notificacoes neste aparelho para receber esse aviso.', 'warning');
+            showToast('Permita notificações neste aparelho para receber esse aviso.', 'warning');
             return;
         }
 
@@ -2499,7 +2499,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
             )}
             {isConfirmDeleteOpen && (
                 <ConfirmationModal
-                    title="Confirmar exclusao"
+                    title="Confirmar exclusão"
                     message={`Tem certeza que deseja excluir a ação "${action?.name}"?`}
                     onConfirm={() => { void confirmDelete(); }}
                     onCancel={() => setConfirmDeleteOpen(false)}

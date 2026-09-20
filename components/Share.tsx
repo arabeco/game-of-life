@@ -254,7 +254,7 @@ export const shareElementWithFeedback = async (
         preparingMessage = 'Preparando compartilhamento...',
         sharedMessage = 'Imagem compartilhada.',
         cancelledMessage = 'Compartilhamento cancelado.',
-        unsupportedMessage = 'O compartilhamento não esta disponivel neste aparelho.',
+        unsupportedMessage = 'O compartilhamento não esta disponível neste aparelho.',
         errorMessage = 'Não foi possível preparar a imagem para compartilhar.',
     }: ShareWithFeedbackOptions = {}
 ): Promise<ShareWithFeedbackResult> => {
@@ -273,7 +273,7 @@ export const shareElementWithFeedback = async (
         console.error('Erro ao compartilhar imagem:', error);
         const message = error instanceof Error ? error.message : String(error || '');
         const isUnavailable = message.toLowerCase().includes('não e suportada')
-            || message.toLowerCase().includes('indisponivel neste aparelho');
+            || message.toLowerCase().includes('indisponível neste aparelho');
 
         showToast(isUnavailable ? unsupportedMessage : errorMessage, isUnavailable ? 'warning' : 'error');
         return 'error';

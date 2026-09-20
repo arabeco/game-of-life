@@ -232,7 +232,7 @@ export const Inventory: React.FC = () => {
             setAvisoDoItem(result.isDuplicate
                 ? `Você já tinha este item. Convertido em +${result.fragmentsGained || 0} fragmentos.`
                 : null);
-            setSelectedItem({ def: recebido, instanceId: `bau-${result.itemId}` });
+            setSelectedItem({ def: recebido, instanceId: `baú-${result.itemId}` });
             return;
         }
 
@@ -273,7 +273,7 @@ export const Inventory: React.FC = () => {
                     userChests.length === 0 ? (
                          <div className="col-span-full text-center py-20 text-gray-500 opacity-50">
                             <div className="text-4xl mb-4">🎒</div>
-                            <p>Nenhum baú disponivel.</p>
+                            <p>Nenhum baú disponível.</p>
                         </div>
                     ) : (
                         userChests.map((chest, idx) => (
@@ -310,7 +310,7 @@ export const Inventory: React.FC = () => {
                     filteredItems.length === 0 ? (
                         <div className="col-span-full text-center py-20 text-gray-500 opacity-50">
                             <div className="text-4xl mb-4">🎒</div>
-                            <p>Inventario vazio nesta categoria.</p>
+                            <p>Inventário vazio nesta categoria.</p>
                         </div>
                     ) : (
                         filteredItems.map(item => {
@@ -352,7 +352,7 @@ export const Inventory: React.FC = () => {
                                     <div className="absolute bottom-2 left-1 right-1 text-center">
                                         {/* Duas linhas: os nomes das insignias deixaram de
                                             comecar pelo metal ("Ouro: Soberano" virou
-                                            "Insignia do Soberano"), entao o nome util fica
+                                            "Insígnia do Soberano"), entao o nome util fica
                                             no fim e truncar em uma linha esconde justamente
                                             de quem a insignia e. */}
                                         <span className="line-clamp-2 block w-full text-[9px] font-bold uppercase leading-tight tracking-wider text-white drop-shadow-md">

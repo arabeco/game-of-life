@@ -259,7 +259,7 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
                                     </div>
                                     <div className="mt-1 text-xs text-white/45">
                                         {isAttachMode
-                                            ? 'Todas as arenas disponiveis ja estão em campanhas.'
+                                            ? 'Todas as arenas disponíveis já estão em campanhas.'
                                             : 'Você ainda pode criar a campanha vazia e montar depois.'}
                                     </div>
                                 </div>
@@ -315,7 +315,7 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
                             {isAttachMode
                                 ? 'Escolha arenas livres para entrar nessa campanha.'
                                 : selectedIds.length > 0
-                                    ? 'Revise o nome e confirme. Nada e criado antes deste botao.'
+                                    ? 'Revise o nome e confirme. Nada e criado antes deste botão.'
                                     : 'Se quiser, crie agora e anexe as arenas depois.'}
                         </div>
                         <div className="flex items-center gap-2">

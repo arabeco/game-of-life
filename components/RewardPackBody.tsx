@@ -112,7 +112,7 @@ export const RewardPackBody: React.FC<RewardPackBodyProps> = ({
   fallbackTitle,
   fallbackSummary,
   fallbackItemSectionTitle = 'Itens recebidos',
-  fallbackEmptyMessage = 'Seu pacote ja foi integrado ao Arsenal.',
+  fallbackEmptyMessage = 'Seu pacote já foi integrado ao Arsenal.',
   fallbackMetricCards = [],
   emblema,
   tom,

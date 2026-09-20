@@ -27,7 +27,7 @@ type ProfileLite = Pick<UserProfile, 'id' | 'nickname' | 'avatarUrl' | 'level'>;
 const typeCopy: Record<VisibleConnectionType, { label: string; invite: string; description: string }> = {
   mentoria: {
     label: 'Mentoria',
-    invite: 'Orientar alguem',
+    invite: 'Orientar alguém',
     description: 'Uma pessoa acompanha o progresso e ajuda a ajustar o caminho.',
   },
   parceria: {

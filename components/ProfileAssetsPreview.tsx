@@ -38,7 +38,7 @@ const isSlotValueEmpty = (value: SlotValue | undefined): boolean => {
     if (value === undefined || value === null) return true;
     if (typeof value === 'string') {
         const normalized = value.trim().toLowerCase();
-        return normalized.length === 0 || normalized === 'nao definido' || normalized === 'não definido';
+        return normalized.length === 0 || normalized === 'não definido' || normalized === 'não definido';
     }
     if (typeof value === 'number') return false;
     return !value.imageUrl?.trim();
@@ -178,7 +178,7 @@ export const ProfileAssetsPreview: React.FC<{
                                                     Maestria atual
                                                 </p>
                                                 <p className="mt-1 text-[12px] font-semibold leading-snug text-white/86">
-                                                    {selectedAssetMasteryPhrase || 'Essa area ainda nao tem uma frase de maestria definida.'}
+                                                    {selectedAssetMasteryPhrase || 'Essa area ainda não tem uma frase de maestria definida.'}
                                                 </p>
                                             </div>
                                         </div>

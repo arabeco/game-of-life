@@ -148,9 +148,9 @@ export const LegacyExportKit = forwardRef<LegacyExportKitHandle, LegacyExportKit
                         </div>
                     </div>
                     <div className="legacy-panel-soft w-full p-6 text-center">
-                        <p className="legacy-kicker legacy-kicker-muted">Periodo completo</p>
+                        <p className="legacy-kicker legacy-kicker-muted">Período completo</p>
                         <p className="mt-3 text-3xl font-black tracking-tight text-white">
-                            {historyStart && historyEnd ? `${formatDate(historyStart)} - ${formatDate(historyEnd)}` : 'Sem periodo fechado'}
+                            {historyStart && historyEnd ? `${formatDate(historyStart)} - ${formatDate(historyEnd)}` : 'Sem período fechado'}
                         </p>
                         <p className="mx-auto mt-4 max-w-3xl text-base leading-relaxed text-gray-300">{summary.plaqueInscription}</p>
                     </div>

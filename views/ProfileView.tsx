@@ -472,7 +472,7 @@ export const ShareableProfileCard: React.FC<{
                         </div>
                         {/* A celula so aparece quando ha numero de verdade. Em base sem a
                             tabela de curtidas o contexto devolve null, e um "0" ali seria
-                            "ninguem curtiu" onde a verdade e "ninguem contou". */}
+                            "ninguém curtiu" onde a verdade e "ninguém contou". */}
                         {curtidasRecebidas !== null && (
                             <div className="rounded-2xl border border-white/8 bg-black/24 px-3 py-2 text-center">
                                 <div className="text-[8px] font-bold uppercase tracking-[0.22em] text-gray-500">Curtidas</div>
@@ -682,7 +682,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
 
         const currentRankIndex = NOBILITY_RANKS.findIndex((rank) => rank.id === displayProfile.nobility?.rankId);
         const currentRankBadgeId = currentRankIndex >= 0
-            ? `insignia_rank_${currentRankIndex + 1}_${displayProfile.nobility.rankId}`
+            ? `insígnia_rank_${currentRankIndex + 1}_${displayProfile.nobility.rankId}`
             : '';
 
         return [...counts.entries()]
@@ -1078,7 +1078,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                             </div>
                                             {/* Curtidas recebidas. So aparece quando ha numero: em base
                                                 sem a tabela o contexto devolve null, e "0" ali diria
-                                                "ninguem curtiu" onde a verdade e "ninguem contou". */}
+                                                "ninguém curtiu" onde a verdade e "ninguém contou". */}
                                             {isOwnProfile && curtidasRecebidas !== null && (
                                                 <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
                                                     <div className="text-[8px] uppercase tracking-[0.22em] text-gray-500">Curtidas recebidas</div>

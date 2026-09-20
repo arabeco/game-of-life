@@ -54,11 +54,11 @@ export const getMoneyCheckoutRuntimeWarning = (): string | null => {
     const platform = getBillingRuntimePlatform();
 
     if (platform === 'android') {
-        return 'Este build Android ja abre a compra nativa da Google Play. A liberacao final do produto depende da confirmacao segura do backend.';
+        return 'Este build Android já abre a compra nativa da Google Play. A liberacao final do produto depende da confirmação segura do backend.';
     }
 
     if (platform === 'ios') {
-        return 'A UI de compra iOS ja esta pronta. Falta ligar StoreKit, restauracao de compras e conciliacao backend quando o projeto abrir no Xcode.';
+        return 'A UI de compra iOS já esta pronta. Falta ligar StoreKit, restauracao de compras e conciliacao backend quando o projeto abrir no Xcode.';
     }
 
     return null;

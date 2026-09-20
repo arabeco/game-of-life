@@ -136,7 +136,7 @@ export const useQuestSharedDomain = ({
         const targetAssetId = assets[0]?.id || 'outros';
         const newArena = await addArena(targetAssetId, {
             name: officeArenaName,
-            description: `Arena automatica do cla ${clan.name} (Office Mode)`,
+            description: `Arena automatica do clã ${clan.name} (Office Mode)`,
             icon: 'O',
         } as any);
         showToast('Arena Office criada automaticamente!', 'success');
@@ -153,7 +153,7 @@ export const useQuestSharedDomain = ({
         const remaining = getActionsForArena(arenaId);
         if (remaining.length === 0) {
             updateArena(arenaId, { isArchived: true });
-            showToast('Arena Office arquivada (sem acoes).', 'info');
+            showToast('Arena Office arquivada (sem ações).', 'info');
         }
     };
 
@@ -161,7 +161,7 @@ export const useQuestSharedDomain = ({
         if (!PRODUCT_FEATURES.clanSharedActions) return;
         updateArena(arenaId, { description: isShared ? '[SHARED]' : '' } as any);
         if (isShared) {
-            showToast('Arena marcada como compartilhada para o cla!', 'success');
+            showToast('Arena marcada como compartilhada para o clã!', 'success');
         }
     };
 

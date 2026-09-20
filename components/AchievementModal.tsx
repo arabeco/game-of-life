@@ -531,7 +531,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                             preparingMessage: 'Preparando a imagem...',
                             sharedMessage: 'Imagem compartilhada.',
                             cancelledMessage: 'Compartilhamento cancelado.',
-                            errorMessage: 'Nao foi possivel preparar a imagem.',
+                            errorMessage: 'Não foi possível preparar a imagem.',
                         });
                     }}
                 />

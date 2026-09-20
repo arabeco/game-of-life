@@ -1128,7 +1128,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             return await deleteCycle(cycleId);
         }
 
-        console.error('deleteCycle indisponivel no contexto. Usando RPC delete_cycle_safely como fallback.', { cycleId, deleteCycle });
+        console.error('deleteCycle indisponível no contexto. Usando RPC delete_cycle_safely como fallback.', { cycleId, deleteCycle });
         const { data, error } = await supabase.rpc('delete_cycle_safely', {
             p_cycle_id: cycleId,
         });
@@ -1207,7 +1207,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             case 'reflexivo':
                 return `${cycleName} foi encerrado. Vale rever o que ${focus} te ensinou nesta fase.`;
             case 'calmo':
-                return `${cycleName} foi concluido. Seu relatório ja pode ser revisado com calma.`;
+                return `${cycleName} foi concluído. Seu relatório já pode ser revisado com calma.`;
             case 'personalizado':
             case 'neutro':
             default:
@@ -2337,7 +2337,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     const handleExportLegacy = async () => {
         if (eraSummaries.length === 0) {
-            showToast('Não ha Eras concluidas para exportar.');
+            showToast('Não ha Eras concluídas para exportar.');
             return;
         }
 
@@ -2373,7 +2373,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     const handleStartLegacyExport = () => {
         if (eraSummaries.length === 0) {
-            showToast('Não ha Eras concluidas para gerar o legado.');
+            showToast('Não ha Eras concluídas para gerar o legado.');
             return;
         }
 
@@ -3302,7 +3302,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                     disabled={locked}
                                                     onClick={() => setInlineEraSkinId(skin.id)}
                                                     className={`flex h-9 w-9 items-center justify-center rounded-full border ${active ?'border-[var(--skin-accent-color)] bg-[var(--skin-accent-color)]/10' : 'border-white/10 bg-black/25'} ${locked ?'cursor-not-allowed opacity-40' : ''}`}
-                                                    title={locked ?'Disponivel no platinum' : skin.name}
+                                                    title={locked ?'Disponível no platinum' : skin.name}
                                                 >
                                                     <span className="inline-flex h-4 w-4 rounded-full" style={{ backgroundColor: skin.edge }} />
                                                 </button>

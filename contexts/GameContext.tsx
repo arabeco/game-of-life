@@ -8832,7 +8832,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             // pior do que nao mostrar nada.
             if (newRankIndex > oldRankIndex && oldRankIndex !== -1 && newRankIndex > 0) {
                 if (newRank) {
-                    const rankInsigniaId = `insignia_rank_${newRankIndex + 1}_${newRankId}`;
+                    const rankInsigniaId = `insígnia_rank_${newRankIndex + 1}_${newRankId}`;
                     const rankRewardDetails = RANK_REWARDS[newRankId] || [];
 
                     // A de subida, que acumula, vem junto da unica daquela patente.

@@ -41,7 +41,7 @@ export const AddClanMemberModal: React.FC<{ onClose: () => void }> = ({ onClose 
     const handleSendInvite = async (friendId: string, nickname: string) => {
         if (!clan) return;
         if (!canManage) {
-            showToast('Apenas o lider do grupo pode enviar convites.', 'warning');
+            showToast('Apenas o líder do grupo pode enviar convites.', 'warning');
             return;
         }
         if (busyId) return;
@@ -50,7 +50,7 @@ export const AddClanMemberModal: React.FC<{ onClose: () => void }> = ({ onClose 
         try {
             const result = await SupabaseService.sendClanInvitation(friendId);
             if (!result.ok) {
-                showToast(result.reason === 'already_invited' ? 'Esse convite ja esta pendente.' : 'Não foi possível enviar o convite.', 'warning');
+                showToast(result.reason === 'already_invited' ? 'Esse convite já esta pendente.' : 'Não foi possível enviar o convite.', 'warning');
                 return;
             }
             setPendingInviteeIds(current => current.includes(friendId) ? current : [...current, friendId]);
@@ -132,7 +132,7 @@ export const AddClanMemberModal: React.FC<{ onClose: () => void }> = ({ onClose 
                                     </div>
                                 ))
                             ) : (
-                                <p className="text-center text-sm text-gray-500 py-4">Nenhuma solicitacao pendente.</p>
+                                <p className="text-center text-sm text-gray-500 py-4">Nenhuma solicitação pendente.</p>
                             )}
                         </div>
                     )}
@@ -159,7 +159,7 @@ export const AddClanMemberModal: React.FC<{ onClose: () => void }> = ({ onClose 
                                     </div>
                                 ))
                             ) : (
-                                <p className="text-center text-sm text-gray-500 py-4">Nenhum amigo disponivel fora do grupo.</p>
+                                <p className="text-center text-sm text-gray-500 py-4">Nenhum amigo disponível fora do grupo.</p>
                             )}
                         </div>
                     )}

@@ -125,7 +125,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
     );
 
     const boardTitle = isOfficeClan ? 'Prioridade desta mesa' : 'Missão deste lugar';
-    const boardEmptyText = isOfficeClan ? 'Esta mesa esta vazia.' : 'Ninguem entrou aqui ainda.';
+    const boardEmptyText = isOfficeClan ? 'Esta mesa esta vazia.' : 'Ninguém entrou aqui ainda.';
     const slotRecadoLabel = isOfficeClan ? 'Recado desta mesa' : 'Recado deste lugar';
     const slotShellLabel = isOfficeClan ? 'Mesa' : 'Lugar';
     const createEntryLabel = isOfficeClan ? 'Nova prioridade' : 'Nova missão';
@@ -297,7 +297,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                 
             if (updateError) throw updateError;
 
-            showToast(isOfficeClan ? "Mesa atualizada!" : "Espaco atualizado!", "success");
+            showToast(isOfficeClan ? "Mesa atualizada!" : "Espaço atualizado!", "success");
             if (onUpdate) onUpdate();
             setView('details');
         } catch (error) {
@@ -503,7 +503,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                                                             {canAccept ? getPrimaryActionLabel(quest, false) : 
                                                                 isAssignedToMe 
                                                                 ? (isOfficeClan ? `${quest.current_value || 0}/${quest.target_value || 1}` : '🔒') 
-                                                                : (quest.mission_type === 'singular' ? 'Com alguem' : 'Ativa')
+                                                                : (quest.mission_type === 'singular' ? 'Com alguém' : 'Ativa')
                                                             }
                                                         </div>
 
@@ -861,7 +861,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                                 >
                                     <div className="text-lg mb-1">👥</div>
                                     Coletiva
-                                    <div className="text-[9px] opacity-60 normal-case mt-1">Fica aberta para contribuicao coletiva</div>
+                                    <div className="text-[9px] opacity-60 normal-case mt-1">Fica aberta para contribuição coletiva</div>
                                 </button>
                             </div>
 
@@ -875,7 +875,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                                     </div>
                                     <div>
                                         <div className="text-xs font-bold text-gray-200">Atribuir para {occupant.nickname}</div>
-                                        <div className="text-[10px] text-gray-500">A tarefa ficara reservada para essa pessoa</div>
+                                        <div className="text-[10px] text-gray-500">A tarefa ficará reservada para essa pessoa</div>
                                     </div>
                                 </div>
                             )}

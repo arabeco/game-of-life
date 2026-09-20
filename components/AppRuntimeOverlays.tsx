@@ -21,23 +21,23 @@ export const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void }> = (
     const clauses = [
         {
             title: 'O DESPERTAR DO SOBERANO',
-            text: 'Ao seguir, você confirma que leu este resumo de aceite. O uso do GLYPH também e regido pelos Termos de Uso e pela Politica de Privacidade completos, disponiveis para consulta permanente.',
+            text: 'Ao seguir, você confirma que leu este resumo de aceite. O uso do GLYPH também e regido pelos Termos de Uso e pela Politica de Privacidade completos, disponíveis para consulta permanente.',
         },
         {
             title: 'I. CONTA E DADOS ESSENCIAIS',
-            text: 'Para criar e manter sua conta, tratamos dados como e-mail, autenticacao, nickname, perfil basico e registros necessarios para operar, sincronizar e proteger o app.',
+            text: 'Para criar e manter sua conta, tratamos dados como e-mail, autenticacao, nickname, perfil básico e registros necessarios para operar, sincronizar e proteger o app.',
         },
         {
             title: 'II. RECURSOS SOCIAIS E PARCEIROS',
-            text: 'Mentoria, grupos, amizades, mensagens, uploads e Oráculo podem envolver compartilhamento de perfil, progresso, imagens e conteúdo conforme sua ação no app. Uploads e anexos podem ficar acessiveis por link. Para viabilizar o servico, usamos parceiros de autenticacao, infraestrutura, IA e pagamento.',
+            text: 'Mentoria, grupos, amizades, mensagens, uploads e Oráculo podem envolver compartilhamento de perfil, progresso, imagens e conteúdo conforme sua ação no app. Uploads e anexos podem ficar acessiveis por link. Para viabilizar o serviço, usamos parceiros de autenticacao, infraestrutura, IA e pagamento.',
         },
         {
-            title: 'III. COMPRAS E LIMITES DO SERVICO',
-            text: 'Compras de recursos digitais sao processadas por parceiro de pagamento e so geram credito após confirmacao. O GLYPH e uma ferramenta de organizacao e jogo, não substitui orientacao medica, psicologica, juridica ou financeira.',
+            title: 'III. COMPRAS E LIMITES DO SERVIÇO',
+            text: 'Compras de recursos digitais são processadas por parceiro de pagamento e so geram crédito após confirmação. O GLYPH e uma ferramenta de organização e jogo, não substitui orientacao medica, psicologica, juridica ou financeira.',
         },
         {
-            title: 'IV. SEUS DIREITOS E SUA SAIDA',
-            text: 'Você pode solicitar acesso, correcao e exclusao dos seus dados na forma da lei. A exclusao da conta pode preservar registros minimos exigidos por obrigacao legal, seguranca e prevencao a fraude. Ao selar, você aceita estas condicoes.',
+            title: 'IV. SEUS DIREITOS E SUA SAÍDA',
+            text: 'Você pode solicitar acesso, correcao e exclusão dos seus dados na forma da lei. A exclusão da conta pode preservar registros minimos exigidos por obrigação legal, segurança e prevencao a fraude. Ao selar, você aceita estas condicoes.',
         },
     ];
     const [step, setStep] = useState(0);

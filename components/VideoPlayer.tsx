@@ -20,7 +20,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     onEnd,
     className = '',
     videoClassName = '',
-    placeholderLabel = 'Playing Video...',
+    placeholderLabel = 'Playing Vídeo...',
     duration = 4000,
     playbackRate = 1.0,
     startTime = 0,
@@ -80,7 +80,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }, [src, maxDuration, hasError]);
 
     const handleError = () => {
-        console.warn(`Failed to load video: ${src}`);
+        console.warn(`Failed to load vídeo: ${src}`);
         setHasError(true);
     };
 

@@ -591,7 +591,7 @@ const UnscheduledTaskCard: React.FC<{
                     <EmojiGlyph symbol={action?.icon || '\u{1F4DD}'} size="action" className="text-white" />
                 </div>
                 <div className="min-w-0 flex-1">
-                    <div className={`${compact ?'text-[12px]' : 'text-[13px]'} truncate font-black uppercase tracking-[0.08em] text-white [text-shadow:0_1px_6px_rgba(2,6,23,0.82)]`}>{action?.name || 'Ação sem vinculo'}</div>
+                    <div className={`${compact ?'text-[12px]' : 'text-[13px]'} truncate font-black uppercase tracking-[0.08em] text-white [text-shadow:0_1px_6px_rgba(2,6,23,0.82)]`}>{action?.name || 'Ação sem vínculo'}</div>
                     <div className={`${compact ?'mt-0 text-[8px]' : 'mt-0.5 text-[10px]'} flex items-center gap-2 font-bold uppercase tracking-[0.14em] text-white/52`}>
                         <span className={task.completed ?'text-emerald-200/70' : ''}>{stateLabel}</span>
                         <span className="h-1 w-1 rounded-full bg-white/18" />
@@ -2192,7 +2192,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                         <div className="flex min-h-[48vh] items-center justify-center px-6">
                             <div className="max-w-[18rem] rounded-[24px] border border-white/8 bg-black/20 px-5 py-5 text-center shadow-[0_14px_34px_rgba(0,0,0,0.18)]">
                                 <div className="text-sm font-semibold text-white">Nada aqui ainda.</div>
-                        <div className="mt-1 text-[12px] leading-relaxed text-white/54">Adicione uma arena para comecar a criar ações e organizar o dia.</div>
+                        <div className="mt-1 text-[12px] leading-relaxed text-white/54">Adicione uma arena para começar a criar ações e organizar o dia.</div>
                             </div>
                         </div>
                     ) : isSimpleList && viewMode === 'day' ?(
@@ -2249,8 +2249,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                         id="focus-mode-button"
                         onClick={() => setZoomLevel(prev => PLANNER_ZOOMS[(PLANNER_ZOOMS.indexOf(prev) + 1) % PLANNER_ZOOMS.length])}
                         className="planner-soft-control flex min-h-11 min-w-11 flex-col items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
-                        title={`Zoom ${zoomLevel}x de ${PLANNER_ZOOMS.length}. Toque para o proximo.`}
-                        aria-label={`Zoom do planner, nivel ${zoomLevel} de ${PLANNER_ZOOMS.length}. Toque para avancar.`}
+                        title={`Zoom ${zoomLevel}x de ${PLANNER_ZOOMS.length}. Toque para o próximo.`}
+                        aria-label={`Zoom do planner, nível ${zoomLevel} de ${PLANNER_ZOOMS.length}. Toque para avançar.`}
                     >
                         <SearchIcon className="w-4 h-4" />
                         <span className="planner-date-label font-bold text-[8px] leading-none text-white/72">{zoomLevel}x</span>

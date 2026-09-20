@@ -100,8 +100,8 @@ export const CodexClaimModal: React.FC<CodexClaimModalProps> = ({ onClose, token
               </div>
             ) : !preview ? (
               <GlassCard variant="neutral" className="rounded-3xl border border-red-500/20 bg-red-950/20 p-6 text-center">
-                <h3 className="text-base font-bold text-white">Convite indisponivel</h3>
-                <p className="mt-2 text-sm text-gray-400">Essa campanha pode ter expirado ou ja ter sido reivindicada.</p>
+                <h3 className="text-base font-bold text-white">Convite indisponível</h3>
+                <p className="mt-2 text-sm text-gray-400">Essa campanha pode ter expirado ou já ter sido reivindicada.</p>
               </GlassCard>
             ) : (
               <>
@@ -196,7 +196,7 @@ export const CodexClaimModal: React.FC<CodexClaimModalProps> = ({ onClose, token
                           <CampaignArenaStack arenas={campaignPreview.arenas} size="md" />
                         </div>
                       ) : (
-                        <div className="py-5 text-sm text-white/40">Campanha indisponivel para visualizacao.</div>
+                        <div className="py-5 text-sm text-white/40">Campanha indisponível para visualização.</div>
                       )}
                     </button>
                   </GlassCard>

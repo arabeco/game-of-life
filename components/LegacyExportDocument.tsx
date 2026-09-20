@@ -52,7 +52,7 @@ export const LegacyExportDocument: React.FC<LegacyExportDocumentProps> = ({
                             </p>
                         </div>
                         <div className="legacy-panel-strong min-w-[220px] p-6 text-right">
-                            <p className="legacy-kicker legacy-kicker-muted">Score medio histórico</p>
+                            <p className="legacy-kicker legacy-kicker-muted">Score médio histórico</p>
                             <p className={`text-6xl font-black mt-3 ${historicalGrade.color}`}>{Math.round(historicalAverageScore)}</p>
                             <p className="text-xs uppercase tracking-[0.25em] text-gray-400 mt-2">Patamar {historicalGrade.grade}</p>
                         </div>
@@ -62,12 +62,12 @@ export const LegacyExportDocument: React.FC<LegacyExportDocumentProps> = ({
                         <div className="legacy-panel-soft p-5">
                             <p className="legacy-kicker legacy-kicker-muted">Soberano</p>
                             <p className="text-2xl font-black mt-2 tracking-tight">{userName}</p>
-                            <p className="text-xs text-gray-500 mt-2">{historyStartDate && historyEndDate ? `${formatDate(historyStartDate)} - ${formatDate(historyEndDate)}` : 'Sem periodo fechado'}</p>
+                            <p className="text-xs text-gray-500 mt-2">{historyStartDate && historyEndDate ? `${formatDate(historyStartDate)} - ${formatDate(historyEndDate)}` : 'Sem período fechado'}</p>
                         </div>
                         <div className="legacy-panel-soft p-5">
                             <p className="legacy-kicker legacy-kicker-muted">Eras</p>
                             <p className="text-4xl font-black mt-2 tracking-tight">{eraSummaries.length}</p>
-                            <p className="text-xs text-gray-500 mt-2">Segmentos historicos consolidados</p>
+                            <p className="text-xs text-gray-500 mt-2">Segmentos históricos consolidados</p>
                         </div>
                         <div className="legacy-panel-soft p-5">
                             <p className="legacy-kicker legacy-kicker-muted">Ciclos</p>
@@ -99,7 +99,7 @@ export const LegacyExportDocument: React.FC<LegacyExportDocumentProps> = ({
                                         </div>
                                     </div>
                                     <div className="min-w-[180px] rounded-[24px] border p-5 text-right" style={{ borderColor: `${era.color}55`, backgroundColor: `${era.color}12` }}>
-                                        <p className="legacy-kicker legacy-kicker-soft">Score medio</p>
+                                        <p className="legacy-kicker legacy-kicker-soft">Score médio</p>
                                         <p className="text-5xl font-black mt-3" style={{ color: era.color }}>{era.avgScore}</p>
                                         <p className="text-xs uppercase tracking-[0.25em] text-gray-300 mt-2">Patamar {era.grade}</p>
                                     </div>
@@ -119,12 +119,12 @@ export const LegacyExportDocument: React.FC<LegacyExportDocumentProps> = ({
                                     <div className="legacy-stat-card p-5">
                                         <p className="legacy-kicker legacy-kicker-muted">Melhor streak</p>
                                         <p className="text-3xl font-black mt-2 tracking-tight">{era.bestStreak}</p>
-                                        <p className="text-xs text-gray-500 mt-2">dias seguidos de execucao</p>
+                                        <p className="text-xs text-gray-500 mt-2">dias seguidos de execução</p>
                                     </div>
                                     <div className="legacy-stat-card p-5">
                                         <p className="legacy-kicker legacy-kicker-muted">Ação-chave da Era</p>
                                         <p className="text-lg font-black mt-2 tracking-tight">{era.topActions[0]?.name || 'Sem ação dominante'}</p>
-                                        <p className="text-xs text-gray-500 mt-2">ação mais recorrente do periodo</p>
+                                        <p className="text-xs text-gray-500 mt-2">ação mais recorrente do período</p>
                                     </div>
                                 </div>
 
@@ -139,7 +139,7 @@ export const LegacyExportDocument: React.FC<LegacyExportDocumentProps> = ({
                                     <div className="flex items-center justify-between gap-4 mb-4">
                                         <div>
                                             <p className="legacy-kicker legacy-kicker-muted">Ações dominantes</p>
-                                            <p className="text-sm text-gray-400 mt-1">As tres ações que mais definiram esta fase.</p>
+                                            <p className="text-sm text-gray-400 mt-1">As três ações que mais definiram esta fase.</p>
                                         </div>
                                         <p className="text-xs text-gray-500">Registro consolidado da {era.label.toLowerCase()}</p>
                                     </div>

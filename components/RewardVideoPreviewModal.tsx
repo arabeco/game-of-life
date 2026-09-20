@@ -52,8 +52,8 @@ export const RewardVideoPreviewModal: React.FC<RewardVideoPreviewModalProps> = (
 
                     <div className="border-b border-white/8 px-5 pb-3 pt-5">
                         <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[var(--skin-accent-color)]">Preview QA</p>
-                        <h2 className="mt-1 text-lg font-black uppercase tracking-[0.16em] text-white">Videos de recompensa</h2>
-                        <p className="mt-1 text-xs leading-relaxed text-white/45">Use para checar a marca d'agua depois do zoom, sem conceder recompensa real.</p>
+                        <h2 className="mt-1 text-lg font-black uppercase tracking-[0.16em] text-white">Vídeos de recompensa</h2>
+                        <p className="mt-1 text-xs leading-relaxed text-white/45">Use para checar a marca d'água depois do zoom, sem conceder recompensa real.</p>
                     </div>
 
                     <div className="flex gap-1 border-b border-white/8 bg-white/[0.025] p-2">

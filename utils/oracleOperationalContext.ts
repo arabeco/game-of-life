@@ -156,13 +156,13 @@ export const resolveArenaTrend = (
 
 const buildArenaSignalReason = (signal: Omit<OracleArenaSignal, 'reason'>): string => {
   if (signal.suggestedAdjustment === 'criar_meta_minima') {
-    return 'A arena tem ações livres ou sem contador, entao precisa de meta minima se você quiser medir avanco.';
+    return 'A arena tem ações livres ou sem contador, então precisa de meta minima se você quiser medir avanço.';
   }
   if (signal.suggestedAdjustment === 'pausar_arena') {
-    return 'A arena ficou varios dias sem uma ação concluida dentro do ciclo.';
+    return 'A arena ficou varios dias sem uma ação concluída dentro do ciclo.';
   }
   if (signal.suggestedAdjustment === 'reduzir_meta') {
-    return 'O avanco da arena ficou abaixo do tempo ja gasto no ciclo.';
+    return 'O avanço da arena ficou abaixo do tempo já gasto no ciclo.';
   }
   if (signal.suggestedAdjustment === 'proteger_uma_acao') {
     return 'A arena tem ação pendente hoje e pode voltar ao fio com um passo pequeno.';
@@ -235,7 +235,7 @@ const buildNextMove = ({
 
   if (needsFirstTask) {
     return priorityActionName
-      ? `Agendar a primeira execucao de ${priorityActionName}.`
+      ? `Agendar a primeira execução de ${priorityActionName}.`
       : 'Agendar a primeira tarefa do ciclo.';
   }
 
@@ -258,7 +258,7 @@ const buildNextMove = ({
     return 'Executar a próxima tarefa planejada do dia.';
   }
 
-  return 'Proteger a cadencia do ciclo com a próxima ação relevante.';
+  return 'Proteger a cadência do ciclo com a próxima ação relevante.';
 };
 
 export const buildOracleOperationalContext = ({

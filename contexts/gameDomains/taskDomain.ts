@@ -236,7 +236,7 @@ export const createTaskDomain = ({
     };
 
     const showJudgedActionMutationBlockedToast = () => {
-        showToast('Essa acao pertence a um ciclo fechado. Crie outra acao para compensar sem apagar historico antigo.', 'warning');
+        showToast('Essa ação pertence a um ciclo fechado. Crie outra ação para compensar sem apagar histórico antigo.', 'warning');
     };
 
     const isTaskInsideActiveCycle = (task: Pick<ScheduledTask, 'date'>) => {
@@ -287,7 +287,7 @@ export const createTaskDomain = ({
             .replace(/[\u0300-\u036f]/g, '')
             .toLowerCase();
 
-        if (normalizedArenaName.includes('quests - cla') || normalizedArenaName.includes('quests - season')) {
+        if (normalizedArenaName.includes('quests - clã') || normalizedArenaName.includes('quests - season')) {
             return null;
         }
 
@@ -371,8 +371,8 @@ export const createTaskDomain = ({
         // pegou. Quem quiser comentario sobe a presenca.
         showToast(
             campaignJustCleared && parentCampaign
-                ? `Campanha "${parentCampaign.title}" concluida.`
-                : `Arena "${arena.name}" concluida.`,
+                ? `Campanha "${parentCampaign.title}" concluída.`
+                : `Arena "${arena.name}" concluída.`,
             'success',
         );
         emitOracleSpeech({
@@ -484,7 +484,7 @@ export const createTaskDomain = ({
 
         const cappedCount = Math.min(nextCount, target);
         const remaining = Math.max(0, target - cappedCount);
-        const actionName = action.name || 'essa acao';
+        const actionName = action.name || 'essa ação';
         const goalEvent = remaining === 0
             ? 'cycle_goal_met'
             : remaining === 1
@@ -723,7 +723,7 @@ export const createTaskDomain = ({
         } catch (error: any) {
             rollbackOptimisticTaskCreation(newTaskIds);
             console.error('Supabase schedule multiple tasks error:', error?.message || error);
-            showToast('Falha na sincronizacao de dados. Tente novamente ou verifique a conexao.', 'error');
+            showToast('Falha na sincronização de dados. Tente novamente ou verifique a conexão.', 'error');
             throw error;
         }
     };
@@ -771,7 +771,7 @@ export const createTaskDomain = ({
             } catch (error: any) {
                 rollbackOptimisticTaskCreation([newTask.id]);
                 console.error('Supabase schedule task error:', error?.message || error);
-                showToast('Falha na sincronizacao de dados. Tente novamente ou verifique a conexao.', 'error');
+                showToast('Falha na sincronização de dados. Tente novamente ou verifique a conexão.', 'error');
                 throw error;
             }
         }
@@ -857,7 +857,7 @@ export const createTaskDomain = ({
             return;
         }
 
-        showToast('Acao compartilhada registrada!', 'success');
+        showToast('Ação compartilhada registrada!', 'success');
     };
 
     const runTaskCompletionSideEffects = (updatedTask: ScheduledTask, action: Action | undefined, optimisticTasks: ScheduledTask[]) => {
@@ -878,7 +878,7 @@ export const createTaskDomain = ({
             const arenaActionIds = new Set(getActionsForArena(arena.id).map(item => item.id));
             const completedCount = optimisticTasks.filter(task => arenaActionIds.has(task.actionId) && task.completed).length;
             if (completedCount >= 15) {
-                showToast('PARABENS! DESAFIO DE 15KM COMPLETADO!', 'success');
+                showToast('PARABÉNS! DESAFIO DE 15KM COMPLETADO!', 'success');
             }
         }
 
@@ -909,7 +909,7 @@ export const createTaskDomain = ({
         const operationalToday = getOperationalDateString(now);
         const taskOperationalDate = getTaskOperationalDateString(taskToCheck);
         if (!taskToCheck.completed && taskOperationalDate && taskOperationalDate > operationalToday) {
-            showToast('Essa acao ainda esta no futuro. Reagende para hoje se ela ja aconteceu.', 'warning');
+            showToast('Essa ação ainda esta no futuro. Reagende para hoje se ela já aconteceu.', 'warning');
             return;
         }
         const localToday = getLocalDateString(now);
@@ -1028,7 +1028,7 @@ export const createTaskDomain = ({
             } catch (error: any) {
                 rollbackOptimisticTaskCreation([newTask.id]);
                 console.error('Supabase schedule task now error:', error?.message || error);
-                showToast('Falha ao registrar a acao concluida.', 'error');
+                showToast('Falha ao registrar a ação concluída.', 'error');
                 return;
             }
 
@@ -1104,7 +1104,7 @@ export const createTaskDomain = ({
             } catch (error: any) {
                 console.error('Supabase complete task at time error:', error?.message || error);
                 restoreTaskAfterPersistenceFailure(existingTask);
-                showToast('Falha ao registrar a acao concluida.', 'error');
+                showToast('Falha ao registrar a ação concluída.', 'error');
                 return;
             }
 
@@ -1158,7 +1158,7 @@ export const createTaskDomain = ({
             } catch (error: any) {
                 rollbackOptimisticTaskCreation([newTask.id]);
                 console.error('Supabase schedule task at time error:', error?.message || error);
-                showToast('Falha ao registrar a acao concluida.', 'error');
+                showToast('Falha ao registrar a ação concluída.', 'error');
                 return;
             }
         }
@@ -1227,7 +1227,7 @@ export const createTaskDomain = ({
             } catch (error: any) {
                 rollbackOptimisticTaskCreation([newTask.id]);
                 console.error('Supabase schedule milestone now error:', error?.message || error);
-                showToast('Falha ao registrar o marco concluido.', 'error');
+                showToast('Falha ao registrar o marco concluído.', 'error');
                 return;
             }
         }
@@ -1296,7 +1296,7 @@ export const createTaskDomain = ({
                 );
             } catch (reconcileError: any) {
                 console.error('Retroactive judged day reconciliation error:', reconcileError?.message || reconcileError);
-                showToast('A tarefa foi removida, mas nao foi possivel recalcular o resumo diario.', 'error');
+                showToast('A tarefa foi removida, mas não foi possível recalcular o resumo diário.', 'error');
             }
         });
     };
@@ -1357,7 +1357,7 @@ export const createTaskDomain = ({
                     );
                 } catch (reconcileError: any) {
                     console.error('Retroactive judged day reconciliation error:', reconcileError?.message || reconcileError);
-                    showToast('A tarefa foi atualizada, mas nao foi possivel recalcular o resumo diario.', 'error');
+                    showToast('A tarefa foi atualizada, mas não foi possível recalcular o resumo diário.', 'error');
                 }
             });
     };
@@ -1375,7 +1375,7 @@ export const createTaskDomain = ({
             .then(({ error }: { error?: { message?: string } }) => {
                 if (!error) return;
                 console.error('Supabase task execution order error:', error.message);
-                showToast('Nao foi possivel salvar a ordem da lista.', 'error');
+                showToast('Não foi possível salvar a ordem da lista.', 'error');
             });
     };
 
@@ -1403,7 +1403,7 @@ export const createTaskDomain = ({
             return;
         }
         if (currentTask?.completed) {
-            showToast('Essa acao ja esta concluida. Reabra manualmente antes de devolver ao estoque.', 'warning');
+            showToast('Essa ação já esta concluída. Reabra manualmente antes de devolver ao estoque.', 'warning');
             return;
         }
 

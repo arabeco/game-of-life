@@ -148,12 +148,12 @@ export const LoginView: React.FC = () => {
         }
 
         if (await isDeletedAccountBlocked(normalizedEmail)) {
-            return 'Essa conta foi excluida e nao pode criar um novo acesso com este e-mail.';
+            return 'Essa conta foi excluída e não pode criar um novo acesso com este e-mail.';
         }
 
         const strength = getPasswordStrength(draft.password);
         if (strength.score < 3) {
-            return 'A senha deve ter pelo menos 8 caracteres e incluir um numero ou caractere especial.';
+            return 'A senha deve ter pelo menos 8 caracteres e incluir um número ou caractere especial.';
         }
 
         return null;
@@ -305,7 +305,7 @@ export const LoginView: React.FC = () => {
                         await saveSessionBackup(signInData.session);
                         sessionReady = true;
                     } else if (signInError && /email.*confirm|confirm.*email|not confirmed/i.test(signInError.message || '')) {
-                        setError('A conta foi criada, mas o Supabase ainda esta exigindo confirmacao de e-mail para login manual. Se quiser, eu te digo exatamente o que desligar no painel Auth para isso parar agora.');
+                        setError('A conta foi criada, mas o Supabase ainda esta exigindo confirmação de e-mail para login manual. Se quiser, eu te digo exatamente o que desligar no painel Auth para isso parar agora.');
                         setLoading(false);
                         return {
                             success: false,
@@ -355,7 +355,7 @@ export const LoginView: React.FC = () => {
             if (!identifier.includes('@')) {
                 const matchedProfile = await findProfileAccess(identifier);
                 if (!matchedProfile?.email) {
-                    setError('Nao encontrei esse nickname. Confira o nome ou entre com e-mail.');
+                    setError('Não encontrei esse nickname. Confira o nome ou entre com e-mail.');
                     setLoading(false);
                     return;
                 }
@@ -363,7 +363,7 @@ export const LoginView: React.FC = () => {
             }
 
             if (await isDeletedAccountBlocked(resolvedEmail)) {
-                setError('Essa conta foi excluida e nao pode entrar novamente com este e-mail.');
+                setError('Essa conta foi excluída e não pode entrar novamente com este e-mail.');
                 setLoading(false);
                 return;
             }
@@ -376,10 +376,10 @@ export const LoginView: React.FC = () => {
             if (error) {
                 const normalizedMessage = String(error.message || '').toLowerCase();
                 if (normalizedMessage.includes('invalid login credentials')) {
-                    throw new Error('Nao consegui entrar com essas credenciais. Confira o e-mail ou nickname e a senha.');
+                    throw new Error('Não consegui entrar com essas credenciais. Confira o e-mail ou nickname e a senha.');
                 }
                 if (normalizedMessage.includes('email not confirmed') || normalizedMessage.includes('email not confirmed')) {
-                    throw new Error('O Supabase ainda esta exigindo confirmacao de e-mail para essa conta. Se quiser, eu te digo exatamente o que desligar no Auth para isso parar agora.');
+                    throw new Error('O Supabase ainda esta exigindo confirmação de e-mail para essa conta. Se quiser, eu te digo exatamente o que desligar no Auth para isso parar agora.');
                 }
                 throw error;
             }
@@ -484,7 +484,7 @@ export const LoginView: React.FC = () => {
             if (isCapacitorNativeRuntime()) {
                 const authUrl = typeof data?.url === 'string' ? data.url.trim() : '';
                 if (!authUrl) {
-                    throw new Error('O Supabase nao retornou a URL do Google para o app nativo.');
+                    throw new Error('O Supabase não retornou a URL do Google para o app nativo.');
                 }
 
                 await Browser.open({ url: authUrl });
@@ -519,7 +519,7 @@ export const LoginView: React.FC = () => {
 
                 setMessage('Abrindo Sign in with Apple neste aparelho...');
             } catch (error: any) {
-                setError(error?.message || 'Nao foi possivel abrir o fluxo do Apple Sign-In agora.');
+                setError(error?.message || 'Não foi possível abrir o fluxo do Apple Sign-In agora.');
             } finally {
                 setLoading(false);
             }
@@ -679,7 +679,7 @@ export const LoginView: React.FC = () => {
                                 onClick={handleAppleLogin}
                                 disabled={loading}
                                 className="login-apple-button"
-                                title={isAppleSignInConfigured() ? 'Abrir Sign in with Apple' : 'Sign in with Apple preparado para configuracao posterior'}
+                                title={isAppleSignInConfigured() ? 'Abrir Sign in with Apple' : 'Sign in with Apple preparado para configuração posterior'}
                             >
                                 <span className="login-apple-button__icon" aria-hidden="true">
                                     <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" focusable="false">

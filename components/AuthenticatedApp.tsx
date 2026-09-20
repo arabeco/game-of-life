@@ -1098,7 +1098,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             setScreenIntroTipsEnabled(userProfile.id, false);
             nextProfileFlags.add(SCREEN_INTRO_TIPS_DISABLED_FLAG);
             setScreenTipsEnabled(false);
-            showToast('Dicas iniciais ocultadas. Para religar: Config > Preferencias > Tutoriais.', 'info');
+            showToast('Dicas iniciais ocultadas. Para religar: Config > Preferências > Tutoriais.', 'info');
             window.dispatchEvent(new CustomEvent(SCREEN_INTRO_TIPS_SETTINGS_CHANGED_EVENT, {
                 detail: { enabled: false },
             }));
@@ -1783,7 +1783,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                 },
             }));
             if (acceptedSystemChallenges.length > 0) {
-                showToast('Missão aceita. Ela ja esta acompanhando seu progresso.', 'success');
+                showToast('Missão aceita. Ela já esta acompanhando seu progresso.', 'success');
             }
         }, 120);
     }, [showToast, updateUserProfile, userProfile]);
@@ -1825,7 +1825,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                 }
                 if (nextPermission === 'granted') {
                     await updateOraclePreferences({ pushEnabled: true });
-                    showToast('Push ativado. O Oráculo ja pode te acompanhar fora da tela.', 'success');
+                    showToast('Push ativado. O Oráculo já pode te acompanhar fora da tela.', 'success');
                 } else if (nextPermission === 'denied') {
                     // Nao insiste depois. Quem quiser ligar depois precisa saber
                     // onde, e este e o unico momento em que da para dizer.
@@ -1868,7 +1868,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
     }, [showToast, updateUserProfile, userProfile.premiumRewardPayload]);
 
     const handleCloseBetaReward = useCallback(() => {
-        showToast('Ciclo beta 14/14 concluido. Seus 50 de ouro ja foram integrados.', 'success');
+        showToast('Ciclo beta 14/14 concluído. Seus 50 de ouro já foram integrados.', 'success');
         updateUserProfile({
             betaRewardPending: false,
             betaRewardShownAt: new Date().toISOString(),
@@ -2233,11 +2233,11 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                         tom={getRewardToneRgb('geral')}
                         onClose={handleCloseBetaReward}
                         fallbackEyebrow="Beta 14 de 14"
-                        fallbackTitle="Recompensa da vigilia"
-                        fallbackSummary="Você atravessou os 14 dias completos do beta e a recompensa final ja foi entregue."
+                        fallbackTitle="Recompensa da vigília"
+                        fallbackSummary="Você atravessou os 14 dias completos do beta e a recompensa final já foi entregue."
                         fallbackButtonLabel="Receber"
                         fallbackItemSectionTitle="Entregue no fim do beta"
-                        fallbackEmptyMessage="Seu bonus final ja entrou no perfil."
+                        fallbackEmptyMessage="Seu bônus final já entrou no perfil."
                     />
                 )}
                 {shouldShowPremiumRenewalOffer && (

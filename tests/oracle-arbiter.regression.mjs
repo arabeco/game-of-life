@@ -763,10 +763,10 @@ const texto = formatOracleDecisionLog([{
   at: '2026-08-28T21:30:00.000Z', presence: 3, threshold: 5, tone: 'neutro',
   chosen: decisao.chosen.entry.type, line: decisao.chosen.line, rows: decisao.rows,
 }]);
-assert.match(texto, /presenca 3/, 'o texto diz a presenca');
+assert.match(texto, /presença 3/, 'o texto diz a presenca');
 assert.match(texto, /=>/, 'o texto diz no que deu');
 assert.match(texto, new RegExp(decisao.chosen.entry.type), 'o texto nomeia o vencedor');
-assert.match(formatOracleDecisionLog([]), /Sem decisoes/, 'log vazio nao quebra o texto');
+assert.match(formatOracleDecisionLog([]), /Sem decisões/, 'log vazio nao quebra o texto');
 
 // Nenhum numero, horario ou distancia reativa a sequencia global.
 for (const streak of [0, 2, 7, 14, 23, 30, 60, 100]) {

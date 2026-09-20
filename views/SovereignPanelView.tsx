@@ -544,13 +544,13 @@ const GmSkinPaletteSection: React.FC = () => {
 };
 
 const GM_SHOWCASE_REPORT = {
-  title: 'Operacao Primeira Linhagem',
+  title: 'Operação Primeira Linhagem',
   subtitle: 'Snapshot editorial para vitrine do beta fechado',
   rangeLabel: '03 fev . 16 mar 2026',
   windowLabel: '42 dias de campo',
   commandLabel: 'ALPHA . T1 FUNDACAO',
   headline:
-    'A cena ja sustenta narrativa pública: onboarding claro, motor de retorno acima da meta e primeiros ciclos fechando com consistencia suficiente para print de campanha.',
+    'A cena já sustenta narrativa pública: onboarding claro, motor de retorno acima da meta e primeiros ciclos fechando com consistência suficiente para print de campanha.',
   metrics: {
     population: 34,
     populationGoal: 50,
@@ -564,14 +564,14 @@ const GM_SHOWCASE_REPORT = {
     target: [60, 30, 20, 45, 70, 70],
   },
   signals: [
-    { title: 'Tempo medio ate ativar', value: '17h', helper: 'do bilhete ao primeiro loop fechado' },
+    { title: 'Tempo médio ate ativar', value: '17h', helper: 'do bilhete ao primeiro loop fechado' },
     { title: 'Dias ativos (14d)', value: '8.6', helper: 'média realista para base ainda enxuta' },
     { title: 'Aceite de convite', value: '83%', helper: 'bilhete ouro, prata e bronze' },
-    { title: 'Sessao util média', value: '18 min', helper: 'janela boa para celular e D0' },
+    { title: 'Sessão útil média', value: '18 min', helper: 'janela boa para celular e D0' },
   ],
   tiers: [
     { tier: 'ouro' as const, count: 8, note: 'Alta resposta, mais clareza e feedback rico' },
-    { tier: 'prata' as const, count: 11, note: 'Bom equilibrio entre volume e retencao' },
+    { tier: 'prata' as const, count: 11, note: 'Bom equilíbrio entre volume e retencao' },
     { tier: 'bronze' as const, count: 15, note: 'Base de prova para onboarding e retorno' },
   ],
   standouts: [
@@ -738,7 +738,7 @@ const GmShowcaseSection: React.FC = () => {
             icon={Flag}
             title="Ciclo 1"
             value={formatPercent(GM_SHOWCASE_REPORT.metrics.cyclePct)}
-            helper="os primeiros fechamentos reais ja aparecem"
+            helper="os primeiros fechamentos reais já aparecem"
             progressPct={GM_SHOWCASE_REPORT.metrics.cyclePct}
             tone={getProgressTone(GM_SHOWCASE_REPORT.metrics.cyclePct, KPI_GOALS.cyclePct)}
           />
@@ -761,7 +761,7 @@ const GmShowcaseSection: React.FC = () => {
           </div>
 
           <div className="rounded-[24px] border border-white/10 bg-black/22 p-4">
-            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/42">Composicao de pelotao</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/42">Composição de pelotao</p>
             <div className="mt-4 space-y-3">
               {GM_SHOWCASE_REPORT.tiers.map((entry) => (
                 <div key={entry.tier} className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-3">
@@ -1164,7 +1164,7 @@ const LEGACY_SHOWCASE_ERAS: LegacyRenderEraSummary[] = (() => {
     }),
     buildShowcaseCycle({
       id: 'legacy-c2',
-      name: 'Cadencia de Ferro',
+      name: 'Cadência de Ferro',
       startDate: '2025-01-20',
       score: 72,
       focusArena: 'Trabalho',
@@ -1219,7 +1219,7 @@ const LEGACY_SHOWCASE_ERAS: LegacyRenderEraSummary[] = (() => {
       startDate: '2025-03-17',
       score: 83,
       focusArena: 'Mentoria',
-      signatureAction: 'Sessao de pupilo',
+      signatureAction: 'Sessão de pupilo',
       plannedMetas: 8,
       sealedMetas: 8,
       identitySnapshot: identityC,
@@ -1231,7 +1231,7 @@ const LEGACY_SHOWCASE_ERAS: LegacyRenderEraSummary[] = (() => {
     }),
     buildShowcaseCycle({
       id: 'legacy-c6',
-      name: 'Dominio do Mobile',
+      name: 'Domínio do Mobile',
       startDate: '2025-03-31',
       score: 77,
       focusArena: 'Produto',
@@ -1250,7 +1250,7 @@ const LEGACY_SHOWCASE_ERAS: LegacyRenderEraSummary[] = (() => {
   const eraThreeCycles = [
     buildShowcaseCycle({
       id: 'legacy-c7',
-      name: 'Expansao do Trono',
+      name: 'Expansão do Trono',
       startDate: '2025-05-05',
       score: 91,
       focusArena: 'Coroa',
@@ -1304,9 +1304,9 @@ const LEGACY_SHOWCASE_ERAS: LegacyRenderEraSummary[] = (() => {
       label: 'Era da Aurora',
       defaultLabel: 'Era 1',
       skinId: '1',
-      description: 'Fase de fundacao em que o ritmo aparece, a saude ancora a disciplina e o sistema deixa de ser promessa para virar pratica.',
-      finalSummary: 'A Aurora provou tracao: o ritual matinal e os blocos de foco amarraram saude, trabalho e estudo numa mesma cadencia.',
-      aiSummary: 'Primeiro bloco histórico com sinais claros de consistencia e adesao ao loop.',
+      description: 'Fase de fundacao em que o ritmo aparece, a saúde ancora a disciplina e o sistema deixa de ser promessa para virar pratica.',
+      finalSummary: 'A Aurora provou tracao: o ritual matinal e os blocos de foco amarraram saúde, trabalho e estudo numa mesma cadência.',
+      aiSummary: 'Primeiro bloco histórico com sinais claros de consistência e adesao ao loop.',
       cycles: eraOneCycles,
       startDate: '2025-01-06',
       endDate: '2025-02-16',
@@ -1330,8 +1330,8 @@ const LEGACY_SHOWCASE_ERAS: LegacyRenderEraSummary[] = (() => {
       label: 'Era do Cerco',
       defaultLabel: 'Era 2',
       skinId: '2',
-      description: 'O sistema entra em guerra de verdade: planner, mentoria e produto comecam a andar juntos e o app vira campo de comando.',
-      finalSummary: 'No Cerco, o Glyph ganha forma de operacao. O comando passa a sustentar mentorias, refinamento visual e leitura de valor.',
+      description: 'O sistema entra em guerra de verdade: planner, mentoria e produto começam a andar juntos e o app vira campo de comando.',
+      finalSummary: 'No Cerco, o Glyph ganha forma de operação. O comando passa a sustentar mentorias, refinamento visual e leitura de valor.',
       aiSummary: 'Fase de consolidacao, com score alto e progresso mais denso em produto.',
       cycles: eraTwoCycles,
       startDate: '2025-03-03',
@@ -1344,7 +1344,7 @@ const LEGACY_SHOWCASE_ERAS: LegacyRenderEraSummary[] = (() => {
       dominantArena: 'Produto',
       topActions: [
         { name: 'Janela de comando', count: 21 },
-        { name: 'Sessao de pupilo', count: 18 },
+        { name: 'Sessão de pupilo', count: 18 },
         { name: 'Passada de interface', count: 16 },
       ],
       bestStreak: 16,
@@ -1717,7 +1717,7 @@ const LegacyPreviewButton: React.FC = () => {
                     fallbackIdentity={GM_SHOWCASE_IDENTITY}
                     sceneGoldCost={null}
                     sceneButtonLabel="Abrir cena teste"
-                    confirmKickerLabel="Laboratorio GM"
+                    confirmKickerLabel="Laboratório GM"
                     confirmTitle="Abrir cena teste do legado?"
                     confirmDescription="Isso abre a cena curada do GM com 3 eras e 9 ciclos de exemplo, sem cobrar ouro."
                     confirmButtonLabel="Abrir cena teste"
@@ -1762,8 +1762,8 @@ const CycleReportPreviewButton: React.FC = () => {
 type NotificationLabType = 'system' | 'oracle_card';
 
 const GM_NOTIFICATION_TEST_CONTENT: Record<NotificationLabType, string> = {
-    system: 'TESTE GM: Aviso de sistema entregue em Avisos. Este item deve aparecer imediatamente na aba de notificacoes.',
-    oracle_card: 'TESTE GM: Card do Oráculo entregue em Avisos. O icone do Oráculo deve destacar ate você abrir a aba.',
+    system: 'TESTE GM: Aviso de sistema entregue em Avisos. Este item deve aparecer imediatamente na aba de notificações.',
+    oracle_card: 'TESTE GM: Card do Oráculo entregue em Avisos. O ícone do Oráculo deve destacar ate você abrir a aba.',
 };
 
 const NOTIFICATION_LAB_DEBUG_PREFIX = '[GM Notification Lab]';
@@ -1917,7 +1917,7 @@ const NotificationTypeButton: React.FC<{ type: NotificationLabType; label: strin
             showToast(
                 type === 'oracle_card'
                     ? 'Card do Oráculo criado em Avisos.'
-                    : 'Notificacao de sistema criada em Avisos.',
+                    : 'Notificação de sistema criada em Avisos.',
                 'success',
             );
             logNotificationLabStep(label, 'toast-success');
@@ -2035,7 +2035,7 @@ const NotificationTestButton: React.FC = () => {
                 await insertNotificationLabRecord(
                     session.user.id,
                     'system',
-                    'TESTE GM: Notificacao de sistema agendada para 15 segundos. Ela deve aparecer em Avisos e disparar o push configurado neste aparelho.',
+                    'TESTE GM: Notificação de sistema agendada para 15 segundos. Ela deve aparecer em Avisos e disparar o push configurado neste aparelho.',
                     {
                         source: 'gm_panel',
                         trigger: 'system_push_15s',
@@ -2065,16 +2065,16 @@ const NotificationTestButton: React.FC = () => {
                 }
 
                 if (pushDelivered) {
-                    showToast('Notificacao interna e push local entregues.', 'success');
+                    showToast('Notificação interna e push local entregues.', 'success');
                     logNotificationLabStep('Sistema + Push (15s)', 'toast-success-push');
                 } else if (remoteDeliveryReady) {
-                    showToast('Notificacao interna criada. Agora o teste depende do push remoto do aparelho.', 'info');
+                    showToast('Notificação interna criada. Agora o teste depende do push remoto do aparelho.', 'info');
                     logNotificationLabStep('Sistema + Push (15s)', 'toast-info-remote');
                 } else if (notificationPermission === 'denied') {
-                    showToast('Notificacao interna entregue, mas o aparelho bloqueou o push local.', 'warning');
+                    showToast('Notificação interna entregue, mas o aparelho bloqueou o push local.', 'warning');
                     logNotificationLabStep('Sistema + Push (15s)', 'toast-warning-denied');
                 } else {
-                    showToast('Notificacao interna entregue. O push local não apareceu neste aparelho.', 'warning');
+                    showToast('Notificação interna entregue. O push local não apareceu neste aparelho.', 'warning');
                     logNotificationLabStep('Sistema + Push (15s)', 'toast-warning-no-push');
                 }
             } catch (err) {
@@ -2082,7 +2082,7 @@ const NotificationTestButton: React.FC = () => {
                 logNotificationLabError('Sistema + Push (15s)', 'failed', err, {
                     sessionUserId: session?.user.id || null,
                 });
-                showToast(`Erro ao enviar notificacao de teste: ${message}`, 'error');
+                showToast(`Erro ao enviar notificação de teste: ${message}`, 'error');
             } finally {
                 window.clearInterval(timer);
                 logNotificationLabStep('Sistema + Push (15s)', 'finish');
@@ -2257,7 +2257,7 @@ export const SovereignPanelView: React.FC = () => {
         <GlassCard variant="neutral" className="p-4 md:p-5">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div className="space-y-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-zinc-500">Composicao da base</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-zinc-500">Composição da base</p>
               <h2 className="text-lg font-black text-white">Quem esta dentro do radar</h2>
             </div>
             <div className="flex flex-wrap gap-2">

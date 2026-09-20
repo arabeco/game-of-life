@@ -202,9 +202,9 @@ export const GOLD_MECHANIC_CATALOG = [
     // O preco mora no VINCULO, nao nas acoes de dentro. Os numeros de verdade
     // estao em constants/relationshipLinks.ts e em public.relationship_link_price;
     // aqui ficam so para a vitrine de mecanicas nao mentir sobre o que custa.
-    { id: 'relationship_link_mentoria', name: 'Vinculo de mentoria (30 dias)', priceGold: 100, source: 'sql' },
-    { id: 'relationship_link_parceria', name: 'Vinculo de parceria (30 dias)', priceGold: 50, source: 'sql' },
-    { id: 'relationship_link_competicao', name: 'Vinculo de competição (30 dias)', priceGold: 50, source: 'sql' },
+    { id: 'relationship_link_mentoria', name: 'Vínculo de mentoria (30 dias)', priceGold: 100, source: 'sql' },
+    { id: 'relationship_link_parceria', name: 'Vínculo de parceria (30 dias)', priceGold: 50, source: 'sql' },
+    { id: 'relationship_link_competicao', name: 'Vínculo de competição (30 dias)', priceGold: 50, source: 'sql' },
     { id: 'relationship_link_renewal', name: 'Renovar vínculo (metade do preço)', priceGold: 25, source: 'sql' },
     { id: 'mentor_codex_forge', name: 'Forjar campanha nova para pupilo', priceGold: 100, source: 'sql' },
     { id: 'codex_share_external', name: 'Gerar link externo de campanha', priceGold: 50, source: 'sql' },

@@ -66,7 +66,7 @@ const getMercadoPagoStatusLabel = (paymentResult: any, deliveryDetected: boolean
         return MERCADO_PAGO_STATUS_LABELS[status];
     }
 
-    return 'aguardando confirmacao';
+    return 'aguardando confirmação';
 };
 
 const isValidCheckoutEmail = (value: string) => EMAIL_REGEX.test(String(value || '').trim());
@@ -193,7 +193,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = (props) => {
         const nextFullName = normalizeFullName(fullName);
         const nextCpf = sanitizeCpf(cpf);
         if (!isValidCheckoutEmail(nextEmail)) {
-            latestRefs.current.showToast('Digite um e-mail valido para continuar.', 'warning');
+            latestRefs.current.showToast('Digite um e-mail válido para continuar.', 'warning');
             return;
         }
         if (!isValidFullName(nextFullName)) {
@@ -201,7 +201,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = (props) => {
             return;
         }
         if (!isValidCpf(nextCpf)) {
-            latestRefs.current.showToast('Digite um CPF valido para continuar.', 'warning');
+            latestRefs.current.showToast('Digite um CPF válido para continuar.', 'warning');
             return;
         }
 
@@ -252,14 +252,14 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = (props) => {
 
             setPaymentResult(result);
             if (!(result?.point_of_interaction?.transaction_data?.qr_code || result?.point_of_interaction?.transaction_data?.qr_code_base64 || result?.point_of_interaction?.transaction_data?.ticket_url)) {
-                latestRefs.current.showToast('Cobranca criada. O QR ainda não voltou nesta resposta.', 'info');
+                latestRefs.current.showToast('Cobrança criada. O QR ainda não voltou nesta resposta.', 'info');
             }
         } catch (error: any) {
             console.error('Erro ao criar Pix:', error);
             const rawMessage = String(error?.message || '').trim();
             const nextError =
                 !rawMessage || /failed to fetch|networkerror|load failed/i.test(rawMessage)
-                    ? 'Não consegui falar com o backend do Pix. Isso costuma ser deploy antigo da edge function ou bloqueio de dominio/CORS.'
+                    ? 'Não consegui falar com o backend do Pix. Isso costuma ser deploy antigo da edge function ou bloqueio de domínio/CORS.'
                     : rawMessage;
             setPaymentError(nextError);
             latestRefs.current.showToast(nextError);
@@ -421,7 +421,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = (props) => {
         const nextFullName = normalizeFullName(`${firstNameInput} ${lastNameInput}`);
         const nextCpf = sanitizeCpf(cpfInput);
         if (!isValidCheckoutEmail(nextEmail)) {
-            showToast('Digite um e-mail valido para continuar.', 'warning');
+            showToast('Digite um e-mail válido para continuar.', 'warning');
             return;
         }
         if (!isValidFullName(nextFullName)) {
@@ -429,7 +429,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = (props) => {
             return;
         }
         if (!isValidCpf(nextCpf)) {
-            showToast('Digite um CPF valido para continuar.', 'warning');
+            showToast('Digite um CPF válido para continuar.', 'warning');
             return;
         }
         void createPixCharge({
@@ -656,7 +656,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = (props) => {
                                                 type="email"
                                                 inputMode="email"
                                                 autoComplete="email"
-                                                placeholder="voce@exemplo.com"
+                                                placeholder="você@exemplo.com"
                                                 value={emailInput}
                                                 onChange={(event) => setEmailInput(event.target.value)}
                                                 disabled={loading}
@@ -736,7 +736,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = (props) => {
                                             Código Pix copia e cola
                                         </div>
                                         <div className="mercado-pago-copybox mt-2 break-all rounded-xl border border-white/10 bg-black/30 p-3 text-xs leading-relaxed text-white">
-                                            {pixQrCode || 'O Mercado Pago ainda não retornou o código copia e cola nesta resposta.'}
+                                            {pixQrCode || 'O Mercado Pago ainda não retornou o código cópia e cola nesta resposta.'}
                                         </div>
                                     </div>
 

@@ -555,7 +555,7 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
     const handleOptIn = async (quest: ClanCustomQuest) => {
         try {
             if (quest.mission_type === 'singular' && (quest.status === 'locked' || quest.assigned_user_id) && quest.assigned_user_id !== userProfile.id) {
-                showToast("Esta tarefa ja esta com outra pessoa.", "error");
+                showToast("Esta tarefa já esta com outra pessoa.", "error");
                 return;
             }
 
@@ -567,7 +567,7 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
                 if (existingPlannerAction.arenaId !== clanArena.id) {
                     updateAction(existingPlannerAction.id, { arenaId: clanArena.id });
                 }
-                showToast(`Essa ação ja esta na arena "${clanArena.name}".`, "info");
+                showToast(`Essa ação já esta na arena "${clanArena.name}".`, "info");
                 return;
             }
 
@@ -635,7 +635,7 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
                 }
             }
 
-            const activationText = quest.mission_type === 'singular' ? 'Tarefa assumida' : 'Acao instalada';
+            const activationText = quest.mission_type === 'singular' ? 'Tarefa assumida' : 'Ação instalada';
             showToast(
                 scheduledInPlanner
                     ? `${activationText} e agendada no Planner!`
@@ -650,7 +650,7 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
 
         } catch (error) {
             console.error("Error opting in:", error);
-            showToast("Erro ao instalar acao.", "error");
+            showToast("Erro ao instalar ação.", "error");
         }
     };
 
@@ -703,7 +703,7 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
 
         } catch (error) {
             console.error("Error aborting mission:", error);
-            showToast("Erro ao remover acao.", "error");
+            showToast("Erro ao remover ação.", "error");
         }
     };
 

@@ -37,7 +37,7 @@ export type OnboardingAnswers = {
 // pessoa ter visto o app fazer qualquer coisa.
 
 const PURPOSES = [
-  { id: 'organizar' as const, icon: '\u{1F5C2}', label: 'Organizar a vida', detail: 'Por ordem no que ja existe' },
+  { id: 'organizar' as const, icon: '\u{1F5C2}', label: 'Organizar a vida', detail: 'Por ordem no que já existe' },
   { id: 'habitos' as const, icon: '\u{1F331}', label: 'Criar habitos', detail: 'Firmar o que ainda não pegou' },
   { id: 'objetivo' as const, icon: '\u{1F3AF}', label: 'Perseguir um objetivo', detail: 'Uma coisa que importa agora' },
   { id: 'retomar' as const, icon: '\u{1F9ED}', label: 'Retomar o controle', detail: 'Voltar a um rumo que se perdeu' },
@@ -197,7 +197,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     },
     {
       id: 'missions',
-      title: 'Quer uma missão para comecar?',
+      title: 'Quer uma missão para começar?',
       text: 'Escolha uma ou nenhuma. Ela apenas acompanha o que você fizer e pode ser abandonada depois.',
       navigation: { view: 'assets', showReports: false, showRestScreen: false, showArenaId: null },
     },

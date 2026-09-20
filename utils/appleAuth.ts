@@ -13,7 +13,7 @@ export const isAppleSignInConfigured = (): boolean =>
   Boolean(getAppleSignInUrl());
 
 export const getAppleSignInPendingMessage = (): string =>
-  'Sign in with Apple ja esta armado nesta tela. Falta apenas conectar a URL/provedor Apple para o botao abrir o fluxo real.';
+  'Sign in with Apple já esta armado nesta tela. Falta apenas conectar a URL/provedor Apple para o botão abrir o fluxo real.';
 
 export const launchAppleSignIn = async (): Promise<boolean> => {
   const authUrl = getAppleSignInUrl();

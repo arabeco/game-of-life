@@ -118,11 +118,24 @@ where alvo.id = codigo.id;
 
 -- Quem saiu do codigo e aposentado, nao apagado: quem ja tem continua tendo, e
 -- o sorteio para de alcancar. (O glifo e o orbe sairam em 20/09; sao 17.)
-update public.items
-set is_live_in_game = false
-where id <> all (array[
-${itens.map((i) => `  ${txt(i.id)}`).join(',\n')}
-]::text[]);
+--
+-- O coalesce no WHERE nao e enfeite: sem ele o update tocaria tambem em quem ja
+-- estava desligado, e o RETURNING abaixo misturaria o que ESTA desligado com o
+-- que ACABOU de ser desligado. Foi assim que a primeira versao deste arquivo
+-- fez parecer que tinha apagado a borda e o banner da Aurora II, que ja estavam
+-- fora porque a temporada ativa e a Genesis.
+with aposentados as (
+  update public.items
+  set is_live_in_game = false
+  where coalesce(is_live_in_game, true) = true
+    and id <> all (array[
+${itens.map((i) => `      ${txt(i.id)}`).join(',\n')}
+    ]::text[])
+  returning id, name, category, tier
+)
+select id, name, category, tier, 'DESLIGADO AGORA' as o_que_mudou
+from aposentados
+order by category, tier, id;
 
 commit;
 
@@ -168,11 +181,22 @@ ${itens.map((i) => `  (${txt(i.id)})`).join(',\n')}
 ) as codigo (id)
 where not exists (select 1 from public.items i where i.id = codigo.id);
 
--- 4. Itens que o codigo nao conhece mais, e que acabaram de ser aposentados.
-select id, name, category, tier
+-- 4. TUDO o que esta desligado hoje — nao so o que este bloco desligou.
+--
+-- Aqui entram tres coisas diferentes, e vale saber qual e qual:
+--   - o que saiu do codigo agora (glifo, orbe, e o que o RETURNING acima listou)
+--   - o que esta fora porque a temporada nao e a da vez (Aurora II)
+--   - o que so existe no banco e nunca chegou ao codigo
+select
+  id, name, category, tier,
+  case
+    when id like 'item_glyph_%' or id like 'item_orb_%' then 'saiu do codigo'
+    when id like '%aurora_1_2026%' or id like '%genesis%' then 'temporada fora da vez'
+    else 'so existe no banco'
+  end as por_que
 from public.items
 where coalesce(is_live_in_game, true) = false
-order by category, tier, id;
+order by por_que, category, tier, id;
 
 -- --------------------------------------------------------------------------
 -- OPCIONAL, E E DECISAO SUA. Nao roda junto.

@@ -90,8 +90,6 @@ const CATEGORIAS = [
     { id: 'ui_skin', nome: 'Skin de UI' },
     { id: 'artifact', nome: 'Artefato', fora: 'e o pão do baú' },
     { id: 'plate', nome: 'Tábua / wallpaper', fora: 'loja e baú' },
-    { id: 'glyph', nome: 'Glifo' },
-    { id: 'orb', nome: 'Orbe' },
     { id: 'garden', nome: 'Jardim', fora: 'loja' },
 ];
 /** `insignias` no plural e a mesma linha de `insignia`; o DB tem as duas grafias. */

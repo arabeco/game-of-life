@@ -2882,7 +2882,31 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     );
                                 })}
                             </div>
-                        ) : (sortedReports.length > 0 || visibleActiveCycle || visibleUpcomingCycle) && (
+                        /*
+                         * A TRILHA APARECE MESMO SEM NADA PARA MOSTRAR.
+                         *
+                         * Aqui havia `(sortedReports.length > 0 || visibleActiveCycle ||
+                         * visibleUpcomingCycle) &&`, e quem chegava agora nao tinha nenhum
+                         * dos tres. A trilha inteira sumia — e com ela a vaga vazia, que e
+                         * onde mora o unico `#start-new-cycle-button` do app.
+                         *
+                         * O efeito era o pior possivel para um comeco: o jogador novo NAO
+                         * CONSEGUIA criar o primeiro ciclo. Os dois caminhos para o
+                         * NewCycleSetupView saem daqui, e os dois exigiam ja ter tido um
+                         * ciclo — este botao, escondido atras da condicao, e o "novo ciclo"
+                         * do fim do relatorio, que so existe para quem acabou de fechar um.
+                         *
+                         * O onboarding batia nisso de frente e parava no passo 10 de 14:
+                         * ele aponta para este botao, e o passo so avanca quando o alvo
+                         * existe no DOM. O tutorial morria justamente antes do ciclo, que e
+                         * o loop central do app.
+                         *
+                         * A trilha ja sabia ser vazia: a vaga "Sem ciclo em andamento" foi
+                         * feita para isso. Sem reports, totalDeParadas vale 1 e os pontos
+                         * nao aparecem, entao o que sobra na tela e exatamente a vaga com o
+                         * botao — que e o que um comeco precisa.
+                         */
+                        ) : (
                             /*
                              * A trilha horizontal.
                              *

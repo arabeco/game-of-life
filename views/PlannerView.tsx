@@ -788,7 +788,7 @@ const DailyView: React.FC<{ tasks: ScheduledTask[], actions: Action[], scaleFact
     );
 };
 
-const PlannerFloatingVitals: React.FC<{ expSnapshot: PlannerExpSnapshot }> = ({ expSnapshot }) => {
+const PlannerFloatingVitals: React.FC<{ expSnapshot: PlannerExpSnapshot; cycleExpBanked: number }> = ({ expSnapshot, cycleExpBanked }) => {
     const { userProfile } = useGame();
     // O pulso da sequencia saiu junto com o contador: ele acendia um brilho
     // no orbe que nao existe mais. E o sinal que ele escutava, daily_streak, nao
@@ -819,13 +819,28 @@ const PlannerFloatingVitals: React.FC<{ expSnapshot: PlannerExpSnapshot }> = ({ 
                         E o "melhor streak" do legado nunca veio daqui: sai de
                         report.metrics.maxStreak, calculado no fecho de cada ciclo. */}
                 </div>
-                {/* A EXP GUARDADA DO CICLO SAIU DAQUI.
+                {/* A EXP GUARDADA DO CICLO SAIU DA TELA, E NAO DO DOM.
 
-                    Ela nao se perde: quem paga e o endCycle, somando
-                    `cycleExpBonus + premiumBonusExp` no fecho, e o numero continua
-                    a vista no Painel Diario como "EXP guardada". O que saiu foi a
-                    segunda linha em cima do planner, que empurrava a caixa para a
-                    largura de dois orbes e roubava espaco do dock. */}
+                    Da tela porque a segunda linha empurrava a caixa para a largura
+                    de dois orbes e roubava espaco do botao de zoom. E ela nao se
+                    perde: quem paga e o endCycle, somando `cycleExpBonus +
+                    premiumBonusExp` no fecho, e o numero continua a vista no Painel
+                    Diario como "EXP guardada".
+
+                    Do DOM ela NAO pode sair, e isso custou uma descoberta: o
+                    tests/cycle-report-flow usa este valor como sinal de que o
+                    `cycleExpBonus` terminou de reidratar. Sem ele o teste voltava a
+                    falhar 1 em 5, fechando ciclo antes da hidratacao — e, pior, o
+                    app perdia a unica amarra entre "a tela prometeu N" e "o relatorio
+                    pagou N", que e a rede contra o pagamento em dobro que o endCycle
+                    ja cometeu uma vez.
+
+                    Como atributo ele cumpre o papel sem ocupar um pixel. O teste ja
+                    lia por textContent, e nao innerText, justamente porque o cracha
+                    ja estava invisivel antes disto. */}
+                <span hidden data-exp-guardada={cycleExpBanked}>
+                    {cycleExpBanked > 0 ? `+${cycleExpBanked} ao fechar` : ''}
+                </span>
                 </div>
         </div>
     );
@@ -2214,7 +2229,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 </div>
             </div>
 
-            <PlannerFloatingVitals expSnapshot={plannerExpSnapshot} />
+            <PlannerFloatingVitals expSnapshot={plannerExpSnapshot} cycleExpBanked={cycleExpBonus || 0} />
 
             {modalData && (
                 <ActionModal

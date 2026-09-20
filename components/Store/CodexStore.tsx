@@ -2,7 +2,6 @@
 import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
 import { CheckIcon, FilterIcon, LightbulbIcon } from '../Icons';
-import { getCasualCampaignFragmentCost } from '../../constants/economy';
 import { CampaignsCodex } from '../CampaignsCodex';
 import { ConfirmationModal } from '../ConfirmationModal';
 import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../../utils/codexPreview';
@@ -116,21 +115,8 @@ const resolveTypeFromTags = (tags: string[]): CampaignTypeId => {
 };
 
 export const CodexStore: React.FC = () => {
-    const { userCodexes, userProfile, codexCatalog, refreshCodexes, buyCodex, buyCodexWithFragments, installCodex, getArenas, showToast, assets } = useGame();
+    const { userCodexes, userProfile, codexCatalog, refreshCodexes, buyCodex, installCodex, getArenas, showToast, assets } = useGame();
     useEffect(() => { void refreshCodexes(); }, [refreshCodexes]);
-    const fragmentsInWallet = Number(userProfile.wallet?.fragments || 0);
-
-    const handleFragmentPurchase = async (codex: { id: string; duration_days: number; price_fragments?: number | null }) => {
-        if (purchasing) return;
-        const custo = Math.max(0, Number(codex.price_fragments ?? getCasualCampaignFragmentCost(codex.duration_days)));
-        if (custo <= 0 || fragmentsInWallet < custo) return;
-        setPurchasing(codex.id);
-        try {
-            await buyCodexWithFragments(codex.id, custo);
-        } finally {
-            setPurchasing(null);
-        }
-    };
     const [purchasing, setPurchasing] = useState<string | null>(null);
     const [campaignPreview, setCampaignPreview] = useState<CodexCampaignPreview | null>(null);
     const [pendingPurchase, setPendingPurchase] = useState<{ id: string; title: string; goldPrice: number } | null>(null);
@@ -626,23 +612,36 @@ export const CodexStore: React.FC = () => {
                                                 </button>
                                             )}
 
-                                            {/* Preco em fragmento ao lado do de ouro.
-                                                Isto morava na aba Forja, que vendia campanha
-                                                casual por fragmento — e campanha nao e forja.
-                                                O fragmento e so outra moeda para a mesma
-                                                compra, entao ele pertence ao card da campanha,
-                                                ao lado do ouro. */}
-                                            {!isOwned && !isInstalled && !isFree && !codex.is_premium && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => { void handleFragmentPurchase(codex); }}
-                                                    disabled={!!purchasing || fragmentsInWallet < getCasualCampaignFragmentCost(codex.duration_days)}
-                                                    className="inline-flex h-9 flex-1 items-center justify-center gap-1 rounded-xl border border-cyan-400/25 bg-cyan-400/10 px-2 text-[10px] font-black uppercase tracking-[0.14em] text-cyan-200 transition-all hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50"
-                                                >
-                                                    <span>{getCasualCampaignFragmentCost(codex.duration_days)}</span>
-                                                    <span aria-hidden>💎</span>
-                                                </button>
-                                            )}
+                                            {/* A COMPRA POR FRAGMENTO SAIU DAQUI.
+
+                                                Ela ja tinha mudado de lugar uma vez: morava na
+                                                aba Forja e veio para ca, porque campanha nao e
+                                                forja. O erro nao era o lugar — era existir.
+
+                                                O mesmo cosmetico custa 15 de ouro ou 40 de
+                                                fragmento na forja, o que fixa o cambio em ~2,7
+                                                fragmentos por ouro — e ouro vale R$ 0,10. Nessa
+                                                regua, um bau lendario dava ate R$ 18 de conteudo
+                                                comprável e um duplicado tier 5 dava R$ 37, tudo
+                                                de graca. A campanha, a 22 fragmentos, saia por
+                                                R$ 0,81.
+
+                                                Enquanto fragmento comprar o que dinheiro compra,
+                                                qualquer taxa de cunhagem vira taxa de cambio, e
+                                                o farm ganha sempre: e de graca, e o tempo da
+                                                pessoa nao entra na conta dela.
+
+                                                O corte e por natureza, e nao por preco. Fragmento
+                                                fica sendo a moeda do "transformei o repetido em
+                                                algo meu" — forja e reciclagem, fechada em si.
+                                                Campanha e conteudo, e conteudo se paga em ouro ou
+                                                vem no premium.
+
+                                                O buyCodexWithFragments continua no contexto e a
+                                                coluna price_fragments continua no catalogo: o que
+                                                saiu foi o caminho, nao a capacidade. Se um dia a
+                                                campanha voltar a ter preco em fragmento, que seja
+                                                por decisao, e nao porque o botao nunca foi tirado. */}
 
                                             {/* O "VER" SAIU.
                                                 O card inteiro ja abre o dossie ao toque — o botao

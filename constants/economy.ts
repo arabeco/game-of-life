@@ -110,11 +110,38 @@
 };
 
 /**
- * O preco em fragmentos de uma campanha casual.
+ * O preco em fragmentos de uma campanha casual. SEM USO — nenhuma tela chama.
  *
- * Morava dentro de TheForge, que era a unica tela que vendia campanha por
- * fragmento. Como a venda passou para a aba de Campanhas — que e onde campanha
- * mora —, a regra precisa de um lugar que as duas telas enxerguem.
+ * FRAGMENTO NAO COMPRA MAIS CAMPANHA, e a razao esta em duas tabelas deste
+ * arquivo. O mesmo cosmetico custa 15 de ouro ou 40 de fragmento na forja, o
+ * que fixa o cambio em ~2,7 fragmentos por ouro; e ouro vale R$ 0,10. Nessa
+ * regua, o que o app dava de graca era:
+ *
+ *   bau lendario   200-500 fragmentos  =  R$  7,40 a 18,50
+ *   duplicado t5      1000             =  R$ 37,00
+ *   CAMPANHA          22-42            =  R$  0,81 a 1,55
+ *
+ * Uma campanha — conteudo estruturado de semanas — saia por menos que o
+ * cosmetico mais barato do jogo, pago com moeda que chove de bau. Enquanto
+ * fragmento comprar o que dinheiro compra, qualquer taxa de cunhagem vira taxa
+ * de cambio, e o farm ganha sempre: e de graca, e o tempo da pessoa nao entra
+ * na conta dela.
+ *
+ * O corte e POR NATUREZA, e nao por preco. Encarecer puniria o jogador novo e
+ * nao incomodaria o veterano com 3000 fragmentos parados. Entao:
+ *
+ *   fragmento  ->  forja e reciclagem. A moeda do "transformei o repetido em
+ *                  algo meu", fechada em si.
+ *   ouro        ->  conteudo. Campanha se paga em ouro ou vem no premium.
+ *
+ * Isso tambem deixa o bau em paz. Bau e caixa de recompensa aleatoria e por
+ * isso nao se vende — e o que a regulacao mira. Nao sendo vendido, ele nao
+ * precisa valer DINHEIRO: precisa ser gostoso de abrir, o que cosmetico e
+ * fragmento de forja resolvem.
+ *
+ * Fica aqui, e nao apagada, porque a capacidade continua no servidor: o
+ * buyCodexWithFragments segue no contexto e price_fragments segue no catalogo.
+ * Se a campanha voltar a ter preco em fragmento, que seja por decisao.
  */
 export const getCasualCampaignFragmentCost = (durationDays: number): number => {
     if (durationDays >= 21) return 42;

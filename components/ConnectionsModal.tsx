@@ -66,13 +66,44 @@ const Avatar: React.FC<{ profile?: ProfileLite | null }> = ({ profile }) => (
   </div>
 );
 
+/**
+ * O progresso da arena compartilhada, com TETO POR ACAO.
+ *
+ * Antes o numerador somava TODAS as tarefas concluidas da arena e comparava com
+ * a soma das repeticoes. As duas pontas nao se falavam:
+ *
+ * - uma acao feita dez vezes onde a meta era tres contava as dez, entao ela
+ *   sozinha enchia a barra da arena inteira enquanto as outras estavam em zero;
+ * - as tarefas chegam sem recorte de ciclo — o servidor as filtra por dono e
+ *   mais nada —, enquanto `repetitions` e meta POR CICLO. Depois de alguns
+ *   ciclos qualquer arena ficava cravada em 100%;
+ * - e acao sem repeticao declarada somava 0 ao alvo, mas as tarefas dela
+ *   continuavam somando ao total.
+ *
+ * A regra certa ja existia no app: `Math.min(nextCount, target)`, em
+ * taskDomain.ts. Cada acao entrega no maximo a propria meta, e a arena so chega
+ * a 100% quando TODAS chegaram — que e o que a barra deveria ter dito desde o
+ * comeco.
+ */
 const getArenaProgress = (entry: LinkedRelationshipArena) => {
   const actions = entry.actions || [];
-  const target = actions.reduce((sum, action) => {
-    const repetitions = Number(action.repetitions || 0);
-    return sum + (repetitions > 0 ? repetitions : 0);
-  }, 0);
-  const completed = (entry.tasks || []).filter((task) => task.completed).length;
+
+  const concluidasPorAcao = new Map<string, number>();
+  (entry.tasks || []).forEach((task) => {
+    if (!task.completed) return;
+    concluidasPorAcao.set(task.actionId, (concluidasPorAcao.get(task.actionId) || 0) + 1);
+  });
+
+  let target = 0;
+  let completed = 0;
+  actions.forEach((action) => {
+    // `Math.max(1, ...)` e o mesmo piso do resto do app: acao sem repeticao
+    // declarada vale uma entrega, e nao zero.
+    const alvo = Math.max(1, Math.floor(Number(action.repetitions || 1)));
+    target += alvo;
+    completed += Math.min(concluidasPorAcao.get(action.id) || 0, alvo);
+  });
+
   return {
     completed,
     target,

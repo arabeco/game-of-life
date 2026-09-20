@@ -284,7 +284,7 @@ const PrivacyPreferencesModal: React.FC<{
                         <div className="flex items-center justify-between gap-3">
                             <div className="space-y-1">
                                 <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Visibilidade do perfil</div>
-                                <div className="text-[11px] text-gray-500">Widgets seguem a visibilidade dos ativos; arenas ficam no controle proprio abaixo.</div>
+                                <div className="text-[11px] text-gray-500">Widgets seguem a visibilidade dos ativos; arenas ficam no controle próprio abaixo.</div>
                             </div>
                             <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-gray-500">So afeta o que outros veem</div>
                         </div>

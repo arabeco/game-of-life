@@ -58,7 +58,7 @@ export const buildArenaLimitMessage = (
         if (summary.isPremium) {
             return `Essa operação precisa de ${requestedArenaCount} arenas, mas seu limite premium de ${summary.limit} já ficou curto. Exclua ${missingSlots} arena(s) antes de continuar ou suba para o Platinum.`;
         }
-        return `Essa operação precisa de ${requestedArenaCount} arenas, mas o plano atual permite ate ${summary.limit}. Exclua ${missingSlots} arena(s), ative Premium para ${PREMIUM_ARENA_LIMIT} ou Platinum para ${PLATINUM_ARENA_LIMIT}.`;
+        return `Essa operação precisa de ${requestedArenaCount} arenas, mas o plano atual permite até ${summary.limit}. Exclua ${missingSlots} arena(s), ative Premium para ${PREMIUM_ARENA_LIMIT} ou Platinum para ${PLATINUM_ARENA_LIMIT}.`;
     }
 
     if (summary.isPlatinum) {

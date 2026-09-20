@@ -564,7 +564,7 @@ const GM_SHOWCASE_REPORT = {
     target: [60, 30, 20, 45, 70, 70],
   },
   signals: [
-    { title: 'Tempo médio ate ativar', value: '17h', helper: 'do bilhete ao primeiro loop fechado' },
+    { title: 'Tempo médio até ativar', value: '17h', helper: 'do bilhete ao primeiro loop fechado' },
     { title: 'Dias ativos (14d)', value: '8.6', helper: 'média realista para base ainda enxuta' },
     { title: 'Aceite de convite', value: '83%', helper: 'bilhete ouro, prata e bronze' },
     { title: 'Sessão útil média', value: '18 min', helper: 'janela boa para celular e D0' },
@@ -1304,7 +1304,7 @@ const LEGACY_SHOWCASE_ERAS: LegacyRenderEraSummary[] = (() => {
       label: 'Era da Aurora',
       defaultLabel: 'Era 1',
       skinId: '1',
-      description: 'Fase de fundacao em que o ritmo aparece, a saúde ancora a disciplina e o sistema deixa de ser promessa para virar pratica.',
+      description: 'Fase de fundação em que o ritmo aparece, a saúde ancora a disciplina e o sistema deixa de ser promessa para virar prática.',
       finalSummary: 'A Aurora provou tracao: o ritual matinal e os blocos de foco amarraram saúde, trabalho e estudo numa mesma cadência.',
       aiSummary: 'Primeiro bloco histórico com sinais claros de consistência e adesao ao loop.',
       cycles: eraOneCycles,
@@ -1751,7 +1751,7 @@ const CycleReportPreviewButton: React.FC = () => {
                     autoPlay={false}
                     onOk={() => setShowPreview(false)}
                     onCompare={() => showToast('Preview de vitrine: comparacao desativada.', 'info')}
-                    onShare={() => showToast('Navegue ate o resumo para exportar o card do mock.', 'info')}
+                    onShare={() => showToast('Navegue até o resumo para exportar o card do mock.', 'info')}
                     onPostToFeed={() => showToast('Preview de vitrine: postagem desativada.', 'info')}
                 />
             )}
@@ -1763,7 +1763,7 @@ type NotificationLabType = 'system' | 'oracle_card';
 
 const GM_NOTIFICATION_TEST_CONTENT: Record<NotificationLabType, string> = {
     system: 'TESTE GM: Aviso de sistema entregue em Avisos. Este item deve aparecer imediatamente na aba de notificações.',
-    oracle_card: 'TESTE GM: Card do Oráculo entregue em Avisos. O ícone do Oráculo deve destacar ate você abrir a aba.',
+    oracle_card: 'TESTE GM: Card do Oráculo entregue em Avisos. O ícone do Oráculo deve destacar até você abrir a aba.',
 };
 
 const NOTIFICATION_LAB_DEBUG_PREFIX = '[GM Notification Lab]';

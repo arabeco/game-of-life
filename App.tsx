@@ -222,7 +222,7 @@ const App: React.FC = () => {
                     saveClosedBetaGoogleRedirect({
                         mode: 'login',
                         email: '',
-                        message: errorDescription || 'Nao consegui concluir o login nativo com Google.',
+                        message: errorDescription || 'Não consegui concluir o login nativo com Google.',
                     });
                     return;
                 }
@@ -233,7 +233,7 @@ const App: React.FC = () => {
                     saveClosedBetaGoogleRedirect({
                         mode: 'login',
                         email: '',
-                        message: 'O Google voltou para o app sem codigo de autenticacao.',
+                        message: 'O Google voltou para o app sem código de autenticacao.',
                     });
                     return;
                 }
@@ -245,7 +245,7 @@ const App: React.FC = () => {
                     saveClosedBetaGoogleRedirect({
                         mode: 'login',
                         email: '',
-                        message: exchangeError.message || 'Falha ao trocar o codigo do Google pela sessao no app.',
+                        message: exchangeError.message || 'Falha ao trocar o código do Google pela sessão no app.',
                     });
                     return;
                 }
@@ -538,7 +538,7 @@ const App: React.FC = () => {
                 saveClosedBetaGoogleRedirect({
                     mode: 'login',
                     email: candidate.user.email || '',
-                    message: 'Esta conta foi excluida e nao pode entrar novamente com este Google.',
+                    message: 'Esta conta foi excluída e não pode entrar novamente com este Google.',
                 });
                 const cleanupResult = await SupabaseService.deleteMyAccount({
                     blockReentry: false,
@@ -563,7 +563,7 @@ const App: React.FC = () => {
                 saveClosedBetaGoogleRedirect({
                     mode: 'login',
                     email: candidate.user.email || '',
-                    message: repairResult.error || 'Seu acesso ja tinha Bilhete vinculado, mas nao consegui reconstruir o perfil agora.',
+                    message: repairResult.error || 'Seu acesso já tinha Bilhete vinculado, mas não consegui reconstruir o perfil agora.',
                 });
                 await signOutAndClearSupabaseSession('local', 'closed-beta-profile-repair-failed');
                 return null;
@@ -583,7 +583,7 @@ const App: React.FC = () => {
                 saveClosedBetaGoogleRedirect({
                     mode: 'login',
                     email: candidate.user.email || '',
-                    message: 'Esta conta foi excluida e nao pode entrar novamente com este Google.',
+                    message: 'Esta conta foi excluída e não pode entrar novamente com este Google.',
                 });
                 const cleanupResult = await SupabaseService.deleteMyAccount({
                     blockReentry: false,

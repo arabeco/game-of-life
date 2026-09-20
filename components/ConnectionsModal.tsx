@@ -779,7 +779,7 @@ export const ConnectionsModal: React.FC<{
               <option value="">Escolha uma arena</option>
               {ownArenas.map((arena: Arena) => <option key={arena.id} value={arena.id}>{arena.name}</option>)}
             </select>
-            {ownArenas.length === 0 && <p className="mt-2 text-[10px] text-amber-200/70">Crie uma arena primeiro; o mentor não fara isso por você.</p>}
+            {ownArenas.length === 0 && <p className="mt-2 text-[10px] text-amber-200/70">Crie uma arena primeiro; o mentor não fará isso por você.</p>}
             <div className="mt-4 flex gap-2">
               <button type="button" onClick={() => setMentorshipPickerLink(null)} className="flex-1 rounded-md border border-white/10 px-3 py-2 text-xs font-bold text-white/60">Cancelar</button>
               <button type="button" disabled={!selectedArenaId || Boolean(busyKey)} onClick={() => void saveMentorshipArena()} id="connections-mentorship-share" className="flex-1 rounded-md bg-amber-300 px-3 py-2 text-xs font-black text-black disabled:opacity-40">Compartilhar</button>

@@ -69,7 +69,7 @@ const questions: QuizQuestion[] = [
     ]},
     { id: 'p2', title: 'O que dentro dessa area doi mais quando você para para pensar?', subtitle: 'As opções se adaptam ao que você escolheu antes.', getOptions: (answers) => q2Options[answers.p1 || ''] || [] },
     { id: 'p3', title: 'Quando você aprende algo novo, o que faz mais sentido pra você?', subtitle: 'Não tem certo ou errado. E sobre como sua mente funciona melhor.', options: [
-        { key: 'A', title: 'Jogar direto na pratica', subtitle: 'Fazer, errar, ajustar. Teoria so depois de sentir na pele' },
+        { key: 'A', title: 'Jogar direto na prática', subtitle: 'Fazer, errar, ajustar. Teoria só depois de sentir na pele' },
         { key: 'B', title: 'Entender antes de agir', subtitle: 'Ler, entender o porque, então aplicar com consciência' },
         { key: 'C', title: 'Sustentar o que já funciona', subtitle: 'Não preciso de novidade. Preciso de consistência no que já sei' },
         { key: 'D', title: 'Criar e expressar', subtitle: 'Aprendo produzindo. Escrita, forma e expressao são meu caminho' },

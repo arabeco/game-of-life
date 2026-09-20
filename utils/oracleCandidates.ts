@@ -104,7 +104,7 @@ export const ORACLE_CANDIDATE_WEIGHTS: Record<OracleCandidateType, OracleCandida
   streak_em_risco: {
     importance: 4, urgency: 5, novelty: 3, actionability: 5,
     cooldownDays: 0, // Zero: cada noite e um risco novo, e nao avisar porque avisou ontem seria deixar morrer por elegancia.
-    why: 'A única coisa no app que morre sozinha se ninguém disser nada. Uma arena fechada continua fechada daqui a vinte minutos; um streak de 23 dias vira 0 na virada. Vence ate a estrutura inflada — a conta que não fecha continua não fechando amanhã de manhã, e a sequência não.',
+    why: 'A única coisa no app que morre sozinha se ninguém disser nada. Uma arena fechada continua fechada daqui a vinte minutos; um streak de 23 dias vira 0 na virada. Vence até a estrutura inflada — a conta que não fecha continua não fechando amanhã de manhã, e a sequência não.',
   },
   meta_inflada: {
     importance: 5, urgency: 3, novelty: 4, actionability: 5,
@@ -144,7 +144,7 @@ export const ORACLE_CANDIDATE_WEIGHTS: Record<OracleCandidateType, OracleCandida
   arena_parada: {
     importance: 4, urgency: 3, novelty: 2, actionability: 4,
     cooldownDays: 2, // Dois dias: sete dias parada nao vira nada em vinte e quatro horas.
-    why: 'Sete dias e zero conclusão e mais grave que atraso: a arena parou de existir na pratica, e ainda da para reanimar.',
+    why: 'Sete dias e zero conclusão e mais grave que atraso: a arena parou de existir na prática, e ainda dá para reanimar.',
   },
   ciclo_atrasado: {
     importance: 3, urgency: 3, novelty: 1, actionability: 2,

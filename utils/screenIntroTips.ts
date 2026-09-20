@@ -293,7 +293,7 @@ const SCREEN_INTRO_TIP_VARIANTS: Partial<Record<ScreenIntroTipId, (state: Screen
   }),
   reports: (state) => (state.hasClosedCycle ? null : {
     title: 'Ainda não ha o que comparar.',
-    summary: 'O histórico nasce quando o primeiro ciclo fecha. Ate la esta tela fica quase vazia.',
+    summary: 'O histórico nasce quando o primeiro ciclo fecha. Até lá esta tela fica quase vazia.',
     items: ['volte aqui depois de fechar um ciclo.'],
   }),
 };

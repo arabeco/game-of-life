@@ -165,7 +165,7 @@ export const ORACLE_CARD_LIBRARY: Partial<Record<OracleCategory, string[]>> = {
     'Trabalho profundo não e trabalhar mais. E trabalhar sem trocar de assunto.',
     'A base parece chata porque você já a domina. Ela continua sendo a base.',
     'Melhora uma variavel por vez. Mudar três ao mesmo tempo apaga a leitura do que funcionou.',
-    'Quem domina sabe a hora de parar. Quem esta aprendendo insiste ate estragar.',
+    'Quem domina sabe a hora de parar. Quem está aprendendo insiste até estragar.',
     'A diferença entre bom e ótimo costuma estar no que se retira, não no que se acrescenta.',
     'Registra o que deu errado com detalhe. Erro sem descrição vira erro repetido.',
     'Executar devagar de propósito ensina mais que executar rápido no automático.',

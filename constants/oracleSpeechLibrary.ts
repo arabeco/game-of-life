@@ -487,7 +487,7 @@ export const ORACLE_GREETINGS: Record<OracleGreetingPeriod, Record<OracleSpeechT
         neutro: ['Boa tarde.', 'Metade do dia. O painel esta aqui.'],
         coach: ['Boa tarde. Ainda da tempo de uma.', 'Metade do dia: uma entrega ainda cabe.'],
         reflexivo: ['Boa tarde. O dia foi como você imaginou?', 'Metade do dia. O que mudou desde de manhã?'],
-        calmo: ['Boa tarde. O que veio ate aqui já conta.', 'Metade do dia, e tudo bem se foi devagar.'],
+        calmo: ['Boa tarde. O que veio até aqui já conta.', 'Metade do dia, e tudo bem se foi devagar.'],
     },
     noite: {
         neutro: ['Boa noite.', 'Fim do dia. O painel esta aqui.'],

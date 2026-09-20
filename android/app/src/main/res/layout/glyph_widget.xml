@@ -1,176 +1,197 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+    O FUNDO E AS BARRAS SEGUEM A SKIN, ENTAO NAO PODEM SER DRAWABLE FIXO.
+
+    Um widget nao roda CSS: ele so aceita a lista fechada de comandos de
+    RemoteViews. `setBackgroundColor` existe, mas so aceita cor SOLIDA — usaria
+    isso e perderia o gradiente e os cantos arredondados.
+
+    Por isso o fundo virou um ImageView que recebe um Bitmap desenhado no
+    provider (Canvas + LinearGradient + RoundRect). O mesmo vale para as duas
+    barras: `setProgressTintList` so e metodo permitido em RemoteViews a partir
+    da API 31, e o minSdk aqui e 24. Duas View com peso resolvem em qualquer
+    versao — a de tras e a trilha, a da frente e o preenchimento, e o peso e o
+    que RemoteViews sabe mexer (`setInt` em `setBackgroundColor` e o peso via
+    duas views irmas).
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/glyph_widget_root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@drawable/glyph_cycle_widget_background"
-    android:gravity="top"
-    android:orientation="vertical"
-    android:paddingLeft="12dp"
-    android:paddingTop="3dp"
-    android:paddingRight="12dp"
-    android:paddingBottom="6dp">
+    android:layout_height="match_parent">
 
-    <FrameLayout
+    <ImageView
+        android:id="@+id/glyph_widget_background"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:minHeight="14dp">
+        android:layout_height="match_parent"
+        android:contentDescription="@null"
+        android:scaleType="fitXY"
+        android:src="@drawable/glyph_cycle_widget_background" />
 
-        <TextView
-            android:id="@+id/glyph_widget_title"
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="top"
+        android:orientation="vertical"
+        android:paddingLeft="12dp"
+        android:paddingTop="3dp"
+        android:paddingRight="12dp"
+        android:paddingBottom="6dp">
+
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:minHeight="14dp">
+
+            <TextView
+                android:id="@+id/glyph_widget_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:fontFamily="sans"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:paddingLeft="52dp"
+                android:paddingRight="52dp"
+                android:text="GLYPH"
+                android:textAllCaps="true"
+                android:textColor="#F7F3E9"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/glyph_widget_end_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="left|center_vertical"
+                android:includeFontPadding="false"
+                android:text="ABRIR"
+                android:textAllCaps="true"
+                android:textColor="#CFC6AD"
+                android:textSize="8sp"
+                android:textStyle="bold" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/glyph_widget_subtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
             android:ellipsize="end"
-            android:fontFamily="sans"
-            android:gravity="center"
             android:includeFontPadding="false"
             android:maxLines="1"
-            android:paddingLeft="52dp"
-            android:paddingRight="52dp"
-            android:text="GLYPH"
-            android:textAllCaps="true"
-            android:textColor="#F7F3E9"
-            android:textSize="13sp"
-            android:textStyle="bold" />
+            android:text="Dia 1/30"
+            android:textColor="#C7D1DF"
+            android:textSize="9sp" />
 
         <TextView
-            android:id="@+id/glyph_widget_end_date"
-            android:layout_width="wrap_content"
+            android:id="@+id/glyph_widget_meta"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="left|center_vertical"
+            android:layout_marginTop="1dp"
+            android:ellipsize="end"
             android:includeFontPadding="false"
-            android:text="ABRIR"
+            android:maxLines="1"
+            android:text="Ciclo ativo"
             android:textAllCaps="true"
-            android:textColor="#CFC6AD"
+            android:textColor="#A8B6C9"
             android:textSize="8sp"
             android:textStyle="bold" />
-    </FrameLayout>
-
-    <TextView
-        android:id="@+id/glyph_widget_subtitle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:ellipsize="end"
-        android:includeFontPadding="false"
-        android:maxLines="1"
-        android:text="Dia 1/30"
-        android:textColor="#C7D1DF"
-        android:textSize="9sp" />
-
-    <TextView
-        android:id="@+id/glyph_widget_meta"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="1dp"
-        android:ellipsize="end"
-        android:includeFontPadding="false"
-        android:maxLines="1"
-        android:text="Ciclo ativo"
-        android:textAllCaps="true"
-        android:textColor="#A8B6C9"
-        android:textSize="8sp"
-        android:textStyle="bold" />
-
-    <LinearLayout
-        android:id="@+id/glyph_widget_actions_row"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:orientation="vertical">
 
         <LinearLayout
+            android:id="@+id/glyph_widget_actions_row"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:layout_marginTop="2dp"
+            android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/glyph_widget_actions_label"
-                android:layout_width="0dp"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:includeFontPadding="false"
-                android:maxLines="1"
-                android:text="Progresso"
-                android:textAllCaps="true"
-                android:textColor="#A8B6C9"
-                android:textSize="7sp"
-                android:textStyle="bold" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/glyph_widget_actions_percent"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="right"
-                android:includeFontPadding="false"
-                android:maxLines="1"
-                android:text="0/0 (0%)"
-                android:textColor="#F7F3E9"
-                android:textSize="7sp"
-                android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/glyph_widget_actions_label"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:text="Progresso"
+                    android:textAllCaps="true"
+                    android:textColor="#A8B6C9"
+                    android:textSize="7sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/glyph_widget_actions_percent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="right"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:text="0/0 (0%)"
+                    android:textColor="#F7F3E9"
+                    android:textSize="7sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/glyph_widget_actions_bar"
+                android:layout_width="match_parent"
+                android:layout_height="3dp"
+                android:layout_marginTop="1dp"
+                android:contentDescription="@null"
+                android:scaleType="fitXY" />
         </LinearLayout>
-
-        <ProgressBar
-            android:id="@+id/glyph_widget_actions_bar"
-            style="@android:style/Widget.ProgressBar.Horizontal"
-            android:layout_width="match_parent"
-            android:layout_height="3dp"
-            android:layout_marginTop="1dp"
-            android:max="100"
-            android:minHeight="3dp"
-            android:progress="0"
-            android:progressDrawable="@drawable/glyph_widget_progress" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/glyph_widget_time_row"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:orientation="vertical">
 
         <LinearLayout
+            android:id="@+id/glyph_widget_time_row"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:layout_marginTop="2dp"
+            android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/glyph_widget_time_label"
-                android:layout_width="0dp"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:includeFontPadding="false"
-                android:maxLines="1"
-                android:text="Tempo"
-                android:textAllCaps="true"
-                android:textColor="#A8B6C9"
-                android:textSize="7sp"
-                android:textStyle="bold" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/glyph_widget_time_percent"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="right"
-                android:includeFontPadding="false"
-                android:maxLines="1"
-                android:text="0/0 (0%)"
-                android:textColor="#C7D1DF"
-                android:textSize="7sp"
-                android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/glyph_widget_time_label"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:text="Tempo"
+                    android:textAllCaps="true"
+                    android:textColor="#A8B6C9"
+                    android:textSize="7sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/glyph_widget_time_percent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="right"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:text="0/0 (0%)"
+                    android:textColor="#C7D1DF"
+                    android:textSize="7sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/glyph_widget_time_bar"
+                android:layout_width="match_parent"
+                android:layout_height="3dp"
+                android:layout_marginTop="1dp"
+                android:contentDescription="@null"
+                android:scaleType="fitXY" />
         </LinearLayout>
-
-        <ProgressBar
-            android:id="@+id/glyph_widget_time_bar"
-            style="@android:style/Widget.ProgressBar.Horizontal"
-            android:layout_width="match_parent"
-            android:layout_height="3dp"
-            android:layout_marginTop="1dp"
-            android:max="100"
-            android:minHeight="3dp"
-            android:progress="0"
-            android:progressDrawable="@drawable/glyph_widget_progress_soft" />
     </LinearLayout>
-</LinearLayout>
+</FrameLayout>

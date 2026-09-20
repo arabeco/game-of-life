@@ -9,6 +9,15 @@ const GlyphWidget = registerPlugin<GlyphWidgetPlugin>('GlyphWidget');
 
 export type GlyphAndroidWidgetSnapshot = {
   updatedAt: string;
+  /**
+   * A cor da Skin de UI equipada, em #rrggbb.
+   *
+   * O widget nao roda CSS e nao enxerga `--skin-accent-color`: ele so recebe
+   * este JSON. Sem este campo o fundo dele ficava dourado para todo mundo,
+   * inclusive para quem equipou Gelo ou Cyberpunk — o mesmo defeito que o bloco
+   * de ciclo tinha dentro do app ate 3cc9dc4.
+   */
+  accentColor?: string;
   daily: DailyWidgetSnapshot;
   oracle: OracleWidgetSnapshot;
   auth?: {

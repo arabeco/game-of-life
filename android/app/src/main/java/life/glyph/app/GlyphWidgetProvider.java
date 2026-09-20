@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.view.View;
 import android.widget.RemoteViews;
 
@@ -49,8 +50,24 @@ public class GlyphWidgetProvider extends AppWidgetProvider {
         views.setTextViewText(R.id.glyph_widget_actions_percent, copy.actionsPercent);
         views.setTextViewText(R.id.glyph_widget_time_label, copy.timeLabel);
         views.setTextViewText(R.id.glyph_widget_time_percent, copy.timePercent);
-        views.setProgressBar(R.id.glyph_widget_actions_bar, 100, copy.actionsProgressPercent, false);
-        views.setProgressBar(R.id.glyph_widget_time_bar, 100, copy.timeProgressPercent, false);
+        /*
+         * A COR DA SKIN ENTRA AQUI, E NAO NO XML.
+         *
+         * O fundo e as duas barras eram drawable fixo: dourado para todo mundo,
+         * inclusive para quem equipou Gelo ou Cyberpunk. Como RemoteViews nao
+         * aceita gradiente dinamico nem tint de ProgressBar abaixo da API 31, o
+         * desenho sai do GlyphWidgetPaint e chega como Bitmap.
+         *
+         * O titulo tambem passa a acompanhar: e a unica linha grande do cartao,
+         * e deixa-la branca desperdicaria o unico lugar onde a cor se le de
+         * relance na tela inicial.
+         */
+        int larguraPx = medir(context, manager, appWidgetId, AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 300, 1400);
+        int alturaPx = medir(context, manager, appWidgetId, AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 56, 600);
+        views.setImageViewBitmap(R.id.glyph_widget_background, GlyphWidgetPaint.fundo(copy.accentColor, larguraPx, alturaPx));
+        views.setImageViewBitmap(R.id.glyph_widget_actions_bar, GlyphWidgetPaint.barra(copy.accentColor, copy.actionsProgressPercent, true, larguraPx));
+        views.setImageViewBitmap(R.id.glyph_widget_time_bar, GlyphWidgetPaint.barra(copy.accentColor, copy.timeProgressPercent, false, larguraPx));
+        views.setTextColor(R.id.glyph_widget_title, copy.accentColor);
         views.setViewVisibility(R.id.glyph_widget_subtitle, copy.showSubtitle ? View.VISIBLE : View.GONE);
         views.setViewVisibility(R.id.glyph_widget_meta, copy.showMeta ? View.VISIBLE : View.GONE);
         views.setViewVisibility(R.id.glyph_widget_actions_row, copy.showMetrics ? View.VISIBLE : View.GONE);
@@ -69,24 +86,55 @@ public class GlyphWidgetProvider extends AppWidgetProvider {
         manager.updateAppWidget(appWidgetId, views);
     }
 
+    /**
+     * O tamanho do widget NA TELA, em pixel, para o bitmap sair na medida.
+     *
+     * O launcher guarda a largura e a altura em dp nas opcoes do widget, e elas
+     * mudam quando a pessoa redimensiona. Na primeira colocacao o mapa costuma
+     * vir vazio, entao o padrao e o tamanho declarado no glyph_widget_info.xml.
+     *
+     * O teto existe porque isto vira alocacao de memoria: um widget arrastado
+     * para a tela inteira num tablet pediria um bitmap grande o bastante para
+     * incomodar, e a diferenca visual acima desse ponto e nenhuma.
+     */
+    private static int medir(Context context, AppWidgetManager manager, int appWidgetId, String chave, int padraoDp, int tetoPx) {
+        int dp = padraoDp;
+        try {
+            Bundle opcoes = manager.getAppWidgetOptions(appWidgetId);
+            if (opcoes != null) {
+                int lido = opcoes.getInt(chave, 0);
+                if (lido > 0) dp = lido;
+            }
+        } catch (Exception _erro) {
+            // Mantem o padrao: um bitmap no tamanho declarado e melhor que nenhum.
+        }
+        float densidade = context.getResources().getDisplayMetrics().density;
+        int px = Math.round(dp * densidade);
+        return Math.max(1, Math.min(px, tetoPx));
+    }
+
     private static WidgetCopy readCopy(Context context) {
         try {
             SharedPreferences prefs = context.getSharedPreferences(GlyphWidgetPlugin.PREFS_GROUP, Context.MODE_PRIVATE);
             String raw = prefs.getString(GlyphWidgetPlugin.SNAPSHOT_KEY, null);
             if (raw == null || raw.trim().isEmpty()) {
-                return WidgetCopy.loggedOut();
+                return WidgetCopy.loggedOut(GlyphWidgetPaint.COR_PADRAO);
             }
 
             JSONObject root = new JSONObject(raw);
+            // A cor vem do snapshot inteiro, e nao do bloco de ciclo: ela vale
+            // tambem para "sem ciclo ativo", onde o cartao continua sendo o
+            // cartao da pessoa.
+            int accent = GlyphWidgetPaint.lerCor(root.optString("accentColor", null));
             JSONObject cycle = root.optJSONObject("cycle");
             JSONObject daily = root.optJSONObject("daily");
             if (daily == null && cycle == null) {
-                return WidgetCopy.loggedOut();
+                return WidgetCopy.loggedOut(accent);
             }
 
             boolean hasCycle = cycle != null || daily.optBoolean("hasCycle", false);
             if (!hasCycle) {
-                return WidgetCopy.noCycle();
+                return WidgetCopy.noCycle(accent);
             }
 
             JSONObject source = cycle != null ? cycle : daily;
@@ -126,10 +174,11 @@ public class GlyphWidgetProvider extends AppWidgetProvider {
                 timeProgress,
                 false,
                 false,
-                true
+                true,
+                accent
             );
         } catch (Exception _error) {
-            return new WidgetCopy(DEFAULT_TITLE, "Sincronizando", "ABRIR", "", "Progresso", "0/0 (0%)", "Tempo", "0/0 (0%)", 0, 0, true, false, false);
+            return new WidgetCopy(DEFAULT_TITLE, "Sincronizando", "ABRIR", "", "Progresso", "0/0 (0%)", "Tempo", "0/0 (0%)", 0, 0, true, false, false, GlyphWidgetPaint.COR_PADRAO);
         }
     }
 
@@ -171,8 +220,10 @@ public class GlyphWidgetProvider extends AppWidgetProvider {
         final boolean showSubtitle;
         final boolean showMeta;
         final boolean showMetrics;
+        /** A cor da Skin de UI equipada, ja convertida de "#rrggbb" para int ARGB. */
+        final int accentColor;
 
-        WidgetCopy(String title, String subtitle, String endDate, String meta, String actionsLabel, String actionsPercent, String timeLabel, String timePercent, int actionsProgressPercent, int timeProgressPercent, boolean showSubtitle, boolean showMeta, boolean showMetrics) {
+        WidgetCopy(String title, String subtitle, String endDate, String meta, String actionsLabel, String actionsPercent, String timeLabel, String timePercent, int actionsProgressPercent, int timeProgressPercent, boolean showSubtitle, boolean showMeta, boolean showMetrics, int accentColor) {
             this.title = title;
             this.subtitle = subtitle;
             this.endDate = endDate;
@@ -186,14 +237,15 @@ public class GlyphWidgetProvider extends AppWidgetProvider {
             this.showSubtitle = showSubtitle;
             this.showMeta = showMeta;
             this.showMetrics = showMetrics;
+            this.accentColor = accentColor;
         }
 
-        static WidgetCopy loggedOut() {
-            return new WidgetCopy("GLYPH", "Entrar", "ABRIR", "", "Progresso", "0/0 (0%)", "Tempo", "0/0 (0%)", 0, 0, true, false, false);
+        static WidgetCopy loggedOut(int accentColor) {
+            return new WidgetCopy("GLYPH", "Entrar", "ABRIR", "", "Progresso", "0/0 (0%)", "Tempo", "0/0 (0%)", 0, 0, true, false, false, accentColor);
         }
 
-        static WidgetCopy noCycle() {
-            return new WidgetCopy("SEM CICLO ATIVO", "Historico", "ABRIR", "", "Progresso", "0/0 (0%)", "Tempo", "0/0 (0%)", 0, 0, true, false, false);
+        static WidgetCopy noCycle(int accentColor) {
+            return new WidgetCopy("SEM CICLO ATIVO", "Historico", "ABRIR", "", "Progresso", "0/0 (0%)", "Tempo", "0/0 (0%)", 0, 0, true, false, false, accentColor);
         }
     }
 }

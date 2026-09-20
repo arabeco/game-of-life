@@ -355,7 +355,21 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
     const resolvedClanName = (clan?.name || clanName || 'seu grupo').trim();
 
     const { trigger } = useSensoryFeedback();
-    const [activeTab, setActiveTab] = useState<ClanDetailTab>('santuario');
+    /*
+     * A ALDEIA ESTA GUARDADA, NAO APAGADA.
+     *
+     * A mecanica inteira — os seis pontos do mapa, a presenca de quem esta em
+     * cada um, a saude que sobe com o tempo e cai quando o ponto esvazia — segue
+     * aqui, com as tabelas no banco. O que nao esta pronto e a IDEIA, nao o
+     * codigo. Para religar: PRODUCT_FEATURES.clanSanctuary = true.
+     *
+     * Enquanto isso a aba nao pode ser a primeira coisa que alguem ve ao abrir um
+     * grupo. As seis funcoes do contexto estao atras da mesma flag e voltam na
+     * primeira linha, entao aldeiaSlots e aldeiaPresence chegavam sempre vazios e
+     * getEffectiveHealth devolvia 0 nos seis pontos: a aldeia abria zerada, sem
+     * ninguem, como se o grupo estivesse abandonado.
+     */
+    const [activeTab, setActiveTab] = useState<ClanDetailTab>(PRODUCT_FEATURES.clanSanctuary ? 'santuario' : 'membros');
     const enrichedClanMembersRef = useRef(enrichedClanMembers);
     const groupBoardTabLabel = isOfficeClan ? 'Prioridade' : 'Missao';
     const groupBoardTitle = isOfficeClan ? 'Prioridade atual da equipe' : 'Missão atual do grupo';
@@ -1369,7 +1383,7 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
 
                         {/* Content Section */}
                         <div className="flex-1 relative min-h-0 pointer-events-auto">
-                            {activeTab === 'santuario' && (
+                            {PRODUCT_FEATURES.clanSanctuary && activeTab === 'santuario' && (
                                 <div className="absolute inset-0 overflow-hidden">
                                     <Sparkles />
 
@@ -1875,9 +1889,11 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
                         <div className="flex-none p-4 z-30 bg-gradient-to-t from-black/80 to-transparent">
                             <GlassCard variant="neutral" className="p-1">
                                 <div className="flex items-center justify-center space-x-1 bg-black/20 p-1 rounded-2xl">
+                                    {PRODUCT_FEATURES.clanSanctuary && (
                                     <button id="clan-tab-sanctuary" onClick={() => setActiveTab('santuario')} className={`w-full py-2 text-sm font-bold rounded-lg ${activeTab === 'santuario' ? 'bg-white/10' : 'text-gray-400'}`}>
                                         {isOfficeClan ? 'Espaço' : 'Espaço'}
                                     </button>
+                                    )}
                                     <button id="clan-tab-members" onClick={() => setActiveTab('membros')} className={`w-full py-2 text-sm font-bold rounded-lg ${activeTab === 'membros' ? 'bg-white/10' : 'text-gray-400'}`}>Pessoas</button>
                                     {PRODUCT_FEATURES.clanMissions && (
                                         <button id="clan-tab-quests" onClick={() => setActiveTab('missoes')} className={`w-full py-2 text-sm font-bold rounded-lg ${activeTab === 'missoes' ? 'bg-white/10' : 'text-gray-400'}`}>{groupBoardTabLabel}</button>

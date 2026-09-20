@@ -822,6 +822,44 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     }, [currentView, pendingDailyPanelOpen]);
 
     /**
+     * O PAINEL DE ONTEM ABRE SOZINHO NA PRIMEIRA VINDA DO DIA.
+     *
+     * Ele existia e quase ninguem via: os unicos caminhos eram o Oraculo
+     * sugerindo, o atalho Alt+S e um botao dentro do planner. Quem acordava e
+     * abria o app nao encontrava nada — nenhum reconhecimento de que ontem
+     * aconteceu, o que e justamente o dia em que a pessoa mais precisa de um
+     * motivo para ficar.
+     *
+     * A marca e por APARELHO, e nao no perfil. Duas razoes: o painel e uma
+     * cortesia de abertura, e ver de novo noutro aparelho nao tira nada de
+     * ninguem; e o perfil e lido a cada carga, entao nao vale engordar uma
+     * linha do banco com um carimbo que so serve para decidir se um modal abre.
+     *
+     * Usa a data OPERACIONAL, que e a que o resto do app usa para saber em que
+     * dia uma tarefa caiu — quem vira a noite continua no dia anterior ate o
+     * corte, e o painel precisa concordar com o planner que ele resume.
+     */
+    useEffect(() => {
+        const userId = userProfile?.id;
+        if (!userId) return;
+
+        const hoje = getOperationalDateString(new Date());
+        const chave = `glyph:painel-de-ontem:${userId}`;
+
+        try {
+            if (window.localStorage.getItem(chave) === hoje) return;
+            window.localStorage.setItem(chave, hoje);
+        } catch {
+            // Aba anonima, armazenamento bloqueado: sem marca nao da para saber
+            // se ja abriu hoje, e abrir de novo a cada carga seria pior do que
+            // nao abrir. Desiste em silencio.
+            return;
+        }
+
+        setPendingDailyPanelOpen(true);
+    }, [userProfile?.id]);
+
+    /**
      * Uma fala de abertura por VINDA ao app — e vinda tem intervalo minimo.
      *
      * A trava zerava em todo `visibilitychange`, entao bloquear e desbloquear o

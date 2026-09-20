@@ -123,16 +123,12 @@ export const RANK_REWARDS: Record<string, { category: UnlockCategory; itemId: st
     escudeiro: [
         { category: 'ui_skins', itemId: 'GOLD', name: 'Tema: Ouro Soberano' },
         { category: 'skins', itemId: 'item_skin_1_004', name: 'Street' },
-        { category: 'borders', itemId: 'item_border_t1_aprendiz', name: 'Borda: Aprendiz' },
-        { category: 'banners', itemId: 'item_banner_disciplinado', name: 'Banner: Disciplinado' },
         { category: 'auras', itemId: 'item_aura_1_001', name: 'Aura: Bruma' },
         { category: 'insignias', itemId: 'insignia_rank_2_escudeiro', name: 'Insígnia: Escudeiro' },
     ],
     cavaleiro: [
         { category: 'ui_skins', itemId: 'CYBER', name: 'Tema: Cyberpunk' },
         { category: 'skins', itemId: 'item_skin_2_003', name: 'Acadêmico' },
-        { category: 'borders', itemId: 'item_border_1_002', name: 'Borda: Disciplinado' },
-        { category: 'banners', itemId: 'item_banner_t1_aprendiz', name: 'Banner: Aprendiz' },
         { category: 'auras', itemId: 'item_aura_1_002', name: 'Aura: Safira' },
         { category: 'artifacts', itemId: 'item_artifact_1_005', name: 'Trio Café' },
         { category: 'insignias', itemId: 'insignia_rank_3_cavaleiro', name: 'Insígnia: Cavaleiro' },
@@ -140,8 +136,6 @@ export const RANK_REWARDS: Record<string, { category: UnlockCategory; itemId: st
     lorde: [
         { category: 'ui_skins', itemId: 'EMBER', name: 'Tema: Chama Viva' },
         { category: 'skins', itemId: 'item_skin_2_002', name: 'Tático' },
-        { category: 'borders', itemId: 'item_border_2_001', name: 'Borda: Popular' },
-        { category: 'banners', itemId: 'item_banner_popular', name: 'Banner: Popular' },
         { category: 'auras', itemId: 'item_aura_1_003', name: 'Aura: Rubi' },
         { category: 'insignias', itemId: 'insignia_rank_4_lorde', name: 'Insígnia: Lorde' },
     ],
@@ -151,23 +145,17 @@ export const RANK_REWARDS: Record<string, { category: UnlockCategory; itemId: st
     // pronto, sem item nenhum apontando para ele.
     barao: [
         { category: 'ui_skins', itemId: 'AURORA', name: 'Tema: Aurora Boreal' },
-        { category: 'borders', itemId: 'item_border_t2_veterano', name: 'Borda: Veterano' },
-        { category: 'banners', itemId: 'item_banner_t2_veterano', name: 'Banner: Veterano' },
         { category: 'auras', itemId: 'item_aura_2_001', name: 'Aura: Esmeralda' },
         { category: 'insignias', itemId: 'insignia_rank_5_barao', name: 'Insígnia: Barão' },
     ],
     conde: [
         { category: 'ui_skins', itemId: 'VOID', name: 'Tema: Vazio Primordial' },
         { category: 'skins', itemId: 'item_skin_2_001', name: 'Executivo' },
-        { category: 'borders', itemId: 'item_border_vanguarda_01', name: 'Borda: Vanguarda' },
-        { category: 'banners', itemId: 'item_banner_imparavel', name: 'Banner: Imparável' },
         { category: 'auras', itemId: 'item_aura_2_002', name: 'Aura: Prata' },
         { category: 'insignias', itemId: 'insignia_rank_6_conde', name: 'Insígnia: Conde' },
     ],
     duque: [
         { category: 'skins', itemId: 'item_skin_3_001', name: 'Nômade' },
-        { category: 'borders', itemId: 'item_border_3_001', name: 'Borda: Imparável' },
-        { category: 'banners', itemId: 'item_banner_vanguarda_01', name: 'Banner: Vanguarda' },
         { category: 'auras', itemId: 'item_aura_3_001', name: 'Aura: Ouro' },
         { category: 'artifacts', itemId: 'item_artifact_2_003', name: 'Setup' },
         { category: 'insignias', itemId: 'insignia_rank_7_duque', name: 'Insígnia: Duque' },
@@ -175,14 +163,10 @@ export const RANK_REWARDS: Record<string, { category: UnlockCategory; itemId: st
     principe: [
         { category: 'skins', itemId: 'item_skin_4_002', name: 'Mago Círculo' },
         { category: 'auras', itemId: 'item_aura_4_001', name: 'Aura: Eclipse' },
-        { category: 'borders', itemId: 'item_border_t3_transcendente', name: 'Borda: Transcendente' },
-        { category: 'banners', itemId: 'item_banner_t4_celestial', name: 'Banner: Celestial' },
         { category: 'insignias', itemId: 'insignia_rank_8_principe', name: 'Insígnia: Príncipe' },
     ],
     rei: [
         { category: 'skins', itemId: 'item_skin_4_001', name: 'Armadura Placa' },
-        { category: 'borders', itemId: 'item_border_4_001', name: 'Borda: Lenda Viva' },
-        { category: 'banners', itemId: 'item_banner_t4_guardia', name: 'Banner: Guardiã' },
         { category: 'auras', itemId: 'item_aura_5_001', name: 'Aura: Pedra da Lua' },
         { category: 'artifacts', itemId: 'item_artifact_4_002', name: 'Dragão Bebê' },
         { category: 'insignias', itemId: 'insignia_rank_9_rei', name: 'Insígnia: Rei' },
@@ -190,7 +174,6 @@ export const RANK_REWARDS: Record<string, { category: UnlockCategory; itemId: st
     soberano: [
         { category: 'skins', itemId: 'item_skin_5_001', name: 'Entidade de Luz' },
         { category: 'borders', itemId: 'item_border_4_002', name: 'Borda: Soberano' },
-        { category: 'banners', itemId: 'item_banner_lendaviva', name: 'Banner: Lenda Viva' },
         { category: 'auras', itemId: 'item_aura_5_002', name: 'Aura: Multiverso' },
         { category: 'insignias', itemId: 'insignia_rank_10_soberano', name: 'Insígnia: Soberano' },
     ],

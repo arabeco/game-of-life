@@ -1,6 +1,6 @@
 -- Sincroniza public.items com constants/items.ts
 --
--- Gerado por scripts/build-items-sync.mjs em 20/09/2026, 20:05, commit 607674c.
+-- Gerado por scripts/build-items-sync.mjs em 20/09/2026, 20:21, commit 93ffde4.
 -- 125 itens. Nao edite a mao: a proxima geracao apaga.
 --
 -- O codigo manda em: nome, categoria, tier, raridade, arte, preco e as flags de

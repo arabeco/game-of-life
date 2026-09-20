@@ -338,6 +338,8 @@ declare
     'item_skin_1_006',
     'item_artifact_1_001',
     'item_plate_1_001',
+    'item_border_t1_aprendiz',
+    'item_banner_t1_aprendiz',
     'insignia_rank_1_vagante',
     'BASIC',
     'FROST'

@@ -112,7 +112,7 @@ Em aberto, ligado ao 4 e ao 5: **o baú poder dar dois itens.**
 - Multiverso — 10 Soberano · SEM ARTE
 
 > **"SEM ARTE" aqui engana.** A aura não é PNG: ela é desenhada no canvas por
-> , seis cores por aura (core, bloom, haze, ring, spark,
+> `utils/auraVisuals.ts`, seis cores por aura (core, bloom, haze, ring, spark,
 > shadow). No avatar ela aparece. O emoji só sai na miniatura da loja e do
 > inventário, que procuram um arquivo.
 >

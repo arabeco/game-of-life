@@ -21,7 +21,16 @@ import * as esbuild from 'esbuild';
  */
 
 const raiz = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+/*
+ * A folha sai em DOIS lugares, e nao num so.
+ *
+ * O docs/ e onde ela mora para ser lida no repositorio. Mas quem a abre para
+ * trabalhar abre pela bancada, que serve tools/ como raiz — e a copia de la
+ * ficou congelada em 04/09 enquanto o catalogo andava. Duas verdades, e a que
+ * se olhava era a velha.
+ */
 const saida = path.join(raiz, 'docs', 'o-catalogo.html');
+const saidaBancada = path.join(raiz, 'tools', 'o-catalogo.html');
 
 const empacota = async (entrada, nome) => {
     const destino = path.join(raiz, 'node_modules', '.cache', nome);
@@ -222,5 +231,13 @@ ${secoes}
 </div></body></html>`;
 
 fs.writeFileSync(saida, html, 'utf8');
+
+/**
+ * A copia da bancada nao pode levar os mesmos caminhos de arte. Em file:// a
+ * arte esta em '../public/assets/'; servida pelo Vite, 'public/' E a raiz, entao
+ * o mesmo caminho sobe uma pasta a mais e todo quadro abre vazio. Uma troca, e a
+ * folha aparece igual nos dois lugares.
+ */
+fs.writeFileSync(saidaBancada, html.split('../public/assets/').join('/assets/'), 'utf8');
 console.log(`o-catalogo: ${path.relative(raiz, saida)} (${(html.length / 1024).toFixed(0)} KB)`);
 console.log(`  ${total} itens · ${comArte} com arte · ${invisiveis.length} escondidos · ${prometemArteQuebrada.length} com caminho quebrado`);

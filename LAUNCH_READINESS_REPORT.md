@@ -1,13 +1,13 @@
 # Launch Readiness Report
 
-- Generated at: 2026-09-16T10:42:54.148Z
+- Generated at: 2026-09-20T14:43:12.121Z
 - Suite: `core`
 - Smoke URL: `http://127.0.0.1:3011/`
-- Build: PASS (20.8s)
+- Build: PASS (22.3s)
 
 ## Checks
 
-### PASS - Avatar offsets regression (0.3s)
+### PASS - Avatar offsets regression (0.2s)
 - Kind: `logic`
 - Simulates: tabela vazia desenha igual ao comportamento antigo
 - Simulates: escala cresce do centro da peca
@@ -19,7 +19,7 @@
 - Simulates: impede a letra solta voltar no lugar do simbolo
 - Simulates: fixa a altura do card de item
 
-### PASS - Item art regression (0.4s)
+### PASS - Item art regression (0.3s)
 - Kind: `logic`
 - Simulates: confere que todo imageUrl existe no disco
 - Simulates: trava as categorias que ainda vivem de emoji
@@ -37,7 +37,7 @@
 - Simulates: prioriza arena em risco
 - Simulates: oferece apenas navegacao segura
 
-### PASS - Reward modal priority regression (0.2s)
+### PASS - Reward modal priority regression (0.1s)
 - Kind: `logic`
 - Simulates: nao mostra passagem antiga a conta nova
 - Simulates: evita sobreposicao entre dicas, temporada e recompensas
@@ -47,19 +47,19 @@
 - Simulates: remove planejamento diario do widget
 - Simulates: mostra acoes feitas, XP e arenas tocadas
 
-### PASS - Daily reading regression (0.2s)
+### PASS - Daily reading regression (0.1s)
 - Kind: `logic`
 - Simulates: fala sobre o dia corrente, nao so sobre dias fechados
 - Simulates: a assinatura muda a regua e nao o elogio
 - Simulates: dia abaixo da media nao soa como falha
 
-### PASS - Cycle comparison regression (0.2s)
+### PASS - Cycle comparison regression (0.1s)
 - Kind: `logic`
 - Simulates: o ciclo nao entra na propria referencia
 - Simulates: dias sem entrega conta invertido
 - Simulates: mediana aguenta ciclo extremo
 
-### PASS - Subscription XP bonus regression (0.2s)
+### PASS - Subscription XP bonus regression (0.1s)
 - Kind: `logic`
 - Simulates: platinum rende mais que premium
 - Simulates: assinatura vencida nao paga bonus
@@ -71,13 +71,13 @@
 - Simulates: constancia conta dias e nao acoes
 - Simulates: entrega anterior ao aceite nao conta
 
-### PASS - Cycle scheduling regression (0.2s)
+### PASS - Cycle scheduling regression (0.1s)
 - Kind: `logic`
 - Simulates: renovar uma arena nao expulsa as outras do ciclo
 - Simulates: a virada reagenda as acoes recorrentes
 - Simulates: o agendamento para no fim do ciclo, nao em 365 dias
 
-### PASS - XP scale regression (0.2s)
+### PASS - XP scale regression (0.1s)
 - Kind: `logic`
 - Simulates: missoes, jornadas e pactos usam a mesma escala
 - Simulates: nenhuma recompensa passa de 500 XP
@@ -94,7 +94,7 @@
 - Simulates: abrir ciclo fecha a rodada
 - Simulates: o fecho do ciclo nao recalcula a base ja paga
 
-### PASS - Oracle reaction regression (0.2s)
+### PASS - Oracle reaction regression (0.1s)
 - Kind: `logic`
 - Simulates: a reacao nao repete a frase anterior
 - Simulates: a primeira acao depois de uma pausa tem fala propria
@@ -154,29 +154,28 @@
 - Simulates: valida progresso de campanha/arena
 - Simulates: confere score, atlas e mutacoes utilitarias
 
-### FAIL - Onboarding happy path
+### PASS - Onboarding happy path (25.5s)
 - Kind: `browser`
 - Simulates: entra com conta temporaria
 - Simulates: atravessa onboarding
 - Simulates: cria arena/acao inicial
 - Simulates: chega no fluxo principal sem travar
-- Error: Onboarding happy path failed with exit 1
 
-### PLANNED - Campaign quiz flow
+### PASS - Campaign quiz flow (15.4s)
 - Kind: `browser`
 - Simulates: abre loja de campanhas
 - Simulates: roda quiz gratis
 - Simulates: reabre quiz completo
 - Simulates: instala campanha e confirma menu
 
-### PLANNED - Cycle report flow
+### PASS - Cycle report flow (20.4s)
 - Kind: `browser`
 - Simulates: cria ciclo real
 - Simulates: conclui tarefas
 - Simulates: fecha ciclo
 - Simulates: abre relatorio e reward flow
 
-### PLANNED - UI shell smoke
+### PASS - UI shell smoke (12.9s)
 - Kind: `browser`
 - Simulates: abre shell principal
 - Simulates: navega views centrais
@@ -184,8 +183,7 @@
 
 ## Manual QA Still Required
 
-- PIX/Ouro real ponta a ponta
-- GM Panel com e-mail real
+- Compra real pela Google Play (recibo validado na edge function)
 - Premium remoto em 2 aparelhos
 - Passada final em aparelho real
 

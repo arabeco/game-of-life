@@ -73,7 +73,7 @@ import {
     rememberOracleSpeech,
     writeOracleSpeechMemory,
 } from '../utils/oracleSpeechMemory';
-import { getOperationalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
+import { getOperationalDateString, shiftLocalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 import './auth-shell.css';
 
 const AssetsView = React.lazy(() => import('../views/AssetsView').then((m) => ({ default: m.AssetsView })));
@@ -431,7 +431,18 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     const [viewTransitionVersion, setViewTransitionVersion] = useState(0);
     const [isProfileVisible, setProfileVisible] = useState(false);
     const [isReportsVisible, setReportsVisible] = useState(false);
-    const [pendingDailyPanelOpen, setPendingDailyPanelOpen] = useState(false);
+    /**
+     * O painel pendente carrega a DATA, e nao so um sim.
+     *
+     * Era um booleano, entao quem abria nao tinha como dizer qual dia mostrar e
+     * o painel caia no padrao — hoje. O painel de abertura resume ONTEM: abrir
+     * no dia de hoje, recem-comecado e ainda vazio, e mostrar uma tela em branco
+     * no lugar do reconhecimento do que a pessoa fez.
+     *
+     * `date: null` continua significando hoje, que e o que o botao do planner e
+     * o atalho do Oraculo pedem.
+     */
+    const [pendingDailyPanel, setPendingDailyPanel] = useState<{ date: string | null } | null>(null);
     const [screenTipsEnabled, setScreenTipsEnabled] = useState(() => areScreenIntroTipsEnabled(userProfile.id, userProfile.completedSeasonMissions || []));
     const [activeScreenTipId, setActiveScreenTipId] = useState<ScreenIntroTipId | null>(null);
     const [screenIntroContextId, setScreenIntroContextId] = useState<ScreenIntroTipId | null>(null);
@@ -721,7 +732,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             const customEvent = event as CustomEvent<AppNavigatePayload>;
             if (!customEvent.detail?.view) return;
             if (customEvent.detail.openDailyPanel) {
-                setPendingDailyPanelOpen(true);
+                setPendingDailyPanel({ date: null });
                 setRestScreenVisible(false);
                 window.dispatchEvent(new CustomEvent('tutorialRestScreen', { detail: { open: false } }));
             }
@@ -811,15 +822,15 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     }, [currentView, handleSetView]);
 
     useEffect(() => {
-        if (!pendingDailyPanelOpen || currentView !== 'planner') return;
+        if (!pendingDailyPanel || currentView !== 'planner') return;
 
         const timer = window.setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('openDailyPanel'));
-            setPendingDailyPanelOpen(false);
+            window.dispatchEvent(new CustomEvent('openDailyPanel', { detail: { date: pendingDailyPanel.date } }));
+            setPendingDailyPanel(null);
         }, 180);
 
         return () => window.clearTimeout(timer);
-    }, [currentView, pendingDailyPanelOpen]);
+    }, [currentView, pendingDailyPanel]);
 
     /**
      * O PAINEL DE ONTEM ABRE SOZINHO NA PRIMEIRA VINDA DO DIA.
@@ -865,8 +876,23 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             return;
         }
 
-        setPendingDailyPanelOpen(true);
-    }, [userProfile?.id, userProfile?.onboardingCompletedAt, userProfile?.onboardingDismissedAt]);
+        /*
+         * ELE MESMO VAI ATE O PLANNER, em vez de esperar sentado.
+         *
+         * O portao que consome esta marca exige `currentView === 'planner'`, e o
+         * app NAO abre no planner: abre na tela de descanso. Entao a marca ficava
+         * pendurada ate a pessoa navegar por conta propria, e o painel aparecia
+         * do nada — no meio de outra coisa, minutos depois de abrir o app, sem
+         * relacao nenhuma com o gesto que a pessoa acabou de fazer.
+         *
+         * Um resumo de ontem que chega cinco minutos depois nao e mais um
+         * bom-dia; e uma interrupcao.
+         */
+        setPendingDailyPanel({ date: shiftLocalDateString(getOperationalDateString(new Date()), -1) });
+        setRestScreenVisible(false);
+        window.dispatchEvent(new CustomEvent('tutorialRestScreen', { detail: { open: false } }));
+        handleSetView('planner');
+    }, [userProfile?.id, userProfile?.onboardingCompletedAt, userProfile?.onboardingDismissedAt, handleSetView]);
 
     /**
      * Uma fala de abertura por VINDA ao app — e vinda tem intervalo minimo.

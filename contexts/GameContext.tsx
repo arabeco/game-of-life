@@ -12434,6 +12434,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
          * "nao mostrar novamente" basta.
          */
         semVideo?: boolean;
+        /**
+         * Paga e cala: credita tudo, sem abrir modal nenhum.
+         *
+         * Existe para o bom-dia. Ele nao e missao — ninguem cumpriu nada, a
+         * pessoa so voltou —, e anunciar "MISSAO CONCLUIDA" por isso e chamar de
+         * conquista o ato de abrir o app. Pior: o modal dizia "a recompensa ja
+         * entrou" sem dizer O QUE entrou, e logo depois vinha o painel de ontem
+         * por cima, dois avisos pela mesma coisa.
+         *
+         * Quem conta a novidade agora e o painel, que e quem tem o que mostrar.
+         */
+        semModal?: boolean;
         /** Insignias e itens da propria missao, alem dos de patente. */
         itemIds?: string[];
         feedTitle?: string;
@@ -12515,6 +12527,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         // pessoa acabou de fechar sumia, e o titulo virava so "ESCUDEIRO".
         // A ordem aqui e a ordem dos fatos: concluiu a missao, e por causa dela
         // subiu de patente. A fila do setAchievementUnlocked cuida do resto.
+        if (grant.semModal) return;
         setAchievementUnlocked({
             type: 'QUEST_COMPLETED',
             data: {
@@ -12601,9 +12614,24 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 fragments: FRAGMENTOS_DO_BOM_DIA,
                 semInsignia: true,
                 semVideo: true,
+                semModal: true,
                 feedTitle: '',
             });
             if (cancelado) return;
+
+            /*
+             * O aviso e um TOAST, e nao um modal.
+             *
+             * "A recompensa desta missao ja entrou" nao dizia o que entrou, e
+             * ainda ocupava a tela inteira para nao dizer. O toast diz o numero,
+             * some sozinho e nao disputa espaco com o painel de ontem, que sobe
+             * logo em seguida — que era o problema de ter os dois.
+             *
+             * E ele nao mora no painel de proposito: o fragmento e presente de
+             * HOJE, por ter voltado, e o painel resume ONTEM. Juntar os dois
+             * faria o cartao de ontem creditar uma coisa que ontem nao rendeu.
+             */
+            showToast(`Bom dia. +${FRAGMENTOS_DO_BOM_DIA} fragmentos por ter voltado.`, 'success');
 
             // Poda: so a marca de hoje fica.
             const atuais = userProfile.completedSeasonMissions || [];

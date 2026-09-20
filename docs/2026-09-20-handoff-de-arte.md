@@ -58,6 +58,45 @@ O nome de cada uma das quatro deve dizer o que ela é antes de a pessoa clicar.
 
 **Total da roupa: 14 desenhos.**
 
+### A regra que muda tudo: um desenho serve os oito corpos
+
+Existem **oito corpos** — quatro tons de pele × dois gêneros — e **uma roupa por
+item**. Não há versão masculina e feminina: o `SKIN_T1_NAUFRAGO.png` é um arquivo
+só, desenhado por cima de qualquer um dos oito.
+
+Então **cada peça tem de ler nas duas silhuetas**. O que funciona: recorte solto,
+camada por cima (capa, manto, casaco aberto), cintura marcada por cinto e não por
+corte. O que não funciona: peça colada que assume um ombro ou um quadril.
+
+### As nove, com o que cada uma tem de dizer
+
+| Degrau | Ideia | Por que sobe |
+|---|---|---|
+| 2 **Escudeiro** | gibão de couro, cinto largo, ombreira **de um lado só** | ainda não é armadura — é quem carrega a de outro |
+| 3 **Cavaleiro** | peitoral de placa, manto curto | a primeira peça de metal |
+| 4 **Lorde** | casaco longo, gola alta, **zero metal** | poder que não precisa mais lutar |
+| 5 **Barão** | sobretudo com pele no colarinho, anel à vista | riqueza que se mostra |
+| 6 **Conde** | veste de corte, bordado dourado no peito | o primeiro traje feito sob medida |
+| 7 **Duque** | capa pesada até o chão, fecho no ombro | volume: ocupa mais espaço que os outros |
+| 8 **Príncipe** | traje claro, faixa cruzada, detalhe em ouro | claro contra o escuro de todos os anteriores |
+| 9 **Rei** | manto de arminho, corrente de ombro a ombro | o topo do que é humano |
+| 10 **Soberano** | luz contida — quase sem tecido reconhecível | **não é o rei mais enfeitado.** É outra coisa |
+
+### As quatro do pacote inicial
+
+O que falta hoje é **silhueta diferente**, não mais camiseta. As comuns atuais —
+Náufrago, Casual, Caçador, Casual 2, Street, Gym Rat — são quase todas o mesmo
+corpo com outra estampa.
+
+| Nome | O que é | O que acrescenta |
+|---|---|---|
+| **Pijama** | calça larga e camiseta folgada | a roupa de quem acabou de acordar — e o app é de hábito diário |
+| **Corrida** | regata, shorts, tênis | a única leve de verdade |
+| **Chuva** | capa longa com capuz | a única com volume acima da cintura |
+| **Verão** | leve, ombros de fora | a única que mostra pele |
+
+As quatro leem nos oito corpos: nenhuma depende de ombro ou quadril.
+
 ---
 
 ## 2 · Cabelo — 8 hoje, 12 depois
@@ -66,14 +105,36 @@ O nome de cada uma das quatro deve dizer o que ela é antes de a pessoa clicar.
 categoria inteira, não passam por inventário, e há teste proibindo o pacote
 inicial de conceder cabelo.
 
-O que existe hoje, para não repetir silhueta:
-
-Cachos · Médio Reto · Texturizado · Dreads · Mullet com Topete · Anime Spiky ·
-Princesa · Fluxo Espiritual
-
 Cada um tem **26 variantes de cor** por recolorização, então um desenho novo vira
 26 peças. Ver `constants/avatarOffsets.ts`: o encaixe é medido em pixels a
 500×500, que é o tamanho da arte.
+
+### O buraco: quem começa não tem cabelo comprido
+
+Os oito de hoje, por degrau:
+
+| Degrau | Quais | Lê como |
+|---|---|---|
+| T1 comum | Cachos, Médio Reto | curto/médio, unissex |
+| T2 incomum | Texturizado | curto masculino |
+| T3 raro | Dreads, Mullet com Topete | médio, unissex e masculino |
+| T4 épico | Anime Spiky, Princesa | masculino e **feminino** |
+| T5 lendário | Fluxo Espiritual | **feminino** |
+
+**As duas opções claramente femininas são épica e lendária.** Quem entra no jogo
+escolhe entre três cortes curtos. O comprimento é prêmio de fim de escada, e não
+devia ser: cabelo é a primeira coisa que a pessoa mexe.
+
+### As quatro, e o que cada uma fecha
+
+| Nome | Degrau | O que é | O buraco que tapa |
+|---|---|---|---|
+| **Rabo de Cavalo** | T1 comum | preso alto, franja solta | **o comprimento no degrau de entrada** |
+| **Coque Solto** | T2 incomum | preso no alto com fios caindo | volume feminino sem comprimento |
+| **Undercut** | T3 raro | raspado nas laterais, volume em cima | o masculino moderno que falta |
+| **Trança Lateral** | T4 épico | longa, caindo de um ombro | comprido sem ser "princesa" |
+
+Fica **4 masculinos, 4 femininos, 4 unissex** — e o comprido presente desde o T1.
 
 ---
 

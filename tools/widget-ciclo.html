@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Widget de ciclo — Glyph</title>
+<!--
+  PROVA DO DESENHO DO WIDGET, ANTES DE INSTALAR.
+
+  O widget e Java puro rodando fora da WebView: so aparece em aparelho, com
+  instalacao de verdade. Esta pagina refaz o MESMO desenho em canvas, com as
+  mesmas contas do GlyphWidgetPaint.java, para dar para olhar os sete patamares
+  lado a lado sem gerar um AAB a cada tentativa.
+
+  Nao e o widget. E a aritmetica dele, desenhada onde da para ver.
+-->
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; padding: 28px 20px 48px; background: #07090c; color: #e8edf4;
+         font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  h1 { font-size: 15px; letter-spacing: .18em; text-transform: uppercase; color: #9fb0c6;
+       font-weight: 700; margin: 0 0 4px; }
+  p.lead { margin: 0 0 26px; font-size: 13px; color: #6f7f93; max-width: 60ch; line-height: 1.55; }
+  .linha { margin-bottom: 22px; }
+  .rotulo { font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+            color: #7d8ea3; margin-bottom: 7px; font-weight: 700; }
+  .ficha { position: relative; width: min(620px, 100%); aspect-ratio: 300 / 56; }
+  .ficha canvas.fundo { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .miolo { position: absolute; inset: 0; padding: 3% 4.5% 5%; display: flex;
+           flex-direction: column; gap: 1px; }
+  .titulo { font-size: 13px; font-weight: 700; text-transform: uppercase;
+            text-align: center; color: #F7F3E9; line-height: 1.05; }
+  .sub { font-size: 9px; color: #C7D1DF; }
+  .par { display: flex; align-items: center; gap: 8px; font-size: 7px;
+         font-weight: 700; text-transform: uppercase; }
+  .par .esq { flex: 1; color: #A8B6C9; }
+  .par .dir { color: #F7F3E9; }
+  .barra { height: 3px; margin-top: 1px; }
+  .barra canvas { width: 100%; height: 100%; display: block; }
+</style>
+</head>
+<body>
+<h1>Widget de ciclo, por patamar</h1>
+<p class="lead">O mesmo desenho do <code>GlyphWidgetPaint.java</code>, refeito em canvas.
+Serve para conferir o acabamento de metal sem precisar instalar um AAB a cada tentativa.
+A barra de cima e o patamar do ciclo; a de baixo e prata, que e o tempo.</p>
+<div id="saida"></div>
+
+<script type="module">
+/** Copia de PLATE_FINISHES e de GlyphWidgetPaint.acabamentoDe. */
+const METAIS = {
+  SS: { face: '#3f0a18', dark: '#64401f', mid: '#c39a51', pale: '#ffe4a2', nome: 'Rubi imperial' },
+  S:  { face: '#4a2169', dark: '#604421', mid: '#c6a05c', pale: '#ffe5ab', nome: 'Violeta imperial' },
+  A:  { face: '#705513', dark: '#725620', mid: '#d8ae42', pale: '#fff1b8', nome: 'Ouro selado' },
+  B:  { face: '#152a36', dark: '#293c48', mid: '#859ea9', pale: '#e4eff4', nome: 'Prata fria' },
+  C:  { face: '#291a13', dark: '#4b3223', mid: '#b07c54', pale: '#f2c39b', nome: 'Bronze EDC' },
+  D:  { face: '#101f2c', dark: '#283d4d', mid: '#68899e', pale: '#c1dce9', nome: 'Aco azulado' },
+  E:  { face: '#191613', dark: '#302c29', mid: '#81756b', pale: '#d0c7bd', nome: 'Ferro carbonico' },
+};
+
+/** A cor puxada para o preto, para a chapa nao virar um bloco de cor. */
+const escurecer = (hex, quanto) => {
+  const n = parseInt(hex.slice(1), 16);
+  const c = (v) => Math.round(v * quanto).toString(16).padStart(2, '0');
+  return `#${c((n >> 16) & 255)}${c((n >> 8) & 255)}${c(n & 255)}`;
+};
+
+const comAlfa = (hex, alfa) => {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alfa})`;
+};
+
+/** GlyphWidgetPaint.octogono — canto CORTADO, nao arredondado. */
+const octogono = (ctx, x0, y0, x1, y1, corte) => {
+  const p = new Path2D();
+  p.moveTo(x0, y0 + corte);
+  p.lineTo(x0 + corte, y0);
+  p.lineTo(x1 - corte, y0);
+  p.lineTo(x1, y0 + corte);
+  p.lineTo(x1, y1 - corte);
+  p.lineTo(x1 - corte, y1);
+  p.lineTo(x0 + corte, y1);
+  p.lineTo(x0, y1 - corte);
+  p.closePath();
+  return p;
+};
+
+/** GlyphWidgetPaint.fundo */
+const desenharFundo = (canvas, metal) => {
+  const L = 900, A = 168; // 300dp x 56dp numa tela de densidade 3
+  canvas.width = L; canvas.height = A;
+  const ctx = canvas.getContext('2d');
+  const menor = Math.min(L, A);
+  const corte = menor * 0.20;
+  const traco = Math.max(2, menor * 0.05);
+
+  const placa = octogono(ctx, traco / 2, traco / 2, L - traco / 2, A - traco / 2, corte);
+
+  const corpo = ctx.createLinearGradient(0, 0, L * 0.35, A);
+  corpo.addColorStop(0, metal.face);
+  corpo.addColorStop(0.58, '#090A0C');
+  corpo.addColorStop(1, '#111315');
+  ctx.fillStyle = corpo; ctx.fill(placa);
+
+  ctx.save();
+  ctx.clip(placa);
+  const halo = ctx.createRadialGradient(L / 2, -A * 0.06, 0, L / 2, -A * 0.06, Math.max(L * 0.55, A));
+  halo.addColorStop(0, comAlfa(metal.mid, 0x29 / 255));
+  halo.addColorStop(1, comAlfa(metal.mid, 0));
+  ctx.fillStyle = halo; ctx.fillRect(0, 0, L, A);
+  const diag = ctx.createLinearGradient(0, 0, L, A);
+  diag.addColorStop(0, comAlfa(metal.mid, 0x0E / 255));
+  diag.addColorStop(0.35, comAlfa(metal.mid, 0));
+  diag.addColorStop(0.72, comAlfa(metal.mid, 0x07 / 255));
+  diag.addColorStop(1, comAlfa(metal.mid, 0));
+  ctx.fillStyle = diag; ctx.fillRect(0, 0, L, A);
+  ctx.restore();
+
+  ctx.lineWidth = traco; ctx.strokeStyle = '#56585A'; ctx.stroke(placa);
+
+  const fino = Math.max(1, traco * 0.36);
+  const recuos = [traco * 1.3, traco * 1.9, traco * 2.9];
+  const cores = ['#090B0D', '#33363A', '#0B0D0F'];
+  recuos.forEach((r, k) => {
+    if (L - r * 2 <= corte || A - r * 2 <= corte) return;
+    ctx.lineWidth = fino; ctx.strokeStyle = cores[k];
+    ctx.stroke(octogono(ctx, r, r, L - r, A - r, Math.max(2, corte - r)));
+  });
+
+  const rFio = traco * 3.6;
+  if (L - rFio * 2 > corte && A - rFio * 2 > corte) {
+    ctx.lineWidth = Math.max(1, fino * 0.8);
+    ctx.strokeStyle = comAlfa(metal.pale, 0x6E / 255);
+    ctx.stroke(octogono(ctx, rFio, rFio, L - rFio, A - rFio, Math.max(2, corte - rFio)));
+  }
+};
+
+/** GlyphWidgetPaint.barra */
+const desenharBarra = (canvas, metal, porcento) => {
+  const L = 900, A = 12;
+  canvas.width = L; canvas.height = A;
+  const ctx = canvas.getContext('2d');
+  const raio = A / 2;
+
+  const trilha = new Path2D();
+  trilha.roundRect(0, 0, L, A, raio);
+  ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fill(trilha);
+
+  if (porcento > 0) {
+    const cheio = Math.max(A, L * (porcento / 100));
+    const grad = ctx.createLinearGradient(0, 0, L, 0);
+    grad.addColorStop(0, metal.dark);
+    grad.addColorStop(0.55, metal.mid);
+    grad.addColorStop(1, metal.pale);
+    const p = new Path2D();
+    p.roundRect(0, 0, cheio, A, raio);
+    ctx.fillStyle = grad; ctx.fill(p);
+  }
+};
+
+const saida = document.getElementById('saida');
+for (const [patamar, metal] of Object.entries(METAIS)) {
+  const linha = document.createElement('div');
+  linha.className = 'linha';
+  linha.innerHTML = `
+    <div class="rotulo">${patamar} · ${metal.nome}</div>
+    <div class="ficha">
+      <canvas class="fundo"></canvas>
+      <div class="miolo">
+        <div class="titulo">CICLO DE SETEMBRO</div>
+        <div class="sub">Dia 12/30</div>
+        <div class="par"><span class="esq">Progresso</span><span class="dir">18/24 (75%)</span></div>
+        <div class="barra"><canvas class="acoes"></canvas></div>
+        <div class="par"><span class="esq">Tempo</span><span class="dir">12/30 (40%)</span></div>
+        <div class="barra"><canvas class="tempo"></canvas></div>
+      </div>
+    </div>`;
+  saida.appendChild(linha);
+  desenharFundo(linha.querySelector('canvas.fundo'), metal);
+  desenharBarra(linha.querySelector('canvas.acoes'), metal, 75);
+  desenharBarra(linha.querySelector('canvas.tempo'), METAIS.B, 40);
+}
+</script>
+</body>
+</html>

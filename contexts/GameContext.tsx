@@ -4,7 +4,6 @@ import { UserCodex, CodexCatalogItem, Asset, Arena, ArenaFolder, Action, Schedul
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, ItemCategory, ItemDef, RANK_UP_INSIGNIA_ID, resolveItemDef, getCatalogItemsByCategory, isChestEligibleItem, isItemCatalogVisible } from '../constants/items';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
-import { SKINS_DATA } from '../constants/GMboard';
 import { PRODUCT_FEATURES } from '../constants/featureFlags';
 import {
     collapseLifeAreaLevels,
@@ -14867,10 +14866,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             void publishGlyphAndroidWidgetSnapshot({
                 updatedAt: new Date().toISOString(),
-                // A mesma fonte que o bloco de ciclo usa dentro do app: a cor sai
-                // do SKINS_DATA pelo id da skin equipada, e nao de um campo do
-                // perfil — `skinColor` nunca existiu em UserProfile.
-                accentColor: SKINS_DATA.find((skin) => skin.id === userProfile.skin)?.color || '#D4AF37',
                 ...snapshot,
                 auth: {
                     supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
@@ -14893,7 +14888,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         oraclePreferences,
         session?.access_token,
         session?.refresh_token,
-        userProfile.skin,
         taskPool,
         tasks,
     ]);

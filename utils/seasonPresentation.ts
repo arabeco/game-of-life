@@ -1,4 +1,4 @@
-import { ACTIVE_SEASON_ID, ERA_CALENDAR, SEASON_ARCHIVE_LOG, SEASON_ORDER, SEASONS, type SeasonConfig } from '../constants/seasonContent';
+import { ACTIVE_SEASON_ID, SEASON_ARCHIVE_LOG, SEASON_ORDER, SEASONS, type EraCheckpoint, type SeasonConfig } from '../constants/seasonContent';
 import { CATALOG_ASSET_ROOT } from '../constants/catalogAssets';
 import { Season } from '../types';
 
@@ -132,13 +132,69 @@ export const resolveSeasonArchiveLogEntry = (season: SeasonLike) => {
   return SEASON_ARCHIVE_LOG.find((entry) => entry.seasonId === season.id) || null;
 };
 
-export const getEraCalendarYears = () =>
-  ERA_CALENDAR.map((year) => ({
-    ...year,
-    checkpoints: year.checkpoints.filter(
-      (checkpoint) => Boolean(checkpoint?.label) && Boolean(checkpoint?.date),
-    ),
-  })).filter((year) => year.checkpoints.length > 0);
+const ROTULO_DA_ERA: Record<number, string> = {
+  1: 'A Primeira Era',
+  2: 'A Segunda Era',
+  3: 'A Terceira Era',
+  4: 'A Quarta Era',
+  5: 'A Quinta Era',
+};
+
+/**
+ * A era de uma temporada, lida do proprio id.
+ *
+ * `season-zenite-1-2026` e a Zenite da PRIMEIRA era; `season-aurora-2-2027`, a
+ * Aurora da segunda. A Genesis nao carrega numero — ela e a abertura da
+ * primeira, e por isso cai no 1.
+ */
+const eraDaTemporada = (seasonId: string): number => {
+  const achado = seasonId.match(/-(\d+)-\d{4}$/);
+  return achado ? Number(achado[1]) : 1;
+};
+
+/**
+ * O CALENDARIO DAS ERAS SAI DAS TEMPORADAS, E NAO DE UMA LISTA A MAO.
+ *
+ * Havia duas verdades sobre a mesma coisa: o ERA_CALENDAR, escrito a mao com os
+ * equinocios e solsticios do ano, e as temporadas encadeadas em SEASONS. Elas
+ * divergiram sem ninguem notar — o calendario dizia que a Aurora I era em
+ * 20/03/2026 enquanto a temporada de mesmo nome rodava de 22/09 a 21/12. A ficha
+ * mostrava uma e o jogo vivia a outra.
+ *
+ * Derivar resolve isso na origem: mexer numa data de temporada passa a mexer no
+ * calendario sozinho, que e o unico jeito de eles nao voltarem a discordar. E o
+ * agrupamento e por ERA, e nao por ano do calendario — uma era atravessa a
+ * virada do ano (a Aurora II abre em setembro de 2027 e a Egide II fecha em
+ * setembro de 2028), entao agrupar por ano partia a era no meio.
+ *
+ * O `year` continua no formato por causa da ficha, e carrega o ano em que a era
+ * comeca.
+ */
+export const getEraCalendarYears = () => {
+  const porEra = new Map<number, { year: number; label: string; checkpoints: EraCheckpoint[] }>();
+
+  for (const seasonId of SEASON_ORDER) {
+    const season = SEASONS[seasonId];
+    if (!season?.name || !season?.startDate) continue;
+
+    const era = eraDaTemporada(seasonId);
+    const anoDeInicio = Number(season.startDate.slice(0, 4));
+    const atual = porEra.get(era) || {
+      year: anoDeInicio,
+      label: ROTULO_DA_ERA[era] || `Era ${era}`,
+      checkpoints: [] as EraCheckpoint[],
+    };
+
+    atual.year = Math.min(atual.year, anoDeInicio);
+    atual.checkpoints.push({ id: season.id, label: season.name, date: season.startDate });
+    porEra.set(era, atual);
+  }
+
+  return [...porEra.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([, era]) => era)
+    .filter((era) => era.checkpoints.length > 0);
+};
 
 export const getSeasonLaunchRewardFlag = (seasonId: string): string => `__flag_season_launch_reward_${seasonId}`;
 export const getSeasonTransitionSeenFlag = (seasonId: string): string => `__flag_season_transition_seen_${seasonId}`;

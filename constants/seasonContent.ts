@@ -132,48 +132,20 @@ export const AURORA_I_LAUNCH_HIGHLIGHTS: SeasonLaunchHighlights = {
   itemIds: ['item_skin_aurora_1_2026'],
 };
 
-export const ERA_CALENDAR: EraCalendarYear[] = [
-  {
-    year: 2026,
-    label: 'A Primeira Era',
-    checkpoints: [
-      { id: '2026-aurora-1', label: 'Aurora I', date: '2026-03-20' },
-      { id: '2026-zenite-1', label: 'Zenite I', date: '2026-06-21' },
-      {
-        id: '2026-eclipse-1',
-        label: 'Eclipse I',
-        date: '2026-09-22',
-        note: 'Ocorre as 21h05 no fuso brasileiro.',
-      },
-      { id: '2026-egide-1', label: 'Egide I', date: '2026-12-21' },
-    ],
-  },
-  {
-    year: 2027,
-    label: 'A Segunda Era',
-    checkpoints: [
-      { id: '2027-aurora-2', label: 'Aurora II', date: '2027-03-20' },
-      { id: '2027-zenite-2', label: 'Zenite II', date: '2027-06-21' },
-      { id: '2027-eclipse-2', label: 'Eclipse II', date: '2027-09-23' },
-      {
-        id: '2027-egide-2',
-        label: 'Egide II',
-        date: '2027-12-21',
-        note: 'O apice acontece as 23h41 no Brasil; em Greenwich ja sera dia 22.',
-      },
-    ],
-  },
-  {
-    year: 2028,
-    label: 'A Terceira Era',
-    checkpoints: [
-      { id: '2028-aurora-3', label: 'Aurora III', date: '2028-03-19' },
-      { id: '2028-zenite-3', label: 'Zenite III', date: '2028-06-20' },
-      { id: '2028-eclipse-3', label: 'Eclipse III', date: '2028-09-22' },
-      { id: '2028-egide-3', label: 'Egide III', date: '2028-12-21' },
-    ],
-  },
-];
+/**
+ * O CALENDARIO DAS ERAS NAO MORA MAIS AQUI.
+ *
+ * Havia uma lista escrita a mao com os equinocios e solsticios de cada ano, ao
+ * lado das temporadas encadeadas em SEASONS. Duas verdades sobre a mesma coisa,
+ * e elas divergiram sem ninguem notar: a lista dizia que a Aurora I era em
+ * 20/03/2026 enquanto a temporada de mesmo nome rodava de 22/09 a 21/12. A ficha
+ * mostrava uma e o jogo vivia a outra.
+ *
+ * Agora o utils/seasonPresentation deriva o calendario das proprias temporadas,
+ * agrupando por era. Mexer numa data passa a mexer no calendario sozinho.
+ *
+ * O tipo EraCheckpoint fica, porque e a forma que a ficha consome.
+ */
 
 export const SEASONS: Record<string, SeasonConfig> = {
   'season-genesis-0': {

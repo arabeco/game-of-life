@@ -12444,6 +12444,76 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return { arena, action };
     }, [actions, getArenas]);
 
+    /**
+     * A ARENA DA JORNADA SE RECOLHE QUANDO A JORNADA ACABA.
+     *
+     * Aceitar uma jornada CRIA uma arena — nome da missao, prioridade alta, uma
+     * acao dentro. Isso e bom enquanto ela esta em curso e virava lixo depois:
+     * ninguem arquivava, ninguem avisava, e a arena ficava no topo da lista com
+     * a acao pela metade. Em um ano de temporadas trimestrais a pessoa acumula
+     * arenas orfas de temporadas mortas, sem saber por que existem.
+     *
+     * ARQUIVA, NAO APAGA. O trabalho feito ali e historico: as tarefas
+     * concluidas ja contaram no ciclo, no relatorio e na EXP, e apagar a arena
+     * deixaria esses registros apontando para o vazio. Arquivada ela some da
+     * lista e volta com um toque em "mostrar arquivadas" — e o proprio
+     * acceptSeasonQuest ja desarquiva ao reaceitar.
+     *
+     * NAO MEXE EM ARENA QUE A PESSOA ADOTOU. Se ela acrescentou outras acoes
+     * ali, a arena deixou de ser da jornada e passou a ser dela; recolher isso
+     * seria tirar da mao de alguem uma coisa que estava sendo usada.
+     */
+    const recolherArenaDaJornada = useCallback(async (quest: SeasonQuest, motivo: 'concluida' | 'encerrada') => {
+        const { arena, action } = findSeasonQuestArenaAndAction(quest);
+        if (!arena || arena.isArchived) return;
+
+        const acoesDaArena = actions.filter((candidate) => candidate.arenaId === arena.id);
+        const soTemAJornada = acoesDaArena.length <= 1
+            && (!action || acoesDaArena.every((candidate) => candidate.id === action.id));
+        if (!soTemAJornada) return;
+
+        updateArena(arena.id, { isArchived: true });
+        showToast(
+            motivo === 'concluida'
+                ? `Arena "${arena.name}" arquivada: a jornada foi concluída.`
+                : `Arena "${arena.name}" arquivada: a temporada encerrou.`,
+            'info',
+        );
+    }, [actions, findSeasonQuestArenaAndAction, showToast, updateArena]);
+
+    /**
+     * A varredura das jornadas que a temporada deixou para tras.
+     *
+     * A conclusao se recolhe sozinha no claimSeasonQuest, mas o abandono nao
+     * avisa ninguem: quem aceitou "O Andarilho" e parou no quinto quilometro
+     * carrega a arena para sempre. Aqui ela se recolhe quando a temporada dela
+     * sai de cena.
+     *
+     * Roda quando as jornadas ou a temporada ativa mudam — o que inclui a
+     * virada — e nao num intervalo. Arena ja arquivada e ignorada pelo
+     * recolherArenaDaJornada, entao repetir a varredura nao custa nada.
+     */
+    useEffect(() => {
+        if (!hasHydratedFromSupabase) return;
+
+        const orfas = seasonQuests.filter((quest) => (
+            quest.season_id
+            && quest.season_id !== activeRuntimeSeasonId
+            && !userProfile.completedSeasonMissions?.includes(quest.id)
+        ));
+        if (!orfas.length) return;
+
+        void (async () => {
+            for (const quest of orfas) await recolherArenaDaJornada(quest, 'encerrada');
+        })();
+    }, [
+        hasHydratedFromSupabase,
+        seasonQuests,
+        activeRuntimeSeasonId,
+        userProfile.completedSeasonMissions,
+        recolherArenaDaJornada,
+    ]);
+
     const acceptSeasonQuest = async (questId: string) => {
         const quest = findSeasonQuestById(questId);
         if (!quest) return;
@@ -12761,6 +12831,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             itemIds: quest.rewards?.items || [],
             feedTitle: `Missão de temporada concluída: ${quest.title}`,
         });
+
+        // Depois da recompensa, e nunca antes: se a entrega falhar, a arena
+        // continua onde estava e a pessoa pode tentar de novo.
+        await recolherArenaDaJornada(quest, 'concluida');
     };
 
     const claimSeasonMission = async (missionId: string) => {

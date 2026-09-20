@@ -142,7 +142,7 @@ export const PlasmaCanvas: React.FC<PlasmaCanvasProps> = ({ color, opacity, clas
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const glRef = useRef<WebGLRenderingContext | null>(null);
     const programRef = useRef<WebGLProgram | null>(null);
-    const animationFrameRef = useRef<number>();
+    const animationFrameRef = useRef<number | undefined>(undefined);
     const startTimeRef = useRef<number>(Date.now());
 
     useEffect(() => {

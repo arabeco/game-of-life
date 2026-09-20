@@ -132,7 +132,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
     variant = 'preferences',
 }) => {
     const { oraclePreferences, updateOraclePreferences, userProfile, showToast } = useGame();
-    const [pushPermission, setPushPermission] = useState<AppPushPermission>('default');
+    const [pushPermission, setPushPermission] = useState<AppPushPermission>('prompt');
 
     const isPremium = hasPremiumAccess(userProfile);
     const pushSupport = getAppPushSupport();

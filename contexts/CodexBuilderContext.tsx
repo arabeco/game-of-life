@@ -138,7 +138,7 @@ export const CodexBuilderProvider: React.FC<{ children: React.ReactNode }> = ({ 
         duration: a.duration,
         repetitions: a.repetitions,
         difficulty: a.difficulty,
-        actionType: a.actionType === 'Compromisso' ? 'Compromisso' : 'Ação Recorrente',
+        actionType: (a.actionType === 'Compromisso' ? 'Compromisso' : 'Ação Recorrente') as 'Compromisso' | 'Ação Recorrente',
       }));
 
     const milestones = draftActions

@@ -23,7 +23,7 @@ import { buildActionPoolByDate, filterCycleTasksByScope } from '../utils/coreLoo
 import { buildLocalDateFromString, getOperationalDateString, shiftLocalDateString, taskMatchesOperationalDate } from '../utils/operationalDay';
 import { isTaskInPool } from '../utils/taskDomain.js';
 import { EmojiGlyph } from './EmojiGlyph';
-import { SKINS_DATA, BORDERS_DATA } from '../constants';
+import { SKINS_DATA, BORDERS_DATA, MOODS_DATA } from '../constants';
 import { getNotificationPriority } from '../constants/oracleNotificationPolicy';
 import { OracleSpeakerMark, type OracleSpeakerTone } from './OracleSpeakerMark';
 
@@ -46,12 +46,10 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         taskPool,
         checklistItems,
         userProfile,
-        currentMood,
         clan,
         assets,
         scheduleAndCompleteNow,
         scheduleAndCompleteMilestoneNow,
-        getLocalDateString,
         oraclePreferences,
         oracleMessages,
         notifications,
@@ -59,6 +57,11 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         showToast
     } = useGame();
     const masteryIndex = getMasteryIndexFromAssets(assets);
+    // O humor NAO vem do contexto — vem do numero cru do perfil, com a mesma
+    // conta do cabecalho. Enquanto se lia um currentMood que nunca existiu, a
+    // bolinha ficava sem cor e a borda recebia a string "undefined40".
+    const currentMood = MOODS_DATA.find(m => userProfile.mood >= m.min && userProfile.mood < m.max)
+        || MOODS_DATA[MOODS_DATA.length - 1];
     const [isClosing, setIsClosing] = useState(false);
     const [holdProgress, setHoldProgress] = useState(0);
     const holdAnimationFrameRef = useRef<number | null>(null);
@@ -839,7 +842,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                 <div className="absolute inset-0 z-0 pointer-events-none" style={{ opacity: softVisuals ? (isLightTheme ? 0.1 : 0.18) : 0.42 }}>
                     <SephirotFog
                         points={[{ x: 50, y: 52, level: 8 }]}
-                        color={softVisuals ? (isLightTheme ? 'rgba(108, 125, 146, 0.55)' : 'rgba(176, 194, 214, 0.36)') : (currentMood?.color || 'var(--skin-accent-color)')}
+                        color={softVisuals ? (isLightTheme ? 'rgba(108, 125, 146, 0.55)' : 'rgba(176, 194, 214, 0.36)') : (currentMood.trackStart || 'var(--skin-accent-color)')}
                         mode="arena"
                         alphaMaxOverride={softVisuals ? 0.12 : 0.2}
                     />
@@ -1170,7 +1173,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                         >
                             <div
                                 className={`w-10 h-10 rounded-full flex items-center justify-center border border-white/10 bg-black/40 backdrop-blur-sm shadow-lg group-hover:border-[var(--skin-accent-color)]/50 transition-colors relative overflow-hidden ${actionProgress?.id === 'mood' ? 'scale-110 border-[var(--skin-accent-color)]' : ''}`}
-                                style={{ borderColor: `${currentMood?.color}40` }}
+                                style={{ borderColor: `${currentMood.trackStart}40` }}
                             >
                                 {/* Individual Progress Ring */}
                                 {actionProgress?.id === 'mood' && (
@@ -1189,7 +1192,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                                 )}
                                 <div
                                     className="w-5 h-5 rounded-full shadow-[0_0_10px_currentColor]"
-                                    style={{ backgroundColor: currentMood?.color, color: currentMood?.color }}
+                                    style={{ backgroundColor: currentMood.trackStart, color: currentMood.trackStart }}
                                 />
                             </div>
                             <span className="text-[8px] font-black text-gray-500 uppercase tracking-tighter group-hover:text-white transition-colors">Humor</span>

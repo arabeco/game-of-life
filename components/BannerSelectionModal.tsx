@@ -3,6 +3,7 @@ import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
 import { BANNERS_DATA, BANNER_UNLOCKS_BY_RANK } from '../constants';
 import { useGame } from '../contexts/GameContext';
+import { UserUnlocks } from '../types';
 
 interface BannerSelectionModalProps {
     currentBanner: string;
@@ -13,7 +14,7 @@ interface BannerSelectionModalProps {
 export const BannerSelectionModal: React.FC<BannerSelectionModalProps> = ({ currentBanner, onClose, onSelect }) => {
     const { userProfile, nobilityRanks } = useGame();
     const unlockedSkins = userProfile.unlockedSkins || {};
-    const unlockedItems = userProfile.unlockedItems || {};
+    const unlockedItems: Partial<UserUnlocks> = userProfile.unlockedItems || {};
     const isStaff = userProfile.role === 'admin' || userProfile.role === 'gm';
     
     const currentRankIndex = nobilityRanks.findIndex(rank => rank.id === userProfile.nobility.rankId);

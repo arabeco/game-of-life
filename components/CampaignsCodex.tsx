@@ -1184,7 +1184,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                         {arenas.map((arena) => {
                                             const index = sortedArenas.findIndex(item => item.id === arena.id);
                                     const locked = isArenaLocked(arena.id);
-                                    const config = selectedCampaign.arenaConfig?.[arena.id] || {};
+                                    const config: Partial<NonNullable<Campaign['arenaConfig']>[string]> = selectedCampaign.arenaConfig?.[arena.id] || {};
                                     const prereqs = config.prerequisiteArenaIds || [];
                                     const isSource = linkingSourceId === arena.id;
                                     const isPrereqOfSource = linkingSourceId && selectedCampaign.arenaConfig?.[linkingSourceId]?.prerequisiteArenaIds?.includes(arena.id);

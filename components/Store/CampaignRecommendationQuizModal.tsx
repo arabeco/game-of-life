@@ -225,7 +225,7 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
     const [installingCatalogId, setInstallingCatalogId] = useState<string | null>(null);
     const ensuredCatalogIdsRef = useRef<Set<string>>(new Set());
 
-    const catalogEntries = useMemo(() => codexCatalog.map(buildEntry).filter((entry): entry is CampaignEntry => Boolean(entry)), [codexCatalog]);
+    const catalogEntries = useMemo(() => codexCatalog.map((catalog): CampaignEntry | null => buildEntry(catalog)).filter((entry): entry is CampaignEntry => Boolean(entry)), [codexCatalog]);
     const freeCatalog = useMemo(() => catalogEntries.filter((entry) => entry.isFree), [catalogEntries]);
     const mediumCatalog = useMemo(
         () => catalogEntries.filter((entry) => !entry.isFree && entry.tierRank === 2),

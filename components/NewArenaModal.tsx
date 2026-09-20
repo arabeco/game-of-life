@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { Arena, Asset } from '../types';
+import type { LifeAreaId } from '../constants/lifeAreas';
 import { CrownIcon, ChevronRightIcon } from './Icons';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
@@ -22,7 +23,7 @@ interface NewArenaModalProps {
     };
 }
 
-const AssetSelectionModal: React.FC<{ onSelect: (assetId: string) => void; onClose: () => void }> = ({ onSelect, onClose }) => {
+const AssetSelectionModal: React.FC<{ onSelect: (assetId: LifeAreaId) => void; onClose: () => void }> = ({ onSelect, onClose }) => {
     const { assets } = useGame();
     const areaAssets = LIFE_AREAS
         .map(area => assets.find(asset => asset.id === area.id))
@@ -35,7 +36,7 @@ const AssetSelectionModal: React.FC<{ onSelect: (assetId: string) => void; onClo
                     <h2 className="text-lg font-bold uppercase tracking-wider text-center">Selecionar área</h2>
                     <div className="space-y-2 max-h-60 overflow-y-auto">
                         {areaAssets.map(asset => (
-                            <button key={asset.id} onClick={() => onSelect(asset.id)} className="w-full p-3 rounded-xl text-left bg-black/20 hover:bg-white/10">
+                            <button key={asset.id} onClick={() => { if (isLifeAreaId(asset.id)) onSelect(asset.id); }} className="w-full p-3 rounded-xl text-left bg-black/20 hover:bg-white/10">
                                 {asset.name}
                             </button>
                         ))}

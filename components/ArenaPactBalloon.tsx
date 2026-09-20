@@ -42,7 +42,7 @@ const PactOption: React.FC<{ pact: ArenaPact; onAccept: (pact: ArenaPact) => voi
     >
         <div className="flex items-start justify-between gap-2">
             <div className="flex min-w-0 items-start gap-2">
-                <EmojiGlyph value={pact.arenaIcon} className="mt-0.5 shrink-0 text-base" />
+                <EmojiGlyph symbol={pact.arenaIcon} className="mt-0.5 shrink-0 text-base" />
                 <div className="min-w-0">
                     <p className="text-[12px] font-black leading-tight text-white">{missionObjective(pact)}</p>
                     {/* O motivo vem do mesmo numero que gerou a proposta. Sem ele a
@@ -231,7 +231,7 @@ export const ArenaPactProposal: React.FC<{ onClose?: () => void; substituindo?: 
                                     onClick={() => setArenaEscolhida(arena.id)}
                                     className="flex w-full items-start gap-2 rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-left transition-colors hover:border-[var(--skin-accent-color)]/40 hover:bg-black/40"
                                 >
-                                    <EmojiGlyph value={arena.icon} className="mt-0.5 shrink-0 text-sm" />
+                                    <EmojiGlyph symbol={arena.icon} className="mt-0.5 shrink-0 text-sm" />
                                     <span className="min-w-0 flex-1">
                                         <span className="block truncate text-[11px] font-black text-white">{arena.name}</span>
                                         {options[0]?.motivo && (

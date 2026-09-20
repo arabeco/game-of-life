@@ -1091,7 +1091,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     const resetFromAction = (nextAction: Action | null, nextScope: EditScope = hasTaskInstanceContext ? 'instance' : 'action') => {
         const baseAction = nextAction
             ? { ...nextAction, difficulty: normalizeActionDifficulty(nextAction.difficulty) }
-            : { arenaId: arenaId, name: '', description: '', icon: '📝', duration: 60, repetitions: 1, actionType: 'Ação Recorrente', difficulty: 2 };
+            : { arenaId: arenaId, name: '', description: '', icon: '📝', duration: 60, repetitions: 1, actionType: 'Ação Recorrente' as const, difficulty: 2 };
         setEditableAction(baseAction);
         setSelectedDays(nextAction?.scheduledDays || []);
         setEditScope(nextScope);

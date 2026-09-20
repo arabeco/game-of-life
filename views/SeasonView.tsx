@@ -705,10 +705,6 @@ export const SeasonView: React.FC = () => {
                                             progress={calculateQuestProgress(quest)}
                                             reward={formatQuestReward(quest)}
                                             onClick={() => setSelectedQuest(quest)}
-                                            onOpenArena={(() => {
-                                                const arenaId = arenaIdForQuest(quest);
-                                                return arenaId ? () => openArena(arenaId) : undefined;
-                                            })()}
                                         />
                                     ))}
                                     {/* A missao do Oraculo mora aqui, junto das outras: para

@@ -127,7 +127,6 @@ const App: React.FC = () => {
     const bootEntryModeRef = useRef<AppRuntimeEntryMode>('unknown');
     const [bootVisuals, setBootVisuals] = useState<{ skin: string; theme: 'LIGHT' | 'DARK' | null }>({
         skin: 'BASIC',
-        mode: 'BASIC',
         theme: 'DARK',
     });
     const bootVisualsRef = useRef(bootVisuals);

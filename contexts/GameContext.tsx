@@ -1,6 +1,6 @@
 ﻿import { loadCatalogRows } from '../utils/networkEfficiency.js';
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
-import { UserCodex, Asset, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, SequenceItem, DailyProofStreak, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RelationshipCompetitionChallenge, RelationshipCompetitionProposal, RelationshipMentorshipOffer, RewardModalPayload, UserBlock, ModerationReportInput, PlannerMatrixQuadrant } from '../types';
+import { UserCodex, CodexCatalogItem, Asset, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, SequenceItem, DailyProofStreak, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RelationshipCompetitionChallenge, RelationshipCompetitionProposal, RelationshipMentorshipOffer, RewardModalPayload, UserBlock, ModerationReportInput, PlannerMatrixQuadrant } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, ItemCategory, ItemDef, RANK_UP_INSIGNIA_ID, resolveItemDef, getCatalogItemsByCategory, isChestEligibleItem, isItemCatalogVisible } from '../constants/items';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
@@ -694,20 +694,14 @@ const buscarCurtidasDoFeed = async (eventIds: string[], userId: string) => {
     return { contagem, minhas: new Set((proprias.data || []).map((linha: any) => String(linha.event_id))) };
 };
 
-export interface CodexCatalogItem {
-    id: string;
-    title: string;
-    description: string;
-    author_name: string;
-    price_brl: number;
-    price_gold?: number;
-    price_fragments?: number | null;
-    is_premium: boolean;
-    cover_image?: string;
-    duration_days: number;
-    created_at: string;
-    template: any; // Using 'any' for now, ideally strictly typed
-}
+/**
+ * O item de catalogo mora no types.ts, e so la.
+ *
+ * Havia uma copia aqui que divergia da de la — price_gold opcional, template
+ * solto como any — e as duas atravessavam os mesmos lugares. Reexportar mantem
+ * quem importa daqui funcionando sem manter duas verdades.
+ */
+export type { CodexCatalogItem } from '../types';
 
 /**
  * A definicao de UserCodex mora no types.ts, e so la.
@@ -986,7 +980,7 @@ export interface GameContextType {
     endDailyBattle: () => void;
     resetDailyCommitment: () => void;
     openChest: (chestType: ChestType) => Promise<ChestOpenResult | null>;
-    createClan: (clanDetails: Omit<Clan, 'id' | 'exp' | 'rankId'>) => Promise<boolean>;
+    createClan: (clanDetails: Pick<Clan, 'name' | 'description' | 'clanType'> & Partial<Pick<Clan, 'icon' | 'recruitmentStatus' | 'backgroundUrl'>>) => Promise<boolean>;
     updateClan: (clanId: string, data: Partial<Pick<Clan, 'name' | 'icon' | 'description' | 'backgroundUrl' | 'recruitmentStatus'>>) => Promise<boolean>;
     leaveClan: () => Promise<void>;
     transferLeadershipAndLeave: (newLeaderId: string) => Promise<void>;
@@ -1089,7 +1083,9 @@ export interface GameContextType {
     respondCompetitionChallenge: (proposalId: string, action: 'accept' | 'decline' | 'cancel') => Promise<boolean>;
     cancelCompetitionChallenge: (challengeId: string) => Promise<boolean>;
     createCodexShareLink: (codexId: string) => Promise<{ url: string; token: string; shareId: string } | null>;
-    sendCodexToNickname: (codexId: string, nickname: string) => Promise<void>;
+    sendCodexToNickname: (codexId: string, nickname: string) => Promise<boolean>;
+    deleteUserCodex: (codexId: string) => Promise<void>;
+    transferUserCodex: (codexId: string, recipientId: string) => Promise<void>;
     getCodexSharePreview: (input: { token?: string; shareId?: string }) => Promise<CodexSharePreview | null>;
     claimCodexShare: (input: { token?: string; shareId?: string }) => Promise<boolean>;
     installCodex: (userCodexId: string) => Promise<void>;
@@ -1102,7 +1098,7 @@ export interface GameContextType {
 
     // Campaigns
     campaigns: Campaign[];
-    addCampaign: (campaign: Omit<Campaign, 'id' | 'createdAt' | 'status'>) => Promise<Campaign>;
+    addCampaign: (campaign: Omit<Campaign, 'id' | 'createdAt' | 'status' | 'userId'>) => Promise<Campaign>;
     updateCampaign: (id: string, updates: Partial<Campaign>) => Promise<boolean>;
     deleteCampaign: (id: string) => Promise<void>;
 
@@ -1344,12 +1340,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         };
     }, [oraclePreferences?.pushEnabled, session?.user.id]);
 
-    const addCampaign = async (campaignData: Omit<Campaign, 'id' | 'createdAt' | 'status'>): Promise<Campaign> => {
+    const addCampaign = async (campaignData: Omit<Campaign, 'id' | 'createdAt' | 'status' | 'userId'>): Promise<Campaign> => {
         const userId = session?.user.id;
         if (!userId) throw new Error("User not authenticated");
 
         const newCampaign: Campaign = {
             ...campaignData,
+            userId,
             id: crypto.randomUUID(),
             createdAt: new Date().toISOString(),
             status: 'active'
@@ -6870,7 +6867,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const fetchRelationshipHubData = async () => {
         const userId = getSupabaseUserId();
         if (!userId || !isUuid(userId)) {
-            return { invites: [], links: [], linkedArenas: [], competitionChallenges: [], summary: null };
+            return { invites: [], links: [], linkedArenas: [], competitionChallenges: [], competitionProposals: [], mentorshipOffers: [], summary: null };
         }
 
         const now = Date.now();
@@ -7539,27 +7536,27 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         };
     };
 
-    const sendCodexToNickname = async (codexId: string, nickname: string) => {
+    const sendCodexToNickname = async (codexId: string, nickname: string): Promise<boolean> => {
         const sourceCodex = userCodexes.find(c => c.id === codexId);
         if (!sourceCodex) {
             showToast('Campanha nao encontrada.', 'error');
-            return;
+            return false;
         }
 
         if (sourceCodex.source_type !== 'created') {
             showToast('Apenas campanhas autorais podem ser compartilhadas.', 'warning');
-            return;
+            return false;
         }
 
         if (!Array.isArray(sourceCodex.template?.levels) || sourceCodex.template.levels.length === 0) {
             showToast('Finalize o manuscrito antes de compartilhar.', 'warning');
-            return;
+            return false;
         }
 
         const normalizedNickname = nickname.trim().replace(/^@+/, '');
         if (!normalizedNickname) {
             showToast('Digite o @nickname de quem vai receber.', 'warning');
-            return;
+            return false;
         }
 
         const { data, error } = await supabase.rpc('send_codex_to_nickname', {
@@ -7570,13 +7567,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (error) {
             console.error('Error sending codex to nickname:', error);
             showToast(error.message || 'Nao foi possivel enviar a campanha.', 'error');
-            return;
+            return false;
         }
 
         const nextGold = Number((data as any)?.new_gold ?? Math.max(0, (userProfile.wallet?.gold || 0) - 50));
         const recipientNickname = String((data as any)?.recipient_nickname || normalizedNickname);
         updateUserProfile({ wallet: { ...userProfile.wallet, gold: nextGold } });
         showToast(`Campanha enviada para @${recipientNickname}.`, 'success');
+        return true;
     };
 
     const getCodexSharePreview = async ({ token, shareId }: { token?: string; shareId?: string }): Promise<CodexSharePreview | null> => {
@@ -7907,7 +7905,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
 
             const createdCampaign = await addCampaign({
-                userId,
                 title: template.title,
                 description: template.description,
                 arenaIds,
@@ -13524,7 +13521,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     // --- Clan Functions ---
-    const createClan = async (clanDetails: Omit<Clan, 'id' | 'exp' | 'rankId'>): Promise<boolean> => {
+    const createClan = async (clanDetails: Pick<Clan, 'name' | 'description' | 'clanType'> & Partial<Pick<Clan, 'icon' | 'recruitmentStatus' | 'backgroundUrl'>>): Promise<boolean> => {
         const userId = getSupabaseUserId();
         if (!userId) {
             console.error("User not authenticated");
@@ -13969,7 +13966,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const friendProfile = friends.find(f => f.id === memberId);
         if (friendProfile) {
-            const newMember: EnrichedClanMember = { ...friendProfile, role: 'member', joinedAt: new Date().toISOString() };
+            const newMember: EnrichedClanMember = { ...friendProfile, role: 'member', joined_at: new Date().toISOString(), contributionPoints: 0, seasonContributionPoints: 0 };
             setEnrichedClanMembers(prev => [...prev, newMember]);
             // Update cache to prevent stale data on reload
             if (clanCacheRef.current && clanCacheRef.current.clanId === clan.id) {

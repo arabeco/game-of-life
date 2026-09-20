@@ -8,10 +8,11 @@ interface RewardPackModalProps {
   open: boolean;
   payload?: RewardModalPayload | null;
   onClose: () => void;
-  fallbackEyebrow: string;
-  fallbackTitle: string;
-  fallbackSummary: string;
-  fallbackButtonLabel: string;
+  /** Textos de reserva: so aparecem quando `payload` vem vazio. */
+  fallbackEyebrow?: string;
+  fallbackTitle?: string;
+  fallbackSummary?: string;
+  fallbackButtonLabel?: string;
   fallbackItemSectionTitle?: string;
   fallbackEmptyMessage?: string;
   fallbackMetricCards?: RewardMetricCard[];
@@ -43,10 +44,10 @@ export const RewardPackModal: React.FC<RewardPackModalProps> = ({
   open,
   payload,
   onClose,
-  fallbackEyebrow,
-  fallbackTitle,
-  fallbackSummary,
-  fallbackButtonLabel,
+  fallbackEyebrow = '',
+  fallbackTitle = 'Recompensa',
+  fallbackSummary = '',
+  fallbackButtonLabel = 'Continuar',
   fallbackItemSectionTitle,
   fallbackEmptyMessage,
   fallbackMetricCards,

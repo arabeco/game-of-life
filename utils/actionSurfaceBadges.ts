@@ -6,7 +6,7 @@ export type ActionSurfaceBadge = {
 };
 
 export const resolveActionSurfaceBadge = (
-    action: Action,
+    action: Pick<Action, 'context' | 'originCodexId'>,
     relationshipLinkType?: RelationshipLinkType | null,
 ): ActionSurfaceBadge | null => {
     const clanTask = action.context?.clanTask;

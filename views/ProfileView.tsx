@@ -292,13 +292,16 @@ const ProfileSlotWidget: React.FC<{ slot: Slot, isShareable?: boolean }> = ({ sl
     const hasGlow = rarityStyle && ['epic', 'legendary', 'mythic'].includes(rarityStyle.key);
     const glowStyle = hasGlow ? { boxShadow: `0 0 10px ${rarityStyle.hex}40` } : {};
 
-    const valueDisplay = typeof slot.value === 'object' && slot.value.imageUrl ? (
+    // Guardado numa variavel: dentro do onError o TypeScript ja perdeu o
+    // estreitamento de "typeof === object", porque o callback roda depois.
+    const imagemDoSlot = typeof slot.value === 'object' ? slot.value : null;
+    const valueDisplay = imagemDoSlot?.imageUrl ? (
         <img
-            src={slot.value.imageUrl}
-            alt={slot.value.caption}
+            src={imagemDoSlot.imageUrl}
+            alt={imagemDoSlot.caption}
             className="w-full h-full object-cover rounded-xl"
             crossOrigin="anonymous"
-            onError={(e) => console.error(`Failed to load widget image: ${slot.value.imageUrl}`)}
+            onError={() => console.error(`Failed to load widget image: ${imagemDoSlot.imageUrl}`)}
         />
     ) : (
         <span className={`truncate font-bold ${isShareable ? 'text-black' : 'text-white'}`}>{String(slot.value)}</span>

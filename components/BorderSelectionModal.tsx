@@ -3,6 +3,7 @@ import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
 import { SKINS_DATA, BORDERS_DATA, SKIN_UNLOCKS_BY_RANK, SKIN_SEASON_UNLOCKS, BORDER_UNLOCKS_BY_RANK } from '../constants';
 import { useGame } from '../contexts/GameContext';
+import { UserUnlocks } from '../types';
 import { Skin } from '../types';
 
 interface BorderSelectionModalProps {
@@ -14,7 +15,7 @@ interface BorderSelectionModalProps {
 export const BorderSelectionModal: React.FC<BorderSelectionModalProps> = ({ currentBorder, onClose, onSelect }) => {
     const { userProfile, nobilityRanks } = useGame();
     const unlockedSkins = userProfile.unlockedSkins || {};
-    const unlockedItems = userProfile.unlockedItems || {};
+    const unlockedItems: Partial<UserUnlocks> = userProfile.unlockedItems || {};
     const completedSeasonMissions = userProfile.completedSeasonMissions || [];
     const currentRankIndex = nobilityRanks.findIndex(rank => rank.id === userProfile.nobility.rankId);
     const rankIndexFor = (rankId: string) => nobilityRanks.findIndex(rank => rank.id === rankId);

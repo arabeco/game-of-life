@@ -352,7 +352,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                             {occupant ? (
                                 <>
                                     <div className="relative mb-2">
-                                        <UserAvatar profile={occupant} size="lg" />
+                                        <UserAvatar avatarUrl={occupant.avatarUrl} nickname={occupant.nickname} level={occupant.level} />
                                         <div className="absolute -bottom-2 -right-2 bg-green-500 text-[10px] font-bold px-2 py-0.5 rounded-full text-black">Online</div>
                                     </div>
                                     <h3 className="font-bold text-lg">{occupant.nickname}</h3>

@@ -19,7 +19,7 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
     const [icon, setIcon] = useState<string>(CLAN_EMBLEM_OPTIONS[0].value);
     const [recruitmentStatus, setRecruitmentStatus] = useState<RecruitmentStatus>('Aberto');
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
-    const [backgroundUrl, setBackgroundUrl] = useState(DEFAULT_SANCTUARY_BACKGROUND);
+    const [backgroundUrl, setBackgroundUrl] = useState<string>(DEFAULT_SANCTUARY_BACKGROUND);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isConfirmingDebit, setIsConfirmingDebit] = useState(false);
     const canAffordClanCreation = (userProfile.wallet?.gold || 0) >= GOLD_CLAN_CREATION_COST;

@@ -2530,7 +2530,7 @@ const MentorCodexModal: React.FC<{
     codexes: any[];
     canMentor: boolean;
     onClose: () => void;
-    onGiveCodex: (codexId: string) => Promise<boolean>;
+    onGiveCodex: (codexId: string) => Promise<void>;
     onCreateNew: () => void;
 }> = ({ pupil, codexes, canMentor, onClose, onGiveCodex, onCreateNew }) => {
     const [selectedCodexId, setSelectedCodexId] = useState<string | null>(null);

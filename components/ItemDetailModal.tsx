@@ -254,7 +254,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
         if (acaoEmCurso || !precoEmOuro || ouroNaCarteira < precoEmOuro) return;
         setAcaoEmCurso('comprar');
         try {
-            await buyStoreItem(currentItem.id);
+            await buyStoreItem(currentItem.id, 'exclusive');
         } finally {
             setAcaoEmCurso(null);
         }

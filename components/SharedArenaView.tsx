@@ -79,7 +79,7 @@ export const SharedArenaView: React.FC<SharedArenaViewProps> = ({ arena, quest, 
                 if (status === 'SUBSCRIBED') {
                     await channel.track({
                         user_id: userProfile.id,
-                        avatar_url: userProfile.avatar_url,
+                        avatar_url: userProfile.avatarUrl,
                         online_at: new Date().toISOString(),
                     });
                 }

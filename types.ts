@@ -1100,9 +1100,6 @@ export interface SeasonMission {
   title: string;
   description: string;
   goal_type:
-    | 'km_run'
-    | 'books_read'
-    | 'meditation_days'
     | 'actions_completed'
     | 'milestones_completed'
     | 'tutorial_completed'

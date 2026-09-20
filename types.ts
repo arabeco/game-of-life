@@ -38,19 +38,32 @@ export interface CodexCatalogItem {
 export type CodexSourceType = 'created' | 'catalog' | 'gift_link' | 'gift_in_app';
 export type CodexShareDeliveryMethod = 'external_link' | 'in_app';
 export type CodexShareStatus = 'pending' | 'claimed' | 'revoked' | 'expired';
+/**
+ * A campanha que o usuario possui. UMA definicao, e nao duas.
+ *
+ * Havia outra igual dentro do contexts/GameContext.tsx, e as duas divergiam:
+ * esta exigia `updated_at` e `author: string`, a de la nao tinha `updated_at` e
+ * aceitava null. Como as duas circulavam pelos mesmos lugares, doze erros de
+ * tipo nasciam so de passar uma onde a outra era esperada — e nenhum deles era
+ * bug de verdade, so ruido que escondia os que eram.
+ *
+ * Os campos anulaveis sao os que o BANCO deixa nulo, e nao um relaxamento por
+ * conveniencia: uma campanha criada no app nasce sem autor, sem preco e sem
+ * versao de esquema, e a linha volta assim.
+ */
 export interface UserCodex {
   id: string;
   owner_id: string;
-  schema_version: string;
   name: string;
-  author: string;
-  price: number;
   description: string;
-  template: CodexTemplate; // JSONB
-  is_public: boolean;
-  published_at?: string;
+  author: string | null;
+  price: number | null;
+  template: CodexTemplate | any; // JSONB
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
+  schema_version?: string | null;
+  is_public?: boolean | null;
+  published_at?: string;
   catalog_id?: string | null;
   source_type?: CodexSourceType;
   origin_codex_id?: string | null;

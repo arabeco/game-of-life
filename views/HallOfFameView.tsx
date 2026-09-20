@@ -32,7 +32,7 @@ const formatFeedDate = (timestamp: string): string => {
 };
 
 export const HallOfFameView: React.FC = () => {
-    const { feed, userProfile, friends } = useGame();
+    const { feed, userProfile, friends, clan } = useGame();
     const [filter, setFilter] = useState<FeedFilter>('Reino');
 
     const friendIds = useMemo(() => new Set(friends.map((friend) => friend.id)), [friends]);
@@ -45,17 +45,24 @@ export const HallOfFameView: React.FC = () => {
                     return friendIds.has(event.userId) || event.userId === userProfile.id;
                 }
                 if (filter === 'Grupo') {
+                    // O CLA VEM DO CONTEXTO, e nao do perfil.
+                    //
+                    // Aqui se lia userProfile.clan, que nao existe em UserProfile:
+                    // o cla mora no proprio contexto. Como a leitura devolvia
+                    // undefined, o Boolean dava false para todo evento e a aba
+                    // Grupo mostrava so os posts da propria pessoa. Nao quebrava
+                    // nada — apenas nao filtrava.
                     const isSameClan = Boolean(
-                        userProfile.clan &&
-                            (event.authorClanName === userProfile.clan.name ||
-                                friends.some((friend) => friend.id === event.userId && friend.clanName === userProfile.clan?.name))
+                        clan &&
+                            (event.authorClanName === clan.name ||
+                                friends.some((friend) => friend.id === event.userId && friend.clanName === clan.name))
                     );
                     return isSameClan || event.userId === userProfile.id;
                 }
                 return true;
             })
             .sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime());
-    }, [feed, filter, friendIds, friends, userProfile.clan, userProfile.id]);
+    }, [clan, feed, filter, friendIds, friends, userProfile.id]);
 
     const groupedFeed = useMemo(() => {
         const groups = new Map<string, FeedEvent[]>();

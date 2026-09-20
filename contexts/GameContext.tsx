@@ -1,6 +1,6 @@
 ﻿import { loadCatalogRows } from '../utils/networkEfficiency.js';
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Asset, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, SequenceItem, DailyProofStreak, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RelationshipCompetitionChallenge, RelationshipCompetitionProposal, RelationshipMentorshipOffer, RewardModalPayload, UserBlock, ModerationReportInput, PlannerMatrixQuadrant } from '../types';
+import { UserCodex, Asset, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, SequenceItem, DailyProofStreak, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RelationshipCompetitionChallenge, RelationshipCompetitionProposal, RelationshipMentorshipOffer, RewardModalPayload, UserBlock, ModerationReportInput, PlannerMatrixQuadrant } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, ItemCategory, ItemDef, RANK_UP_INSIGNIA_ID, resolveItemDef, getCatalogItemsByCategory, isChestEligibleItem, isItemCatalogVisible } from '../constants/items';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
@@ -709,23 +709,17 @@ export interface CodexCatalogItem {
     template: any; // Using 'any' for now, ideally strictly typed
 }
 
-export interface UserCodex {
-    id: string;
-    owner_id: string;
-    name: string;
-    description: string;
-    author: string | null;
-    price: number | null;
-    template: any;
-    created_at: string;
-    catalog_id?: string | null;
-    schema_version?: string | null;
-    is_public?: boolean | null;
-    source_type?: 'created' | 'catalog' | 'gift_link' | 'gift_in_app';
-    origin_codex_id?: string | null;
-    created_by_user_id?: string | null;
-    raw_template?: any;
-}
+/**
+ * A definicao de UserCodex mora no types.ts, e so la.
+ *
+ * Havia uma copia aqui que divergia da de la — sem `updated_at`, com `author`
+ * anulavel — e as duas circulavam pelos mesmos lugares. Doze erros de tipo
+ * nasciam so de passar uma onde a outra era esperada, e nenhum era bug de
+ * verdade: era ruido escondendo os que eram.
+ *
+ * O re-export fica porque meia duzia de telas importa o tipo daqui.
+ */
+export type { UserCodex } from '../types';
 
 type OracleTriggerStatus =
     | 'generated'

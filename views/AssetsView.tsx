@@ -11,6 +11,7 @@ import { EditIcon, XIcon } from '../components/Icons';
 import { Portal } from '../components/Portal';
 import { ASSET_ACCENT_COLORS, getAssetArt } from '../constants/assetVisuals';
 import { LIFE_AREAS, PONTOS_POR_DEGRAU } from '../constants/lifeAreas';
+import { SKINS_DATA } from '../constants/GMboard';
 import { MasteryStep } from '../components/MasteryWheel';
 import './mastery-quiz.css';
 import { useAssetsOverviewLayoutConfig } from '../hooks/useAssetsOverviewLayoutConfig';
@@ -165,7 +166,19 @@ export const AssetsView: React.FC = () => {
     const selectedAssetMaxLevel = Math.max(1, Object.keys(selectedAsset?.levelDescriptions || {}).length - 1);
     const canShowSelectedAssetWidget = Boolean(selectedAssetPrimarySlot);
     const selectedAssetAccentRgb = hexToRgb(selectedAssetAccent);
-    const cycleAccentRgb = hexToRgb(userProfile.skinColor || '#d4af37');
+    /*
+     * A COR DO CICLO SEGUE A SKIN EQUIPADA.
+     *
+     * Aqui se lia `userProfile.skinColor`, que nao existe em UserProfile nenhum
+     * — o campo nunca foi declarado nem gravado. A leitura devolvia undefined, o
+     * `||` caia sempre no dourado, e o bloco do ciclo ficava dourado para todo
+     * mundo, inclusive para quem equipou Gelo, Vazio ou Cyberpunk. Nao quebrava:
+     * so ignorava a escolha da pessoa em silencio.
+     *
+     * A cor de verdade sai do SKINS_DATA pelo id da skin, que e como o
+     * ReportResultCarousel ja fazia.
+     */
+    const cycleAccentRgb = hexToRgb(SKINS_DATA.find((skin) => skin.id === userProfile.skin)?.color || '#d4af37');
     const cycleLabelColor = lightenToward(cycleAccentRgb, [168, 182, 201], 0.52);
     const cycleTitleColor = lightenToward(cycleAccentRgb, [247, 243, 233], 0.8);
     const cycleMetaColor = lightenToward(cycleAccentRgb, [199, 209, 223], 0.58);

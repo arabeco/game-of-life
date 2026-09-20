@@ -1729,7 +1729,7 @@ export const ArenasView: React.FC = () => {
                 onTouchStart={shouldEnableTouchReorder ? (e) => handleInteractionStart(e, campaign.id, 'campaign') : undefined}
                 onClick={() => setSelectedCampaignId(campaign.id)}
                 className={`relative col-span-2 min-w-0 aspect-[4/3] bg-[#1a1a1a] rounded-2xl border flex flex-col cursor-pointer transition-all group overflow-hidden ${isDragOver ? 'z-10 ring-2 ring-[var(--skin-accent-color)]' : ''} ${isDragged ? 'opacity-30' : ''} ${campaignAttentionClass}`}
-                style={{ borderColor: userProfile.skinColor || 'var(--skin-accent-color)', touchAction: 'pan-x pan-y' }}
+                style={{ borderColor: 'var(--skin-accent-color)', touchAction: 'pan-x pan-y' }}
             >
                 {/* Folder Stack Effect */}
                 <div className="absolute top-0 right-0 w-full h-full bg-white/5 rounded-2xl -z-10 transform translate-x-1 -translate-y-1 border border-white/5" />

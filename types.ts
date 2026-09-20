@@ -1295,6 +1295,13 @@ export interface LinkedRelationshipArena {
   arena?: Arena | null;
   actions?: Action[];
   tasks?: ScheduledTask[];
+  /**
+   * Quando o DONO desta arena a fechou.
+   *
+   * E o unico jeito de o outro lado do vinculo saber: as tarefas dele nao
+   * chegam aqui, entao sem este carimbo nao ha como calcular a conclusao dele.
+   */
+  completedAt?: string | null;
 }
 
 export interface RelationshipCompetitionChallenge {

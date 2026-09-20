@@ -170,7 +170,23 @@ const ArenaProgress: React.FC<{
 
   return (
     <div className="flex flex-col gap-1">
-      <div className="px-0.5 text-[9px] font-black uppercase tracking-[0.16em] text-white/45">{owner}</div>
+      {/*
+          O SELO DE CONCLUIDO E A UNICA NOTICIA QUE ATRAVESSA.
+
+          As tarefas do outro nao chegam aqui — o servidor filtra por dono —,
+          entao a barra dele fica presa no que o payload trouxe e nao ha como
+          calcular se ele terminou. O carimbo do banco e o unico fato que cruza
+          o vinculo, e e ele que responde "e ai, voce fechou?" sem ninguem
+          precisar perguntar.
+      */}
+      <div className="flex items-center gap-1.5 px-0.5">
+        <span className="min-w-0 flex-1 truncate text-[9px] font-black uppercase tracking-[0.16em] text-white/45">{owner}</span>
+        {entry.completedAt && (
+          <span className="shrink-0 rounded-full border border-emerald-300/25 bg-emerald-400/10 px-1.5 py-[1px] text-[8px] font-black uppercase tracking-[0.1em] text-emerald-200">
+            Concluiu
+          </span>
+        )}
+      </div>
       <ArenaCard
         arena={arenaViva || previewArenaFromEntry(entry)}
         actions={(usarContexto ? acoesVivas : entry.actions) || entry.actions || []}

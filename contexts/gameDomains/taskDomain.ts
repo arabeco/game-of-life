@@ -93,6 +93,8 @@ interface CreateTaskDomainParams {
     updateClanMissionProgress: (questId: string, increment: number) => Promise<void>;
     updateCustomClanMissionProgress: (missionId: string, increment: number) => Promise<void>;
     handleCompetitionArenaCompletion?: (arenaId: string) => Promise<void>;
+    /** Avisa o outro lado do vinculo que esta arena compartilhada fechou. */
+    handleSharedArenaCompletion?: (arenaId: string) => Promise<void>;
     onDailyProofActionCompleted?: (payload: { task: ScheduledTask; action?: Action; tasksAfterChange: ScheduledTask[] }) => void;
     setAchievementUnlocked: (achievement: AchievementState) => void;
     getLocalDateString: (date?: Date) => string;
@@ -134,6 +136,7 @@ export const createTaskDomain = ({
     updateClanMissionProgress,
     updateCustomClanMissionProgress,
     handleCompetitionArenaCompletion,
+    handleSharedArenaCompletion,
     onDailyProofActionCompleted,
     setAchievementUnlocked,
     getLocalDateString,
@@ -451,6 +454,17 @@ export const createTaskDomain = ({
             }
         });
 
+        /*
+         * O aviso vai para as TRES relacoes, e nao so para o duelo.
+         *
+         * O duelo tinha o proprio caminho porque tem placar e premio. Parceria e
+         * mentoria nao tinham nenhum: a pessoa fechava a arena e o outro lado
+         * nunca ficava sabendo. O RPC e quem decide se ha vinculo, se e sua a
+         * arena e se ja foi avisado — daqui sai o gatilho e mais nada.
+         */
+        if (handleSharedArenaCompletion) {
+            void handleSharedArenaCompletion(arena.id);
+        }
         if (handleCompetitionArenaCompletion) {
             void handleCompetitionArenaCompletion(arena.id);
         }

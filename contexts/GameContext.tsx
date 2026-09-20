@@ -6663,6 +6663,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             arenaId: row.arena_id,
             createdByUserId: row.created_by_user_id ?? null,
             createdAt: row.created_at,
+            completedAt: row.completed_at ?? null,
             metadata: row.metadata ?? null,
             arena: previewArena,
             actions: actionsByArenaId.get(row.arena_id) || [],
@@ -7425,6 +7426,31 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         showToast('Duelo encerrado. Vocês dois estão livres para abrir outro.', 'success');
         window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
         return true;
+    };
+
+    /**
+     * Avisa o outro lado do vinculo que VOCE fechou a arena compartilhada.
+     *
+     * O duelo ja fazia isso — carimba a conclusao e notifica o rival —, e era a
+     * unica das tres relacoes que avisava. Numa parceria ou numa mentoria a
+     * pessoa terminava a arena e o outro nunca ficava sabendo: a tabela nao tinha
+     * onde guardar "concluí" e ninguem mandava nada.
+     *
+     * O RPC decide tudo: ele so aceita do DONO da arena, ignora chamada repetida
+     * (fechar de novo nao reavisa) e nao faz nada se o vinculo ja acabou. Aqui e
+     * so o gatilho — e ele e silencioso de proposito, porque quem fechou a arena
+     * ja recebeu o toast, o balao e o modal do feito. Isto e recado para o outro.
+     */
+    const anunciarArenaCompartilhadaConcluida = async (arenaId: string) => {
+        if (!arenaId) return;
+        try {
+            const { error } = await supabase.rpc('mark_relationship_arena_completed', {
+                p_arena_id: arenaId,
+            });
+            if (error) console.warn('Falha ao anunciar arena compartilhada concluida:', error.message || error);
+        } catch (erro: any) {
+            console.warn('Falha ao anunciar arena compartilhada concluida:', erro?.message || erro);
+        }
     };
 
     const resolveCompetitionChallengeOutcome = async (arenaId: string) => {
@@ -13047,6 +13073,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         updateClanMissionProgress,
         updateCustomClanMissionProgress,
         handleCompetitionArenaCompletion: resolveCompetitionChallengeOutcome,
+        handleSharedArenaCompletion: anunciarArenaCompartilhadaConcluida,
         onDailyProofActionCompleted: registerDailyProofAction,
         setAchievementUnlocked,
         getLocalDateString,

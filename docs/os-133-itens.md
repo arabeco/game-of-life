@@ -28,8 +28,8 @@ combinado, escrito antes.
 | 1 | Roupa | ~11 roupas novas, chegando a **30**. Para engordar o pacote inicial e dar uma boa por patente. |
 | 2 | Cabelo | Fica como está: livre para todos. |
 | 3 | Aura | Não cria agora. Uma nova para o degrau 8 é opcional e barata (é código, não desenho). |
-| 4 | Borda | A maioria passa a ser **desbloqueável ou secreta**, não comprável. Exceção possível: as de patente. |
-| 5 | Banner | Igual à borda. |
+| 4 | Borda | **Nenhuma nova.** Só a Soberano fica na escada, no degrau 10. As outras saem por **regra clara, com quest invisível e modal**. A Aprendiz entra no pacote inicial. |
+| 5 | Banner | Igual à borda. A Aprendiz entra no pacote inicial. |
 | 6 | Insígnia | Fica como está. |
 | 7 | Skin de UI | Uma por **patente ímpar**. O pacote inicial passa a dar **BASIC + GOLD**. |
 | 8 | Artefato | **Tirar o jardim 2D antigo** (9 peças aposentadas) e trazer os kits do jardim novo para cá. |
@@ -99,6 +99,49 @@ kit.
 
 **O tema não é um kit.** Ele acende a versão colorida de toda peça que a pessoa
 já tem — vale mais quanto mais ela já jogou.
+
+### Borda e banner: o que isso desfaz
+
+Em 20/09 eu tinha acabado de encher os dois na escada — borda 4/10 → 9/10,
+banner 2/10 → 9/10. **A decisão desfaz isso**, e de propósito: 32 das 33 peças
+não têm nome de patente, então ficavam num degrau sem dizer por quê.
+
+Depois da mudança:
+
+| | Na escada | Por regra |
+|---|---|---|
+| Borda | 1 (Soberano, degrau 10) | 16 |
+| Banner | 0 | 16 |
+
+Duas entram no **pacote inicial**, que era o buraco do degrau 1: a **Borda
+Aprendiz** e o **Banner Aprendiz**. São as únicas com nome de quem está
+chegando.
+
+**A máquina de entrega já existe.** O `SKIN_SEASON_UNLOCKS` liga item a missão
+cumprida e o `BorderSelectionModal` já lê `completedSeasonMissions` para liberar
+borda. O que falta é a condição sair do ciclo em vez da temporada, e a quest ser
+invisível até cumprir.
+
+### A raridade não pode sair do preço
+
+Hoje ela sai. No jardim é literal:
+
+| Item | Preço | Raridade |
+|---|---|---|
+| Caminho antigo | 45 | incomum |
+| Espelho do bosque | 110 | raro |
+| Pátio dourado | 210 | épico |
+| Margens do refúgio | 260 | épico |
+| Gênesis | 480 | lendário |
+
+Sobe o preço, sobe a raridade. Isso faz a raridade não querer dizer nada além de
+"é caro" — e quem paga pula a escada inteira.
+
+**A raridade devia dizer quão difícil é conseguir, não quanto custa.** Com os
+kits por nível isso se resolve sozinho: o Básico é comum porque todo mundo tem,
+o Extras é raro porque é a última coisa que se ganha. O preço vira outra coisa.
+
+Fica em aberto decidir a raridade de cada kit e de cada cena.
 
 ---
 

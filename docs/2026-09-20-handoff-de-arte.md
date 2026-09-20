@@ -3,7 +3,8 @@
 Saiu da conversa por tópico de 20/09/2026, cruzada com o `ITEMS_DB` de verdade.
 As contas são do catálogo depois que o glifo e o orbe saíram: **134 itens**.
 
-**21 desenhos.** Roupa 13, cabelo 4, wallpaper 4.
+**21 desenhos, mais quatro peças de jardim.** Roupa 13, cabelo 4, wallpaper 4,
+jardim 4 (modelo 3D).
 
 Aura não entra: ela é código, não arte. Ver a nota no fim.
 
@@ -89,6 +90,40 @@ incomum, rara, épica, lendária, lendária — falta corpo no meio.
 
 ---
 
+## 4 · Jardim — peças para um sexto kit
+
+**Quantidade a combinar. É modelo 3D, não PNG.**
+
+O jardim tem 18 peças. Tirando as 3 de água (que vêm do terreno, não de kit) e
+as 3 de assinatura (uma por coleção), sobram **12 para os kits** — e 12 dividem
+em cinco kits, com o último saindo curto:
+
+| Kit | Pedra | Caminho | Planta | Luz |
+|---|---|---|---|---|
+| **Básico** · grátis | Pedra avulsa | Caminho reto | Pinheiro | — |
+| **Kit 2** | Rocha musgosa | Caminho curvo | — | Lanterna de pedra |
+| **Kit 3** | Conjunto natural | Passos livres | Bordo japonês | — |
+| **Gourmet** | — | — | Bambuzal, Jardineira | Lanterna suspensa |
+| **Extras** | as 3 assinaturas | | | |
+
+**Falta um sexto.** Cada kit tem de levar um pouco de cada família — senão a
+pessoa compra um e fica com um jardim só de pedra —, então o sexto pede pelo
+menos **uma pedra, um caminho, uma planta e uma luz**: quatro peças novas.
+
+O que já existe, para não repetir silhueta:
+
+- **Pedra** — Pedra avulsa, Rocha musgosa, Conjunto natural
+- **Caminho** — Caminho reto, Caminho curvo, Passos livres
+- **Planta** — Pinheiro, Bordo japonês, Bambuzal, Jardineira de flores
+- **Luz** — Lanterna de pedra, Lanterna suspensa
+- **Assinatura** — Totem das três pedras, Guardião do pátio, Relicário de ametista
+
+Cada peça é desenhada **uma vez e recolorida por tema**: a mesma geometria vira
+"de rio", "de calcário" e "de basalto". Então quatro peças novas viram doze
+aparições. Ver `views/zen3d/collections.ts`.
+
+---
+
 ## O que NÃO é desenho
 
 ### Aura — é código
@@ -107,10 +142,17 @@ porque essas telas procuram um arquivo. Se um dia isso incomodar, a saída barat
 é a grade desenhar a aura em CSS com o mesmo `getAuraBackground` da folha — não
 precisa de PNG.
 
-### Borda e banner — não faltam, sobram
+### Borda e banner — não faltam, sobram, e nenhuma nova entra
 
 17 e 16, todas com arte menos a Borda Soberano. O problema delas não é desenho, é
 **porta**: 8 bordas e 10 banners só saem por ouro.
+
+Ficou decidido em 20/09 que **não se desenha nenhuma nova**. Chegou a estar em
+cima da mesa uma por patente — vinte peças — e caiu: já há coisa demais. Só a
+Borda Soberano fica na escada, no degrau 10. As outras 32 vão sair por regra,
+com quest invisível e modal.
+
+A Borda Aprendiz e o Banner Aprendiz passam a vir no pacote inicial.
 
 ### Insígnia — está pronta
 
@@ -125,7 +167,8 @@ precisa de PNG.
 | Roupa | 19 | 30 | **13** |
 | Cabelo | 8 | 12 | **4** |
 | Wallpaper | 6 | 10 | **4** |
-| | | | **21** |
+| Jardim (3D) | 15 peças | 19 | **4** |
+| | | | **25** |
 
-O caso mais urgente dos 21 é um só: **a Entidade de Luz**. Os outros vinte
-melhoram o jogo; esse conserta uma promessa quebrada no topo da escada.
+O caso mais urgente dos 25 é um só: **a Entidade de Luz**. Os outros vinte e
+quatro melhoram o jogo; esse conserta uma promessa quebrada no topo da escada.

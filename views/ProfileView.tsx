@@ -190,12 +190,23 @@ const UnifiedSovereignDisplay: React.FC<{
     };
 
     const positionClasses = className || "absolute bottom-4 right-4 w-24 h-32";
+    /*
+     * A AURA FICA. Ela e do soberano, e nao dos outros modos.
+     *
+     * Este bloco desliga o que pertence aos OUTROS dois modos de exibicao —
+     * artefato, glifo, orbe e as placas deles — para que o cartao mostre so o
+     * soberano. A aura estava na lista por engano: ela e parte do visual do
+     * proprio soberano, como a roupa e o cabelo.
+     *
+     * O efeito era o avesso do pretendido: a aura aparecia para os OUTROS, na
+     * lista de membros do grupo, que renderiza o <Sovereign> com a config
+     * inteira — e sumia justamente no perfil de quem a equipou.
+     */
     const displayConfig = primaryDisplay === 'sovereign'
         ? {
             ...sovereignConfig,
             artifact: 'none',
             glyph: 'none',
-            aura: 'none',
             orb: 'none',
             artifactPlate: 'none',
             glyphPlate: 'none'

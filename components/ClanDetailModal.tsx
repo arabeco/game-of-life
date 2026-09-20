@@ -775,7 +775,9 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
             { id: 'trono', label: 'Sala Diretor', emoji: '💼', x: 49, y: 32 },
         ] : ALDEIA_SLOTS;
 
-        const customConfig = clan?.slotConfig || clan?.slot_config;
+        // slot_config em snake_case era resto do formato cru do banco; o Clan ja
+        // chega com slotConfig.
+        const customConfig = clan?.slotConfig;
         if (!customConfig) return base;
 
         return base.map(s => {
@@ -786,7 +788,7 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
             }
             return { ...s, label: custom.label, emoji: custom.emoji, note: custom.note };
         });
-    }, [isOfficeClan, clan?.slotConfig, clan?.slot_config]);
+    }, [isOfficeClan, clan?.slotConfig]);
     const defaultMissionSlotId = (slotsConfig.find(slot => slot.id !== 'trono')?.id || 'fogueira') as AldeiaSlotId;
 
     // Update clan exp/order if needed (Optional: sync with DB if this calculation is authoritative)

@@ -582,7 +582,20 @@ export interface UserProfile {
   arenaPactGoal?: number | null;
   arenaPactStartedOn?: string | null;
   arenaPactEndsOn?: string | null;
-  role: 'admin' | 'gm' | 'user';
+  /**
+   * `admin_gm` FAZ PARTE, e faltava aqui.
+   *
+   * O tipo declarava so tres funcoes, mas a quarta e usada no app inteiro: o
+   * utils/premiumAccess a aceita, cinco checagens de staff a listam, e o SQL do
+   * beta exclui `('gm', 'admin', 'admin_gm')` do placar. Ela existe no banco.
+   *
+   * O efeito de faltar aqui era pior do que parece. Tres telas comparam a funcao
+   * direto — MasteryView, SovereignCustomizer e GameContext — e o verificador
+   * marcava as tres como "comparacao que nunca pode ser verdadeira". Quem
+   * acreditasse no aviso e apagasse a comparacao trancaria staff de verdade para
+   * fora da propria ferramenta.
+   */
+  role: 'admin' | 'gm' | 'admin_gm' | 'user';
   isPremium?: boolean;
   clanName?: string;
   clanIcon?: string;

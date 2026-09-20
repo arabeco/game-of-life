@@ -250,7 +250,11 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
         return getArenaPresentationTasks(tasks, activeCycle, freeProgressResetAt, getLocalDateString());
     }, [activeCycle, freeProgressResetAt, propTasks, tasks]);
     const [dragOverActionId, setDragOverActionId] = useState<string | null>(null);
-    const [linkType, setLinkType] = useState<string | null>(null);
+    // O vinculo so tem tres formas, e o estado estava como string solta.
+    // Solto, ele contaminava tudo que recebia effectiveLinkType — tres
+    // props tipadas passavam a receber string, e o verificador reclamava nos
+    // tres pontos em vez de na origem.
+    const [linkType, setLinkType] = useState<RelationshipLinkType | null>(null);
     const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
     useEffect(() => {
@@ -300,7 +304,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                  .maybeSingle();
 
              if (data) {
-                 setLinkType(data.link_type === 'competicao' ? null : data.link_type);
+                 setLinkType(data.link_type === 'competicao' ? null : (data.link_type as RelationshipLinkType));
              }
         };
         fetchLinkType();

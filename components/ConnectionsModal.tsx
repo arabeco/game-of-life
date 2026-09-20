@@ -616,7 +616,7 @@ export const ConnectionsModal: React.FC<{
                         ) : relationshipArenas.length > 0 ? (
                           <div className="mt-3 grid gap-2 sm:grid-cols-2">
                             {relationshipArenas.map((entry) => {
-                              const ownerId = entry.arena?.userId || String(entry.metadata?.owner_user_id || entry.createdByUserId || '');
+                              const ownerId = /* arena.userId e resto de uma forma antiga de Arena: o dono sai do vinculo */ String(entry.metadata?.owner_user_id || entry.createdByUserId || '');
                               const owner = ownerId === userProfile.id ? 'Sua arena' : `Arena de ${other?.nickname || 'aliado'}`;
                               return <ArenaProgress key={entry.id} entry={entry} owner={owner} arenaViva={arenaVivaDoVinculo(entry)} acoesVivas={getActionsForArena(entry.arenaId)} onOpen={() => setArenaDoVinculoAberta(entry)} />;
                             })}
@@ -647,7 +647,7 @@ export const ConnectionsModal: React.FC<{
                             id={`connections-partnership-pick-arena-${link.id}`}
                             type="button"
                             onClick={() => {
-                              const ownShare = relationshipArenas.find((entry) => entry.arena?.userId === userProfile.id || entry.createdByUserId === userProfile.id || String(entry.metadata?.owner_user_id || '') === userProfile.id);
+                              const ownShare = relationshipArenas.find((entry) => entry.createdByUserId === userProfile.id || String(entry.metadata?.owner_user_id || '') === userProfile.id);
                               setSelectedArenaId(ownShare?.arenaId || '');
                               setArenaPickerLink(link);
                             }}

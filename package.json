@@ -55,7 +55,8 @@
     "smoke:journey": "node tests/mega/journey.mjs --live",
     "smoke:journey:cleanup": "node tests/mega/cleanup.mjs",
     "test:mega:local": "node tests/mega/run-local.mjs",
-    "mesa": "node scripts/build-mesa.mjs"
+    "mesa": "node scripts/build-mesa.mjs",
+    "sql:itens": "node scripts/build-items-sync.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.0",

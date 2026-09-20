@@ -57,6 +57,17 @@ const METAIS = {
   E:  { face: '#191613', dark: '#302c29', mid: '#81756b', pale: '#d0c7bd', nome: 'Ferro carbonico' },
 };
 
+/** edge/trim de METAL_RANKS: a moldura, que e peca separada do corpo. */
+const MOLDURAS = {
+  SS: { edge: '#ffd86b', trim: '#fff5d0' },
+  S:  { edge: '#f1c45b', trim: '#fff0c2' },
+  A:  { edge: '#ffe29a', trim: '#fff5d2' },
+  B:  { edge: '#f7fbff', trim: '#ffffff' },
+  C:  { edge: '#f5c18e', trim: '#fbe0c2' },
+  D:  { edge: '#d6e7f2', trim: '#f2f8fc' },
+  E:  { edge: '#d2c1af', trim: '#efe6dc' },
+};
+
 /** A cor puxada para o preto, para a chapa nao virar um bloco de cor. */
 const escurecer = (hex, quanto) => {
   const n = parseInt(hex.slice(1), 16);
@@ -85,7 +96,7 @@ const octogono = (ctx, x0, y0, x1, y1, corte) => {
 };
 
 /** GlyphWidgetPaint.fundo */
-const desenharFundo = (canvas, metal) => {
+const desenharFundo = (canvas, metal, patamar) => {
   const L = 900, A = 168; // 300dp x 56dp numa tela de densidade 3
   canvas.width = L; canvas.height = A;
   const ctx = canvas.getContext('2d');
@@ -115,7 +126,12 @@ const desenharFundo = (canvas, metal) => {
   ctx.fillStyle = diag; ctx.fillRect(0, 0, L, A);
   ctx.restore();
 
-  ctx.lineWidth = traco; ctx.strokeStyle = '#56585A'; ctx.stroke(placa);
+  const m = MOLDURAS[patamar] || MOLDURAS.A;
+  const gm = ctx.createLinearGradient(0, 0, L, A);
+  gm.addColorStop(0, m.trim);
+  gm.addColorStop(0.5, escurecer(m.edge, 0.42));
+  gm.addColorStop(1, m.edge);
+  ctx.lineWidth = traco; ctx.strokeStyle = gm; ctx.stroke(placa);
 
   const fino = Math.max(1, traco * 0.36);
   const recuos = [traco * 1.3, traco * 1.9, traco * 2.9];
@@ -125,13 +141,6 @@ const desenharFundo = (canvas, metal) => {
     ctx.lineWidth = fino; ctx.strokeStyle = cores[k];
     ctx.stroke(octogono(ctx, r, r, L - r, A - r, Math.max(2, corte - r)));
   });
-
-  const rFio = traco * 3.6;
-  if (L - rFio * 2 > corte && A - rFio * 2 > corte) {
-    ctx.lineWidth = Math.max(1, fino * 0.8);
-    ctx.strokeStyle = comAlfa(metal.pale, 0x6E / 255);
-    ctx.stroke(octogono(ctx, rFio, rFio, L - rFio, A - rFio, Math.max(2, corte - rFio)));
-  }
 };
 
 /** GlyphWidgetPaint.barra */
@@ -175,7 +184,7 @@ for (const [patamar, metal] of Object.entries(METAIS)) {
       </div>
     </div>`;
   saida.appendChild(linha);
-  desenharFundo(linha.querySelector('canvas.fundo'), metal);
+  desenharFundo(linha.querySelector('canvas.fundo'), metal, patamar);
   desenharBarra(linha.querySelector('canvas.acoes'), metal, 75);
   desenharBarra(linha.querySelector('canvas.tempo'), METAIS.B, 40);
 }

@@ -57,6 +57,53 @@ final class GlyphWidgetPaint {
         return new Acabamento(Color.parseColor(face), Color.parseColor(dark), Color.parseColor(mid), Color.parseColor(pale));
     }
 
+    /**
+     * O METAL DA BORDA — a escada, em tres degraus.
+     *
+     * A chapa mostra o TOM do patamar; a borda mostra o MATERIAL. Sao coisas
+     * diferentes de proposito: o tom identifica o ciclo, o material diz quanto
+     * ele vale. Ferro e aco embaixo, prata no meio, ouro no topo — quem chegou
+     * ao A ve a moldura mudar de metal, e isso se le de relance na tela inicial
+     * sem precisar ler numero nenhum.
+     *
+     * Cada degrau tem escuro e claro porque uma borda de cor chapada nao e uma
+     * moldura de metal: e um retangulo com contorno.
+     */
+    static final class Moldura {
+        final int escuro;
+        final int claro;
+        private Moldura(int escuro, int claro) { this.escuro = escuro; this.claro = claro; }
+    }
+
+    /*
+     * Estes valores NAO foram inventados aqui: sao o `edge` e o `trim` de
+     * METAL_RANKS, em components/MetalReportCard.tsx. A ficha do app ja tinha a
+     * escada de metais pronta — ouro no topo, prata no B, bronze no C, aco no D,
+     * ferro no E — e eu tinha usado so a metade da tabela, a do corpo, enquanto
+     * inventava uma moldura de tres degraus ao lado.
+     *
+     * Os proprios nomes dos patamares dizem que a borda e uma peca separada do
+     * corpo: "Roxo E OURO", "Rubi E OURO". A chapa recebe o tom, a moldura recebe
+     * o metal.
+     */
+    private static Moldura moldura(String edge, String trim) {
+        return new Moldura(Color.parseColor(edge), Color.parseColor(trim));
+    }
+
+    static Moldura molduraDe(String patamar) {
+        if (patamar == null) return moldura("#ffe29a", "#fff5d2");
+        switch (patamar.trim().toUpperCase()) {
+            case "SS": return moldura("#ffd86b", "#fff5d0");
+            case "S":  return moldura("#f1c45b", "#fff0c2");
+            case "A":  return moldura("#ffe29a", "#fff5d2");
+            case "B":  return moldura("#f7fbff", "#ffffff");
+            case "C":  return moldura("#f5c18e", "#fbe0c2");
+            case "D":  return moldura("#d6e7f2", "#f2f8fc");
+            case "E":  return moldura("#d2c1af", "#efe6dc");
+            default:   return moldura("#ffe29a", "#fff5d2");
+        }
+    }
+
     /** Ouro selado: o acabamento de sempre, e o que vale quando nao ha ciclo. */
     static final Acabamento PADRAO = de("#705513", "#725620", "#d8ae42", "#fff1b8");
 
@@ -145,7 +192,7 @@ final class GlyphWidgetPaint {
      * O tamanho vem de fora porque o ImageView escala com `fitXY`: desenhar num
      * quadrado e esticar deformaria o chanfro.
      */
-    static Bitmap fundo(Acabamento metal, int largura, int altura) {
+    static Bitmap fundo(Acabamento metal, String patamar, int largura, int altura) {
         Bitmap bitmap = Bitmap.createBitmap(largura, altura, Bitmap.Config.ARGB_8888);
         Canvas tela = new Canvas(bitmap);
 
@@ -196,13 +243,31 @@ final class GlyphWidgetPaint {
         tela.drawPaint(diagonal);
         tela.restore();
 
-        // 3. As quatro linhas. Esta e a parte bonita, e a que faltava.
+        // 3. A MOLDURA. Esta e a parte bonita, e ela e a escada.
+        //
+        // Gradiente diagonal do escuro ao claro do metal: e o que faz a borda
+        // parecer chanfrada em vez de desenhada. Uma linha de cor unica devolveria
+        // o contorno chapado que esta peca existe para nao ser.
         Paint linha = new Paint(Paint.ANTI_ALIAS_FLAG);
         linha.setStyle(Paint.Style.STROKE);
 
+        /*
+         * `edge` e `trim` sao os dois CLAROS do metal — na ficha grande eles
+         * aparecem como aro e como fio de luz, em camadas diferentes. Numa borda
+         * unica de 56dp nao ha espaco para duas camadas, entao o volume sai de
+         * escurecer o `edge` no meio do gradiente: claro nas pontas, fundo no
+         * centro. E o que faz a moldura parecer chanfrada em vez de desenhada.
+         */
+        Moldura moldura = molduraDe(patamar);
         linha.setStrokeWidth(traco);
-        linha.setColor(0xFF56585A);
+        linha.setShader(new LinearGradient(
+            0f, 0f, largura, altura,
+            new int[] { moldura.claro, escurecer(moldura.escuro, 0.42f), moldura.escuro },
+            new float[] { 0f, 0.5f, 1f },
+            Shader.TileMode.CLAMP
+        ));
         tela.drawPath(placa, linha);
+        linha.setShader(null);
 
         final float fino = Math.max(1f, traco * 0.36f);
         final float[] recuos = { traco * 1.3f, traco * 1.9f, traco * 2.9f };
@@ -215,15 +280,10 @@ final class GlyphWidgetPaint {
             tela.drawPath(octogono(r, r, largura - r, altura - r, Math.max(2f, corte - r)), linha);
         }
 
-        // 4. E o unico ponto em que o patamar aparece com forca: o fio mais
-        //    interno, no tom claro do metal. E ele que diz de que material a
-        //    ficha e feita, sem tingir o resto.
-        float rFio = traco * 3.6f;
-        if (largura - rFio * 2f > corte && altura - rFio * 2f > corte) {
-            linha.setStrokeWidth(Math.max(1f, fino * 0.8f));
-            linha.setColor(comAlfa(metal.pale, 0x6E));
-            tela.drawPath(octogono(rFio, rFio, largura - rFio, altura - rFio, Math.max(2f, corte - rFio)), linha);
-        }
+        // O fio interno no tom do metal SAIU. Ele existia para dizer de que
+        // material a ficha e feita, e quem diz isso agora e a moldura — que e o
+        // lugar certo. Desenhado por dentro, virava um retangulo claro em volta do
+        // texto: uma caixa, e nao um acabamento.
 
         return bitmap;
     }

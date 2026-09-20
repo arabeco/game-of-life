@@ -243,13 +243,15 @@ const naPasta = (relativo) => fs.existsSync(path.join(root, 'public', relativo.r
 
     // Quem ja tem missao escrita precisa ter exatamente tres.
     //
-    // A Aurora I tem QUATRO: as tres da colecao mais 'aurora-quest-cla-vigilia',
+    // A Aurora II tem QUATRO: as tres da colecao mais 'aurora-quest-cla-vigilia',
     // uma missao de cla. Ela nao entrega peca e nao e o fecho — entrou fora da
     // regra. Fica anotada aqui ate a decisao: ou vira o selo (o quarto passo que
     // entrega insignia e tema), ou sai. Enquanto estiver na lista, o teste
     // aceita; no dia que mudar, ele avisa.
     const todas = Object.values(SEASONS);
-    const excecoesConhecidas = { 'season-aurora-1-2026': 4 };
+    // A temporada mudou de casa: a Genesis ocupou a vaga da Aurora na Primeira
+    // Era, entao a colecao passou a ser entregue pela Aurora II.
+    const excecoesConhecidas = { 'season-aurora-2-2027': 4 };
     const comQuests = todas.filter((season) => (season.quests || []).length > 0);
     const foraDaRegra = comQuests
         .filter((season) => season.quests.length !== (excecoesConhecidas[season.id] ?? MISSOES_POR_TEMPORADA))

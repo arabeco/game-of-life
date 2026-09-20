@@ -5,7 +5,15 @@ import { getHairUrl } from './skins';
 import { CATALOG_ASSET_ROOT, CATALOG_AVATAR_ROOT, CATALOG_GLYPH_ROOT, CATALOG_INTERFACE_ROOT } from './catalogAssets';
 
 export type ItemCategory = 'skin' | 'hair' | 'border' | 'banner' | 'glyph' | 'aura' | 'ui_skin' | 'artifact' | 'orb' | 'plate' | 'chest' | 'insignia' | 'insignias' | 'garden';
-export type ItemSeasonSlot = 'skin' | 'border' | 'banner' | 'glyph' | 'orb' | 'plate' | 'insignia' | 'ui_skin';
+/**
+ * As vagas de uma colecao de temporada.
+ *
+ * Glifo, orbe e placa sairam: nenhum item do catalogo jamais usou essas tres
+ * como vaga de temporada, e as duas colecoes existentes as traziam como null.
+ * Elas nao sao lacunas a preencher — sao resto de um desenho anterior, e essas
+ * categorias nao se prendem a temporada.
+ */
+export type ItemSeasonSlot = 'skin' | 'border' | 'banner' | 'insignia' | 'ui_skin';
 
 export interface SeasonCollectionDef {
     id: string;
@@ -269,7 +277,7 @@ export const ITEMS_DB: ItemDef[] = [
     // T5
     { id: 'item_border_5_001', name: 'GM - Grande Mestre', category: 'border', tier: 5, rarity: 'legendary', icon: '🏛️', imageUrl: `${INTERFACE_BASE_URL}/borda_gm.png`, isGmExclusive: true },
     // Novos T5
-    { id: 'item_border_aurora_1_2026', name: 'Aurora I', category: 'border', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'border', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/borda_aurora_i.webp` },
+    { id: 'item_border_aurora_1_2026', name: 'Aurora II', category: 'border', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'border', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/borda_aurora_i.webp` },
     { id: 'item_border_t5_genesis', name: 'Gênesis', category: 'border', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'border', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/borda_t5_genesis.png` },
 
     // --- BANNERS ---
@@ -295,7 +303,7 @@ export const ITEMS_DB: ItemDef[] = [
 
     // T5
     { id: 'item_banner_gm', name: 'Grão Mestre', category: 'banner', tier: 5, rarity: 'legendary', icon: '🏛️', imageUrl: `${INTERFACE_BASE_URL}/banner_gm.png`, isGmExclusive: true },
-    { id: 'item_banner_aurora_1_2026', name: 'Aurora I', category: 'banner', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'banner', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/banner_aurora_i.webp` },
+    { id: 'item_banner_aurora_1_2026', name: 'Aurora II', category: 'banner', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'banner', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/banner_aurora_i.webp` },
     { id: 'item_banner_t5_genesis', name: 'Gênesis', category: 'banner', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'banner', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/banner_t5_genesis.png` },
 
     // --- GLIFOS ---
@@ -366,7 +374,7 @@ export const ITEMS_DB: ItemDef[] = [
     // nome parecido, e trocar a arte de uma pela outra repintaria um tema vendido.
     // Este e a quinta peca da colecao da Aurora I, entregue pelo selo, e usa o
     // orbe novo (aurora_i.png), que e outro desenho.
-    themeCatalogItem({ id: 'AURORA_I', name: 'Tema: Aurora I', tier: 6, rarity: 'mythic', icon: '🌌', asset: 'aurora_i.png', isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'ui_skin' }),
+    themeCatalogItem({ id: 'AURORA_I', name: 'Tema: Aurora II', tier: 6, rarity: 'mythic', icon: '🌌', asset: 'aurora_i.png', isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'ui_skin' }),
     // T5
     themeCatalogItem({ id: 'VOID', name: 'Tema: Vazio Primordial', tier: 5, rarity: 'legendary', icon: '\uD83D\uDD2E', asset: 'void.png', costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.VOID }),
     themeCatalogItem({ id: 'GENESIS', name: 'Tema: Genesis', tier: 6, rarity: 'mythic', icon: '\u2726', asset: 'genesis.png', isSeasonExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'ui_skin' }),
@@ -398,7 +406,7 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'insignia_quest_incomum', name: 'Insígnia de Missão', category: 'insignia', tier: 2, rarity: 'uncommon', icon: '🎖️', description: "Marca de prata acumulável, concedida ao concluir uma missão individual, inicial ou de arena.", isQuestExclusive: true, imageUrl: `${INTERFACE_BASE_URL}/insignia_missao_prata.webp` },
     { id: 'insignia_levelup_rara', name: 'Insígnia de Patente Rara', category: 'insignia', tier: 3, rarity: 'rare', icon: '⭐', description: "Patente de Ouro: Concedida ao atingir um novo nível de excelência.", isRankExclusive: true, imageUrl: `${INTERFACE_BASE_URL}/insignia_rank_7_duque.webp` },
     { id: 'insignia_season_genesis', name: 'Gênesis', category: 'insignia', tier: 6, rarity: 'mythic', icon: '🌌', description: "Marca de quem esteve na Temporada Zero, antes da Primeira Era começar.", isSeasonExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'insignia', imageUrl: `${INTERFACE_BASE_URL}/insignia_season_genesis.webp` },
-    { id: 'insignia_season_aurora_1', name: 'Aurora I', category: 'insignia', tier: 6, rarity: 'mythic', icon: '🌌', description: "Marca roxa da primeira Temporada oficial da Primeira Era.", isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'insignia', imageUrl: `${INTERFACE_BASE_URL}/insignia_season_aurora_1.webp` },
+    { id: 'insignia_season_aurora_1', name: 'Aurora II', category: 'insignia', tier: 6, rarity: 'mythic', icon: '🌌', description: "Marca roxa da primeira Temporada oficial da Primeira Era.", isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'insignia', imageUrl: `${INTERFACE_BASE_URL}/insignia_season_aurora_1.webp` },
 ];
 
 const LEGACY_ITEM_ID_ALIASES: Record<string, string> = {
@@ -488,19 +496,16 @@ export const isChestEligibleItem = (itemOrId?: ItemDef | string): boolean => {
 // patente. Esta acumula; as dez de patente sao uma de cada.
 export const RANK_UP_INSIGNIA_ID = 'insignia_levelup_rara';
 
-export const SEASON_COLLECTION_SLOTS: ItemSeasonSlot[] = ['skin', 'border', 'banner', 'glyph', 'orb', 'plate', 'insignia', 'ui_skin'];
+export const SEASON_COLLECTION_SLOTS: ItemSeasonSlot[] = ['skin', 'border', 'banner', 'insignia', 'ui_skin'];
 export const SEASON_COLLECTIONS: Record<string, SeasonCollectionDef> = {
     aurora_1_2026: {
         id: 'aurora_1_2026',
-        name: 'Aurora I',
+        name: 'Aurora II',
         storeMode: 'seasonal_high',
         slots: {
             skin: 'item_skin_aurora_1_2026',
             border: 'item_border_aurora_1_2026',
             banner: 'item_banner_aurora_1_2026',
-            glyph: null,
-            orb: null,
-            plate: null,
             insignia: 'insignia_season_aurora_1',
             ui_skin: 'AURORA_I',
         },
@@ -514,9 +519,6 @@ export const SEASON_COLLECTIONS: Record<string, SeasonCollectionDef> = {
             skin: 'item_skin_5_002',
             border: 'item_border_t5_genesis',
             banner: 'item_banner_t5_genesis',
-            glyph: null,
-            orb: null,
-            plate: null,
             insignia: 'insignia_season_genesis',
             ui_skin: 'GENESIS',
         },

@@ -68,7 +68,9 @@ for (const quest of SYSTEM_CHALLENGES.filter((entry) => entry.inicial)) {
 // --- jornadas da temporada -------------------------------------------------
 const seasonSource = arquivo('../constants/seasonContent.ts');
 const genesisStart = seasonSource.indexOf("'season-genesis-0': {");
-const genesisEnd = seasonSource.indexOf("'season-aurora-1-2026': {", genesisStart);
+// A Genesis termina onde a proxima temporada comeca. Era a Aurora I; depois
+// que a Genesis passou a cobrir a vaga da Aurora na Primeira Era, e a Zenite I.
+const genesisEnd = seasonSource.indexOf("'season-zenite-1-2026': {", genesisStart);
 assert.ok(genesisStart >= 0 && genesisEnd > genesisStart, 'o bloco da Genesis deve ser identificavel');
 const genesis = seasonSource.slice(genesisStart, genesisEnd);
 

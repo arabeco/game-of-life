@@ -188,7 +188,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
     const emblemaDoFeito = isCompetitionResult ? icon : getRewardEmblemUrl(tipoDaRecompensa, achievement.data.name);
     const tomDoFeito = getRewardToneRgb(tipoDaRecompensa, achievement.data.name);
     const inferredSeasonId = rewardItemIds.includes('insignia_season_aurora_1')
-        ? 'season-aurora-1-2026'
+        ? 'season-aurora-2-2027'
         : 'season-genesis-0';
     const seasonBackground = seloDaTemporada
         ? SEASONS[achievement.data.seasonId || inferredSeasonId]?.backgroundUrl

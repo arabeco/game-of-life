@@ -34,15 +34,27 @@ assert.doesNotMatch(projectionSource, /snapshot\.clanName !== undefined \? snaps
 assert.match(projectionSource, /identity=\{displayedPlaqueIdentity\}/);
 assert.doesNotMatch(projectionSource, /legacy-identity-dock/);
 assert.doesNotMatch(projectionModalSource, /legacy-identity-dock/);
-assert.match(projectionModalSource, /identityMode="current"/);
-// A placa passou a ter duas larguras — compacta e normal — em 7389bac, e a
-// coluna deixou de ser 58/76. O teste ficou preso na medida antiga e ja
-// falhava antes desta leva; ele guarda que a placa tem TRES COLUNAS com o
-// miolo elastico, que e o que impede o nome de empurrar os selos para fora.
-assert.match(plaqueSource, /grid-cols-\[\d+px_minmax\(0,1fr\)_\d+px\]/);
-// Mesmo 7389bac: o titulo da placa deixou de ser "Retrato do ciclo" e passou a
-// ser "Ciclo fechado". A trava guarda que a placa se NOMEIA — sem isso ela vira
-// uma imagem bonita sem dizer do que se trata.
-assert.match(plaqueSource, /Ciclo fechado/);
+// O `identityMode` saiu de proposito em 4ea7441: na cena do legado ele trocava
+// a unica letra da placa por um carimbo de data, e "16/09/2026" e tres vezes
+// mais largo que "A", entao as duas pontas ficavam tortas. A trava agora guarda
+// a decisao — a placa recebe a identidade e mais nada — em vez de guardar o
+// prop que foi removido, que e o que fazia este teste falhar.
+assert.match(projectionModalSource, /identity=\{fallbackIdentity\}/);
+assert.doesNotMatch(projectionModalSource, /identityMode=/);
+// O grid de tres colunas virou flex em 4ea7441, pelo motivo que o comentario
+// da propria placa registra: a coluna do meio era fixa em 210px e um apelido de
+// treze letras ja entrava cortado. O que a trava guarda continua sendo a mesma
+// decisao — o miolo e ELASTICO e pode encolher (`min-w-0 flex-1`), que e o que
+// impede o nome de empurrar os dois selos para fora da placa. Prender a trava a
+// `grid-cols-[58px_minmax(0,1fr)_76px]` era prender a uma medida, nao a uma
+// regra, e foi o que fez este teste falhar por duas versoes seguidas.
+assert.match(plaqueSource, /min-w-0 flex-1/);
+// "Ciclo fechado" nunca foi o titulo da placa: era o texto de reserva do
+// CARIMBO DE DATA, que so existia dentro do ramo `identityMode === 'historical'`
+// removido em 4ea7441. A trava guarda a decisao que restou: a chapa da direita
+// e a NOTA, sempre — dois numeros do mesmo peso, um em cada ponta. Era o
+// carimbo que tomava o lugar da unica letra da placa.
+assert.match(plaqueSource, /'Patamar',/);
+assert.doesNotMatch(plaqueSource, /capturedDate/);
 
 console.log('Cycle seal and Legacy regression: identity, arenas, actions and planner marks remain frozen until the cycle itself is deleted.');

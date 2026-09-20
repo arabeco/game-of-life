@@ -52,13 +52,29 @@ const bool = (v) => (v === true ? 'true' : 'false');
 
 const itens = ITEMS_DB.filter((i) => i.category !== 'chest');
 
-const linha = (i) => [
-    txt(i.id), txt(i.name), txt(i.category), num(i.tier), txt(i.rarity),
-    txt(i.imageUrl), num(i.costGold),
-    bool(i.isRankExclusive), bool(i.isGoldExclusive), bool(i.isSeasonExclusive),
-    bool(i.isPremiumOnly), bool(i.isChestExclusive), bool(i.isLegacyRetired),
-    txt(i.seasonKey), txt(i.seasonSlot),
-].join(', ');
+/**
+ * Reciclagem e forja saem do tier, e nao de tabela nenhuma.
+ *
+ * Conferido tupla a tupla no `sql/items_catalog_seed.sql`: os 134 itens usam
+ * exatamente seis pares, um por tier, sem uma excecao. Como e regra e nao
+ * escolha, o gerador pode calcular — e so para item NOVO. Em item que ja existe
+ * o banco manda, porque la os numeros podem ter sido ajustados a mao.
+ */
+const ECONOMIA = {
+    1: [10, 40], 2: [30, 120], 3: [100, 400],
+    4: [300, 1200], 5: [1000, 4000], 6: [0, 0],
+};
+
+const linha = (i) => {
+    const [reciclagem, forja] = ECONOMIA[i.tier] || [0, 0];
+    return [
+        txt(i.id), txt(i.name), txt(i.category), num(i.tier), txt(i.rarity),
+        txt(i.imageUrl), num(i.costGold),
+        bool(i.isRankExclusive), bool(i.isGoldExclusive), bool(i.isSeasonExclusive),
+        bool(i.isPremiumOnly), bool(i.isChestExclusive), bool(i.isLegacyRetired),
+        txt(i.seasonKey), txt(i.seasonSlot), num(reciclagem), num(forja),
+    ].join(', ');
+};
 
 /**
  * Staff, quest e relatorio nao existem como coluna no banco.
@@ -90,31 +106,38 @@ const sql = `-- Sincroniza public.items com constants/items.ts
 
 begin;
 
-update public.items as alvo
-set
-  name = codigo.name,
-  category = codigo.category,
-  tier = codigo.tier,
-  rarity = codigo.rarity,
-  image_url = codigo.image_url,
-  gold_price = codigo.gold_price,
-  is_rank_exclusive = codigo.is_rank_exclusive,
-  is_gold_exclusive = codigo.is_gold_exclusive,
-  is_season_exclusive = codigo.is_season_exclusive,
-  is_premium_only = codigo.is_premium_only,
-  is_chest_exclusive = codigo.is_chest_exclusive,
-  is_legacy_retired = codigo.is_legacy_retired,
-  season_key = codigo.season_key,
-  season_slot = codigo.season_slot
-from (values
-${itens.map((i) => `  (${linha(i)})`).join(',\n')}
-) as codigo (
+-- Item que ja existe e corrigido; item que o codigo criou e inserido.
+--
+-- A diferenca entre os dois esta no do update: ele NAO repete recycle_value,
+-- craft_cost, description e is_live_in_game. Esses quatro so valem na inclusao.
+-- Num item que ja esta no banco eles podem ter sido mexidos a mao, e o codigo
+-- nao tem como saber disso — reescrever seria apagar no escuro. E is_live_in_game
+-- fica de fora por um motivo proprio: item desligado pode ter sido desligado de
+-- proposito, e o sync nao religa nada.
+insert into public.items (
   id, name, category, tier, rarity, image_url, gold_price,
   is_rank_exclusive, is_gold_exclusive, is_season_exclusive,
   is_premium_only, is_chest_exclusive, is_legacy_retired,
-  season_key, season_slot
+  season_key, season_slot, recycle_value, craft_cost, is_live_in_game
 )
-where alvo.id = codigo.id;
+values
+${itens.map((i) => `  (${linha(i)}, true)`).join(',\n')}
+on conflict (id) do update
+set
+  name = excluded.name,
+  category = excluded.category,
+  tier = excluded.tier,
+  rarity = excluded.rarity,
+  image_url = excluded.image_url,
+  gold_price = excluded.gold_price,
+  is_rank_exclusive = excluded.is_rank_exclusive,
+  is_gold_exclusive = excluded.is_gold_exclusive,
+  is_season_exclusive = excluded.is_season_exclusive,
+  is_premium_only = excluded.is_premium_only,
+  is_chest_exclusive = excluded.is_chest_exclusive,
+  is_legacy_retired = excluded.is_legacy_retired,
+  season_key = excluded.season_key,
+  season_slot = excluded.season_slot;
 
 -- Quem saiu do codigo e aposentado, nao apagado: quem ja tem continua tendo, e
 -- o sorteio para de alcancar. (O glifo e o orbe sairam em 20/09; sao 17.)
@@ -169,12 +192,10 @@ where coalesce(is_live_in_game, true) = true
 group by category
 order by category;
 
--- 3. O CODIGO TEM ITEM QUE O BANCO NAO TEM?
+-- 3. Sobrou algum item do codigo sem linha no banco? Tem de vir vazio.
 --
--- Isto aqui e um UPDATE: ele conserta linha que existe e nao cria linha nova. A
--- aura Eclipse nasceu no codigo em 20/09 e nao tem linha no banco — enquanto
--- nao tiver, o app a mostra e o servidor nao a conhece. O insert dela precisa
--- de recycle_value e craft_cost, que so o banco sabe, entao fica para a mao.
+-- Desde que o bloco virou upsert isto e so uma rede: se aparecer alguem aqui, o
+-- insert falhou em silencio e vale olhar.
 select codigo.id as so_no_codigo
 from (values
 ${itens.map((i) => `  (${txt(i.id)})`).join(',\n')}

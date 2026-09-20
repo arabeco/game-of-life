@@ -323,6 +323,7 @@ export const ITEMS_DB: ItemDef[] = [
     // T3
     catalogItem('aura', { id: 'item_aura_3_001', name: 'Ouro', tier: 3, rarity: 'rare', icon: '🟡', isRankExclusive: true }),
     // T5
+    catalogItem('aura', { id: 'item_aura_4_001', name: 'Eclipse', tier: 4, rarity: 'epic', icon: '🌑', isRankExclusive: true }),
     catalogItem('aura', { id: 'item_aura_5_001', name: 'Pedra da Lua', tier: 5, rarity: 'legendary', icon: '🌙', isRankExclusive: true }),
     catalogItem('aura', { id: 'item_aura_5_002', name: 'Multiverso', tier: 5, rarity: 'legendary', icon: '🌌', isRankExclusive: true }),
 

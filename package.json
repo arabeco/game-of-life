@@ -51,7 +51,7 @@
     "preview": "vite preview",
     "worker:legacy-render": "node scripts/legacy-render-worker.mjs",
     "bancada": "vite --config vite.preview.config.ts",
-    "folhas": "node scripts/build-ladder-sheet.mjs && node scripts/build-catalog-sheet.mjs && node scripts/build-mesa.mjs && node scripts/build-seasons-sheet.mjs && node scripts/build-modal-sheet.mjs && node scripts/build-oraculo-sheet.mjs",
+    "folhas": "node scripts/build-ladder-sheet.mjs && node scripts/build-catalog-sheet.mjs && node scripts/build-mesa.mjs && node scripts/build-auras-sheet.mjs && node scripts/build-seasons-sheet.mjs && node scripts/build-modal-sheet.mjs && node scripts/build-oraculo-sheet.mjs",
     "smoke:journey": "node tests/mega/journey.mjs --live",
     "smoke:journey:cleanup": "node tests/mega/cleanup.mjs",
     "test:mega:local": "node tests/mega/run-local.mjs",

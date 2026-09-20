@@ -1,0 +1,133 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+<title>As Auras — Glyph</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:28px 24px 80px; background:#0e1013; color:#e7e9ec;
+         font:14px/1.55 system-ui,-apple-system,Segoe UI,sans-serif; }
+  .wrap { max-width:1100px; margin:0 auto; }
+  h1 { font-size:26px; margin:0 0 6px; letter-spacing:-.01em; }
+  h2 { font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:#8b929c;
+       margin:34px 0 10px; border-bottom:1px solid #23262c; padding-bottom:7px; }
+  p.lead { color:#969ca6; max-width:72ch; margin:0 0 14px; }
+  .carimbo { display:flex; gap:8px; flex-wrap:wrap; margin:14px 0 6px; }
+  .carimbo span { font:11px/1 ui-monospace,monospace; letter-spacing:.06em; color:#8b929c;
+                  border:1px solid #2a2e35; border-radius:5px; padding:6px 9px; background:#14171b; }
+  .grade { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:14px; }
+  .peca { margin:0; }
+  .poco { position:relative; aspect-ratio:3/4; border-radius:10px; overflow:hidden;
+          border:1px solid color-mix(in srgb, var(--c) 45%, transparent); background-color:#07080a; }
+  /* Um vulto no lugar do avatar: a aura so se le quando ha um corpo dentro dela. */
+  .corpo { position:absolute; left:50%; bottom:12%; width:26%; height:58%;
+           transform:translateX(-50%); border-radius:44% 44% 30% 30%;
+           background:linear-gradient(#1b1f26, #0d1014); box-shadow:0 0 22px rgba(0,0,0,.55); }
+  figcaption { margin-top:7px; }
+  .nome { display:block; font-size:12.5px; color:#e7e9ec; }
+  .rar { display:block; font:9px ui-monospace,monospace; letter-spacing:.1em;
+         text-transform:uppercase; color:var(--c); margin-top:2px; }
+  .porta { display:block; font:10px ui-monospace,monospace; color:#6e747c; margin-top:3px; }
+  .nota { margin-top:14px; padding:11px 13px; border-left:2px solid #d8b44c; background:#14171b;
+          color:#969ca6; font-size:13.5px; }
+  .nota strong { color:#e7e9ec; }
+  footer { margin-top:52px; padding-top:16px; border-top:1px solid #23262c; color:#6e747c; font-size:12.5px; }
+</style></head><body><div class="wrap">
+
+<h1>As Auras</h1>
+<p class="lead">A única categoria que não dava para ver. A aura não é arquivo: são seis cores por
+aura em <code>utils/auraVisuals.ts</code>, pintadas no canvas do avatar. O catálogo só sabe mostrar
+arquivo, então ela sempre apareceu como emoji — e a categoria passou por vazia sem estar.</p>
+
+<div class="carimbo">
+  <span>gerada 20/09/2026, 19:08</span>
+  <span>commit 9a7b7a1</span>
+  <span>fonte: utils/auraVisuals.ts</span>
+</div>
+
+<h2>As 9 que existem</h2>
+<div class="grade"><figure class="peca" style="--c:#9aa3ad">
+  <div class="poco" style="background:radial-gradient(circle at 50% 52%, rgba(226, 232, 240, 0.34) 0%, rgba(148, 163, 184, 0.28) 24%, rgba(255,255,255,0.06) 38%, transparent 68%), radial-gradient(circle at 28% 30%, rgba(255, 255, 255, 0.12) 0%, transparent 26%), radial-gradient(circle at 72% 28%, rgba(255, 255, 255, 0.16) 0%, transparent 30%), radial-gradient(circle at 50% 78%, rgba(226, 232, 240, 0.18) 0%, transparent 34%)"><div class="corpo"></div></div>
+  <figcaption>
+    <span class="nome">Bruma</span>
+    <span class="rar">comum</span>
+    <span class="porta">2 Escudeiro</span>
+  </figcaption>
+</figure><figure class="peca" style="--c:#9aa3ad">
+  <div class="poco" style="background:radial-gradient(circle at 50% 52%, rgba(56, 189, 248, 0.38) 0%, rgba(37, 99, 235, 0.28) 24%, rgba(255,255,255,0.06) 38%, transparent 68%), radial-gradient(circle at 28% 30%, rgba(191, 219, 254, 0.2) 0%, transparent 26%), radial-gradient(circle at 72% 28%, rgba(125, 211, 252, 0.2) 0%, transparent 30%), radial-gradient(circle at 50% 78%, rgba(96, 165, 250, 0.24) 0%, transparent 34%)"><div class="corpo"></div></div>
+  <figcaption>
+    <span class="nome">Safira</span>
+    <span class="rar">comum</span>
+    <span class="porta">3 Cavaleiro</span>
+  </figcaption>
+</figure><figure class="peca" style="--c:#9aa3ad">
+  <div class="poco" style="background:radial-gradient(circle at 50% 52%, rgba(248, 113, 113, 0.38) 0%, rgba(220, 38, 38, 0.28) 24%, rgba(255,255,255,0.06) 38%, transparent 68%), radial-gradient(circle at 28% 30%, rgba(254, 202, 202, 0.18) 0%, transparent 26%), radial-gradient(circle at 72% 28%, rgba(252, 165, 165, 0.18) 0%, transparent 30%), radial-gradient(circle at 50% 78%, rgba(248, 113, 113, 0.24) 0%, transparent 34%)"><div class="corpo"></div></div>
+  <figcaption>
+    <span class="nome">Rubi</span>
+    <span class="rar">comum</span>
+    <span class="porta">4 Lorde</span>
+  </figcaption>
+</figure><figure class="peca" style="--c:#63b36b">
+  <div class="poco" style="background:radial-gradient(circle at 50% 52%, rgba(74, 222, 128, 0.36) 0%, rgba(22, 163, 74, 0.28) 24%, rgba(255,255,255,0.06) 38%, transparent 68%), radial-gradient(circle at 28% 30%, rgba(220, 252, 231, 0.16) 0%, transparent 26%), radial-gradient(circle at 72% 28%, rgba(134, 239, 172, 0.18) 0%, transparent 30%), radial-gradient(circle at 50% 78%, rgba(74, 222, 128, 0.22) 0%, transparent 34%)"><div class="corpo"></div></div>
+  <figcaption>
+    <span class="nome">Esmeralda</span>
+    <span class="rar">incomum</span>
+    <span class="porta">5 Barão</span>
+  </figcaption>
+</figure><figure class="peca" style="--c:#63b36b">
+  <div class="poco" style="background:radial-gradient(circle at 50% 52%, rgba(226, 232, 240, 0.36) 0%, rgba(148, 163, 184, 0.26) 24%, rgba(255,255,255,0.06) 38%, transparent 68%), radial-gradient(circle at 28% 30%, rgba(255, 255, 255, 0.18) 0%, transparent 26%), radial-gradient(circle at 72% 28%, rgba(255, 255, 255, 0.22) 0%, transparent 30%), radial-gradient(circle at 50% 78%, rgba(203, 213, 225, 0.2) 0%, transparent 34%)"><div class="corpo"></div></div>
+  <figcaption>
+    <span class="nome">Prata</span>
+    <span class="rar">incomum</span>
+    <span class="porta">6 Conde</span>
+  </figcaption>
+</figure><figure class="peca" style="--c:#5b8fd6">
+  <div class="poco" style="background:radial-gradient(circle at 50% 52%, rgba(250, 204, 21, 0.4) 0%, rgba(202, 138, 4, 0.3) 24%, rgba(255,255,255,0.06) 38%, transparent 68%), radial-gradient(circle at 28% 30%, rgba(254, 249, 195, 0.18) 0%, transparent 26%), radial-gradient(circle at 72% 28%, rgba(254, 240, 138, 0.18) 0%, transparent 30%), radial-gradient(circle at 50% 78%, rgba(250, 204, 21, 0.24) 0%, transparent 34%)"><div class="corpo"></div></div>
+  <figcaption>
+    <span class="nome">Ouro</span>
+    <span class="rar">raro</span>
+    <span class="porta">7 Duque</span>
+  </figcaption>
+</figure><figure class="peca" style="--c:#a86fd6">
+  <div class="poco" style="background:radial-gradient(circle at 50% 52%, rgba(76, 29, 149, 0.44) 0%, rgba(30, 27, 75, 0.34) 24%, rgba(255,255,255,0.06) 38%, transparent 68%), radial-gradient(circle at 28% 30%, rgba(253, 224, 71, 0.2) 0%, transparent 26%), radial-gradient(circle at 72% 28%, rgba(251, 146, 60, 0.16) 0%, transparent 30%), radial-gradient(circle at 50% 78%, rgba(251, 191, 36, 0.3) 0%, transparent 34%)"><div class="corpo"></div></div>
+  <figcaption>
+    <span class="nome">Eclipse</span>
+    <span class="rar">épico</span>
+    <span class="porta">8 Príncipe</span>
+  </figcaption>
+</figure><figure class="peca" style="--c:#d8a23c">
+  <div class="poco" style="background:radial-gradient(circle at 50% 52%, rgba(196, 181, 253, 0.4) 0%, rgba(109, 40, 217, 0.28) 24%, rgba(255,255,255,0.06) 38%, transparent 68%), radial-gradient(circle at 28% 30%, rgba(243, 232, 255, 0.2) 0%, transparent 26%), radial-gradient(circle at 72% 28%, rgba(233, 213, 255, 0.2) 0%, transparent 30%), radial-gradient(circle at 50% 78%, rgba(192, 132, 252, 0.24) 0%, transparent 34%)"><div class="corpo"></div></div>
+  <figcaption>
+    <span class="nome">Pedra da Lua</span>
+    <span class="rar">lendário</span>
+    <span class="porta">9 Rei</span>
+  </figcaption>
+</figure><figure class="peca" style="--c:#d8a23c">
+  <div class="poco" style="background:radial-gradient(circle at 50% 52%, rgba(129, 140, 248, 0.38) 0%, rgba(217, 70, 239, 0.24) 24%, rgba(255,255,255,0.06) 38%, transparent 68%), radial-gradient(circle at 28% 30%, rgba(191, 219, 254, 0.16) 0%, transparent 26%), radial-gradient(circle at 72% 28%, rgba(56, 189, 248, 0.18) 0%, transparent 30%), radial-gradient(circle at 50% 78%, rgba(168, 85, 247, 0.2) 0%, transparent 34%)"><div class="corpo"></div></div>
+  <figcaption>
+    <span class="nome">Multiverso</span>
+    <span class="rar">lendário</span>
+    <span class="porta">10 Soberano</span>
+  </figcaption>
+</figure></div>
+
+<h2>A que está no código e não é item</h2>
+<div class="grade"><figure class="peca" style="--c:#d8a23c">
+  <div class="poco" style="background:radial-gradient(circle at 50% 52%, rgba(251, 191, 36, 0.4) 0%, rgba(249, 115, 22, 0.28) 24%, rgba(255,255,255,0.06) 38%, transparent 68%), radial-gradient(circle at 28% 30%, rgba(255, 247, 237, 0.18) 0%, transparent 26%), radial-gradient(circle at 72% 28%, rgba(254, 240, 138, 0.18) 0%, transparent 30%), radial-gradient(circle at 50% 78%, rgba(251, 191, 36, 0.26) 0%, transparent 34%)"><div class="corpo"></div></div>
+  <figcaption>
+    <span class="nome">Fênix Dourada</span>
+    <span class="rar">lendário</span>
+    <span class="porta">não existe como item</span>
+  </figcaption>
+</figure></div>
+<div class="nota"><strong>A Fênix Dourada tem as seis cores escritas e nenhum item aponta para
+ela.</strong> É o mesmo caso do <code>SKIN_T2_MILITAR.png</code>: trabalho pronto, fora do jogo.</div>
+
+<div class="nota"><strong>Isto é o gêmeo em CSS, não a pintura do canvas.</strong> A receita de cor é
+a mesma tabela; o desenho de verdade sai do <code>drawAuraCanvasEffect</code>, com o avatar dentro.
+O vulto escuro aqui está no lugar do corpo, porque aura sem corpo não se lê.</div>
+
+<footer>
+  Gerada por <code>scripts/build-auras-sheet.mjs</code> · <code>npm run folhas</code>.
+  Não edite este arquivo à mão: a próxima geração apaga.
+</footer>
+</div></body></html>

@@ -23,6 +23,7 @@ const AURA_KEY_ALIASES: Record<string, string> = {
     item_aura_2_001: 'esmeralda',
     item_aura_2_002: 'prata',
     item_aura_3_001: 'ouro',
+    item_aura_4_001: 'eclipse',
     item_aura_5_001: 'pedra da lua',
     item_aura_5_002: 'multiverso',
     item_aura_exclusive_001: 'fenix dourada',
@@ -76,6 +77,14 @@ const AURA_VISUALS: Record<string, AuraVisual> = {
         ring: 'rgba(250, 204, 21, 0.24)',
         spark: 'rgba(254, 249, 195, 0.18)',
         shadow: 'rgba(234, 179, 8, 0.3)',
+    },
+    eclipse: {
+        core: 'rgba(76, 29, 149, 0.44)',
+        bloom: 'rgba(30, 27, 75, 0.34)',
+        haze: 'rgba(251, 146, 60, 0.16)',
+        ring: 'rgba(251, 191, 36, 0.3)',
+        spark: 'rgba(253, 224, 71, 0.2)',
+        shadow: 'rgba(124, 58, 237, 0.3)',
     },
     'pedra da lua': {
         core: 'rgba(196, 181, 253, 0.4)',

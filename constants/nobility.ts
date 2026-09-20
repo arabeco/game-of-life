@@ -174,6 +174,7 @@ export const RANK_REWARDS: Record<string, { category: UnlockCategory; itemId: st
     ],
     principe: [
         { category: 'skins', itemId: 'item_skin_4_002', name: 'Mago Círculo' },
+        { category: 'auras', itemId: 'item_aura_4_001', name: 'Aura: Eclipse' },
         { category: 'borders', itemId: 'item_border_t3_transcendente', name: 'Borda: Transcendente' },
         { category: 'banners', itemId: 'item_banner_t4_celestial', name: 'Banner: Celestial' },
         { category: 'insignias', itemId: 'insignia_rank_8_principe', name: 'Insígnia: Príncipe' },

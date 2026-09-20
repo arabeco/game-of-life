@@ -52,6 +52,38 @@ const {
     assert.deepEqual(applyAvatarOffset(500, 500, { x: -5, y: 8 }), { x: -5, y: 8, w: 500, h: 500 });
 }
 
+// 2b. O DESLOCAMENTO ACOMPANHA O TAMANHO DO CANVAS.
+//
+// Este caso faltava, e o buraco custou caro: as assertivas todas usavam 500x500,
+// que e o tamanho da ferramenta de alinhar — entao a conta parecia certa e o app
+// saia torto, porque ele desenha em 300x300 (Avatar), 200x300
+// (SovereignCustomizer) e 220x220 (bancada).
+//
+// x e y sao medidos contra a arte em 500x500. Aplicados crus num canvas menor,
+// valem proporcionalmente MAIS: "+17" virava 17 de 300 em vez de 17 de 500.
+{
+    // Metade do lado: metade do deslocamento.
+    assert.deepEqual(
+        applyAvatarOffset(250, 250, { x: -5, y: 8 }),
+        { x: -2.5, y: 4, w: 250, h: 250 },
+        'em 250x250 o ajuste vale metade do que vale em 500x500',
+    );
+
+    // Quadro nao quadrado: cada eixo tem o proprio fator.
+    assert.deepEqual(
+        applyAvatarOffset(200, 300, { x: 10, y: 20 }),
+        { x: 4, y: 12, w: 200, h: 300 },
+        'em 200x300 o horizontal e o vertical escalam por fatores diferentes',
+    );
+
+    // A peca do Princesa, no tamanho em que o app de fato desenha.
+    const princesa = applyAvatarOffset(300, 300, { x: -1, y: 17 });
+    assert.ok(
+        Math.abs(princesa.y - 10.2) < 0.001,
+        `+17 na arte de 500 tem de virar +10,2 num canvas de 300, e veio ${princesa.y}`,
+    );
+}
+
 // 3. A chave e o NOME DO ARQUIVO, venha a URL de onde vier.
 //
 // O CanvasAvatar monta URL de jeito diferente por categoria — avatarAsset,

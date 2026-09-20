@@ -146,6 +146,15 @@ export const REGIOES_DO_CORPO: Record<RegiaoDoCorpo, Array<[number, number, numb
  * As medidas sao do alpha de body_masc_1.png e servem de gabarito para conferir
  * corpo novo: node scripts/check-avatar-geometry.mjs
  */
+/**
+ * O LADO DA ARTE, e a unidade de todo ajuste deste arquivo.
+ *
+ * Todo PNG de avatar tem 500x500, e a ferramenta de alinhar desenha num canvas
+ * de 500x500. Entao x e y aqui sao pixels DESSE quadro — nao do canvas onde o
+ * app vai desenhar, que muda de tela para tela.
+ */
+export const LADO_DA_ARTE = 500;
+
 export const REFERENCIA = {
     corpo: 'body_masc_1.png',
     /** Primeira linha com pixel opaco, o alto do cranio. */
@@ -337,9 +346,28 @@ export const applyAvatarOffset = (
     const escala = offset?.scale ?? 1;
     const w = largura * escala;
     const h = altura * escala;
+
+    /*
+     * O DESLOCAMENTO E PROPORCIONAL, e nao pixel cru.
+     *
+     * x e y foram medidos contra a arte em 500x500, que e o tamanho do PNG e o
+     * do canvas da ferramenta. Mas o app nao desenha em 500: o Avatar usa
+     * 300x300, o SovereignCustomizer usa 200x300 e a bancada usa 220x220.
+     *
+     * Aplicando o numero cru, o mesmo ajuste valia MAIS quanto menor a tela — o
+     * "+17" do Princesa virava 17 pixels de 300 em vez de 17 de 500, quase o
+     * dobro do deslocamento pretendido. E em 200x300, onde o quadro nem e
+     * quadrado, o horizontal e o vertical erravam por fatores diferentes.
+     *
+     * Era por isso que a peca assentava certa na ferramenta e saia torta no
+     * app: as duas faziam a mesma conta, sobre reguas diferentes.
+     */
+    const fatorX = largura / LADO_DA_ARTE;
+    const fatorY = altura / LADO_DA_ARTE;
+
     return {
-        x: (largura - w) / 2 + (offset?.x ?? 0),
-        y: (altura - h) / 2 + (offset?.y ?? 0),
+        x: (largura - w) / 2 + (offset?.x ?? 0) * fatorX,
+        y: (altura - h) / 2 + (offset?.y ?? 0) * fatorY,
         w,
         h,
     };

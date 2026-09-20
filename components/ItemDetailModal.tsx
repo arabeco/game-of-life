@@ -43,11 +43,9 @@ const CATEGORY_MAP: Partial<Record<ItemCategory, UnlockCategory>> = {
     'hair': 'hairStyles',
     'border': 'borders',
     'banner': 'banners',
-    'glyph': 'glyphs',
     'aura': 'auras',
     'ui_skin': 'skins',
     'artifact': 'artifacts',
-    'orb': 'orbs',
     'plate': 'plates',
     // Adicionar outros mapeamentos conforme necessário se existirem no ItemCategory
 };
@@ -108,10 +106,8 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
         (currentItem.category === 'skin' && userProfile.sovereign?.outfit === currentItem.id) ||
         (currentItem.category === 'hair' && userProfile.sovereign?.hairStyle === currentItem.id) ||
         (currentItem.category === 'artifact' && userProfile.sovereign?.artifact === currentItem.id) ||
-        (currentItem.category === 'glyph' && userProfile.sovereign?.glyph === currentItem.id) ||
         (currentItem.category === 'aura' && userProfile.sovereign?.aura === currentItem.id) ||
-        (currentItem.category === 'orb' && userProfile.sovereign?.orb === currentItem.id) ||
-        (currentItem.category === 'plate' && [userProfile.sovereign?.sovereignPlate, userProfile.sovereign?.artifactPlate, userProfile.sovereign?.glyphPlate].includes(currentItem.id)) ||
+        (currentItem.category === 'plate' && [userProfile.sovereign?.sovereignPlate, userProfile.sovereign?.artifactPlate].includes(currentItem.id)) ||
         (currentItem.category === 'banner' && resolveCatalogAssetUrl(userProfile.bannerUrl) === currentItem.imageUrl)
     );
 

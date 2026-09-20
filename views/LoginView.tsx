@@ -207,9 +207,7 @@ export const LoginView: React.FC = () => {
                         skins: {},
                         borders: {},
                         banners: {},
-                        glyphs: {},
                         auras: {},
-                        orbs: {},
                         plates: {},
                         ornament: {},
                         insignias: {},
@@ -241,9 +239,6 @@ export const LoginView: React.FC = () => {
                     'cachos': true,
                     'medio_reto': true,
                     'textured_crop': true
-                };
-                newProfile.unlockedItems.orbs = {
-                    'item_orb_1_002': true // Orbe de Cobre
                 };
                 newProfile.unlockedItems.plates = {
                     'item_plate_1_001': true // Placa Madeira
@@ -424,9 +419,7 @@ export const LoginView: React.FC = () => {
                             skins: {},
                             borders: {},
                             banners: {},
-                            glyphs: {},
                             auras: {},
-                            orbs: {},
                             plates: {},
                             ornament: {},
                             insignias: {},

@@ -171,20 +171,9 @@ const UnifiedSovereignDisplay: React.FC<{
             return SOVEREIGN_ASSETS.artifacts?.find(a => a.id === sovereignConfig.artifact)?.url;
         } catch (e) { return undefined; }
     };
-    const getGlyphUrl = () => {
-        try {
-            return SOVEREIGN_ASSETS.glyphs?.find(g => g.id === sovereignConfig.glyph)?.url;
-        } catch (e) { return undefined; }
-    };
-    const getOrbUrl = () => {
-        try {
-            return SOVEREIGN_ASSETS.orbs?.find(o => o.id === sovereignConfig.orb)?.url;
-        } catch (e) { return undefined; }
-    };
     const getPlateUrl = () => {
         try {
             if (primaryDisplay === 'item') return SOVEREIGN_ASSETS.plates?.find(p => p.id === sovereignConfig.artifactPlate)?.url;
-            if (primaryDisplay === 'glyph') return SOVEREIGN_ASSETS.plates?.find(p => p.id === sovereignConfig.glyphPlate)?.url;
             return SOVEREIGN_ASSETS.plates?.find(p => p.id === sovereignConfig.sovereignPlate)?.url;
         } catch (e) { return undefined; }
     };
@@ -206,8 +195,6 @@ const UnifiedSovereignDisplay: React.FC<{
         ? {
             ...sovereignConfig,
             artifact: 'none',
-            glyph: 'none',
-            orb: 'none',
             artifactPlate: 'none',
             glyphPlate: 'none'
         }
@@ -247,24 +234,6 @@ const UnifiedSovereignDisplay: React.FC<{
                                 className="relative z-10 w-full h-full object-contain p-2 drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]"
                                 crossOrigin="anonymous"
                             />
-                        </div>
-                    ) : <span className="text-[10px] text-gray-500 font-bold uppercase">Vazio</span>
-                )}
-                {primaryDisplay === 'glyph' && (
-                    getGlyphUrl() ? (
-                        <div className="relative w-full h-full flex items-center justify-center">
-                            {getPlateUrl() && (
-                                <img src={getPlateUrl()} alt="Placa" className="absolute inset-0 w-full h-full object-cover opacity-90" crossOrigin="anonymous" />
-                            )}
-                            <img
-                                src={getGlyphUrl()}
-                                alt="Glifo"
-                                className="relative z-10 w-full h-full object-contain p-2 drop-shadow-[0_0_10px_rgba(34,211,238,0.4)]"
-                                crossOrigin="anonymous"
-                            />
-                            {getOrbUrl() && (
-                                <img src={getOrbUrl()} alt="Orbe" className="absolute inset-0 w-full h-full object-contain z-20 scale-75 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]" crossOrigin="anonymous" />
-                            )}
                         </div>
                     ) : <span className="text-[10px] text-gray-500 font-bold uppercase">Vazio</span>
                 )}

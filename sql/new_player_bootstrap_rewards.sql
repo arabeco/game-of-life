@@ -336,11 +336,9 @@ declare
     'item_skin_1_002',
     'item_skin_1_005',
     'item_skin_1_006',
-    'item_glyph_1_001',
     'item_artifact_1_001',
     'item_garden_stone_1',
     'item_garden_plant_1',
-    'item_orb_1_002',
     'item_plate_1_001',
     'insignia_rank_1_vagante',
     'BASIC',
@@ -350,7 +348,6 @@ declare
   v_starter_topup text[] := array[
     'item_skin_1_005',
     'item_skin_1_006',
-    'item_glyph_1_001',
     'insignia_rank_1_vagante',
     'FROST'
   ];
@@ -370,9 +367,6 @@ declare
     'item_artifact_3_006'
   ];
   v_orb_pool text[] := array[
-    'item_orb_2_002',
-    'item_orb_2_003',
-    'item_orb_3_001'
   ];
   v_plate_pool text[] := array[
     'item_plate_2_001',

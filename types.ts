@@ -412,16 +412,13 @@ export interface SovereignConfig {
   hairColor: string;
   outfit: string;
   artifact: string;
-  glyph: string; // NEW: Glifo slot
   aura: string; // NEW: Aura slot
-  orb?: string; // NEW: Orbe slot
   sovereignPlate?: string; // NEW: Placa slot for Sovereign
   artifactPlate?: string; // NEW: Placa slot for Artifact
-  glyphPlate?: string; // NEW: Placa slot for Glyph
-  primaryDisplay?: 'sovereign' | 'item' | 'glyph'; // Preferred miniature display
+  primaryDisplay?: 'sovereign' | 'item'; // Preferred miniature display
 }
 
-export type UnlockCategory = 'bodyStyles' | 'hairStyles' | 'outfits' | 'artifacts' | 'codexes' | 'skins' | 'borders' | 'banners' | 'glyphs' | 'auras' | 'orbs' | 'plates' | 'ornament' | 'insignias' | 'ui_skins';
+export type UnlockCategory = 'bodyStyles' | 'hairStyles' | 'outfits' | 'artifacts' | 'codexes' | 'skins' | 'borders' | 'banners' | 'auras' | 'plates' | 'ornament' | 'insignias' | 'ui_skins';
 
 // 'mythic' e exclusiva de temporada: nenhum bau normal sorteia nela, e nenhum
 // item de temporada usa outra. E o tier 6, fora da escada de 1 a 5.

@@ -1488,13 +1488,10 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
                                                             // Force "Boneco" Config
                                                             const forceBodyConfig = member.sovereign ? {
                                                                 ...member.sovereign,
-                                                                glyph: 'none',
                                                                 artifact: 'none',
-                                                                glyphPlate: 'none',
                                                                 artifactPlate: 'none',
                                                                 aura: 'none',
                                                                 sovereignPlate: 'none',
-                                                                orb: 'none',
                                                                 primaryDisplay: 'sovereign' as const
                                                             } : undefined;
 

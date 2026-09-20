@@ -19,8 +19,6 @@ const ICONE_DA_CATEGORIA: Record<string, string> = {
     skin: 'cat-skin',
     border: 'cat-borda',
     banner: 'cat-banner',
-    glyph: 'cat-glifo',
-    orb: 'cat-orbe',
     plate: 'cat-placa',
 };
 

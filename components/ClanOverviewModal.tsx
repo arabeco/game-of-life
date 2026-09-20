@@ -107,12 +107,9 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
         ? {
             ...member.sovereign,
             artifact: 'none',
-            glyph: 'none',
             aura: 'none',
-            orb: 'none',
             sovereignPlate: 'none',
             artifactPlate: 'none',
-            glyphPlate: 'none',
             primaryDisplay: 'sovereign' as const,
         }
         : undefined;

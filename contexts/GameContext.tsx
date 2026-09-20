@@ -508,9 +508,7 @@ const DEFAULT_USER_PROFILE: UserProfile = {
         skins: {},
         borders: {},
         banners: {},
-        glyphs: {},
         auras: {},
-        orbs: {},
         plates: {},
         ornament: {},
         insignias: {},
@@ -2274,7 +2272,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'item_artifact_1_001', // Adaga Aprendiz
                 'item_garden_stone_1', // Pedra Serena
                 'item_garden_plant_1', // Musgo Vivo
-                'item_orb_1_002',  // Orbe de Cobre
                 'item_plate_1_001', // Placa Madeira
                 'BASIC'            // Tema Básico
             ];
@@ -2840,10 +2837,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             (itemDef.category === 'skin' && userProfile.sovereign.outfit === item.id) ||
             (itemDef.category === 'hair' && userProfile.sovereign.hairStyle === item.id) ||
             (itemDef.category === 'artifact' && userProfile.sovereign.artifact === item.id) ||
-            (itemDef.category === 'glyph' && userProfile.sovereign.glyph === item.id) ||
             (itemDef.category === 'aura' && userProfile.sovereign.aura === item.id) ||
-            (itemDef.category === 'orb' && userProfile.sovereign.orb === item.id) ||
-            (itemDef.category === 'plate' && [userProfile.sovereign.sovereignPlate, userProfile.sovereign.artifactPlate, userProfile.sovereign.glyphPlate].includes(item.id)) ||
+            (itemDef.category === 'plate' && [userProfile.sovereign.sovereignPlate, userProfile.sovereign.artifactPlate].includes(item.id)) ||
             (itemDef.category === 'banner' && resolveCatalogAssetUrl(userProfile.bannerUrl) === itemDef.imageUrl)
         );
 
@@ -2861,12 +2856,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 if (itemDef.category === 'skin') newSovereign.outfit = 'none';
                 if (itemDef.category === 'hair') newSovereign.hairStyle = 'none';
                 if (itemDef.category === 'artifact') newSovereign.artifact = 'none';
-                if (itemDef.category === 'glyph') newSovereign.glyph = 'none';
                 if (itemDef.category === 'aura') newSovereign.aura = 'none';
-                if (itemDef.category === 'orb') newSovereign.orb = 'none';
                 if (itemDef.category === 'plate') {
                     if (userProfile.sovereign.primaryDisplay === 'item') newSovereign.artifactPlate = 'none';
-                    else if (userProfile.sovereign.primaryDisplay === 'glyph') newSovereign.glyphPlate = 'none';
                     else newSovereign.sovereignPlate = 'none';
                 }
                 updateUserProfile({ sovereign: newSovereign });
@@ -2886,12 +2878,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 if (itemDef.category === 'skin') newSovereign.outfit = itemDef.id;
                 if (itemDef.category === 'hair') newSovereign.hairStyle = itemDef.id;
                 if (itemDef.category === 'artifact') newSovereign.artifact = itemDef.id;
-                if (itemDef.category === 'glyph') newSovereign.glyph = itemDef.id;
                 if (itemDef.category === 'aura') newSovereign.aura = itemDef.id;
-                if (itemDef.category === 'orb') newSovereign.orb = itemDef.id;
                 if (itemDef.category === 'plate') {
                     if (userProfile.sovereign.primaryDisplay === 'item') newSovereign.artifactPlate = itemDef.id;
-                    else if (userProfile.sovereign.primaryDisplay === 'glyph') newSovereign.glyphPlate = itemDef.id;
                     else newSovereign.sovereignPlate = itemDef.id;
                 }
                 updateUserProfile({ sovereign: newSovereign });
@@ -9237,9 +9226,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             skins: {},
             borders: {},
             banners: {},
-            glyphs: {},
             auras: {},
-            orbs: {},
             plates: {},
             insignias: {},
             ornament: {},

@@ -44,11 +44,7 @@ export const buildClosedBetaProfilePayload = (session: Session) => {
       skins: {},
       borders: {},
       banners: {},
-      glyphs: {},
       auras: {},
-      orbs: {
-        item_orb_1_002: true,
-      },
       plates: {
         item_plate_1_001: true,
       },

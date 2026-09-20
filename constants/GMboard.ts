@@ -57,10 +57,6 @@ export const SOVEREIGN_ASSETS = {
     { id: 'none', name: 'Nenhum', url: '', rarity: 'common' as ItemRarity },
     ...getCatalogItemsByCategory('artifact').map(i => ({ id: i.id, name: i.name, url: i.imageUrl || '', rarity: i.rarity })),
   ],
-  glyphs: [
-    { id: 'none', name: 'Nenhum', url: '', rarity: 'common' as ItemRarity },
-    ...getCatalogItemsByCategory('glyph').map(i => ({ id: i.id, name: i.name, url: i.imageUrl || '', rarity: i.rarity })),
-  ],
   plates: [
     { id: 'none', name: 'Nenhuma', url: '', rarity: 'common' as ItemRarity },
     ...getCatalogItemsByCategory('plate').map(i => ({ id: i.id, name: i.name, url: i.imageUrl || '', rarity: i.rarity })),
@@ -69,17 +65,13 @@ export const SOVEREIGN_ASSETS = {
     { id: 'none', name: 'Nenhum', url: '', rarity: 'common' as ItemRarity },
     ...getCatalogItemsByCategory('aura').map(i => ({ id: i.id, name: i.name, url: i.imageUrl || '', rarity: i.rarity })),
   ],
-  orbs: [
-    { id: 'none', name: 'Nenhum', url: '', rarity: 'common' as ItemRarity },
-    ...getCatalogItemsByCategory('orb').map(i => ({ id: i.id, name: i.name, url: i.imageUrl || '', rarity: i.rarity })),
-  ],
 };
 
 export const DEFAULT_SOVEREIGN_CONFIG: SovereignConfig = {
     body: 'body_masc_1', skinTone: '#FBE5D5', hairStyle: 'none', hairColor: '#2C1608',
     outfit: 'none', artifact: 'none',
-    glyph: 'none', aura: 'none', orb: 'none',
-    sovereignPlate: 'none', artifactPlate: 'none', glyphPlate: 'none'
+    aura: 'none',
+    sovereignPlate: 'none', artifactPlate: 'none'
 };
 
 export const getItemCategory = (itemId: string): UnlockCategory | null => {
@@ -87,10 +79,8 @@ export const getItemCategory = (itemId: string): UnlockCategory | null => {
   if (SOVEREIGN_ASSETS.hairStyles.some(i => i.id === itemId)) return 'hairStyles';
   if (SOVEREIGN_ASSETS.outfits.some(i => i.id === itemId)) return 'outfits';
   if (SOVEREIGN_ASSETS.artifacts.some(i => i.id === itemId)) return 'artifacts';
-  if (SOVEREIGN_ASSETS.glyphs.some(i => i.id === itemId)) return 'glyphs';
   if (SOVEREIGN_ASSETS.plates.some(i => i.id === itemId)) return 'plates';
   if (SOVEREIGN_ASSETS.auras.some(i => i.id === itemId)) return 'auras';
-  if (SOVEREIGN_ASSETS.orbs.some(i => i.id === itemId)) return 'orbs';
   return null;
 };
 
@@ -101,13 +91,11 @@ export const buildDefaultLevelUnlocks = (): LevelUnlocks => ({
   hairStyles: buildUnlockMap(SOVEREIGN_ASSETS.hairStyles),
   outfits: buildUnlockMap(SOVEREIGN_ASSETS.outfits),
   artifacts: buildUnlockMap(SOVEREIGN_ASSETS.artifacts),
-  glyphs: buildUnlockMap(SOVEREIGN_ASSETS.glyphs),
   codexes: {},
   skins: {},
   borders: {},
   banners: {},
   auras: buildUnlockMap(SOVEREIGN_ASSETS.auras),
-  orbs: buildUnlockMap(SOVEREIGN_ASSETS.orbs),
   plates: buildUnlockMap(SOVEREIGN_ASSETS.plates),
   ornament: {},
   insignias: {},
@@ -123,7 +111,7 @@ export const GM_CONFIG = {
   chestDrops: {
     itemDropChanceByChest: { Comum: 0.005, Raro: 0.01, Épico: 0.02, Lendário: 0.03 } as Partial<Record<ChestType, number>>,
     skinDropChanceByChest: { Comum: 0.005, Raro: 0.02, Épico: 0.05, Lendário: 0.1 } as Partial<Record<ChestType, number>>,
-    itemPool: { categories: ['bodyStyles', 'outfits', 'artifacts', 'glyphs', 'auras', 'orbs'] as UnlockCategory[], excludeIds: ['none'] },
+    itemPool: { categories: ['bodyStyles', 'outfits', 'artifacts', 'auras'] as UnlockCategory[], excludeIds: ['none'] },
   },
   cosmetics: {
     skins: [

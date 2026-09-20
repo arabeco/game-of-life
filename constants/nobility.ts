@@ -110,7 +110,6 @@ export const RANK_REWARDS: Record<string, { category: UnlockCategory; itemId: st
     // horas, e ate la o vestuario e o unico lugar do jogo onde a pessoa se ve.
     vagante: [
         { category: 'ui_skins', itemId: 'FROST', name: 'Tema: Gelo Eterno' },
-        { category: 'glyphs', itemId: 'item_glyph_1_001', name: 'Tábua Aprendiz' },
         { category: 'skins', itemId: 'item_skin_1_001', name: 'Náufrago' },
         { category: 'skins', itemId: 'item_skin_1_002', name: 'Casual' },
         { category: 'skins', itemId: 'item_skin_1_005', name: 'Caçador' },
@@ -140,7 +139,6 @@ export const RANK_REWARDS: Record<string, { category: UnlockCategory; itemId: st
     ],
     lorde: [
         { category: 'ui_skins', itemId: 'EMBER', name: 'Tema: Chama Viva' },
-        { category: 'glyphs', itemId: 'item_glyph_2_002', name: 'Granito Rúnico' },
         { category: 'skins', itemId: 'item_skin_2_002', name: 'Tático' },
         { category: 'borders', itemId: 'item_border_2_001', name: 'Borda: Popular' },
         { category: 'banners', itemId: 'item_banner_popular', name: 'Banner: Popular' },
@@ -153,8 +151,6 @@ export const RANK_REWARDS: Record<string, { category: UnlockCategory; itemId: st
     // pronto, sem item nenhum apontando para ele.
     barao: [
         { category: 'ui_skins', itemId: 'AURORA', name: 'Tema: Aurora Boreal' },
-        { category: 'skins', itemId: 'item_skin_2_004', name: 'Militar' },
-        { category: 'orbs', itemId: 'item_orb_2_002', name: 'Orbe Sombrio' },
         { category: 'borders', itemId: 'item_border_t2_veterano', name: 'Borda: Veterano' },
         { category: 'banners', itemId: 'item_banner_t2_veterano', name: 'Banner: Veterano' },
         { category: 'auras', itemId: 'item_aura_2_001', name: 'Aura: Esmeralda' },
@@ -169,7 +165,6 @@ export const RANK_REWARDS: Record<string, { category: UnlockCategory; itemId: st
         { category: 'insignias', itemId: 'insignia_rank_6_conde', name: 'Insígnia: Conde' },
     ],
     duque: [
-        { category: 'glyphs', itemId: 'item_glyph_3_003', name: 'Mecanismo Rúnico' },
         { category: 'skins', itemId: 'item_skin_3_001', name: 'Nômade' },
         { category: 'borders', itemId: 'item_border_3_001', name: 'Borda: Imparável' },
         { category: 'banners', itemId: 'item_banner_vanguarda_01', name: 'Banner: Vanguarda' },
@@ -179,13 +174,11 @@ export const RANK_REWARDS: Record<string, { category: UnlockCategory; itemId: st
     ],
     principe: [
         { category: 'skins', itemId: 'item_skin_4_002', name: 'Mago Círculo' },
-        { category: 'orbs', itemId: 'item_orb_4_001', name: 'Orbe de Diamante' },
         { category: 'borders', itemId: 'item_border_t3_transcendente', name: 'Borda: Transcendente' },
         { category: 'banners', itemId: 'item_banner_t4_celestial', name: 'Banner: Celestial' },
         { category: 'insignias', itemId: 'insignia_rank_8_principe', name: 'Insígnia: Príncipe' },
     ],
     rei: [
-        { category: 'glyphs', itemId: 'item_glyph_4_001', name: 'Crisol Geomântico' },
         { category: 'skins', itemId: 'item_skin_4_001', name: 'Armadura Placa' },
         { category: 'borders', itemId: 'item_border_4_001', name: 'Borda: Lenda Viva' },
         { category: 'banners', itemId: 'item_banner_t4_guardia', name: 'Banner: Guardiã' },
@@ -194,9 +187,7 @@ export const RANK_REWARDS: Record<string, { category: UnlockCategory; itemId: st
         { category: 'insignias', itemId: 'insignia_rank_9_rei', name: 'Insígnia: Rei' },
     ],
     soberano: [
-        { category: 'glyphs', itemId: 'item_glyph_5_001', name: 'A FORJA' },
         { category: 'skins', itemId: 'item_skin_5_001', name: 'Entidade de Luz' },
-        { category: 'orbs', itemId: 'item_orb_5_001', name: 'Orbe Gênese' },
         { category: 'borders', itemId: 'item_border_4_002', name: 'Borda: Soberano' },
         { category: 'banners', itemId: 'item_banner_lendaviva', name: 'Banner: Lenda Viva' },
         { category: 'auras', itemId: 'item_aura_5_002', name: 'Aura: Multiverso' },

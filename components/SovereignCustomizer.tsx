@@ -17,7 +17,7 @@ interface SovereignCustomizerProps {
     onClose: () => void;
 }
 
-type EditMode = 'sovereign' | 'artifact' | 'glyph';
+type EditMode = 'sovereign' | 'artifact';
 type SovereignSubTab = 'Corpo' | 'Cabelo' | 'Skin';
 
 // Reusable Left/Right Selector
@@ -99,9 +99,7 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
         skins: {},
         borders: {},
         banners: {},
-        glyphs: {},
         auras: {},
-        orbs: {},
         plates: {},
         ornament: {},
         insignias: {},
@@ -162,11 +160,9 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
         return assets.hairStyles?.find((h: any) => h.id === id)?.name || id;
     };
     const getOutfitName = (id: string) => SOVEREIGN_ASSETS.outfits.find(o => o.id === id)?.name || id;
-    const getGlyphName = (id: string) => SOVEREIGN_ASSETS.glyphs.find(g => g.id === id)?.name || id;
     const getAuraName = (id: string) => SOVEREIGN_ASSETS.auras.find(a => a.id === id)?.name || id;
-    const getOrbName = (id: string) => (SOVEREIGN_ASSETS as any).orbs?.find((o: any) => o.id === id)?.name || id;
     const getPlateName = (id: string) => SOVEREIGN_ASSETS.plates?.find(p => p.id === id)?.name || id;
-    const getSharedPlateId = () => config.sovereignPlate || config.artifactPlate || config.glyphPlate || 'none';
+    const getSharedPlateId = () => config.sovereignPlate || config.artifactPlate || 'none';
 
     // Specific Cyclers
     const cycleGender = (direction: number) => {
@@ -233,23 +229,12 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
         setConfig(p => ({ ...p, outfit: newOutfit }));
     };
 
-    const cycleGlyph = (direction: number) => {
-        const newGlyph = cycle(config.glyph, SOVEREIGN_ASSETS.glyphs, direction, 'glyphs');
-        setConfig(p => ({ ...p, glyph: newGlyph }));
-    };
-
     const cycleAura = (direction: number) => {
         const newAura = cycle(config.aura, SOVEREIGN_ASSETS.auras, direction, 'auras');
         setConfig(p => ({ ...p, aura: newAura }));
     };
 
-    const cycleOrb = (direction: number) => {
-        const orbs = (SOVEREIGN_ASSETS as any).orbs || [];
-        const newOrb = cycle(config.orb, orbs, direction, 'orbs');
-        setConfig(p => ({ ...p, orb: newOrb }));
-    };
-
-    const cyclePlate = (direction: number, type: 'sovereign' | 'artifact' | 'glyph' | 'shared') => {
+    const cyclePlate = (direction: number, type: 'sovereign' | 'artifact' | 'shared') => {
         const plates = SOVEREIGN_ASSETS.plates || [];
         if (type === 'shared') {
             const newPlate = cycle(getSharedPlateId(), plates, direction, 'plates');
@@ -257,7 +242,6 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                 ...p,
                 sovereignPlate: newPlate,
                 artifactPlate: newPlate,
-                glyphPlate: newPlate,
             }));
         } else if (type === 'sovereign') {
             const newPlate = cycle(config.sovereignPlate, plates, direction, 'plates');
@@ -265,27 +249,21 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
         } else if (type === 'artifact') {
             const newPlate = cycle(config.artifactPlate, plates, direction, 'plates');
             setConfig(p => ({ ...p, artifactPlate: newPlate }));
-        } else if (type === 'glyph') {
-            const newPlate = cycle(config.glyphPlate, plates, direction, 'plates');
-            setConfig(p => ({ ...p, glyphPlate: newPlate }));
         }
     };
 
     // Derived assets for preview
     const equippedArtifact = SOVEREIGN_ASSETS.artifacts?.find(a => a.id === config.artifact);
     const equippedAura = SOVEREIGN_ASSETS.auras?.find(a => a.id === config.aura);
-    const equippedGlyph = SOVEREIGN_ASSETS.glyphs?.find(g => g.id === config.glyph);
     const sharedPlateId = getSharedPlateId();
     const equippedSharedPlate = SOVEREIGN_ASSETS.plates?.find(p => p.id === sharedPlateId);
-    const equippedOrb = SOVEREIGN_ASSETS.orbs?.find(o => o.id === config.orb);
     
     // Primary Display Handler
-    const setPrimary = (type: 'sovereign' | 'item' | 'glyph') => {
+    const setPrimary = (type: 'sovereign' | 'item') => {
         setConfig(p => ({ ...p, primaryDisplay: type }));
         // Also switch mode to edit that item
         if (type === 'sovereign') setActiveMode('sovereign');
         if (type === 'item') setActiveMode('artifact');
-        if (type === 'glyph') setActiveMode('glyph');
     };
 
     const primary = config.primaryDisplay || 'sovereign';
@@ -307,10 +285,10 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                     </button>
                 </div>
 
-                {/* Preview Section (3 Slots) */}
+                {/* Preview Section (2 Slots) */}
                 <div className="p-4 bg-black/20 border-b border-white/5 flex gap-4 justify-center items-stretch shrink-0">
                     
-                    {/* 1. Sovereign Card (Left) */}
+                    {/* 1. O soberano, a esquerda */}
                     <div 
                         onClick={() => {
                             setActiveMode('sovereign');
@@ -326,10 +304,7 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                             sovereignConfig={{
                                 ...config,
                                 artifact: 'none',
-                                glyph: 'none',
-                                orb: 'none',
                                 artifactPlate: 'none',
-                                glyphPlate: 'none',
                                 sovereignPlate: sharedPlateId,
                             }}
                             width={200} 
@@ -348,9 +323,8 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                         </div>
                     </div>
 
-                    {/* Right Column */}
+                    {/* 2. O artefato, a direita. Era uma coluna de dois: o glifo saiu. */}
                     <div className="flex flex-col justify-between w-24 h-48 gap-2">
-                        {/* 2. Artifact Card (Top Right) */}
                         <div 
                             onClick={() => {
                                 setActiveMode('artifact');
@@ -401,66 +375,6 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                             </div>
                         </div>
 
-                        {/* 3. Glyph Card (Bottom Right) */}
-                        <div 
-                            onClick={() => {
-                                setActiveMode('glyph');
-                                setPrimary('glyph');
-                            }}
-                            className={`relative flex-1 bg-black/40 border-2 rounded-xl flex items-center justify-center cursor-pointer transition-all group hover:border-white/30`}
-                            style={{
-                                borderColor: activeMode === 'glyph' ? 'var(--skin-accent-color)' : 'rgba(255,255,255,0.1)',
-                                boxShadow: activeMode === 'glyph' ? '0 0 15px var(--skin-accent-color)' : undefined
-                            }}
-                        >
-                            {equippedSharedPlate?.url && (
-                                <img
-                                    src={equippedSharedPlate.url}
-                                    alt="Placa"
-                                    className="absolute inset-0 w-full h-full object-contain opacity-90 z-0"
-                                    onError={(event) => {
-                                        event.currentTarget.style.display = 'none';
-                                    }}
-                                />
-                            )}
-                            {config.aura !== 'none' && (
-                                <ItemArt
-                                    src={equippedAura?.url}
-                                    alt={equippedAura?.name || config.aura}
-                                    category="aura"
-                                    className="absolute inset-0 z-[1] rounded-xl"
-                                    fallback={<span />}
-                                />
-                            )}
-                            <ItemArt
-                                src={equippedGlyph?.url}
-                                alt={equippedGlyph?.name || 'Glifo'}
-                                className="relative z-10 w-12 h-12 flex items-center justify-center"
-                                imgClassName="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]"
-                                textClassName="text-[9px] text-gray-600 font-bold uppercase"
-                                fallbackText="Vazio"
-                            />
-                            {equippedOrb?.url && (
-                                <img
-                                    src={equippedOrb.url}
-                                    alt="Orbe"
-                                    className="absolute inset-0 w-full h-full object-contain z-20 scale-75 drop-shadow-[0_0_8px_rgba(255,255,255,0.35)]"
-                                    onError={(event) => {
-                                        event.currentTarget.style.display = 'none';
-                                    }}
-                                />
-                            )}
-                            
-                            <div 
-                                className={`absolute top-1.5 right-1.5 w-4 h-4 rounded-full border border-black/50 flex items-center justify-center transition-colors shadow-md`}
-                                style={{ backgroundColor: primary === 'glyph' ? 'var(--skin-accent-color)' : 'rgba(0,0,0,0.6)' }}
-                            >
-                                {primary === 'glyph' && <CheckIcon className="w-2.5 h-2.5 text-black" />}
-                            </div>
-                            <div className="absolute bottom-0 inset-x-0 bg-black/60 p-0.5 text-[8px] text-center font-bold text-gray-300 uppercase tracking-wider">
-                                Glifo
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -599,26 +513,6 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                         </div>
                     )}
 
-                    {/* GLYPH CONTROLS */}
-                    {activeMode === 'glyph' && (
-                        <div className="space-y-4 animate-fade-in">
-                            <div className="bg-black/20 p-3 rounded-xl border border-white/5 space-y-3">
-                                <Selector 
-                                    label="Moldura (Glifo)" 
-                                    value={getGlyphName(config.glyph)} 
-                                    onPrev={() => cycleGlyph(-1)} 
-                                    onNext={() => cycleGlyph(1)} 
-                                />
-                                <div className="h-px bg-white/5 w-full" />
-                                <Selector 
-                                    label="Orbe" 
-                                    value={getOrbName(config.orb || 'none')} 
-                                    onPrev={() => cycleOrb(-1)} 
-                                    onNext={() => cycleOrb(1)} 
-                                />
-                            </div>
-                        </div>
-                    )}
                 </div>
 
                 {/* Footer Buttons */}

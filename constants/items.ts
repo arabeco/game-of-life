@@ -4,7 +4,7 @@ import { PRODUCT_FEATURES } from './featureFlags';
 import { getHairUrl } from './skins';
 import { CATALOG_ASSET_ROOT, CATALOG_AVATAR_ROOT, CATALOG_GLYPH_ROOT, CATALOG_INTERFACE_ROOT } from './catalogAssets';
 
-export type ItemCategory = 'skin' | 'hair' | 'border' | 'banner' | 'glyph' | 'aura' | 'ui_skin' | 'artifact' | 'orb' | 'plate' | 'chest' | 'insignia' | 'insignias' | 'garden';
+export type ItemCategory = 'skin' | 'hair' | 'border' | 'banner' | 'aura' | 'ui_skin' | 'artifact' | 'plate' | 'chest' | 'insignia' | 'insignias' | 'garden';
 /**
  * As vagas de uma colecao de temporada.
  *
@@ -88,7 +88,7 @@ export const rootImageAsset = (filename: string): string => `${ROOT_IMAGES_URL}/
 const avatarItem = <TCategory extends Extract<ItemCategory, 'skin' | 'artifact'>>(category: TCategory, item: AssetBackedItemInput): ItemDef =>
     assetItem(category, BASE_URL, item);
 
-const glyphCatalogItem = <TCategory extends Extract<ItemCategory, 'glyph' | 'aura' | 'orb' | 'plate'>>(category: TCategory, item: AssetBackedItemInput): ItemDef =>
+const glyphCatalogItem = <TCategory extends Extract<ItemCategory, 'aura' | 'plate'>>(category: TCategory, item: AssetBackedItemInput): ItemDef =>
     assetItem(category, GLYPHS_BASE_URL, item);
 
 const interfaceCatalogItem = <TCategory extends Extract<ItemCategory, 'border' | 'banner'>>(category: TCategory, item: AssetBackedItemInput): ItemDef =>
@@ -178,8 +178,6 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_skin_2_001', name: 'Executivo', category: 'skin', tier: 2, rarity: 'uncommon', icon: '💼', imageUrl: avatarPngAsset('SKIN_T2_EXECUTIVO'), isRankExclusive: true },
     { id: 'item_skin_2_002', name: 'Tático', category: 'skin', tier: 2, rarity: 'uncommon', icon: '🎖️', imageUrl: avatarPngAsset('SKIN_T2_TATICO'), isRankExclusive: true },
     { id: 'item_skin_2_003', name: 'Acadêmico', category: 'skin', tier: 2, rarity: 'uncommon', icon: '🎓', imageUrl: avatarPngAsset('SKIN_T2_ACADEMICO'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_2_003, isRankExclusive: true },
-    // A arte estava no disco desde sempre e nenhum item apontava para ela.
-    { id: 'item_skin_2_004', name: 'Militar', category: 'skin', tier: 2, rarity: 'uncommon', icon: '🪖', imageUrl: avatarPngAsset('SKIN_T2_MILITAR'), isRankExclusive: true },
     // T3 (Raro)
     { id: 'item_skin_3_001', name: 'Nômade', category: 'skin', tier: 3, rarity: 'rare', icon: '🧭', imageUrl: avatarPngAsset('SKIN_T3_NOMADE'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_3_001 },
     { id: 'item_skin_3_002', name: 'Alquimista', category: 'skin', tier: 3, rarity: 'rare', icon: '⚗️', imageUrl: avatarPngAsset('SKIN_T3_ALQUIMISTA'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_3_002 },
@@ -310,19 +308,9 @@ export const ITEMS_DB: ItemDef[] = [
 
     // --- GLIFOS ---
     // T1
-    { id: 'item_glyph_1_001', name: 'Tábua Aprendiz', category: 'glyph', tier: 1, rarity: 'common', icon: '🪵', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T1_TABUA_APRENDIZ.png`, isRankExclusive: true },
-    { id: 'item_glyph_1_002', name: 'Manuscrito', category: 'glyph', tier: 1, rarity: 'common', icon: '📜', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T1_MANUSCRITO_HOD.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_glyph_1_002 },
-    { id: 'item_glyph_1_003', name: 'Lajota', category: 'glyph', tier: 1, rarity: 'common', icon: '🧱', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T1_LAJOTA_CALCARIO.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_glyph_1_003 },
     // T2
-    { id: 'item_glyph_2_002', name: 'Granito Rúnico', category: 'glyph', tier: 2, rarity: 'uncommon', icon: '🪨', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T2_GRANITO_RUNICO.png`, isRankExclusive: true },
     // T3
-    { id: 'item_glyph_3_002', name: 'Mecanismo Bronze', category: 'glyph', tier: 3, rarity: 'rare', icon: '⚙️', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T3_MECANISMO_BRONZE.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_glyph_3_002 },
-    { id: 'item_glyph_3_003', name: 'Mecanismo Rúnico', category: 'glyph', tier: 3, rarity: 'rare', icon: '⚙️', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T3_MECANISMO_RUNICO.png`, isRankExclusive: true },
     // T5
-    { id: 'item_glyph_4_001', name: 'Crisol Geomântico', category: 'glyph', tier: 4, rarity: 'epic', icon: '🔶', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T4_CRISOL_GEOMANTICO.png`, isRankExclusive: true },
-    { id: 'item_glyph_4_002', name: 'Cristal Branco', category: 'glyph', tier: 4, rarity: 'epic', icon: '💎', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T4_CRISTAL_BRANCO.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_glyph_4_002 },
-    { id: 'item_glyph_5_001', name: 'A FORJA - Losango 3D', category: 'glyph', tier: 5, rarity: 'legendary', icon: '🔷', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T5_A_FORJA.png`, isRankExclusive: true },
-    { id: 'item_glyph_5_002', name: 'Artefato Sombrio', category: 'glyph', tier: 5, rarity: 'legendary', icon: '🖤', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T5_ARTEFATO_SOMBRIO.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_glyph_5_002 },
 
     // --- AURAS ---
     // T1
@@ -340,16 +328,9 @@ export const ITEMS_DB: ItemDef[] = [
 
     // --- ORBES ---
     // T1
-    { id: 'item_orb_1_002', name: 'Orbe de Cobre', category: 'orb', tier: 1, rarity: 'common', icon: '🟠', imageUrl: `${GLYPHS_BASE_URL}/ORBE_T1_COBRE.png` },
     // T2
-    { id: 'item_orb_2_002', name: 'Orbe Sombrio', category: 'orb', tier: 2, rarity: 'uncommon', icon: '⚫', imageUrl: `${GLYPHS_BASE_URL}/ORBE_T2_SOMBRIO.png`, isRankExclusive: true },
-    { id: 'item_orb_2_003', name: 'Orbe Tempestade', category: 'orb', tier: 2, rarity: 'uncommon', icon: '🌩️', imageUrl: `${GLYPHS_BASE_URL}/ORBE_T2_TEMPESTADE.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_orb_2_003 },
     // T3
-    { id: 'item_orb_3_001', name: 'Orbe de Ouro', category: 'orb', tier: 3, rarity: 'rare', icon: '🟡', imageUrl: `${GLYPHS_BASE_URL}/ORBE_T3_OURO.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_orb_3_001 },
-    { id: 'item_orb_4_001', name: 'Orbe de Diamante', category: 'orb', tier: 4, rarity: 'epic', icon: '💎', imageUrl: `${GLYPHS_BASE_URL}/ORBE_T4_DIAMANTE.png`, isRankExclusive: true },
     // T5
-    { id: 'item_orb_5_001', name: 'Orbe Gênese', category: 'orb', tier: 5, rarity: 'legendary', icon: '♾️', imageUrl: `${GLYPHS_BASE_URL}/ORBE_T5_GENESE.png`, isRankExclusive: true },
-    { id: 'item_orb_5_002', name: 'Orbe Soberano', category: 'orb', tier: 5, rarity: 'legendary', icon: '👑', imageUrl: `${GLYPHS_BASE_URL}/ORBE_T5_SOBERANO.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_orb_5_002 },
 
     // --- PLACAS ---
     { id: 'item_plate_1_001', name: 'Placa Madeira', category: 'plate', tier: 1, rarity: 'common', icon: '🪵', imageUrl: `${GLYPHS_BASE_URL}/PLACA_MADEIRA.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_plate_1_001 },
@@ -590,8 +571,6 @@ const PNG_REQUIRED_CATEGORIES = new Set<ItemCategory>([
     'artifact',
     'border',
     'banner',
-    'glyph',
-    'orb',
     'plate',
     // Cabelo saiu da lista opcional: os 26 PNGs sempre estiveram no disco, e a
     // grade do Arsenal mostrava emoji porque o item nao carregava imageUrl.

@@ -35,9 +35,9 @@ export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({
 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const config = { ...DEFAULT_SOVEREIGN_CONFIG, ...sovereignConfig };
-    const { body, skinTone, hairStyle, hairColor, outfit, artifact, glyph, aura, orb, sovereignPlate, artifactPlate, glyphPlate } = config;
+    const { body, skinTone, hairStyle, hairColor, outfit, artifact, aura, sovereignPlate, artifactPlate } = config;
 
-    const getAssetUrl = (category: keyof typeof SOVEREIGN_ASSETS | 'orbs' | 'plates', id: string | null) => {
+    const getAssetUrl = (category: keyof typeof SOVEREIGN_ASSETS, id: string | null) => {
         if (!id || id === 'none') return null;
         // @ts-ignore
         const asset = SOVEREIGN_ASSETS[category]?.find(a => a.id === id);
@@ -305,31 +305,6 @@ export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({
 
                 if (!isMounted) return;
 
-                // 7. Glyph Plate
-                const glyphPlateUrl = getAssetUrl('plates', glyphPlate);
-                if (glyphPlateUrl) {
-                    await loadAndDrawImage(glyphPlateUrl);
-                }
-
-                if (!isMounted) return;
-
-                // 8. Glyph (Foreground - at feet/side)
-                const glyphUrl = getAssetUrl('glyphs', glyph);
-                const glyphLoaded = await loadAndDrawImage(glyphUrl);
-                if (!glyphLoaded) {
-                    const glyphIcon = getItemIcon(glyph);
-                    if (glyphIcon) {
-                        drawEmoji(glyphIcon, width * 0.8, height * 0.9, 80, '#FFFFFF');
-                    }
-                }
-
-                if (!isMounted) return;
-
-                // 9. Orb
-                const orbUrl = getAssetUrl('orbs', orb);
-                if (orbUrl) {
-                    await loadAndDrawImage(orbUrl);
-                }
 
                 // Final Step: Draw everything to main canvas
                 if (isMounted) {

@@ -12,7 +12,7 @@ import { getChestArtUrl } from '../../constants/catalogAssets';
 import { ItemArt } from '../ItemArt';
 import { resolveCatalogAssetUrl } from '../../constants/catalogAssets';
 
-type InventoryTab = 'garden' | 'all' | 'sovereign' | 'glyph' | 'interface' | 'honors' | 'chests';
+type InventoryTab = 'garden' | 'all' | 'sovereign' | 'estilo' | 'interface' | 'honors' | 'chests';
 type InventoryEntry = {
     id: string;
     instanceId: string;
@@ -31,7 +31,7 @@ const TABS: { id: InventoryTab; label: string; categories: string[] }[] = [
     { id: 'garden', label: 'Jardim', categories: ['garden'] },
     { id: 'all', label: 'Tudo', categories: [] },
     { id: 'sovereign', label: 'Soberano', categories: ['skin', 'artifact'] },
-    { id: 'glyph', label: 'Glifo', categories: ['glyph', 'aura', 'orb', 'plate'] },
+    { id: 'estilo', label: 'Estilo', categories: ['aura', 'plate'] },
     { id: 'interface', label: 'Interface', categories: ['border', 'ui_skin', 'banner'] },
     { id: 'honors', label: 'Honras', categories: ['insignia', 'insignias'] },
     { id: 'chests', label: 'Baus', categories: ['chest'] },
@@ -58,10 +58,8 @@ export const Inventory: React.FC = () => {
         if (category === 'skin') return userProfile.sovereign.outfit === itemId;
         if (category === 'hair') return userProfile.sovereign.hairStyle === itemId;
         if (category === 'artifact') return userProfile.sovereign.artifact === itemId;
-        if (category === 'glyph') return userProfile.sovereign.glyph === itemId;
         if (category === 'aura') return userProfile.sovereign.aura === itemId;
-        if (category === 'orb') return userProfile.sovereign.orb === itemId;
-        if (category === 'plate') return [userProfile.sovereign.sovereignPlate, userProfile.sovereign.artifactPlate, userProfile.sovereign.glyphPlate].includes(itemId);
+        if (category === 'plate') return [userProfile.sovereign.sovereignPlate, userProfile.sovereign.artifactPlate].includes(itemId);
         if (category === 'border') return userProfile.border === itemId;
         if (category === 'ui_skin') return userProfile.skin === itemId;
         if (category === 'banner') return !!imageUrl && resolveCatalogAssetUrl(userProfile.bannerUrl) === imageUrl;

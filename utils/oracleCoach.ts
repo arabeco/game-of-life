@@ -99,7 +99,7 @@ export const COACH_LINES: Record<string, CoachToneLines> = {
     ],
     coach: [
       'Voltou depois de {dias} dias. Começa por uma ação pequena, e ajusta o resto depois.',
-      'De volta em {dias} dias. Escolhe uma só para hoje: recomecar pesa menos que compensar.',
+      'De volta em {dias} dias. Escolhe uma só para hoje: recomeçar pesa menos que compensar.',
       '{dias} dias fora. Não tenta compensar hoje: uma ação já recoloca o ritmo.',
       'Está de volta. Abre a arena mais fácil que tiver e fecha uma coisa.',
     ],
@@ -809,7 +809,7 @@ export const buildOracleCycleCoachBrief = (
     casos.push({
       peso: 100, cooldownDays: 0, // Sem arena nenhuma nao existe outra leitura possivel: e o unico caminho.
       id: 'coach:first-arena',
-      content: 'Vamos comecar pequeno. Escolha uma frente importante da sua vida e crie uma arena com uma ação que realmente caiba na sua semana.',
+      content: 'Vamos começar pequeno. Escolha uma frente importante da sua vida e crie uma arena com uma ação que realmente caiba na sua semana.',
       quickActions: [{ id: 'coach-open-arenas', label: 'Criar primeira arena', kind: 'open_arenas' }],
     });
   }
@@ -818,7 +818,7 @@ export const buildOracleCycleCoachBrief = (
     casos.push({
       peso: 95, cooldownDays: 2, // Jogar sem ciclo e modo suportado. Cobrar ciclo todo dia e a definicao de chatear.
       id: 'coach:start-cycle',
-      content: `Você ja tem ${context.totalArenas} arena${context.totalArenas === 1 ? '' : 's'}. Agora escolha uma rodada curta para transformar intencao em ritmo. Sete dias ja bastam para aprender o que cabe de verdade.`,
+      content: `Você já tem ${context.totalArenas} arena${context.totalArenas === 1 ? '' : 's'}. Agora escolha uma rodada curta para transformar intencao em ritmo. Sete dias já bastam para aprender o que cabe de verdade.`,
       quickActions: [
         { id: 'coach-open-cycle', label: 'Montar ciclo', kind: 'open_cycle' },
         { id: 'coach-open-arenas', label: 'Rever arenas', kind: 'open_arenas' },
@@ -845,8 +845,8 @@ export const buildOracleCycleCoachBrief = (
       peso: 85, cooldownDays: 2, // Meta mensuravel nao aparece sozinha em 24 horas.
       id: `coach:unmeasured:${focusArena?.arenaId || 'cycle'}`,
       content: focusArena
-        ? `${focusArena.arenaName} ainda não tem uma meta mensuravel neste ciclo. Se quiser acompanhar o ritmo, defina uma repeticao minima que seja honesta.`
-        : 'Este ciclo ainda não tem uma meta mensuravel. Escolha uma ação pequena para saber o que significa avancar.',
+        ? `${focusArena.arenaName} ainda não tem uma meta mensurável neste ciclo. Se quiser acompanhar o ritmo, defina uma repetição minima que seja honesta.`
+        : 'Este ciclo ainda não tem uma meta mensurável. Escolha uma ação pequena para saber o que significa avançar.',
       quickActions: compactActions([
         openFocusedArena(context),
         { id: 'coach-open-arenas', label: 'Ver arenas', kind: 'open_arenas' },
@@ -858,7 +858,7 @@ export const buildOracleCycleCoachBrief = (
     casos.push({
       peso: 80, cooldownDays: 0, // O ultimo dia acontece uma vez por ciclo. Nao ha o que espacar.
       id: `coach:last-day:${context.cycleName || 'active'}:${pending}`,
-      content: `O ciclo chegou ao último dia com ${pending} acao${pending === 1 ? '' : 'es'} pendente${pending === 1 ? '' : 's'}. Não precisa fingir um fechamento perfeito: faca o que ainda cabe e encerre com uma leitura honesta.`,
+      content: `O ciclo chegou ao último dia com ${pending} ação${pending === 1 ? '' : 'es'} pendente${pending === 1 ? '' : 's'}. Não precisa fingir um fechamento perfeito: faca o que ainda cabe e encerre com uma leitura honesta.`,
       quickActions: [
         { id: 'coach-open-planner', label: 'Ver o que ainda cabe', kind: 'open_planner' },
         { id: 'coach-open-cycle', label: 'Rever ciclo', kind: 'open_cycle' },
@@ -868,7 +868,7 @@ export const buildOracleCycleCoachBrief = (
 
   if (context.cyclePace === 'atrasado' || context.cyclePace === 'critico') {
     const arenaLine = focusArena
-      ? ` ${focusArena.arenaName} pede mais atencao agora.`
+      ? ` ${focusArena.arenaName} pede mais atenção agora.`
       : '';
     casos.push({
       peso: 75, cooldownDays: 1, // Cada dia atras e um fato novo — mas um dia de folga e o que deixa o resto da fila existir.
@@ -907,7 +907,7 @@ export const buildOracleCycleCoachBrief = (
   // divida diaria, e o app nao deve inventar urgencia que a agenda nao registra.
   if (context.cyclePace === 'no_ritmo' && deriva >= 4 && (context.pendingActionsToday || 0) > 0 && (context.cycleDaysRemaining || 0) >= 2) {
     const arenaLine = focusArena?.arenaName
-      ? ` ${focusArena.arenaName} foi a que mais ficou para tras.`
+      ? ` ${focusArena.arenaName} foi a que mais ficou para trás.`
       : '';
     casos.push({
       peso: 68, cooldownDays: 2, // A deriva e aviso preventivo. Repetido vira cobranca sobre algo que ela ja ouviu.
@@ -924,7 +924,7 @@ export const buildOracleCycleCoachBrief = (
     casos.push({
       peso: 70, cooldownDays: 0, // A primeira prova do ciclo so acontece uma vez.
       id: `coach:first-proof:${context.cycleName || 'active'}`,
-      content: 'O ciclo comecou, mas ainda falta a primeira conclusao. Não tente resolver a semana inteira agora: escolha a menor ação que coloca o ciclo em movimento hoje.',
+      content: 'O ciclo começou, mas ainda falta a primeira conclusão. Não tente resolver a semana inteira agora: escolha a menor ação que coloca o ciclo em movimento hoje.',
       quickActions: [
         { id: 'coach-open-planner', label: 'Escolher primeira ação', kind: 'open_planner' },
       ],
@@ -988,7 +988,7 @@ export const buildOracleCycleCoachBrief = (
       const arredondado = porDia >= 2 ? Math.round(porDia) : Math.round(porDia * 10) / 10;
       casos.push({
         peso: 78, cooldownDays: 2, // A conta que nao fecha e estrutural: nao muda de um dia para o outro.
-        id: `coach:conta-nao-fecha:${context.cycleDayNumber || 0}:${pending}`,
+        id: `coach:conta-não-fecha:${context.cycleDayNumber || 0}:${pending}`,
         content: `Faltam ${pending} ações e ${diasRestantes} dia${diasRestantes === 1 ? '' : 's'}. Isso pede ${arredondado} por dia, e seu melhor dia até agora ${melhorDia === 1 ? 'foi 1' : `foram ${melhorDia}`}. Reduzir uma meta agora não tira EXP já conquistada.`,
         quickActions: compactActions([
           openFocusedArena(context),
@@ -1185,14 +1185,14 @@ export const buildOracleCycleCoachBrief = (
     if (quedaVolume >= 0.2 && ganhoConstancia >= 0.15) {
       casos.push({
         peso: 56, cooldownDays: 3,
-        id: `coach:volume-x-constancia:queda:${ritmo.diasAnalisados}`,
+        id: `coach:volume-x-constância:queda:${ritmo.diasAnalisados}`,
         content: `Nos últimos ${ritmo.diasAnalisados - metade} dias você fez menos por dia do que no começo do ciclo, mas faltou menos dias. Seu volume caiu; sua constância melhorou.`,
         quickActions: [{ id: 'coach-open-cycle', label: 'Ver ciclo', kind: 'open_cycle' }],
       });
     } else if (quedaVolume <= -0.2 && ganhoConstancia <= -0.15) {
       casos.push({
         peso: 56, cooldownDays: 3,
-        id: `coach:volume-x-constancia:picos:${ritmo.diasAnalisados}`,
+        id: `coach:volume-x-constância:picos:${ritmo.diasAnalisados}`,
         content: `Nos últimos ${ritmo.diasAnalisados - metade} dias você fez mais por dia do que no começo do ciclo, mas em menos dias. Seu volume subiu; sua constância caiu.`,
         quickActions: [{ id: 'coach-open-cycle', label: 'Ver ciclo', kind: 'open_cycle' }],
       });
@@ -1267,8 +1267,8 @@ export const buildOracleCycleCoachBrief = (
       bonus: bonusDe(escolhido),
       pesoFinal: pesoFinal(escolhido),
       porQueVenceu: descartados.length === 0
-        ? 'unico candidato'
-        : `maior peso final entre os permitidos e acordados; o proximo era ${descartados[0].assunto} (${descartados[0].peso}, ${descartados[0].razao})`,
+        ? 'único candidato'
+        : `maior peso final entre os permitidos e acordados; o próximo era ${descartados[0].assunto} (${descartados[0].peso}, ${descartados[0].razao})`,
       descartados: descartados.slice(0, 6),
     });
   }

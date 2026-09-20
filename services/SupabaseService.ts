@@ -8,7 +8,7 @@ export class SupabaseService {
     const accessToken = data.session?.access_token;
 
     if (error || !accessToken) {
-      throw new Error('Sessao autenticada ausente para chamar a funcao protegida.');
+      throw new Error('Sessão autenticada ausente para chamar a função protegida.');
     }
 
     return {
@@ -319,15 +319,15 @@ export class SupabaseService {
         return 'Insira seu Bilhete Dourado.';
       case 'EMPTY_USER':
       case 'USER_NOT_FOUND':
-        return 'Sua sessao Google nao foi reconhecida por completo. Tente entrar com Google novamente.';
+        return 'Sua sessão Google não foi reconhecida por completo. Tente entrar com Google novamente.';
       case 'USER_MISMATCH':
-        return 'Essa sessao nao combina com a conta que esta validando o Bilhete. Entre com Google novamente.';
+        return 'Essa sessão não combina com a conta que esta validando o Bilhete. Entre com Google novamente.';
       case 'INVITE_NOT_FOUND':
-        return 'Bilhete Dourado nao encontrado.';
+        return 'Bilhete Dourado não encontrado.';
       case 'INVITE_ALREADY_USED':
-        return 'Esse Bilhete Dourado ja foi usado por outra conta.';
+        return 'Esse Bilhete Dourado já foi usado por outra conta.';
       default:
-        return 'Nao consegui validar esse Bilhete Dourado agora.';
+        return 'Não consegui validar esse Bilhete Dourado agora.';
     }
   }
 
@@ -391,7 +391,7 @@ export class SupabaseService {
       return {
         success: false,
         code: '',
-        error: 'Digite um codigo para resgatar.',
+        error: 'Digite um código para resgatar.',
       };
     }
 
@@ -402,11 +402,11 @@ export class SupabaseService {
       });
 
       if (error) {
-        console.error('Erro ao resgatar codigo via RPC:', error);
+        console.error('Erro ao resgatar código via RPC:', error);
         return {
           success: false,
           code: normalizedCode,
-          error: error.message || 'Nao consegui resgatar esse codigo agora.',
+          error: error.message || 'Não consegui resgatar esse código agora.',
         };
       }
 
@@ -439,14 +439,14 @@ export class SupabaseService {
       return {
         success: false,
         code: normalizedCode,
-        error: 'Nao consegui resgatar esse codigo agora.',
+        error: 'Não consegui resgatar esse código agora.',
       };
     } catch (rpcError: any) {
-      console.error('Erro ao resgatar codigo via RPC:', rpcError);
+      console.error('Erro ao resgatar código via RPC:', rpcError);
       return {
         success: false,
         code: normalizedCode,
-        error: rpcError?.message || 'Nao consegui resgatar esse codigo agora.',
+        error: rpcError?.message || 'Não consegui resgatar esse código agora.',
       };
     }
   }
@@ -455,7 +455,7 @@ export class SupabaseService {
     if (!userId) {
       return {
         success: false,
-        error: 'Usuario ausente para registrar o check-in do beta.',
+        error: 'Usuário ausente para registrar o check-in do beta.',
       };
     }
 
@@ -468,7 +468,7 @@ export class SupabaseService {
         console.error('Erro ao processar check-in do beta via RPC:', error);
         return {
           success: false,
-          error: error.message || 'Nao consegui registrar o check-in do beta agora.',
+          error: error.message || 'Não consegui registrar o check-in do beta agora.',
         };
       }
 
@@ -495,7 +495,7 @@ export class SupabaseService {
       console.error('Erro ao processar check-in do beta via RPC:', rpcError);
       return {
         success: false,
-        error: rpcError?.message || 'Nao consegui registrar o check-in do beta agora.',
+        error: rpcError?.message || 'Não consegui registrar o check-in do beta agora.',
       };
     }
   }
@@ -505,7 +505,7 @@ export class SupabaseService {
       const { data, error } = await supabase.rpc('get_closed_beta_access_status');
 
       if (error) {
-        console.error('Erro ao validar sessao do beta fechado via RPC:', error);
+        console.error('Erro ao validar sessão do beta fechado via RPC:', error);
         return null;
       }
 
@@ -517,7 +517,7 @@ export class SupabaseService {
         blockedReason: typeof (data as any)?.blocked_reason === 'string' ? (data as any)?.blocked_reason : null,
       };
     } catch (error) {
-      console.error('Erro inesperado ao validar sessao do beta fechado:', error);
+      console.error('Erro inesperado ao validar sessão do beta fechado:', error);
       return null;
     }
   }
@@ -563,7 +563,7 @@ export class SupabaseService {
 
       if (!error) {
         if ((data as any)?.success === false) {
-          return { success: false, error: (data as any)?.error || 'Nao foi possivel excluir a conta.' };
+          return { success: false, error: (data as any)?.error || 'Não foi possível excluir a conta.' };
         }
 
         return { success: true };
@@ -581,12 +581,12 @@ export class SupabaseService {
       return {
         success: false,
         error: contextualMessage || (responseStatus
-          ? `Nao foi possivel excluir a conta. HTTP ${responseStatus}. Nenhum dado foi removido.`
-          : 'Nao foi possivel excluir a conta. Nenhum dado foi removido.'),
+          ? `Não foi possível excluir a conta. HTTP ${responseStatus}. Nenhum dado foi removido.`
+          : 'Não foi possível excluir a conta. Nenhum dado foi removido.'),
       };
     } catch (error) {
       console.error('Erro inesperado ao excluir conta:', error);
-      return { success: false, error: (error as any)?.message || 'Nao foi possivel excluir a conta.' };
+      return { success: false, error: (error as any)?.message || 'Não foi possível excluir a conta.' };
     }
   }
 

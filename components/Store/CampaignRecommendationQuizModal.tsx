@@ -37,64 +37,64 @@ const tierFromDuration = (days: number) => (days >= 21 ? 3 : days >= 14 ? 2 : 1)
 
 const q2Options: Record<string, QuizOption[]> = {
     A: [
-        { key: 'A', title: 'Como eu me movo e treino', subtitle: 'Treino, forca, intensidade e consistencia corporal.' },
-        { key: 'B', title: 'Como eu me alimento', subtitle: 'Escolhas alimentares, clareza nutricional e relacao com comida.' },
-        { key: 'C', title: 'Como eu recupero e durmo', subtitle: 'Sono, recuperacao e energia restaurada.' },
-        { key: 'D', title: 'Como eu me sinto dia a dia', subtitle: 'Disposicao, ritmo e sensacao corporal geral.' },
+        { key: 'A', title: 'Como eu me movo e treino', subtitle: 'Treino, força, intensidade e consistência corporal.' },
+        { key: 'B', title: 'Como eu me alimento', subtitle: 'Escolhas alimentares, clareza nutricional e relação com comida.' },
+        { key: 'C', title: 'Como eu recupero e durmo', subtitle: 'Sono, recuperação e energia restaurada.' },
+        { key: 'D', title: 'Como eu me sinto dia a dia', subtitle: 'Disposição, ritmo e sensacao corporal geral.' },
     ],
     B: [
-        { key: 'A', title: 'Como eu foco e tomo decisoes', subtitle: 'Clareza, prioridade e presenca mental.' },
-        { key: 'B', title: 'Como eu organizo meu espaco e rotina', subtitle: 'Ambiente, sistema e estrutura operacional.' },
+        { key: 'A', title: 'Como eu foco e tomo decisões', subtitle: 'Clareza, prioridade e presença mental.' },
+        { key: 'B', title: 'Como eu organizo meu espaço e rotina', subtitle: 'Ambiente, sistema e estrutura operacional.' },
     ],
     C: [
         { key: 'A', title: 'Como eu executo no dia a dia', subtitle: 'Ação concreta, ritmo e producao real.' },
-        { key: 'B', title: 'Como eu planejo e estrategio', subtitle: 'Visao, organizacao e pensamento de estrutura.' },
+        { key: 'B', title: 'Como eu planejo e estrategio', subtitle: 'Visao, organização e pensamento de estrutura.' },
     ],
-    D: [{ key: 'A', title: 'Como eu controlo e construo', subtitle: 'Controle, direcao e construcao financeira.' }],
-    E: [{ key: 'A', title: 'Como eu me conecto e me faco presente', subtitle: 'Vinculo, presenca e contato intencional.' }],
+    D: [{ key: 'A', title: 'Como eu controlo e construo', subtitle: 'Controle, direção e construção financeira.' }],
+    E: [{ key: 'A', title: 'Como eu me conecto e me faço presente', subtitle: 'Vínculo, presença e contato intencional.' }],
     F: [
         { key: 'A', title: 'Como eu me entendo', subtitle: 'Autopercepcao, leitura interna e clareza do eu.' },
-        { key: 'B', title: 'Como eu construo quem quero ser', subtitle: 'Identidade deliberada, direcao e proposito.' },
+        { key: 'B', title: 'Como eu construo quem quero ser', subtitle: 'Identidade deliberada, direção e propósito.' },
     ],
 };
 
 const questions: QuizQuestion[] = [
     { id: 'p1', title: 'Quando você para e olha para a sua vida agora, onde esta o maior peso?', subtitle: 'Não o que você acha mais importante. O que esta pesando de verdade hoje.', options: [
-        { key: 'A', title: 'No meu corpo', subtitle: 'Energia baixa, saude negligenciada, corpo que não acompanha a mente' },
-        { key: 'B', title: 'Na minha cabeca', subtitle: 'Pensamentos acumulados, foco quebrado, ambiente mental pesado' },
+        { key: 'A', title: 'No meu corpo', subtitle: 'Energia baixa, saúde negligenciada, corpo que não acompanha a mente' },
+        { key: 'B', title: 'Na minha cabeça', subtitle: 'Pensamentos acumulados, foco quebrado, ambiente mental pesado' },
         { key: 'C', title: 'No que eu produzo', subtitle: 'Metas que não saem do papel, rotina que não rende, trabalho empacado' },
         { key: 'D', title: 'No meu dinheiro', subtitle: 'Controle inexistente, gastos que somem, futuro financeiro sem clareza' },
-        { key: 'E', title: 'Nas minhas relacoes', subtitle: 'Vinculos rasos, presenca dividida, comunicacao que não chega' },
-        { key: 'F', title: 'Em quem eu estou me tornando', subtitle: 'Identidade turva, proposito sem forma, sensacao de estar a deriva' },
+        { key: 'E', title: 'Nas minhas relações', subtitle: 'Vínculos rasos, presença dividida, comunicação que não chega' },
+        { key: 'F', title: 'Em quem eu estou me tornando', subtitle: 'Identidade turva, propósito sem forma, sensacao de estar a deriva' },
     ]},
     { id: 'p2', title: 'O que dentro dessa area doi mais quando você para para pensar?', subtitle: 'As opções se adaptam ao que você escolheu antes.', getOptions: (answers) => q2Options[answers.p1 || ''] || [] },
     { id: 'p3', title: 'Quando você aprende algo novo, o que faz mais sentido pra você?', subtitle: 'Não tem certo ou errado. E sobre como sua mente funciona melhor.', options: [
         { key: 'A', title: 'Jogar direto na pratica', subtitle: 'Fazer, errar, ajustar. Teoria so depois de sentir na pele' },
-        { key: 'B', title: 'Entender antes de agir', subtitle: 'Ler, entender o porque, entao aplicar com consciencia' },
-        { key: 'C', title: 'Sustentar o que ja funciona', subtitle: 'Não preciso de novidade. Preciso de consistencia no que ja sei' },
-        { key: 'D', title: 'Criar e expressar', subtitle: 'Aprendo produzindo. Escrita, forma e expressao sao meu caminho' },
+        { key: 'B', title: 'Entender antes de agir', subtitle: 'Ler, entender o porque, então aplicar com consciência' },
+        { key: 'C', title: 'Sustentar o que já funciona', subtitle: 'Não preciso de novidade. Preciso de consistência no que já sei' },
+        { key: 'D', title: 'Criar e expressar', subtitle: 'Aprendo produzindo. Escrita, forma e expressao são meu caminho' },
     ]},
-    { id: 'p4', title: 'Quanto tempo você consegue honestamente comprometer com um ciclo agora?', subtitle: 'Seja real. Um ciclo curto concluido vale mais do que um longo abandonado.', options: [
+    { id: 'p4', title: 'Quanto tempo você consegue honestamente comprometer com um ciclo agora?', subtitle: 'Seja real. Um ciclo curto concluído vale mais do que um longo abandonado.', options: [
         { key: 'A', title: '7 dias', subtitle: 'Uma semana. Curto, intenso, sem desculpa' },
-        { key: 'B', title: '14 dias', subtitle: 'Duas semanas. Tempo suficiente para progressao real' },
-        { key: 'C', title: '21 dias ou mais', subtitle: 'Tres semanas. Transformacao mais profunda, exige mais comprometimento' },
+        { key: 'B', title: '14 dias', subtitle: 'Duas semanas. Tempo suficiente para progressão real' },
+        { key: 'C', title: '21 dias ou mais', subtitle: 'Três semanas. Transformacao mais profunda, exige mais comprometimento' },
     ]},
     { id: 'p5', title: 'Como esta o seu ritmo hoje, honestamente?', subtitle: 'Isso ajuda o sistema a calibrar o nível de exigencia da sua campanha.', options: [
         { key: 'A', title: 'No caos', subtitle: 'Cada dia e diferente do anterior, nada tem forma ainda' },
         { key: 'B', title: 'Tentando, mas quebrando', subtitle: 'Tenho intencao de rotina mas ela não segura' },
-        { key: 'C', title: 'Estavel, mas estagnado', subtitle: 'Tenho rotina mas sinto que não estou evoluindo' },
+        { key: 'C', title: 'Estável, mas estagnado', subtitle: 'Tenho rotina mas sinto que não estou evoluindo' },
         { key: 'D', title: 'Em movimento', subtitle: 'Estou bem, mas quero subir o nível' },
     ]},
-    { id: 'p6', title: 'O que geralmente te tira do caminho quando você comeca algo?', subtitle: 'Não o que você gostaria de dizer. O que realmente acontece.', options: [
-        { key: 'A', title: 'Perco o foco no meio do caminho', subtitle: 'Comeco bem, mas disperso depois de alguns dias' },
+    { id: 'p6', title: 'O que geralmente te tira do caminho quando você começa algo?', subtitle: 'Não o que você gostaria de dizer. O que realmente acontece.', options: [
+        { key: 'A', title: 'Perco o foco no meio do caminho', subtitle: 'Começo bem, mas disperso depois de alguns dias' },
         { key: 'B', title: 'A vida bate e eu desisto', subtitle: 'Eventos externos quebram meu ritmo e eu não volto' },
-        { key: 'C', title: 'Não sei por onde comecar de verdade', subtitle: 'A intencao existe mas a ação concreta trava' },
+        { key: 'C', title: 'Não sei por onde começar de verdade', subtitle: 'A intencao existe mas a ação concreta trava' },
         { key: 'D', title: 'Fico num ciclo de planejar e não executar', subtitle: 'Organizo tudo, mas na hora de fazer, travo' },
     ]},
-    { id: 'p7', title: 'O que te faz sentir que valeu a pena no final de um ciclo?', subtitle: 'A última pergunta. O que importa pra você quando olha para tras.', options: [
-        { key: 'A', title: 'Ver o quanto avancei em relacao a quem eu era', subtitle: 'Progresso acumulado, histórico, comparacao com o passado' },
-        { key: 'B', title: 'Ter cumprido o que eu prometi pra mim mesmo', subtitle: 'Consistencia, aderencia, não ter quebrado o compromisso' },
-        { key: 'C', title: 'Sentir que mudei algo concreto na minha vida', subtitle: 'Resultado tangivel, mudanca real, algo diferente que posso apontar' },
+    { id: 'p7', title: 'O que te faz sentir que valeu a pena no final de um ciclo?', subtitle: 'A última pergunta. O que importa pra você quando olha para trás.', options: [
+        { key: 'A', title: 'Ver o quanto avancei em relação a quem eu era', subtitle: 'Progresso acumulado, histórico, comparacao com o passado' },
+        { key: 'B', title: 'Ter cumprido o que eu prometi pra mim mesmo', subtitle: 'Consistência, aderencia, não ter quebrado o compromisso' },
+        { key: 'C', title: 'Sentir que mudei algo concreto na minha vida', subtitle: 'Resultado tangivel, mudança real, algo diferente que posso apontar' },
         { key: 'D', title: 'Ter construido algo que vai durar além do ciclo', subtitle: 'Habito instalado, sistema criado, legado que continua' },
     ]},
 ];
@@ -104,8 +104,8 @@ const desiredDurationByP4: Partial<Record<QuizAnswerKey, number>> = { A: 7, B: 1
 
 const freeTitles = (answers: QuizAnswers) => {
     switch (answers.p1) {
-        case 'A': return answers.p2 === 'A' ? ['Fundamentos da Calistenia', 'HIIT Express (Queima Rápida)'] : answers.p2 === 'B' ? ['Bussola Nutricional (Basico)'] : ['Manha Energetica'];
-        case 'B': return answers.p2 === 'B' && (answers.p5 === 'A' || answers.p5 === 'B') ? ['Manutencao da Base (Casa)'] : ['Foco Basico (Anti-Distracao)'];
+        case 'A': return answers.p2 === 'A' ? ['Fundamentos da Calistenia', 'HIIT Express (Queima Rápida)'] : answers.p2 === 'B' ? ['Bussola Nutricional (Básico)'] : ['Manhã Energetica'];
+        case 'B': return answers.p2 === 'B' && (answers.p5 === 'A' || answers.p5 === 'B') ? ['Manutenção da Base (Casa)'] : ['Foco Básico (Anti-Distracao)'];
         case 'C': return answers.p2 === 'B' ? ['Diário de Bordo (Journaling)'] : ['Motor de Produtividade'];
         case 'D': return ['Radar Financeiro'];
         case 'E': return ['Sincronia de Rede'];
@@ -118,22 +118,22 @@ const fullTitles = (answers: QuizAnswers) => {
     switch (answers.p1) {
         case 'A':
             if (answers.p2 === 'A') return ['Fundamentos da Calistenia', 'HIIT Express (Queima Rápida)', 'Corpo em Movimento', 'Mobilidade e Flexibilidade', 'Despertar de Ferro', 'Corpo de Elite'];
-            if (answers.p2 === 'B') return ['Bussola Nutricional (Basico)', 'Reset Dopaminergico', 'Manha Energetica'];
-            if (answers.p2 === 'C') return ['Sono de Elite', 'Manha Energetica', 'Corpo de Elite'];
-            return ['Manha Energetica', 'Corpo em Movimento', 'Sono de Elite'];
+            if (answers.p2 === 'B') return ['Bussola Nutricional (Básico)', 'Reset Dopaminérgico', 'Manhã Energetica'];
+            if (answers.p2 === 'C') return ['Sono de Elite', 'Manhã Energetica', 'Corpo de Elite'];
+            return ['Manhã Energetica', 'Corpo em Movimento', 'Sono de Elite'];
         case 'B':
             return answers.p2 === 'A'
-                ? ['Foco Basico (Anti-Distracao)', 'Leitura Ativa', 'Detox Digital', 'Estoicismo Aplicado', 'Foco Blindado']
-                : ['Manutencao da Base (Casa)', 'Logistica de Vanguarda', 'Foco Basico (Anti-Distracao)', 'Detox Digital'];
+                ? ['Foco Básico (Anti-Distracao)', 'Leitura Ativa', 'Detox Digital', 'Estoicismo Aplicado', 'Foco Blindado']
+                : ['Manutenção da Base (Casa)', 'Logística de Vanguarda', 'Foco Básico (Anti-Distracao)', 'Detox Digital'];
         case 'C':
             return answers.p2 === 'B'
-                ? ['Diário de Bordo (Journaling)', 'Logistica de Vanguarda', 'Construcao de Identidade', 'Lideranca sem Cargo']
+                ? ['Diário de Bordo (Journaling)', 'Logística de Vanguarda', 'Construção de Identidade', 'Liderança sem Cargo']
                 : ['Motor de Produtividade', 'Criatividade em Sprint', 'Expressao Criativa', 'Foco Blindado'];
-        case 'D': return ['Radar Financeiro', 'Controle de Impulsos', 'Financas com Intencao', 'Maestria Financeira'];
-        case 'E': return ['Sincronia de Rede', 'Presenca Real', 'Voz e Presenca', 'Construcao de Clã'];
+        case 'D': return ['Radar Financeiro', 'Controle de Impulsos', 'Finanças com Intencao', 'Maestria Financeira'];
+        case 'E': return ['Sincronia de Rede', 'Presença Real', 'Voz e Presença', 'Construção de Clã'];
         case 'F': return answers.p2 === 'B'
-            ? ['Construcao de Identidade', 'Estoicismo Aplicado', 'Lideranca sem Cargo']
-            : ['Diário de Bordo (Journaling)', 'Estoicismo Aplicado', 'Construcao de Identidade'];
+            ? ['Construção de Identidade', 'Estoicismo Aplicado', 'Liderança sem Cargo']
+            : ['Diário de Bordo (Journaling)', 'Estoicismo Aplicado', 'Construção de Identidade'];
         default: return ['Motor de Produtividade', 'Diário de Bordo (Journaling)'];
     }
 };
@@ -295,7 +295,7 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
     ): Promise<UserCodex | null> => {
         const existing = findOwnedCodex(recommendation.entry.catalog.id);
         if (existing) {
-            setStatusMessage(installedCodexIds.has(existing.id) ? 'Essa campanha ja esta instalada nas suas campanhas.' : 'Campanha adicionada a sua biblioteca. Ela ja aparece no menu de Campanhas.');
+            setStatusMessage(installedCodexIds.has(existing.id) ? 'Essa campanha já esta instalada nas suas campanhas.' : 'Campanha adicionada a sua biblioteca. Ela já aparece no menu de Campanhas.');
             return existing;
         }
         if (!options.autoAcquire) {
@@ -395,7 +395,7 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
                 return;
             }
             if (installedCodexIds.has(resolved.id)) {
-                showToast('Essa campanha ja esta instalada nas suas campanhas.', 'info');
+                showToast('Essa campanha já esta instalada nas suas campanhas.', 'info');
                 if (closeOnSuccess) onClose();
                 return;
             }

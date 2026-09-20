@@ -255,14 +255,14 @@ export const getNotificationLaneLabel = (type: NotificationType): string => {
 export const getNotificationTitle = (notification: Notification): string => {
   switch (notification.type) {
     case 'cycle_ending':
-      return 'Seu ciclo esta proximo do fim.';
+      return 'Seu ciclo esta próximo do fim.';
     case 'cycle_finalized':
-      return 'Parabens! Seu ciclo foi finalizado.';
+      return 'Parabéns! Seu ciclo foi finalizado.';
     case 'reward_ready':
     case 'mission_redeemable':
-      return 'Voce tem novas recompensas.';
+      return 'Você tem novas recompensas.';
     case 'mentor_invite':
-      return 'Voce recebeu um convite de mentor.';
+      return 'Você recebeu um convite de mentor.';
     case 'direct_message':
       return typeof notification.metadata?.senderNickname === 'string' && notification.metadata.senderNickname.trim().length > 0
         ? notification.metadata.senderNickname
@@ -271,9 +271,9 @@ export const getNotificationTitle = (notification: Notification): string => {
       if (notification.metadata?.joinRequest) {
         return 'Novo pedido para o seu grupo.';
       }
-      return 'Voce recebeu um convite de grupo.';
+      return 'Você recebeu um convite de grupo.';
     case 'friend_request':
-      return 'Voce recebeu um convite de amizade.';
+      return 'Você recebeu um convite de amizade.';
     case 'friend_response':
       return 'Seu convite de amizade foi respondido.';
     case 'friend_accepted':
@@ -283,25 +283,25 @@ export const getNotificationTitle = (notification: Notification): string => {
     case 'clan_join':
       return 'Seu pedido de grupo foi aceito.';
     case 'clan_mission_update':
-      return 'Seu grupo precisa de voce.';
+      return 'Seu grupo precisa de você.';
     case 'season_ending':
       return 'A temporada esta acabando.';
     case 'level_up':
-      return 'Voce subiu de nivel.';
+      return 'Você subiu de nível.';
     case 'title_unlocked':
-      return 'Voce desbloqueou um titulo.';
+      return 'Você desbloqueou um título.';
     case 'oracle_prompt':
-      return 'O Oraculo chamou sua atencao.';
+      return 'O Oráculo chamou sua atenção.';
     case 'codex_gift':
-      return 'Uma Campanha chegou para voce.';
+      return 'Uma Campanha chegou para você.';
     case 'partnership_invite':
-      return 'Voce recebeu um convite de parceria.';
+      return 'Você recebeu um convite de parceria.';
     case 'arena_access':
       return 'Uma nova arena foi compartilhada.';
     case 'competition_result':
       return 'Seu duelo recebeu um desfecho.';
     case 'action_reminder':
-      return 'Sua acao vai comecar em breve.';
+      return 'Sua ação vai começar em breve.';
     case 'system':
       return 'Aviso do sistema.';
     default:
@@ -375,30 +375,30 @@ export const getNotificationBody = (
     case 'mission_redeemable':
       switch (oracleMode) {
         case 'coach':
-          return 'Resgate agora e siga. Nao deixa recompensa virar pendencia.';
+          return 'Resgate agora e siga. Não deixa recompensa virar pendência.';
         case 'tatico':
-          return 'Recompensa disponivel. Recolha para manter o fluxo limpo.';
+          return 'Recompensa disponível. Recolha para manter o fluxo limpo.';
         case 'estrategico':
-          return 'Seu progresso ja liberou novas recompensas.';
+          return 'Seu progresso já liberou novas recompensas.';
         default:
-          return 'Voce tem recompensas prontas para resgate.';
+          return 'Você tem recompensas prontas para resgate.';
       }
     case 'season_ending':
       return 'A temporada esta perto do fim. Vale revisar o que ainda da para fechar.';
     case 'level_up':
-      return 'Sua progressao avancou. Vale registrar esse salto na memoria do ciclo.';
+      return 'Sua progressão avançou. Vale registrar esse salto na memória do ciclo.';
     case 'title_unlocked':
-      return 'Um novo titulo foi desbloqueado no seu percurso.';
+      return 'Um novo título foi desbloqueado no seu percurso.';
     case 'friend_accepted':
       return notification.content || 'Seu convite de amizade foi aceito.';
     case 'clan_join':
       return notification.content || 'Seu pedido de entrada no grupo foi aceito.';
     case 'mentor_invite':
-      return notification.content || 'Alguem quer entrar em um vinculo de mentoria com voce.';
+      return notification.content || 'Alguém quer entrar em um vínculo de mentoria com você.';
     case 'direct_message':
       return typeof notification.metadata?.messagePreview === 'string' && notification.metadata.messagePreview.trim().length > 0
         ? notification.metadata.messagePreview
-        : (notification.content || 'Uma nova mensagem direta chegou para voce.');
+        : (notification.content || 'Uma nova mensagem direta chegou para você.');
     case 'friend_request':
       return notification.content || 'Existe um novo convite de amizade esperando sua resposta.';
     case 'clan_invite':
@@ -406,22 +406,22 @@ export const getNotificationBody = (
     case 'oracle_prompt':
       switch (oracleMode) {
         case 'coach':
-          return notification.content || 'O Oraculo viu um ponto de execucao que merece sua atencao.';
+          return notification.content || 'O Oráculo viu um ponto de execução que merece sua atenção.';
         case 'tatico':
-          return notification.content || 'O Oraculo detectou um ajuste operacional necessario.';
+          return notification.content || 'O Oráculo detectou um ajuste operacional necessário.';
         case 'estrategico':
-          return notification.content || 'O Oraculo detectou um sinal importante na sua fase atual.';
+          return notification.content || 'O Oráculo detectou um sinal importante na sua fase atual.';
         default:
-          return notification.content || 'O Oraculo tem uma chamada curta para voce.';
+          return notification.content || 'O Oráculo tem uma chamada curta para você.';
       }
     case 'codex_gift':
       return notification.content || 'Uma campanha valiosa foi enviada para a sua biblioteca.';
     case 'competition_result':
       return notification.content || 'Seu rival fechou o duelo primeiro e o baú dessa corrida já foi decidido.';
     case 'action_reminder':
-      return notification.content || 'Uma acao programada sua vai comecar em breve.';
+      return notification.content || 'Uma ação programada sua vai começar em breve.';
     default:
-      return notification.content || 'Ha uma atualizacao importante esperando sua leitura.';
+      return notification.content || 'Ha uma atualização importante esperando sua leitura.';
   }
 };
 

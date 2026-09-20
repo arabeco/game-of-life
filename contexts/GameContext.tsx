@@ -12040,8 +12040,33 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
         }
 
+        const acoesAntesDaExclusao = actions.filter(a => a.arenaId === arenaId);
+        const acoesDepoisDaExclusao = acoesAntesDaExclusao.filter(a => a.id !== actionId);
+        const tarefasDepoisDaExclusao = tasks.filter(t => t.actionId !== actionId);
+
         setActions(prev => prev.filter(a => a.id !== actionId));
         setTasks(prev => prev.filter(t => t.actionId !== actionId));
+
+        /*
+         * APAGAR A ULTIMA PENDENCIA TAMBEM FECHA A ARENA.
+         *
+         * O fecho so era avaliado ao CONCLUIR tarefa. Quem desistia de uma acao
+         * que nao ia sair terminava a arena do mesmo jeito — e ela ficava em 99%
+         * para sempre, sem selo, sem modal e sem feito, porque nada reavaliava o
+         * denominador depois da exclusao.
+         *
+         * As duas listas vao explicitas porque o `setActions` acima ainda nao
+         * propagou: ler o estado aqui devolveria a lista ANTIGA dos dois lados, a
+         * transicao sumiria e o fecho continuaria mudo.
+         */
+        if (action && arenaId && acoesDepoisDaExclusao.length > 0) {
+            taskDomain.maybeTriggerArenaCompletionAttention(
+                action,
+                tasks,
+                tarefasDepoisDaExclusao,
+                { antes: acoesAntesDaExclusao, depois: acoesDepoisDaExclusao },
+            );
+        }
         if (actionTaskIds.length > 0) {
             setDailyCommitmentState(prev => ({
                 ...prev,

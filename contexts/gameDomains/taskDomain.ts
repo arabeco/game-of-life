@@ -30,6 +30,18 @@ import { buildRecurringDates, resolveScheduleHorizon } from '../../utils/cycleSc
 
 export interface TaskDomainApi {
     scheduleMultipleTasks: (actionOrId: string | Action, daysOfWeek: DayOfWeek[], startTimeInMinutes: number) => Promise<void>;
+    /**
+     * Avalia se a arena da acao ACABOU de fechar, e celebra se sim.
+     *
+     * Exposto porque o fecho nao acontece so ao concluir tarefa: apagar a ultima
+     * acao pendente tambem termina a arena, e quem apaga mora no GameContext.
+     */
+    maybeTriggerArenaCompletionAttention: (
+        action: Action | undefined,
+        previousTasks: ScheduledTask[],
+        nextTasks: ScheduledTask[],
+        listasDeAcoes?: { antes: Action[]; depois: Action[] },
+    ) => unknown;
     scheduleTask: (actionOrId: string | Action, date: string, startTime: number) => Promise<ScheduledTask | undefined>;
     scheduleAndCompleteNow: (actionId: string, taskId?: string) => Promise<void>;
     scheduleAndCompleteAt: (actionId: string, date: string, startTime: number, taskId?: string) => Promise<void>;
@@ -272,10 +284,32 @@ export const createTaskDomain = ({
         }));
     };
 
+    /**
+     * A arena fecha por dois motivos, e nao so por um.
+     *
+     * Ela fecha quando a ultima acao PENDENTE e concluida — e era o unico caso
+     * tratado aqui. Mas ela tambem fecha quando a ultima acao pendente e
+     * APAGADA: quem desiste de uma acao que nao ia sair termina a arena do mesmo
+     * jeito, e ela ficava em 99% para sempre, sem selo, sem modal e sem feito,
+     * porque nada reavaliava o denominador.
+     *
+     * `listasDeAcoes` existe para esse segundo caso. Este checador e um
+     * DETECTOR DE TRANSICAO: so dispara quando o antes estava abaixo de 100 e o
+     * depois chegou la. Numa conclusao de tarefa o que muda sao as TAREFAS, e os
+     * dois lados usam a mesma lista de acoes. Numa exclusao o que muda sao as
+     * ACOES, e sem a lista de antes os dois lados dariam 100 — a transicao
+     * sumiria e o fecho continuaria mudo.
+     */
     const maybeTriggerArenaCompletionAttention = (
         action: Action | undefined,
         previousTasks: ScheduledTask[],
         nextTasks: ScheduledTask[],
+        /**
+         * As listas de acao dos dois lados, quando quem chama nao pode confiar no
+         * estado. Na exclusao o `setActions` ainda nao propagou quando isto roda,
+         * entao `getActionsForArena` devolveria a lista ANTIGA nos dois lados.
+         */
+        listasDeAcoes?: { antes: Action[]; depois: Action[] },
     ): CompletionAttentionResult => {
         if (!action) return null;
 
@@ -293,7 +327,9 @@ export const createTaskDomain = ({
 
         if (getClanQuestForAction(action)) return null;
 
-        const arenaActions = getActionsForArena(arena.id);
+        const arenaActions = listasDeAcoes ? listasDeAcoes.depois : getActionsForArena(arena.id);
+        // Arena sem acao nenhuma nao esta concluida: esta vazia. Apagar a ultima
+        // acao de uma arena a esvazia, e nao a fecha.
         if (arenaActions.length === 0) return null;
 
         const previousCycleTasks = getTasksInsideActiveCycle(previousTasks);
@@ -301,7 +337,8 @@ export const createTaskDomain = ({
 
         const previousProgress = calculateArenaProgress({
             arena,
-            actions: arenaActions,
+            // O "antes" pode ter outra lista de acoes: e o caso da exclusao.
+            actions: listasDeAcoes ? listasDeAcoes.antes : arenaActions,
             tasks: previousCycleTasks,
         });
 
@@ -1444,6 +1481,7 @@ export const createTaskDomain = ({
 
     return {
         scheduleMultipleTasks,
+        maybeTriggerArenaCompletionAttention,
         scheduleTask,
         scheduleAndCompleteNow,
         scheduleAndCompleteAt,

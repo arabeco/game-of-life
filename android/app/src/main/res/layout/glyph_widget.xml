@@ -35,29 +35,66 @@
         android:paddingLeft="12dp"
         android:paddingTop="3dp"
         android:paddingRight="12dp"
-        android:paddingBottom="6dp">
+        android:paddingBottom="2dp">
 
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:minHeight="14dp">
 
-            <TextView
-                android:id="@+id/glyph_widget_title"
+            <!--
+                AS DUAS LINHAS SAO VIEWS COM PESO, e nao desenho em volta do texto.
+
+                Um widget nao tem como desenhar "ao redor" de um TextView: o bitmap
+                do fundo nao sabe onde o titulo comeca nem onde acaba. Com
+                layout_weight de cada lado, as linhas ficam com o que sobrar — entao
+                encolhem sozinhas quando o nome do ciclo e longo e se esticam quando
+                e curto, sem ninguem medir nada.
+
+                O recuo de 46dp abre espaco para o periodo, sobreposto a esquerda
+                dentro do mesmo FrameLayout.
+            -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:fontFamily="sans"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:maxLines="1"
-                android:paddingLeft="52dp"
-                android:paddingRight="52dp"
-                android:text="GLYPH"
-                android:textAllCaps="true"
-                android:textColor="#F7F3E9"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingLeft="46dp"
+                android:paddingRight="46dp">
+
+                <ImageView
+                    android:id="@+id/glyph_widget_rule_left"
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1"
+                    android:contentDescription="@null"
+                    android:scaleType="fitXY" />
+
+                <TextView
+                    android:id="@+id/glyph_widget_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="7dp"
+                    android:layout_marginRight="7dp"
+                    android:ellipsize="end"
+                    android:fontFamily="sans"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:text="GLYPH"
+                    android:textAllCaps="true"
+                    android:textColor="#F7F3E9"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/glyph_widget_rule_right"
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1"
+                    android:contentDescription="@null"
+                    android:scaleType="fitXY" />
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/glyph_widget_end_date"

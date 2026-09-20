@@ -289,6 +289,55 @@ final class GlyphWidgetPaint {
     }
 
     /**
+     * A LINHA ORNAMENTAL que ladeia o titulo.
+     *
+     * Ela nasce transparente na ponta de fora e chega ao metal encostando no
+     * texto, entao as duas juntas leem como um filete que emoldura o nome em vez
+     * de dois tracos soltos. `aDireita` inverte o sentido para o par ficar
+     * simetrico.
+     *
+     * A LARGURA E FALSA de proposito: quem decide o comprimento e o
+     * `layout_weight` no XML, que da a cada linha o que sobrar depois do titulo.
+     * O bitmap so precisa do gradiente; o `fitXY` estica. E por isso que o nome
+     * do ciclo pode crescer que as linhas encolhem sozinhas, sem ninguem medir.
+     */
+    static Bitmap linhaDoTitulo(String patamar, boolean aDireita) {
+        final int largura = 200;
+        final int altura = 3;
+        Moldura m = molduraDe(patamar);
+
+        Bitmap bitmap = Bitmap.createBitmap(largura, altura, Bitmap.Config.ARGB_8888);
+        Canvas tela = new Canvas(bitmap);
+        Paint pincel = new Paint(Paint.ANTI_ALIAS_FLAG);
+        pincel.setShader(new LinearGradient(
+            0f, 0f, largura, 0f,
+            aDireita
+                ? new int[] { m.claro, comAlfa(m.escuro, 0x88), comAlfa(m.escuro, 0x00) }
+                : new int[] { comAlfa(m.escuro, 0x00), comAlfa(m.escuro, 0x88), m.claro },
+            new float[] { 0f, 0.55f, 1f },
+            Shader.TileMode.CLAMP
+        ));
+        tela.drawRect(0f, 0f, largura, altura, pincel);
+        return bitmap;
+    }
+
+    /**
+     * O corpo do titulo encolhe quando o nome e longo.
+     *
+     * `autoSizeTextType` so vale da API 26 para cima e o minSdk aqui e 24, entao
+     * a conta sai daqui e chega por setTextViewTextSize, que funciona em todas.
+     * Os degraus sao largos de proposito: um tamanho por caractere faria a ficha
+     * mudar de cara a cada renomeacao.
+     */
+    static float tamanhoDoTitulo(String titulo) {
+        int letras = titulo == null ? 0 : titulo.trim().length();
+        if (letras <= 14) return 13f;
+        if (letras <= 20) return 11.5f;
+        if (letras <= 26) return 10f;
+        return 9f;
+    }
+
+    /**
      * A barra de progresso, com o brilho de metal de volta.
      *
      * Tres paradas na horizontal — escuro, meio, claro —, que e exatamente o que

@@ -10,6 +10,7 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.TypedValue;
 import android.view.View;
 import android.widget.RemoteViews;
 
@@ -67,6 +68,11 @@ public class GlyphWidgetProvider extends AppWidgetProvider {
         views.setImageViewBitmap(R.id.glyph_widget_background, GlyphWidgetPaint.fundo(metal, copy.grade, larguraPx, alturaPx));
         views.setImageViewBitmap(R.id.glyph_widget_actions_bar, GlyphWidgetPaint.barra(metal, copy.actionsProgressPercent, true, larguraPx));
         views.setImageViewBitmap(R.id.glyph_widget_time_bar, GlyphWidgetPaint.barra(metal, copy.timeProgressPercent, false, larguraPx));
+        // O titulo recebe o tom claro do metal e o corpo cai quando o nome e longo.
+        views.setImageViewBitmap(R.id.glyph_widget_rule_left, GlyphWidgetPaint.linhaDoTitulo(copy.grade, false));
+        views.setImageViewBitmap(R.id.glyph_widget_rule_right, GlyphWidgetPaint.linhaDoTitulo(copy.grade, true));
+        views.setTextColor(R.id.glyph_widget_title, GlyphWidgetPaint.molduraDe(copy.grade).claro);
+        views.setTextViewTextSize(R.id.glyph_widget_title, TypedValue.COMPLEX_UNIT_SP, GlyphWidgetPaint.tamanhoDoTitulo(copy.title));
         views.setViewVisibility(R.id.glyph_widget_subtitle, copy.showSubtitle ? View.VISIBLE : View.GONE);
         views.setViewVisibility(R.id.glyph_widget_meta, copy.showMeta ? View.VISIBLE : View.GONE);
         views.setViewVisibility(R.id.glyph_widget_actions_row, copy.showMetrics ? View.VISIBLE : View.GONE);

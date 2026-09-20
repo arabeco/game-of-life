@@ -25,10 +25,21 @@
             color: #7d8ea3; margin-bottom: 7px; font-weight: 700; }
   .ficha { position: relative; width: min(620px, 100%); aspect-ratio: 300 / 56; }
   .ficha canvas.fundo { position: absolute; inset: 0; width: 100%; height: 100%; }
-  .miolo { position: absolute; inset: 0; padding: 3% 4.5% 5%; display: flex;
-           flex-direction: column; gap: 1px; }
-  .titulo { font-size: 13px; font-weight: 700; text-transform: uppercase;
-            text-align: center; color: #F7F3E9; line-height: 1.05; }
+  /* O miolo e desenhado em 1dp = 1px e depois AMPLIADO duas vezes.
+     Sem isso a ficha saia com 620px de largura e fontes de tamanho real: sobrava
+     uma faixa vazia embaixo que no aparelho nao existe, e o preview mentia
+     justamente sobre o espacamento que ele deveria ajudar a julgar. */
+  /* line-height 1 em tudo: e o equivalente do includeFontPadding="false" do
+     Android, que e o que o layout usa. Sem isso o CSS soma meia linha por campo
+     e o preview transborda uma ficha que no aparelho cabe. */
+  .miolo * { line-height: 1; }
+  .miolo { position: absolute; top: 0; left: 0; width: 310px; height: 56px;
+           transform: scale(2); transform-origin: top left;
+           padding: 3px 12px 2px; display: flex; flex-direction: column; gap: 1px; }
+  .faixa-titulo { display: flex; align-items: center; gap: 7px; padding: 0 34px; }
+  .faixa-titulo .linha { flex: 1; height: 1px; }
+  .titulo { font-weight: 700; text-transform: uppercase; white-space: nowrap;
+            line-height: 1.05; }
   .sub { font-size: 9px; color: #C7D1DF; }
   .par { display: flex; align-items: center; gap: 8px; font-size: 7px;
          font-weight: 700; text-transform: uppercase; }
@@ -175,7 +186,11 @@ for (const [patamar, metal] of Object.entries(METAIS)) {
     <div class="ficha">
       <canvas class="fundo"></canvas>
       <div class="miolo">
-        <div class="titulo">CICLO DE SETEMBRO</div>
+        <div class="faixa-titulo">
+          <span class="linha esquerda"></span>
+          <span class="titulo">CICLO DE SETEMBRO</span>
+          <span class="linha direita"></span>
+        </div>
         <div class="sub">Dia 12/30</div>
         <div class="par"><span class="esq">Progresso</span><span class="dir">18/24 (75%)</span></div>
         <div class="barra"><canvas class="acoes"></canvas></div>
@@ -185,6 +200,18 @@ for (const [patamar, metal] of Object.entries(METAIS)) {
     </div>`;
   saida.appendChild(linha);
   desenharFundo(linha.querySelector('canvas.fundo'), metal, patamar);
+
+  // As duas linhas e o tom do titulo, com as mesmas contas do Java.
+  const m = MOLDURAS[patamar] || MOLDURAS.A;
+  const esc = escurecer(m.edge, 0.42);
+  linha.querySelector('.linha.esquerda').style.background =
+    `linear-gradient(90deg, ${comAlfa(esc, 0)}, ${comAlfa(esc, 0.53)} 55%, ${m.trim})`;
+  linha.querySelector('.linha.direita').style.background =
+    `linear-gradient(90deg, ${m.trim}, ${comAlfa(esc, 0.53)} 45%, ${comAlfa(esc, 0)})`;
+  const t = linha.querySelector('.titulo');
+  t.style.color = m.trim;
+  const letras = t.textContent.trim().length;
+  t.style.fontSize = (letras <= 14 ? 13 : letras <= 20 ? 11.5 : letras <= 26 ? 10 : 9) + 'px';
   desenharBarra(linha.querySelector('canvas.acoes'), metal, 75);
   desenharBarra(linha.querySelector('canvas.tempo'), METAIS.B, 40);
 }

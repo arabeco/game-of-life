@@ -997,11 +997,6 @@ export interface GameContextType {
     updateSeason: (seasonId: string, seasonData: Partial<Omit<Season, 'id'>>) => Promise<void>;
     addSeasonMission: (missionData: Omit<SeasonMission, 'id'>) => Promise<void>;
     manualCloseSITREP: () => void;
-    saveSanctuaryPosition: (payload: { clanId: string; userId: string; row: number; col: number; area: string; action: string; timestamp: string }) => Promise<void>;
-    getSanctuaryPositionsForClan: (clanId: string) => Promise<Record<string, { row: number; col: number; area: string; action: string; timestamp: string }>>;
-    getSanctuaryAreaStats: (clanId: string) => Promise<Record<string, { totalSeconds: number; lastUpdated: string }>>;
-    updateSanctuaryAreaTime: (clanId: string, area: string, seconds: number) => Promise<void>;
-    applySanctuaryAreaDecay: (clanId: string, occupancy: Record<string, number>, totalMembers?: number) => Promise<void>;
     loadClanAndMembers: (clanId: string, force?: boolean) => Promise<void>;
     oraclePreferences: OraclePreferences | null;
     updateOraclePreferences: (prefs: Partial<OraclePreferences>) => Promise<void>;
@@ -8724,268 +8719,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return () => window.clearInterval(intervalId);
     }, [closeDailyCommitment, dailyCommitment]);
 
-    const saveSanctuaryPosition = async (payload: { clanId: string; userId: string; row: number; col: number; area: string; action: string; timestamp: string }) => {
-        if (!PRODUCT_FEATURES.clanSanctuary) return;
-        try {
-            const uid = getSupabaseUserId();
-            if (!uid) {
-                console.error('Cannot save sanctuary position: User not authenticated');
-                return;
-            }
-
-            // Usar Supabase para salvar posição, garantindo que user_id seja o do usuário logado
-            const { error } = await supabase
-                .from('sanctuary_positions')
-                .upsert({
-                    clan_id: payload.clanId,
-                    user_id: uid, // Use auth uid instead of payload.userId to satisfy RLS
-                    row: payload.row,
-                    col: payload.col,
-                    area: payload.area,
-                    action: payload.action,
-                    timestamp: payload.timestamp
-                }, {
-                    onConflict: 'clan_id,user_id'
-                });
-
-            if (error) {
-                console.error('Failed to save sanctuary position to Supabase:', error);
-            }
-        } catch (e) {
-            console.error('Failed to save sanctuary position:', e);
-        }
-    };
-
-    const getSanctuaryPositionsForClan = async (clanId: string): Promise<Record<string, { row: number; col: number; area: string; action: string; timestamp: string }>> => {
-        if (!PRODUCT_FEATURES.clanSanctuary) return {};
-        try {
-            // Buscar posições do Supabase
-            const { data, error } = await supabase
-                .from('sanctuary_positions')
-                .select('*')
-                .eq('clan_id', clanId);
-
-            if (error) {
-                console.error('Failed to get sanctuary positions from Supabase:', error);
-                return {};
-            }
-
-            if (!data || data.length === 0) {
-                return {};
-            }
-
-            // Converter array do Supabase para objeto com userId como chave
-            const positions: Record<string, { row: number; col: number; area: string; action: string; timestamp: string }> = {};
-            data.forEach((position: any) => {
-                positions[position.user_id] = {
-                    row: position.row,
-                    col: position.col,
-                    area: position.area,
-                    action: position.action,
-                    timestamp: position.timestamp
-                };
-            });
-
-            return positions;
-        } catch (e) {
-            console.error('Failed to get sanctuary positions:', e);
-            return {};
-        }
-    };
-
-    const getSanctuaryAreaStats = useCallback(async (clanId: string): Promise<Record<string, { totalSeconds: number; lastUpdated: string }>> => {
-        if (!PRODUCT_FEATURES.clanSanctuary) return {};
-        try {
-            const currentTime = new Date().toISOString();
-            const { data, error } = await supabase
-                .from('sanctuary_area_stats')
-                .select('*')
-                .eq('clan_id', clanId);
-
-            if (error) {
-                console.error('Failed to get sanctuary area stats from Supabase:', error);
-                return {};
-            }
-
-            if (!data || data.length === 0) {
-                return {};
-            }
-
-            const stats: Record<string, { totalSeconds: number; lastUpdated: string }> = {};
-            data.forEach((stat: any) => {
-                stats[stat.area] = {
-                    totalSeconds: stat.total_seconds,
-                    lastUpdated: stat.last_updated || currentTime
-                };
-            });
-
-            return stats;
-        } catch (e) {
-            console.error('Failed to get sanctuary area stats:', e);
-            return {};
-        }
-    }, []);
-
-    const updateSanctuaryAreaTime = async (clanId: string, area: string, seconds: number) => {
-        if (!PRODUCT_FEATURES.clanSanctuary) return;
-        try {
-            const { data: currentStats, error: fetchError } = await supabase
-                .from('sanctuary_area_stats')
-                .select('total_seconds')
-                .eq('clan_id', clanId)
-                .eq('area', area)
-                .maybeSingle();
-
-            if (fetchError) {
-                console.error('Failed to load sanctuary area time from Supabase:', fetchError);
-                return;
-            }
-
-            const nextTotalSeconds = (currentStats?.total_seconds ?? 0) + seconds;
-            const { error } = await supabase
-                .from('sanctuary_area_stats')
-                .upsert({
-                    clan_id: clanId,
-                    area: area,
-                    total_seconds: nextTotalSeconds,
-                    last_updated: new Date().toISOString()
-                }, {
-                    onConflict: 'clan_id,area'
-                });
-
-            if (error) {
-                console.error('Failed to update sanctuary area time in Supabase:', error);
-            }
-        } catch (e) {
-            console.error('Failed to update sanctuary area time:', e);
-        }
-    };
-
-
-
-    // Função para atualizar estatísticas do santuário baseada em tempo (Crescimento/Decaimento suave)
-    const applySanctuaryAreaDecay = async (clanId: string, occupancy: Record<string, number>, totalMembers: number = 1) => {
-        if (!PRODUCT_FEATURES.clanSanctuary) return;
-        try {
-            const currentTime = new Date();
-            const areas = ['meditation', 'devotion', 'rest', 'garden'];
-
-            // Constantes de Balanceamento (Baseado em 28800s = 100%)
-            const MAX_POINTS = 28800;
-            // Ganho de 30% (8640s) por dia (86400s) -> mais rápido para incentivar
-            const MAX_DAILY_GROWTH = MAX_POINTS * 0.30;
-            const GROWTH_RATE_PER_SECOND = MAX_DAILY_GROWTH / 86400;
-
-            // Perda de 25% (7200s) por dia (86400s) -> decaimento visível
-            const DECAY_RATE_PER_SECOND = (MAX_POINTS * 0.25) / 86400;
-
-            // Intervalo mínimo de atualização reduzido para 10s para ser muito fluido
-            const MIN_UPDATE_INTERVAL = 10;
-
-            // OTIMIZACAO: Buscar todos de uma vez para reduzir reads
-            const { data: allStats, error: fetchError } = await supabase
-                .from('sanctuary_area_stats')
-                .select('area, total_seconds, last_updated')
-                .eq('clan_id', clanId);
-
-            if (fetchError) {
-                console.error('Failed to fetch sanctuary stats:', fetchError);
-                return;
-            }
-
-            const statsMap = new Map();
-            if (allStats) {
-                allStats.forEach((s: any) => statsMap.set(s.area, s));
-            }
-
-            for (const area of areas) {
-                const currentStats = statsMap.get(area);
-
-                const lastUpdated = currentStats?.last_updated ?new Date(currentStats.last_updated) : currentTime;
-                // Se não existir, assume 50%
-                let totalSeconds = currentStats ?Number(currentStats.total_seconds) : 14400;
-
-                // Calcular tempo passado em segundos
-                const secondsPassed = (currentTime.getTime() - lastUpdated.getTime()) / 1000;
-
-                // Ignorar atualizações muito frequentes para economizar writes
-                if (secondsPassed < MIN_UPDATE_INTERVAL && currentStats) continue;
-
-                let change = 0;
-                const activeUsers = occupancy[area] || 0;
-
-                if (activeUsers > 0) {
-                    // Se ocupado: Cresce proporcionalmente à participação do clã
-                    // Meta: 10% ao dia se 100% do clã estiver participando
-                    const participationRatio = Math.min(1, activeUsers / Math.max(1, totalMembers));
-                    change = secondsPassed * GROWTH_RATE_PER_SECOND * participationRatio;
-                } else {
-                    // Se vazio: Decai 5% ao dia
-                    change = -(secondsPassed * DECAY_RATE_PER_SECOND);
-                }
-
-                let nextTotalSeconds = totalSeconds + change;
-                // Clamp entre 0 e Max
-                nextTotalSeconds = Math.max(0, Math.min(MAX_POINTS, nextTotalSeconds));
-
-                // Arredondar para inteiro para evitar "dígitos quebrados"
-                const finalSeconds = Math.floor(nextTotalSeconds);
-
-                // Se não mudou nada (devido ao arredondamento), ignora
-                if (finalSeconds === Math.floor(totalSeconds) && currentStats) continue;
-
-                // Atualizar no banco
-                const { error: updateError } = await supabase
-                    .from('sanctuary_area_stats')
-                    .upsert({
-                        clan_id: clanId,
-                        area: area,
-                        total_seconds: finalSeconds,
-                        last_updated: currentTime.toISOString()
-                    }, {
-                        onConflict: 'clan_id,area'
-                    });
-
-                if (updateError) {
-                    console.error(`Failed to update sanctuary stats for ${area}:`, updateError);
-                }
-            }
-        } catch (e) {
-            console.error('Failed to update sanctuary stats:', e);
-        }
-    };
-
     useEffect(() => {
         if (!clan?.id || !enableClanQuestProgress) return;
         fetchClanQuestProgress(clan.id);
         const intervalId = window.setInterval(() => fetchClanQuestProgress(clan.id), 15000);
-
-        // Add periodic check for sanctuary decay (every minute)
-        // This ensures that even if the modal isn't open, the decay is applied if the user is online
-        const sanctuaryInterval = window.setInterval(() => {
-            // We need to fetch occupancy for applySanctuaryAreaDecay
-            // For now, let's just trigger it with empty occupancy or fetch it inside
-            // Actually, applySanctuaryAreaDecay requires occupancy.
-            // Let's assume we can fetch it or just pass empty if we want decay only.
-            // BUT, getSanctuaryPositionsForClan is available.
-            getSanctuaryPositionsForClan(clan.id).then(positions => {
-                const occupancy: Record<string, number> = {};
-                Object.values(positions).forEach(p => {
-                    occupancy[p.area] = (occupancy[p.area] || 0) + 1;
-                });
-                // Also need total members... clan object has it?No, need enrichedClanMembers.length
-                // But enrichedClanMembers might not be loaded fully?
-                // Let's use a safe default or try to use what we have.
-                const totalMembers = enrichedClanMembers.length || 1;
-                applySanctuaryAreaDecay(clan.id, occupancy, totalMembers);
-            });
-        }, 60000); // 1 minute (reduced from 1 hour for visible decay)
-
         return () => {
             window.clearInterval(intervalId);
-            window.clearInterval(sanctuaryInterval);
         };
-    }, [clan?.id, fetchClanQuestProgress, enableClanQuestProgress, enrichedClanMembers.length]);
+    }, [clan?.id, fetchClanQuestProgress, enableClanQuestProgress]);
 
     // Real-time Clan Mission Progress & Participants
     useEffect(() => {
@@ -13812,8 +13553,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             deleteClanScopedRows('clan_aldeia_slots', clan.id),
             deleteClanScopedRows('clan_aldeia_presence', clan.id),
             deleteClanScopedRows('clan_custom_quests', clan.id),
-            deleteClanScopedRows('sanctuary_positions', clan.id),
-            deleteClanScopedRows('sanctuary_area_stats', clan.id),
         ]);
 
         const { error: memberCleanupError } = await supabase
@@ -15132,7 +14871,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             abortSeasonQuest,
             roundExpBonus, addProfileFlag, feed, addFeedEvent, deleteFeedEvent, toggleFeedLike, fetchLikesReceived, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, ensureTasksLoadedThrough, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, addSequenceItem, updateSequenceItem, markSequenceItemToday, adjustSequenceItemDays, resetSequenceItem, deleteSequenceItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, recordMoodEntry, fetchMoodHistory, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, respondToClanInvite, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
             directMessages, dmConversations, blockedUsers, blockedUserIds, sendDirectMessage, markDMAsRead, fetchDMs, blockUser, unblockUser, submitModerationReport,
-            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, isProfileLoaded, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, donateItem, craftItem, buyChestWithFragments, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, createCompetitionInvite, respondToRelationshipInvite, endRelationshipLink, renewRelationshipLink, offerMentorshipArena, respondMentorshipOffer, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, respondCompetitionChallenge, cancelCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
+            addSeason, updateSeason, addSeasonMission, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, isProfileLoaded, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, donateItem, craftItem, buyChestWithFragments, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, createCompetitionInvite, respondToRelationshipInvite, endRelationshipLink, renewRelationshipLink, offerMentorshipArena, respondMentorshipOffer, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, respondCompetitionChallenge, cancelCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,
             aldeiaSlots, aldeiaPresence, loadAldeiaData, setAldeiaSlots, setAldeiaPresence,
             activeArenaPact, arenaPactProgress, arenaPactCandidates, missaoIndividualDisponivel, getArenaPactOptionsForArena, acceptArenaPact, abandonArenaPact, claimArenaPact, missaoDeSistemaAtiva

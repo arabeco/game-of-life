@@ -963,34 +963,6 @@ export type EnrichedClanMember = Omit<UserProfile, 'role'> & {
   seasonContributionPoints: number;
 };
 
-// Sistema de Santuario - Posicionamento e Tempo
-export type SanctuaryArea = 'meditation' | 'devotion' | 'rest' | 'garden';
-export type GardenAction = 'working' | 'watering' | 'walking';
-
-export interface SanctuaryPosition {
-  userId: string;
-  row: number;
-  col: number;
-  area: SanctuaryArea;
-  gardenAction?: GardenAction;
-  lastUpdated: string; // ISO timestamp
-}
-
-export interface SanctuaryTimeTracker {
-  userId: string;
-  area: SanctuaryArea;
-  totalTime: number; // seconds
-  currentSessionStart?: string; // ISO timestamp
-  lastCalculatedDecay: string; // ISO timestamp
-}
-
-export interface SanctuaryAreaStats {
-  area: SanctuaryArea;
-  totalTime: number; // seconds
-  activeUsers: number;
-  lastUpdated: string;
-  decayRate: number; // seconds per hour when empty
-}
 
 
 export interface Mood {

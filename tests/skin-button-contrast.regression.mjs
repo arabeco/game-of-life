@@ -81,13 +81,24 @@ const corEm = (ps, t) => {
     return ps[ps.length - 1].cor;
 };
 
-/** A largura do botao, lida da classe que o componente aplica. */
+/**
+ * A largura do botao, lida da classe que o componente aplica.
+ *
+ * Aceita as DUAS formas porque o botao trocou de tecnica sem trocar de tamanho.
+ * Ele tinha `min-w-[13rem]` com um `max-w` ao lado, e nao funcionava: no CSS
+ * `min-width` ganha de `max-width`, entao em tela estreita ele crescia por cima
+ * do simbolo de compartilhar. Virou `w-[min(13rem,...)]`, que resolve na largura
+ * em vez de na cascata.
+ *
+ * O que este teste mede e o contraste da letra ao longo do gradiente, e para
+ * isso o que importa e o 13rem — a largura em que o texto de fato se assenta.
+ */
 const larguraDoBotao = () => {
     const fonte = fs.readFileSync(path.join(raiz, 'components', 'AchievementModal.tsx'), 'utf8');
     const classe = (fonte.match(/primaryButtonClass = '([^']+)'/) || [])[1];
     assert.ok(classe, 'não achei primaryButtonClass — o teste precisa ser ajustado');
-    const rem = classe.match(/min-w-\[([\d.]+)rem\]/);
-    assert.ok(rem, 'o botão primário perdeu a largura mínima declarada');
+    const rem = classe.match(/w-\[min\(([\d.]+)rem,/) || classe.match(/min-w-\[([\d.]+)rem\]/);
+    assert.ok(rem, 'o botão primário perdeu a largura declarada');
     return Number(rem[1]) * 16;
 };
 

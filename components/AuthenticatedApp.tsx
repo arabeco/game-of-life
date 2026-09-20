@@ -843,6 +843,15 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         const userId = userProfile?.id;
         if (!userId) return;
 
+        // NUNCA POR CIMA DO ONBOARDING.
+        //
+        // Quem esta chegando agora nao tem ontem nenhum — o painel abriria vazio
+        // — e ainda receberia um modal em cima do tutorial, tapando o passo que
+        // ele estava seguindo. O teste de caminho feliz do onboarding pegou
+        // isto: ele parava no passo 10 de 14, "comece um ciclo curto", porque o
+        // painel tinha subido na frente.
+        if (shouldAutoStartOnboarding(userProfile)) return;
+
         const hoje = getOperationalDateString(new Date());
         const chave = `glyph:painel-de-ontem:${userId}`;
 
@@ -857,7 +866,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         }
 
         setPendingDailyPanelOpen(true);
-    }, [userProfile?.id]);
+    }, [userProfile?.id, userProfile?.onboardingCompletedAt, userProfile?.onboardingDismissedAt]);
 
     /**
      * Uma fala de abertura por VINDA ao app — e vinda tem intervalo minimo.

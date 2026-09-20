@@ -160,8 +160,19 @@ const ler = (relativo) => fs.readFileSync(path.join(root, relativo), 'utf8');
     const dominio = ler('contexts/gameDomains/taskDomain.ts');
     assert.doesNotMatch(feito, /achievement\.type !== 'ARENA_COMPLETED'/, 'a arena voltou a morrer antes de renderizar');
     assert.match(feito, /celebrationScreensEnabled: false/, 'sumiu o atalho para não mostrar celebrações');
-    assert.match(feito, /label: 'Dias ativos'/, 'a arena perdeu os dados da conclusão');
+    // Os cartões da arena passaram a ser DOIS, e os dois sobre o que a pessoa
+    // fez: ações concluídas e tempo dedicado. "Dias ativos" saiu dos cartões e
+    // foi para a frase, onde não disputa espaço — e "Tipos de ação" saiu de vez,
+    // porque contava quantas ações a arena TEM cadastradas, que é configuração
+    // da arena e não feito de ninguém. Três cartões numa grade de duas colunas
+    // ainda quebravam em duas fileiras, com a terceira cortada e a placa
+    // ganhando barra de rolagem.
+    assert.match(feito, /label: 'Ações concluídas'/, 'a arena perdeu as entregas do cartão');
+    assert.match(feito, /label: 'Tempo dedicado'/, 'a arena perdeu o tempo, que era o número que faltava aparecer');
+    assert.doesNotMatch(feito, /label: 'Tipos de ação'/, 'voltou o cartão que contava a configuração da arena');
+    assert.match(feito, /de trabalho\.`/, 'a frase da arena deixou de dizer em quantos dias ela foi fechada');
     assert.match(dominio, /deliveries: entregasDaArena\.length/, 'o evento da arena deixou de carregar as entregas reais');
+    assert.match(dominio, /minutes: entregasDaArena\.reduce/, 'o evento da arena deixou de carregar os minutos');
     assert.match(feito, /Toque para pular/, 'o vídeo voltou a prender a pessoa até o fim');
     assert.match(feito, /DIRECOES\.B/, 'o feito deixou de usar a placa B aprovada');
 }
@@ -282,7 +293,10 @@ const ler = (relativo) => fs.readFileSync(path.join(root, relativo), 'utf8');
 // 18. O acontecimento e grande; o nome proprio e pequeno.
 {
     const feito = ler('components/AchievementModal.tsx');
-    assert.match(feito, /title: 'Arena concluída!'.*subtitle: data\.name/, 'arena voltou a repetir o nome grande');
+    // Com `s` porque o retorno da arena passou a ocupar varias linhas: ele
+    // calcula os dias antes de montar a frase. O que o teste cobra continua
+    // sendo a hierarquia — o acontecimento no titulo, o nome proprio embaixo.
+    assert.match(feito, /title: 'Arena concluída!'[\s\S]*?subtitle: data\.name/s, 'arena voltou a repetir o nome grande');
     assert.match(feito, /title: 'Missão concluída!'.*subtitle: data\.title/s, 'missao perdeu a hierarquia comum');
     assert.match(feito, /title: 'Nova patente!'.*subtitle: data\.name/, 'patente perdeu a hierarquia comum');
     assert.match(feito, /seloDaTemporada \? 'Temporada concluída!' : title/, 'selo perdeu o título de temporada');

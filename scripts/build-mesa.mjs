@@ -72,20 +72,27 @@ const OUTRAS = [
     { id: 'aposentado', nome: 'Aposentado' },
 ];
 
-/** As linhas, na ordem em que fazem sentido conversar sobre elas. */
+/**
+ * As linhas, na ordem em que fazem sentido conversar sobre elas.
+ *
+ * O campo `fora` marca a categoria que NAO entra na escada de proposito — cabelo e
+ * aparencia livre, tabua e jardim vivem na loja, artefato e o pao do bau. Sem
+ * isso a mesa acenderia quarenta buracos que ninguem quer tapar, e o numero de
+ * casas vazias deixaria de significar alguma coisa.
+ */
 const CATEGORIAS = [
     { id: 'skin', nome: 'Roupa' },
-    { id: 'hair', nome: 'Cabelo' },
+    { id: 'hair', nome: 'Cabelo', fora: 'livre para todos' },
     { id: 'aura', nome: 'Aura' },
     { id: 'border', nome: 'Borda' },
     { id: 'banner', nome: 'Banner' },
     { id: 'insignia', nome: 'Insígnia' },
     { id: 'ui_skin', nome: 'Skin de UI' },
-    { id: 'artifact', nome: 'Artefato' },
-    { id: 'plate', nome: 'Tábua / wallpaper' },
+    { id: 'artifact', nome: 'Artefato', fora: 'e o pão do baú' },
+    { id: 'plate', nome: 'Tábua / wallpaper', fora: 'loja e baú' },
     { id: 'glyph', nome: 'Glifo' },
     { id: 'orb', nome: 'Orbe' },
-    { id: 'garden', nome: 'Jardim' },
+    { id: 'garden', nome: 'Jardim', fora: 'loja' },
 ];
 /** `insignias` no plural e a mesma linha de `insignia`; o DB tem as duas grafias. */
 const linhaDe = (categoria) => (categoria === 'insignias' ? 'insignia' : categoria);
@@ -201,6 +208,8 @@ const CSS = `
                   -45deg, #17130b, #17130b 5px, #131009 5px, #131009 10px); }
   .cela.vazia::after { content:"—"; margin:auto; color:#6b5320; font:12px ui-monospace,monospace; }
   .cela.grande { max-height:156px; overflow-y:auto; }
+  .cela.dispensada { background:#0d0f12; border-color:#15181d; }
+  .mesa td.rotulo.fora b { color:#767c85; }
 
   .card { width:34px; height:34px; border-radius:6px; border:1px solid var(--c); cursor:grab;
           background:radial-gradient(circle at 35% 28%, color-mix(in srgb, var(--c) 22%, transparent),
@@ -282,8 +291,8 @@ function monta(cabecalho, corpo, colunas) {
     '<th>' + (c.ordem ? c.ordem + ' ' : '') + escapa(c.nome) +
     '<span class="n" id="n-' + cabecalho + '-' + c.id + '"></span></th>').join('');
   tb.innerHTML = DADOS.categorias.map((cat) =>
-    '<tr><td class="rotulo"><b>' + escapa(cat.nome) + '</b><span id="r-' + corpo + '-' + cat.id + '"></span></td>' +
-    colunas.map((c) => '<td><div class="cela' + (naEscada(c.id) ? '' : ' grande') +
+    '<tr><td class="rotulo' + (cat.fora ? ' fora' : '') + '"><b>' + escapa(cat.nome) + '</b><span id="r-' + corpo + '-' + cat.id + '"></span></td>' +
+    colunas.map((c) => '<td><div class="cela' + (naEscada(c.id) ? '' : ' grande') + (cat.fora ? ' dispensada' : '') +
       '" data-linha="' + cat.id + '" data-porta="' + c.id + '"></div></td>').join('') + '</tr>').join('');
 }
 
@@ -292,7 +301,8 @@ function pinta() {
     const lista = DADOS.itens.filter((i) => i.linha === cela.dataset.linha && porta(i) === cela.dataset.porta);
     cela.innerHTML = lista.map(cardHTML).join('');
     // So acende buraco na escada: celula vazia em "Staff" ou "Missao" e normal.
-    cela.classList.toggle('vazia', naEscada(cela.dataset.porta) && lista.length === 0);
+    // Categoria dispensada da escada nao tem buraco: o vazio dela e a decisao.
+    cela.classList.toggle('vazia', naEscada(cela.dataset.porta) && lista.length === 0 && !cela.classList.contains('dispensada'));
   });
 
   DADOS.patentes.forEach((p) => {
@@ -307,7 +317,7 @@ function pinta() {
     const daLinha = DADOS.itens.filter((i) => i.linha === c.id);
     const degraus = new Set(daLinha.filter((i) => naEscada(porta(i))).map((i) => porta(i)));
     const alvo = document.getElementById('r-corpoEscada-' + c.id);
-    if (alvo) alvo.textContent = degraus.size + ' de 10 degraus';
+    if (alvo) alvo.textContent = c.fora ? c.fora : degraus.size + ' de 10 degraus';
     const outro = document.getElementById('r-corpoOutras-' + c.id);
     if (outro) outro.textContent = daLinha.length + ' itens';
   });

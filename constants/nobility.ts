@@ -95,69 +95,101 @@ export const NOBILITY_RANKS: NobilityRank[] = [
  * existe.
  */
 export const RANK_REWARDS: Record<string, { category: UnlockCategory; itemId: string; name: string }[]> = {
+    // O VAGANTE SO PODE LISTAR O QUE O PACOTE INICIAL ENTREGA.
+    //
+    // Ninguem e promovido a Vagante — entra-se nele — entao nao ha modal de
+    // promocao para entregar nada aqui. Quem entrega e o
+    // `sql/new_player_bootstrap_rewards.sql`; esta lista so EXIBE, na
+    // NobilityLadder. Por isso o degrau 1 nao ganhou borda, banner nem aura
+    // junto com os outros: sem passar pelo SQL, seriam tres promessas que
+    // nunca chegam.
+    //
+    // E por isso as quatro roupas continuam aqui. Nao e duplicata do pacote: e
+    // o pacote, mostrado. O piso de quatro esta no
+    // tests/starter-e-patentes.regression.mjs — a primeira promocao custa 100
+    // horas, e ate la o vestuario e o unico lugar do jogo onde a pessoa se ve.
     vagante: [
         { category: 'ui_skins', itemId: 'FROST', name: 'Tema: Gelo Eterno' },
         { category: 'glyphs', itemId: 'item_glyph_1_001', name: 'Tábua Aprendiz' },
         { category: 'skins', itemId: 'item_skin_1_001', name: 'Náufrago' },
         { category: 'skins', itemId: 'item_skin_1_002', name: 'Casual' },
         { category: 'skins', itemId: 'item_skin_1_005', name: 'Caçador' },
-        // O Casual 2 desceu do Escudeiro para ca. Nao e generosidade: a primeira
-        // promocao custa 100 horas, e ate la o vestuario era o unico lugar do
-        // jogo onde a pessoa se ve. Tres roupas mais o "nenhuma" davam um
-        // ciclador de quatro posicoes — perto demais de um uniforme.
         { category: 'skins', itemId: 'item_skin_1_006', name: 'Casual 2' },
         { category: 'insignias', itemId: 'insignia_rank_1_vagante', name: 'Insígnia: Vagante' },
     ],
+    // Dos degraus 2 ao 10 a regra e uma so: UMA de cada categoria por degrau,
+    // com a raridade subindo junto. Borda, banner e aura eram os tres mais
+    // vazios da escada — 4, 2 e 0 degraus de dez — e nenhum deles precisou de
+    // desenho novo: os itens ja existiam, so estavam todos na loja.
     escudeiro: [
-        { category: 'ui_skins', itemId: 'CYBER', name: 'Tema: Cyberpunk' },
+        { category: 'ui_skins', itemId: 'GOLD', name: 'Tema: Ouro Soberano' },
         { category: 'skins', itemId: 'item_skin_1_004', name: 'Street' },
         { category: 'borders', itemId: 'item_border_t1_aprendiz', name: 'Borda: Aprendiz' },
+        { category: 'banners', itemId: 'item_banner_disciplinado', name: 'Banner: Disciplinado' },
+        { category: 'auras', itemId: 'item_aura_1_001', name: 'Aura: Bruma' },
         { category: 'insignias', itemId: 'insignia_rank_2_escudeiro', name: 'Insígnia: Escudeiro' },
     ],
     cavaleiro: [
-        { category: 'ui_skins', itemId: 'AURORA', name: 'Tema: Aurora Boreal' },
-        { category: 'artifacts', itemId: 'item_artifact_1_005', name: 'Trio Café' },
+        { category: 'ui_skins', itemId: 'CYBER', name: 'Tema: Cyberpunk' },
         { category: 'skins', itemId: 'item_skin_2_003', name: 'Acadêmico' },
+        { category: 'borders', itemId: 'item_border_1_002', name: 'Borda: Disciplinado' },
         { category: 'banners', itemId: 'item_banner_t1_aprendiz', name: 'Banner: Aprendiz' },
+        { category: 'auras', itemId: 'item_aura_1_002', name: 'Aura: Safira' },
+        { category: 'artifacts', itemId: 'item_artifact_1_005', name: 'Trio Café' },
         { category: 'insignias', itemId: 'insignia_rank_3_cavaleiro', name: 'Insígnia: Cavaleiro' },
     ],
     lorde: [
         { category: 'ui_skins', itemId: 'EMBER', name: 'Tema: Chama Viva' },
         { category: 'glyphs', itemId: 'item_glyph_2_002', name: 'Granito Rúnico' },
         { category: 'skins', itemId: 'item_skin_2_002', name: 'Tático' },
+        { category: 'borders', itemId: 'item_border_2_001', name: 'Borda: Popular' },
+        { category: 'banners', itemId: 'item_banner_popular', name: 'Banner: Popular' },
+        { category: 'auras', itemId: 'item_aura_1_003', name: 'Aura: Rubi' },
         { category: 'insignias', itemId: 'insignia_rank_4_lorde', name: 'Insígnia: Lorde' },
     ],
+    // O degrau que caia. Mil horas entregavam um orbe tier 2 e mais nada —
+    // menos que o Lorde por metade do preco. A roupa que fecha o buraco nao
+    // precisou ser desenhada: o SKIN_T2_MILITAR.png estava no disco, pago e
+    // pronto, sem item nenhum apontando para ele.
     barao: [
-        { category: 'ui_skins', itemId: 'GOLD', name: 'Tema: Ouro Soberano' },
-        // O degrau que cai. Mil horas entregam um orbe tier 2, menos que o Lorde
-        // por metade do preco. O cabelo que tapava isto era aparencia que a
-        // pessoa ja tinha; tirado ele, o buraco esta a vista de novo e so fecha
-        // com peca nova.
+        { category: 'ui_skins', itemId: 'AURORA', name: 'Tema: Aurora Boreal' },
+        { category: 'skins', itemId: 'item_skin_2_004', name: 'Militar' },
         { category: 'orbs', itemId: 'item_orb_2_002', name: 'Orbe Sombrio' },
-        { category: 'borders', itemId: 'item_border_vanguarda_01', name: 'Borda: Vanguarda' },
+        { category: 'borders', itemId: 'item_border_t2_veterano', name: 'Borda: Veterano' },
+        { category: 'banners', itemId: 'item_banner_t2_veterano', name: 'Banner: Veterano' },
+        { category: 'auras', itemId: 'item_aura_2_001', name: 'Aura: Esmeralda' },
         { category: 'insignias', itemId: 'insignia_rank_5_barao', name: 'Insígnia: Barão' },
     ],
     conde: [
         { category: 'ui_skins', itemId: 'VOID', name: 'Tema: Vazio Primordial' },
         { category: 'skins', itemId: 'item_skin_2_001', name: 'Executivo' },
-        { category: 'borders', itemId: 'item_border_t2_veterano', name: 'Borda: Veterano' },
+        { category: 'borders', itemId: 'item_border_vanguarda_01', name: 'Borda: Vanguarda' },
+        { category: 'banners', itemId: 'item_banner_imparavel', name: 'Banner: Imparável' },
+        { category: 'auras', itemId: 'item_aura_2_002', name: 'Aura: Prata' },
         { category: 'insignias', itemId: 'insignia_rank_6_conde', name: 'Insígnia: Conde' },
     ],
     duque: [
         { category: 'glyphs', itemId: 'item_glyph_3_003', name: 'Mecanismo Rúnico' },
-        { category: 'artifacts', itemId: 'item_artifact_2_003', name: 'Setup' },
+        { category: 'skins', itemId: 'item_skin_3_001', name: 'Nômade' },
+        { category: 'borders', itemId: 'item_border_3_001', name: 'Borda: Imparável' },
         { category: 'banners', itemId: 'item_banner_vanguarda_01', name: 'Banner: Vanguarda' },
+        { category: 'auras', itemId: 'item_aura_3_001', name: 'Aura: Ouro' },
+        { category: 'artifacts', itemId: 'item_artifact_2_003', name: 'Setup' },
         { category: 'insignias', itemId: 'insignia_rank_7_duque', name: 'Insígnia: Duque' },
     ],
     principe: [
         { category: 'skins', itemId: 'item_skin_4_002', name: 'Mago Círculo' },
         { category: 'orbs', itemId: 'item_orb_4_001', name: 'Orbe de Diamante' },
-        // Dois itens em 7.000 horas: o degrau mais magro da escada inteira.
+        { category: 'borders', itemId: 'item_border_t3_transcendente', name: 'Borda: Transcendente' },
+        { category: 'banners', itemId: 'item_banner_t4_celestial', name: 'Banner: Celestial' },
         { category: 'insignias', itemId: 'insignia_rank_8_principe', name: 'Insígnia: Príncipe' },
     ],
     rei: [
         { category: 'glyphs', itemId: 'item_glyph_4_001', name: 'Crisol Geomântico' },
+        { category: 'skins', itemId: 'item_skin_4_001', name: 'Armadura Placa' },
         { category: 'borders', itemId: 'item_border_4_001', name: 'Borda: Lenda Viva' },
+        { category: 'banners', itemId: 'item_banner_t4_guardia', name: 'Banner: Guardiã' },
+        { category: 'auras', itemId: 'item_aura_5_001', name: 'Aura: Pedra da Lua' },
         { category: 'artifacts', itemId: 'item_artifact_4_002', name: 'Dragão Bebê' },
         { category: 'insignias', itemId: 'insignia_rank_9_rei', name: 'Insígnia: Rei' },
     ],
@@ -165,6 +197,9 @@ export const RANK_REWARDS: Record<string, { category: UnlockCategory; itemId: st
         { category: 'glyphs', itemId: 'item_glyph_5_001', name: 'A FORJA' },
         { category: 'skins', itemId: 'item_skin_5_001', name: 'Entidade de Luz' },
         { category: 'orbs', itemId: 'item_orb_5_001', name: 'Orbe Gênese' },
+        { category: 'borders', itemId: 'item_border_4_002', name: 'Borda: Soberano' },
+        { category: 'banners', itemId: 'item_banner_lendaviva', name: 'Banner: Lenda Viva' },
+        { category: 'auras', itemId: 'item_aura_5_002', name: 'Aura: Multiverso' },
         { category: 'insignias', itemId: 'insignia_rank_10_soberano', name: 'Insígnia: Soberano' },
     ],
 };

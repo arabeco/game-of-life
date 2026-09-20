@@ -178,6 +178,8 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_skin_2_001', name: 'Executivo', category: 'skin', tier: 2, rarity: 'uncommon', icon: '💼', imageUrl: avatarPngAsset('SKIN_T2_EXECUTIVO'), isRankExclusive: true },
     { id: 'item_skin_2_002', name: 'Tático', category: 'skin', tier: 2, rarity: 'uncommon', icon: '🎖️', imageUrl: avatarPngAsset('SKIN_T2_TATICO'), isRankExclusive: true },
     { id: 'item_skin_2_003', name: 'Acadêmico', category: 'skin', tier: 2, rarity: 'uncommon', icon: '🎓', imageUrl: avatarPngAsset('SKIN_T2_ACADEMICO'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_2_003, isRankExclusive: true },
+    // A arte estava no disco desde sempre e nenhum item apontava para ela.
+    { id: 'item_skin_2_004', name: 'Militar', category: 'skin', tier: 2, rarity: 'uncommon', icon: '🪖', imageUrl: avatarPngAsset('SKIN_T2_MILITAR'), isRankExclusive: true },
     // T3 (Raro)
     { id: 'item_skin_3_001', name: 'Nômade', category: 'skin', tier: 3, rarity: 'rare', icon: '🧭', imageUrl: avatarPngAsset('SKIN_T3_NOMADE'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_3_001 },
     { id: 'item_skin_3_002', name: 'Alquimista', category: 'skin', tier: 3, rarity: 'rare', icon: '⚗️', imageUrl: avatarPngAsset('SKIN_T3_ALQUIMISTA'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_3_002 },
@@ -268,7 +270,7 @@ export const ITEMS_DB: ItemDef[] = [
 
     // T4
     { id: 'item_border_4_001', name: 'Lenda Viva', category: 'border', tier: 4, rarity: 'epic', icon: '🏛️', imageUrl: `${INTERFACE_BASE_URL}/borda_lendaviva.png`, isRankExclusive: true },
-    { id: 'item_border_4_002', name: 'Soberano', category: 'border', tier: 4, rarity: 'epic', icon: '👑' },
+    { id: 'item_border_4_002', name: 'Soberano', category: 'border', tier: 4, rarity: 'epic', icon: '👑', isRankExclusive: true },
     // Novos T4
     { id: 'item_border_t4_celestial', name: 'Celestial', category: 'border', tier: 4, rarity: 'epic', icon: '🌙', imageUrl: `${INTERFACE_BASE_URL}/borda_t4_celestial.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_border_t4_celestial },
     { id: 'item_border_t4_guardia', name: 'Guardiã', category: 'border', tier: 4, rarity: 'epic', icon: '🛡️', imageUrl: `${INTERFACE_BASE_URL}/borda_t4_guardia.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_border_t4_guardia },
@@ -324,17 +326,17 @@ export const ITEMS_DB: ItemDef[] = [
 
     // --- AURAS ---
     // T1
-    catalogItem('aura', { id: 'item_aura_1_001', name: 'Bruma', tier: 1, rarity: 'common', icon: '🌫️' }),
-    catalogItem('aura', { id: 'item_aura_1_002', name: 'Safira', tier: 1, rarity: 'common', icon: '🔵' }),
-    catalogItem('aura', { id: 'item_aura_1_003', name: 'Rubi', tier: 1, rarity: 'common', icon: '🔴' }),
+    catalogItem('aura', { id: 'item_aura_1_001', name: 'Bruma', tier: 1, rarity: 'common', icon: '🌫️', isRankExclusive: true }),
+    catalogItem('aura', { id: 'item_aura_1_002', name: 'Safira', tier: 1, rarity: 'common', icon: '🔵', isRankExclusive: true }),
+    catalogItem('aura', { id: 'item_aura_1_003', name: 'Rubi', tier: 1, rarity: 'common', icon: '🔴', isRankExclusive: true }),
     // T2
-    catalogItem('aura', { id: 'item_aura_2_001', name: 'Esmeralda', tier: 2, rarity: 'uncommon', icon: '🟢' }),
-    catalogItem('aura', { id: 'item_aura_2_002', name: 'Prata', tier: 2, rarity: 'uncommon', icon: '⚪' }),
+    catalogItem('aura', { id: 'item_aura_2_001', name: 'Esmeralda', tier: 2, rarity: 'uncommon', icon: '🟢', isRankExclusive: true }),
+    catalogItem('aura', { id: 'item_aura_2_002', name: 'Prata', tier: 2, rarity: 'uncommon', icon: '⚪', isRankExclusive: true }),
     // T3
-    catalogItem('aura', { id: 'item_aura_3_001', name: 'Ouro', tier: 3, rarity: 'rare', icon: '🟡' }),
+    catalogItem('aura', { id: 'item_aura_3_001', name: 'Ouro', tier: 3, rarity: 'rare', icon: '🟡', isRankExclusive: true }),
     // T5
-    catalogItem('aura', { id: 'item_aura_5_001', name: 'Pedra da Lua', tier: 5, rarity: 'legendary', icon: '🌙' }),
-    catalogItem('aura', { id: 'item_aura_5_002', name: 'Multiverso', tier: 5, rarity: 'legendary', icon: '🌌' }),
+    catalogItem('aura', { id: 'item_aura_5_001', name: 'Pedra da Lua', tier: 5, rarity: 'legendary', icon: '🌙', isRankExclusive: true }),
+    catalogItem('aura', { id: 'item_aura_5_002', name: 'Multiverso', tier: 5, rarity: 'legendary', icon: '🌌', isRankExclusive: true }),
 
     // --- ORBES ---
     // T1

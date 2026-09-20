@@ -132,28 +132,52 @@ para o pacote inicial, **Soberano** fica no degrau 10, **Aurora II** e
 **Gênesis** são de temporada, **GM / Grão Mestre** é de staff, e **Origem** está
 aposentado.
 
-**Sobram 11.** Os nomes já dizem a regra; falta o jogo saber medir.
+**Sobram 11 — e uma delas nem é regra.** Fechadas na conversa de 20/09:
 
-| Nome | Raridade | Regra que o nome pede | O jogo já mede? |
-|---|---|---|---|
-| Disciplinado | comum | fechar um ciclo sem falhar um dia | **sim** — `streakBad` por ação |
-| Popular | incomum | ter 5 vínculos ativos ao mesmo tempo | **sim** — os vínculos de arena |
-| Veterano | incomum | 100 dias de conta | **sim** — `createdAt` |
-| Imparável | raro | 30 dias de sequência sem quebrar | **sim** — `streakGood` |
-| Vanguarda | raro | ter entrado antes de uma data | **sim** — `createdAt` |
-| Místico | raro | 2 arenas de espiritualidade no mesmo ciclo | **não** — falta cruzar arena com área |
-| Transcendente | raro | fechar um ciclo com nota máxima | **sim** — a nota do relatório |
-| Celestial | épico | uma arena fechada em cada uma das 5 áreas | **não** — falta a mesma leitura |
-| Guardiã | épico | uma mentoria concluída como mentor | **sim** — o tipo do vínculo |
-| Oráculo | épico | fechar 10 relatórios de ciclo | **sim** — os relatórios |
-| Lenda Viva | épico | 1.000 ações concluídas | **sim** — a contagem de ações |
+| Nome | Raridade | A regra |
+|---|---|---|
+| **Disciplinado** | comum | fechar um ciclo com **100% das ações** — nenhuma falhada |
+| **Popular** | incomum | ter **5 amizades** |
+| **Veterano** | incomum | fechar ciclos em **meses diferentes** (quantos, a decidir) |
+| **Imparável** | raro | **30 dias** de sequência sem quebrar |
+| **Vanguarda** | raro | **não é regra.** Vem com o código VANGUARDA25 |
+| **Místico** | raro | **2 arenas de Propósito & Espiritualidade** completas no mesmo ciclo |
+| **Transcendente** | raro | **+100 ações e +90% de conclusão** no mesmo ciclo |
+| **Celestial** | épico | uma arena **completa** em cada uma das **5 áreas** |
+| **Guardiã** | épico | mentoria concluída — **duas**, ou uma com duas arenas |
+| **Oráculo** | épico | **2 missões individuais** completas — o oráculo é quem as dá |
+| **Lenda Viva** | épico | **1.000 ações** concluídas |
 
-**Nove das onze o jogo já sabe medir.** Só duas precisam de leitura nova, e é a
-mesma leitura: *quantas arenas de tal área foram fechadas neste ciclo*. Uma
-função serve para as duas.
+#### Três coisas que a conversa resolveu
 
-As cinco áreas são propósito, relações, trabalho, lazer e saúde — estão em
-`constants/lifeAreas.ts`.
+**A espiritualidade existe.** Eu tinha escrito que faltava medir; não falta. A
+área `proposito` se chama, por extenso, *PROPÓSITO & ESPIRITUALIDADE*. O Místico
+mapeia direto numa das cinco áreas que já estão em `constants/lifeAreas.ts`.
+
+**Completa, não criada.** O Celestial e o Místico contam arena **fechada** no
+ciclo, não arena aberta. Criar cinco arenas e abandonar não pode valer prêmio.
+
+**Disciplinado e Transcendente disparam no mesmo momento** — os dois se decidem
+no fecho do ciclo, e um ciclo perfeito e grande cumpre os dois de uma vez. Não é
+problema desde que os modais saiam em ordem, e não empilhados.
+
+#### O Vanguarda é outra coisa
+
+Ele sai da lista de regras. É item de **código de resgate**: o VANGUARDA25, com
+**25 unidades** e peças que depois **não podem cair de baú**.
+
+Duas coisas para conferir antes:
+
+- o `reward_codes` tem `max_redemptions`, e o VANGUARDA10 do repositório está com
+  ele em `null` — ou seja, ilimitado;
+- a Borda e o Banner Vanguarda hoje são prêmio de patente (Conde e Duque) e estão
+  com `isRankExclusive`, o que já os mantém fora do baú. Virando item de código,
+  a porta muda mas a proteção precisa continuar.
+
+#### O que ainda falta medir
+
+Só uma leitura nova, e ela serve para as duas regras de área: *quantas arenas de
+tal área foram FECHADAS neste ciclo*. Uma função.
 
 **A entrega já existe.** O `SKIN_SEASON_UNLOCKS` liga item a condição cumprida e
 o `BorderSelectionModal` já o consulta. Hoje ele tem **uma** linha:

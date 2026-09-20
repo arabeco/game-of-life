@@ -56,9 +56,13 @@ const naPasta = (relativo) => fs.existsSync(path.join(root, 'public', relativo.r
 // Agora cada penteado carrega o proprio imageUrl e hair e obrigatoria. Este
 // teste trava as duas metades juntas: sem o campo, mover a categoria esconderia
 // os oito do catalogo tendo a arte pronta.
+//
+// O numero subiu de 8 para 12 em 20/09/2026. Nao e afrouxar o teste: o que ele
+// guarda e que TODO penteado do HAIR_DB tenha item, imageUrl e arquivo. O total
+// esta aqui para que somar um penteado seja uma decisao, e nao um acidente.
 {
     const cabelos = ITEMS_DB.filter((item) => item.category === 'hair');
-    assert.equal(cabelos.length, 8, 'o catalogo deveria ter 8 penteados');
+    assert.equal(cabelos.length, 12, 'o catalogo deveria ter 12 penteados');
 
     const semCampo = cabelos.filter((item) => !item.imageUrl).map((item) => item.id);
     assert.deepEqual(semCampo, [], `penteado sem imageUrl: ${semCampo.join(', ')}`);
@@ -119,9 +123,13 @@ const naPasta = (relativo) => fs.existsSync(path.join(root, 'public', relativo.r
 // entrada correspondente. Se um item NOVO aparecer aqui, foi cadastrado sem PNG
 // e ninguem ia notar.
 {
+    // A roupa do Soberano saiu daqui em 20/09/2026. Nao porque o desenho chegou:
+    // porque ela ganhou um PNG de mentira no nome final
+    // (SKIN_T5_SOBERANO.png, xadrez magenta) para o resto do jogo poder ser
+    // ligado enquanto a arte nao vem. Quando o desenho chegar e so sobrescrever
+    // o arquivo — nenhuma linha muda, e esta lista continua com dois.
     const conhecidos = [
         'item_border_4_002',        // Borda Soberano, epico
-        'item_skin_5_001',          // Entidade de Luz, lendario
         'item_skin_exclusive_001',  // Empreendedor, epico
     ];
     const pendentes = ITEM_IDS_PENDING_ART.slice().sort();

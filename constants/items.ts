@@ -171,22 +171,48 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_skin_1_001', name: 'Náufrago', category: 'skin', tier: 1, rarity: 'common', icon: '🧥', imageUrl: avatarPngAsset('SKIN_T1_NAUFRAGO'), description: "Trajes desgastados pelo tempo e pelo mar. Ideal para quem está começando sua jornada do zero.", isRankExclusive: true },
     { id: 'item_skin_1_002', name: 'Casual', category: 'skin', tier: 1, rarity: 'common', icon: '👕', imageUrl: avatarPngAsset('SKIN_T1_CASUAL'), description: "Roupas confortáveis para o dia a dia. Nada de especial, mas cumpre o papel.", isRankExclusive: true },
     { id: 'item_skin_1_003', name: 'Gym Rat', category: 'skin', tier: 1, rarity: 'common', icon: '🏋️', imageUrl: avatarPngAsset('SKIN_T1_GYM_RAT'), description: "Focado no treino e na disciplina física. O suor é o seu melhor acessório.", costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_1_003 },
-    { id: 'item_skin_1_004', name: 'Street', category: 'skin', tier: 1, rarity: 'common', icon: '🧢', imageUrl: avatarPngAsset('SKIN_T1_STREET'), description: "Estilo urbano para quem domina as ruas e o asfalto.", isRankExclusive: true },
+    { id: 'item_skin_1_004', name: 'Street', category: 'skin', tier: 1, rarity: 'common', icon: '🧢', imageUrl: avatarPngAsset('SKIN_T1_STREET'), description: "Estilo urbano para quem domina as ruas e o asfalto." },
     { id: 'item_skin_1_005', name: 'Caçador', category: 'skin', tier: 1, rarity: 'common', icon: '\uD83C\uDFF9', imageUrl: avatarPngAsset('SKIN_T1_CACADOR'), description: 'Traje leve de exploração para quem atravessa terreno aberto com discrição.', isRankExclusive: true },
     { id: 'item_skin_1_006', name: 'Casual 2', category: 'skin', tier: 1, rarity: 'common', icon: '\uD83E\uDDE5', imageUrl: avatarPngAsset('SKIN_T1_CASUAL_2'), description: 'Variação casual mais limpa e moderna para o dia a dia do soberano.', isRankExclusive: true },
+    // As quatro de 20/09/2026, para o pacote inicial. O buraco nao era
+    // quantidade, era SILHUETA: as comuns de hoje sao quase todas o mesmo
+    // corpo com outra estampa na camiseta. Cada uma destas acrescenta uma
+    // forma que nao existia.
+    { id: 'item_skin_1_007', name: 'Pijama', category: 'skin', tier: 1, rarity: 'common', icon: '\u{1F457}', imageUrl: avatarPngAsset('SKIN_T1_PIJAMA') },
+    { id: 'item_skin_1_008', name: 'Corrida', category: 'skin', tier: 1, rarity: 'common', icon: '\u{1F457}', imageUrl: avatarPngAsset('SKIN_T1_CORRIDA') },
+    { id: 'item_skin_1_009', name: 'Chuva', category: 'skin', tier: 1, rarity: 'common', icon: '\u{1F457}', imageUrl: avatarPngAsset('SKIN_T1_CHUVA') },
+    { id: 'item_skin_1_010', name: 'Verão', category: 'skin', tier: 1, rarity: 'common', icon: '\u{1F457}', imageUrl: avatarPngAsset('SKIN_T1_VERAO') },
+
+    // A ESCADA VESTE O PROPRIO NOME. Do Escudeiro ao Soberano, a roupa do
+    // degrau e a roupa do nome do degrau — e ninguem precisa mais explicar
+    // por que aquela peca esta ali. O que e esquisito (Naufrago, Nomade,
+    // Alquimista, Mago Circulo) saiu da escada e foi para o bau e a loja,
+    // que e onde variedade vale.
+    { id: 'item_skin_1_011', name: 'Escudeiro', category: 'skin', tier: 1, rarity: 'common', icon: '\u{1F457}', imageUrl: avatarPngAsset('SKIN_T1_ESCUDEIRO'), isRankExclusive: true },
+
     // T2 (Incomum)
-    { id: 'item_skin_2_001', name: 'Executivo', category: 'skin', tier: 2, rarity: 'uncommon', icon: '💼', imageUrl: avatarPngAsset('SKIN_T2_EXECUTIVO'), isRankExclusive: true },
-    { id: 'item_skin_2_002', name: 'Tático', category: 'skin', tier: 2, rarity: 'uncommon', icon: '🎖️', imageUrl: avatarPngAsset('SKIN_T2_TATICO'), isRankExclusive: true },
-    { id: 'item_skin_2_003', name: 'Acadêmico', category: 'skin', tier: 2, rarity: 'uncommon', icon: '🎓', imageUrl: avatarPngAsset('SKIN_T2_ACADEMICO'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_2_003, isRankExclusive: true },
+    { id: 'item_skin_2_001', name: 'Executivo', category: 'skin', tier: 2, rarity: 'uncommon', icon: '💼', imageUrl: avatarPngAsset('SKIN_T2_EXECUTIVO') },
+    { id: 'item_skin_2_002', name: 'Tático', category: 'skin', tier: 2, rarity: 'uncommon', icon: '🎖️', imageUrl: avatarPngAsset('SKIN_T2_TATICO') },
+    { id: 'item_skin_2_003', name: 'Acadêmico', category: 'skin', tier: 2, rarity: 'uncommon', icon: '🎓', imageUrl: avatarPngAsset('SKIN_T2_ACADEMICO'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_2_003 },
+    { id: 'item_skin_2_005', name: 'Cavaleiro', category: 'skin', tier: 2, rarity: 'uncommon', icon: '\u{1F457}', imageUrl: avatarPngAsset('SKIN_T2_CAVALEIRO'), isRankExclusive: true },
+    { id: 'item_skin_2_006', name: 'Lorde', category: 'skin', tier: 2, rarity: 'uncommon', icon: '\u{1F457}', imageUrl: avatarPngAsset('SKIN_T2_LORDE'), isRankExclusive: true },
+    { id: 'item_skin_2_007', name: 'Barão', category: 'skin', tier: 2, rarity: 'uncommon', icon: '\u{1F457}', imageUrl: avatarPngAsset('SKIN_T2_BARAO'), isRankExclusive: true },
+
     // T3 (Raro)
     { id: 'item_skin_3_001', name: 'Nômade', category: 'skin', tier: 3, rarity: 'rare', icon: '🧭', imageUrl: avatarPngAsset('SKIN_T3_NOMADE'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_3_001 },
     { id: 'item_skin_3_002', name: 'Alquimista', category: 'skin', tier: 3, rarity: 'rare', icon: '⚗️', imageUrl: avatarPngAsset('SKIN_T3_ALQUIMISTA'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_3_002 },
     { id: 'item_skin_3_003', name: 'Híbrido', category: 'skin', tier: 3, rarity: 'rare', icon: '🧬', imageUrl: avatarPngAsset('SKIN_T3_HIBRIDO'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_3_003 },
+    { id: 'item_skin_3_004', name: 'Conde', category: 'skin', tier: 3, rarity: 'rare', icon: '\u{1F457}', imageUrl: avatarPngAsset('SKIN_T3_CONDE'), isRankExclusive: true },
+    { id: 'item_skin_3_005', name: 'Duque', category: 'skin', tier: 3, rarity: 'rare', icon: '\u{1F457}', imageUrl: avatarPngAsset('SKIN_T3_DUQUE'), isRankExclusive: true },
+
     // T4 (Épico)
     { id: 'item_skin_4_001', name: 'Armadura Placa', category: 'skin', tier: 4, rarity: 'epic', icon: '🛡️', imageUrl: avatarPngAsset('SKIN_T4_ARMADURA_PLACA'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_4_001 },
-    { id: 'item_skin_4_002', name: 'Mago Círculo', category: 'skin', tier: 4, rarity: 'epic', icon: '🧙', imageUrl: avatarPngAsset('SKIN_T4_MAGO_CIRCULO'), isRankExclusive: true },
+    { id: 'item_skin_4_002', name: 'Mago Círculo', category: 'skin', tier: 4, rarity: 'epic', icon: '🧙', imageUrl: avatarPngAsset('SKIN_T4_MAGO_CIRCULO') },
+    { id: 'item_skin_4_003', name: 'Príncipe', category: 'skin', tier: 4, rarity: 'epic', icon: '\u{1F457}', imageUrl: avatarPngAsset('SKIN_T4_PRINCIPE'), isRankExclusive: true },
+    { id: 'item_skin_4_004', name: 'Rei', category: 'skin', tier: 4, rarity: 'epic', icon: '\u{1F457}', imageUrl: avatarPngAsset('SKIN_T4_REI'), isRankExclusive: true },
+
     // T5 (Lendário)
-    catalogItem('skin', { id: 'item_skin_5_001', name: 'Soberano', tier: 5, rarity: 'legendary', icon: '✨', isRankExclusive: true }),
+    avatarItem('skin', { id: 'item_skin_5_001', name: 'Soberano', tier: 5, rarity: 'legendary', icon: '✨', asset: 'SKIN_T5_SOBERANO.png', isRankExclusive: true }),
     avatarItem('skin', { id: 'item_skin_5_002', name: 'Vestido Real', tier: 6, rarity: 'mythic', icon: '\uD83D\uDC57', asset: 'SKIN_T5_VESTIDO_REAL.png', isSeasonExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'skin', description: 'Traje lendário reservado aos baús mais raros do inventário.' }),
 
     // Season
@@ -238,6 +264,15 @@ export const ITEMS_DB: ItemDef[] = [
 
     // TIER 5 - Legendary
     { id: 'fluxo_espiritual', name: 'Fluxo Espiritual', category: 'hair', tier: 5, rarity: 'legendary', icon: '✨', imageUrl: hairPngAsset('fluxo_espiritual') },
+
+    // As quatro de 20/09/2026. A contagem mostrou um buraco: as duas unicas
+    // opcoes claramente femininas eram epica e lendaria, entao quem comecava
+    // o jogo escolhia entre tres cortes curtos. Cabelo e a primeira coisa que
+    // a pessoa mexe, e comprimento nao pode ser premio de fim de escada.
+    { id: 'rabo_de_cavalo', name: 'Rabo de Cavalo', category: 'hair', tier: 1, rarity: 'common', icon: '🐎', imageUrl: hairPngAsset('rabo_de_cavalo') },
+    { id: 'coque_solto', name: 'Coque Solto', category: 'hair', tier: 2, rarity: 'uncommon', icon: '🌀', imageUrl: hairPngAsset('coque_solto') },
+    { id: 'undercut', name: 'Undercut', category: 'hair', tier: 3, rarity: 'rare', icon: '🪒', imageUrl: hairPngAsset('undercut') },
+    { id: 'tranca_lateral', name: 'Trança Lateral', category: 'hair', tier: 4, rarity: 'epic', icon: '🧵', imageUrl: hairPngAsset('tranca_lateral') },
 
     // --- BORDAS ---
     // T1

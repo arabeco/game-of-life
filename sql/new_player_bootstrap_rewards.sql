@@ -336,6 +336,11 @@ declare
     'item_skin_1_002',
     'item_skin_1_005',
     'item_skin_1_006',
+    'item_skin_1_004',
+    'item_skin_1_007',
+    'item_skin_1_008',
+    'item_skin_1_009',
+    'item_skin_1_010',
     'item_artifact_1_001',
     'item_plate_1_001',
     'item_border_t1_aprendiz',
@@ -348,6 +353,11 @@ declare
   v_starter_topup text[] := array[
     'item_skin_1_005',
     'item_skin_1_006',
+    'item_skin_1_004',
+    'item_skin_1_007',
+    'item_skin_1_008',
+    'item_skin_1_009',
+    'item_skin_1_010',
     'insignia_rank_1_vagante',
     'FROST'
   ];

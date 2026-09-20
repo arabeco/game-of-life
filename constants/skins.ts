@@ -68,6 +68,16 @@ export const HAIR_DB: SkinItem[] = [
     
     // TIER 5 - Legendary
     { id: 'fluxo_espiritual', name: 'Fluxo Espiritual', tier: 'T5', rarity: 'legendary', availableColors: ['ama', 'bran', 'rosa', 'verm'] },
+
+    // As quatro de 20/09/2026. Entraram porque a contagem mostrou um buraco:
+    // as duas unicas opcoes claramente femininas eram epica e lendaria, entao
+    // quem comecava o jogo escolhia entre tres cortes curtos. Cabelo e a
+    // primeira coisa que a pessoa mexe, e o comprimento nao pode ser premio de
+    // fim de escada.
+    { id: 'rabo_de_cavalo', name: 'Rabo de Cavalo', tier: 'T1', rarity: 'common', availableColors: ['cast', 'pre', 'bran'] },
+    { id: 'coque_solto', name: 'Coque Solto', tier: 'T2', rarity: 'uncommon', availableColors: ['cast', 'pre', 'bran'] },
+    { id: 'undercut', name: 'Undercut', tier: 'T3', rarity: 'rare', availableColors: ['cast', 'pre', 'bran'] },
+    { id: 'tranca_lateral', name: 'Trança Lateral', tier: 'T4', rarity: 'epic', availableColors: ['cast', 'bran', 'rosa'] },
 ];
 
 // Color mapping for filename suffix

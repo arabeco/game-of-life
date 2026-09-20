@@ -38,6 +38,45 @@ combinado, escrito antes.
 
 Em aberto, ligado ao 4 e ao 5: **o baú poder dar dois itens.**
 
+### O que o baú alcança, antes e depois
+
+Tirar o glifo e o orbe tirou 9 peças do sorteio. O efeito não foi parelho:
+
+| Baú | Antes | Agora |
+|---|---|---|
+| Comum | 40 | 34 |
+| Incomum | 49 | 45 |
+| Raro e Ciclo | 51 | 46 |
+| Épico | 31 | 28 |
+| **Lendário** | **10** | **8** |
+| Mítico | 3 por temporada | 3 por temporada |
+
+**O Lendário é o problema, e já era antes.** Oito peças: abre oito vezes e viu
+tudo. Foi de onde saíram duas das nove — o Artefato Sombrio e o Orbe Soberano
+eram tier 5.
+
+### O jardim como peça de catálogo — a proposta
+
+Hoje o jardim entrega **5 itens** e se esgota em duas compras: um id libera as
+nove peças de uma coleção inteira.
+
+Quebrado como conversado, viram **13 lugares, 9 conquistáveis**:
+
+| O quê | Quantos | Grátis no começo |
+|---|---|---|
+| Cenas (bases de terreno) | 4 | 1 (a aberta) |
+| Kits de peça | 6 | 2 (Pedras e Caminhos) |
+| Temas de cor | 3 | 1 (Refúgio natural) |
+
+Os seis kits saem sozinhos das cinco categorias que já existem no
+, com a Luz partida em duas:
+
+Pedras (3 peças) · Caminhos (3) · Água (3) · Plantas (4) · Lanternas (2) ·
+Assinaturas (3, uma por coleção)
+
+**O tema não é um kit.** Ele acende a versão colorida de toda peça que a pessoa
+já tem — vale mais quanto mais ela já jogou.
+
 ---
 
 ## Roupa — 19

@@ -69,7 +69,7 @@ Quebrado como conversado, viram **13 lugares, 9 conquistáveis**:
 | Temas de cor | 3 | 1 (Refúgio natural) |
 
 Os seis kits saem sozinhos das cinco categorias que já existem no
-, com a Luz partida em duas:
+`views/zen3d/model.ts`, com a Luz partida em duas:
 
 Pedras (3 peças) · Caminhos (3) · Água (3) · Plantas (4) · Lanternas (2) ·
 Assinaturas (3, uma por coleção)

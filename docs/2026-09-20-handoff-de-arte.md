@@ -1,7 +1,8 @@
 # Handoff de arte — o que desenhar, e por quê
 
 Saiu da conversa por tópico de 20/09/2026, cruzada com o `ITEMS_DB` de verdade.
-As contas são do catálogo depois que o glifo e o orbe saíram: **134 itens**.
+As contas são do catálogo depois que o glifo, o orbe e o jardim 2D saíram:
+**125 itens**.
 
 **21 desenhos, mais quatro peças de jardim.** Roupa 13, cabelo 4, wallpaper 4,
 jardim 4 (modelo 3D).

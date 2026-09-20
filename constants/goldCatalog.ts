@@ -1,4 +1,25 @@
-﻿export const GOLD_PACK_CATALOG = [
+﻿import type { BillingInternalProductId } from './billingCatalog';
+
+/**
+ * Os ids daqui SAO os ids de cobranca, e o tipo agora diz isso.
+ *
+ * Sem a anotacao o TypeScript inferia `id: string`, e a amarra entre o
+ * catalogo e o BillingInternalProductId sumia: a GoldStore montava o estado
+ * de compra com string solta e o portao de pagamento, que exige o tipo,
+ * recusava. Anotar aqui conserta os dois pontos de uma vez e, de quebra,
+ * passa a acusar id de pacote escrito errado na origem.
+ */
+export const GOLD_PACK_CATALOG: Array<{
+    id: BillingInternalProductId;
+    name: string;
+    priceBrl: number;
+    goldBase: number;
+    bonusGold: number;
+    totalGold: number;
+    icon: string;
+    highlight?: boolean;
+    tag?: string;
+}> = [
     { id: 'pack_gold_1', name: 'Pepita', priceBrl: 5, goldBase: 50, bonusGold: 0, totalGold: 50, icon: '\u{1FA99}' },
     { id: 'pack_gold_2', name: 'Barra Pequena', priceBrl: 10, goldBase: 100, bonusGold: 10, totalGold: 110, icon: '\u{1F9C8}' },
     { id: 'pack_gold_3', name: 'Barra Grande', priceBrl: 20, goldBase: 200, bonusGold: 30, totalGold: 230, icon: '\u{1F9F1}' },

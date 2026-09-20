@@ -620,7 +620,11 @@ export const ArenasView: React.FC = () => {
         const liveOwnedArena = ownedArenaIds.has(previewArena.id)
             ? assets.flatMap((asset) => asset.arenas).find((arena) => arena.id === previewArena.id) || null
             : null;
-        const collaborationRole = linkedArena.linkType === 'mentoria'
+        // Anotado porque o ternario aninhado infere `string`, e nao os dois
+        // papeis. Sem isto o objeto inteiro deixava de caber no estado, e o
+        // verificador reclamava nos tres pontos que chamam o construtor em vez
+        // de aqui, que e onde o tipo se perde.
+        const collaborationRole: 'mentor' | 'pupil' | null = linkedArena.linkType === 'mentoria'
             ? (linkedArena.mentorId === userProfile.id ? 'mentor' : linkedArena.pupilId === userProfile.id ? 'pupil' : null)
             : null;
         const canMentorshipCollaborate = Boolean(

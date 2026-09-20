@@ -1,4 +1,5 @@
 ﻿import React, { useEffect, useMemo, useState } from 'react';
+import type { BillingInternalProductId } from '../../constants/billingCatalog';
 import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
 import { GOLD_BOOST_PRODUCTS, GOLD_PACK_CATALOG, GOLD_PLATINUM_PRODUCT, GOLD_PREMIUM_PRODUCT } from '../../constants/goldCatalog';
@@ -14,7 +15,7 @@ type GoldConfirmState = { kind: 'boost'; boostId: string; boostName: string; cos
 
 type MembershipCheckoutState = {
     amount: number;
-    membershipId: string;
+    membershipId: BillingInternalProductId;
     membershipName: string;
     membershipTier: 'premium' | 'platinum';
     equivalentGold: number;
@@ -31,7 +32,7 @@ const splitBenefitsIntoColumns = (benefits: readonly string[]) => {
 export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: number } | null }> = ({ scrollRequest = null }) => {
     const { buyStoreItem, userProfile } = useGame();
     const [loading, setLoading] = useState<string | null>(null);
-    const [selectedPack, setSelectedPack] = useState<{ amount: number; goldAmount: number; internalProductId: string } | null>(null);
+    const [selectedPack, setSelectedPack] = useState<{ amount: number; goldAmount: number; internalProductId: BillingInternalProductId } | null>(null);
     const [selectedMembership, setSelectedMembership] = useState<MembershipCheckoutState | null>(null);
     const [confirmState, setConfirmState] = useState<GoldConfirmState | null>(null);
     const isStaffAccess = isStaffRole(userProfile.role);

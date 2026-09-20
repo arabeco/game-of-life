@@ -228,6 +228,23 @@ export const STORAGE_KEY_CAMPAIGNS = 'gol_campaigns_v2';
 export const PROFILE_FLAG_TERMS_ACCEPTED = '__flag_terms_accepted_v1';
 export const PROFILE_FLAG_TERMS_PENDING = '__flag_terms_pending_v1';
 export const PROFILE_FLAG_TUTORIAL_COMPLETED = '__flag_tutorial_completed_v1';
+
+/**
+ * A marca do bom-dia carrega a data e e podada: so a ultima fica.
+ *
+ * O prefixo existe para a poda. Sem ele seriam 365 textos por ano em
+ * `completedSeasonMissions`, que e lido a cada carga do app.
+ */
+export const BOM_DIA_FLAG_PREFIX = '__bom_dia:';
+
+/**
+ * Fragmentos por abrir o app no dia.
+ *
+ * Dois sao onze dias para a campanha casual mais barata, de 22. Da para sentir
+ * e nunca substitui missao nem ciclo, que continuam sendo de onde vem coisa de
+ * verdade.
+ */
+export const FRAGMENTOS_DO_BOM_DIA = 2;
 const ACTION_REMINDER_RECHECK_MS = 60 * 1000;
 const ACTION_REMINDER_LATE_GRACE_MS = 15 * 60 * 1000;
 
@@ -12779,6 +12796,70 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         // provider. Ele e quem libera os cosmeticos e enfileira a celebracao.
         // Fazer isso tambem aqui duplicava insignias, inventario e modal.
     };
+
+    /**
+     * O BOM-DIA: fragmentos por ter voltado.
+     *
+     * O problema que isto resolve: entre instalar o app e receber a primeira
+     * coisa, o jogador atravessava um ciclo inteiro. As missoes iniciais pagam
+     * uma vez e acabam, a sequencia foi aposentada da recompensa, e a EXP do dia
+     * so chega ao perfil quando o ciclo fecha — o que pode levar duas semanas.
+     * Quem acordava e abria o app nao encontrava nada.
+     *
+     * FRAGMENTO, E NAO EXP, de proposito. A EXP do dia ja e depositada em
+     * daily_commitments e paga no fecho; adiantar esse pagamento aqui exigiria
+     * excluir do fecho o que ja foi pago, e o endCycle tem historico de pagar a
+     * mesma base duas vezes. Fragmento e dinheiro novo: nao ha o que excluir de
+     * lugar nenhum, entao nao ha furo a abrir.
+     *
+     * FIXO E PEQUENO. Dois por dia sao onze dias para a campanha casual mais
+     * barata, de 22. Da para sentir e nunca substitui o que se ganha jogando —
+     * missao e ciclo continuam sendo de onde vem coisa de verdade. E e fixo, e
+     * nao proporcional ao dia anterior, porque quem nao fez nada ontem e
+     * exatamente quem mais precisa de um motivo para voltar hoje; escalar com
+     * produtividade cobraria mais caro de quem ja esta saindo.
+     *
+     * A MARCA E PODADA. O completionId carrega a data, e o grantMissionReward
+     * guarda todo completionId em `completedSeasonMissions` — um por dia seriam
+     * 365 textos por ano numa linha lida a cada carga do app. A poda por prefixo
+     * mantem so o ultimo, como ja faz o setFreeProgressResetMarker.
+     */
+    useEffect(() => {
+        if (!hasHydratedFromSupabase || !userProfile?.id) return;
+
+        const hoje = getOperationalDateString(new Date());
+        const marca = `${BOM_DIA_FLAG_PREFIX}${hoje}`;
+        const marcas = userProfile.completedSeasonMissions || [];
+        if (marcas.includes(marca)) return;
+
+        let cancelado = false;
+        void (async () => {
+            await grantMissionReward({
+                completionId: marca,
+                title: 'Bom dia',
+                icon: '☀️',
+                xp: 0,
+                fragments: FRAGMENTOS_DO_BOM_DIA,
+                semInsignia: true,
+                semVideo: true,
+                feedTitle: '',
+            });
+            if (cancelado) return;
+
+            // Poda: so a marca de hoje fica.
+            const atuais = userProfile.completedSeasonMissions || [];
+            const semAsAntigas = atuais.filter((flag) => !flag.startsWith(BOM_DIA_FLAG_PREFIX));
+            if (semAsAntigas.length !== atuais.length) {
+                updateUserProfile({ completedSeasonMissions: [...semAsAntigas, marca] });
+            }
+        })();
+
+        return () => { cancelado = true; };
+        // grantMissionReward e recriado a cada render e nao entra nas
+        // dependencias: entrar faria o efeito rodar sem parar. A trava de
+        // completionId dentro dele ja impede pagamento repetido.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [hasHydratedFromSupabase, userProfile?.id, userProfile.completedSeasonMissions]);
 
     const claimSeasonQuest = async (questId: string) => {
         const quest = findSeasonQuestById(questId);

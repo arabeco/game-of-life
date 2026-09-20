@@ -37,6 +37,7 @@
     "test:starter-patentes": "node tests/starter-e-patentes.regression.mjs",
     "test:egress-estatico": "node tests/egress-estatico.regression.mjs",
     "test:arena-da-jornada": "node tests/arena-da-jornada.regression.mjs",
+    "test:bom-dia": "node tests/bom-dia.regression.mjs",
     "check:avatar-geometry": "node scripts/check-avatar-geometry.mjs",
     "gerar:tons-do-corpo": "node scripts/gerar-tons-do-corpo.mjs",
     "folha:cabelos": "node scripts/folha-de-cabelos.mjs",

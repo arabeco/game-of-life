@@ -41,10 +41,30 @@ const bloco = (() => {
     );
 }
 
-// 2. Fixo, e nao proporcional ao dia anterior.
+// 2a. So paga a quem fez alguma coisa ONTEM.
 //
-// Quem nao fez nada ontem e exatamente quem mais precisa de um motivo para
-// voltar hoje. Escalar com produtividade cobra mais caro de quem ja esta saindo.
+// Pagar por abrir o app quebrava duas coisas. Economia: fragmento preso a
+// presenca, e nao a uso, e o mesmo farm sem jogar que tirou a campanha do preco
+// em fragmento. E primeira instalacao: a conta nova terminava o onboarding com
+// a marca do bom-dia ja no perfil, e o primeiro modal de recompensa que a
+// pessoa via era um premio por nao ter feito nada.
+//
+// Prender ao dia anterior resolve os dois, e dispensa guarda contra o
+// onboarding — quem acabou de instalar nao concluiu nada ontem.
+{
+    assert.match(bloco, /shiftLocalDateString\(hoje, -1\)/, 'o bom-dia deixou de olhar o dia anterior');
+    assert.match(
+        bloco, /if \(!fezAlgoOntem\) return;/,
+        'o bom-dia voltou a pagar por abrir o app, sem exigir uso no dia anterior',
+    );
+    assert.match(bloco, /task\.completed/, 'o bom-dia tem de exigir tarefa CONCLUIDA, e nao apenas agendada');
+}
+
+// 2b. O valor e fixo: quem fez uma acao e quem fez dez recebem igual.
+//
+// O que se paga aqui e ter voltado, nao ter produzido — produtividade ja e paga
+// pela EXP do dia, pelas missoes e pelo fecho do ciclo. Escalar aqui seria pagar
+// a mesma coisa duas vezes.
 {
     assert.match(
         contexto, /export const FRAGMENTOS_DO_BOM_DIA = (\d+);/,
@@ -60,7 +80,10 @@ const bloco = (() => {
         + 'mais que um bau raro (30 a 80), e abrir o app passa a render mais que usar '
         + 'o app.',
     );
-    assert.doesNotMatch(bloco, /completedRows|expDeposited|cycleExpBonus/, 'o bom-dia nao olha o dia anterior');
+    assert.doesNotMatch(
+        bloco, /completedRows|expDeposited|cycleExpBonus|\.length \* |fezAlgoOntem\.length/,
+        'o bom-dia voltou a escalar com o tamanho do dia anterior',
+    );
 }
 
 // 3. A marca e podada.

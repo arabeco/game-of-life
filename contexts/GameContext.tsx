@@ -12840,6 +12840,24 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const marcas = userProfile.completedSeasonMissions || [];
         if (marcas.includes(marca)) return;
 
+        // SO PARA QUEM FEZ ALGUMA COISA ONTEM.
+        //
+        // Sem isto o bom-dia pagava por ABRIR o app, e duas coisas quebravam. A
+        // primeira e de economia: fragmento preso a presenca, e nao a uso, e
+        // exatamente o farm sem jogar que a retirada da campanha veio impedir. A
+        // segunda aparecia na primeira instalacao — a conta nova terminava o
+        // onboarding com a marca do bom-dia ja no perfil, e o primeiro modal de
+        // recompensa que a pessoa via era um premio por nao ter feito nada.
+        //
+        // Prender ao dia anterior resolve os dois de uma vez, e dispensa guarda
+        // propria contra o onboarding: quem acabou de instalar nao concluiu nada
+        // ontem.
+        const ontem = shiftLocalDateString(hoje, -1);
+        const fezAlgoOntem = tasks.some((task) => (
+            task.completed && getTaskOperationalDateString(task) === ontem
+        ));
+        if (!fezAlgoOntem) return;
+
         let cancelado = false;
         void (async () => {
             await grantMissionReward({
@@ -12867,7 +12885,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         // dependencias: entrar faria o efeito rodar sem parar. A trava de
         // completionId dentro dele ja impede pagamento repetido.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [hasHydratedFromSupabase, userProfile?.id, userProfile.completedSeasonMissions]);
+    }, [hasHydratedFromSupabase, userProfile?.id, userProfile.completedSeasonMissions, tasks]);
 
     const claimSeasonQuest = async (questId: string) => {
         const quest = findSeasonQuestById(questId);

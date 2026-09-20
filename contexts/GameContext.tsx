@@ -2270,8 +2270,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'item_skin_1_001', // Náufrago
                 'item_skin_1_002', // Casual
                 'item_artifact_1_001', // Adaga Aprendiz
-                'item_garden_stone_1', // Pedra Serena
-                'item_garden_plant_1', // Musgo Vivo
                 'item_plate_1_001', // Placa Madeira
                 'BASIC'            // Tema Básico
             ];

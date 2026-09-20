@@ -337,8 +337,6 @@ declare
     'item_skin_1_005',
     'item_skin_1_006',
     'item_artifact_1_001',
-    'item_garden_stone_1',
-    'item_garden_plant_1',
     'item_plate_1_001',
     'insignia_rank_1_vagante',
     'BASIC',

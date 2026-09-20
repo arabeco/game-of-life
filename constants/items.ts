@@ -200,19 +200,10 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_artifact_1_003', name: 'Gato Laranja', category: 'artifact', tier: 1, rarity: 'common', icon: '🐱', imageUrl: avatarPngAsset('artefato_t1_gatolaranja') },
     { id: 'item_artifact_1_004', name: 'Halteres', category: 'artifact', tier: 1, rarity: 'common', icon: '🏋️', imageUrl: avatarPngAsset('artefato_t1_halterespar') },
     { id: 'item_artifact_1_005', name: 'Trio Café', category: 'artifact', tier: 1, rarity: 'common', icon: '☕', imageUrl: avatarPngAsset('artefato_t1_triocafe'), isRankExclusive: true },
-    { id: 'item_garden_stone_1', name: 'Pedra Serena', category: 'artifact', isLegacyRetired: true, tier: 1, rarity: 'common', icon: '\u{1FAA8}', imageUrl: avatarPngAsset('JARDIM_PEDRA_SERENA'), description: 'Pedra básica para iniciar o Jardim Zen.' },
-    { id: 'item_garden_plant_1', name: 'Musgo Vivo', category: 'artifact', isLegacyRetired: true, tier: 1, rarity: 'common', icon: '\u{1FAB4}', imageUrl: avatarPngAsset('JARDIM_MUSGO_VIVO'), description: 'Planta básica para iniciar o Jardim Zen.' },
-    { id: 'item_garden_tool_1', name: 'Garfo de Areia', category: 'artifact', isLegacyRetired: true, tier: 1, rarity: 'common', icon: '\u{1F9F9}', imageUrl: avatarPngAsset('JARDIM_GARFO_3_DENTES'), description: 'Ferramenta decorativa para compor o Jardim Zen.' },
     // T2
     { id: 'item_artifact_2_001', name: 'Cachorro Husky', category: 'artifact', tier: 2, rarity: 'uncommon', icon: '🐺', imageUrl: avatarPngAsset('artefato_t2_cachorrohusky') },
     { id: 'item_artifact_2_002', name: 'Gato Siamês', category: 'artifact', tier: 2, rarity: 'uncommon', icon: '🐈', imageUrl: avatarPngAsset('artefato_t2_gatosiames') },
     { id: 'item_artifact_2_003', name: 'Setup', category: 'artifact', tier: 2, rarity: 'uncommon', icon: '💻', imageUrl: avatarPngAsset('artefato_t2_setup'), isRankExclusive: true },
-    { id: 'item_garden_stone_2', name: 'Pedra Lunar', category: 'artifact', isLegacyRetired: true, tier: 2, rarity: 'uncommon', icon: '\u{1FAA8}', imageUrl: avatarPngAsset('JARDIM_PEDRA_LUNAR'), description: 'Pedra clara para composições de areia.' },
-    { id: 'item_garden_lantern_1', name: 'Lanterna de Pedra', category: 'artifact', isLegacyRetired: true, tier: 2, rarity: 'uncommon', icon: '\u{1F3EE}', imageUrl: avatarPngAsset('JARDIM_LANTERNA_PEDRA'), description: 'Lanterna ornamental para dar profundidade ao Jardim Zen.' },
-    { id: 'item_garden_plant_2', name: 'Bambu Jovem', category: 'artifact', isLegacyRetired: true, tier: 2, rarity: 'uncommon', icon: '\u{1F38D}', imageUrl: avatarPngAsset('JARDIM_BAMBU_JOVEM'), description: 'Vegetação vertical para o Jardim Zen.' },
-    { id: 'item_garden_stone_3', name: 'Pedra Obsidiana', category: 'artifact', isLegacyRetired: true, tier: 3, rarity: 'rare', icon: '\u{1FAA8}', imageUrl: avatarPngAsset('JARDIM_PEDRA_OBSIDIANA'), description: 'Pedra escura e mais rara para contraste no Jardim Zen.' },
-    { id: 'item_garden_bridge_1', name: 'Ponte de Madeira', category: 'artifact', isLegacyRetired: true, tier: 2, rarity: 'uncommon', icon: '\u{1F309}', imageUrl: avatarPngAsset('JARDIM_PONTE_MADEIRA'), description: 'Ponte pequena para criar caminho e composição no Jardim Zen.' },
-    { id: 'item_garden_statue_1', name: 'Estatua de Meditação', category: 'artifact', isLegacyRetired: true, tier: 3, rarity: 'rare', icon: '\u{1F5FF}', imageUrl: avatarPngAsset('JARDIM_ESTATUA_MEDITACAO'), description: 'Ponto de contemplacao raro para o Jardim Zen.' },
     // T3
     { id: 'item_artifact_3_001', name: 'Cachorro Jack', category: 'artifact', tier: 3, rarity: 'rare', icon: '🐕', imageUrl: avatarPngAsset('artefato_t3_cachorrojack') },
     { id: 'item_artifact_3_002', name: 'Caixa Mágica', category: 'artifact', tier: 3, rarity: 'rare', icon: '🎁', imageUrl: avatarPngAsset('ARTEFATO_T3_caixamagica') },
@@ -231,22 +222,22 @@ export const ITEMS_DB: ItemDef[] = [
 
     // --- CABELOS ---
     // TIER 1 - Common
-    { id: 'cachos', name: 'Cachos', category: 'hair', tier: 1, rarity: 'common', icon: '〰️', isRankExclusive: true, imageUrl: hairPngAsset('cachos') },
-    { id: 'medio_reto', name: 'Médio Reto', category: 'hair', tier: 1, rarity: 'common', icon: '💇', isRankExclusive: true, imageUrl: hairPngAsset('medio_reto') },
+    { id: 'cachos', name: 'Cachos', category: 'hair', tier: 1, rarity: 'common', icon: '〰️', imageUrl: hairPngAsset('cachos') },
+    { id: 'medio_reto', name: 'Médio Reto', category: 'hair', tier: 1, rarity: 'common', icon: '💇', imageUrl: hairPngAsset('medio_reto') },
 
     // TIER 2 - Uncommon
-    { id: 'textured_crop', name: 'Texturizado', category: 'hair', tier: 2, rarity: 'uncommon', icon: '✂️', isRankExclusive: true, imageUrl: hairPngAsset('textured_crop') },
+    { id: 'textured_crop', name: 'Texturizado', category: 'hair', tier: 2, rarity: 'uncommon', icon: '✂️', imageUrl: hairPngAsset('textured_crop') },
 
     // TIER 3 - Rare
-    { id: 'dreads', name: 'Dreads', category: 'hair', tier: 3, rarity: 'rare', icon: '🧶', isRankExclusive: true, imageUrl: hairPngAsset('dreads') },
-    { id: 'mullet_topete', name: 'Mullet Top', category: 'hair', tier: 3, rarity: 'rare', icon: '💈', isRankExclusive: true, imageUrl: hairPngAsset('mullet_topete') },
+    { id: 'dreads', name: 'Dreads', category: 'hair', tier: 3, rarity: 'rare', icon: '🧶', imageUrl: hairPngAsset('dreads') },
+    { id: 'mullet_topete', name: 'Mullet Top', category: 'hair', tier: 3, rarity: 'rare', icon: '💈', imageUrl: hairPngAsset('mullet_topete') },
 
     // TIER 4 - Epic
-    { id: 'anime_spikes', name: 'Anime Spiky', category: 'hair', tier: 4, rarity: 'epic', icon: '⚡', isRankExclusive: true, imageUrl: hairPngAsset('anime_spikes') },
+    { id: 'anime_spikes', name: 'Anime Spiky', category: 'hair', tier: 4, rarity: 'epic', icon: '⚡', imageUrl: hairPngAsset('anime_spikes') },
     { id: 'princesa', name: 'Princesa', category: 'hair', tier: 4, rarity: 'epic', icon: '👑', imageUrl: hairPngAsset('princesa') },
 
     // TIER 5 - Legendary
-    { id: 'fluxo_espiritual', name: 'Fluxo Espiritual', category: 'hair', tier: 5, rarity: 'legendary', icon: '✨', isRankExclusive: true, imageUrl: hairPngAsset('fluxo_espiritual') },
+    { id: 'fluxo_espiritual', name: 'Fluxo Espiritual', category: 'hair', tier: 5, rarity: 'legendary', icon: '✨', imageUrl: hairPngAsset('fluxo_espiritual') },
 
     // --- BORDAS ---
     // T1

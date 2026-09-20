@@ -1368,13 +1368,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const updateCampaign = async (id: string, updates: Partial<Campaign>): Promise<boolean> => {
         const userId = session?.user.id;
         if (!userId) {
-            showToast("Voce precisa estar autenticado para salvar a campanha.", 'error');
+            showToast("Você precisa estar autenticado para salvar a campanha.", 'error');
             return false;
         }
 
         const currentCampaign = campaigns.find(c => c.id === id);
         if (!currentCampaign) {
-            showToast("Campanha nao encontrada para salvar.", 'error');
+            showToast("Campanha não encontrada para salvar.", 'error');
             return false;
         }
 
@@ -1412,7 +1412,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (error) {
             console.error("Error updating campaign:", error);
             setCampaigns(prev => prev.map(c => c.id === id ? currentCampaign : c));
-            showToast("Nao foi possivel salvar o novo nome da campanha.", 'error');
+            showToast("Não foi possível salvar o novo nome da campanha.", 'error');
             return false;
         }
 
@@ -1438,7 +1438,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const { error } = userId ? await query.eq('user_id', userId) : await query;
         if (error) {
             console.error("Error deleting campaign:", error);
-            showToast("Nao foi possivel excluir a campanha por completo.", 'error');
+            showToast("Não foi possível excluir a campanha por completo.", 'error');
         }
     };
 
@@ -1727,17 +1727,17 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const selectedMode = isPremiumUser ? (oraclePreferences.activeMode || 'neutro') : 'neutro';
 
         if (!isPremiumUser) {
-            showToast('Os cards de conteudo fazem parte do Premium.', 'info');
+            showToast('Os cards de conteúdo fazem parte do Premium.', 'info');
             return { status: 'premium_required', ...quota };
         }
 
         if (!oraclePreferences.iaEnabled) {
-            showToast('Ative a IA do Oraculo para gerar cards.', 'info');
+            showToast('Ative a IA do Oráculo para gerar cards.', 'info');
             return { status: 'disabled', ...quota };
         }
 
         if (quota.combinedSentToday >= quota.dailyLimit || quota.remainingCategories.length === 0) {
-            showToast(`Os ${quota.dailyLimit} temas de hoje ja foram entregues.`, 'info');
+            showToast(`Os ${quota.dailyLimit} temas de hoje já foram entregues.`, 'info');
             return { status: 'daily_limit', ...quota };
         }
 
@@ -1767,7 +1767,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         );
 
         if (!category) {
-            showToast('Todos os temas assinados ja foram entregues hoje.', 'info');
+            showToast('Todos os temas assinados já foram entregues hoje.', 'info');
             return { status: 'daily_limit', ...quota };
         }
 
@@ -1788,7 +1788,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const text = pickOracleCard({ category, deliveredContents });
             if (!text) {
                 console.error('Oracle card library has no stock for category:', category);
-                showToast('Ainda nao ha cards para este tema.', 'info');
+                showToast('Ainda não ha cards para este tema.', 'info');
                 return { status: 'error', ...quota };
             }
 
@@ -1855,7 +1855,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         } catch (error) {
             console.error('Oracle AI generation failed:', error);
-            showToast('Falha ao gerar card do Oraculo.', 'error');
+            showToast('Falha ao gerar card do Oráculo.', 'error');
             return { status: 'error', ...quota };
         }
     };
@@ -2036,8 +2036,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     ? (sameSender ? senderNickname : 'Mensagens diretas')
                     : senderNickname;
                 const body = unreadCount > 1
-                    ? (sameSender ? `${unreadCount} mensagens nao lidas` : `${unreadCount} mensagens diretas nao lidas`)
-                    : (preview || 'Uma nova mensagem direta chegou para voce.');
+                    ? (sameSender ? `${unreadCount} mensagens não lidas` : `${unreadCount} mensagens diretas não lidas`)
+                    : (preview || 'Uma nova mensagem direta chegou para você.');
                 const tag = sameSender
                     ? `glyph-direct-message-${String(latestDirectMessage?.metadata?.senderId || session?.user.id || 'dm')}`
                     : `glyph-direct-message-${session?.user.id || 'dm'}`;
@@ -2108,7 +2108,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const modeConfig = getOracleModeConfig(latestMessage.mode);
         void showLocalNotification({
-            title: `Oraculo - ${modeConfig.name}`,
+            title: `Oráculo - ${modeConfig.name}`,
             body: latestMessage.content,
             tag: `glyph-oracle-${latestMessage.id}`,
             url: '/?oracle=chat',
@@ -2178,8 +2178,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 const delivered = await showLocalNotification({
                     title: hasAlreadyStarted ? `Agora: ${action.name}` : `Em 15 min: ${action.name}`,
                     body: hasAlreadyStarted
-                        ? (arena ? `${arena.icon} ${arena.name} ja comecou.` : 'Sua acao ja comecou.')
-                        : (arena ? `${arena.icon} ${arena.name} comeca as ${formatReminderClock(taskStartAt)}.` : `Sua acao comeca as ${formatReminderClock(taskStartAt)}.`),
+                        ? (arena ? `${arena.icon} ${arena.name} já começou.` : 'Sua ação já começou.')
+                        : (arena ? `${arena.icon} ${arena.name} começa as ${formatReminderClock(taskStartAt)}.` : `Sua ação começa as ${formatReminderClock(taskStartAt)}.`),
                     tag: `glyph-action-reminder-${task.id}`,
                     url: '/?view=planner',
                 });
@@ -2330,7 +2330,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 } else if (insertError.code === '23505') {
                     // Outra passada ja entregou o pacote. Nao e falha, e nao pode
                     // conceder os baus de novo - por isso nao caimos no ramo de cima.
-                    console.info('Starter pack ja havia sido entregue por outra passada.');
+                    console.info('Starter pack já havia sido entregue por outra passada.');
                 } else {
                     console.error("Error granting starter pack:", insertError);
                 }
@@ -2488,7 +2488,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const item = ITEMS_DB.find(i => i.id === itemId);
             if (!item || !item.costGold) return;
             if (!isItemCatalogVisible(item)) {
-                showToast("Este item ainda esta fora do jogo enquanto a arte final nao fica pronta.", "error");
+                showToast("Este item ainda esta fora do jogo enquanto a arte final não fica pronta.", "error");
                 return;
             }
             cost = item.costGold;
@@ -2573,7 +2573,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 expBoostExpiresAt,
                 expBoostProductId: boost.id,
             });
-            showToast(`Debito de ${cost} Ouro confirmado. ${boost.name} ativo.`, "success");
+            showToast(`Débito de ${cost} Ouro confirmado. ${boost.name} ativo.`, "success");
             return;
         } else if (type === 'premium') {
             const membershipProduct = getGoldMembershipProduct(itemId) || GOLD_PREMIUM_PRODUCT;
@@ -2612,7 +2612,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             });
             showToast(
                 options?.successMessage
-                    || `Debito de ${cost} Ouro confirmado. ${nextSubscriptionTier === 'platinum' ? 'Platinum' : 'Premium'} renovado por 30 dias.`,
+                    || `Débito de ${cost} Ouro confirmado. ${nextSubscriptionTier === 'platinum' ? 'Platinum' : 'Premium'} renovado por 30 dias.`,
                 "success",
             );
             return;
@@ -2638,23 +2638,23 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const motivo = String(erro?.message || '');
         const codigo = String(erro?.code || '');
         if (codigo === 'PGRST202' || motivo.includes('Could not find the function') || motivo.includes('does not exist')) {
-            return `${acao} ainda nao existe no servidor. Avise o Afonso: falta a migracao.`;
+            return `${acao} ainda não existe no servidor. Avise o Afonso: falta a migracao.`;
         }
         // Funcao duplicada no banco: duas versoes com o mesmo nome de argumento e
         // tipos diferentes. O PostgREST nao consegue escolher e recusa a chamada.
         // Foi o que derrubou o quebrar item, e nao ha nada que a pessoa possa
         // fazer a respeito — entao a mensagem manda avisar quem pode.
         if (codigo === 'PGRST203' || motivo.includes('Could not choose the best candidate')) {
-            return `${acao} esta duplicada no servidor. Avise o Afonso: ha duas versoes da mesma funcao.`;
+            return `${acao} esta duplicada no servidor. Avise o Afonso: ha duas versoes da mesma função.`;
         }
         if (motivo.includes('permission denied')) {
-            return `Sem permissao para ${acao.toLowerCase()}. Avise o Afonso: falta o grant.`;
+            return `Sem permissão para ${acao.toLowerCase()}. Avise o Afonso: falta o grant.`;
         }
         if (motivo.includes('NOT_ENOUGH_FRAGMENTS')) return '\u{1F48E} Fragmentos insuficientes.';
-        if (motivo.includes('ITEM_NOT_OWNED')) return 'Esse item nao esta mais com voce.';
+        if (motivo.includes('ITEM_NOT_OWNED')) return 'Esse item não esta mais com você.';
         if (motivo.includes('ITEM_EQUIPPED')) return 'Desequipe o item antes.';
-        if (motivo.includes('AUTH_REQUIRED')) return 'Sessao expirada. Entre de novo.';
-        return `Nao foi possivel: ${motivo.slice(0, 120) || 'erro sem mensagem'}`;
+        if (motivo.includes('AUTH_REQUIRED')) return 'Sessão expirada. Entre de novo.';
+        return `Não foi possível: ${motivo.slice(0, 120) || 'erro sem mensagem'}`;
     };
 
     const recycleItem = async (instanceId: string) => {
@@ -2684,7 +2684,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         // Antes, `success: false` nao produzia nada: o botao aceitava o toque e a
         // tela ficava igual, sem erro e sem resultado.
-        showToast(String(data?.error || 'Nao foi possivel quebrar este item.'), 'error');
+        showToast(String(data?.error || 'Não foi possível quebrar este item.'), 'error');
     };
 
     /**
@@ -5175,8 +5175,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const expLabel = settledExpTotal > 0 ? ` +${settledExpTotal} XP no ciclo.` : '';
         showToast(
             settledCount === 1
-                ? `1 dia pendente foi reconciliado pelo historico real.${expLabel}`
-                : `${settledCount} dias pendentes foram reconciliados pelo historico real.${expLabel}`,
+                ? `1 dia pendente foi reconciliado pelo histórico real.${expLabel}`
+                : `${settledCount} dias pendentes foram reconciliados pelo histórico real.${expLabel}`,
             'success'
         );
     }, [activeCycle, actions, getSupabaseUserId, isClanQuestActionId, refreshOpenCycleDerivedState, resolveOperationalScoredTaskIds, showToast, summarizeOperationalDayCommitment, tasks]);
@@ -6155,7 +6155,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             console.log("[cleanup] Iniciando limpeza manual de tarefas orfas...");
             const uid = session?.user.id;
             if (!uid) {
-                console.error("[cleanup] Usuario nao autenticado.");
+                console.error("[cleanup] Usuário não autenticado.");
                 return;
             }
 
@@ -6190,7 +6190,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
                 // Check 1: Action exists?
                 if (!validActionIds.has(task.action_id)) {
-                    console.log(`[cleanup] Tarefa ${task.id} (Action ${task.action_id}) -> Acao nao existe.`);
+                    console.log(`[cleanup] Tarefa ${task.id} (Action ${task.action_id}) -> Ação não existe.`);
                     tasksToDelete.push(task.id);
                     return;
                 }
@@ -6198,7 +6198,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 // Check 2: Arena exists?
                 const arenaId = actionArenaMap.get(task.action_id);
                 if (arenaId && !validArenaIds.has(arenaId)) {
-                    console.log(`[cleanup] Tarefa ${task.id} (Arena ${arenaId}) -> Arena nao existe.`);
+                    console.log(`[cleanup] Tarefa ${task.id} (Arena ${arenaId}) -> Arena não existe.`);
                     tasksToDelete.push(task.id);
                     return;
                 }
@@ -6220,16 +6220,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
                 // Refresh local state
                 setTasks(prev => prev.filter(t => !tasksToDelete.includes(t.id)));
-                console.log("[cleanup] Limpeza concluida e estado atualizado!");
-                alert(`Limpeza concluida! ${tasksToDelete.length} tarefas orfas removidas.`);
+                console.log("[cleanup] Limpeza concluída e estado atualizado!");
+                alert(`Limpeza concluída! ${tasksToDelete.length} tarefas orfas removidas.`);
 
                 // Optional reload to force sync
-                if (confirm("Deseja recarregar a pagina para garantir que todas as mudancas sejam aplicadas?")) {
+                if (confirm("Deseja recarregar a página para garantir que todas as mudanças sejam aplicadas?")) {
                     window.location.reload();
                 }
             } else {
                 console.log("[cleanup] Nenhuma tarefa orfa encontrada.");
-                alert("Nenhuma tarefa orfa encontrada no banco de dados. Se voce ainda ve tarefas quebradas, elas podem ser fantasmas locais. Tente recarregar a pagina.");
+                alert("Nenhuma tarefa orfa encontrada no banco de dados. Se você ainda ve tarefas quebradas, elas podem ser fantasmas locais. Tente recarregar a página.");
             }
         };
 
@@ -6483,7 +6483,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const catalogItem = codexCatalog.find(c => c.id === catalogId);
         if (!catalogItem) {
-            showToast('Campanha nao encontrada.', 'error');
+            showToast('Campanha não encontrada.', 'error');
             return null;
         }
 
@@ -6498,7 +6498,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const existingCodex = userCodexes.find(c => (c.catalog_id || c.origin_codex_id || c.id) === catalogId);
         if (existingCodex) {
             if (!options?.silentSuccess) {
-                showToast(`"${catalogItem.title}" ja esta na sua biblioteca.`, 'info');
+                showToast(`"${catalogItem.title}" já esta na sua biblioteca.`, 'info');
             }
             return existingCodex;
         }
@@ -6520,7 +6520,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const purchasedCodex = (data as any)?.codex;
         if (!purchasedCodex) {
-            showToast('A compra foi aceita, mas a campanha nao retornou da forja.', 'error');
+            showToast('A compra foi aceita, mas a campanha não retornou da forja.', 'error');
             return null;
         }
 
@@ -6541,7 +6541,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const buyCodexCreationSlot = async (): Promise<boolean> => {
-        showToast('A forja de campanhas nao usa mais limite de criacao.', 'info');
+        showToast('A forja de campanhas não usa mais limite de criação.', 'info');
         return false;
     };
 
@@ -6722,47 +6722,47 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         metadata: row.metadata ?? null,
     });
 
-    const mapRelationshipErrorMessage = (message?: string, fallback = 'Nao foi possivel concluir o vinculo.') => {
+    const mapRelationshipErrorMessage = (message?: string, fallback = 'Não foi possível concluir o vínculo.') => {
         const raw = String(message || '').trim();
         if (!raw) return fallback;
         if (raw.includes('arena_snapshot')) return 'Seu banco ainda esta com o schema antigo da mentoria. Rode o SQL que libera arena_snapshot como opcional.';
-        if (raw.includes('MENTOR_PREMIUM_REQUIRED')) return 'A mentoria basica nao usa mais Premium. Se isso apareceu, o banco ainda esta com regra antiga.';
-        if (raw.includes('RELATIONSHIP_SLOT_LIMIT_REACHED')) return 'Nao foi possivel abrir outro vinculo desse tipo agora.';
-        if (raw.includes('PUPIL_MENTOR_SLOT_LIMIT_REACHED')) return 'Esse pupilo ja esta em outra mentoria ativa.';
-        if (raw.includes('RELATIONSHIP_INVITE_ALREADY_PENDING')) return 'Ja existe um convite pendente com esse aliado.';
-        if (raw.includes('RELATIONSHIP_LINK_ALREADY_ACTIVE')) return 'Esse vinculo ja esta ativo.';
-        if (raw.includes('RELATIONSHIP_LINK_NOT_FOUND')) return 'Esse vinculo nao foi encontrado.';
-        if (raw.includes('RELATIONSHIP_LINK_ALREADY_ENDED')) return 'Esse vinculo ja foi encerrado.';
-        if (raw.includes('RELATIONSHIP_LINK_PERMISSION_DENIED')) return 'Voce nao pode encerrar esse vinculo.';
-        if (raw.includes('ACTIVE_SHAREABLE_LINK_REQUIRED')) return 'Esse vinculo nao pode receber arena compartilhada agora.';
-        if (raw.includes('ACTIVE_MENTORIA_LINK_REQUIRED')) return 'Essa mentoria nao esta ativa.';
-        if (raw.includes('MENTORSHIP_ARENA_CREATION_DISABLED')) return 'Na mentoria, o orientado escolhe uma arena propria. O mentor apenas acompanha.';
+        if (raw.includes('MENTOR_PREMIUM_REQUIRED')) return 'A mentoria básica não usa mais Premium. Se isso apareceu, o banco ainda esta com regra antiga.';
+        if (raw.includes('RELATIONSHIP_SLOT_LIMIT_REACHED')) return 'Não foi possível abrir outro vínculo desse tipo agora.';
+        if (raw.includes('PUPIL_MENTOR_SLOT_LIMIT_REACHED')) return 'Esse pupilo já esta em outra mentoria ativa.';
+        if (raw.includes('RELATIONSHIP_INVITE_ALREADY_PENDING')) return 'Já existe um convite pendente com esse aliado.';
+        if (raw.includes('RELATIONSHIP_LINK_ALREADY_ACTIVE')) return 'Esse vínculo já esta ativo.';
+        if (raw.includes('RELATIONSHIP_LINK_NOT_FOUND')) return 'Esse vínculo não foi encontrado.';
+        if (raw.includes('RELATIONSHIP_LINK_ALREADY_ENDED')) return 'Esse vínculo já foi encerrado.';
+        if (raw.includes('RELATIONSHIP_LINK_PERMISSION_DENIED')) return 'Você não pode encerrar esse vínculo.';
+        if (raw.includes('ACTIVE_SHAREABLE_LINK_REQUIRED')) return 'Esse vínculo não pode receber arena compartilhada agora.';
+        if (raw.includes('ACTIVE_MENTORIA_LINK_REQUIRED')) return 'Essa mentoria não esta ativa.';
+        if (raw.includes('MENTORSHIP_ARENA_CREATION_DISABLED')) return 'Na mentoria, o orientado escolhe uma arena própria. O mentor apenas acompanha.';
         if (raw.includes('MENTORSHIP_PUPIL_REQUIRED')) return 'Somente o orientado pode escolher ou retirar a arena acompanhada.';
         if (raw.includes('MENTORSHIP_OWN_ARENA_REQUIRED')) return 'Escolha uma arena sua e ativa para compartilhar com o mentor.';
         if (raw.includes('ACTIVE_PARTNERSHIP_LINK_REQUIRED')) return 'Essa parceria precisa estar ativa para compartilhar arenas.';
-        if (raw.includes('ACTIVE_COMPETITION_LINK_REQUIRED')) return 'Essa competicao precisa estar ativa para lancar um desafio.';
+        if (raw.includes('ACTIVE_COMPETITION_LINK_REQUIRED')) return 'Essa competição precisa estar ativa para lancar um desafio.';
         if (raw.includes('PARTNERSHIP_SOURCE_ARENA_REQUIRED')) return 'Escolha uma arena sua para expor nessa parceria.';
-        if (raw.includes('RELATIONSHIP_ARENA_SHARE_ALREADY_EXISTS')) return 'Essa arena ja esta exposta nessa parceria.';
-        if (raw.includes('RELATIONSHIP_ARENA_ALREADY_LINKED')) return 'Essa arena ja esta vinculada em outra relacao.';
-        if (raw.includes('RELATIONSHIP_ARENA_SHARE_PERMISSION_DENIED')) return 'Voce nao pode retirar essa arena da parceria.';
-        if (raw.includes('LINKED_ARENA_SLOT_LIMIT_REACHED')) return 'Cada arena compartilhada custa 50 de ouro por unidade. Se isso apareceu, o SQL novo ainda nao foi aplicado.';
+        if (raw.includes('RELATIONSHIP_ARENA_SHARE_ALREADY_EXISTS')) return 'Essa arena já esta exposta nessa parceria.';
+        if (raw.includes('RELATIONSHIP_ARENA_ALREADY_LINKED')) return 'Essa arena já esta vinculada em outra relação.';
+        if (raw.includes('RELATIONSHIP_ARENA_SHARE_PERMISSION_DENIED')) return 'Você não pode retirar essa arena da parceria.';
+        if (raw.includes('LINKED_ARENA_SLOT_LIMIT_REACHED')) return 'Cada arena compartilhada custa 50 de ouro por unidade. Se isso apareceu, o SQL novo ainda não foi aplicado.';
         if (raw.includes('LINKED_ARENA_SLOT_DISABLED')) return 'Cada arena compartilhada custa 50 de ouro por unidade.';
         if (raw.includes('ARENA_NAME_REQUIRED')) return 'Diga o nome da arena vinculada.';
         if (raw.includes('ARENA_ASSET_REQUIRED')) return 'Escolha o ativo da arena vinculada.';
         if (raw.includes('COMPETITION_SOURCE_ARENA_REQUIRED')) return 'Escolha uma arena sua para espelhar nesse duelo.';
-        if (raw.includes('COMPETITION_SOURCE_ARENA_LOCKED')) return 'Use uma arena autoral livre. Arena compartilhada ou duelo antigo nao pode virar base.';
-        if (raw.includes('COMPETITION_SOURCE_ARENA_EMPTY')) return 'Essa arena ainda nao tem acoes suficientes para virar duelo.';
+        if (raw.includes('COMPETITION_SOURCE_ARENA_LOCKED')) return 'Use uma arena autoral livre. Arena compartilhada ou duelo antigo não pode virar base.';
+        if (raw.includes('COMPETITION_SOURCE_ARENA_EMPTY')) return 'Essa arena ainda não tem ações suficientes para virar duelo.';
         if (raw.includes('COMPETITION_SNAPSHOT_LOCKED')) return 'Esse duelo foi selado como snapshot. Para mudar algo, forje outro duelo.';
-        if (raw.includes('COMPETITION_CHALLENGE_ALREADY_ACTIVE')) return 'Ja existe um duelo ativo nesse vinculo.';
-        if (raw.includes('COMPETITION_CHALLENGE_LIMIT_REACHED')) return 'Esse vinculo ja atingiu o limite de duelos abertos agora.';
-        if (raw.includes('COMPETITION_CHALLENGE_NOT_FOUND')) return 'Esse duelo nao foi encontrado.';
-        if (raw.includes('COMPETITION_CHALLENGE_PERMISSION_DENIED')) return 'Voce nao participa desse duelo.';
-        if (raw.includes('COMPETITION_CHALLENGE_ALREADY_FINISHED')) return 'Esse duelo ja terminou e nao pode ser desistido.';
+        if (raw.includes('COMPETITION_CHALLENGE_ALREADY_ACTIVE')) return 'Já existe um duelo ativo nesse vínculo.';
+        if (raw.includes('COMPETITION_CHALLENGE_LIMIT_REACHED')) return 'Esse vínculo já atingiu o limite de duelos abertos agora.';
+        if (raw.includes('COMPETITION_CHALLENGE_NOT_FOUND')) return 'Esse duelo não foi encontrado.';
+        if (raw.includes('COMPETITION_CHALLENGE_PERMISSION_DENIED')) return 'Você não participa desse duelo.';
+        if (raw.includes('COMPETITION_CHALLENGE_ALREADY_FINISHED')) return 'Esse duelo já terminou e não pode ser desistido.';
         if (raw.includes('COMPETITION_DURATION_INVALID')) return 'Escolha um prazo entre 1 e 30 dias.';
-        if (raw.includes('COMPETITION_CHALLENGER_GOLD_REQUIRED')) return 'Quem enviou o desafio nao tem mais os 50 de ouro necessarios. O convite pode ser cancelado e enviado novamente depois.';
-        if (raw.includes('COMPETITION_REWARD_COOLDOWN')) return 'Essa dupla ja recebeu uma recompensa de desafio nos ultimos 7 dias.';
-        if (raw.includes('COMPETITION_SOURCE_CHANGED')) return 'Essa arena mudou depois do convite. Cancele e envie um novo desafio com a versao atual.';
-        if (raw.includes('RELATIONSHIP_INVITE_EXPIRED')) return 'Esse convite expirou. Peca para a pessoa enviar outro.';
+        if (raw.includes('COMPETITION_CHALLENGER_GOLD_REQUIRED')) return 'Quem enviou o desafio não tem mais os 50 de ouro necessarios. O convite pode ser cancelado e enviado novamente depois.';
+        if (raw.includes('COMPETITION_REWARD_COOLDOWN')) return 'Essa dupla já recebeu uma recompensa de desafio nos últimos 7 dias.';
+        if (raw.includes('COMPETITION_SOURCE_CHANGED')) return 'Essa arena mudou depois do convite. Cancele e envie um novo desafio com a versão atual.';
+        if (raw.includes('RELATIONSHIP_INVITE_EXPIRED')) return 'Esse convite expirou. Peça para a pessoa enviar outro.';
         if (raw.includes('MENTOR_FORGED_CODEX_LIMIT_REACHED')) return 'A forja de campanhas da mentoria agora e paga por uso. Se isso apareceu, o banco ainda esta com regra antiga.';
         if (raw.includes('RELATIONSHIP_CAPACITY_DISABLED')) return 'A camada social agora funciona so por ouro.';
         return raw;
@@ -6792,7 +6792,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         });
 
         if (error) {
-            showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel montar essa entrega.'), 'error');
+            showToast(mapRelationshipErrorMessage(error.message, 'Não foi possível montar essa entrega.'), 'error');
             return false;
         }
 
@@ -6815,7 +6815,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         });
 
         if (error) {
-            showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel responder essa entrega.'), 'error');
+            showToast(mapRelationshipErrorMessage(error.message, 'Não foi possível responder essa entrega.'), 'error');
             return false;
         }
 
@@ -6838,14 +6838,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         });
 
         if (error) {
-            showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel renovar o vinculo.'), 'error');
+            showToast(mapRelationshipErrorMessage(error.message, 'Não foi possível renovar o vínculo.'), 'error');
             return false;
         }
 
         const nextGold = Number((data as any)?.new_gold ?? userProfile.wallet?.gold ?? 0);
         updateUserProfile({ wallet: { ...userProfile.wallet, gold: nextGold } });
 
-        showToast('Vinculo renovado por mais um mes.', 'success');
+        showToast('Vínculo renovado por mais um mês.', 'success');
         return true;
     };
 
@@ -7136,11 +7136,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error('Error creating relationship invite:', error);
-            showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel enviar o convite.'), 'error');
+            showToast(mapRelationshipErrorMessage(error.message, 'Não foi possível enviar o convite.'), 'error');
             return false;
         }
 
-        showToast(linkType === 'mentoria' ? 'Convite de mentoria enviado.' : linkType === 'parceria' ? 'Convite de parceria enviado.' : 'Convite de competicao enviado.', 'success');
+        showToast(linkType === 'mentoria' ? 'Convite de mentoria enviado.' : linkType === 'parceria' ? 'Convite de parceria enviado.' : 'Convite de competição enviado.', 'success');
         window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
         return true;
     };
@@ -7165,11 +7165,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error('Error creating competition invite:', error);
-            showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel enviar o desafio.'), 'error');
+            showToast(mapRelationshipErrorMessage(error.message, 'Não foi possível enviar o desafio.'), 'error');
             return false;
         }
 
-        showToast('Convite enviado. Os 50 de ouro so serao cobrados se a pessoa aceitar.', 'success');
+        showToast('Convite enviado. Os 50 de ouro so serão cobrados se a pessoa aceitar.', 'success');
         window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
         return true;
     };
@@ -7182,7 +7182,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error('Error responding to relationship invite:', error);
-            showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel atualizar o convite.'), 'error');
+            showToast(mapRelationshipErrorMessage(error.message, 'Não foi possível atualizar o convite.'), 'error');
             return false;
         }
 
@@ -7205,7 +7205,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error('Error ending relationship link:', error);
-            showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel encerrar este vinculo.'), 'error');
+            showToast(mapRelationshipErrorMessage(error.message, 'Não foi possível encerrar este vínculo.'), 'error');
             return false;
         }
 
@@ -7219,7 +7219,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             });
         }
 
-        showToast('Vinculo encerrado.', 'success');
+        showToast('Vínculo encerrado.', 'success');
         window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
         return true;
     };
@@ -7235,7 +7235,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     ): Promise<Arena | null> => {
         void relationshipLinkId;
         void arenaInput;
-        showToast('O mentor nao cria tarefas nem arenas. O orientado escolhe uma arena propria para acompanhamento.', 'info');
+        showToast('O mentor não cria tarefas nem arenas. O orientado escolhe uma arena própria para acompanhamento.', 'info');
         return null;
     };
 
@@ -7252,7 +7252,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error('Error selecting mentorship arena:', error);
-            showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel compartilhar essa arena com o mentor.'), 'error');
+            showToast(mapRelationshipErrorMessage(error.message, 'Não foi possível compartilhar essa arena com o mentor.'), 'error');
             return null;
         }
 
@@ -7265,7 +7265,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (!arenaRow) return null;
 
         const mapped = mapToCamelCase(arenaRow) as Arena;
-        showToast((data as any)?.changed === false ? 'Essa arena ja esta sendo acompanhada.' : 'Arena compartilhada com o mentor.', 'success');
+        showToast((data as any)?.changed === false ? 'Essa arena já esta sendo acompanhada.' : 'Arena compartilhada com o mentor.', 'success');
         window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
         return {
             ...mapped,
@@ -7287,7 +7287,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error('Error sharing relationship arena:', error);
-            showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel expor essa arena na parceria.'), 'error');
+            showToast(mapRelationshipErrorMessage(error.message, 'Não foi possível expor essa arena na parceria.'), 'error');
             return null;
         }
 
@@ -7296,7 +7296,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             updateUserProfile({ wallet: { ...userProfile.wallet, gold: nextGold } });
         }
 
-        showToast((data as any)?.changed === false ? 'Essa arena ja esta na parceria.' : 'Arena da parceria atualizada.', 'success');
+        showToast((data as any)?.changed === false ? 'Essa arena já esta na parceria.' : 'Arena da parceria atualizada.', 'success');
         window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
 
         const arenaRow = (data as any)?.arena;
@@ -7318,7 +7318,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error('Error removing relationship arena share:', error);
-            showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel retirar essa arena da parceria.'), 'error');
+            showToast(mapRelationshipErrorMessage(error.message, 'Não foi possível retirar essa arena da parceria.'), 'error');
             return false;
         }
 
@@ -7364,11 +7364,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error('Error proposing competition challenge:', error);
-            showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel propor esse duelo.'), 'error');
+            showToast(mapRelationshipErrorMessage(error.message, 'Não foi possível propor esse duelo.'), 'error');
             return null;
         }
 
-        showToast('Duelo proposto. Ele comeca quando o outro aceitar.', 'success');
+        showToast('Duelo proposto. Ele começa quando o outro aceitar.', 'success');
         window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
         return null;
     };
@@ -7392,7 +7392,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error('Error responding to competition proposal:', error);
-            showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel responder esse duelo.'), 'error');
+            showToast(mapRelationshipErrorMessage(error.message, 'Não foi possível responder esse duelo.'), 'error');
             return false;
         }
 
@@ -7418,11 +7418,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error('Error cancelling competition challenge:', error);
-            showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel desistir desse duelo.'), 'error');
+            showToast(mapRelationshipErrorMessage(error.message, 'Não foi possível desistir desse duelo.'), 'error');
             return false;
         }
 
-        showToast('Duelo encerrado. Voces dois estao livres para abrir outro.', 'success');
+        showToast('Duelo encerrado. Vocês dois estão livres para abrir outro.', 'success');
         window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
         return true;
     };
@@ -7492,7 +7492,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const createCodexShareLink = async (codexId: string): Promise<{ url: string; token: string; shareId: string } | null> => {
         const sourceCodex = userCodexes.find(c => c.id === codexId);
         if (!sourceCodex) {
-            showToast('Campanha nao encontrada.', 'error');
+            showToast('Campanha não encontrada.', 'error');
             return null;
         }
 
@@ -7512,7 +7512,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error('Error creating codex share link:', error);
-            showToast(error.message || 'Nao foi possivel forjar o link da campanha.', 'error');
+            showToast(error.message || 'Não foi possível forjar o link da campanha.', 'error');
             return null;
         }
 
@@ -7534,7 +7534,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const sendCodexToNickname = async (codexId: string, nickname: string): Promise<boolean> => {
         const sourceCodex = userCodexes.find(c => c.id === codexId);
         if (!sourceCodex) {
-            showToast('Campanha nao encontrada.', 'error');
+            showToast('Campanha não encontrada.', 'error');
             return false;
         }
 
@@ -7561,7 +7561,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error('Error sending codex to nickname:', error);
-            showToast(error.message || 'Nao foi possivel enviar a campanha.', 'error');
+            showToast(error.message || 'Não foi possível enviar a campanha.', 'error');
             return false;
         }
 
@@ -7618,12 +7618,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error('Error claiming codex share:', error);
-            showToast(error.message || 'Nao foi possivel reivindicar esta campanha.', 'error');
+            showToast(error.message || 'Não foi possível reivindicar esta campanha.', 'error');
             return false;
         }
 
         if ((data as any)?.success === false) {
-            showToast(String((data as any)?.error || 'Nao foi possivel reivindicar esta campanha.'), 'error');
+            showToast(String((data as any)?.error || 'Não foi possível reivindicar esta campanha.'), 'error');
             return false;
         }
 
@@ -7664,12 +7664,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const sourceCodex = userCodexes.find(c => c.id === codexId && c.owner_id === userId);
         if (!sourceCodex) {
-            showToast('Campanha nao encontrada.');
+            showToast('Campanha não encontrada.');
             return false;
         }
 
         if (sourceCodex.catalog_id) {
-            showToast('Campanha comprada nao pode ser copiada para pupilos.');
+            showToast('Campanha comprada não pode ser copiada para pupilos.');
             return false;
         }
 
@@ -7719,7 +7719,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         if (!codex?.template || !Array.isArray(codex.template.levels) || codex.template.levels.length === 0) {
-            showToast('Essa campanha ainda nao tem fases para enviar.');
+            showToast('Essa campanha ainda não tem fases para enviar.');
             return false;
         }
 
@@ -7993,13 +7993,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 author_clan_name: userProfile.clanName || null,
                 author_clan_icon: userProfile.clanIcon || null,
             }).select('id,user_id,event_type,author_nickname,author_avatar_url,author_clan_name,author_clan_icon,content,created_at').single();
-            if (error || !data?.id) throw error || new Error('Publicação sem confirmação');
+            if (error || !data?.id) throw error || new Error('Públicação sem confirmação');
             const saved = mapFeedEventFromDbRow(data);
             setFeed(previous => [saved, ...previous.filter(event => event.id !== saved.id)].slice(0, 80));
             return true;
         } catch (error) {
             console.error('Error publishing feed event:', error);
-            showToast('Não foi possível confirmar a publicação. Confira a aba Feitos antes de tentar novamente.', 'error');
+            showToast('Não foi possível confirmar a públicação. Confira a aba Feitos antes de tentar novamente.', 'error');
             return false;
         } finally {
             feedPublicationsInFlight.current.delete(key);
@@ -8034,11 +8034,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error('Error deleting feed event:', error.message);
-            showToast('Nao foi possivel remover agora.', 'error');
+            showToast('Não foi possível remover agora.', 'error');
             return false;
         }
         if (!data || data.length === 0) {
-            showToast('Esse feito nao e seu para remover.', 'warning');
+            showToast('Esse feito não e seu para remover.', 'warning');
             return false;
         }
 
@@ -9074,8 +9074,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const ordinalDay = Number(result.ordinalDay || nextCount || 1);
             const progressLabel = `${Math.max(1, nextCount)}/${Math.max(1, targetDays)}`;
             const content = result.rewardGrantedNow
-                ? `Dia ${progressLabel} da vigilia ${result.programLabel || 'beta'}. Voce fechou os ${targetDays} dias completos e a recompensa final ja foi liberada.`
-                : `Dia ${progressLabel} da vigilia ${result.programLabel || 'beta'}. Entrada registrada no dia ${ordinalDay}. O que voce quer mover hoje?`;
+                ? `Dia ${progressLabel} da vigília ${result.programLabel || 'beta'}. Você fechou os ${targetDays} dias completos e a recompensa final já foi liberada.`
+                : `Dia ${progressLabel} da vigília ${result.programLabel || 'beta'}. Entrada registrada no dia ${ordinalDay}. O que você quer mover hoje?`;
 
             const newMessage: OracleMessage = {
                 id: crypto.randomUUID(),
@@ -9087,9 +9087,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 contextSnapshot: {
                     triggerType: 'app_open',
                     presentation: 'info_card',
-                    categoryLabel: 'Vigilia beta',
+                    categoryLabel: 'Vigília beta',
                     generatedFor: 'chat',
-                    summary: 'Check-in diario do beta',
+                    summary: 'Check-in diário do beta',
                     betaProgram: {
                         programKey: result.programKey,
                         progressLabel,
@@ -9647,7 +9647,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     .then(({ error }) => {
                         if (error) {
                             console.error("Supabase update asset levels error:", error.message, error.details, error.hint);
-                            showToast('Nao consegui salvar a maestria no banco agora.', 'error');
+                            showToast('Não consegui salvar a maestria no banco agora.', 'error');
                             return;
                         }
                         // Only successful level saves belong in the assessment history.
@@ -9656,7 +9656,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                             levels: normalizedLevels,
                             mastery_index: toMasteryIndex(nextTotalLevel),
                         }).then(({ error: snapshotError }) => {
-                            if (snapshotError) console.error('Nao consegui guardar o retrato da maestria:', snapshotError.message);
+                            if (snapshotError) console.error('Não consegui guardar o retrato da maestria:', snapshotError.message);
                             updateUserProfile({ lastLevelUpdate: Date.now(), level: nextTotalLevel });
                         });
                     });
@@ -9677,7 +9677,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (!userId) return null;
         const today = getLocalDateString();
         if (activeCycle || upcomingCycle) {
-            showToast('Voce ja tem um ciclo ativo ou agendado. Encerre ou remova o atual antes de criar outro.', 'error');
+            showToast('Você já tem um ciclo ativo ou agendado. Encerre ou remova o atual antes de criar outro.', 'error');
             return null;
         }
         // Abrir ciclo FECHA a rodada, e paga o que ela acumulou.
@@ -9699,7 +9699,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return null;
         }
         if (!normalizedEndDate || normalizedEndDate < normalizedStartDate) {
-            showToast('A data final do ciclo precisa ser igual ou depois do inicio.', 'error');
+            showToast('A data final do ciclo precisa ser igual ou depois do início.', 'error');
             return null;
         }
         const newCycle: Cycle = {
@@ -10181,7 +10181,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     .single();
 
                 if (error || !sealedCycle?.id) {
-                    const message = error?.message || 'O Supabase nao confirmou o ciclo selado.';
+                    const message = error?.message || 'O Supabase não confirmou o ciclo selado.';
                     console.error('Supabase cycle update error:', message);
                     throw new Error(message);
                 }
@@ -10190,7 +10190,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     p_cycle_id: cycle.id,
                 });
                 if (cycleGoldError || !(cycleGoldData as any)?.success) {
-                    const message = cycleGoldError?.message || (cycleGoldData as any)?.error || 'O ouro do ciclo nao foi confirmado.';
+                    const message = cycleGoldError?.message || (cycleGoldData as any)?.error || 'O ouro do ciclo não foi confirmado.';
                     console.error('Cycle gold reward error:', message);
                     throw new Error(message);
                 }
@@ -10266,7 +10266,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 }
             } catch (error) {
                 console.error('Error auto-finishing expired cycle:', error);
-                showToast('Nao foi possivel encerrar automaticamente o ciclo vencido.', 'error');
+                showToast('Não foi possível encerrar automaticamente o ciclo vencido.', 'error');
                 autoFinishingCycleRef.current = null;
             }
         }, 350);
@@ -10285,7 +10285,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         setCycleProgress(0);
         setCycleExpBonus(0);
         setFreeProgressResetMarker(`${upcomingCycle.startDate}T00:00:00`, false);
-        showToast(`O ciclo "${upcomingCycle.name}" comecou hoje.`, 'success');
+        showToast(`O ciclo "${upcomingCycle.name}" começou hoje.`, 'success');
     }, [activeCycle, hasHydratedFromSupabase, showToast, upcomingCycle]);
 
     const recordClanContribution = async (xpAmount: number, sourceKey?: string) => {
@@ -10361,7 +10361,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const deleteCycle = async (cycleId: string) => {
         const userId = getSupabaseUserId();
         if (!userId) {
-            showToast('Nao foi possivel identificar sua sessao para excluir o ciclo.', 'error');
+            showToast('Não foi possível identificar sua sessão para excluir o ciclo.', 'error');
             return false;
         }
 
@@ -10376,12 +10376,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (cycleLoadError) {
             console.error('Error loading cycle for deletion:', cycleLoadError);
-            showToast('Nao foi possivel carregar esse ciclo para exclusao.', 'error');
+            showToast('Não foi possível carregar esse ciclo para exclusão.', 'error');
             return false;
         }
 
         if (!cycleRow) {
-            showToast('Nao foi possivel encontrar esse ciclo para excluir.', 'error');
+            showToast('Não foi possível encontrar esse ciclo para excluir.', 'error');
             return false;
         }
 
@@ -10403,7 +10403,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             if (cycleActionsError) {
                 console.error('Error loading actions for cycle deletion:', cycleActionsError);
-                showToast('Nao foi possivel preparar a exclusao das acoes do ciclo.', 'error');
+                showToast('Não foi possível preparar a exclusão das ações do ciclo.', 'error');
                 return false;
             }
 
@@ -10423,7 +10423,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             if (scopedTasksError) {
                 console.error('Error loading scheduled tasks for cycle deletion:', scopedTasksError);
-                showToast('Nao foi possivel preparar a exclusao das acoes agendadas do ciclo.', 'error');
+                showToast('Não foi possível preparar a exclusão das ações agendadas do ciclo.', 'error');
                 return false;
             }
 
@@ -10445,7 +10445,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             rpcTaskIds.forEach((taskId: string) => scopedTaskIds.add(taskId));
         } else if (safeDeleteError && !String(safeDeleteError.message || '').toLowerCase().includes('function')) {
             console.error('Safe cycle deletion RPC failed:', safeDeleteError);
-            showToast('Nao foi possivel excluir esse ciclo com seguranca.', 'error');
+            showToast('Não foi possível excluir esse ciclo com segurança.', 'error');
             return false;
         }
 
@@ -10458,7 +10458,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             if (sitrepDeleteError) {
                 console.error('Error deleting sitrep reports for cycle:', sitrepDeleteError);
-                showToast('Nao foi possivel limpar os registros do ciclo antes da exclusao.', 'error');
+                showToast('Não foi possível limpar os registros do ciclo antes da exclusão.', 'error');
                 return false;
             }
 
@@ -10473,7 +10473,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
                     if (taskDeleteError) {
                         console.error('Error deleting scheduled tasks for cycle:', taskDeleteError);
-                        showToast('Nao foi possivel limpar as acoes agendadas desse ciclo.', 'error');
+                        showToast('Não foi possível limpar as ações agendadas desse ciclo.', 'error');
                         return false;
                     }
                 }
@@ -10493,7 +10493,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
 
             if (!deletedRows || deletedRows.length === 0) {
-                showToast('Nao foi possivel encontrar esse ciclo para excluir.', 'error');
+                showToast('Não foi possível encontrar esse ciclo para excluir.', 'error');
                 return false;
             }
         }
@@ -10581,7 +10581,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (readError) {
             console.error('Failed to read tasks before cycle regeneration:', readError.message);
-            showToast('Nao consegui reagendar suas ações recorrentes. Confira o planner do ciclo novo.', 'error');
+            showToast('Não consegui reagendar suas ações recorrentes. Confira o planner do ciclo novo.', 'error');
             return;
         }
 
@@ -10617,7 +10617,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const failedIds = new Set(created.map(task => task.id));
             setTasks(prev => prev.filter(task => !failedIds.has(task.id)));
             console.error('Failed to regenerate recurring tasks:', insertError.message);
-            showToast('Nao consegui reagendar suas ações recorrentes. Confira o planner do ciclo novo.', 'error');
+            showToast('Não consegui reagendar suas ações recorrentes. Confira o planner do ciclo novo.', 'error');
         }
     };
 
@@ -11772,7 +11772,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             });
         }
 
-        showToast('Arena excluida definitivamente.', 'success');
+        showToast('Arena excluída definitivamente.', 'success');
     };
     // Memoised so consumers can safely list it as an effect/memo dependency; a fresh
     // identity every render was invalidating downstream memos such as SeasonView's
@@ -12291,7 +12291,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 const isActiveForClan = clanProgress && clanProgress[quest.id] !== undefined;
 
                 if (!isActiveForClan) {
-                    showToast("Esta tarefa precisa ser ativada pelo lider do grupo primeiro.");
+                    showToast("Esta tarefa precisa ser ativada pelo líder do grupo primeiro.");
                     return;
                 }
             }
@@ -12316,7 +12316,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     return;
                 }
             }
-            showToast(`Tarefa "${quest.title}" ja esta ativa.`, 'info');
+            showToast(`Tarefa "${quest.title}" já esta ativa.`, 'info');
             return;
         }
 
@@ -12325,7 +12325,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const assetId = assets[0]?.id || 'geral';
             arena = await addArena(assetId, {
                 name: seasonArenaName,
-                description: quest.description || (isClanQuest ? 'Tarefa do grupo' : 'Missao de temporada'),
+                description: quest.description || (isClanQuest ? 'Tarefa do grupo' : 'Missão de temporada'),
                 icon: quest.actionTemplate.icon || (isClanQuest ? '\u2694\uFE0F' : '\u{1F4DD}'),
                 priority: 'alta' // Destaque para missões ativas
             });
@@ -12359,7 +12359,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             await joinClanMission(quest.id);
         }
 
-        showToast(`Missao "${quest.title}" aceita. Confira a arena "${seasonArenaName}".`, 'success');
+        showToast(`Missão "${quest.title}" aceita. Confira a arena "${seasonArenaName}".`, 'success');
     };
 
     const abortSeasonQuest = async (questId: string) => {
@@ -12373,7 +12373,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             await leaveClanMission(quest.id);
         }
 
-        showToast(`Missao "${quest.title}" abandonada.`);
+        showToast(`Missão "${quest.title}" abandonada.`);
     };
 
     /**
@@ -12658,7 +12658,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (!earnedChest) {
             const normalizedDescription = quest.description.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-            if (normalizedDescription.includes('Bau Season') || normalizedDescription.includes('Bau Temporada')) {
+            if (normalizedDescription.includes('Baú Season') || normalizedDescription.includes('Baú Temporada')) {
                 earnedChest = 'Season';
             }
         }
@@ -12701,7 +12701,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 && jornadas.every((questId) => concluidas.has(questId));
 
             if (!selo) {
-                showToast("Essa missao pertence a uma temporada encerrada.", 'info');
+                showToast("Essa missão pertence a uma temporada encerrada.", 'info');
                 return;
             }
         }
@@ -12758,7 +12758,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 p_reward_id: challenge.id,
             });
             if (error || !(data as any)?.success) {
-                throw new Error(error?.message || (data as any)?.error || 'Nao foi possivel validar a recompensa.');
+                throw new Error(error?.message || (data as any)?.error || 'Não foi possível validar a recompensa.');
             }
 
             goldGranted = Number((data as any)?.gold_granted || 0);
@@ -13168,7 +13168,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 automaticChallengeRetryRef.current.set(candidate.id, falhas);
                 if (falhas < 2) automaticChallengeClaimsRef.current.delete(candidate.id);
                 console.error('Automatic challenge reward failed:', error);
-                showToast('Nao foi possivel entregar a recompensa do desafio. Tente novamente.', 'error');
+                showToast('Não foi possível entregar a recompensa do desafio. Tente novamente.', 'error');
             })
             .finally(() => {
                 automaticChallengeClaimInFlightRef.current = false;
@@ -13223,7 +13223,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error('Error clearing pending action tasks:', error.message);
-            showToast('Nao foi possivel limpar os agendamentos antigos dessa acao.', 'error');
+            showToast('Não foi possível limpar os agendamentos antigos dessa ação.', 'error');
         }
     };
 
@@ -13233,31 +13233,31 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         switch (normalizedMessage) {
             case 'AUTH_REQUIRED':
-                return 'Voce precisa estar autenticado para criar um grupo.';
+                return 'Você precisa estar autenticado para criar um grupo.';
             case 'CLAN_NAME_REQUIRED':
-                return 'O nome do grupo nao pode ficar vazio.';
+                return 'O nome do grupo não pode ficar vazio.';
             case 'CLAN_ALREADY_JOINED':
-                return 'Voce ja participa de um grupo.';
+                return 'Você já participa de um grupo.';
             case 'CLAN_NAME_ALREADY_EXISTS':
-                return 'Ja existe um grupo com esse nome.';
+                return 'Já existe um grupo com esse nome.';
             case 'Saldo insuficiente de Ouro.':
-                return `Voce precisa de ${GOLD_CLAN_CREATION_COST} ouro para criar um grupo.`;
+                return `Você precisa de ${GOLD_CLAN_CREATION_COST} ouro para criar um grupo.`;
             default:
                 if (lowerMessage.includes('duplicate') || lowerMessage.includes('already exists')) {
-                    return 'Ja existe um grupo com esse nome.';
+                    return 'Já existe um grupo com esse nome.';
                 }
                 if (lowerMessage.includes('insufficient') || lowerMessage.includes('saldo insuficiente')) {
-                    return `Voce precisa de ${GOLD_CLAN_CREATION_COST} ouro para criar um grupo.`;
+                    return `Você precisa de ${GOLD_CLAN_CREATION_COST} ouro para criar um grupo.`;
                 }
                 if (lowerMessage.includes('joined') || lowerMessage.includes('participa')) {
-                    return 'Voce ja participa de um grupo.';
+                    return 'Você já participa de um grupo.';
                 }
                 if (lowerMessage.includes('auth') || lowerMessage.includes('row-level security')) {
-                    return 'Voce precisa estar autenticado para criar um grupo.';
+                    return 'Você precisa estar autenticado para criar um grupo.';
                 }
                 return normalizedMessage
-                    ? `Nao foi possivel criar o grupo. ${normalizedMessage.slice(0, 140)}`
-                    : 'Nao foi possivel criar o grupo.';
+                    ? `Não foi possível criar o grupo. ${normalizedMessage.slice(0, 140)}`
+                    : 'Não foi possível criar o grupo.';
         }
     };
 
@@ -13266,12 +13266,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const userId = getSupabaseUserId();
         if (!userId) {
             console.error("User not authenticated");
-            showToast('Voce precisa estar autenticado para criar um grupo.', 'error');
+            showToast('Você precisa estar autenticado para criar um grupo.', 'error');
             return false;
         }
 
         if ((userProfile.wallet?.gold || 0) < GOLD_CLAN_CREATION_COST) {
-            showToast(`Voce precisa de ${GOLD_CLAN_CREATION_COST} ouro para criar um grupo.`, 'warning');
+            showToast(`Você precisa de ${GOLD_CLAN_CREATION_COST} ouro para criar um grupo.`, 'warning');
             promptGoldShortage({
                 requiredGold: GOLD_CLAN_CREATION_COST,
                 label: 'criar um grupo',
@@ -13300,7 +13300,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const clanId = createdClan?.id;
 
         if (!clanId) {
-            showToast('Nao foi possivel confirmar a criacao do grupo.', 'error');
+            showToast('Não foi possível confirmar a criação do grupo.', 'error');
             return false;
         }
 
@@ -13364,7 +13364,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error || !updatedClanRow) {
             console.error("Error updating clan:", error?.message || 'No clan row returned');
-            showToast('Nao foi possivel atualizar o grupo.', 'error');
+            showToast('Não foi possível atualizar o grupo.', 'error');
             return false;
         }
 
@@ -13680,7 +13680,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const addClanMember = async (memberId: string) => {
         console.warn('Direct clan member insertion blocked. Member must request to join.', memberId);
-        showToast('A entrada no grupo so acontece por solicitacao aprovada.', 'warning');
+        showToast('A entrada no grupo so acontece por solicitação aprovada.', 'warning');
         return;
         if (!clan) return;
         if (!isUuid(memberId)) {
@@ -13696,7 +13696,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (countError) { console.error("Error checking clan size:", countError.message); return; }
 
         if (count !== null && count >= MAX_CLAN_MEMBERS) {
-            alert(`O grupo atingiu o limite maximo de ${MAX_CLAN_MEMBERS} pessoas.`);
+            alert(`O grupo atingiu o limite máximo de ${MAX_CLAN_MEMBERS} pessoas.`);
             return;
         }
 
@@ -13760,7 +13760,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const joinClan = async (clanToJoin: Clan) => {
         if (clan) {
-            showToast('Voce ja esta em um grupo.', 'info');
+            showToast('Você já esta em um grupo.', 'info');
             return;
         }
 
@@ -13782,7 +13782,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             if (freshClanError) {
                 console.error("Error checking clan recruitment status:", freshClanError.message);
-                showToast('Nao foi possivel verificar a entrada desse grupo.', 'error');
+                showToast('Não foi possível verificar a entrada desse grupo.', 'error');
                 return;
             }
 
@@ -13798,7 +13798,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 .toLowerCase();
             if (recruitmentStatus === 'privado') {
                 await requestClanJoin(clanToJoin);
-                showToast('Solicitacao enviada. Agora o lider precisa aprovar sua entrada.', 'success');
+                showToast('Solicitação enviada. Agora o líder precisa aprovar sua entrada.', 'success');
                 return;
             }
 
@@ -13810,7 +13810,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             if (existingMembershipError) {
                 console.error("Error checking existing clan membership:", existingMembershipError.message);
-                showToast('Nao foi possivel verificar seu grupo atual.', 'error');
+                showToast('Não foi possível verificar seu grupo atual.', 'error');
                 return;
             }
 
@@ -13818,9 +13818,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (existingMembership?.clan_id) {
                 await refreshClanMembershipState(userId);
                 if (String(existingMembership.clan_id) === clanToJoin.id) {
-                    showToast(`Voce ja entrou em ${clanToJoin.name}.`, 'info');
+                    showToast(`Você já entrou em ${clanToJoin.name}.`, 'info');
                 } else {
-                    showToast('Voce ja participa de um grupo.', 'info');
+                    showToast('Você já participa de um grupo.', 'info');
                 }
                 return;
             }
@@ -13832,13 +13832,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             if (clanMembersError) {
                 console.error("Error checking clan size:", clanMembersError.message);
-                showToast('Nao foi possivel verificar o tamanho do grupo.', 'error');
+                showToast('Não foi possível verificar o tamanho do grupo.', 'error');
                 return;
             }
 
             const memberCount = new Set((clanMembersData ?? []).map((member: any) => String(member.user_id))).size;
             if (memberCount >= MAX_CLAN_MEMBERS) {
-                alert(`Este grupo atingiu o limite maximo de ${MAX_CLAN_MEMBERS} pessoas.`);
+                alert(`Este grupo atingiu o limite máximo de ${MAX_CLAN_MEMBERS} pessoas.`);
                 return;
             }
 
@@ -13849,7 +13849,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (joinError) {
                 console.error("Error joining clan:", joinError.message);
                 await refreshClanMembershipState(userId);
-                showToast('Nao foi possivel entrar no grupo agora.', 'error');
+                showToast('Não foi possível entrar no grupo agora.', 'error');
                 return;
             }
 
@@ -13878,7 +13878,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 .eq('status', 'pending');
 
             setClanJoinRequestsOutgoing(prev => prev.filter(request => request.clanId !== clanToJoin.id));
-            showToast(`Voce entrou em ${clanToJoin.name}.`, 'success');
+            showToast(`Você entrou em ${clanToJoin.name}.`, 'success');
             window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
             await loadClanAndMembers(clanToJoin.id, true);
         } finally {
@@ -13893,10 +13893,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const result = await SupabaseService.respondToClanInvitation(notificationId, accept);
         if (!result.ok) {
             const message = result.reason === 'already_in_clan'
-                ? 'Voce ja participa de um grupo.'
+                ? 'Você já participa de um grupo.'
                 : result.reason === 'clan_full'
                     ? 'Esse grupo esta cheio.'
-                    : 'Nao foi possivel responder ao convite.';
+                    : 'Não foi possível responder ao convite.';
             showToast(message, 'warning');
             return false;
         }
@@ -13905,7 +13905,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (accept) {
             clanCacheRef.current = null;
             await refreshClanMembershipState(userId);
-            showToast('Convite aceito. Voce entrou no grupo.', 'success');
+            showToast('Convite aceito. Você entrou no grupo.', 'success');
         } else {
             showToast('Convite recusado.', 'success');
         }
@@ -13924,7 +13924,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (clanMembersError) { console.error("Error checking clan size:", clanMembersError.message); return; }
         const memberCount = new Set((clanMembersData ?? []).map((member: any) => String(member.user_id))).size;
         if (memberCount >= MAX_CLAN_MEMBERS) {
-            alert(`O grupo atingiu o limite maximo de ${MAX_CLAN_MEMBERS} pessoas.`);
+            alert(`O grupo atingiu o limite máximo de ${MAX_CLAN_MEMBERS} pessoas.`);
             return;
         }
 
@@ -13939,9 +13939,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (existingMembership?.clan_id) {
             await loadClanJoinRequestsIncoming(clan.id);
             if (String(existingMembership.clan_id) === clan.id) {
-                showToast('Essa pessoa ja entrou no grupo.', 'info');
+                showToast('Essa pessoa já entrou no grupo.', 'info');
             } else {
-                showToast('Essa pessoa ja participa de outro grupo.', 'warning');
+                showToast('Essa pessoa já participa de outro grupo.', 'warning');
             }
             return;
         }
@@ -14084,7 +14084,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const userId = session?.user.id;
         if (!userId) return false;
         if (!blockedUserId || blockedUserId === userId) {
-            showToast('Nao e possivel bloquear este usuario.', 'warning');
+            showToast('Não e possível bloquear este usuário.', 'warning');
             return false;
         }
 
@@ -14100,7 +14100,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error('Error blocking user:', error);
-            showToast('Nao foi possivel bloquear este usuario.', 'error');
+            showToast('Não foi possível bloquear este usuário.', 'error');
             return false;
         }
 
@@ -14121,7 +14121,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         await fetchBlockedUsers(userId);
         await fetchDMs(userId);
-        showToast('Usuario bloqueado.', 'success');
+        showToast('Usuário bloqueado.', 'success');
         return true;
     };
 
@@ -14137,13 +14137,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error('Error unblocking user:', error);
-            showToast('Nao foi possivel desbloquear este usuario.', 'error');
+            showToast('Não foi possível desbloquear este usuário.', 'error');
             return false;
         }
 
         await fetchBlockedUsers(userId);
         await fetchDMs(userId);
-        showToast('Usuario desbloqueado.', 'success');
+        showToast('Usuário desbloqueado.', 'success');
         return true;
     };
 
@@ -14170,10 +14170,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const message = String(error.message || '');
             console.error('Error submitting moderation report:', error);
             if (message.includes('moderation_reports')) {
-                showToast('O canal de denuncia ainda nao foi publicado no banco.', 'warning');
+                showToast('O canal de denuncia ainda não foi publicado no banco.', 'warning');
                 return false;
             }
-            showToast('Nao foi possivel enviar a denuncia.', 'error');
+            showToast('Não foi possível enviar a denuncia.', 'error');
             return false;
         }
 
@@ -14244,7 +14244,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const userId = session?.user.id;
         if (!userId) return;
         if (blockedUserIds.includes(recipientId)) {
-            showToast('Desbloqueie este usuario para voltar a enviar mensagens.', 'warning');
+            showToast('Desbloqueie este usuário para voltar a enviar mensagens.', 'warning');
             return;
         }
 
@@ -14623,7 +14623,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 // Solta a trava: falha de rede nao pode aposentar o aviso para
                 // sempre. Na proxima abertura ele tenta de novo.
                 pactoVencidoAvisadoRef.current = null;
-                console.error('Nao foi possivel encerrar a missao vencida:', error.message);
+                console.error('Não foi possível encerrar a missão vencida:', error.message);
                 return;
             }
 
@@ -14634,8 +14634,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             emitOracleSpeech({
                 title: 'Oraculo',
                 message: feitas > 0
-                    ? `O prazo de "${pact.title}" terminou. Ficaram ${feitas} de ${alvo} — o que voce fez esta registrado nas arenas, e o lugar da missao esta livre de novo.`
-                    : `O prazo de "${pact.title}" terminou sem registro. O lugar da missao esta livre de novo, e a proxima pode ser menor.`,
+                    ? `O prazo de "${pact.title}" terminou. Ficaram ${feitas} de ${alvo} — o que você fez esta registrado nas arenas, e o lugar da missão esta livre de novo.`
+                    : `O prazo de "${pact.title}" terminou sem registro. O lugar da missão esta livre de novo, e a próxima pode ser menor.`,
                 tone: 'guide',
                 durationMs: 7200,
                 kind: 'abertura',
@@ -14723,12 +14723,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         // O slot pode estar ocupado por uma missao de SISTEMA. Sem isto a pessoa
         // ficaria com duas em andamento e o Oraculo falaria de uma so.
         if (missaoDeSistemaAtiva && !substituir) {
-            showToast(`Voce ja tem "${missaoDeSistemaAtiva.title}" em andamento. Termine ou troque antes de aceitar outra.`, 'warning');
+            showToast(`Você já tem "${missaoDeSistemaAtiva.title}" em andamento. Termine ou troque antes de aceitar outra.`, 'warning');
             return;
         }
 
         if (anterior && !substituir) {
-            showToast('Voce ja tem uma missao individual em andamento. Termine ou troque antes de aceitar outra.', 'warning');
+            showToast('Você já tem uma missão individual em andamento. Termine ou troque antes de aceitar outra.', 'warning');
             return;
         }
         const fresh = getArenaPactOptionsForArena(pact.arenaId).find(option => option.kind === pact.kind && option.difficulty === pact.difficulty);
@@ -14771,7 +14771,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const { error } = await supabase.rpc('abandon_arena_pact');
         if (error) { showToast('Não foi possível encerrar o pacto.', 'error'); return; }
         await updateUserProfile(toArenaPactState(null));
-        showToast('Missao encerrada. O Oraculo pode propor outra quando voce pedir.', 'info');
+        showToast('Missão encerrada. O Oráculo pode propor outra quando você pedir.', 'info');
     };
 
     const claimArenaPact = async () => {
@@ -14785,7 +14785,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         // O servidor refaz a contagem e paga; o cliente nao decide recompensa.
         const { data, error } = await supabase.rpc('claim_arena_pact_reward');
         if (error || !(data as any)?.success) {
-            showToast(error?.message || 'Nao foi possivel validar a missao agora.', 'error');
+            showToast(error?.message || 'Não foi possível validar a missão agora.', 'error');
             return;
         }
 

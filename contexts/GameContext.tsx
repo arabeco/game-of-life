@@ -240,9 +240,17 @@ export const BOM_DIA_FLAG_PREFIX = '__bom_dia:';
 /**
  * Fragmentos por abrir o app no dia.
  *
- * Dois sao onze dias para a campanha casual mais barata, de 22. Da para sentir
- * e nunca substitui missao nem ciclo, que continuam sendo de onde vem coisa de
- * verdade.
+ * A ancora aqui JA MUDOU UMA VEZ, e vale registrar para nao mudar de novo por
+ * engano. O valor foi escolhido contra o preco da campanha casual — 22
+ * fragmentos, onze dias de bom-dia. Campanha saiu do preco em fragmento pouco
+ * depois, e aquela conta deixou de existir.
+ *
+ * A ancora certa e a forja, que e o unico sumidouro que sobrou: forjar um item
+ * tier 1 custa 40. Dois por dia sao vinte dias para escolher um cosmetico
+ * basico — uma gota que se sente no mes e que nunca compete com quem joga. Um
+ * unico bau raro entrega de 30 a 80 fragmentos, entao trinta dias de bom-dia
+ * valem MENOS que um bau; e assim que tem de ser, ou abrir o app passaria a
+ * render mais que usar o app.
  */
 export const FRAGMENTOS_DO_BOM_DIA = 2;
 const ACTION_REMINDER_RECHECK_MS = 60 * 1000;

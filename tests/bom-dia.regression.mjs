@@ -54,9 +54,11 @@ const bloco = (() => {
     assert.ok(valor > 0, 'o bom-dia tem de pagar alguma coisa');
     assert.ok(
         valor <= 5,
-        `o bom-dia paga ${valor} fragmentos. A campanha casual mais barata custa 22: `
-        + 'acima de 5 por dia, abrir o app passa a render mais que jogar, e missao e '
-        + 'ciclo deixam de ser de onde vem coisa de verdade.',
+        `o bom-dia paga ${valor} fragmentos. A ancora e a FORJA, unico sumidouro de `
+        + 'fragmento desde que campanha saiu do preco em fragmento: forjar um item '
+        + 'tier 1 custa 40. Acima de 5 por dia, trinta dias de bom-dia passam a valer '
+        + 'mais que um bau raro (30 a 80), e abrir o app passa a render mais que usar '
+        + 'o app.',
     );
     assert.doesNotMatch(bloco, /completedRows|expDeposited|cycleExpBonus/, 'o bom-dia nao olha o dia anterior');
 }

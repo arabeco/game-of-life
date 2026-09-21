@@ -22,15 +22,38 @@ const qualifiesForTopGrade = (fairness) => !!fairness
  * @param {number} score
  * @param {CycleGradeEvidence|null} [fairness]
  */
+/**
+ * A frase e a cor pertencem a LETRA, e nao a quem calculou a letra.
+ *
+ * Elas moravam dentro do getScoreGrade, presas as faixas de score. Quem mostra a
+ * nota nova na tela nao tinha de onde tirar a frase certa, e acabava pegando a do
+ * score: um ciclo de 100% em cinco dias aparecia como "B" com "Plano honrado em
+ * alto patamar. Raro e preciso." embaixo — a letra de uma regua, a frase de outra,
+ * no mesmo cartao.
+ */
+const FALA_DA_NOTA = {
+    SS: { color: 'text-rose-400', phrase: 'Ciclo perfeito. Excelência em cada compromisso.' },
+    S: { color: 'text-purple-400', phrase: 'Plano honrado em alto patamar. Raro e preciso.' },
+    A: { color: 'text-amber-300', phrase: 'Execucao solida. O ciclo foi honrado.' },
+    B: { color: 'text-yellow-400', phrase: 'Bom ciclo. Algumas brechas a selar.' },
+    C: { color: 'text-orange-400', phrase: 'Metade do caminho. O que travou?' },
+    D: { color: 'text-red-400', phrase: 'Ciclo comprometido. Revise o plano.' },
+    E: { color: 'text-red-900', phrase: 'O plano existiu. A execucao, não.' },
+};
+
+/** A frase que acompanha uma nota. Quem mostra a letra mostra esta. */
+export const falaDaNota = (nota) => FALA_DA_NOTA[nota] || FALA_DA_NOTA.E;
+
 export const getScoreGrade = (score, fairness) => {
     const eligible = qualifiesForTopGrade(fairness);
-    if (score === 100 && eligible) return { grade: 'SS', color: 'text-rose-400', phrase: 'Ciclo perfeito. Excelência em cada compromisso.' };
-    if (score >= 92 && (!fairness || eligible)) return { grade: 'S', color: 'text-purple-400', phrase: 'Plano honrado em alto patamar. Raro e preciso.' };
-    if (score >= 84) return { grade: 'A', color: 'text-amber-300', phrase: 'Execucao solida. O ciclo foi honrado.' };
-    if (score >= 70) return { grade: 'B', color: 'text-yellow-400', phrase: 'Bom ciclo. Algumas brechas a selar.' };
-    if (score >= 55) return { grade: 'C', color: 'text-orange-400', phrase: 'Metade do caminho. O que travou?' };
-    if (score >= 40) return { grade: 'D', color: 'text-red-400', phrase: 'Ciclo comprometido. Revise o plano.' };
-    return { grade: 'E', color: 'text-red-900', phrase: 'O plano existiu. A execucao, não.' };
+    const comLetra = (grade) => ({ grade, ...falaDaNota(grade) });
+    if (score === 100 && eligible) return comLetra('SS');
+    if (score >= 92 && (!fairness || eligible)) return comLetra('S');
+    if (score >= 84) return comLetra('A');
+    if (score >= 70) return comLetra('B');
+    if (score >= 55) return comLetra('C');
+    if (score >= 40) return comLetra('D');
+    return comLetra('E');
 };
 
 /* ==========================================================================
@@ -143,6 +166,10 @@ export const bauDaNota = (nota) => BAU_DA_NOTA[nota] ?? null;
 export const getLegacyCycleGrade = (cycle) => {
     const inferred = getScoreGrade(cycle.score);
     const grade = cycle.grade?.trim().toUpperCase();
-    const colors = {E:'text-red-900',D:'text-red-400',C:'text-orange-400',B:'text-yellow-400',A:'text-amber-300',S:'text-purple-400',SS:'text-rose-400'};
-    return grade && Object.hasOwn(colors, grade) ? {...inferred, grade, color: colors[grade]} : inferred;
+    // A frase vinha junto com a cor, e aqui so a cor era trocada: a letra gravada
+    // aparecia com a frase da letra INFERIDA do score. Trocar a letra troca as
+    // duas coisas que falam por ela.
+    return grade && Object.hasOwn(FALA_DA_NOTA, grade)
+        ? { ...inferred, grade, ...falaDaNota(grade) }
+        : inferred;
 };

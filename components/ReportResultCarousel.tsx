@@ -5,7 +5,7 @@ import { useGame } from '../contexts/GameContext';
 import { Portal } from './Portal';
 import { SKINS_DATA } from '../constants/GMboard';
 import { Report, ChestType } from '../types';
-import { getScoreGrade } from '../utils/dateUtils';
+import { getScoreGrade, falaDaNota } from '../utils/dateUtils';
 import { VideoPlayer } from './VideoPlayer';
 import { CycleAtlasPanel } from './CycleAtlasPanel';
 import { resolveItemDef } from '../constants/items';
@@ -585,7 +585,10 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                     { rotulo: 'Ações', valor: `${metrics.actionsCompleted}/${metrics.totalPlannedActions}` },
                 ]}
                 barras={decomposicao}
-                remate={scoreInfo.phrase}
+                // A frase segue a LETRA que esta na tela, e nao o score que deixou
+                // de decidir a letra. Um ciclo de 100% em cinco dias mostrava "B"
+                // com "Plano honrado em alto patamar. Raro e preciso." embaixo.
+                remate={falaDaNota(notaDoRelatorio).phrase}
             />
         );
     };

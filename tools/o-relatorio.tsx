@@ -85,9 +85,13 @@ const QUADROS = [
         id: 'veredito',
         titulo: 'VEREDITO',
         numero: 'A',
-        rotulo: '14/09/2026 — 20/09/2026 · 6 dias',
+        rotulo: '14/09/2026 — 20/09/2026 · 7 dias',
+        // O rodape do Veredito trocou junto com a regua: o indice de 100 pontos
+        // saiu e entrou a conclusao, que e de onde a letra vem agora. A bancada
+        // ficou mostrando o indice por um tempo e me fez cacar um bug ja morto —
+        // mock velho mente com a mesma cara de bug vivo.
         legenda: [
-            { rotulo: 'Índice', valor: '99' },
+            { rotulo: 'Conclusão', valor: '100%' },
             { rotulo: 'Ações', valor: '66/66' },
         ],
         barras: [

@@ -41,4 +41,4 @@ export const getCycleTimingSummary = (startDateStr: string, endDateStr: string, 
     };
 };
 
-export { getScoreGrade } from './cycleGrade.js';
+export { getScoreGrade, falaDaNota } from './cycleGrade.js';

@@ -129,6 +129,13 @@ const suites = {
       interactions: ['fechar o ciclo e continuar nao deixa as arenas cheias', 'a experiencia do ciclo nao volta na rodada e nao e paga duas vezes'],
     },
     {
+      id: 'rodada-dupla',
+      label: 'Rodada nao paga duas vezes regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'rodada-nao-paga-duas-vezes.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['concluir a rodada no meio do dia nao devolve o dia ja pago', 'a marca na virada do dia conta o proprio dia'],
+    },
+    {
       id: 'xp-scale',
       label: 'XP scale regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'xp-scale.regression.mjs')]],

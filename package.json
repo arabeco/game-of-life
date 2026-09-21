@@ -57,7 +57,8 @@
     "test:mega:local": "node tests/mega/run-local.mjs",
     "mesa": "node scripts/build-mesa.mjs",
     "sql:itens": "node scripts/build-items-sync.mjs",
-    "test:continuar-sem-ciclo": "node tests/continuar-sem-ciclo.regression.mjs"
+    "test:continuar-sem-ciclo": "node tests/continuar-sem-ciclo.regression.mjs",
+    "test:rodada-dupla": "node tests/rodada-nao-paga-duas-vezes.regression.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.0",

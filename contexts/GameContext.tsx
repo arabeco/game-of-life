@@ -54,7 +54,7 @@ import {
 import { ORACLE_FREE_TONE, ORACLE_PREMIUM_TONES, type OracleSpeechTone } from '../constants/oracleSpeechLibrary';
 import { getSeasonLaunchRewardFlag, getSeasonLaunchToastStorageKey, resolveRuntimeActiveSeason, resolveSeasonConfigForSeason } from '../utils/seasonPresentation';
 import { showLocalNotification } from '../utils/localNotification';
-import { FREE_PROGRESS_RESET_FLAG_PREFIX, buildFreeProgressResetFlag, filterTasksAfterFreeProgressReset, getFreeProgressResetAt } from '../utils/freeProgressScope';
+import { FREE_PROGRESS_RESET_FLAG_PREFIX, buildFreeProgressResetFlag, filterTasksAfterFreeProgressReset, getFreeProgressResetAt, primeiroDiaInteiroDaRodada } from '../utils/freeProgressScope';
 import { hasAppPushRemoteDeliveryReady, syncAppPushRegistration } from '../utils/pushRuntime';
 import { getNotificationBody, getNotificationTitle, getVisibleNotificationsForProfile, shouldPushNotificationForProfile } from '../constants/oracleNotificationPolicy';
 import { buildOracleOperationalContext } from '../utils/oracleOperationalContext';
@@ -5186,8 +5186,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
 
+        // O primeiro dia INTEIRO da rodada, e nao o dia em que a marca caiu.
+        //
+        // Recortar a marca em dez caracteres parecia a mesma coisa e nao era: o
+        // deposito e por dia e a marca e um instante, entao a marca do meio da
+        // tarde fazia o dia inteiro entrar na rodada nova — inclusive a parte
+        // que o proprio fecho acabara de pagar. O dia voltava, e o fecho
+        // seguinte o pagava outra vez.
         const resetAt = getFreeProgressResetAt(userProfile);
-        const desde = resetAt ? resetAt.slice(0, 10) : '1970-01-01';
+        const desde = primeiroDiaInteiroDaRodada(resetAt);
 
         const { data, error } = await supabase
             .from('daily_commitments')

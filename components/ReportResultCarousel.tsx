@@ -128,13 +128,24 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     const sealedMetas = metrics.sealedMetas ?? metrics.goalsMet ?? 0;
     const plannedMetas = metrics.plannedMetas ?? Math.max(sealedMetas, 0);
     const scoreInfo = getScoreGrade(report.performanceScore, fairness);
-    const duration = daysBetween(new Date(report.startDate), new Date(report.endDate));
-    const totalDays = Math.max(1, duration + 1);
+    /*
+     * DIA SE CONTA INCLUINDO OS DOIS EXTREMOS.
+     *
+     * De 14/09 a 20/09 sao SETE dias, e nao seis. A subtracao crua da seis, e
+     * era ela que ia para a tela do Veredito enquanto a Presenca, do lado,
+     * dizia 7/7 — dois numeros discordando na mesma apresentacao.
+     *
+     * A variavel da subtracao crua deixou de existir de proposito. Ela estava
+     * certa em nenhum lugar: onde virava texto mentia por um dia, e no calculo
+     * de tempo decorrido dava 0% num ciclo de um dia. Sobrou uma so, inclusiva,
+     * que serve aos dois usos.
+     */
+    const totalDays = Math.max(1, daysBetween(new Date(report.startDate), new Date(report.endDate)) + 1);
 
     // Calculate Time Progress
     const plannedEndDate = metrics.plannedEndDate ? new Date(metrics.plannedEndDate) : new Date(report.endDate);
-    const plannedDuration = Math.max(1, daysBetween(new Date(report.startDate), plannedEndDate));
-    const timePercentage = Math.min(100, (duration / plannedDuration) * 100);
+    const plannedDuration = Math.max(1, daysBetween(new Date(report.startDate), plannedEndDate) + 1);
+    const timePercentage = Math.min(100, (totalDays / plannedDuration) * 100);
     const consistencyPct = metrics.consistencyDays ? Math.min(100, Math.round((metrics.consistencyDays / totalDays) * 100)) : 0;
     const executionPercentage = metrics.executionRatePct ?? Math.min(100, Math.round((metrics.actionsCompleted / Math.max(metrics.totalPlannedActions, 1)) * 100));
     const timeElapsedPercentage = metrics.timeElapsedPct ?? Math.round(timePercentage);
@@ -530,7 +541,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                     rotulo="sinal insuficiente"
                     remate="Ainda não há sinal suficiente para julgar este ciclo com justiça."
                     legenda={[
-                        { rotulo: 'Período', valor: `${duration} dias` },
+                        { rotulo: 'Período', valor: `${totalDays} dias` },
                         { rotulo: 'Ações', valor: `${metrics.actionsCompleted}/${metrics.totalPlannedActions}` },
                     ]}
                 />
@@ -542,7 +553,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 rank={scoreInfo.grade}
                 titulo="Veredito"
                 numero={scoreInfo.grade}
-                rotulo={`${formatDate(report.startDate)} — ${formatDate(report.endDate)} · ${duration} dias`}
+                rotulo={`${formatDate(report.startDate)} — ${formatDate(report.endDate)} · ${totalDays} dias`}
                 legenda={[
                     { rotulo: 'Índice', valor: `${report.performanceScore}` },
                     { rotulo: 'Ações', valor: `${metrics.actionsCompleted}/${metrics.totalPlannedActions}` },

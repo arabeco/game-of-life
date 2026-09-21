@@ -157,6 +157,13 @@ const suites = {
       interactions: ['o card do dia nasce ligado', 'a leitura do ciclo e o card de tema nao dividem a vaga do dia', 'cada um cai na sua aba', 'um banco de textos so para o app e para o cron'],
     },
     {
+      id: 'ciclo-recem-nascido',
+      label: 'Ciclo recem-nascido regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'ciclo-recem-nascido.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['o dia 1 nao recebe "salve o que puder"', 'um dia cheio pela frente nao e ciclo perdido', 'sem ciclo nao ha risco de ciclo', 'mais tarde o aviso continua vindo'],
+    },
+    {
       id: 'xp-scale',
       label: 'XP scale regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'xp-scale.regression.mjs')]],

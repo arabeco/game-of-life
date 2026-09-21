@@ -448,8 +448,22 @@ export const buildOracleOperationalContext = ({
     : null;
   const cyclePace = resolveCyclePace(effectiveCycleProgress, expectedCycleProgress);
 
+  /**
+   * UM DIA CHEIO NAO E UM CICLO PERDIDO.
+   *
+   * `pendingTodayTasks.length >= 5` morava aqui, e lia o PLANO como fracasso:
+   * quem planejou cinco acoes para hoje tem cinco pendentes as nove da manha, e
+   * levava risco alto por ter um dia inteiro pela frente. Pendencia de hoje e o
+   * dia que ainda vai acontecer; risco se mede no que ja passou e nao foi feito.
+   *
+   * `!activeCycle` tambem morava aqui, e declarava risco alto no ciclo de quem
+   * NAO TEM ciclo. Jogar so por rodada e um modo suportado, e sem ciclo nao
+   * existe ritmo de ciclo para cobrar.
+   */
   let cycleRisk: OracleContext['cycleRisk'] = 'baixo';
-  if (!activeCycle || cyclePace === 'critico' || pendingTodayTasks.length >= 5 || overdueTasks.length >= 3) {
+  if (!activeCycle) {
+    cycleRisk = 'baixo';
+  } else if (cyclePace === 'critico' || overdueTasks.length >= 3) {
     cycleRisk = 'alto';
   } else if (
     overdueTasks.length > 0 ||

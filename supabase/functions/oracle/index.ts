@@ -737,18 +737,40 @@ const buildOracleOperationalContext = ({
   const cycleDayNumber = activeCycle
     ? Math.min(cycleTotalDays || 1, daysBetweenInclusive(activeCycle.start_date, operationalDate))
     : null;
+  // O DIA DE HOJE AINDA NAO ACABOU, entao ele nao entra na conta do que ja era
+  // para estar pronto. Contando o dia corrente, o dia 1 de um ciclo de sete ja
+  // nascia devendo 14% as nove da manha, e a pessoa levava "atrasado" por ter
+  // acordado. O que se cobra sao os dias FECHADOS.
+  //
+  // utils/oracleOperationalContext.ts ja tinha esta correcao; esta copia ficou
+  // para tras. Sao duas contas do mesmo numero em dois runtimes, e enquanto forem
+  // duas elas precisam mudar juntas — o teste cards-de-sabedoria compara as duas.
   const expectedCycleProgress = activeCycle && cycleDayNumber && cycleTotalDays
-    ? Math.round((cycleDayNumber / cycleTotalDays) * 100)
+    ? Math.round(((cycleDayNumber - 1) / cycleTotalDays) * 100)
     : null;
 
+  // UM DIA CHEIO NAO E UM CICLO PERDIDO.
+  //
+  // `pendingTodayTasks.length >= 5` morava aqui, e lia o PLANO como fracasso:
+  // quem planejou cinco acoes para hoje tem cinco pendentes as nove da manha, e
+  // recebia "nao da pra salvar tudo neste ciclo" no dia 1. Pendencia de hoje e o
+  // dia que ainda vai acontecer. O que mede risco e o que ja passou e nao foi
+  // feito — por isso so vencidas e ritmo ficaram.
+  //
+  // `!activeCycle` tambem morava aqui, e declarava risco alto no ciclo de quem
+  // NAO TEM ciclo. E o mesmo defeito que a nota de deriveOracleHostOperational-
+  // State ja descreve para "sem_direcao": jogar so por rodada e um modo
+  // suportado, e sem ciclo nao existe ritmo de ciclo para cobrar.
   let cycleRisk: OracleContext["cycleRisk"] = "baixo";
-  if (!activeCycle || pendingTodayTasks.length >= 5 || overdueTasks.length >= 3) {
-    cycleRisk = "alto";
-  } else if (
-    overdueTasks.length > 0 ||
-    (expectedCycleProgress !== null && cycleCompletionPercent < expectedCycleProgress - 15)
-  ) {
-    cycleRisk = "medio";
+  if (activeCycle) {
+    if (overdueTasks.length >= 3) {
+      cycleRisk = "alto";
+    } else if (
+      overdueTasks.length > 0 ||
+      (expectedCycleProgress !== null && cycleCompletionPercent < expectedCycleProgress - 15)
+    ) {
+      cycleRisk = "medio";
+    }
   }
 
   const sortedByUrgency = [...overdueTasks, ...pendingTodayTasks].sort((left, right) => {

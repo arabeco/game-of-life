@@ -29,6 +29,10 @@ export type OracleHostContext = {
   hasCycle: boolean;
   cycleRisk: "baixo" | "medio" | "alto";
   cyclePace?: "adiantado" | "no_ritmo" | "atrasado" | "critico" | null;
+  /** Em que dia do ciclo a pessoa esta, e de quantos. Opcionais: quem nao mede
+   * ciclo nao precisa preencher, e a regra abaixo trata a ausencia. */
+  cycleDayNumber?: number | null;
+  cycleTotalDays?: number | null;
   cyclePendingActions?: number;
   pendingActionsToday: number;
   overdueActions: number;
@@ -318,6 +322,32 @@ const getContextDate = (context: OracleHostContext): string | null => {
   return `${year}-${month}-${day}`;
 };
 
+/**
+ * Quanto de ciclo tem de ter passado antes de ele poder ser declarado perdido.
+ *
+ * Um quarto do caminho, com piso de tres dias: sete dias num ciclo de 28, tres
+ * num ciclo de 7. O piso existe porque um quarto de um ciclo de tres dias seria
+ * o primeiro dia, e o primeiro dia e exatamente o que esta regra protege.
+ */
+const CICLO_MINIMO_PARA_RISCO = 0.25;
+const DIAS_MINIMOS_PARA_RISCO = 3;
+
+const cicloJaPodeSerPerdido = (context: OracleHostContext): boolean => {
+  // Sem ciclo nao ha ciclo a perder. Quem joga so por rodada nao recebe aviso
+  // sobre um ciclo que nao abriu.
+  if (!context.hasCycle) return false;
+
+  const dia = context.cycleDayNumber;
+  const total = context.cycleTotalDays;
+
+  // Sem a medida do ciclo nao da para saber se e cedo demais. Aqui a duvida passa:
+  // o risco veio de numeros que existem de verdade — vencidas, ritmo —, e calar
+  // sobre eles esconderia um problema real so porque falta um campo.
+  if (!dia || !total || total <= 0) return true;
+
+  return dia >= Math.max(DIAS_MINIMOS_PARA_RISCO, Math.ceil(total * CICLO_MINIMO_PARA_RISCO));
+};
+
 export const deriveOracleHostOperationalState = (
   context: OracleHostContext,
   options: { operationalDate?: string | null } = {},
@@ -345,7 +375,17 @@ export const deriveOracleHostOperationalState = (
     return "sem_direcao";
   }
 
-  if (context.cycleRisk === "alto" || context.cyclePace === "critico") {
+  // NAO SE PERDE UM CICLO QUE MAL COMECOU.
+  //
+  // "em_risco" fala em cortar o que da e deixar o resto ir. Isso so faz sentido
+  // quando ja passou tempo suficiente para o buraco ser real. Em 21/09 chegou um
+  // card dizendo "nao da pra salvar tudo neste ciclo" no DIA 1 — e no dia 1 nao
+  // ha nada perdido, ha um plano inteiro pela frente.
+  //
+  // Antes do corte, o pior diagnostico honesto e "atrasado": da para recuperar.
+  // Dizer que nao da e mentira, e e mentira justo na hora em que a pessoa mais
+  // precisa de tracao para comecar.
+  if ((context.cycleRisk === "alto" || context.cyclePace === "critico") && cicloJaPodeSerPerdido(context)) {
     return "em_risco";
   }
 

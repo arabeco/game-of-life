@@ -81,7 +81,40 @@ const marca = marcaDeRodadaDepoisDoCiclo(relatorio);
     assert.equal(curto, '2026-09-21T00:00:00.000Z');
 }
 
-// 6. Relatorio sem data nao inventa marca.
+// 6. ENCERRAR NO MEIO. A marca segue o dia em que se fechou, nao o planejado.
+//
+// O `endCycle` grava `endDate = getLocalDateString()` — o dia de hoje, o dia do
+// fecho — e guarda o que estava planejado num campo separado, `plannedEndDate`.
+// Sao coisas diferentes de proposito, e a marca tem de seguir a PRIMEIRA.
+//
+// Se seguisse a planejada, quem encerrasse um ciclo de trinta dias no decimo
+// nono ficaria onze dias com a rodada surda: tudo o que fizesse ate a data que
+// nunca chegou cairia antes da marca, as arenas apareceriam vazias e a
+// experiencia da rodada nao contaria. O contrario do bug que este arquivo
+// guarda, e do mesmo tamanho.
+{
+    const encerradoNoMeio = {
+        startDate: '2026-09-01',
+        endDate: '2026-09-20',        // fechou hoje, a mao
+        plannedEndDate: '2026-09-30', // ia ate o fim do mes
+    };
+    const marcaDoMeio = marcaDeRodadaDepoisDoCiclo(encerradoNoMeio);
+    assert.equal(marcaDoMeio, '2026-09-21T00:00:00.000Z', 'a marca seguiu a data planejada em vez do fecho de verdade');
+
+    // O dia seguinte ao fecho ja conta, mesmo estando antes do fim planejado.
+    const depoisDoFecho = filterTasksAfterFreeProgressReset(
+        [{ id: 'dia-seguinte', date: '2026-09-21', completedAt: '2026-09-21T10:00:00.000Z' },
+         { id: 'dentro-do-planejado', date: '2026-09-25', completedAt: '2026-09-25T10:00:00.000Z' }],
+        marcaDoMeio,
+    ).map((t) => t.id);
+    assert.deepEqual(
+        depoisDoFecho,
+        ['dia-seguinte', 'dentro-do-planejado'],
+        'tarefa feita depois do fecho manual precisa contar na rodada nova',
+    );
+}
+
+// 7. Relatorio sem data nao inventa marca.
 //
 // Devolver uma marca invalida seria pior do que nao devolver nenhuma: a marca
 // vazia mantem a rodada como estava, e uma marca torta apagaria a arena inteira.

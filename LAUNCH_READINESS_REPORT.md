@@ -1,9 +1,9 @@
 # Launch Readiness Report
 
-- Generated at: 2026-09-21T01:25:18.463Z
+- Generated at: 2026-09-21T10:44:41.705Z
 - Suite: `core`
 - Smoke URL: `http://127.0.0.1:3011/`
-- Build: PASS (24.0s)
+- Build: PASS (25.0s)
 
 ## Checks
 
@@ -59,13 +59,13 @@
 - Simulates: dias sem entrega conta invertido
 - Simulates: mediana aguenta ciclo extremo
 
-### PASS - Subscription XP bonus regression (0.2s)
+### PASS - Subscription XP bonus regression (0.1s)
 - Kind: `logic`
 - Simulates: platinum rende mais que premium
 - Simulates: assinatura vencida nao paga bonus
 - Simulates: vitrine sai do mesmo numero do calculo
 
-### PASS - Arena pacts regression (0.2s)
+### PASS - Arena pacts regression (0.1s)
 - Kind: `logic`
 - Simulates: nao propoe arena arquivada, travada, vazia ou concluida
 - Simulates: constancia conta dias e nao acoes
@@ -82,7 +82,7 @@
 - Simulates: fechar o ciclo e continuar nao deixa as arenas cheias
 - Simulates: a experiencia do ciclo nao volta na rodada e nao e paga duas vezes
 
-### PASS - Rodada nao paga duas vezes regression (0.2s)
+### PASS - Rodada nao paga duas vezes regression (0.1s)
 - Kind: `logic`
 - Simulates: concluir a rodada no meio do dia nao devolve o dia ja pago
 - Simulates: a marca na virada do dia conta o proprio dia
@@ -93,7 +93,7 @@
 - Simulates: regra nao promete item que nao existe
 - Simulates: um item nao sai por duas regras
 
-### PASS - XP scale regression (0.2s)
+### PASS - XP scale regression (0.1s)
 - Kind: `logic`
 - Simulates: missoes, jornadas e pactos usam a mesma escala
 - Simulates: nenhuma recompensa passa de 500 XP
@@ -110,7 +110,7 @@
 - Simulates: abrir ciclo fecha a rodada
 - Simulates: o fecho do ciclo nao recalcula a base ja paga
 
-### PASS - Oracle reaction regression (0.2s)
+### PASS - Oracle reaction regression (0.1s)
 - Kind: `logic`
 - Simulates: a reacao nao repete a frase anterior
 - Simulates: a primeira acao depois de uma pausa tem fala propria
@@ -128,7 +128,7 @@
 - Simulates: a presenca e o corte de relevancia
 - Simulates: sem candidato ele fica quieto
 
-### PASS - Oracle presence policy regression (0.6s)
+### PASS - Oracle presence policy regression (0.9s)
 - Kind: `logic`
 - Simulates: presenca decide o que ele fala
 - Simulates: aviso decide onde chega
@@ -170,28 +170,28 @@
 - Simulates: valida progresso de campanha/arena
 - Simulates: confere score, atlas e mutacoes utilitarias
 
-### PASS - Onboarding happy path (21.0s)
+### PASS - Onboarding happy path (19.5s)
 - Kind: `browser`
 - Simulates: entra com conta temporaria
 - Simulates: atravessa onboarding
 - Simulates: cria arena/acao inicial
 - Simulates: chega no fluxo principal sem travar
 
-### PASS - Campaign quiz flow (13.0s)
+### PASS - Campaign quiz flow (12.8s)
 - Kind: `browser`
 - Simulates: abre loja de campanhas
 - Simulates: roda quiz gratis
 - Simulates: reabre quiz completo
 - Simulates: instala campanha e confirma menu
 
-### PASS - Cycle report flow (20.4s)
+### PASS - Cycle report flow (20.2s)
 - Kind: `browser`
 - Simulates: cria ciclo real
 - Simulates: conclui tarefas
 - Simulates: fecha ciclo
 - Simulates: abre relatorio e reward flow
 
-### PASS - UI shell smoke (11.5s)
+### PASS - UI shell smoke (12.0s)
 - Kind: `browser`
 - Simulates: abre shell principal
 - Simulates: navega views centrais

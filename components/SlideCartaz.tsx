@@ -210,35 +210,57 @@ export const SlideCartaz: React.FC<SlideCartazProps> = ({
             {legenda.length > 0 && (
                 /* Duas colunas, nao quatro caixas: a legenda e para ser conferida
                    depois do numero, e nao disputada com ele. Sem moldura e sem
-                   fundo — o fio de cima ja separa. */
+                   fundo — o fio de cima ja separa.
+
+                   MAS ELA VINHA A ESQUERDA, e todo o resto do cartaz e centrado.
+                   O olho descia pelo eixo do meio — sobrancelha, numero gigante,
+                   frase — e batia num bloco encostado na borda. Nao era um
+                   problema de cada dado: era o eixo mudando no meio da pagina.
+
+                   E vinha apagada demais para se conferir. O rotulo saia com 8,5px
+                   em 33% de opacidade e a nota com 27% — abaixo do que se le num
+                   celular no claro, ainda mais em serifada. Aumentar meio pixel e
+                   subir a opacidade nao disputa com o numero heroi: ele tem seis
+                   vezes o tamanho, e a distancia continua enorme.
+
+                   O ultimo item, quando sao impares, atravessa as duas colunas e
+                   fica no meio. Antes ele ficava sozinho na coluna da esquerda,
+                   com um buraco do lado — e o TERRITORIO, que tem tres, mostrava
+                   isso toda vez. */
                 <div
-                    className="relative z-[3] grid w-full max-w-[290px] grid-cols-2 gap-x-5 gap-y-3 pt-5"
+                    className="relative z-[3] grid w-full max-w-[320px] grid-cols-2 gap-x-5 gap-y-3.5 pt-5"
                     style={{ borderTop: `1px solid ${acabamento.mid}33` }}
                 >
-                    {legenda.map((item) => (
-                        <div key={item.rotulo} className="min-w-0 text-left">
-                            <p
-                                className="m-0 truncate text-[8.5px] font-black uppercase tracking-[0.2em]"
-                                style={{ color: `${acabamento.pale}55` }}
+                    {legenda.map((item, indice) => {
+                        const sozinhoNaUltimaLinha = legenda.length % 2 === 1 && indice === legenda.length - 1;
+                        return (
+                            <div
+                                key={item.rotulo}
+                                className={`min-w-0 text-center ${sozinhoNaUltimaLinha ? 'col-span-2' : ''}`}
                             >
-                                {item.rotulo}
-                            </p>
-                            <p
-                                className={`m-0 truncate text-[1.05rem] font-bold leading-tight tabular-nums ${TONS[item.tom || 'normal']}`}
-                                style={{
-                                    fontFamily: 'Cinzel, Georgia, serif',
-                                    ...(item.tom && item.tom !== 'normal' ? {} : tinta),
-                                }}
-                            >
-                                {item.valor}
-                            </p>
-                            {item.nota && (
-                                <p className="m-0 truncate text-[8.5px] font-bold" style={{ color: `${acabamento.pale}44` }}>
-                                    {item.nota}
+                                <p
+                                    className="m-0 truncate text-[9.5px] font-black uppercase tracking-[0.2em]"
+                                    style={{ color: `${acabamento.pale}99` }}
+                                >
+                                    {item.rotulo}
                                 </p>
-                            )}
-                        </div>
-                    ))}
+                                <p
+                                    className={`m-0 mt-0.5 truncate text-[1.35rem] font-bold leading-tight tabular-nums ${TONS[item.tom || 'normal']}`}
+                                    style={{
+                                        fontFamily: 'Cinzel, Georgia, serif',
+                                        ...(item.tom && item.tom !== 'normal' ? {} : tinta),
+                                    }}
+                                >
+                                    {item.valor}
+                                </p>
+                                {item.nota && (
+                                    <p className="m-0 truncate text-[9px] font-bold" style={{ color: `${acabamento.pale}77` }}>
+                                        {item.nota}
+                                    </p>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
             )}
 
@@ -248,18 +270,18 @@ export const SlideCartaz: React.FC<SlideCartazProps> = ({
                    acabamento do patamar — era cinza sobre cinza, cinco fios de
                    1px que ninguem lia. */
                 <div
-                    className="relative z-[3] w-full max-w-[290px] space-y-2 pt-5"
+                    className="relative z-[3] w-full max-w-[320px] space-y-2.5 pt-5"
                     style={{ borderTop: `1px solid ${acabamento.mid}33` }}
                 >
                     {barras.map((barra) => (
                         <div key={barra.rotulo} className="flex items-center gap-3">
                             <span
-                                className="w-[74px] shrink-0 truncate text-right text-[8.5px] font-black uppercase tracking-[0.16em]"
-                                style={{ color: barra.destaque ? '#EAB308' : `${acabamento.pale}55` }}
+                                className="w-[80px] shrink-0 truncate text-right text-[9.5px] font-black uppercase tracking-[0.16em]"
+                                style={{ color: barra.destaque ? '#EAB308' : `${acabamento.pale}99` }}
                             >
                                 {barra.rotulo}
                             </span>
-                            <div className="h-[3px] flex-1 overflow-hidden rounded-full" style={{ background: acabamento.dark }}>
+                            <div className="h-[4px] flex-1 overflow-hidden rounded-full" style={{ background: acabamento.dark }}>
                                 <div
                                     className="h-full rounded-full transition-[width] duration-700"
                                     style={{
@@ -271,8 +293,8 @@ export const SlideCartaz: React.FC<SlideCartazProps> = ({
                                 />
                             </div>
                             <span
-                                className="w-7 shrink-0 text-right text-[9px] font-black tabular-nums"
-                                style={{ color: barra.destaque ? '#EAB308' : `${acabamento.pale}88` }}
+                                className="w-8 shrink-0 text-right text-[10.5px] font-black tabular-nums"
+                                style={{ color: barra.destaque ? '#EAB308' : `${acabamento.pale}bb` }}
                             >
                                 +{barra.pts}
                             </span>

@@ -3,7 +3,9 @@
 Saiu da conversa por tópico de 20/09/2026, cruzada com o `ITEMS_DB` de verdade.
 São **125 itens** no catálogo, depois que o glifo, o orbe e o jardim 2D saíram.
 
-**26 desenhos.** Roupa 14, cabelo 4, wallpaper 4, jardim 4.
+**26 desenhos, e 25 deles já têm arquivo esperando.** Roupa 14, cabelo 4,
+wallpaper 4, jardim 4. Tudo o que é roupa e cabelo já está ligado no app com um
+PNG de mentira no nome final — ver *Os arquivos, com o nome final*.
 
 Aura não entra: ela é código, não arte. Borda e banner também não: têm 33 peças
 desenhadas e o problema delas é porta. Ver *O que NÃO é desenho*.
@@ -226,6 +228,73 @@ saem por **11 regras**, com quest invisível e modal. As regras estão em
 ### Insígnia — está pronta
 
 16, todas desenhadas, uma para cada uma das dez patentes.
+
+---
+
+## Os arquivos, com o nome final
+
+**Tudo já está ligado no app.** Os itens existem, os degraus apontam para eles, o
+baú e a loja os conhecem. No lugar do desenho há um **PNG de mentira** — xadrez
+magenta, 500×500, feio de propósito para ninguém confundir com arte pronta.
+
+**Entregar é sobrescrever o arquivo.** Nenhuma linha de código muda, e a peça
+aparece no app na hora.
+
+Para saber o que ainda falta, a qualquer momento:
+
+```
+npm run arte:pendente
+```
+
+### Roupa — 13 arquivos, 500×500
+
+| Peça | Arquivo |
+|---|---|
+| Pijama | `public/assets/catalog/avatars/SKIN_T1_PIJAMA.png` |
+| Corrida | `public/assets/catalog/avatars/SKIN_T1_CORRIDA.png` |
+| Chuva | `public/assets/catalog/avatars/SKIN_T1_CHUVA.png` |
+| Verão | `public/assets/catalog/avatars/SKIN_T1_VERAO.png` |
+| Escudeiro | `public/assets/catalog/avatars/SKIN_T1_ESCUDEIRO.png` |
+| Cavaleiro | `public/assets/catalog/avatars/SKIN_T2_CAVALEIRO.png` |
+| Lorde | `public/assets/catalog/avatars/SKIN_T2_LORDE.png` |
+| Barão | `public/assets/catalog/avatars/SKIN_T2_BARAO.png` |
+| Conde | `public/assets/catalog/avatars/SKIN_T3_CONDE.png` |
+| Duque | `public/assets/catalog/avatars/SKIN_T3_DUQUE.png` |
+| Príncipe | `public/assets/catalog/avatars/SKIN_T4_PRINCIPE.png` |
+| Rei | `public/assets/catalog/avatars/SKIN_T4_REI.png` |
+| **Soberano** | `public/assets/catalog/avatars/SKIN_T5_SOBERANO.png` |
+
+### Cabelo — 12 arquivos, 500×500
+
+Cada penteado são **três cores**, e o sufixo do arquivo diz qual: `cast`
+(castanho), `pre` (preto), `bran` (branco), `rosa`.
+
+| Penteado | Arquivos, em `public/assets/catalog/avatars/hair/` |
+|---|---|
+| Rabo de Cavalo | `CABELO_T1_RABO_DE_CAVALO_cast.png` · `_pre.png` · `_bran.png` |
+| Coque Solto | `CABELO_T2_COQUE_SOLTO_cast.png` · `_pre.png` · `_bran.png` |
+| Undercut | `CABELO_T3_UNDERCUT_cast.png` · `_pre.png` · `_bran.png` |
+| Trança Lateral | `CABELO_T4_TRANCA_LATERAL_cast.png` · `_bran.png` · `_rosa.png` |
+
+**O cabelo tem um passo a mais que a roupa não tem.** Ele encaixa na cabeça por
+uma tabela de deslocamento (`constants/avatarOffsets.ts`), e o valor só pode ser
+medido no desenho de verdade — os doze estão sem entrada, o que significa
+"centralizado, tamanho natural". Quando a arte chegar, o encaixe se acerta em
+`tools/avatar-align.html`, que lê do arquivo e devolve o bloco para colar.
+
+### Ainda sem placeholder
+
+Estes dois não têm arquivo nenhum: aparecem como emoji no app.
+
+| Peça | Onde |
+|---|---|
+| Borda Soberano | prêmio do degrau 10 |
+| Empreendedor | roupa épica, só baú |
+
+### Wallpaper e jardim
+
+As **4 wallpapers** e as **4 peças de jardim** ainda não têm item criado nem
+nome de arquivo — os degraus delas não foram decididos. Ficam para quando forem.
 
 ---
 

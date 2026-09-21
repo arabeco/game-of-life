@@ -1,9 +1,9 @@
 # Launch Readiness Report
 
-- Generated at: 2026-09-21T00:51:17.107Z
+- Generated at: 2026-09-21T01:03:18.171Z
 - Suite: `core`
 - Smoke URL: `http://127.0.0.1:3011/`
-- Build: PASS (18.3s)
+- Build: PASS (29.1s)
 
 ## Checks
 
@@ -159,28 +159,28 @@
 - Simulates: valida progresso de campanha/arena
 - Simulates: confere score, atlas e mutacoes utilitarias
 
-### PASS - Onboarding happy path (18.0s)
+### PASS - Onboarding happy path (24.0s)
 - Kind: `browser`
 - Simulates: entra com conta temporaria
 - Simulates: atravessa onboarding
 - Simulates: cria arena/acao inicial
 - Simulates: chega no fluxo principal sem travar
 
-### PASS - Campaign quiz flow (12.7s)
+### PASS - Campaign quiz flow (15.6s)
 - Kind: `browser`
 - Simulates: abre loja de campanhas
 - Simulates: roda quiz gratis
 - Simulates: reabre quiz completo
 - Simulates: instala campanha e confirma menu
 
-### PASS - Cycle report flow (21.1s)
+### PASS - Cycle report flow (21.9s)
 - Kind: `browser`
 - Simulates: cria ciclo real
 - Simulates: conclui tarefas
 - Simulates: fecha ciclo
 - Simulates: abre relatorio e reward flow
 
-### PASS - UI shell smoke (10.6s)
+### PASS - UI shell smoke (10.5s)
 - Kind: `browser`
 - Simulates: abre shell principal
 - Simulates: navega views centrais

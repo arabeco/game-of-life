@@ -82,12 +82,8 @@ const getAchievementDetails = (type: FeedEventType, data: any) => {
                     : 'Arena fechada e registrada no seu histórico.',
             };
         }
-        // O titulo e o NOME DO DEGRAU, nao "Nova patente!". Quem abre este modal
-        // ja sabe que subiu — ele so abre nessa hora. O que a pessoa quer ler e
-        // ATE ONDE subiu, e isso estava no subtitulo, a 9px e em cinza. O "Nova
-        // patente" virou sobrancelha.
         case 'PLAYER_RANK_UP':
-            return { title: data.name || 'Nova patente!', subtitle: '', icon: '\u{1F451}', message: 'Sua nova patente e as recompensas correspondentes foram liberadas.' };
+            return { title: 'Nova patente!', subtitle: data.name, icon: '\u{1F451}', message: 'Sua nova patente e as recompensas correspondentes foram liberadas.' };
         case 'QUEST_COMPLETED': {
             return {
                 title: 'Missão concluída!',
@@ -175,14 +171,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
         || rewardItemIds.some((itemId) => String(itemId).startsWith('insignia_season_'));
     // A sobrancelha diz de onde o feito veio. Antes o modal so tinha titulo, e
     // "Parabens" sozinho nao distinguia subir de patente de fechar um ciclo.
-    // A sobrancelha de patente leva o "Nova patente!", e o TITULO fica com o
-    // nome do degrau. Estava ao contrario: o nome ia para o subtitulo, que a
-    // placa desenha com 9px em cinza, enquanto o titulo de 34px dizia "Nova
-    // patente!" — que a pessoa ja sabe, porque o modal so abre nessa hora. A
-    // unica informacao nova saia na menor letra da tela.
-    const sobrancelha = isCompetitionResult
-        ? 'Resultado do desafio'
-        : isRankUp ? 'Nova patente' : '';
+    const sobrancelha = isCompetitionResult ? 'Resultado do desafio' : '';
     // O tipo do acontecimento decide DUAS coisas de uma vez: o emblema do topo
     // e o tom do reflexo. Antes o emblema era emoji escolhido no meio do JSX e
     // o reflexo era dourado fixo — subir de patente e fechar um ciclo saiam

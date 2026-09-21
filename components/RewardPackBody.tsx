@@ -187,8 +187,22 @@ export const RewardPackBody: React.FC<RewardPackBodyProps> = ({
         <h2 className={`reward-title-metal mb-[5px] ${eyebrow ? 'mt-[7px]' : 'mt-0'} text-balance font-serif font-black uppercase leading-[1.02] ${tituloLongo ? 'text-[25px] tracking-[0.045em]' : 'text-[34px] tracking-[0.07em]'}`}>
           {titulo}
         </h2>
+        {/* O SUBTITULO E O NOME PROPRIO: qual arena, qual missao, qual patente.
+            Ele continua menor que o titulo — a regra da placa e que o
+            acontecimento e grande e o nome proprio e pequeno, e o
+            tests/reward-modal.regression.mjs guarda essa hierarquia nos tres
+            modais de uma vez.
+
+            Mas "pequeno" estava sendo 9px em #b7b2a8, com o mesmo tamanho e
+            quase a mesma cor da sobrancelha logo acima — e a sobrancelha diz de
+            onde o feito veio, que e a parte que a pessoa ja sabe. Os dois
+            viravam a mesma sussurrada, e quem subia de patente lia "NOVA
+            PATENTE!" em 34px dourado sem conseguir ver ATE ONDE subiu.
+
+            Treze pixels e quase branco ainda deixam o titulo mandando, e tiram
+            o nome proprio do empate com a sobrancelha. */}
         {payload?.subtitle && (
-          <div className="mb-2 text-[9px] font-black uppercase tracking-[0.24em] text-[#b7b2a8]">
+          <div className="mb-2 text-[13px] font-black uppercase tracking-[0.16em] text-[#e8e2d4]">
             {payload.subtitle}
           </div>
         )}

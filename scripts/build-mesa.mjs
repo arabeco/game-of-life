@@ -42,6 +42,7 @@ const empacota = async (entrada, nome) => {
 
 const { ITEMS_DB, isChestEligibleItem } = await empacota('constants/items.ts', 'mesa-items.mjs');
 const { RANK_REWARDS, NOBILITY_RANKS } = await empacota('constants/nobility.ts', 'mesa-nobility.mjs');
+const { ITENS_LIBERADOS_POR_REGRA, ITENS_DA_VANGUARDA } = await empacota('constants/desbloqueiosPorRegra.ts', 'mesa-regras.mjs');
 
 /** Os ids de um array literal do plpgsql, pelo nome da variavel. */
 const sql = fs.readFileSync(path.join(raiz, 'sql', 'new_player_bootstrap_rewards.sql'), 'utf8');
@@ -66,6 +67,8 @@ const OUTRAS = [
     { id: 'loja', nome: 'Loja (ouro)' },
     { id: 'temporada', nome: 'Temporada' },
     { id: 'missao', nome: 'Missão' },
+    { id: 'regra', nome: 'Por regra' },
+    { id: 'codigo', nome: 'Cupom' },
     { id: 'staff', nome: 'Staff' },
     { id: 'livre', nome: 'Livre p/ todos' },
     { id: 'orfao', nome: 'Sem porta' },
@@ -119,6 +122,10 @@ const portaDe = (item) => {
     if (noStarter.has(item.id)) return 'inicial';
     if (item.isGmExclusive) return 'staff';
     if (item.isQuestExclusive) return 'missao';
+    // Declaradas no constants/desbloqueiosPorRegra. Ainda sem medidor, mas
+    // declaradas: a mesa as mostrava como SEM PORTA, que e outra coisa.
+    if (ITENS_LIBERADOS_POR_REGRA.has(item.id)) return 'regra';
+    if (ITENS_DA_VANGUARDA.includes(item.id)) return 'codigo';
     if (item.isSeasonExclusive || item.seasonKey) return 'temporada';
     if (item.costGold) return 'loja';
     if (typeof isChestEligibleItem === 'function' && isChestEligibleItem(item)) return 'bau';

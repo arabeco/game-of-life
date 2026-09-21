@@ -1,9 +1,9 @@
 # Launch Readiness Report
 
-- Generated at: 2026-09-21T11:41:20.561Z
+- Generated at: 2026-09-21T11:49:59.742Z
 - Suite: `core`
 - Smoke URL: `http://127.0.0.1:3011/`
-- Build: PASS (18.2s)
+- Build: PASS (18.4s)
 
 ## Checks
 
@@ -19,7 +19,7 @@
 - Simulates: impede a letra solta voltar no lugar do simbolo
 - Simulates: fixa a altura do card de item
 
-### PASS - Item art regression (0.3s)
+### PASS - Item art regression (0.2s)
 - Kind: `logic`
 - Simulates: confere que todo imageUrl existe no disco
 - Simulates: trava as categorias que ainda vivem de emoji
@@ -176,14 +176,14 @@
 - Simulates: valida progresso de campanha/arena
 - Simulates: confere score, atlas e mutacoes utilitarias
 
-### PASS - Onboarding happy path (16.2s)
+### PASS - Onboarding happy path (19.4s)
 - Kind: `browser`
 - Simulates: entra com conta temporaria
 - Simulates: atravessa onboarding
 - Simulates: cria arena/acao inicial
 - Simulates: chega no fluxo principal sem travar
 
-### PASS - Campaign quiz flow (13.9s)
+### PASS - Campaign quiz flow (12.6s)
 - Kind: `browser`
 - Simulates: abre loja de campanhas
 - Simulates: roda quiz gratis

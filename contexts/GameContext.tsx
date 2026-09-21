@@ -28,6 +28,7 @@ import { createTaskDomain } from './gameDomains/taskDomain';
 import { useQuestSharedDomain } from './gameDomains/questSharedDomain';
 import { buildCyclePaceMetrics, buildDailyExpSnapshot, buildTaskPoolEntries, filterCycleTasksByScope, getInitialDailyCommitmentTaskIds, getTaskBaseExp, mergeTasksIntoCommitment } from '../utils/coreLoopUtils.js';
 import { buildFairScoreFromTasks, recalculateReportsWithFairScore } from '../utils/fairScoreUtils.js';
+import { notaDoCiclo } from '../utils/cycleGrade.js';
 import { buildCycleWeeklyAtlas } from '../utils/reportAtlasUtils.js';
 import { DEFAULT_ORACLE_PRESENCE_LEVEL, getOracleFeedQuotaStatus } from '../utils/oracleFeedUtils';
 import { allowsOracleReaction } from '../constants/oraclePresencePolicy';
@@ -10081,12 +10082,57 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             endDate,
         );
 
+        /*
+         * QUANTAS DAS CINCO AREAS TIVERAM ENTREGA NESTE CICLO.
+         *
+         * O SS exige as cinco vivas. Sem isso, um mes impecavel so de academia
+         * valeria o mesmo que um mes impecavel na vida inteira — e a nota mais
+         * alta do jogo passaria a premiar justamente quem estreitou.
+         */
+        const areasComEntrega = currentAssets.filter((asset) => {
+            if (asset.id === 'geral') return false;
+            const arenasDoAtivo = cycle?.arenaIds?.length
+                ? asset.arenas.filter((arena) => cycle.arenaIds.includes(arena.id))
+                : asset.arenas;
+            const idsDeAcao = new Set(
+                currentActions
+                    .filter((acao) => arenasDoAtivo.some((arena) => arena.id === acao.arenaId))
+                    .map((acao) => acao.id),
+            );
+            return completedScoredTasks.some((tarefa) => idsDeAcao.has(tarefa.actionId));
+        }).length;
+
+        const horasHonradas = Math.round(completedScoredTasks.reduce((soma, t) => soma + (t.duration / 60), 0));
+
+        /*
+         * A NOTA DO CICLO, DE UMA REGUA SO.
+         *
+         * Ela usa a MESMA porcentagem que a tela mostra no quadro de Execucao.
+         * Nao e detalhe: o pecado original desta parte foi ter tres medicoes
+         * diferentes do mesmo ciclo, e a pessoa ver 100% na tela e uma nota que
+         * saia de outra conta. Se o quadro diz cem, a nota parte de cem.
+         *
+         * O motivo do teto vai junto para o relatorio poder dizer o que segurou
+         * a nota, em vez de deixar a pessoa adivinhando como aconteceu no ciclo
+         * de 20/09: 99 pontos, nota A, nenhum bau, nenhuma explicacao.
+         */
+        const notaDoFecho = notaDoCiclo({
+            conclusaoPct: executionRatePct,
+            dias: durationDays,
+            horas: horasHonradas,
+            metasSeladas: fairScoreResult.fairness.sealedMetas,
+            metasPlanejadas: fairScoreResult.fairness.plannedMetas,
+            diasZerados: daysWithoutCompletion,
+            areasAtivas: areasComEntrega,
+        });
+
         const newReport: Report = {
             id: crypto.randomUUID(),
             cycleId: cycle?.id,
             startDate,
             endDate,
             performanceScore,
+            grade: notaDoFecho.nota,
             cycleName: cycle?.name,
             seasonId: cycleSeasonId,
             metrics: {

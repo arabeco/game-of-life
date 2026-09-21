@@ -19,6 +19,7 @@ import { PlacaEmEscala, LARGURA_OFICIAL_DA_PLACA, ALTURA_OFICIAL_DA_PLACA } from
 import { EraRibbon, ERA_RIBBON_SKINS, getEraRibbonSkin } from '../components/EraRibbon';
 import { MetalReportCard } from '../components/MetalReportCard';
 import { marcaDeRodadaDepoisDoCiclo } from '../utils/freeProgressScope';
+import { bauDaNota } from '../utils/cycleGrade.js';
 import { Portal } from '../components/Portal';
 import { RewardPackModal } from '../components/RewardPackModal';
 
@@ -1000,34 +1001,24 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setScanError(null);
         setShowNewCycleSetup(false);
 
-        const startD = parseDate(report.startDate);
-        const endD = parseDate(report.endDate);
-        const durationDays = Math.max(1, daysBetween(startD, endD) + 1);
-        const score = report.performanceScore;
-
-        let chestType: ChestType | null = null;
-
-        // A regua e ancorada em horas reais: 1 minuto executado vale ~1 EXP.
-        // 7 dias a 6h/dia alcancam Raro, 15 dias a 8h/dia o Epico, e o Lendario
-        // pede 30 dias a 8h/dia com nota quase perfeita. Incomum saiu da escada
-        // do ciclo - continua existindo no Starter Pack e em missao.
-        if (awardedExp >= 14400 && score >= 90 && durationDays >= 30) chestType = 'Lendário';
-        else if (awardedExp >= 7200 && score >= 80) chestType = 'Épico';
-        else if (awardedExp >= 2500 && score >= 70) chestType = 'Raro';
-        else if (awardedExp >= 750) chestType = 'Comum';
-
-        if (chestType && chestType !== 'Lendário') {
-            const roll = Math.random();
-            if (roll < 0.05) {
-                if (chestType === 'Comum') chestType = 'Raro';
-                else if (chestType === 'Raro') chestType = 'Épico';
-                else if (chestType === 'Épico') chestType = 'Lendário';
-            }
-        }
-
-        if (durationDays < 7) {
-            chestType = null;
-        }
+        /*
+         * O BAU SAI DA NOTA, E DE MAIS NADA.
+         *
+         * Aqui havia uma SEGUNDA regua: quatro faixas de EXP cruzadas com o
+         * score e com os dias, mais uma trava de sete dias no fim, mais um
+         * sorteio de 5% para subir um degrau. Somada a faixa do score que virava
+         * nota, eram tres medicoes do mesmo ciclo — e foi assim que um ciclo de
+         * 99 pontos terminou com nota A e nenhum bau, sem que nenhuma das tres
+         * dissesse por que.
+         *
+         * Agora a nota ja carrega o porte: ela e a conclusao limitada pelo teto
+         * de dias e horas. Perguntar de novo por EXP e por dias seria perguntar
+         * duas vezes a mesma coisa e discordar de si mesmo.
+         *
+         * O sorteio de 5% saiu junto. Bau vindo de uma regra que a pessoa
+         * entende vale mais do que bau vindo de sorte que ela nao ve.
+         */
+        const chestType: ChestType | null = bauDaNota(report.grade) as ChestType | null;
 
         setEarnedChest(chestType);
         setGrantedInsignias(['insignia_report_comum']);

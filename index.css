@@ -1516,6 +1516,36 @@ body {
     0 0 0 1px rgba(255, 255, 255, 0.32);
 }
 
+/*
+ * O PAINEL DE MODAL NAO E VIDRO, E PRECISA DIZER ISSO MAIS ALTO.
+ *
+ * O ConfirmationModal e os irmaos montam sobre GlassCard, que carrega a classe
+ * .glass-card. E existe, mais acima nesta folha, uma regra que atende por
+ *
+ *     .mode-game .glass-card { background: var(--glass-bg) !important;
+ *                              backdrop-filter: none !important; }
+ *
+ * com --glass-bg em rgba(26,26,26,.5). O !important ganha do gradiente opaco
+ * declarado logo acima, entao o painel de TODO modal ficava METADE transparente
+ * — e sem o desfoque que ainda o salvaria, porque o mesmo bloco desliga o
+ * backdrop-filter.
+ *
+ * Sobre fundo escuro ninguem notava. Sobre o cartao DOURADO do fim de ciclo o
+ * titulo virava oliva sobre oliva: o texto continuava #e5e7eb, com contraste de
+ * 16 contra o fundo que a folha promete, e a tela mostrava o ouro atravessando
+ * por baixo dele. Medir o texto nao acusava nada, porque o texto estava certo.
+ *
+ * Perguntar nao e a hora de ver o que esta atras. Modal que bloqueia e opaco.
+ */
+.mode-game .ui-modal-panel.glass-card,
+.mode-office .ui-modal-panel.glass-card {
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--skin-accent-color) 12%, rgba(255, 255, 255, 0.08)), transparent 34%),
+    linear-gradient(180deg, rgb(18, 20, 24), rgb(8, 10, 14)) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+}
+
 .ui-modal-panel::before {
   content: "";
   position: absolute;

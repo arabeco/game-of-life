@@ -147,3 +147,85 @@ for (const entrada of [tudoAcima, tudoAbaixo, comSigoMesmo]) {
 }
 
 console.log('Fecho da comparacao: diz o que levar do ciclo, sem cobrar nada dele.');
+
+/* ==========================================================================
+ * A NARRACAO: A FRASE QUE SO PODERIA TER SIDO ESCRITA SOBRE ESTE CICLO.
+ *
+ * O fecho acima CONTA quantas medidas subiram. Ele nunca NOMEIA nada, entao
+ * "na maior parte das medidas este ciclo ficou acima de seus 3 ciclos
+ * anteriores" serve para qualquer ciclo de qualquer pessoa em qualquer mes — e
+ * a pessoa le uma vez e nao leva nada.
+ * ========================================================================== */
+
+const { buildComparisonNarration } = await import('../utils/cycleComparison.ts');
+
+assert.equal(
+  buildComparisonNarration({ sampleSize: 0, metrics: [], headline: null }),
+  null,
+  'sem medida comparavel nao ha o que narrar',
+);
+
+// A FORCA E RELATIVA, E NAO O DELTA CRU.
+//
+// As medidas nao estao na mesma unidade: pontuacao anda de 0 a 100, sequencia
+// de 0 a 28. Pelo delta cru a pontuacao ganhava quase sempre, e "+14 pontos"
+// enterrava uma sequencia que DOBROU — que e a coisa notavel do ciclo.
+// O historico acima e modesto de proposito (exec ~50, sequencia ~3), entao um
+// ciclo forte fica acima em tudo.
+const tudoMelhor = buildCycleComparison(
+  cycle('otimo', { exec: 96, dias: 24, seq: 9, lacunas: 1, score: 88 }),
+  historico,
+);
+const narracaoBoa = buildComparisonNarration(tudoMelhor);
+assert.match(
+  narracaoBoa,
+  /maior sequência subiu de \d+ para \d+ dias/i,
+  `a narracao tem de nomear o movimento mais notavel, com numero: "${narracaoBoa}"`,
+);
+assert.match(narracaoBoa, /Nada cedeu no caminho/i, 'ciclo sem perda diz que nada cedeu');
+
+// Num ciclo misto ela nomeia OS DOIS extremos: o que puxou e o que cobrou.
+// Misto CONTRA ESTE historico: a sequencia e a constancia sobem, a execucao e a
+// pontuacao cedem.
+const misto = buildCycleComparison(
+  cycle('misto', { exec: 34, dias: 22, seq: 9, lacunas: 4, score: 44 }),
+  historico,
+);
+const narracaoMista = buildComparisonNarration(misto);
+assert.match(narracaoMista, /subiu de/i, 'o que melhorou aparece');
+assert.match(narracaoMista, /cedeu de/i, 'o que piorou aparece');
+assert.match(narracaoMista, /No saldo/i, 'e depois dos fatos vem a leitura');
+
+// Numero que SOBE e sempre dito como subida, mesmo quando subir e ruim: "os
+// dias sem entrega cederam" seria elogio dito como perda.
+const soFalha = buildCycleComparison(
+  cycle('falho', { exec: 50, dias: 11, seq: 3, lacunas: 22, score: 60 }),
+  historico,
+);
+const narracaoFalha = buildComparisonNarration(soFalha);
+assert.match(
+  narracaoFalha,
+  /dias sem entrega cresceram de \d+ para \d+/i,
+  `numero que sobe se diz subindo: "${narracaoFalha}"`,
+);
+
+// Ciclo identico ao proprio normal nao inventa movimento.
+const parado = buildCycleComparison(
+  cycle('igual', { exec: 50, dias: 11, seq: 3, lacunas: 9, score: 60 }),
+  historico,
+);
+assert.match(
+  buildComparisonNarration(parado),
+  /Nada se moveu além do ruído/i,
+  'sem movimento, a narracao diz isso em vez de forcar um destaque',
+);
+
+// Nenhuma narracao cobra, e todas cabem num cartaz.
+for (const entrada of [tudoMelhor, misto, soFalha, parado]) {
+  const frase = buildComparisonNarration(entrada);
+  assert.ok(frase, 'toda comparacao com medida tem narracao');
+  assert.doesNotMatch(frase, /falh(ou|ei)|fracass|preguic|deveria|desperdic/i, `narracao nao cobra: "${frase}"`);
+  assert.ok(frase.length <= 200, `narracao longa demais para um cartaz: "${frase}"`);
+}
+
+console.log('Narracao da comparacao: nomeia os extremos com numero, e so entao le o saldo.');

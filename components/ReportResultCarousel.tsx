@@ -12,7 +12,7 @@ import { GraficoDeDiasDoCiclo } from './GraficoDeDiasDoCiclo';
 import { resolveItemDef } from '../constants/items';
 import { ChevronLeftIcon, ChevronRightIcon, XIcon, ShareIcon, CheckIcon, CrownIcon, ZapIcon, TrophyIcon, Trash2Icon, RefreshCwIcon } from './Icons';
 import { MetalReportCard } from './MetalReportCard';
-import { buildComparisonClosingLine, buildCycleComparison, isFavourable } from '../utils/cycleComparison';
+import { buildComparisonClosingLine, buildComparisonNarration, buildCycleComparison, isFavourable } from '../utils/cycleComparison';
 import { hasPlatinumAccess } from '../utils/premiumAccess';
 import { exportElementAsImage, shouldPreferNativeShare } from './Share';
 import { ShareChoiceSheet } from './ShareChoiceSheet';
@@ -487,7 +487,24 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         [isPlatinum, report, reports],
     );
     const showComparisonSlide = Boolean(comparison && comparison.metrics.length > 0);
-    const closingLine = comparison ? buildComparisonClosingLine(comparison) : null;
+    /*
+     * A NARRACAO NO LUGAR DO FECHO GENERICO.
+     *
+     * `buildComparisonClosingLine` conta quantas medidas subiram e quantas
+     * desceram: "na maior parte das medidas este ciclo ficou acima de seus 3
+     * ciclos anteriores" serve para qualquer ciclo de qualquer pessoa em
+     * qualquer mes, e a pessoa le uma vez e nao leva nada.
+     *
+     * A narracao pega os dois extremos e diz os numeros deles — "A maior
+     * sequencia subiu de 4 para 9 dias. A execucao cedeu de 88% para 76%." —, e
+     * so entao le o saldo. E a unica frase da apresentacao que so poderia ter
+     * sido escrita sobre ESTE ciclo.
+     *
+     * O fecho antigo fica de reserva para relatorio sem medida comparavel.
+     */
+    const closingLine = comparison
+        ? (buildComparisonNarration(comparison) || buildComparisonClosingLine(comparison))
+        : null;
 
     /*
      * CONTRA VOCE: O QUADRO DO PLATINUM.

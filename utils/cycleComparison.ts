@@ -172,6 +172,87 @@ export const buildComparisonClosingLine = (comparison: CycleComparison): string 
   return 'A maior parte cedeu, mas não tudo. O que resistiu e por onde começar da próxima vez.';
 };
 
+/* ==========================================================================
+ * A NARRACAO DO CICLO.
+ *
+ * As duas frases acima CONTAM quantas medidas subiram e quantas desceram, e
+ * nenhuma delas NOMEIA nada: "na maior parte das medidas este ciclo ficou acima
+ * de seus 3 ciclos anteriores" serve para qualquer ciclo de qualquer pessoa em
+ * qualquer mes. A pessoa le uma vez e nao leva nada.
+ *
+ * Esta pega os dois extremos — o que mais subiu a favor e o que mais cedeu — e
+ * diz os numeros deles. "A maior sequencia subiu de 4 para 9 dias. A execucao
+ * cedeu de 88% para 76%." Duas frases curtas com nome e numero valem mais que
+ * um paragrafo de leitura geral, e so podem ter sido escritas sobre ESTE ciclo.
+ *
+ * O fecho e uma leitura, e nao uma cobranca: o ciclo ja acabou, nao ha o que
+ * corrigir nele.
+ * ========================================================================== */
+
+const SUJEITOS: Record<CycleMetricComparison['id'], { nome: string; unidade: string }> = {
+  execucao: { nome: 'A execução', unidade: '' },
+  constancia: { nome: 'Os dias com entrega', unidade: '' },
+  sequencia: { nome: 'A maior sequência', unidade: ' dias' },
+  lacunas: { nome: 'Os dias sem entrega', unidade: '' },
+  pontuacao: { nome: 'A pontuação', unidade: '' },
+};
+
+const frasear = (metrica: CycleMetricComparison): string => {
+  const { nome, unidade } = SUJEITOS[metrica.id];
+  // O verbo segue a DIRECAO do numero, e nao se aquilo foi bom: "os dias sem
+  // entrega cederam" seria elogio dito como perda. Numero que desce, desce.
+  const verbo = metrica.delta > 0
+    ? (isFavourable(metrica) ? 'subiu' : 'cresceu')
+    : (isFavourable(metrica) ? 'caiu' : 'cedeu');
+  const plural = nome.startsWith('Os');
+  const conjugado = plural
+    ? { subiu: 'subiram', cresceu: 'cresceram', caiu: 'caíram', cedeu: 'cederam' }[verbo]
+    : verbo;
+  return `${nome} ${conjugado} de ${metrica.baseline}${metrica.suffix} para ${metrica.current}${metrica.suffix}${unidade}.`;
+};
+
+export const buildComparisonNarration = (comparison: CycleComparison): string | null => {
+  if (comparison.metrics.length === 0) return null;
+
+  const moveram = comparison.metrics.filter((metrica) => metrica.direction !== 'estavel');
+  if (moveram.length === 0) {
+    return `Nada se moveu além do ruído. Este ciclo repetiu, medida por medida, o que você já vinha fazendo nos ${comparison.sampleSize} anteriores.`;
+  }
+
+  /*
+   * A FORCA E RELATIVA, E NAO O DELTA CRU.
+   *
+   * As medidas nao estao na mesma unidade: pontuacao anda de 0 a 100, sequencia
+   * anda de 0 a 28. Ordenando pelo delta cru, a pontuacao ganhava quase sempre —
+   * "+14 pontos" enterrava uma sequencia que dobrou de 4 para 9 dias, que e a
+   * coisa notavel do ciclo. Proporcao ao proprio normal poe as cinco na mesma
+   * regua: 4 para 9 e +125%, 74 para 88 e +19%.
+   */
+  const forca = (metrica: CycleMetricComparison) => (
+    Math.abs(metrica.delta) / Math.max(1, Math.abs(metrica.baseline))
+  );
+  const aFavor = moveram.filter(isFavourable).sort((esq, dir) => forca(dir) - forca(esq));
+  const contra = moveram.filter((metrica) => !isFavourable(metrica)).sort((esq, dir) => forca(dir) - forca(esq));
+
+  const partes: string[] = [];
+  if (aFavor[0]) partes.push(frasear(aFavor[0]));
+  if (contra[0]) partes.push(frasear(contra[0]));
+
+  if (contra.length === 0) {
+    partes.push('Nada cedeu no caminho.');
+  } else if (aFavor.length === 0) {
+    partes.push('Vale olhar se a carga planejada mudou antes de concluir qualquer coisa.');
+  } else if (aFavor.length > contra.length) {
+    partes.push('No saldo, o ciclo andou para a frente.');
+  } else if (contra.length > aFavor.length) {
+    partes.push('No saldo, ele pediu mais do que rendeu.');
+  } else {
+    partes.push('Um ciclo de troca: o que subiu custou o que desceu.');
+  }
+
+  return partes.join(' ');
+};
+
 export const buildCycleComparison = (
   report: Report,
   history: Report[],

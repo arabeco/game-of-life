@@ -164,6 +164,13 @@ const suites = {
       interactions: ['o dia 1 nao recebe "salve o que puder"', 'um dia cheio pela frente nao e ciclo perdido', 'sem ciclo nao ha risco de ciclo', 'mais tarde o aviso continua vindo'],
     },
     {
+      id: 'relatorio-sem-repeticao',
+      label: 'Relatorio sem repeticao regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'relatorio-sem-repeticao.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['cada quadro responde uma pergunta diferente', 'um numero aparece uma vez so', 'o melhor dia e a maior sequencia saem do banco para a tela', 'a comparacao com o historico deixa de ser so do Platinum'],
+    },
+    {
       id: 'xp-scale',
       label: 'XP scale regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'xp-scale.regression.mjs')]],

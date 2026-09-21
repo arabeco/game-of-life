@@ -33,7 +33,7 @@ const QUADROS = [
             { rotulo: 'Ações', valor: '66/66' },
             { rotulo: 'Carga', valor: '55h', nota: '9.1h por dia' },
             { rotulo: 'Presença', valor: '7/7', nota: 'nenhum dia zerado', tom: 'bom' as const },
-            { rotulo: 'Ritmo', valor: '0', nota: 'no compasso' },
+            { rotulo: 'Melhor dia', valor: 'qui 18/09', nota: '14 entregas' },
         ],
     },
     {
@@ -47,9 +47,7 @@ const QUADROS = [
         rotulo: 'o ciclo inteiro, dia a dia',
         legenda: [
             { rotulo: 'Semanas', valor: '1' },
-            { rotulo: 'Dias ativos', valor: '7/7' },
-            { rotulo: 'Feitas', valor: '66/66' },
-            { rotulo: 'Carga', valor: '55h' },
+            { rotulo: 'Maior sequência', valor: '7', nota: 'dias seguidos', tom: 'bom' as const },
         ],
     },
     {
@@ -77,7 +75,6 @@ const QUADROS = [
         rotulo: 'depositados na sua nobreza',
         legenda: [
             { rotulo: 'Metas', valor: '7/7', nota: 'todas seladas', tom: 'bom' as const },
-            { rotulo: 'Desafios', valor: '0' },
             { rotulo: 'Ouro', valor: '+5' },
         ],
     },
@@ -92,7 +89,7 @@ const QUADROS = [
         // mock velho mente com a mesma cara de bug vivo.
         legenda: [
             { rotulo: 'Conclusão', valor: '100%' },
-            { rotulo: 'Ações', valor: '66/66' },
+            { rotulo: 'vs. 3 ciclos', valor: '+12%', nota: 'mediana 88%', tom: 'bom' as const },
         ],
         remate: 'Execução sólida. O ciclo foi honrado.',
     },

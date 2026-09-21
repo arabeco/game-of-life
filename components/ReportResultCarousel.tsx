@@ -24,6 +24,26 @@ const ReportRadarChart = React.lazy(() => import('./ReportRadarChart').then((m) 
 const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 const daysBetween = (start: Date, end: Date) => Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 
+/**
+ * O melhor dia do ciclo, curto o bastante para caber numa vaga de rodape.
+ *
+ * `bestDay` e `bestDayCount` sao calculados no fecho e gravados no relatorio
+ * desde sempre — e nenhuma tela lia nenhum dos dois. Enquanto isso o rodape da
+ * Execucao gastava a quarta vaga com o Ritmo, que e um delta contra o planejado
+ * e da zero quase sempre: um "0" sozinho no meio de 66/66 e 7/7, que se le como
+ * resultado nulo em vez de "no compasso".
+ */
+const rotuloDoMelhorDia = (iso?: string): string | null => {
+    if (!iso) return null;
+    // Meio-dia UTC: a data e um dia local gravado sem hora, e a meia-noite faria
+    // o fuso empurrar para o dia anterior em qualquer lugar a oeste de Greenwich.
+    const dia = new Date(`${iso}T12:00:00Z`);
+    if (Number.isNaN(dia.getTime())) return null;
+    const semana = dia.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: 'UTC' }).replace('.', '');
+    const doisDigitos = (n: number) => String(n).padStart(2, '0');
+    return `${semana} ${doisDigitos(dia.getUTCDate())}/${doisDigitos(dia.getUTCMonth() + 1)}`;
+};
+
 interface ReportResultCarouselProps {
     report: Report;
     onOk: () => void;
@@ -163,6 +183,8 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     const paceDelta = metrics.paceDeltaPct ?? (executionPercentage - timeElapsedPercentage);
     const paceLabel = paceDelta >= 5 ? 'Adiantado' : paceDelta <= -5 ? 'Atrasado' : 'No compasso';
     const paceColor = paceDelta >= 5 ? 'text-green-400' : paceDelta <= -5 ? 'text-red-400' : 'text-white';
+    const melhorDia = rotuloDoMelhorDia(metrics.bestDay);
+    const maiorSequencia = metrics.maxStreak || 0;
 
     const handleExportRewardCard = async (forcePreferShare?: boolean) => {
         if (isExportingRewardCard) return;
@@ -276,12 +298,23 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                     nota: diasSemNada > 0 ? `${diasSemNada} ${diasSemNada === 1 ? 'dia zerado' : 'dias zerados'}` : 'nenhum dia zerado',
                     tom: diasSemNada === 0 ? 'bom' : 'normal',
                 },
-                {
-                    rotulo: 'Ritmo',
-                    valor: paceDelta > 0 ? `+${paceDelta}` : `${paceDelta}`,
-                    nota: paceLabel.toLowerCase(),
-                    tom: paceDelta >= 5 ? 'bom' : paceDelta <= -5 ? 'alerta' : 'normal',
-                },
+                /* A quarta vaga era do Ritmo, e o Ritmo quase sempre e zero.
+                   Aqui entra o MELHOR DIA: um fato que a pessoa nao tem de
+                   cabeca, que so este ciclo produziu, e que estava calculado e
+                   guardado sem nunca chegar a uma tela. Quando o ciclo nao tem
+                   um pico — nenhuma entrega — a vaga simplesmente nao existe, em
+                   vez de mostrar um zero. */
+                ...(melhorDia && (metrics.bestDayCount || 0) > 0
+                    ? [{
+                        rotulo: 'Melhor dia',
+                        valor: melhorDia,
+                        nota: `${metrics.bestDayCount} ${metrics.bestDayCount === 1 ? 'entrega' : 'entregas'}`,
+                        // Sem tom: e um FATO, nao um veredito. O verde ja esta na
+                        // Presenca deste mesmo rodape, e verde em tudo e verde em
+                        // nada — ainda mais disputando com o acabamento dourado,
+                        // que e a identidade do quadro.
+                    }]
+                    : []),
             ]}
         />
         );
@@ -301,11 +334,26 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
             titulo="Atlas"
             figura={<CycleAtlasPanel weeks={weeklyAtlas} semMoldura />}
             rotulo="o ciclo inteiro, dia a dia"
+            /* O RODAPE DO ATLAS ERA TRES QUARTOS REPETICAO.
+               "Dias ativos" era a Presenca da Execucao com outro nome, "Feitas"
+               eram as Acoes, "Carga" era a Carga — os mesmos tres numeros, na
+               tela seguinte, com rotulos diferentes. Parecia informacao nova e
+               era o mesmo ciclo dito duas vezes.
+               A grade em cima fala de FORMA: onde o ciclo emendou e onde furou.
+               Entao o rodape passa a medir a forma dela — a maior emenda e em
+               quantas semanas ela se espalhou.
+               Sao DOIS, e nao tres: "dias sem entrega" tambem entrou aqui e saiu
+               no mesmo dia, porque e a nota da Presenca na Execucao dita de
+               novo. Duas vagas de coisas que so existem aqui valem mais que tres
+               com uma repetida. */
             legenda={[
                 { rotulo: 'Semanas', valor: `${weeklyAtlas.length}` },
-                { rotulo: 'Dias ativos', valor: `${metrics.consistencyDays || 0}/${totalDays}` },
-                { rotulo: 'Feitas', valor: `${metrics.actionsCompleted}/${metrics.totalPlannedActions}` },
-                { rotulo: 'Carga', valor: `${metrics.totalHours}h` },
+                {
+                    rotulo: 'Maior sequência',
+                    valor: `${maiorSequencia}`,
+                    nota: maiorSequencia === 1 ? 'dia seguido' : 'dias seguidos',
+                    tom: maiorSequencia >= totalDays && totalDays > 1 ? 'bom' : 'normal',
+                },
             ]}
         />
     );
@@ -387,8 +435,16 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 nota: plannedMetas > 0 && sealedMetas === plannedMetas ? 'todas seladas' : undefined,
                 tom: plannedMetas > 0 && sealedMetas === plannedMetas ? 'bom' : 'normal',
             },
-            { rotulo: 'Desafios', valor: `${metrics.questsCompleted || 0}` },
         ];
+
+        /* ZERO NAO E CONQUISTA.
+           "Desafios 0" ocupava vaga fixa num quadro que se chama Conquistas, ao
+           lado de "Metas 7/7" e "Ouro +5". Numero que so aparece quando existe
+           deixa o rodape mais curto num ciclo magro — e um rodape curto de coisas
+           reais vale mais do que um cheio com um zero dentro. */
+        if ((metrics.questsCompleted || 0) > 0) {
+            legenda.push({ rotulo: 'Desafios', valor: `${metrics.questsCompleted}` });
+        }
 
         if ((report.clanPoints || 0) > 0) {
             legenda.push({ rotulo: 'Clã', valor: `${report.clanPoints}`, nota: 'pontos levados' });
@@ -410,14 +466,27 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         );
     };
 
-    // Platinum: o relatorio deixa de descrever um ciclo solto e passa a compara-lo
-    // com os ciclos ja fechados. Entra condicionalmente, como o Atlas.
+    /*
+     * A COMPARACAO SE CALCULA PARA TODO MUNDO; SO O QUADRO INTEIRO E DO PLATINUM.
+     *
+     * Ela era a unica tela da apresentacao que dizia algo que a pessoa NAO SABIA
+     * — todo o resto ela viveu — e estava inteira atras de `isPlatinum ? : null`.
+     * No lancamento isso quer dizer ninguem: o quadro exige dois ciclos fechados
+     * antes, e quem tem dois ciclos fechados ainda nem decidiu se fica.
+     *
+     * Os dados ja existem e a conta e local, entao cobrar por ela custava a
+     * melhor parte do relatorio para quase todo mundo. Agora o gratuito recebe
+     * UMA linha, no rodape do Veredito, a partir do segundo ciclo. O Platinum
+     * continua com o quadro completo, todas as medidas contra a mediana do
+     * historico: profundidade continua paga, a virada de lista-de-tarefas para
+     * historico deixa de ser.
+     */
     const isPlatinum = hasPlatinumAccess(userProfile);
     const comparison = useMemo(
-        () => (isPlatinum ? buildCycleComparison(report, reports || []) : null),
-        [isPlatinum, report, reports],
+        () => buildCycleComparison(report, reports || []),
+        [report, reports],
     );
-    const showComparisonSlide = Boolean(comparison && comparison.metrics.length > 0);
+    const showComparisonSlide = Boolean(isPlatinum && comparison && comparison.metrics.length > 0);
     const closingLine = comparison ? buildComparisonClosingLine(comparison) : null;
 
     /*
@@ -561,6 +630,10 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
          * generica, e a pessoa nao tinha como saber que faltou UM DIA. Frase
          * bonita a gente le uma vez; motivo a gente usa no proximo ciclo.
          */
+        // A execucao e a medida que o Veredito julga, entao e ela que se compara
+        // aqui. As outras quatro (constancia, sequencia, lacunas, pontuacao)
+        // continuam inteiras no quadro do Platinum.
+        const contraOHistorico = comparison?.metrics.find((medida) => medida.id === 'execucao') || null;
         const conclusaoPct = metrics.executionRatePct
             ?? Math.round((metrics.actionsCompleted / Math.max(metrics.totalPlannedActions, 1)) * 100);
 
@@ -572,7 +645,26 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 rotulo={`${formatDate(report.startDate)} — ${formatDate(report.endDate)} · ${totalDays} dias`}
                 legenda={[
                     { rotulo: 'Conclusão', valor: `${conclusaoPct}%` },
-                    { rotulo: 'Ações', valor: `${metrics.actionsCompleted}/${metrics.totalPlannedActions}` },
+                    /* A SEGUNDA VAGA ERA "ACOES 66/66", QUE E O RODAPE DA EXECUCAO.
+                       Repetir o mesmo numero no climax nao acrescenta nada: quem
+                       chegou aqui passou por ele ha quatro quadros.
+                       No lugar entra a unica coisa da apresentacao que a pessoa
+                       NAO viveu — como este ciclo se compara com os que ela ja
+                       fechou. No primeiro ciclo nao ha com o que comparar, e a
+                       Conclusao fica sozinha e centrada, que e melhor do que
+                       encher a linha. */
+                    ...(contraOHistorico
+                        ? [{
+                            rotulo: `vs. ${comparison!.sampleSize} ${comparison!.sampleSize === 1 ? 'ciclo' : 'ciclos'}`,
+                            valor: contraOHistorico.direction === 'estavel'
+                                ? 'igual'
+                                : `${contraOHistorico.delta > 0 ? '+' : ''}${contraOHistorico.delta}${contraOHistorico.suffix}`,
+                            nota: `mediana ${contraOHistorico.baseline}${contraOHistorico.suffix}`,
+                            tom: (contraOHistorico.direction === 'acima'
+                                ? 'bom'
+                                : contraOHistorico.direction === 'abaixo' ? 'alerta' : 'normal') as 'bom' | 'alerta' | 'normal',
+                        }]
+                        : []),
                 ]}
                 // A frase segue a LETRA que esta na tela, e nao o score que deixou
                 // de decidir a letra. Um ciclo de 100% em cinco dias mostrava "B"

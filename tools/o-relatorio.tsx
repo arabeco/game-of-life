@@ -18,6 +18,31 @@ import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { SlideCartaz } from '../components/SlideCartaz';
 import { GraficoDeDiasDoCiclo } from '../components/GraficoDeDiasDoCiclo';
+import { ReportRadarChart } from '../components/ReportRadarChart';
+
+/**
+ * As areas, em FATIA do ciclo — as cinco somam 100.
+ *
+ * O "equilibrado" e o caso que expunha o defeito: 20 em cada uma desenhava um
+ * pentagono do tamanho de uma moeda contra uma escala de 100, e quem espalhou
+ * bem o esforco via o grafico dizer que nao fez nada.
+ */
+const AREAS_DE_MENTIRA: Record<string, { subject: string; A: number; fullMark: number }[]> = {
+    'áreas · equilibrado': [
+        { subject: 'Corpo', A: 21, fullMark: 100 },
+        { subject: 'Mente', A: 20, fullMark: 100 },
+        { subject: 'Trabalho', A: 19, fullMark: 100 },
+        { subject: 'Relações', A: 20, fullMark: 100 },
+        { subject: 'Espírito', A: 20, fullMark: 100 },
+    ],
+    'áreas · puxado por uma': [
+        { subject: 'Corpo', A: 52, fullMark: 100 },
+        { subject: 'Mente', A: 14, fullMark: 100 },
+        { subject: 'Trabalho', A: 22, fullMark: 100 },
+        { subject: 'Relações', A: 8, fullMark: 100 },
+        { subject: 'Espírito', A: 4, fullMark: 100 },
+    ],
+};
 
 const PATAMARES = ['S', 'A', 'B', 'C', 'D', 'E'];
 
@@ -89,11 +114,6 @@ const QUADROS = [
     {
         id: 'territorio',
         titulo: 'TERRITÓRIO',
-        figura: (
-            <div className="mx-auto flex h-[190px] w-full max-w-[300px] items-center justify-center rounded-xl border border-white/10 bg-black/30 text-[10px] uppercase tracking-[0.2em] text-white/30">
-                o pentágono das áreas
-            </div>
-        ),
         rotulo: 'academia e dieta puxou o ciclo',
         // TRES itens, de proposito: e o quadro que mostrava o ultimo sozinho na
         // coluna da esquerda, com um buraco do lado.
@@ -134,6 +154,7 @@ const QUADROS = [
 const Bancada: React.FC = () => {
     const [rank, setRank] = useState('A');
     const [cicloDeMentira, setCicloDeMentira] = useState('7 dias · 100%');
+    const [areasDeMentira, setAreasDeMentira] = useState('áreas · equilibrado');
 
     return (
         <div className="min-h-screen bg-[#0b0b0c] p-6 text-white">
@@ -160,12 +181,12 @@ const Bancada: React.FC = () => {
                     ))}
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2">
-                    {Object.keys(CICLOS_DE_MENTIRA).map((nome) => (
+                    {[...Object.keys(CICLOS_DE_MENTIRA), ...Object.keys(AREAS_DE_MENTIRA)].map((nome) => (
                         <button
                             key={nome}
-                            onClick={() => setCicloDeMentira(nome)}
+                            onClick={() => (CICLOS_DE_MENTIRA[nome] ? setCicloDeMentira(nome) : setAreasDeMentira(nome))}
                             className={`rounded-lg border px-3 py-1.5 text-[10.5px] font-bold transition-all ${
-                                cicloDeMentira === nome
+                                cicloDeMentira === nome || areasDeMentira === nome
                                     ? 'border-white/40 bg-white/15 text-white'
                                     : 'border-white/10 bg-white/5 text-white/50 hover:bg-white/10'
                             }`}
@@ -185,7 +206,9 @@ const Bancada: React.FC = () => {
                                 rank={rank}
                                 figura={q.id === 'atlas'
                                     ? <GraficoDeDiasDoCiclo weeks={CICLOS_DE_MENTIRA[cicloDeMentira]} rank={rank} />
-                                    : q.figura}
+                                    : q.id === 'territorio'
+                                        ? <ReportRadarChart data={AREAS_DE_MENTIRA[areasDeMentira]} />
+                                        : q.figura}
                             />
                         </div>
                         <figcaption className="mt-2 text-center text-[10px] font-black uppercase tracking-[0.2em] text-white/35">

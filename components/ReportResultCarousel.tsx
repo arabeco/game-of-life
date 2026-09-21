@@ -395,7 +395,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                     rank={notaDoRelatorio}
                     titulo="Território"
                     figura={(
-                        <Suspense fallback={<div className="h-[240px] w-full" />}>
+                        <Suspense fallback={<div className="h-[276px] w-full" />}>
                             <ReportRadarChart data={radarData} />
                         </Suspense>
                     )}

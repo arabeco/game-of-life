@@ -60,7 +60,8 @@
     "test:continuar-sem-ciclo": "node tests/continuar-sem-ciclo.regression.mjs",
     "test:rodada-dupla": "node tests/rodada-nao-paga-duas-vezes.regression.mjs",
     "test:regras-desbloqueio": "node tests/regras-de-desbloqueio.regression.mjs",
-    "arte:pendente": "node scripts/placeholders-pendentes.mjs"
+    "arte:pendente": "node scripts/placeholders-pendentes.mjs",
+    "test:nota-do-ciclo": "node tests/nota-do-ciclo.regression.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.0",

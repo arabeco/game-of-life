@@ -143,6 +143,13 @@ const suites = {
       interactions: ['nenhuma borda ou banner fica sem caminho', 'regra nao promete item que nao existe', 'um item nao sai por duas regras'],
     },
     {
+      id: 'nota-do-ciclo',
+      label: 'Nota do ciclo regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'nota-do-ciclo.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['a conclusao da a nota e o porte da o teto', 'o SS pede um mes impecavel e nao um mes comprido', 'o bau sai da nota e de mais nada'],
+    },
+    {
       id: 'xp-scale',
       label: 'XP scale regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'xp-scale.regression.mjs')]],

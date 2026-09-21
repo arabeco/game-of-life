@@ -94,13 +94,6 @@ const QUADROS = [
             { rotulo: 'Conclusão', valor: '100%' },
             { rotulo: 'Ações', valor: '66/66' },
         ],
-        barras: [
-            { rotulo: 'Honra', pts: 40, max: 40 },
-            { rotulo: 'Metas', pts: 30, max: 30 },
-            { rotulo: 'Cadência', pts: 15, max: 15 },
-            { rotulo: 'Realismo', pts: 10, max: 10 },
-            { rotulo: 'Ascensão', pts: 4, max: 5 },
-        ],
         remate: 'Execução sólida. O ciclo foi honrado.',
     },
 ];

@@ -9,13 +9,6 @@ export interface LegendaDoCartaz {
     tom?: 'normal' | 'bom' | 'alerta';
 }
 
-export interface BarraDoCartaz {
-    rotulo: string;
-    pts: number;
-    max: number;
-    destaque?: boolean;
-}
-
 interface SlideCartazProps {
     titulo: string;
     /** Uma marca ao lado do titulo — o selo do Platinum, por exemplo. */
@@ -37,8 +30,6 @@ interface SlideCartazProps {
     /** 0 a 100. Desenha um traco sob o numero; omitir quando nao houver escala. */
     progresso?: number;
     legenda?: LegendaDoCartaz[];
-    /** A decomposicao de uma nota, quando ela existe. */
-    barras?: BarraDoCartaz[];
     /** Uma frase de fechamento, quando o ciclo tem algo a dizer. */
     remate?: string;
     /** A nota do ciclo. E ela que da o acabamento do quadro. */
@@ -87,7 +78,6 @@ export const SlideCartaz: React.FC<SlideCartazProps> = ({
     rotulo,
     progresso,
     legenda = [],
-    barras = [],
     remate,
     rank,
 }) => {
@@ -264,44 +254,6 @@ export const SlideCartaz: React.FC<SlideCartazProps> = ({
                 </div>
             )}
 
-            {barras.length > 0 && (
-                /* A decomposicao da nota: cada criterio vale ate um teto, entao a
-                   barra mede o quanto daquele teto o ciclo alcancou. Tudo no
-                   acabamento do patamar — era cinza sobre cinza, cinco fios de
-                   1px que ninguem lia. */
-                <div
-                    className="relative z-[3] w-full max-w-[320px] space-y-2.5 pt-5"
-                    style={{ borderTop: `1px solid ${acabamento.mid}33` }}
-                >
-                    {barras.map((barra) => (
-                        <div key={barra.rotulo} className="flex items-center gap-3">
-                            <span
-                                className="w-[80px] shrink-0 truncate text-right text-[9.5px] font-black uppercase tracking-[0.16em]"
-                                style={{ color: barra.destaque ? '#EAB308' : `${acabamento.pale}99` }}
-                            >
-                                {barra.rotulo}
-                            </span>
-                            <div className="h-[4px] flex-1 overflow-hidden rounded-full" style={{ background: acabamento.dark }}>
-                                <div
-                                    className="h-full rounded-full transition-[width] duration-700"
-                                    style={{
-                                        width: `${barra.max > 0 ? Math.min(100, (barra.pts / barra.max) * 100) : 0}%`,
-                                        background: barra.destaque
-                                            ? 'linear-gradient(90deg, #a97e12, #ffe08a)'
-                                            : `linear-gradient(90deg, ${acabamento.mid}, ${acabamento.pale})`,
-                                    }}
-                                />
-                            </div>
-                            <span
-                                className="w-8 shrink-0 text-right text-[10.5px] font-black tabular-nums"
-                                style={{ color: barra.destaque ? '#EAB308' : `${acabamento.pale}bb` }}
-                            >
-                                +{barra.pts}
-                            </span>
-                        </div>
-                    ))}
-                </div>
-            )}
 
             {remate && (
                 <p

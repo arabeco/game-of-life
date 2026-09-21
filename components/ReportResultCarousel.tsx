@@ -123,7 +123,6 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     const { metrics, highlight, assetProgress } = report;
     const weeklyAtlas = metrics.weeklyAtlas || [];
     const fairness = metrics.fairness;
-    const isFairScoreModel = metrics.scoreModelVersion === 'fair_v2_1' && !!fairness?.scoreBreakdown;
     const isLowSignal = fairness?.measurementStatus === 'low_signal';
     const sealedMetas = metrics.sealedMetas ?? metrics.goalsMet ?? 0;
     const plannedMetas = metrics.plannedMetas ?? Math.max(sealedMetas, 0);
@@ -516,33 +515,24 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
      * VEREDITO: O CLIMAX, E ELE E UMA LETRA.
      *
      * Ja era um cartaz — a letra em corpo enorme e a frase embaixo —, mas em
-     * branco chapado sobre preto, com a decomposicao em cinco fios cinzas de 1px
-     * que ninguem lia. A letra e o simbolo mais importante da apresentacao
-     * inteira: ela merece o acabamento do patamar, que e justamente o que ela
-     * nomeia.
+     * branco chapado sobre preto, com a decomposicao do indice em cinco fios cinzas
+     * de 1px que ninguem lia — e que hoje nem existem mais. A letra e o simbolo
+     * mais importante da apresentacao inteira: ela merece o acabamento do patamar,
+     * que e justamente o que ela nomeia.
      */
     const renderVerdictSlide = () => {
-        const decomposicao = isFairScoreModel
-            ? [
-                { rotulo: 'Honra', pts: fairness!.scoreBreakdown.honorPts, max: 40 },
-                { rotulo: 'Metas', pts: fairness!.scoreBreakdown.metaPts, max: 30 },
-                { rotulo: 'Cadência', pts: fairness!.scoreBreakdown.cadencePts, max: 15 },
-                { rotulo: 'Realismo', pts: fairness!.scoreBreakdown.realismPts, max: 10 },
-                { rotulo: 'Ascensão', pts: fairness!.scoreBreakdown.ascensionPts, max: 5 },
-            ]
-            : metrics.scoreBreakdown
-                ? [
-                    { rotulo: 'Progresso', pts: metrics.scoreBreakdown.progressPts, max: 40 },
-                    { rotulo: 'Marcos', pts: metrics.scoreBreakdown.milestonePts, max: Math.max(metrics.scoreBreakdown.milestonePts, 30) },
-                    { rotulo: 'Desafios', pts: metrics.scoreBreakdown.questPts, max: Math.max(metrics.scoreBreakdown.questPts, 20) },
-                    { rotulo: 'Consistência', pts: metrics.scoreBreakdown.consistencyPts, max: 20 },
-                    { rotulo: 'Volume', pts: metrics.scoreBreakdown.volumePts, max: 30 },
-                    ...((metrics.scoreBreakdown.premiumBonusPts ?? 0) > 0
-                        ? [{ rotulo: 'Premium', pts: metrics.scoreBreakdown.premiumBonusPts!, max: Math.max(metrics.scoreBreakdown.premiumBonusPts!, 50), destaque: true }]
-                        : []),
-                ]
-                : [];
-
+        /*
+         * AS CINCO BARRAS SAIRAM.
+         *
+         * Elas decompunham o indice de 100 pontos — Honra 40, Metas 30, Cadencia
+         * 15, Realismo 10, Ascensao 5 — e o indice deixou de decidir a letra. O
+         * cartao ficava com a CONCLUSAO em cima, de onde a nota vem, e cinco
+         * barras somando 99 embaixo, de onde ela nao vem mais. Duas reguas no
+         * mesmo cartao, e a de baixo sem poder nenhum.
+         *
+         * O que sobra e o que a nota realmente e: a letra, o periodo, a conclusao,
+         * as acoes, e uma frase. Uma regua do comeco ao fim.
+         */
         if (isLowSignal) {
             return (
                 <SlideCartaz
@@ -584,7 +574,6 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                     { rotulo: 'Conclusão', valor: `${conclusaoPct}%` },
                     { rotulo: 'Ações', valor: `${metrics.actionsCompleted}/${metrics.totalPlannedActions}` },
                 ]}
-                barras={decomposicao}
                 // A frase segue a LETRA que esta na tela, e nao o score que deixou
                 // de decidir a letra. Um ciclo de 100% em cinco dias mostrava "B"
                 // com "Plano honrado em alto patamar. Raro e preciso." embaixo.

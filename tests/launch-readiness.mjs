@@ -136,6 +136,13 @@ const suites = {
       interactions: ['concluir a rodada no meio do dia nao devolve o dia ja pago', 'a marca na virada do dia conta o proprio dia'],
     },
     {
+      id: 'regras-desbloqueio',
+      label: 'Regras de desbloqueio regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'regras-de-desbloqueio.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['nenhuma borda ou banner fica sem caminho', 'regra nao promete item que nao existe', 'um item nao sai por duas regras'],
+    },
+    {
       id: 'xp-scale',
       label: 'XP scale regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'xp-scale.regression.mjs')]],

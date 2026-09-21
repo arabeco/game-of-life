@@ -65,7 +65,7 @@ const CENARIOS: Cenario[] = [
     {
         id: 'missao', rotulo: 'Missão concluída', nota: 'com vídeo',
         type: 'QUEST_COMPLETED',
-        data: { title: 'Cinco dias em movimento', icon: '🎯', reward: premio(['item_glyph_3_002'], 150) },
+        data: { title: 'Cinco dias em movimento', icon: '🎯', reward: premio(['item_plate_3_001'], 150) },
     },
     {
         id: 'relatorio', rotulo: 'Relatório concluído', nota: 'com vídeo',
@@ -195,7 +195,7 @@ function Bancada() {
                     fallbackSummary="Os itens já estão no seu arsenal."
                     fallbackButtonLabel="Receber"
                     payload={{
-                        itemIds: ['item_glyph_3_002', 'item_border_t3_mistico'],
+                        itemIds: ['item_plate_3_001', 'item_border_t3_mistico'],
                         rewardDetails: [
                             { category: 'ui_skins', itemId: 'AURORA', name: 'Tema: Aurora Boreal' },
                         ],

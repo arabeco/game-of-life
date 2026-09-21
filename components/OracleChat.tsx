@@ -36,9 +36,24 @@ const isReading = (id?: string) => id === READING_FEED_ID || id === CYCLE_READIN
  * quis ser: card de conteudo, que nao depende do seu estado. A divisao passa a
  * ser por ASSUNTO, e as duas pontas (hidratacao e filtro) leem daqui para nao
  * discordarem de novo.
+ *
+ * O card automatico furava essa regra por um detalhe: ele ESCOLHE um tema da
+ * biblioteca (Carta inspiradora, Fragmento de sabedoria) e depois escreve texto
+ * de CONTEXTO, sobre os seus numeros. Roteado pela categoria, ele caia em
+ * Sabedoria com etiqueta de sabedoria e corpo de relatorio. Por isso o assunto
+ * agora tambem se le no proposito: quem fala do seu ciclo diz isso de si mesmo,
+ * em vez de deixar a categoria mentir pelos dois.
  */
 const CATEGORIAS_DE_LEITURA = new Set(['analise_padroes']);
 const ehLeitura = (category?: string | null) => Boolean(category && CATEGORIAS_DE_LEITURA.has(category));
+
+/** Propositos que falam do estado da pessoa. Vao para "Dia e ciclo". */
+const PROPOSITOS_DO_DIA = new Set(['cycle_insight']);
+
+/** Um card e de "Dia e ciclo" quando o ASSUNTO e a pessoa — por tema ou por proposito. */
+const ehDoDiaEDoCiclo = (category?: string | null, purpose?: string | null) => (
+    ehLeitura(category) || Boolean(purpose && PROPOSITOS_DO_DIA.has(purpose))
+);
 
 interface Message {
   section?: 'guidance' | 'wisdom';
@@ -346,7 +361,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
     const feedCards: Message[] = recentFeedCards.slice(-30).map((feedMessage) => ({
       role: 'assistant',
-      section: ehLeitura(feedMessage.category) ? 'guidance' : (feedMessage.deliveryType === 'feed' ? 'wisdom' : 'guidance'),
+      section: ehDoDiaEDoCiclo(feedMessage.category, feedMessage.contextSnapshot?.purpose) ? 'guidance' : (feedMessage.deliveryType === 'feed' ? 'wisdom' : 'guidance'),
       content: feedMessage.content,
       timestamp: new Date(feedMessage.createdAt),
       mode: feedMessage.mode,
@@ -692,7 +707,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   // If isEmbedded is true, we render a smaller status bar inside the chat area if header is hidden
   const showStatusPill = hideHeader;
 
-  const wisdomIds = new Set((oracleMessages || []).filter(message => message.deliveryType === 'feed' && message.contextSnapshot?.purpose !== 'oracle_speech' && !ehLeitura(message.category)).map(message => message.id));
+  const wisdomIds = new Set((oracleMessages || []).filter(message => message.deliveryType === 'feed' && message.contextSnapshot?.purpose !== 'oracle_speech' && !ehDoDiaEDoCiclo(message.category, message.contextSnapshot?.purpose)).map(message => message.id));
   const visibleMessages = section === 'mission' ? [] : messages.filter(message => section === 'wisdom' ? (message.section === 'wisdom' || wisdomIds.has(message.feedId || '')) : !(message.section === 'wisdom' || wisdomIds.has(message.feedId || '')));
 
   const content = (

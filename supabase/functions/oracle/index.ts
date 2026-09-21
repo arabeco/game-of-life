@@ -15,6 +15,7 @@ import {
   type OracleHostOperationalState,
 } from "../_shared/oracle-host-voice.ts";
 import { buildContextualOracleLine } from "../_shared/oracle-lines.ts";
+import { pickOracleCard } from "../_shared/oracle-card-library.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
@@ -250,7 +251,7 @@ const ORACLE_CATEGORY_LABELS: Record<OracleCategory, string> = {
 const DEFAULT_ORACLE_PREFERENCES = {
   iaEnabled: true,
   notificationsEnabled: true,
-  dailyFocusCardEnabled: false,
+  dailyFocusCardEnabled: true,
   // Matches the settings screen, which offers 0, 2 and 3. Level 1 has no option.
   presenceLevel: 2,
   enabledCategories: [...ORACLE_MANUAL_LIBRARY_CATEGORIES],
@@ -481,8 +482,12 @@ const resolveOracleAutoDailyTarget = (
   _appMode: AppMode,
 ): number => {
   if (preferences.presenceLevel <= 0 || preferences.enabledCategories.length === 0) return 0;
-  // Deliberate since 1.0.56: one automatic card a day at every level above silent.
-  return 1;
+  // Duas entregas por dia desde 21/09: a leitura do ciclo, que vai para "Dia e
+  // ciclo", e um card do banco de temas, que vai para "Sabedoria". O numero nao e
+  // volume solto — ele so existe para o intervalo abaixo espalhar as duas pelo dia
+  // em vez de deixar as duas caindo juntas. Quem limita cada uma a uma por dia e a
+  // contagem por proposito, em createAutomaticOracleMessage.
+  return 2;
 };
 
 const getOracleAutoGapMs = (
@@ -1019,19 +1024,38 @@ const createAutomaticOracleMessage = async (
 
   const activeCycle = cycleResult.data ?? null;
   const oracleMessages = normalizeOracleMessages(oracleMessagesResult.data);
+  // DUAS ENTREGAS POR DIA, UMA PARA CADA ABA.
+  //
+  // "Dia e ciclo" recebe a leitura dos seus numeros. "Sabedoria" recebe um card do
+  // banco de temas. Sao assuntos diferentes, e por isso contam separado.
+  //
+  // Um contador so foi exatamente o que apagou o card de sabedoria: a leitura saia
+  // primeiro, gastava a vaga do dia, e o card tematico nunca chegava a existir
+  // sozinho. O que chegava era o ROTULO dele grudado no texto da leitura, porque a
+  // leitura pedia uma categoria emprestada para se identificar.
+  //
+  // Os volumes tambem sao diferentes por um motivo real: a leitura sai de uma pool
+  // de 3 variacoes por estado operacional e nao aguenta frequencia; o banco de
+  // temas tem centenas e aguenta.
   const autoDailyTarget = resolveOracleAutoDailyTarget(preferences, appMode);
+  if (autoDailyTarget <= 0) return { status: "skipped", reason: "daily_limit" };
+
   const todayMessages = getOracleFeedMessagesForOperationalDay(oracleMessages, now);
-  const subscribedCategories = normalizeOracleManualCategories(preferences.enabledCategories);
-  const autoMessagesToday = todayMessages.filter((message) => (
-    subscribedCategories.includes(message.category)
-    && message.contextSnapshot?.triggerType !== "manual"
-  ));
-  const autoSentToday = new Set(autoMessagesToday.map((message) => message.category)).size;
-  const autoRemainingToday = Math.max(0, autoDailyTarget - autoSentToday);
-  if (autoRemainingToday <= 0) return { status: "skipped", reason: "daily_limit" };
+  const automaticosDeHoje = todayMessages.filter(
+    (message) => message.contextSnapshot?.triggerType !== "manual",
+  );
+  const jaSaiuHoje = (purpose: string) => automaticosDeHoje.some(
+    (message) => message.contextSnapshot?.purpose === purpose,
+  );
+
+  const faltaInsight = !jaSaiuHoje("cycle_insight");
+  const faltaSabedoria = !jaSaiuHoje("premium_content_card");
+  if (!faltaInsight && !faltaSabedoria) return { status: "skipped", reason: "daily_limit" };
+
+  const autoSentToday = automaticosDeHoje.length;
 
   const autoGapMs = getOracleAutoGapMs(preferences, appMode);
-  const latestAutoTodayMessage = getLatestOracleFeedMessage(autoMessagesToday);
+  const latestAutoTodayMessage = getLatestOracleFeedMessage(automaticosDeHoje);
   if (latestAutoTodayMessage) {
     const nextAutoInMs = Math.max(0, autoGapMs - (now.getTime() - new Date(latestAutoTodayMessage.createdAt).getTime()));
     if (nextAutoInMs > 0) return { status: "skipped", reason: "cooldown" };
@@ -1104,30 +1128,66 @@ const createAutomaticOracleMessage = async (
   });
 
   const triggerType: OracleTriggerType = autoSentToday === 0 ? "app_open" : "cron";
-  const category = resolveAutomaticOracleCategory(
-    appMode,
-    preferences.activeMode,
-    contextData,
-    oracleMessages,
-    preferences.enabledCategories,
-    now,
-  );
-  if (!category) return { status: "skipped", reason: "daily_limit" };
   const presentation: OraclePresentation = "info_card";
-  const recentOracleLines = oracleMessages.map((message) => message.content).filter(Boolean).slice(0, 5);
   const operationalState = deriveOracleOperationalState(contextData, now);
-  // Written line instead of a model call: these speak about the player's own numbers,
-  // so a template filled from context cannot invent them, costs nothing per delivery,
-  // and does not disappear when the provider is unreachable.
-  const text = buildContextualOracleLine({
-    state: operationalState,
-    context: contextData,
-    recentLines: recentOracleLines,
-  });
 
-  // No line fits the current state with the data available. Staying quiet is better
-  // than delivering something generic that ignores what is happening.
-  if (!text) return { status: "skipped", reason: "no_line_for_state" };
+  // A leitura sai na frente quando as duas estao pendentes: ela fala do dia que
+  // esta acontecendo e envelhece dentro do proprio dia. O card de tema serve igual
+  // de manha ou de noite, entao ele e o que pode esperar.
+  let category: OracleCategory;
+  let text: string | null;
+  let purpose: string;
+  let summary: string;
+
+  if (faltaInsight) {
+    // A LEITURA PARA DE PEDIR UMA CATEGORIA EMPRESTADA.
+    //
+    // Ela sorteava um tema da biblioteca so para ter o que gravar nesta coluna, e
+    // era esse emprestimo que a mandava para Sabedoria vestida de card: rotulo de
+    // "Carta inspiradora" por fora, os seus numeros por dentro. O nome proprio dela
+    // sempre existiu — analise_padroes, "Leitura de ritmo" —, e a primeira aba ja
+    // sabia receber ele. Agora a categoria e o proposito dizem a mesma coisa.
+    category = "analise_padroes";
+    purpose = "cycle_insight";
+    summary = "Leitura do seu ciclo";
+    // Written line instead of a model call: these speak about the player's own numbers,
+    // so a template filled from context cannot invent them, costs nothing per delivery,
+    // and does not disappear when the provider is unreachable.
+    text = buildContextualOracleLine({
+      state: operationalState,
+      context: contextData,
+      recentLines: oracleMessages.map((message) => message.content).filter(Boolean).slice(0, 5),
+    });
+
+    // No line fits the current state with the data available. Staying quiet is better
+    // than delivering something generic that ignores what is happening.
+    if (!text) return { status: "skipped", reason: "no_line_for_state" };
+  } else {
+    const tema = resolveAutomaticOracleCategory(
+      appMode,
+      preferences.activeMode,
+      contextData,
+      oracleMessages,
+      preferences.enabledCategories,
+      now,
+    );
+    if (!tema) return { status: "skipped", reason: "daily_limit" };
+    category = tema;
+    purpose = "premium_content_card";
+    summary = ORACLE_CATEGORY_LABELS[tema];
+    // Mesmo banco que o botao "pedir card" usa, e e por isso que ele mora em
+    // _shared: o card do dia e o card pedido a mao sao a mesma coisa, um chega
+    // sozinho. Duas copias do banco viravam duas verdades no primeiro dia em que
+    // alguem escrevesse num arquivo so.
+    text = pickOracleCard({
+      category: tema,
+      deliveredContents: oracleMessages
+        .filter((message) => message.category === tema)
+        .map((message) => String(message.content || ""))
+        .filter(Boolean),
+    });
+    if (!text) return { status: "skipped", reason: "no_stock_for_category" };
+  }
 
   const messageId = crypto.randomUUID();
   const { error: insertError } = await supabaseAdmin
@@ -1144,9 +1204,11 @@ const createAutomaticOracleMessage = async (
         presentation,
         categoryLabel: ORACLE_CATEGORY_LABELS[category],
         generatedFor: "feed",
-        purpose: "premium_content_card",
+        // O proposito e o que decide a aba, e nao o canal de entrega: as duas
+        // chegam pelo feed, e so ele sabe dizer de qual assunto cada uma fala.
+        purpose,
         operationalState,
-        summary: "Card do Oraculo",
+        summary,
       },
       read: false,
       created_at: now.toISOString(),

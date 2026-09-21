@@ -1600,7 +1600,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const nextIaEnabled = mapped.iaEnabled ?? true;
             setOraclePreferences({
                 ...mapped,
-                dailyFocusCardEnabled: mapped.dailyFocusCardEnabled ?? false,
+                dailyFocusCardEnabled: mapped.dailyFocusCardEnabled ?? true,
                 importantAlertsEnabled: mapped.importantAlertsEnabled ?? false,
                 dmNotificationsEnabled: mapped.dmNotificationsEnabled ?? true,
                 enabledCategories: normalizeOracleManualCategories(mapped.enabledCategories || []),
@@ -1614,7 +1614,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 userId,
                 iaEnabled: true,
                 notificationsEnabled: true,
-                dailyFocusCardEnabled: false,
+                dailyFocusCardEnabled: true,
                 importantAlertsEnabled: false,
                 dmNotificationsEnabled: true,
                 pushEnabled: getPushEnabled(userId),

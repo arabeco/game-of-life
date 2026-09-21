@@ -150,6 +150,13 @@ const suites = {
       interactions: ['a conclusao da a nota e o porte da o teto', 'o SS pede um mes impecavel e nao um mes comprido', 'o bau sai da nota e de mais nada'],
     },
     {
+      id: 'cards-de-sabedoria',
+      label: 'Cards de sabedoria regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'cards-de-sabedoria.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['o card do dia nasce ligado', 'a leitura do ciclo e o card de tema nao dividem a vaga do dia', 'cada um cai na sua aba', 'um banco de textos so para o app e para o cron'],
+    },
+    {
       id: 'xp-scale',
       label: 'XP scale regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'xp-scale.regression.mjs')]],

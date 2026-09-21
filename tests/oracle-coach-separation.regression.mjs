@@ -82,7 +82,13 @@ const cardStart2 = edgeSource.indexOf('const createAutomaticOracleMessage');
 const cardEnd2 = edgeSource.indexOf('const handleAutomaticOracleCron', cardStart2);
 const automaticCard = edgeSource.slice(cardStart2, cardEnd2);
 assert.ok(cardStart2 >= 0 && cardEnd2 > cardStart2, 'caminho do card automatico deve ser identificavel');
-assert.match(automaticCard, /purpose: "premium_content_card"/);
+// A entrega automatica virou DUAS desde 21/09, e cada uma declara o proprio
+// proposito: a leitura do ciclo vai para "Dia e ciclo", o card de tema vai para
+// "Sabedoria". O gravador escreve a variavel, entao a ancora passou a ser a
+// atribuicao de cada ramo — o que prova mais do que a literal provava: que os
+// dois caminhos existem e nao se confundem.
+assert.match(automaticCard, /purpose = "premium_content_card";/);
+assert.match(automaticCard, /purpose = "cycle_insight";/);
 assert.doesNotMatch(automaticCard, /focusArenaSignal|priorityActionName|nextMove/);
 
 

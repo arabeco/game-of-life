@@ -7,7 +7,11 @@ const automaticEnd = source.indexOf('const buildOracleChatSystemPrompt', automat
 const automatic = source.slice(automaticStart, automaticEnd);
 
 const preferenceGate = automatic.indexOf('if (!preferences.dailyFocusCardEnabled)');
-const quotaGate = automatic.indexOf('if (autoRemainingToday <= 0)');
+// A cota virou DUAS, uma por aba: a leitura do ciclo e o card de tema contam
+// separado desde 21/09. O que este teste guarda continua sendo o mesmo — sair do
+// dia cheio custa uma consulta, e essa decisao tem de acontecer antes da carga
+// operacional, nao depois de ler arenas e tarefas.
+const quotaGate = automatic.indexOf('if (!faltaInsight && !faltaSabedoria)');
 const arenaLoad = automatic.indexOf('.from("arenas")');
 const taskLoad = automatic.indexOf('.from("scheduled_tasks")');
 

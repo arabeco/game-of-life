@@ -18,6 +18,7 @@ import { LegacyGrandPlaque } from '../components/LegacyGrandPlaque';
 import { PlacaEmEscala, LARGURA_OFICIAL_DA_PLACA, ALTURA_OFICIAL_DA_PLACA } from '../components/PlacaEmEscala';
 import { EraRibbon, ERA_RIBBON_SKINS, getEraRibbonSkin } from '../components/EraRibbon';
 import { MetalReportCard } from '../components/MetalReportCard';
+import { marcaDeRodadaDepoisDoCiclo } from '../utils/freeProgressScope';
 import { Portal } from '../components/Portal';
 import { RewardPackModal } from '../components/RewardPackModal';
 
@@ -1526,8 +1527,17 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setView('hub');
     };
 
+    /**
+     * "Continuar" fecha o ciclo e devolve a pessoa para a rodada livre.
+     *
+     * A marca vinha da data de INICIO do ciclo, e isso mantinha o ciclo inteiro
+     * dentro da rodada nova: as arenas continuavam cheias, e o acumulado da
+     * rodada virava a experiencia do ciclo — a mesma que o relatorio ja tinha
+     * creditado e que ja tinha promovido. Ao concluir a rodada depois, o ciclo
+     * pagava pela segunda vez.
+     */
     const handleContinueFromCycleResult = async () => {
-        const resetAt = selectedReport?.startDate ? `${selectedReport.startDate}T00:00:00` : null;
+        const resetAt = marcaDeRodadaDepoisDoCiclo(selectedReport);
         await handlePostCycleResultsOk();
         if (resetAt) {
             continueFreeProgressFrom(resetAt);

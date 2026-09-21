@@ -122,6 +122,13 @@ const suites = {
       interactions: ['renovar uma arena nao expulsa as outras do ciclo', 'a virada reagenda as acoes recorrentes', 'o agendamento para no fim do ciclo, nao em 365 dias'],
     },
     {
+      id: 'continuar-sem-ciclo',
+      label: 'Continuar sem ciclo regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'continuar-sem-ciclo.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['fechar o ciclo e continuar nao deixa as arenas cheias', 'a experiencia do ciclo nao volta na rodada e nao e paga duas vezes'],
+    },
+    {
       id: 'xp-scale',
       label: 'XP scale regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'xp-scale.regression.mjs')]],

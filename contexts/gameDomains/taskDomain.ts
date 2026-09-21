@@ -409,6 +409,16 @@ export const createTaskDomain = ({
         // para nao ser comentado, e recebia o elogio assim mesmo pela outra porta.
         // Sem a voz, o toast vira o que ele deveria ser: o registro de que a acao
         // pegou. Quem quiser comentario sobe a presenca.
+        // Os numeros do feito, medidos ANTES de anunciar: a fala do Oraculo
+        // passou a usa-los, e ate hoje eles nasciam depois dela.
+        const arenaActionIdSet = new Set(arenaActions.map((action) => action.id));
+        const entregasDaArena = nextCycleTasks.filter(
+            (task) => task.completed && arenaActionIdSet.has(task.actionId),
+        );
+        const diasDaArena = new Set(
+            entregasDaArena.map((task) => getTaskOperationalDateString(task)).filter(Boolean),
+        );
+
         showToast(
             campaignJustCleared && parentCampaign
                 ? `Campanha "${parentCampaign.title}" concluída.`
@@ -419,7 +429,11 @@ export const createTaskDomain = ({
             title: campaignJustCleared ? 'Campanha' : 'Arena',
             message: campaignJustCleared && parentCampaign
                 ? falarReacao('campaign_completed', { campaign: parentCampaign.title })
-                : falarReacao('arena_completed', { arena: arena.name }),
+                : falarReacao('arena_completed', {
+                    arena: arena.name,
+                    entregas: String(entregasDaArena.length),
+                    dias: String(diasDaArena.size),
+                }),
             tone: 'success',
             durationMs: campaignJustCleared ? 5600 : 5000,
         }, 'marco');
@@ -431,14 +445,6 @@ export const createTaskDomain = ({
         // historias diferentes com o mesmo titulo. E gravar em vez de consultar e
         // o que torna isso honesto — desmarcar uma acao amanha muda o estado da
         // arena, nao muda o que aconteceu.
-        const arenaActionIdSet = new Set(arenaActions.map((action) => action.id));
-        const entregasDaArena = nextCycleTasks.filter(
-            (task) => task.completed && arenaActionIdSet.has(task.actionId),
-        );
-        const diasDaArena = new Set(
-            entregasDaArena.map((task) => getTaskOperationalDateString(task)).filter(Boolean),
-        );
-
 
         setAchievementUnlocked({
             type: 'ARENA_COMPLETED',

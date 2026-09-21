@@ -92,27 +92,41 @@ export const ORACLE_SPEECH_LIBRARY: Record<OracleSpeechEvent, ToneVariants> = {
         ],
     },
 
-    /** Arena concluida. Marcadores: {arena} */
+    /**
+     * Arena concluida. Marcadores: {arena}, {entregas}, {dias}
+     *
+     * OS NUMEROS ENTRARAM NA FALA, e o motivo estava escrito no proprio codigo
+     * que monta o modal desta arena: "cinco acoes em tres dias e trinta e quatro
+     * entregas em vinte e um dias sao historias diferentes com o mesmo titulo".
+     *
+     * O modal recebia esses numeros e a fala nao. Ela dizia "essa frente ganhou
+     * forma real" tanto para uma arena de tres dias quanto para uma de tres
+     * meses — elogio de tamanho unico, que e o mesmo que nao comentar.
+     *
+     * Cada frase usa UM dos dois, e nao os dois: "{entregas} entregas em {dias}
+     * dias" em toda linha viraria relatorio falado. O toast ja diz o numero seco;
+     * aqui ele entra quando muda o sentido da frase.
+     */
     arena_completed: {
         neutro: [
-            'Arena "{arena}" concluída. Muito bem. Essa frente ganhou forma real.',
-            '"{arena}" fechou. Boa. Agora vale registrar o que funcionou antes de empilhar outra coisa.',
-            'Arena "{arena}" encerrada. O espaço dela abre para outra coisa.',
+            'Arena "{arena}" concluída. {entregas} entregas em {dias} dias, e essa frente ganhou forma real.',
+            '"{arena}" fechou com {entregas} entregas. Vale registrar o que funcionou antes de empilhar outra coisa.',
+            'Arena "{arena}" encerrada em {dias} dias. O espaço dela abre para outra coisa.',
         ],
         calmo: [
-            '"{arena}" fechou. Sem pressa de começar a próxima.',
-            'Arena "{arena}" concluída. Fica um momento com isso antes de seguir.',
-            '"{arena}" fechou. Pode ficar só nisso hoje.',
+            '"{arena}" fechou. Foram {dias} dias; sem pressa de começar a próxima.',
+            'Arena "{arena}" concluída, {entregas} entregas. Fica um momento com isso antes de seguir.',
+            '"{arena}" fechou depois de {dias} dias. Pode ficar só nisso hoje.',
         ],
         coach: [
-            'Arena "{arena}" concluída. Anota as duas ações que mais renderam.',
-            '"{arena}" fechou. Não abre outra hoje - deixa o próximo ciclo escolher.',
-            '"{arena}" concluída. Não preenche a vaga hoje - deixa o ciclo respirar um dia.',
+            'Arena "{arena}" concluída em {dias} dias. Anota as duas ações que mais renderam.',
+            '"{arena}" fechou com {entregas} entregas. Não abre outra hoje: deixa o próximo ciclo escolher.',
+            '"{arena}" concluída. {entregas} entregas não se repõem num dia; deixa o ciclo respirar.',
         ],
         reflexivo: [
-            '"{arena}" fechou. O que aqui vale levar para a próxima?',
-            'Arena "{arena}" concluída. Foi ela que mudou, ou você?',
-            '"{arena}" fechou. Ela terminou porque acabou, ou porque você mudou?',
+            '"{arena}" fechou. Dos {dias} dias, o que vale levar para a próxima?',
+            'Arena "{arena}" concluída em {entregas} entregas. Foi ela que mudou, ou você?',
+            '"{arena}" fechou depois de {dias} dias. Ela terminou porque acabou, ou porque você mudou?',
         ],
     },
 

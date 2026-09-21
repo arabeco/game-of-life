@@ -100,9 +100,10 @@ const tetoDoPorte = (e) => {
 /**
  * A nota de um ciclo, com o motivo do teto quando ele segurou alguma coisa.
  *
- * O motivo existe porque era exatamente o que faltava: a pessoa via 99, A e
- * nenhum bau, e nao tinha como saber por que. Nota limitada tem de dizer o que
- * a limitou.
+ * O motivo NAO vai para a tela — ficou decidido em 21/09 que a pessoa nao
+ * precisa saber por que nao tirou S. Ele existe para quem depura e para o teste:
+ * uma nota limitada tem de conseguir dizer o que a limitou, mesmo que ninguem
+ * pergunte.
  */
 export const notaDoCiclo = (evidencia) => {
     const pct = Math.max(0, Math.min(100, Number(evidencia?.conclusaoPct) || 0));

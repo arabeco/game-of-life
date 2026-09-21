@@ -129,6 +129,17 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     const plannedMetas = metrics.plannedMetas ?? Math.max(sealedMetas, 0);
     const scoreInfo = getScoreGrade(report.performanceScore, fairness);
     /*
+     * A NOTA DO CICLO, UMA SO PARA O CARROSSEL INTEIRO.
+     *
+     * O acabamento de cada quadro vem do rank — um ciclo A e dourado do
+     * primeiro slide ao ultimo. Se o Veredito lesse a nota nova e os outros
+     * cinco a antiga, a apresentacao mudaria de cor no meio.
+     *
+     * O report.grade e a regua nova; o scoreInfo fica de reserva para os
+     * relatorios fechados antes dela, que nao tem o campo.
+     */
+    const notaDoRelatorio = report.grade || scoreInfo.grade;
+    /*
      * DIA SE CONTA INCLUINDO OS DOIS EXTREMOS.
      *
      * De 14/09 a 20/09 sao SETE dias, e nao seis. A subtracao crua da seis, e
@@ -164,7 +175,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
             }
 
             const result = await exportElementAsImage(REWARD_CARD_CAPTURE_ID, {
-                fileName: `glyph-card-ciclo-${formatDate(report.endDate).replace(/\//g, '-')}-${scoreInfo.grade}.png`,
+                fileName: `glyph-card-ciclo-${formatDate(report.endDate).replace(/\//g, '-')}-${notaDoRelatorio}.png`,
                 title: 'Card do ciclo - Glyph',
                 backgroundColor: '#050505',
                 preferShare: preferShareForThisRun,
@@ -228,7 +239,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         if (semPlano) {
             return (
                 <SlideCartaz
-                    rank={scoreInfo.grade}
+                    rank={notaDoRelatorio}
                     titulo="Execução"
                     numero={metrics.consistencyDays || 0}
                     sufixo={(metrics.consistencyDays || 0) === 1 ? 'dia' : 'dias'}
@@ -246,7 +257,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
 
         return (
         <SlideCartaz
-            rank={scoreInfo.grade}
+            rank={notaDoRelatorio}
             titulo="Execução"
             numero={executionPercentage}
             sufixo="%"
@@ -287,7 +298,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
      */
     const renderAtlasSlide = () => (
         <SlideCartaz
-            rank={scoreInfo.grade}
+            rank={notaDoRelatorio}
             titulo="Atlas"
             figura={<CycleAtlasPanel weeks={weeklyAtlas} semMoldura />}
             rotulo="o ciclo inteiro, dia a dia"
@@ -328,7 +339,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         if (temRadar) {
             return (
                 <SlideCartaz
-                    rank={scoreInfo.grade}
+                    rank={notaDoRelatorio}
                     titulo="Território"
                     figura={(
                         <Suspense fallback={<div className="h-[240px] w-full" />}>
@@ -343,7 +354,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
 
         return (
             <SlideCartaz
-                rank={scoreInfo.grade}
+                rank={notaDoRelatorio}
                 titulo="Território"
                 numero={highlight.mostFocusedArena}
                 rotulo="a arena que puxou o ciclo"
@@ -389,7 +400,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
 
         return (
             <SlideCartaz
-                rank={scoreInfo.grade}
+                rank={notaDoRelatorio}
                 titulo="Conquistas"
                 numero={semNada ? '0' : `+${expDoCiclo}`}
                 sufixo="EXP"
@@ -473,7 +484,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
 
         return (
             <SlideCartaz
-                rank={scoreInfo.grade}
+                rank={notaDoRelatorio}
                 titulo="Contra você"
                 /* O selo e a razao de esta tela existir: ela e a unica que so
                    funciona com historico guardado. Ele voltou para o lado do
@@ -535,7 +546,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         if (isLowSignal) {
             return (
                 <SlideCartaz
-                    rank={scoreInfo.grade}
+                    rank={notaDoRelatorio}
                     titulo="Veredito"
                     numero="—"
                     rotulo="sinal insuficiente"
@@ -548,14 +559,29 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
             );
         }
 
+        /*
+         * A NOTA VEM DO RELATORIO, E O MOTIVO DO TETO VEM COM ELA.
+         *
+         * `report.grade` e a nota da regua nova: conclusao limitada pelo porte
+         * do ciclo. O `scoreInfo.grade` fica de reserva para os relatorios
+         * fechados antes dela, que nao tem o campo.
+         *
+         * E o remate passa a ser O MOTIVO, quando houve um. Era isto que
+         * faltava: um ciclo de 100% em cinco dias mostrava "B" e uma frase
+         * generica, e a pessoa nao tinha como saber que faltou UM DIA. Frase
+         * bonita a gente le uma vez; motivo a gente usa no proximo ciclo.
+         */
+        const conclusaoPct = metrics.executionRatePct
+            ?? Math.round((metrics.actionsCompleted / Math.max(metrics.totalPlannedActions, 1)) * 100);
+
         return (
             <SlideCartaz
-                rank={scoreInfo.grade}
+                rank={notaDoRelatorio}
                 titulo="Veredito"
-                numero={scoreInfo.grade}
+                numero={notaDoRelatorio}
                 rotulo={`${formatDate(report.startDate)} — ${formatDate(report.endDate)} · ${totalDays} dias`}
                 legenda={[
-                    { rotulo: 'Índice', valor: `${report.performanceScore}` },
+                    { rotulo: 'Conclusão', valor: `${conclusaoPct}%` },
                     { rotulo: 'Ações', valor: `${metrics.actionsCompleted}/${metrics.totalPlannedActions}` },
                 ]}
                 barras={decomposicao}
@@ -606,7 +632,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                     <MetalReportCard
                         captureId={REWARD_CARD_CAPTURE_ID}
                         entryFlash={rewardFlashActive}
-                        rank={scoreInfo.grade}
+                        rank={notaDoRelatorio}
                         score={report.performanceScore}
                         title={report.cycleName || 'Ciclo concluído'}
                         subtitle="Ciclo consolidado"

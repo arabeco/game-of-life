@@ -829,8 +829,6 @@ export interface Report {
   performanceScore: number;
   /** A nota do ciclo, de SS a E. Sai do notaDoCiclo no fecho. */
   grade?: string | null;
-  /** O que segurou a nota, quando o porte do ciclo a limitou. */
-  motivoDoTeto?: string | null;
   metrics: {
     actionsCompleted: number;
     totalPlannedActions: number;

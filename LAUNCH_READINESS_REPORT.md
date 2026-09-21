@@ -1,9 +1,9 @@
 # Launch Readiness Report
 
-- Generated at: 2026-09-21T10:44:41.705Z
+- Generated at: 2026-09-21T10:55:35.957Z
 - Suite: `core`
 - Smoke URL: `http://127.0.0.1:3011/`
-- Build: PASS (25.0s)
+- Build: PASS (18.5s)
 
 ## Checks
 
@@ -128,7 +128,7 @@
 - Simulates: a presenca e o corte de relevancia
 - Simulates: sem candidato ele fica quieto
 
-### PASS - Oracle presence policy regression (0.9s)
+### PASS - Oracle presence policy regression (0.5s)
 - Kind: `logic`
 - Simulates: presenca decide o que ele fala
 - Simulates: aviso decide onde chega
@@ -170,28 +170,29 @@
 - Simulates: valida progresso de campanha/arena
 - Simulates: confere score, atlas e mutacoes utilitarias
 
-### PASS - Onboarding happy path (19.5s)
+### PASS - Onboarding happy path (20.7s)
 - Kind: `browser`
 - Simulates: entra com conta temporaria
 - Simulates: atravessa onboarding
 - Simulates: cria arena/acao inicial
 - Simulates: chega no fluxo principal sem travar
 
-### PASS - Campaign quiz flow (12.8s)
+### PASS - Campaign quiz flow (18.6s)
 - Kind: `browser`
 - Simulates: abre loja de campanhas
 - Simulates: roda quiz gratis
 - Simulates: reabre quiz completo
 - Simulates: instala campanha e confirma menu
 
-### PASS - Cycle report flow (20.2s)
+### FAIL - Cycle report flow
 - Kind: `browser`
 - Simulates: cria ciclo real
 - Simulates: conclui tarefas
 - Simulates: fecha ciclo
 - Simulates: abre relatorio e reward flow
+- Error: Cycle report flow failed with exit 1
 
-### PASS - UI shell smoke (12.0s)
+### PLANNED - UI shell smoke
 - Kind: `browser`
 - Simulates: abre shell principal
 - Simulates: navega views centrais

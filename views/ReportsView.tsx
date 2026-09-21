@@ -1452,6 +1452,31 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         void handleOpenPostCycleChest();
     }, [view, isPostCycleFlow, selectedReport?.id, earnedChest, expGained, fragmentsGained, grantedInsignias, handleOpenPostCycleChest]);
 
+    /**
+     * O PREMIO VEM ANTES DO RELATORIO, E NAO POR CIMA DELE.
+     *
+     * A ordem era: acaba o video, o relatorio abre na pagina 1, e meio segundo
+     * depois o modal de recompensa cai em cima. A pessoa via um lampejo do
+     * relatorio, perdia, e ao fechar o modal voltava para ele — so que agora
+     * pelo comeco, sem ter entendido o que acabou de acontecer.
+     *
+     * E o fim do relatorio e o lugar errado para uma recompensa. Na ultima
+     * pagina a pessoa ja esta decidindo o que vem depois: abrir outro ciclo,
+     * rever, continuar sem ciclo. Um modal ali interrompe a decisao em vez de
+     * fechar a leitura.
+     *
+     * Entao o relatorio nao monta enquanto houver premio a entregar. Video,
+     * premio, relatorio — cada um inteiro, na sua vez.
+     *
+     * A conta olha para o que AINDA VAI ser entregue, e nao so para o modal
+     * aberto: o modal nasce dentro de um efeito, que roda depois da primeira
+     * pintura. Esperar por ele seria esperar o lampejo que se quer tirar.
+     */
+    const premioAindaNaoEntregue = entregaDoCicloRef.current !== (selectedReport?.id || null)
+        && (Boolean(earnedChest) || expGained > 0 || fragmentsGained > 0 || grantedInsignias.length > 0);
+    const premioNaFrenteDoRelatorio = isPostCycleFlow
+        && (Boolean(reportRewardPayload) || premioAindaNaoEntregue);
+
     const handleStartNewCycleFromResults = async () => {
         setShowNewCycleSetup(true);
 
@@ -3173,6 +3198,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 );
             }
             case 'results':
+                // Enquanto o premio nao foi entregue, a tela fica com o modal e
+                // mais nada. Ver `premioNaFrenteDoRelatorio`.
+                if (premioNaFrenteDoRelatorio) return null;
                 return selectedReport ?(
                     <ReportResultCarousel
                         report={selectedReport}
@@ -3193,10 +3221,10 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         chestOpened={postCycleChestOpened}
                         isOpeningChest={isOpeningPostCycleChest}
                         startAtEnd={selectedReportStartsAtEnd}
-                        /* A apresentacao nao corre atras da tela de recompensas. Ela
-                           monta por baixo enquanto o modal esta aberto, e sem isto os
-                           quadros iam passando sozinhos — quando a pessoa fechasse a
-                           recompensa, o slideshow ja teria acontecido. */
+                        /* O carrossel nao monta mais por baixo do modal — ver
+                           premioNaFrenteDoRelatorio. Isto fica como cinto: se um dia
+                           outro modal abrir sobre o relatorio, os quadros nao podem
+                           passar sozinhos atras dele. */
                         autoPlay={!reportRewardPayload}
                     />
                 ) : <p>Erro ao carregar relat\u00F3rio.</p>;

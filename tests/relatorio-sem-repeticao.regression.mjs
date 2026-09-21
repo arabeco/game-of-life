@@ -78,8 +78,8 @@ assert.ok(
 );
 assert.match(
   veredito,
-  /contraOHistorico/,
-  'A vaga livre do Veredito e da comparacao com o historico.',
+  /legenda=\{\[\s*\{ rotulo: 'Conclusão', valor: `\$\{conclusaoPct\}%` \},\s*\]\}/,
+  'O rodape do Veredito e a conclusao sozinha: e o que a letra tem a dizer de si.',
 );
 
 // As cinco barras do indice de 100 pontos nao voltam: o indice nao decide mais
@@ -106,28 +106,29 @@ assert.ok(
 );
 
 // ---------------------------------------------------------------------------
-// 4. A COMPARACAO SE CALCULA PARA TODO MUNDO; SO O QUADRO E DO PLATINUM.
+// 4. A COMPARACAO E DO PLATINUM, INTEIRA.
 //
-// Era a unica tela que dizia algo que a pessoa NAO sabia, e estava inteira
-// atras do plano pago — num app cujo quadro exige dois ciclos ja fechados.
+// Uma linha dela chegou a sair para o gratuito, no rodape do Veredito, e voltou
+// em 21/09: comparar o ciclo com o proprio historico e o que o Platinum vende, e
+// dar metade de graca esvazia a metade que sobra. Melhorar a comparacao e
+// engorda-la dentro do quadro, e nao espalhar pedaco dela pela apresentacao.
 // ---------------------------------------------------------------------------
 
 assert.match(
   fonte,
-  /const comparison = useMemo\(\s*\(\) => buildCycleComparison\(report, reports \|\| \[\]\),/,
-  'A comparacao voltou a ser calculada so para o Platinum.',
+  /\(isPlatinum \? buildCycleComparison\(report, reports \|\| \[\]\) : null\)/,
+  'A comparacao tem de ser calculada so para quem paga por ela.',
 );
-assert.match(
-  fonte,
-  /const showComparisonSlide = Boolean\(isPlatinum/,
-  'O QUADRO inteiro continua sendo do Platinum: o que abriu foi a linha do Veredito.',
+assert.ok(
+  !veredito.includes('comparison'),
+  'Pedaco da comparacao voltou a vazar para o Veredito do plano gratuito.',
 );
 
 // ---------------------------------------------------------------------------
 // 5. ZERO NAO E CONQUISTA.
 // ---------------------------------------------------------------------------
 
-const conquistas = quadro('const renderAchievementsSlide', 'A COMPARACAO SE CALCULA');
+const conquistas = quadro('const renderAchievementsSlide', 'const isPlatinum');
 assert.match(
   conquistas,
   /if \(\(metrics\.questsCompleted \|\| 0\) > 0\) \{/,

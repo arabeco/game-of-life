@@ -17,8 +17,49 @@ import '../index.css';
 import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { SlideCartaz } from '../components/SlideCartaz';
+import { GraficoDeDiasDoCiclo } from '../components/GraficoDeDiasDoCiclo';
 
 const PATAMARES = ['S', 'A', 'B', 'C', 'D', 'E'];
+
+/**
+ * Dois ciclos de mentira para o grafico de dias, porque um so esconde metade.
+ *
+ * O de 7 dias e o do video: cumprido inteiro, e nele a sombra do planejado fica
+ * invisivel por baixo do feito — que e o certo. O de 28 e o que mostra o resto:
+ * dias furados, dias pela metade, a virada de semana e a barra fina.
+ */
+const semanaDeMentira = (inicio: number, pares: [number, number][], indice: number) => ({
+    weekIndex: indice,
+    startDate: '2026-09-14',
+    endDate: '2026-09-20',
+    plannedCount: pares.reduce((t, [, p]) => t + p, 0),
+    completedCount: pares.reduce((t, [f]) => t + f, 0),
+    plannedMinutes: 0,
+    completedMinutes: 0,
+    dominantArenaName: 'Academia e dieta',
+    days: pares.map(([feito, planejado], i) => ({
+        date: `2026-09-${String(inicio + i).padStart(2, '0')}`,
+        plannedCount: planejado,
+        completedCount: feito,
+        plannedMinutes: 0,
+        completedMinutes: 0,
+        arenaBuckets: [],
+        scheduledItems: [],
+        unscheduledItems: [],
+    })),
+});
+
+const CICLOS_DE_MENTIRA: Record<string, any[]> = {
+    '7 dias · 100%': [
+        semanaDeMentira(14, [[8, 8], [9, 9], [14, 14], [7, 7], [12, 12], [10, 10], [6, 6]], 0),
+    ],
+    '28 dias · com falhas': [
+        semanaDeMentira(1, [[5, 6], [7, 7], [3, 8], [6, 6], [0, 4], [9, 9], [4, 5]], 0),
+        semanaDeMentira(8, [[8, 8], [11, 11], [6, 9], [0, 5], [0, 3], [7, 7], [9, 9]], 1),
+        semanaDeMentira(15, [[12, 12], [10, 10], [15, 15], [8, 8], [6, 10], [0, 6], [3, 7]], 2),
+        semanaDeMentira(22, [[9, 9], [7, 7], [4, 9], [11, 11], [5, 5], [2, 8], [6, 6]], 3),
+    ],
+};
 
 /** Os seis quadros, com os numeros do ciclo do video. */
 const QUADROS = [
@@ -39,12 +80,7 @@ const QUADROS = [
     {
         id: 'atlas',
         titulo: 'ATLAS',
-        figura: (
-            <div className="mx-auto flex h-[190px] w-full max-w-[300px] items-center justify-center rounded-xl border border-white/10 bg-black/30 text-[10px] uppercase tracking-[0.2em] text-white/30">
-                a grade do ciclo
-            </div>
-        ),
-        rotulo: 'o ciclo inteiro, dia a dia',
+        rotulo: 'um dia por barra — a mais alta foi o seu pico',
         legenda: [
             { rotulo: 'Semanas', valor: '1' },
             { rotulo: 'Maior sequência', valor: '7', nota: 'dias seguidos', tom: 'bom' as const },
@@ -97,6 +133,7 @@ const QUADROS = [
 
 const Bancada: React.FC = () => {
     const [rank, setRank] = useState('A');
+    const [cicloDeMentira, setCicloDeMentira] = useState('7 dias · 100%');
 
     return (
         <div className="min-h-screen bg-[#0b0b0c] p-6 text-white">
@@ -122,13 +159,34 @@ const Bancada: React.FC = () => {
                         </button>
                     ))}
                 </div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                    {Object.keys(CICLOS_DE_MENTIRA).map((nome) => (
+                        <button
+                            key={nome}
+                            onClick={() => setCicloDeMentira(nome)}
+                            className={`rounded-lg border px-3 py-1.5 text-[10.5px] font-bold transition-all ${
+                                cicloDeMentira === nome
+                                    ? 'border-white/40 bg-white/15 text-white'
+                                    : 'border-white/10 bg-white/5 text-white/50 hover:bg-white/10'
+                            }`}
+                        >
+                            {nome}
+                        </button>
+                    ))}
+                </div>
             </header>
 
             <div className="mx-auto flex max-w-[1400px] flex-wrap justify-center gap-6">
                 {QUADROS.map((q) => (
                     <figure key={q.id} className="m-0 w-[340px]">
                         <div style={{ ['--altura-do-slide' as string]: '34rem' }}>
-                            <SlideCartaz {...q} rank={rank} />
+                            <SlideCartaz
+                                {...q}
+                                rank={rank}
+                                figura={q.id === 'atlas'
+                                    ? <GraficoDeDiasDoCiclo weeks={CICLOS_DE_MENTIRA[cicloDeMentira]} rank={rank} />
+                                    : q.figura}
+                            />
                         </div>
                         <figcaption className="mt-2 text-center text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
                             {q.titulo}

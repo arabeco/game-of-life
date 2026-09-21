@@ -8,6 +8,7 @@ import { Report, ChestType } from '../types';
 import { getScoreGrade, falaDaNota } from '../utils/dateUtils';
 import { VideoPlayer } from './VideoPlayer';
 import { CycleAtlasPanel } from './CycleAtlasPanel';
+import { GraficoDeDiasDoCiclo } from './GraficoDeDiasDoCiclo';
 import { resolveItemDef } from '../constants/items';
 import { ChevronLeftIcon, ChevronRightIcon, XIcon, ShareIcon, CheckIcon, CrownIcon, ZapIcon, TrophyIcon, Trash2Icon, RefreshCwIcon } from './Icons';
 import { MetalReportCard } from './MetalReportCard';
@@ -332,8 +333,13 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         <SlideCartaz
             rank={notaDoRelatorio}
             titulo="Atlas"
-            figura={<CycleAtlasPanel weeks={weeklyAtlas} semMoldura />}
-            rotulo="o ciclo inteiro, dia a dia"
+            /* A AGENDA SAIU; ENTROU UMA BARRA POR DIA.
+               O CycleAtlasPanel desenha a grade de horas com cada tarefa no
+               horario dela. E a visao certa para PLANEJAR, e a errada para 190px
+               de altura numa apresentacao que passa sozinha: virava textura.
+               Ele continua inteiro onde faz sentido, no Atlas do ciclo aberto. */
+            figura={<GraficoDeDiasDoCiclo weeks={weeklyAtlas} rank={notaDoRelatorio} />}
+            rotulo="um dia por barra — a mais alta foi o seu pico"
             /* O RODAPE DO ATLAS ERA TRES QUARTOS REPETICAO.
                "Dias ativos" era a Presenca da Execucao com outro nome, "Feitas"
                eram as Acoes, "Carga" era a Carga — os mesmos tres numeros, na
@@ -467,26 +473,20 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     };
 
     /*
-     * A COMPARACAO SE CALCULA PARA TODO MUNDO; SO O QUADRO INTEIRO E DO PLATINUM.
+     * A COMPARACAO E DO PLATINUM, INTEIRA.
      *
-     * Ela era a unica tela da apresentacao que dizia algo que a pessoa NAO SABIA
-     * — todo o resto ela viveu — e estava inteira atras de `isPlatinum ? : null`.
-     * No lancamento isso quer dizer ninguem: o quadro exige dois ciclos fechados
-     * antes, e quem tem dois ciclos fechados ainda nem decidiu se fica.
-     *
-     * Os dados ja existem e a conta e local, entao cobrar por ela custava a
-     * melhor parte do relatorio para quase todo mundo. Agora o gratuito recebe
-     * UMA linha, no rodape do Veredito, a partir do segundo ciclo. O Platinum
-     * continua com o quadro completo, todas as medidas contra a mediana do
-     * historico: profundidade continua paga, a virada de lista-de-tarefas para
-     * historico deixa de ser.
+     * Cheguei a soltar uma linha dela para o gratuito, no rodape do Veredito. Foi
+     * decidido em 21/09 que ela volta para o plano pago: comparar o ciclo com o
+     * proprio historico e o que o Platinum vende, e vender metade disso de graca
+     * esvazia a metade que sobra. O caminho de melhorar a comparacao e engorda-la
+     * aqui dentro, e nao espalhar pedaco dela pela apresentacao.
      */
     const isPlatinum = hasPlatinumAccess(userProfile);
     const comparison = useMemo(
-        () => buildCycleComparison(report, reports || []),
-        [report, reports],
+        () => (isPlatinum ? buildCycleComparison(report, reports || []) : null),
+        [isPlatinum, report, reports],
     );
-    const showComparisonSlide = Boolean(isPlatinum && comparison && comparison.metrics.length > 0);
+    const showComparisonSlide = Boolean(comparison && comparison.metrics.length > 0);
     const closingLine = comparison ? buildComparisonClosingLine(comparison) : null;
 
     /*
@@ -630,10 +630,6 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
          * generica, e a pessoa nao tinha como saber que faltou UM DIA. Frase
          * bonita a gente le uma vez; motivo a gente usa no proximo ciclo.
          */
-        // A execucao e a medida que o Veredito julga, entao e ela que se compara
-        // aqui. As outras quatro (constancia, sequencia, lacunas, pontuacao)
-        // continuam inteiras no quadro do Platinum.
-        const contraOHistorico = comparison?.metrics.find((medida) => medida.id === 'execucao') || null;
         const conclusaoPct = metrics.executionRatePct
             ?? Math.round((metrics.actionsCompleted / Math.max(metrics.totalPlannedActions, 1)) * 100);
 
@@ -643,28 +639,15 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 titulo="Veredito"
                 numero={notaDoRelatorio}
                 rotulo={`${formatDate(report.startDate)} — ${formatDate(report.endDate)} · ${totalDays} dias`}
+                /* UMA VAGA SO, E CENTRADA.
+                   A segunda era "Acoes 66/66", que e o rodape da Execucao: quem
+                   chega ao climax passou por esse numero quatro quadros antes.
+                   A comparacao com o historico ocupou esse lugar por um tempo e
+                   voltou para o Platinum, onde ela e o produto.
+                   Sobra a conclusao sozinha, que e exatamente o que a letra tem
+                   a dizer de si — e o grid centra o item impar. */
                 legenda={[
                     { rotulo: 'Conclusão', valor: `${conclusaoPct}%` },
-                    /* A SEGUNDA VAGA ERA "ACOES 66/66", QUE E O RODAPE DA EXECUCAO.
-                       Repetir o mesmo numero no climax nao acrescenta nada: quem
-                       chegou aqui passou por ele ha quatro quadros.
-                       No lugar entra a unica coisa da apresentacao que a pessoa
-                       NAO viveu — como este ciclo se compara com os que ela ja
-                       fechou. No primeiro ciclo nao ha com o que comparar, e a
-                       Conclusao fica sozinha e centrada, que e melhor do que
-                       encher a linha. */
-                    ...(contraOHistorico
-                        ? [{
-                            rotulo: `vs. ${comparison!.sampleSize} ${comparison!.sampleSize === 1 ? 'ciclo' : 'ciclos'}`,
-                            valor: contraOHistorico.direction === 'estavel'
-                                ? 'igual'
-                                : `${contraOHistorico.delta > 0 ? '+' : ''}${contraOHistorico.delta}${contraOHistorico.suffix}`,
-                            nota: `mediana ${contraOHistorico.baseline}${contraOHistorico.suffix}`,
-                            tom: (contraOHistorico.direction === 'acima'
-                                ? 'bom'
-                                : contraOHistorico.direction === 'abaixo' ? 'alerta' : 'normal') as 'bom' | 'alerta' | 'normal',
-                        }]
-                        : []),
                 ]}
                 // A frase segue a LETRA que esta na tela, e nao o score que deixou
                 // de decidir a letra. Um ciclo de 100% em cinco dias mostrava "B"

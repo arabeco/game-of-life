@@ -918,7 +918,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                                 {previewMeta?.badgeLabel || 'Campanha'}
                                             </div>
                                             <h1
-                                                className="text-left text-[17px] font-black uppercase leading-[0.94] tracking-[0.05em]"
+                                                className="text-left text-[17px] font-black uppercase leading-[1.05] tracking-[0.05em]"
                                                 style={{ overflowWrap: 'anywhere', wordBreak: 'normal', ...tintaDaCampanha }}
                                             >
                                                 {displayCampaignTitle}

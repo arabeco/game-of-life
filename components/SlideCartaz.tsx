@@ -156,8 +156,24 @@ export const SlideCartaz: React.FC<SlideCartazProps> = ({
                     <div className="relative z-10 w-full">{figura}</div>
                 ) : (
                     <div className="relative z-10 flex items-baseline justify-center gap-1">
+                        {/* A ENTRELINHA NAO PODE SER MENOR QUE 1 AQUI, e o motivo
+                            nao e espacamento.
+
+                            Este span carrega a tinta metalica, que e um GRADIENTE
+                            recortado pela letra. Gradiente e fundo, e fundo so
+                            pinta dentro da caixa do elemento. Com `leading-[0.86]`
+                            a caixa ficava 14% mais baixa que a letra — e como o
+                            span e filho de um flex, ele vira bloco e a caixa passa
+                            a valer a entrelinha inteira. O que sobrava para fora
+                            nao ganhava gradiente nenhum: como o preenchimento do
+                            texto e transparente, o pe dos algarismos simplesmente
+                            desaparecia. "+3359" chegava com a base dos treses e do
+                            nove cortada reta.
+
+                            1.05 e a mesma entrelinha do `__rank` da placa de
+                            ciclo, que nunca cortou nada. */}
                         <span
-                            className="font-bold leading-[0.86] tracking-tight"
+                            className="font-bold leading-[1.05] tracking-tight"
                             style={{ fontSize: tamanhoDoNumero, fontFamily: 'Cinzel, Georgia, serif', ...tinta }}
                         >
                             {numero}

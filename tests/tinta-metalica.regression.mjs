@@ -82,4 +82,50 @@ assert.deepEqual(
   + `${declaracoes.join(', ')}`,
 );
 
+/* ==========================================================================
+ * O PE DOS ALGARISMOS SUMIA.
+ *
+ * Depois de o ouro voltar, "+3359" chegou com a base dos treses e do nove
+ * cortada reta. Nao era fonte nem recorte: era a CAIXA.
+ *
+ * A tinta e um gradiente recortado pela letra, e gradiente e FUNDO. Fundo so
+ * pinta dentro da caixa do elemento. O numero vinha com `leading-[0.86]`, e ele
+ * e filho de um flex — o que o torna bloco e faz a caixa valer a entrelinha
+ * inteira. Medido na tela: caixa de 56px para uma letra de 66px, nove pixels de
+ * falta. O que sobrava para fora nao ganhava gradiente nenhum, e como o
+ * preenchimento do texto e transparente, aquilo simplesmente nao existia.
+ *
+ * Entrelinha menor que 1 e recurso legitimo de tipografia em qualquer outro
+ * lugar. Em cima da tinta, e um corte.
+ * ========================================================================== */
+
+const QUEBRA = String.fromCharCode(10);
+
+for (const caminho of arquivos) {
+  const fonte = readFileSync(caminho, 'utf8');
+  if (!/tintaMetalica|\.\.\.tinta/.test(fonte)) continue;
+
+  const linhas = fonte.split(QUEBRA).map((linha) => linha.trimEnd());
+  linhas.forEach((linha, indice) => {
+    if (!/\.\.\.tinta/.test(linha)) return;
+    // O className costuma estar na linha de cima; a janela cobre o elemento.
+    const janela = linhas.slice(Math.max(0, indice - 3), indice + 2).join(' ');
+    const apertada = janela.match(/leading-\[(0?\.\d+)\]/);
+    assert.ok(
+      !apertada,
+      `${caminho}:${indice + 1}: entrelinha ${apertada && apertada[1]} num elemento com a tinta metalica. `
+      + 'O gradiente so pinta dentro da caixa, entao a parte da letra que sobra para fora some. Use 1 ou mais.',
+    );
+    // `leading-none` — entrelinha exatamente 1 — passa, e e o PISO.
+    //
+    // A caixa fica do tamanho do corpo da fonte, e o que escapa dela e so a
+    // ultraestrutura do desenho da letra: a cauda de um "g", o rabo de um "ç". A
+    // placa do legado tem quatro elementos assim, tres deles com `tabular-nums`,
+    // onde nao ha descendente nenhum para cortar. Nao ha estrago medido ali, e
+    // subir a entrelinha de uma placa inteira sem ver o resultado trocaria um
+    // risco por outro. O que este teste impede e o buraco de verdade: 0.86 tirou
+    // nove pixels de uma letra de sessenta e seis.
+  });
+}
+
 console.log('[tinta-metalica] ok');

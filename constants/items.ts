@@ -197,6 +197,8 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_skin_2_005', name: 'Cavaleiro', category: 'skin', tier: 2, rarity: 'uncommon', icon: '\u{1F457}', imageUrl: avatarPngAsset('SKIN_T2_CAVALEIRO'), isRankExclusive: true },
     { id: 'item_skin_2_006', name: 'Lorde', category: 'skin', tier: 2, rarity: 'uncommon', icon: '\u{1F457}', imageUrl: avatarPngAsset('SKIN_T2_LORDE'), isRankExclusive: true },
     { id: 'item_skin_2_007', name: 'Barão', category: 'skin', tier: 2, rarity: 'uncommon', icon: '\u{1F457}', imageUrl: avatarPngAsset('SKIN_T2_BARAO'), isRankExclusive: true },
+    { id: 'item_skin_2_008', name: 'Oficina', category: 'skin', tier: 2, rarity: 'uncommon', icon: '🧰', imageUrl: avatarPngAsset('SKIN_T2_OFICINA'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_2_008 },
+    { id: 'item_skin_2_009', name: 'Trilha', category: 'skin', tier: 2, rarity: 'uncommon', icon: '🥾', imageUrl: avatarPngAsset('SKIN_T2_TRILHA'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_2_009 },
 
     // T3 (Raro)
     { id: 'item_skin_3_001', name: 'Nômade', category: 'skin', tier: 3, rarity: 'rare', icon: '🧭', imageUrl: avatarPngAsset('SKIN_T3_NOMADE'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_3_001 },
@@ -204,6 +206,9 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_skin_3_003', name: 'Híbrido', category: 'skin', tier: 3, rarity: 'rare', icon: '🧬', imageUrl: avatarPngAsset('SKIN_T3_HIBRIDO'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_3_003 },
     { id: 'item_skin_3_004', name: 'Conde', category: 'skin', tier: 3, rarity: 'rare', icon: '\u{1F457}', imageUrl: avatarPngAsset('SKIN_T3_CONDE'), isRankExclusive: true },
     { id: 'item_skin_3_005', name: 'Duque', category: 'skin', tier: 3, rarity: 'rare', icon: '\u{1F457}', imageUrl: avatarPngAsset('SKIN_T3_DUQUE'), isRankExclusive: true },
+    { id: 'item_skin_3_006', name: 'Noturno', category: 'skin', tier: 3, rarity: 'rare', icon: '🌙', imageUrl: avatarPngAsset('SKIN_T3_NOTURNO'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_3_006 },
+    { id: 'item_skin_3_007', name: 'Ateliê', category: 'skin', tier: 3, rarity: 'rare', icon: '🎨', imageUrl: avatarPngAsset('SKIN_T3_ATELIE'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_3_007 },
+    { id: 'item_skin_3_008', name: 'Inverno', category: 'skin', tier: 3, rarity: 'rare', icon: '❄️', imageUrl: avatarPngAsset('SKIN_T3_INVERNO'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_3_008 },
 
     // T4 (Épico)
     { id: 'item_skin_4_001', name: 'Armadura Placa', category: 'skin', tier: 4, rarity: 'epic', icon: '🛡️', imageUrl: avatarPngAsset('SKIN_T4_ARMADURA_PLACA'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_4_001 },
@@ -395,7 +400,7 @@ export const ITEMS_DB: ItemDef[] = [
 
     // --- EXCLUSIVOS (Store) ---
     // Itens legacy preservados para inventarios antigos, fora do catalogo ativo de ouro.
-    catalogItem('skin', { id: 'item_skin_exclusive_001', name: 'Empreendedor', tier: 4, rarity: 'epic', icon: '💼' }),
+    avatarItem('skin', { id: 'item_skin_exclusive_001', name: 'Empreendedor', tier: 4, rarity: 'epic', icon: '💼', asset: 'SKIN_T4_EMPREENDEDOR.png' }),
 
     // --- INSÍGNIAS ---
     // NOBREZA (Ouro)

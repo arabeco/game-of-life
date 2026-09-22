@@ -52,19 +52,19 @@ export const BODY_DB: BodyDefinition[] = [
 
 export const HAIR_DB: SkinItem[] = [
     // TIER 1 - Common
-    { id: 'cachos', name: 'Cachos', tier: 'T1', rarity: 'common', availableColors: ['cast', 'preto'] },
-    { id: 'medio_reto', name: 'Médio Reto', tier: 'T1', rarity: 'common', availableColors: ['bran', 'cast', 'pre'] },
+    { id: 'cachos', name: 'Cachos', tier: 'T1', rarity: 'common', availableColors: ['cast', 'preto', 'ama'] },
+    { id: 'medio_reto', name: 'Médio Reto', tier: 'T1', rarity: 'common', availableColors: ['bran', 'cast', 'pre', 'ama'] },
     
     // TIER 2 - Uncommon
-    { id: 'textured_crop', name: 'Texturizado', tier: 'T2', rarity: 'uncommon', availableColors: ['bran', 'pre', 'ver'] },
+    { id: 'textured_crop', name: 'Texturizado', tier: 'T2', rarity: 'uncommon', availableColors: ['bran', 'pre', 'ver', 'ama'] },
     
     // TIER 3 - Rare
-    { id: 'dreads', name: 'Dreads', tier: 'T3', rarity: 'rare', availableColors: ['bran', 'cast', 'pre'] },
+    { id: 'dreads', name: 'Dreads', tier: 'T3', rarity: 'rare', availableColors: ['bran', 'cast', 'pre', 'ama'] },
     { id: 'mullet_topete', name: 'Mullet Top', tier: 'T3', rarity: 'rare', availableColors: ['ama', 'bra', 'cast', 'verm'] },
     
     // TIER 4 - Epic
     { id: 'anime_spikes', name: 'Anime Spiky', tier: 'T4', rarity: 'epic', availableColors: ['ama', 'bran', 'cast', 'pre'] },
-    { id: 'princesa', name: 'Princesa', tier: 'T4', rarity: 'epic', availableColors: ['bran', 'cast', 'preto'] },
+    { id: 'princesa', name: 'Princesa', tier: 'T4', rarity: 'epic', availableColors: ['bran', 'cast', 'preto', 'ama'] },
     
     // TIER 5 - Legendary
     { id: 'fluxo_espiritual', name: 'Fluxo Espiritual', tier: 'T5', rarity: 'legendary', availableColors: ['ama', 'bran', 'rosa', 'verm'] },
@@ -74,10 +74,10 @@ export const HAIR_DB: SkinItem[] = [
     // quem comecava o jogo escolhia entre tres cortes curtos. Cabelo e a
     // primeira coisa que a pessoa mexe, e o comprimento nao pode ser premio de
     // fim de escada.
-    { id: 'rabo_de_cavalo', name: 'Rabo de Cavalo', tier: 'T1', rarity: 'common', availableColors: ['cast', 'pre', 'bran'] },
-    { id: 'coque_solto', name: 'Coque Solto', tier: 'T2', rarity: 'uncommon', availableColors: ['cast', 'pre', 'bran'] },
-    { id: 'undercut', name: 'Undercut', tier: 'T3', rarity: 'rare', availableColors: ['cast', 'pre', 'bran'] },
-    { id: 'tranca_lateral', name: 'Trança Lateral', tier: 'T4', rarity: 'epic', availableColors: ['cast', 'bran', 'rosa'] },
+    { id: 'rabo_de_cavalo', name: 'Rabo de Cavalo', tier: 'T1', rarity: 'common', availableColors: ['cast', 'pre', 'bran', 'ama'] },
+    { id: 'coque_solto', name: 'Coque Solto', tier: 'T2', rarity: 'uncommon', availableColors: ['cast', 'pre', 'bran', 'ama'] },
+    { id: 'undercut', name: 'Undercut', tier: 'T3', rarity: 'rare', availableColors: ['cast', 'pre', 'bran', 'ama'] },
+    { id: 'tranca_lateral', name: 'Trança Lateral', tier: 'T4', rarity: 'epic', availableColors: ['cast', 'bran', 'rosa', 'ama'] },
 ];
 
 // Color mapping for filename suffix

@@ -192,6 +192,13 @@ const suites = {
       interactions: ['preco e premio saem do catalogo do servidor', 'o dono da compra sai do token', 'o catalogo do servidor bate com o do app', 'o webhook confere assinatura e valor cobrado'],
     },
     {
+      id: 'economia-descontos',
+      label: 'Economia descontos regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'economia-descontos.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['a tela e o banco descontam igual', 'o preco final em ouro bate', 'o custo com plano nao volta a ser numero fixo', 'o credito antigo continua honrado'],
+    },
+    {
       id: 'tinta-metalica',
       label: 'Tinta metalica regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'tinta-metalica.regression.mjs')]],

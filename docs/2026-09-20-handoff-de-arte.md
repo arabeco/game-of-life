@@ -318,6 +318,25 @@ A escada de peso importa mais que o tema: de Feudo a Imperio sao 250 vezes mais
 experiencia, e o desenho tem de crescer junto. Se o Feudo ja for grandioso, nao
 sobra para onde ir.
 
+### E O MESMO LUGAR, SETE VEZES
+
+A tabela acima descreve cada patente separada, e isso engana: sete pedidos
+soltos devolvem sete LUGARES diferentes, e ai o fundo nao le como evolucao — le
+como sete cartoes-postais. Evoluir e a unica coisa que este desenho precisa
+dizer, porque ele e o premio de subir.
+
+**A camera nao se mexe. O terreno e que cresce.** Mesmo morro, mesmo rio, mesma
+linha do horizonte, do Feudo ao Imperio. Onde o Feudo tem cerca e fogueira, o
+Bastiao tem muro; onde o Bastiao tem muro, o Reino tem castelo. Quem sobe
+reconhece o lugar e ve o que mudou — e esse reconhecimento que da a sensacao de
+ter construido alguma coisa.
+
+Na pratica isso quer dizer gerar em CADEIA, e nao em paralelo: o Feudo nasce
+primeiro, e ele mesmo vira a referencia do Bastiao ("mesma vista, mesmo
+enquadramento, agora com muro de pedra"). O Bastiao vira a referencia do
+Provincia, e assim por diante. Sete geracoes encadeadas.
+
+
 **Formato:** mesmo do wallpaper de perfil — e o fundo atras do conteudo, entao
 ele nao disputa com texto. O centro fica calmo; a informacao mora nas bordas.
 

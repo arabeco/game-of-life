@@ -71,7 +71,7 @@ export function validateGardenSnapshot(value:unknown):value is GardenSnapshot {
     &&(s.drawingBounds===undefined||!!s.drawingBounds&&[s.drawingBounds.x,s.drawingBounds.z].every(n=>finite(n)&&n>=1&&n<=32))
     &&['cloister','ruins','mist'].includes(s.environment)&&['morning','sunset','overcast'].includes(s.atmosphere)
     &&Number.isInteger(s.sand)&&s.sand>=0&&s.sand<3
-    &&Array.isArray(s.objects)&&s.objects.length<=64&&s.objects.every(o=>o&&text(o.id)&&['garden-planter','garden-river','medieval-lamp','bridge','maple','pine','rock','pebble','rock-cluster','path-straight','path-curve','path-wild','pond','stream-straight','stream-curve','lantern','bamboo'].includes(o.type)
+    &&Array.isArray(s.objects)&&s.objects.length<=64&&s.objects.every(o=>o&&text(o.id)&&['strata-stone','wood-walkway','fern','low-lantern','garden-planter','garden-river','medieval-lamp','bridge','maple','pine','rock','pebble','rock-cluster','path-straight','path-curve','path-wild','pond','stream-straight','stream-curve','lantern','bamboo'].includes(o.type)
       &&Array.isArray(o.position)&&o.position.length===3&&o.position.every(finite)&&finite(o.rotation)
       &&Number.isInteger(o.variant)&&o.variant>=0&&o.variant<100&&(!o.kit||['starter','luxury','genesis'].includes(o.kit)))
     &&new Set(s.objects.map(o=>o.id)).size===s.objects.length

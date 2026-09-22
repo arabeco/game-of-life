@@ -1,3 +1,4 @@
+import {createGardenArt,isNewGardenPiece} from './GardenArt';
 import type { KitId } from './kits';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -34,6 +35,12 @@ function colored(g: THREE.BufferGeometry, color: string, seed: number) {
 export function getObjectGeometry(type: ObjectKind, variant = 0, palette:GardenPalette = 'autumn',kit:KitId='starter') {
   const key = `${kit}:${type}:${variant}:${type==='maple'||type==='pine'?palette:'shared'}`;
   const existing = cache.get(key); if (existing) return existing;
+  if(isNewGardenPiece(type)){
+    const root=createGardenArt(type,kit==='starter'?'serene':kit),parts:THREE.BufferGeometry[]=[];
+    root.updateMatrixWorld(true);
+    root.traverse(o=>{if(o instanceof THREE.Mesh){const g=o.geometry.clone().applyMatrix4(o.matrixWorld);g.deleteAttribute('color');parts.push(colored(g,'#a8aa8c',variant));}});
+    const geometry=mergeGeometries(parts)!;parts.forEach(g=>g.dispose());root.userData.dispose();cache.set(key,geometry);return geometry;
+  }
   const luxe=kit==='luxury',genesis=kit==='genesis';
   const stoneColor=luxe?'#d5cbb0':genesis?'#514a68':'#929487',metal=luxe?'#ba9349':genesis?'#a592c7':'#605a42',glow=genesis?'#c79cf5':'#f0c675';
   const parts: THREE.BufferGeometry[] = [];

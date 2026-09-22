@@ -78,4 +78,12 @@ const expanded={...state,objects:[rock],terrain:{shape:'circle',size:'spacious'}
 assert.equal(Number(await save(expanded,3)),4);
 assert.deepEqual(await scalar('select state from user_gardens_3d where user_id=$1',[A]),expanded);
 console.log('Garden terrain SQL: existing save function preserves shape, size, drawing bounds, objects and storage URLs without a migration (local PostgreSQL).');
+await db.exec('reset role');
+await db.exec(readFileSync(new URL('../supabase/migrations/20260922120000_garden_art_four_pieces.sql',import.meta.url),'utf8'));
+await login(A);
+const artState={...expanded,objects:['strata-stone','wood-walkway','fern','low-lantern'].map((type,i)=>({...rock,id:`art-${i}`,type,kit:'starter',position:[i*2,0,0]}))};
+assert.equal(Number(await save(artState,4)),5);
+assert.deepEqual(await scalar('select state from user_gardens_3d where user_id=$1',[A]),artState);
+await assert.rejects(()=>save({...artState,objects:[{...artState.objects[0],type:'invented-piece'}]},5));
+console.log('Garden art SQL: four new pieces save/reopen; unknown types rejected.');
 await db.close();

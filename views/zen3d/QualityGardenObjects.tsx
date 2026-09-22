@@ -1,3 +1,4 @@
+import { createGardenArt, isNewGardenPiece, NEW_GARDEN_PIECES } from './GardenArt';
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useThree, type ThreeEvent } from '@react-three/fiber';
 import * as T from 'three';
@@ -12,7 +13,7 @@ import sandColorUrl from '../../tools/zen-quality/assets/sand/compact/diff.webp?
 import sandRoughUrl from '../../tools/zen-quality/assets/sand/compact/rough.webp?url';
 
 type Part = {geometry:T.BufferGeometry;material:T.Material|T.Material[];matrix:T.Matrix4};
-const supported = new Set<ObjectKind>(['pine','maple','rock','pebble','rock-cluster','path-straight','path-curve','path-wild','bamboo','lantern','bridge']);
+const supported = new Set<ObjectKind>([...NEW_GARDEN_PIECES,'pine','maple','rock','pebble','rock-cluster','path-straight','path-curve','path-wild','bamboo','lantern','bridge']);
 const themeOf=(kit:KitId):KitTheme=>kit==='starter'?'serene':kit;
 const themeCache=new WeakMap<Library,Map<string,Part[]>>();
 
@@ -33,13 +34,17 @@ function parts(root:T.Object3D, size?:T.Vector3):Part[] {
 }
 
 class Library {
+ private art=new Map<string,T.Group>();
  private kits=new Map<KitId,T.Group>();
  private materials=new Set<T.Material>();
  constructor(readonly tree:T.Group,readonly rock:T.Group,readonly sand?:T.Texture,readonly rough?:T.Texture) {themeCache.set(this,new Map());}
  get(type:ObjectKind,kit:KitId):Part[] {
   const cache=themeCache.get(this)!,key=`${type}:${kit}`,existing=cache.get(key);if(existing)return existing;
   const theme=themeOf(kit);let result:Part[];
-  if(type==='pine'||type==='maple') {
+  if(isNewGardenPiece(type)){
+   let source=this.art.get(key);if(!source){let material:T.MeshStandardMaterial|undefined;this.rock.traverse(o=>{if(o instanceof T.Mesh&&o.material instanceof T.MeshStandardMaterial)material??=o.material;});source=createGardenArt(type,theme,material);this.art.set(key,source);}
+   result=parts(source);
+  }else if(type==='pine'||type==='maple') {
    result=parts(this.tree,new T.Vector3(type==='pine'?4.6:4.9,type==='pine'?5.5:4.8,4.5)).map(p=>{
     if(!(p.material instanceof T.MeshStandardMaterial)||!p.material.name.includes('leaves')||!KIT_THEMES[theme].foliage)return p;
     const material=p.material.clone(),tint=new T.Color(KIT_THEMES[theme].foliage!);
@@ -59,6 +64,7 @@ class Library {
   cache.set(key,result);return result;
  }
  dispose(){
+  this.art.forEach(a=>a.userData.dispose());
   this.sand?.dispose();this.rough?.dispose();
   this.kits.forEach(k=>k.userData.dispose());this.materials.forEach(m=>m.dispose());
   const resources=new Set<T.BufferGeometry|T.Material|T.Texture>();

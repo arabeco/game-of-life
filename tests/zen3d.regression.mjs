@@ -49,7 +49,9 @@ check(JSON.stringify(JSON.parse(JSON.stringify(INITIAL_LAYOUT)))===JSON.stringif
 check(INITIAL_LAYOUT.version===2&&INITIAL_LAYOUT.objects.every(o=>Number.isInteger(o.variant)),'Versioned layout carries procedural variants.');
 const stress=await import(load('stressScene',{'./model':modelUrl}));
 const loadScene=stress.createStressScene();check(loadScene.length===MAX_OBJECTS,'Stress scene fills the actual object limit.');
-const art=await import(load('procedural',{'./model':modelUrl,'three':import.meta.resolve('three'),'three/addons/utils/BufferGeometryUtils.js':import.meta.resolve('three/addons/utils/BufferGeometryUtils.js')}));
+const baseKitUrl=load('../../tools/zen-quality/baseKit',{'three':import.meta.resolve('three')});
+const gardenArtUrl=load('GardenArt',{'../../tools/zen-quality/baseKit':baseKitUrl,'three':import.meta.resolve('three'),'three/addons/utils/BufferGeometryUtils.js':import.meta.resolve('three/addons/utils/BufferGeometryUtils.js')});
+const art=await import(load('procedural',{'./GardenArt':gardenArtUrl,'./model':modelUrl,'three':import.meta.resolve('three'),'three/addons/utils/BufferGeometryUtils.js':import.meta.resolve('three/addons/utils/BufferGeometryUtils.js')}));
 let largest=0;
 for(const item of CATALOG.filter(c=>!isWater(c.type)))for(let v=0;v<VARIANTS;v++) {
   const g=art.getObjectGeometry(item.type,v),p=g.attributes.position;
@@ -107,7 +109,7 @@ check(placement.placementFits(kit.map(o=>({...o,position:[o.position[0]+.25,0,o.
 check(!placement.placementFits(kit.map(o=>({...o,position:[o.position[0]+10,0,o.position[2]]})),[]),'Whole base must fit inside ellipse');
 console.log('Decoration placement and complete base movement passed.');
 const kits=await import(load('kits'));
-const kitArt=await import(load('procedural',{'./model':modelUrl,'three':import.meta.resolve('three'),'three/addons/utils/BufferGeometryUtils.js':import.meta.resolve('three/addons/utils/BufferGeometryUtils.js')}));
+const kitArt=await import(load('procedural',{'./GardenArt':gardenArtUrl,'./model':modelUrl,'three':import.meta.resolve('three'),'three/addons/utils/BufferGeometryUtils.js':import.meta.resolve('three/addons/utils/BufferGeometryUtils.js')}));
 for(const kit of kits.KITS){
  const initial=templates.templateObjects('open','rustic',kit.id);
  check(initial.length===6,`${kit.id}: six starter pieces`);

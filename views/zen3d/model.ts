@@ -1,5 +1,5 @@
 import type { KitId } from './kits';
-export type ObjectKind = 'stone-totem' | 'guardian-statue' | 'crystal-reliquary' | 'garden-planter' | 'garden-river' | 'medieval-lamp' | 'bridge' | 'maple' | 'pine' | 'rock' | 'pebble' | 'rock-cluster' | 'path-straight' | 'path-curve' | 'path-wild' | 'pond' | 'stream-straight' | 'stream-curve' | 'lantern' | 'bamboo';
+export type ObjectKind = 'strata-stone' | 'wood-walkway' | 'fern' | 'low-lantern' | 'stone-totem' | 'guardian-statue' | 'crystal-reliquary' | 'garden-planter' | 'garden-river' | 'medieval-lamp' | 'bridge' | 'maple' | 'pine' | 'rock' | 'pebble' | 'rock-cluster' | 'path-straight' | 'path-curve' | 'path-wild' | 'pond' | 'stream-straight' | 'stream-curve' | 'lantern' | 'bamboo';
 export type Category = 'Pedras' | 'Caminhos' | 'Água' | 'Plantas' | 'Luz';
 export interface GardenObject { id: string; type: ObjectKind; position: [number, number, number]; rotation: number; variant: number; fixed?: boolean; kit?: KitId }
 export interface GardenLayout { version: 2; objects: GardenObject[] }
@@ -18,6 +18,10 @@ export function configureGarden(x:number,z:number,roundness:number){GARDEN_X=x;G
 export function gardenBoundary(angle:number,margin=0):[number,number]{const c=Math.cos(angle),s=Math.sin(angle);return [Math.sign(c)*Math.abs(c)**(2/GARDEN_ROUNDNESS)*(GARDEN_X+margin),Math.sign(s)*Math.abs(s)**(2/GARDEN_ROUNDNESS)*(GARDEN_Z+margin)];}
 export const CATEGORIES: Category[] = ['Pedras', 'Caminhos', 'Água', 'Plantas', 'Luz'];
 export const CATALOG: { type: ObjectKind; category: Category; name: string; description: string }[] = [
+  {type:'strata-stone',category:'Pedras',name:'Laje estratificada',description:'Camadas de pedra marcadas pelo tempo'},
+  {type:'wood-walkway',category:'Caminhos',name:'Passarela de madeira',description:'Tábuas envelhecidas · 3,2 m'},
+  {type:'fern',category:'Plantas',name:'Samambaia',description:'Frondes arqueadas e folíolos delicados'},
+  {type:'low-lantern',category:'Luz',name:'Luminária baixa',description:'Metal vazado e luz entre as hastes'},
   {type:'stone-totem',category:'Luz',name:'Totem das três pedras',description:'Pedra sobre pedra, marcas do tempo'},
   {type:'guardian-statue',category:'Luz',name:'Guardião do pátio',description:'Escultura de calcário com manto e brasão'},
   {type:'crystal-reliquary',category:'Luz',name:'Relicário de ametista',description:'Cristal suspenso em arcos de basalto'},
@@ -38,7 +42,7 @@ export const CATALOG: { type: ObjectKind; category: Category; name: string; desc
   { type: 'lantern', category: 'Luz', name: 'Lanterna de pedra', description: 'Luz âmbar entre as folhas' },
 ];
 export const isWater = (type: ObjectKind) => type === 'pond' || type === 'garden-river' || type.startsWith('stream-');
-export const isPath = (type: ObjectKind) => type.startsWith('path-') || type === 'pebble';
+export const isPath = (type: ObjectKind) => type.startsWith('path-') || type === 'wood-walkway' || type === 'pebble';
 export const randomAt = (seed: number, n: number) => { const v = Math.sin(seed * 73.13 + n * 137.91) * 43758.5453; return v - Math.floor(v); };
 export function moduleLine(type: ObjectKind, variant = 0): [number, number][] {
   const count = type.startsWith('stream') ? 13 : 7;
@@ -67,6 +71,10 @@ export function toWorld(x: number, z: number, item: Pick<GardenObject, 'position
   return [item.position[0] + x * Math.cos(item.rotation) + z * Math.sin(item.rotation), item.position[2] - x * Math.sin(item.rotation) + z * Math.cos(item.rotation)];
 }
 export function footprint(type: ObjectKind, variant = 0): Circle[] {
+  if(type==='wood-walkway')return [-1.4,-.7,0,.7,1.4].map(z=>({x:0,z,radius:.59}));
+  if(type==='fern')return [{x:0,z:0,radius:1.03}];
+  if(type==='strata-stone')return [{x:0,z:0,radius:.62}];
+  if(type==='low-lantern')return [{x:0,z:0,radius:.35}];
   if(type==='bridge')return [-1.45,-.72,0,.72,1.45].map(z=>({x:0,z,radius:.68}));
   if (isWater(type)) return waterPieces(type, variant);
   const stones = stonePieces(type, variant);

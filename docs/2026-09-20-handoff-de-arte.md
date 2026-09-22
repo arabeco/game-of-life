@@ -10,6 +10,10 @@ PNG de mentira no nome final — ver *Os arquivos, com o nome final*.
 Aura não entra: ela é código, não arte. Borda e banner também não: têm 33 peças
 desenhadas e o problema delas é porta. Ver *O que NÃO é desenho*.
 
+E há um pedido que **não acaba**: cada temporada nova pede cinco peças próprias —
+skin, borda, banner, insígnia e a vitrine do tema. As 26 de cima fecham a lista;
+essas cinco voltam sempre. Ver *5 · Temporada*.
+
 ---
 
 ## 1 · Roupa — as nove da escada
@@ -231,6 +235,57 @@ saem por **11 regras**, com quest invisível e modal. As regras estão em
 
 ---
 
+## 5 · Temporada — cinco peças, e elas voltam
+
+**Esta é diferente de todas as outras deste documento.** As de cima acabam: uma
+vez desenhadas as 26, a lista fecha. Esta **recomeça a cada temporada**, e é o
+único compromisso de arte que o app tem para sempre.
+
+Uma temporada é uma coleção de cinco vagas. O código as define assim, e não
+aceita uma sexta:
+
+```ts
+type ItemSeasonSlot = 'skin' | 'border' | 'banner' | 'insignia' | 'ui_skin';
+```
+
+| Vaga | O que é | Formato |
+|---|---|---|
+| **skin** | a roupa da temporada, mítica | PNG 500×500, serve os oito corpos |
+| **border** | a moldura do avatar | WEBP |
+| **banner** | a faixa do perfil | WEBP |
+| **insignia** | o selo de quem viveu aquela temporada | WEBP |
+| **ui_skin** | o tema: a cara do app inteiro | PNG de vitrine + as cores, que são código |
+
+As duas temporadas que existem estão **completas** — Aurora II e Genesis Legacy,
+as cinco vagas com arte. Não há buraco para tapar hoje; há um pacote para
+encomendar toda vez que uma temporada nova nascer.
+
+Os nomes seguem o padrão da Aurora II:
+
+```
+public/assets/catalog/avatars/SKIN_QUEST_GUARDIAO_AURORA.png
+public/assets/catalog/interface/borda_aurora_i.webp
+public/assets/catalog/interface/banner_aurora_i.webp
+public/assets/catalog/interface/insignia_season_aurora_1.webp
+public/assets/catalog/aurora_i.png
+```
+
+Duas observações que economizam retrabalho:
+
+**A insígnia entra junto, e é fácil esquecer.** Ela não aparece no perfil como as
+outras quatro — é uma marca pequena, e some da cabeça de quem está desenhando as
+peças grandes. Coleção com quatro de cinco não é coleção.
+
+**O `ui_skin` é o único que pode entrar sem arte.** O tema é um conjunto de cores
+no código; o PNG é só a vitrine dele na loja. Dá para lançar uma temporada com o
+tema funcionando e a vitrine por fazer — não dá para fazer isso com nenhuma das
+outras quatro.
+
+A bancada `tools/as-temporadas.html` mostra o que cada temporada carrega e onde
+estão os vazios, coleção por coleção.
+
+---
+
 ## Os arquivos, com o nome final
 
 **Tudo já está ligado no app.** Os itens existem, os degraus apontam para eles, o
@@ -307,6 +362,9 @@ nome de arquivo — os degraus delas não foram decididos. Ficam para quando for
 | Wallpaper | 6 | 10 | **4** |
 | Jardim (3D) | 15 peças | 19 | **4** |
 | | | | **26** |
+
+E, fora desta conta, **5 por temporada nova** — skin, borda, banner, insígnia e a
+vitrine do tema. As 26 acabam; essas cinco voltam sempre.
 
 A ordem, se for em partes:
 

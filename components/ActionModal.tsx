@@ -1794,6 +1794,50 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                     </p>
                                                 )}
 
+
+                                                <StyledRangeInput
+                                                    containerId="onboarding-action-duration"
+                                                    inputRef={durationInputRef}
+                                                    label="Duração base"
+                                                    value={editableAction.duration || 60}
+                                                    min={15} max={480} step={1} unit="min"
+                                                    snapValues={ACTION_DURATION_OPTIONS}
+                                                    formatValue={formatDurationLabel}
+                                                    onChange={val => {
+                                                        setEditableAction(p => ({ ...p, duration: val }));
+                                                        handleTutorialNextFormStep(FIRST_USE_ONBOARDING_EVENTS.actionDurationAdjusted, { duration: val });
+                                                    }}
+                                                />
+
+                                                {editableAction.actionType === 'Ação Recorrente' && (
+                                                    <StyledRangeInput
+                                                        containerId="onboarding-action-repetitions"
+                                                        inputRef={repsInputRef}
+                                                        label="Repetições"
+                                                        value={editableAction.repetitions || 1}
+                                                        min={1}
+                                                        max={50}
+                                                        step={1}
+                                                        unit="x"
+                                                        onChange={val => {
+                                                            setEditableAction(p => ({ ...p, repetitions: val }));
+                                                            handleTutorialNextFormStep(FIRST_USE_ONBOARDING_EVENTS.actionRepetitionsAdjusted, { repetitions: val });
+                                                        }}
+                                                    />
+                                                )}
+
+                                                {/* QUANDO VEM DEPOIS DE O QUE.
+
+                                                    Este bloco ficava entre o NOME e a DURACAO, e sozinho
+                                                    empurrava o tamanho da acao para fora da tela: eram 176
+                                                    linhas de formulario entre "Nome da acao" e "Repeticoes",
+                                                    com dias da semana, data, horario e lembrete no meio.
+                                                    Criar uma acao exigia rolar para achar de que tamanho ela e.
+
+                                                    Criar responde O QUE a acao e. QUANDO ela acontece e
+                                                    pergunta do planner, que e onde se arrasta da bay para o
+                                                    dia — so o Compromisso precisa responder as duas de uma
+                                                    vez, porque ele nasce ja marcado numa data. */}
                                                 {(editableAction.actionType === 'Ação Recorrente' || editableAction.actionType === 'Compromisso') && (
                                                     <div className="rounded-[18px] border border-white/8 bg-black/18 px-3 py-3 space-y-3">
                                                         <div className="flex items-center justify-between px-1">
@@ -1879,37 +1923,6 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                             </p>
                                                         )}
                                                     </div>
-                                                )}
-
-                                                <StyledRangeInput
-                                                    containerId="onboarding-action-duration"
-                                                    inputRef={durationInputRef}
-                                                    label="Duração base"
-                                                    value={editableAction.duration || 60}
-                                                    min={15} max={480} step={1} unit="min"
-                                                    snapValues={ACTION_DURATION_OPTIONS}
-                                                    formatValue={formatDurationLabel}
-                                                    onChange={val => {
-                                                        setEditableAction(p => ({ ...p, duration: val }));
-                                                        handleTutorialNextFormStep(FIRST_USE_ONBOARDING_EVENTS.actionDurationAdjusted, { duration: val });
-                                                    }}
-                                                />
-
-                                                {editableAction.actionType === 'Ação Recorrente' && (
-                                                    <StyledRangeInput
-                                                        containerId="onboarding-action-repetitions"
-                                                        inputRef={repsInputRef}
-                                                        label="Repetições"
-                                                        value={editableAction.repetitions || 1}
-                                                        min={1}
-                                                        max={50}
-                                                        step={1}
-                                                        unit="x"
-                                                        onChange={val => {
-                                                            setEditableAction(p => ({ ...p, repetitions: val }));
-                                                            handleTutorialNextFormStep(FIRST_USE_ONBOARDING_EVENTS.actionRepetitionsAdjusted, { repetitions: val });
-                                                        }}
-                                                    />
                                                 )}
 
                                                 {/* O "Excluir Ação" de largura inteira que ficava aqui

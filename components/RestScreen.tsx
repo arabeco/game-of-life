@@ -1195,7 +1195,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                                     style={{ backgroundColor: currentMood.trackStart, color: currentMood.trackStart }}
                                 />
                             </div>
-                            <span className="text-[8px] font-black text-gray-500 uppercase tracking-tighter group-hover:text-white transition-colors">Humor</span>
+                            <span className="text-[8px] font-black text-gray-500 uppercase tracking-tighter group-hover:text-white transition-colors">Diário</span>
                         </button>
 
                         {/* ORACLE INDICATOR */}

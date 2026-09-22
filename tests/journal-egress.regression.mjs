@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs';
 
 const servico = readFileSync(new URL('../services/JournalService.ts', import.meta.url), 'utf8');
 const contexto = readFileSync(new URL('../contexts/GameContext.tsx', import.meta.url), 'utf8');
-const modal = readFileSync(new URL('../components/ChecklistModal.tsx', import.meta.url), 'utf8');
+const aba = readFileSync(new URL('../components/JournalTab.tsx', import.meta.url), 'utf8');
+const humor = readFileSync(new URL('../components/MoodModal.tsx', import.meta.url), 'utf8');
 const migracao = readFileSync(
   new URL('../supabase/migrations/20260922240000_journal_por_paginas.sql', import.meta.url),
   'utf8',
@@ -38,9 +39,12 @@ assert.ok(
 // 2. QUEM LE E A TELA, E SO QUANDO ABRE.
 // ---------------------------------------------------------------------------
 
-assert.match(modal, /from '\.\.\/services\/JournalService'/, 'a aba do diario precisa falar com o servico');
+assert.match(aba, /from '\.\.\/services\/JournalService'/, 'a aba do diario precisa falar com o servico');
+// O diario mora no modal de Humor, e nao no de Checklist: "como estou" e "por
+// que" sao a mesma frase partida ao meio. No Checklist ele estava por vizinhanca.
+assert.match(humor, /import JournalTab from '\.\/JournalTab'/, 'o diario vive no modal de humor');
 assert.match(
-  modal,
+  aba,
   /useEffect\(\(\) => \{[\s\S]{0,260}?listarPaginas\(userId\)/,
   'o indice deve ser lido quando a aba monta, e nao antes',
 );

@@ -119,3 +119,59 @@ export const cabecalhoDeHoje = (agora: Date = new Date()): string => {
   const mes = String(agora.getMonth() + 1).padStart(2, '0');
   return `${dia}/${mes}/${agora.getFullYear()}`;
 };
+
+/**
+ * O SEPARADOR ENTRE ENTRADAS. Tambem serve para achar a ultima ao reler.
+ */
+export const SEPARADOR_DE_ENTRADA = '--------------';
+
+/**
+ * Anexa uma entrada na pagina corrente — a de numero mais alto que ainda cabe.
+ *
+ * Nao existe "pagina de hoje": a pessoa escolhe como preencher, e uma pagina
+ * pode guardar um dia ou um ano. O que este helper faz e o gesto minimo de um
+ * diario — continuar de onde parou.
+ */
+export const anexarEntrada = async (
+  userId: string,
+  cabecalho: string,
+  texto: string,
+): Promise<boolean> => {
+  const paginas = await listarPaginas(userId);
+  const ultima = paginas.length ? Math.max(...paginas.map((p) => p.pageNumber)) : 0;
+
+  const entrada = `${cabecalho}\n${texto}`.trim();
+  let numero = ultima || 1;
+  let conteudo = ultima ? await lerPagina(userId, ultima) : '';
+
+  // Nao cabe? A entrada comeca numa pagina nova em vez de ser cortada no meio.
+  if (conteudo && conteudo.length + entrada.length + SEPARADOR_DE_ENTRADA.length + 4 > JOURNAL_MAX_CARACTERES) {
+    if (ultima >= JOURNAL_MAX_PAGINAS) return false;
+    numero = ultima + 1;
+    conteudo = '';
+  }
+
+  const junto = conteudo.trim()
+    ? `${conteudo.replace(/\s+$/, '')}\n\n${SEPARADOR_DE_ENTRADA}\n${entrada}\n`
+    : `${entrada}\n`;
+
+  return salvarPagina(userId, numero, junto);
+};
+
+/**
+ * A COR VEM DO TEXTO, e nao de uma coluna.
+ *
+ * O cabecalho de cada entrada carrega o nome do humor — "22/09/2026 · Coragem".
+ * Guardar o numero do humor numa coluna a parte criaria duas versoes da mesma
+ * informacao, e um dia elas discordariam; assim a entrada e a fonte, e a cor e
+ * derivada dela. Quem editar o texto a mao muda a cor junto, que e o
+ * comportamento honesto.
+ */
+export const humorDaEntrada = (trecho: string): string | null => {
+  const linhas = String(trecho || '').split('\n');
+  for (const linha of linhas) {
+    const achado = linha.match(/^\s*\d{2}\/\d{2}\/\d{4}\s+·\s+(.+?)\s*$/);
+    if (achado) return achado[1];
+  }
+  return null;
+};

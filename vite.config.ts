@@ -24,16 +24,6 @@ export default defineConfig(({ mode }) => {
           manualChunks(id) {
             const normalizedId = id.replace(/\\/g, '/');
 
-            /*
-             * O SENTRY TEM PEDACO PROPRIO, E E POR ISSO QUE ELE E OPCIONAL.
-             *
-             * `relatorioDeErros.ts` o carrega por `import()` justamente para ele
-             * nao viajar com quem nao configurou a chave. Sem esta regra o
-             * Rollup o jogava dentro de `vendor`, que todo mundo baixa na
-             * abertura — e ai o import dinamico deixava de economizar qualquer
-             * coisa e ainda somava peso, porque o codigo acabava em dois lugares.
-             */
-            if (normalizedId.includes('@sentry')) return 'sentry';
             if (normalizedId.includes('html-to-image') || normalizedId.includes('html2canvas')) return 'capture';
             if (
               normalizedId.includes('/components/Legacy') ||

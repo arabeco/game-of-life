@@ -162,51 +162,60 @@ const PLATE_FINISHES: Record<MetalReportRank, PlateFinish> = {
 export const getPlateFinish = (rank: string): PlateFinish => PLATE_FINISHES[getMetalRankPalette(rank).rank];
 
 /**
- * A TINTA METALICA DO APP, NUM LUGAR SO.
+ * A TINTA METALICA DO APP, NUM LUGAR SO — E ELA E A DA PLACA DE CICLO.
  *
- * O gradiente de 103 graus preso ao texto por `background-clip`. Ela sobrevive a
- * captura de imagem da tela de compartilhamento porque a lib e `html-to-image`,
- * que renderiza CSS de verdade.
+ * Nao e "parecida com a da placa": e a MESMA declaracao, copiada de
+ * `.metal-report-card__score` em metal-report-card.css. Mesmo angulo, mesmas
+ * paradas, mesma sombra, mesma cor de reserva. A placa e a peca que atravessou
+ * o app inteiro sendo legivel, entao ela e a referencia — e nao mais um jeito
+ * proprio de fazer ouro.
  *
- * A PROFUNDIDADE VEM DE `text-shadow`, E NAO DE `filter`.
+ * O QUE ELA JA FOI, E POR QUE VOLTOU.
  *
- * Era `filter: drop-shadow(...)` no mesmo elemento do `background-clip: text`, e
- * essa dupla e frágil: o filtro joga o elemento numa superficie de composicao
- * propria, e em algumas maquinas o recorte pelo texto se perde na rasterizacao.
- * Quando isso acontece nao sobra texto ilegivel — sobra o RETANGULO do gradiente
- * inteiro, um tijolo dourado no lugar do numero.
+ * A versao anterior tinha o mesmo `background-clip: text` com um gradiente de
+ * 103 graus e um `drop-shadow` de 4px de desfoque. Em 22/09/2026 chegou uma
+ * tela dos seis quadros do relatorio com TODO numero virado um retangulo de
+ * gradiente — o recorte pela letra tinha se perdido na rasterizacao daquela
+ * maquina, e o que sobrou foi o tijolo do fundo inteiro.
  *
- * Em 22/09/2026 chegou a tela assim: os seis quadros do relatorio com todo
- * numero virado bloco, e legiveis exatamente os valores que levam `tom` — que
- * sao os unicos que NAO passam por aqui. Nao reproduz em toda maquina, e por
- * isso mesmo nao da para deixar: falha de compositor depende de GPU e driver, e
- * o app nao escolhe nenhum dos dois.
+ * O primeiro conserto trocou o filtro por `text-shadow`, culpando a dupla
+ * filtro+recorte. Estava errado: a placa de ciclo usa essa mesma dupla e nunca
+ * quebrou em maquina nenhuma. E o remedio tinha um efeito colateral visivel —
+ * `text-shadow` desenha ANTES do gradiente pintar por cima, entao nas bordas
+ * suavizadas do glifo a sombra atravessa e ACINZENTA o ouro. Sumiu o tijolo e
+ * entrou um numero cinza.
  *
- * `text-shadow` desenha a partir da propria forma da letra, entao ele convive
- * com o fill transparente e nao cria superficie nenhuma.
- *
- * A sombra ficou MAIS FRACA que a do filtro, e por um motivo que so aparece
- * olhando. O drop-shadow sombreava o RESULTADO ja composto, entao a sombra caia
- * limpa atras do glifo cheio. A text-shadow desenha antes, a partir da forma da
- * letra, e o gradiente pinta por cima: nas bordas suavizadas, onde o glifo e
- * meio transparente, a sombra atravessa e acinzenta o ouro. Quanto mais forte a
- * sombra, mais cinza o numero — que e o oposto do que ela existe para fazer.
- *
- * `0 2px 3px` a 50% ainda descola a letra do fundo escuro e nao suja mais nada.
+ * Entao a tinta parou de ter jeito proprio. O que muda em relacao ao que
+ * quebrou e o que a placa sempre teve: desfoque de 1px em vez de 4, e uma `color`
+ * solida de reserva embaixo do fill transparente.
  */
-export const SOMBRA_DA_TINTA_METALICA = '0 2px 3px rgba(0,0,0,.5)';
 
-/** A tinta a partir de um gradiente qualquer — a placa, o codex, a loja. */
-export const tintaMetalicaCom = (gradiente: string): React.CSSProperties => ({
+/**
+ * `corDeReserva` vai em `color`, embaixo do fill transparente — como na placa.
+ *
+ * Ela nao salva de nada enquanto o `-webkit-text-fill-color: transparent` valer,
+ * e nenhum navegador de hoje ignora essa propriedade. Esta aqui porque a regra da
+ * placa a tem, e a regra desta tinta e ser a da placa, linha por linha: o dia em
+ * que as duas divergirem por "isso aqui nao faz nada mesmo" e o dia em que volta
+ * a haver dois ouros no app.
+ */
+export const tintaMetalicaCom = (gradiente: string, corDeReserva: string): React.CSSProperties => ({
+  color: corDeReserva,
   background: gradiente,
   backgroundClip: 'text',
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
-  textShadow: SOMBRA_DA_TINTA_METALICA,
+  filter: 'drop-shadow(0 1px 1px rgba(0, 0, 0, .8))',
 });
 
+/** O gradiente da placa, com as cores de um acabamento qualquer. */
+export const gradienteMetalico = (mid: string, pale: string) => (
+  `linear-gradient(118deg, ${mid} 0%, ${pale} 18%, #fffaf0 48%, ${pale} 78%, ${mid} 100%)`
+);
+
 export const tintaMetalicaDo = (finish: PlateFinish): React.CSSProperties => tintaMetalicaCom(
-  `linear-gradient(103deg, ${finish.mid} 2%, ${finish.pale} 26%, #fff8ea 44%, ${finish.pale} 62%, ${finish.mid} 88%, ${finish.pale} 100%)`,
+  gradienteMetalico(finish.mid, finish.pale),
+  finish.pale,
 );
 
 const plateOutline = (i: number) => `${18+i},${i} ${302-i},${i} ${320-i},${18+i} ${320-i},${512-i} ${302-i},${530-i} ${18+i},${530-i} ${i},${512-i} ${i},${18+i}`;

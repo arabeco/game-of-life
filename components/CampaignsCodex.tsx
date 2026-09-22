@@ -17,7 +17,7 @@ import { UserCodex } from '../types';
 import { CodexCoverArt as SharedCodexCoverArt } from './CodexCoverArt';
 import { filterTasksAfterFreeProgressReset } from '../utils/freeProgressScope';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
-import { tintaMetalicaCom } from './MetalReportCard';
+import { gradienteMetalico, tintaMetalicaCom } from './MetalReportCard';
 
 /* O mesmo chanfro de oito cantos da placa de ciclo, da placa do legado e do card
    da campanha na loja. */
@@ -469,9 +469,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
     const tintaDaCampanha: React.CSSProperties = {
         /* Mesma sequencia de paradas da placa: passa pelo tom, mas TERMINA claro.
            Fechar no tom escuro apaga as letras das pontas do titulo. */
-        ...tintaMetalicaCom(
-            `linear-gradient(103deg, ${tomDaCampanha} 2%, #e9edf2 26%, #fff8ea 46%, #e9edf2 66%, ${tomDaCampanha} 88%, #e9edf2 100%)`,
-        ),
+        ...tintaMetalicaCom(gradienteMetalico(tomDaCampanha, '#e9edf2'), '#e9edf2'),
     };
 
     const campaignArenaStates = useMemo(() => {

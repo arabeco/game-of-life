@@ -27,7 +27,7 @@ import {
     type CampaignTypeId,
 } from '../../utils/campaignCatalogMeta';
 import { LIFE_AREAS } from '../../constants/lifeAreas';
-import { tintaMetalicaCom } from '../MetalReportCard';
+import { gradienteMetalico, tintaMetalicaCom } from '../MetalReportCard';
 
 const isProbablyImageUrl = (value?: string | null) => {
     if (!value) return false;
@@ -498,9 +498,7 @@ export const CodexStore: React.FC = () => {
                                                            e passa pelo tom, mas TERMINA claro. Fechar no tom
                                                            escuro apagava as letras das pontas — "RESET"
                                                            entrava sumindo. */
-                                                        ...tintaMetalicaCom(
-                                                            `linear-gradient(103deg, ${tomDaCampanha} 2%, #e9edf2 26%, #fff8ea 46%, #e9edf2 66%, ${tomDaCampanha} 88%, #e9edf2 100%)`,
-                                                        ),
+                                                        ...tintaMetalicaCom(gradienteMetalico(tomDaCampanha, '#e9edf2'), '#e9edf2'),
                                                     }}
                                                 >
                                                     {codex.title}

@@ -5,7 +5,7 @@ import { buildLegacyPlaqueSummary } from './LegacyPlaqueArtifact';
 import { UserAvatar } from './UserAvatar';
 import { getDisplayLevel } from '../constants/lifeAreas';
 import { getLegacyPlaqueColor } from '../constants/legacyPlaqueColors';
-import { tintaMetalicaCom } from './MetalReportCard';
+import { gradienteMetalico, tintaMetalicaCom } from './MetalReportCard';
 
 interface LegacyGrandPlaqueProps {
     eras: LegacyEraSummary[];
@@ -105,7 +105,8 @@ export const LegacyGrandPlaque: React.FC<LegacyGrandPlaqueProps> = ({
         clipPath: `polygon(${canto}px 0, calc(100% - ${canto}px) 0, 100% ${canto}px, 100% calc(100% - ${canto}px), calc(100% - ${canto}px) 100%, ${canto}px 100%, 0 calc(100% - ${canto}px), 0 ${canto}px)`,
     });
     const tintaMetalica: React.CSSProperties = tintaMetalicaCom(
-        `linear-gradient(103deg, ${cor.metalMid} 2%, ${cor.metalLight} 26%, #fff8ea 44%, ${cor.metalLight} 62%, ${cor.metalMid} 88%, ${cor.metalLight} 100%)`,
+        gradienteMetalico(cor.metalMid, cor.metalLight),
+        cor.metalLight,
     );
     /*
      * SO A PATENTE.

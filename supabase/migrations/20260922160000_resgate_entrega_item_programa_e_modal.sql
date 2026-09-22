@@ -1,66 +1,21 @@
-create table if not exists public.reward_codes (
-  id uuid primary key default gen_random_uuid(),
-  code text not null,
-  title text not null,
-  description text null,
-  is_active boolean not null default true,
-  starts_at timestamptz null,
-  ends_at timestamptz null,
-  max_redemptions integer null,
-  per_user_limit integer not null default 1,
-  reward_payload jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create unique index if not exists reward_codes_code_ci_idx
-  on public.reward_codes ((lower(code)));
-
-create table if not exists public.reward_code_redemptions (
-  id uuid primary key default gen_random_uuid(),
-  code_id uuid not null references public.reward_codes(id) on delete cascade,
-  user_id uuid not null,
-  code text not null,
-  reward_snapshot jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default now()
-);
-
-create index if not exists reward_code_redemptions_code_id_idx
-  on public.reward_code_redemptions (code_id, created_at desc);
-
-create index if not exists reward_code_redemptions_user_id_idx
-  on public.reward_code_redemptions (user_id, created_at desc);
-
-alter table if exists public.reward_codes enable row level security;
-alter table if exists public.reward_code_redemptions enable row level security;
-
-revoke all on table public.reward_codes from public;
-revoke all on table public.reward_codes from anon;
-revoke all on table public.reward_codes from authenticated;
-
-revoke all on table public.reward_code_redemptions from public;
-revoke all on table public.reward_code_redemptions from anon;
-revoke all on table public.reward_code_redemptions from authenticated;
-
-drop policy if exists "reward_codes_no_direct_access" on public.reward_codes;
-create policy "reward_codes_no_direct_access"
-on public.reward_codes
-for all
-using (false)
-with check (false);
-
-drop policy if exists "reward_code_redemptions_read_own" on public.reward_code_redemptions;
-create policy "reward_code_redemptions_read_own"
-on public.reward_code_redemptions
-for select
-using (auth.uid() = user_id);
-
-drop policy if exists "reward_code_redemptions_no_direct_write" on public.reward_code_redemptions;
-create policy "reward_code_redemptions_no_direct_write"
-on public.reward_code_redemptions
-for all
-using (false)
-with check (false);
+-- O CODIGO DE RESGATE ENTREGAVA UM TERCO DO QUE PROMETIA.
+--
+-- O VANGUARDA25 grava no `reward_payload`, desde abril: 50 de ouro, um bau
+-- Incomum, quatro `item_ids`, o programa beta de 14 dias e o `vanguard_payload`
+-- inteiro — titulo, resumo e os tres destaques do modal de boas-vindas.
+--
+-- A funcao `redeem_reward_code` lia ouro, fragmentos, dias premium, bau e
+-- creditos. So isso. `item_ids`, `beta_program_*`, `vanguard_payload` e
+-- `set_vanguard_welcome` eram ignorados em silencio: quem resgatava recebia o
+-- ouro e o bau, e o "Pacote da Vanguarda" chegava sem borda, sem banner, sem
+-- programa e sem o modal que ja existe pronto na tela esperando o campo.
+--
+-- Ninguem percebeu porque resgate que da certo pela metade nao reclama. Confira
+-- depois de aplicar com o bloco em sql/checks/vanguarda25_esta_de_pe.sql.
+--
+-- As tres entregas novas sao idempotentes: `_starter_reward_grant_inventory_item_once`
+-- ja nao duplica item, e os dois updates escrevem o mesmo valor se rodarem de
+-- novo. O resgate em si continua protegido pelo limite por pessoa.
 
 create or replace function public.redeem_reward_code(p_code text, p_user_id uuid default auth.uid())
 returns jsonb
@@ -69,6 +24,13 @@ security definer
 set search_path = public, auth, extensions
 as $$
 declare
+  -- O que a funcao nao sabia entregar ate 22/09/2026.
+  v_item_ids text[] := array[]::text[];
+  v_item_id text;
+  v_vanguard_payload jsonb;
+  v_beta_key text;
+  v_beta_label text;
+  v_beta_days integer := 0;
   v_uid uuid := coalesce(p_user_id, auth.uid());
   v_code text := upper(trim(coalesce(p_code, '')));
   v_reward public.reward_codes%rowtype;
@@ -208,6 +170,21 @@ begin
   v_campaign_quiz_free_credits := greatest(0, coalesce((v_payload ->> 'campaign_quiz_free_credits')::integer, 0));
   v_campaign_quiz_medium_credits := greatest(0, coalesce((v_payload ->> 'campaign_quiz_medium_credits')::integer, 0));
 
+  /* ITEM, PROGRAMA E MODAL: o que o payload prometia e a funcao ignorava.
+
+     O VANGUARDA25 grava item_ids, beta_program_* e vanguard_payload desde
+     abril, e nada disso era lido. Quem resgatava recebia ouro e bau, e o
+     "Pacote da Vanguarda" entregava um terco do que anunciava — sem borda,
+     sem banner, sem programa e sem o modal de boas-vindas. */
+  v_vanguard_payload := v_payload -> 'vanguard_payload';
+  v_beta_key := nullif(trim(coalesce(v_payload ->> 'beta_program_key', '')), '');
+  v_beta_label := nullif(trim(coalesce(v_payload ->> 'beta_program_label', '')), '');
+  v_beta_days := greatest(0, coalesce((v_payload ->> 'beta_program_days')::integer, 0));
+
+  select coalesce(array_agg(value), array[]::text[])
+  into v_item_ids
+  from jsonb_array_elements_text(coalesce(v_payload -> 'item_ids', '[]'::jsonb)) as value;
+
   v_current_gold := coalesce((coalesce(v_profile.wallet, '{}'::jsonb) ->> 'gold')::integer, v_profile.gold, 0);
   v_current_fragments := coalesce((coalesce(v_profile.wallet, '{}'::jsonb) ->> 'fragments')::integer, v_profile.fragments, 0);
   v_next_gold := v_current_gold + v_gold;
@@ -272,6 +249,35 @@ begin
     v_snapshot
   );
 
+  -- Concede os itens. A funcao do starter ja e "once": resgatar de novo nao
+  -- duplica nada no inventario.
+  if array_length(v_item_ids, 1) is not null then
+    foreach v_item_id in array v_item_ids loop
+      perform public._starter_reward_grant_inventory_item_once(v_uid, v_item_id);
+    end loop;
+  end if;
+
+  -- O programa beta, quando o codigo carrega um.
+  if v_beta_key is not null then
+    update public.user_profiles
+    set beta_program_code = v_beta_key,
+        beta_program_label = coalesce(v_beta_label, beta_program_label),
+        beta_program_started_at = coalesce(beta_program_started_at, v_now),
+        beta_program_ends_at = case
+          when v_beta_days > 0 then greatest(coalesce(beta_program_ends_at, v_now), v_now) + make_interval(days => v_beta_days)
+          else beta_program_ends_at
+        end
+    where id = v_uid;
+  end if;
+
+  -- E o modal de boas-vindas, que ja existe na tela esperando este campo.
+  if coalesce((v_payload ->> 'set_vanguard_welcome')::boolean, false) and v_vanguard_payload is not null then
+    update public.user_profiles
+    set vanguard_welcome_pending = true,
+        vanguard_welcome_payload = v_vanguard_payload
+    where id = v_uid;
+  end if;
+
   v_reward_summary := coalesce(v_payload ->> 'summary', '');
   if v_reward_summary = '' then
     v_reward_summary := concat_ws(
@@ -299,51 +305,8 @@ begin
     'chest_count', v_chest_count,
     'legacy_scene_credits_granted', v_legacy_scene_credits,
     'campaign_quiz_free_credits_granted', v_campaign_quiz_free_credits,
-    'campaign_quiz_medium_credits_granted', v_campaign_quiz_medium_credits
+    'campaign_quiz_medium_credits_granted', v_campaign_quiz_medium_credits,
+    'item_ids', to_jsonb(v_item_ids)
   );
 end;
 $$;
-
-revoke all on function public.redeem_reward_code(text, uuid) from public;
-grant execute on function public.redeem_reward_code(text, uuid) to authenticated;
-
-insert into public.reward_codes (
-  code,
-  title,
-  description,
-  is_active,
-  starts_at,
-  ends_at,
-  max_redemptions,
-  per_user_limit,
-  reward_payload
-)
-values (
-  'VANGUARDA10',
-  'Vanguarda 10',
-  'Codigo inicial da Vanguarda. Fica ativo apenas nos primeiros 10 dias desta campanha.',
-  true,
-  now(),
-  now() + interval '10 days',
-  null,
-  1,
-  jsonb_build_object(
-    'gold', 50,
-    'fragments', 50,
-    'premium_days', 10,
-    'chest_type', 'Raro',
-    'chest_count', 1,
-    'summary', 'VANGUARDA10 resgatado: +50 ouro, +50 fragmentos, 10 dias premium e 1 bau raro.'
-  )
-)
-on conflict ((lower(code)))
-do update set
-  title = excluded.title,
-  description = excluded.description,
-  is_active = excluded.is_active,
-  starts_at = excluded.starts_at,
-  ends_at = excluded.ends_at,
-  max_redemptions = excluded.max_redemptions,
-  per_user_limit = excluded.per_user_limit,
-  reward_payload = excluded.reward_payload,
-  updated_at = now();

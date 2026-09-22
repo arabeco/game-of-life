@@ -12454,39 +12454,40 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
 
-        // Se for quest de cla, garante participacao
+        /**
+         * MISSAO DE CLA NAO SE PEGA, E NAO GANHA ARENA.
+         *
+         * Ela exigia dois passos: o lider ativava e cada membro aceitava, e o
+         * aceite criava uma ARENA PESSOAL com o nome da missao. Dois problemas.
+         *
+         * O primeiro e que o botao de ativar mora na tela da Aldeia, que esta
+         * desligada — entao o fluxo inteiro era inalcancavel: nem o lider
+         * conseguia comecar.
+         *
+         * O segundo e de desenho. Missao de grupo que pede arena individual faz
+         * cada um carregar um recipiente proprio para somar num numero comum, e
+         * ainda enche o planner de arena que se arquiva sozinha. O que o grupo
+         * quer e o contrario: contribuir sem combinar nada, do que ja se faz.
+         *
+         * (A regra de "cada quest cria uma arena com o nome da missao" continua
+         * valendo para as INDIVIDUAIS e as de temporada. So o cla sai dela.)
+         */
         if (quest.type === 'clan') {
-            // VERIFICACAO DE SEGURANCA: So permite entrar se o lider ja ativou
-            if (clan) {
-                const clanProgress = clanQuestProgress[clan.id];
-                const isActiveForClan = clanProgress && clanProgress[quest.id] !== undefined;
-
-                if (!isActiveForClan) {
-                    showToast("Esta tarefa precisa ser ativada pelo líder do grupo primeiro.");
-                    return;
-                }
-            }
-
-            await joinClanMission(quest.id);
+            showToast('A tarefa do grupo soma sozinha, pelo que cada um ja faz.', 'info');
+            return;
         }
 
         // 1. Verificar se a ação já existe
-        const isClanQuest = quest.type === 'clan';
         // NOME DA ARENA = TÍTULO DA MISSÃO
-        // O usuário solicitou explicitamente: "quero que cada quest de cla e de missao crie uma arena nova com o nome daquela missao"
+        // O usuario pediu isto para as INDIVIDUAIS e as de temporada: cada quest
+        // ganha uma arena com o nome da missao. O cla saiu da regra em 22/09/2026 —
+        // ver a nota acima.
         const seasonArenaName = quest.title; // Ex: "Correr 15km", "Ler Livro X"
 
         // 2. Buscar ou Criar Arena (Específica para esta missão)
         let { arena, action: existingAction } = findSeasonQuestArenaAndAction(quest);
 
         if (existingAction) {
-            if (quest.type === 'clan' && clan) {
-                const isParticipating = userMissionParticipations[quest.id];
-                if (!isParticipating) {
-                    await joinClanMission(quest.id);
-                    return;
-                }
-            }
             showToast(`Tarefa "${quest.title}" já esta ativa.`, 'info');
             return;
         }
@@ -12496,8 +12497,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const assetId = assets[0]?.id || 'geral';
             arena = await addArena(assetId, {
                 name: seasonArenaName,
-                description: quest.description || (isClanQuest ? 'Tarefa do grupo' : 'Missão de temporada'),
-                icon: quest.actionTemplate.icon || (isClanQuest ? '\u2694\uFE0F' : '\u{1F4DD}'),
+                description: quest.description || 'Missao de temporada',
+                icon: quest.actionTemplate.icon || '\u{1F4DD}',
                 priority: 'alta' // Destaque para missões ativas
             });
 
@@ -12515,20 +12516,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             sourceQuestId: quest.id,
             name: quest.actionTemplate.name,
             description: quest.actionTemplate.description,
-            icon: isClanQuest ? '\u2694\uFE0F' : (quest.actionTemplate.icon || '\u{1F4DD}'),
+            icon: quest.actionTemplate.icon || '\u{1F4DD}',
             duration: quest.actionTemplate.duration,
-            repetitions: isClanQuest ?(quest.requirements?.clanGoal || quest.goal_value || quest.actionTemplate.repetitions || 1) : (quest.actionTemplate.repetitions || quest.goal_value || 1),
+            repetitions: quest.actionTemplate.repetitions || quest.goal_value || 1,
             actionType: quest.actionTemplate.isMilestone ? 'Marco' : 'A\u00E7\u00E3o Recorrente',
             difficulty: 3
         });
 
         // Configuração adicional para quests de clã
-        if (isClanQuest && clan) {
-            // REMOVIDO: Upsert automático em clan_mission_progress.
-            // Agora o líder deve ativar explicitamente via activateClanQuest.
-            // Apenas juntamos o membro à missão.
-            await joinClanMission(quest.id);
-        }
 
         showToast(`Missão "${quest.title}" aceita. Confira a arena "${seasonArenaName}".`, 'success');
     };
@@ -12540,8 +12535,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const { action: existingAction } = findSeasonQuestArenaAndAction(quest);
         if (existingAction) {
             await deleteAction(existingAction.id);
-        } else if (quest.type === 'clan') {
-            await leaveClanMission(quest.id);
         }
 
         showToast(`Missão "${quest.title}" abandonada.`);

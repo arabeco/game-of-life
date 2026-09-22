@@ -57,6 +57,12 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
     const [acaoEmCurso, setAcaoEmCurso] = React.useState<string | null>(null);
     const [currentItem, setCurrentItem] = React.useState<ItemDef>(initialItem);
 
+    /**
+     * `aviso` so existe na DUPLICATA do bau — e a linha que diz que o item ja
+     * era dela e virou fragmentos. Serve de sinal para a acao la embaixo.
+     */
+    const duplicataDeBau = Boolean(aviso);
+
     // Reset current item when prop changes
     React.useEffect(() => {
         setCurrentItem(initialItem);
@@ -391,7 +397,21 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
 
                 {/* Actions */}
                 <div className="z-10 mt-auto grid w-full grid-cols-2 gap-2.5 pt-3">
-                    {currentItem.category === 'chest' ? (
+                    {duplicataDeBau ? (
+                        /* DUPLICATA NAO GANHA "EQUIPAR".
+                         *
+                         * O item ja era dela antes de o bau abrir; o que chegou
+                         * foram fragmentos. Oferecer "Equipar" aqui convida a
+                         * acreditar que veio peca nova, e ainda muda o que esta
+                         * no corpo por causa de uma tela que so dava um aviso.
+                         * A unica acao honesta e fechar. */
+                        <button
+                            onClick={onClose}
+                            className="col-span-2 py-3 luxe-bico luxe-skin-button"
+                        >
+                            OK
+                        </button>
+                    ) : currentItem.category === 'chest' ? (
                         <button 
                             onClick={handleOpen}
                             className="col-span-2 py-3 luxe-bico luxe-skin-button"

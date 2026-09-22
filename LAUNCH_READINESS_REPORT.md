@@ -1,13 +1,13 @@
 # Launch Readiness Report
 
-- Generated at: 2026-09-21T21:01:53.610Z
+- Generated at: 2026-09-22T13:47:08.237Z
 - Suite: `core`
 - Smoke URL: `http://127.0.0.1:3011/`
-- Build: PASS (28.6s)
+- Build: PASS (18.6s)
 
 ## Checks
 
-### PASS - Avatar offsets regression (0.3s)
+### PASS - Avatar offsets regression (0.2s)
 - Kind: `logic`
 - Simulates: tabela vazia desenha igual ao comportamento antigo
 - Simulates: escala cresce do centro da peca
@@ -37,7 +37,7 @@
 - Simulates: prioriza arena em risco
 - Simulates: oferece apenas navegacao segura
 
-### PASS - Reward modal priority regression (0.1s)
+### PASS - Reward modal priority regression (0.2s)
 - Kind: `logic`
 - Simulates: nao mostra passagem antiga a conta nova
 - Simulates: evita sobreposicao entre dicas, temporada e recompensas
@@ -47,7 +47,7 @@
 - Simulates: remove planejamento diario do widget
 - Simulates: mostra acoes feitas, XP e arenas tocadas
 
-### PASS - Daily reading regression (0.2s)
+### PASS - Daily reading regression (0.1s)
 - Kind: `logic`
 - Simulates: fala sobre o dia corrente, nao so sobre dias fechados
 - Simulates: a assinatura muda a regua e nao o elogio
@@ -59,7 +59,7 @@
 - Simulates: dias sem entrega conta invertido
 - Simulates: mediana aguenta ciclo extremo
 
-### PASS - Subscription XP bonus regression (0.2s)
+### PASS - Subscription XP bonus regression (0.1s)
 - Kind: `logic`
 - Simulates: platinum rende mais que premium
 - Simulates: assinatura vencida nao paga bonus
@@ -99,7 +99,48 @@
 - Simulates: o SS pede um mes impecavel e nao um mes comprido
 - Simulates: o bau sai da nota e de mais nada
 
-### PASS - XP scale regression (0.2s)
+### PASS - Cards de sabedoria regression (0.1s)
+- Kind: `logic`
+- Simulates: o card do dia nasce ligado
+- Simulates: a leitura do ciclo e o card de tema nao dividem a vaga do dia
+- Simulates: cada um cai na sua aba
+- Simulates: um banco de textos so para o app e para o cron
+
+### PASS - Ciclo recem-nascido regression (0.1s)
+- Kind: `logic`
+- Simulates: o dia 1 nao recebe "salve o que puder"
+- Simulates: um dia cheio pela frente nao e ciclo perdido
+- Simulates: sem ciclo nao ha risco de ciclo
+- Simulates: mais tarde o aviso continua vindo
+
+### PASS - Manha nao tem veredito regression (0.1s)
+- Kind: `logic`
+- Simulates: as sete da manha o plano nao e diagnostico
+- Simulates: a tarde o diagnostico volta inteiro
+- Simulates: a frase fala da arena e nao do dia
+- Simulates: nenhuma frase promete que uma acao resolve o dia
+
+### PASS - Relatorio sem repeticao regression (0.1s)
+- Kind: `logic`
+- Simulates: cada quadro responde uma pergunta diferente
+- Simulates: um numero aparece uma vez so
+- Simulates: o melhor dia e a maior sequencia saem do banco para a tela
+- Simulates: a comparacao com o historico deixa de ser so do Platinum
+
+### PASS - Apagar conta regression (0.1s)
+- Kind: `logic`
+- Simulates: so a exclusao pode abortar a exclusao
+- Simulates: limpeza de arquivo avisa e segue
+- Simulates: o pedido se registra antes de apagar
+- Simulates: o app continua tendo por onde pedir
+
+### PASS - Tinta metalica regression (0.1s)
+- Kind: `logic`
+- Simulates: drop-shadow nao volta para cima do recorte por texto
+- Simulates: o numero nao vira um tijolo dourado
+- Simulates: a tinta metalica tem um dono so
+
+### PASS - XP scale regression (0.1s)
 - Kind: `logic`
 - Simulates: missoes, jornadas e pactos usam a mesma escala
 - Simulates: nenhuma recompensa passa de 500 XP
@@ -122,7 +163,7 @@
 - Simulates: a primeira acao depois de uma pausa tem fala propria
 - Simulates: a dica de tela olha o que existe na tela
 
-### PASS - Sensory grammar regression (0.2s)
+### PASS - Sensory grammar regression (0.1s)
 - Kind: `logic`
 - Simulates: tres pesos e nada colidindo
 - Simulates: fechar ciclo nao vibra como fechar painel
@@ -134,7 +175,7 @@
 - Simulates: a presenca e o corte de relevancia
 - Simulates: sem candidato ele fica quieto
 
-### PASS - Oracle presence policy regression (0.7s)
+### PASS - Oracle presence policy regression (0.5s)
 - Kind: `logic`
 - Simulates: presenca decide o que ele fala
 - Simulates: aviso decide onde chega
@@ -176,14 +217,14 @@
 - Simulates: valida progresso de campanha/arena
 - Simulates: confere score, atlas e mutacoes utilitarias
 
-### PASS - Onboarding happy path (20.4s)
+### PASS - Onboarding happy path (17.2s)
 - Kind: `browser`
 - Simulates: entra com conta temporaria
 - Simulates: atravessa onboarding
 - Simulates: cria arena/acao inicial
 - Simulates: chega no fluxo principal sem travar
 
-### PASS - Campaign quiz flow (13.5s)
+### PASS - Campaign quiz flow (12.3s)
 - Kind: `browser`
 - Simulates: abre loja de campanhas
 - Simulates: roda quiz gratis
@@ -198,7 +239,7 @@
 - Simulates: abre relatorio e reward flow
 - Error: Cycle report flow failed with exit 1
 
-### PLANNED - UI shell smoke
+### PASS - UI shell smoke (9.8s)
 - Kind: `browser`
 - Simulates: abre shell principal
 - Simulates: navega views centrais

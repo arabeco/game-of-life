@@ -27,6 +27,95 @@ const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || DEFAULT_ALLOWED_ORIG
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+/**
+ * O PRECO E O PREMIO MORAM AQUI, E NAO NO PEDIDO.
+ *
+ * Ate 22/09/2026 esta funcao lia `amount` e `goldAmount` do CORPO da
+ * requisicao. Quanto se paga e quanto se recebe eram dois campos livres,
+ * escolhidos por quem chamava. Com `verify_jwt = false`, o cliente mandando a
+ * anon key (que e publica, esta no bundle) e o `userId` tambem vindo do corpo,
+ * dava para pagar um centavo, receber o que quisesse e creditar a conta de
+ * QUALQUER pessoa — sem app, sem login, sem nem abrir o site.
+ *
+ * E o pior caso nao era ouro: com `purchaseKind: "membership"` a mesma chamada
+ * comprava Platinum por um centavo, entrando pelo caminho legitimo
+ * (`process_approved_membership_payment`, service_role). O guard de 14/09, que
+ * proibe o cliente de escrever `is_premium`, nao tinha como ver isso.
+ *
+ * Agora o pedido manda so o ID do produto. Preco, ouro e plano saem desta
+ * tabela. Ela e COPIA da de `constants/goldCatalog.ts` porque edge function nao
+ * importa do app — e o teste `pagamento-web` trava as duas juntas, para um
+ * preco mudar la e nao ficar velho aqui.
+ */
+type Produto =
+  | { kind: "gold"; priceBrl: number; gold: number; label: string }
+  | { kind: "membership"; priceBrl: number; tier: "premium" | "platinum"; equivalentGold: number; label: string };
+
+const CATALOGO: Record<string, Produto> = {
+  pack_gold_1: { kind: "gold", priceBrl: 5, gold: 50, label: "50 ouro" },
+  pack_gold_2: { kind: "gold", priceBrl: 10, gold: 110, label: "110 ouro" },
+  pack_gold_3: { kind: "gold", priceBrl: 20, gold: 230, label: "230 ouro" },
+  pack_gold_4: { kind: "gold", priceBrl: 50, gold: 600, label: "600 ouro" },
+  pack_gold_5: { kind: "gold", priceBrl: 100, gold: 1300, label: "1300 ouro" },
+  premium_30d: { kind: "membership", priceBrl: 17.9, tier: "premium", equivalentGold: 200, label: "Premium 30d" },
+  platinum_30d: { kind: "membership", priceBrl: 44.9, tier: "platinum", equivalentGold: 500, label: "Platinum 30d" },
+};
+
+/**
+ * QUEM PAGA E QUEM O TOKEN DIZ, E NAO QUEM O CORPO AFIRMA.
+ *
+ * A anon key e recusada de proposito: ela identifica o PROJETO, nao a pessoa, e
+ * era exatamente o que o app mandava antes. Sem sessao de verdade nao ha compra.
+ */
+const usuarioDoToken = async (req: Request): Promise<string | null> => {
+  const header = req.headers.get("authorization") || "";
+  const token = header.slice(0, 7).toLowerCase() === "bearer " ? header.slice(7).trim() : "";
+  if (!token || token === Deno.env.get("SUPABASE_ANON_KEY")) return null;
+  try {
+    const { data, error } = await supabase.auth.getUser(token);
+    if (error || !data?.user?.id) return null;
+    return data.user.id;
+  } catch {
+    return null;
+  }
+};
+
+/** Centavos batem; float nao. 17.9 e 44.9 existem no catalogo. */
+const mesmoValor = (a: unknown, b: number) => Math.round(Number(a || 0) * 100) === Math.round(b * 100);
+
+/**
+ * A assinatura do Mercado Pago, quando ha segredo configurado.
+ *
+ * O manifesto e o formato que eles publicam: id, request-id e ts, na ordem, com
+ * HMAC-SHA256. Sem `MERCADO_PAGO_WEBHOOK_SECRET` isto devolve true e o controle
+ * que sobra e a re-consulta na API — que ja e forte, porque o status vem da
+ * fonte. Configurar o segredo fecha tambem a porta de alguem gastar a nossa cota
+ * mandando notificacao falsa.
+ */
+const assinaturaConfere = async (req: Request, dataId: string): Promise<boolean> => {
+  const segredo = Deno.env.get("MERCADO_PAGO_WEBHOOK_SECRET") || "";
+  if (!segredo) {
+    console.warn("[Glyph Pay] MERCADO_PAGO_WEBHOOK_SECRET ausente: seguindo so com a conferencia na API.");
+    return true;
+  }
+  const assinatura = req.headers.get("x-signature") || "";
+  const requestId = req.headers.get("x-request-id") || "";
+  const partes = Object.fromEntries(
+    assinatura.split(",").map((parte) => parte.split("=").map((valor) => valor.trim())).filter((par) => par.length === 2),
+  ) as Record<string, string>;
+  if (!partes.ts || !partes.v1) return false;
+  const manifesto = `id:${dataId};request-id:${requestId};ts:${partes.ts};`;
+  const chave = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(segredo), { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
+  );
+  const bytes = new Uint8Array(await crypto.subtle.sign("HMAC", chave, new TextEncoder().encode(manifesto)));
+  const esperado = Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+  if (esperado.length !== partes.v1.length) return false;
+  let diferenca = 0;
+  for (let i = 0; i < esperado.length; i += 1) diferenca |= esperado.charCodeAt(i) ^ partes.v1.charCodeAt(i);
+  return diferenca === 0;
+};
+
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const normalizeFullName = (value: string) => String(value || "").replace(/\s+/g, " ").trim();
@@ -68,13 +157,6 @@ const splitFullName = (value: string) => {
     firstName: parts[0] || "",
     lastName: parts.slice(1).join(" "),
   };
-};
-
-const normalizeMembershipTier = (value: string | null | undefined) => {
-  const normalized = String(value || "").trim().toLowerCase();
-  if (normalized === "platinum") return "platinum";
-  if (normalized === "premium") return "premium";
-  return null;
 };
 
 const maskEmail = (value: string) => {
@@ -182,63 +264,46 @@ serve(async (req) => {
   const path = url.pathname;
 
   try {
-    // --- 1. ENDPOINT DE CHECKOUT (CRIAR PREFERÊNCIA) ---
-    if (path.endsWith("/checkout")) {
-      const { userId, goldAmount, amount } = await req.json();
-
-      const response = await fetch("https://api.mercadopago.com/checkout/preferences", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${MP_ACCESS_TOKEN}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          items: [
-            {
-              id: `gold_pack_${goldAmount}`,
-              title: `Pacote de Ouro: ${goldAmount} unidades`,
-              quantity: 1,
-              unit_price: amount,
-              currency_id: "BRL",
-            }
-          ],
-          metadata: {
-            user_id: userId,
-            gold_amount: goldAmount,
-            amount_paid: amount
-          },
-          notification_url: MERCADO_PAGO_WEBHOOK_URL,
-          auto_return: "approved",
-          back_urls: {
-            success: `${APP_RETURN_URL}?payment=success`,
-            failure: `${APP_RETURN_URL}?payment=failure`,
-            pending: `${APP_RETURN_URL}?payment=pending`,
-          },
-        }),
-      });
-
-      const data = await response.json();
-      return new Response(JSON.stringify({ preferenceId: data.id }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
+    // O ENDPOINT /checkout FOI REMOVIDO EM 22/09/2026.
+    //
+    // Nada no app o chamava — o unico caminho de compra e /process_payment —,
+    // e ele criava preferencia do Mercado Pago com preco e metadata escolhidos
+    // pelo corpo da requisicao. Endpoint de pagamento sem chamador e superficie
+    // de ataque sem contrapartida.
 
     // --- 2. ENDPOINT DE PROCESSAMENTO (CRIAR PAGAMENTO REAL) ---
     if (url.pathname.endsWith("/process_payment")) {
-      const { formData, userId, goldAmount, amount, purchaseKind, membershipTier, productId, productLabel, equivalentGold } = await req.json();
-      const payerEmail = String(formData?.payer?.email || "").trim();
-      const payerFullName = normalizeFullName(formData?.payer?.fullName || "");
-      const payerCpf = sanitizeCpf(formData?.payer?.cpf || "");
-      const normalizedPurchaseKind = String(purchaseKind || "gold").trim().toLowerCase() === "membership" ? "membership" : "gold";
-      const normalizedMembershipTier = normalizeMembershipTier(membershipTier);
+      const corpo = await req.json();
+      const formData = corpo?.formData;
 
-      if (normalizedPurchaseKind === "membership" && !normalizedMembershipTier) {
-        return new Response(JSON.stringify({ error: "Plano de assinatura inválido." }), {
+      // Quem paga sai do TOKEN. `userId` no corpo e ignorado de proposito.
+      const userId = await usuarioDoToken(req);
+      if (!userId) {
+        return new Response(JSON.stringify({ error: "Sessao necessaria para pagar." }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 401,
+        });
+      }
+
+      // Preco e premio saem do CATALOGO. O corpo escolhe o produto, nao o valor.
+      const productId = String(corpo?.productId || "").trim();
+      const produto = CATALOGO[productId];
+      if (!produto) {
+        return new Response(JSON.stringify({ error: "Produto invalido." }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 400,
         });
       }
+
+      const amount = produto.priceBrl;
+      const normalizedPurchaseKind = produto.kind;
+      const normalizedMembershipTier = produto.kind === "membership" ? produto.tier : null;
+      const goldAmount = produto.kind === "gold" ? produto.gold : 0;
+      const equivalentGold = produto.kind === "gold" ? produto.gold : produto.equivalentGold;
+      const productLabel = produto.label;
+      const payerEmail = String(formData?.payer?.email || "").trim();
+      const payerFullName = normalizeFullName(formData?.payer?.fullName || "");
+      const payerCpf = sanitizeCpf(formData?.payer?.cpf || "");
 
       if (!isValidEmail(payerEmail)) {
         return new Response(JSON.stringify({ error: "E-mail do pagador invalido." }), {
@@ -285,10 +350,10 @@ serve(async (req) => {
           metadata: {
             user_id: userId,
             purchase_kind: normalizedPurchaseKind,
-            product_id: productId || (normalizedPurchaseKind === "membership" ? `${normalizedMembershipTier}_30d` : null),
-            product_label: productLabel || (normalizedPurchaseKind === "membership" ? `${normalizedMembershipTier} 30d` : `${goldAmount} ouro`),
+            product_id: productId,
+            product_label: productLabel,
             membership_tier: normalizedMembershipTier,
-            equivalent_gold: equivalentGold ?? goldAmount,
+            equivalent_gold: equivalentGold,
             gold_amount: goldAmount,
             amount_paid: amount
           },
@@ -335,47 +400,73 @@ serve(async (req) => {
         return new Response("Ignored: No payment ID", { status: 200 });
       }
 
+      // A NOTIFICACAO NAO E PROVA DE NADA. Ela so diz qual pagamento olhar.
+      if (!(await assinaturaConfere(req, String(paymentId)))) {
+        console.warn(`[Glyph Pay] Assinatura invalida para ${paymentId}. Ignorado.`);
+        return new Response("Invalid signature", { status: 200 });
+      }
+
       // Buscar detalhes oficiais do pagamento no Mercado Pago
       const mpResponse = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
         headers: { "Authorization": `Bearer ${MP_ACCESS_TOKEN}` },
       });
       
+      // SEM A RESPOSTA DA API, NAO HA O QUE PROCESSAR.
+      //
+      // Aqui havia um fallback que seguia em frente quando a busca falhava,
+      // desde que o CORPO da notificacao dissesse "payment.updated" — ou seja,
+      // confiava na parte que qualquer um escreve. Devolver 200 sem creditar faz
+      // o Mercado Pago reenviar; e assim que se trata falha de rede.
       if (!mpResponse.ok) {
-        // Se der erro na busca (comum em sandbox), vamos logar e tentar prosseguir se o body tiver info
-        console.error(`[Glyph Pay] Erro ao buscar detalhes do pagamento ${paymentId}. Status: ${mpResponse.status}`);
-        
-        // Tentar buscar do banco se já existe (fallback)
-        if (body.action === "payment.updated" || body.status === "approved") {
-           // Se a notificação já diz que aprovou, tentamos processar com o que temos
-        } else {
-           return new Response("Error fetching details", { status: 200 }); // Retorna 200 pro MP não reenviar
-        }
+        console.error(`[Glyph Pay] Falha ao buscar ${paymentId} na API. Status ${mpResponse.status}.`);
+        return new Response("Error fetching details", { status: 200 });
       }
 
       const paymentData = await mpResponse.json();
 
       // Se o pagamento foi aprovado, creditar o ouro via RPC
       if (paymentData.status === "approved") {
-        const { user_id, gold_amount, amount_paid, purchase_kind, membership_tier } = paymentData.metadata;
+        const { user_id } = paymentData.metadata || {};
+
+        // O QUE FOI COBRADO TEM DE SER O PRECO DO PRODUTO.
+        //
+        // O metadata hoje e escrito por esta funcao, entao ja e confiavel. Esta
+        // conferencia e a segunda tranca: se algum dia alguem conseguir plantar
+        // metadata, ainda precisaria ter PAGO o valor de tabela para receber.
+        const produto = CATALOGO[String(paymentData?.metadata?.product_id || "")];
+        if (!produto) {
+          console.error(`[Glyph Pay] Pagamento ${paymentId} sem produto de catalogo. Nada creditado.`);
+          return new Response("Unknown product", { status: 200 });
+        }
+        if (!mesmoValor(paymentData?.transaction_amount, produto.priceBrl)) {
+          console.error(`[Glyph Pay] Pagamento ${paymentId}: cobrado ${paymentData?.transaction_amount}, tabela ${produto.priceBrl}. Nada creditado.`);
+          return new Response("Amount mismatch", { status: 200 });
+        }
+        if (!user_id) {
+          console.error(`[Glyph Pay] Pagamento ${paymentId} sem user_id. Nada creditado.`);
+          return new Response("Missing user", { status: 200 });
+        }
         const safeMetadata = buildSafePaymentMetadata(paymentData);
-        const normalizedPurchaseKind = String(purchase_kind || "gold").trim().toLowerCase();
-        const normalizedMembershipTier = normalizeMembershipTier(membership_tier);
-        const rpcName = normalizedPurchaseKind === "membership"
+        // O QUE SE CREDITA SAI DO CATALOGO, e nao do metadata.
+        //
+        // Depois de conferir o produto e o valor cobrado, ler a quantidade do
+        // metadata seria voltar a confiar no texto quando ja se tem a fonte.
+        const rpcName = produto.kind === "membership"
           ? "process_approved_membership_payment"
           : "process_approved_payment";
-        const rpcPayload = normalizedPurchaseKind === "membership"
+        const rpcPayload = produto.kind === "membership"
           ? {
               p_user_id: user_id,
               p_payment_id: paymentId.toString(),
-              p_membership_tier: normalizedMembershipTier,
-              p_amount_paid: parseFloat(amount_paid),
+              p_membership_tier: produto.tier,
+              p_amount_paid: Number(paymentData.transaction_amount),
               p_metadata: safeMetadata,
             }
           : {
               p_user_id: user_id,
               p_payment_id: paymentId.toString(),
-              p_gold_amount: parseInt(gold_amount),
-              p_amount_paid: parseFloat(amount_paid),
+              p_gold_amount: produto.gold,
+              p_amount_paid: Number(paymentData.transaction_amount),
               p_metadata: safeMetadata,
             };
 
@@ -386,11 +477,7 @@ serve(async (req) => {
           throw error;
         }
         
-        console.log(
-          normalizedPurchaseKind === "membership"
-            ? `[Glyph Pay] Sucesso: ${normalizedMembershipTier} ativado para ${user_id}`
-            : `[Glyph Pay] Sucesso: ${gold_amount} ouros para ${user_id}`,
-        );
+        console.log(`[Glyph Pay] Sucesso: ${produto.label} para ${user_id}`);
       }
 
       return new Response("OK", { status: 200 });

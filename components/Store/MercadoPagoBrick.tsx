@@ -214,12 +214,26 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = (props) => {
             setCheckoutCpf(nextCpf);
             setPaymentResult(null);
 
+            /* O SERVIDOR DECIDE PRECO E PREMIO; DAQUI SO VAI O PRODUTO.
+               Ate 22/09/2026 este corpo mandava `amount`, `goldAmount` e `userId`,
+               e a funcao obedecia — dava para pagar um centavo e receber o que
+               quisesse. E o Authorization levava a ANON KEY, que e publica e nao
+               identifica ninguem; agora vai a sessao, e o servidor tira o dono da
+               compra dela. Ver o cabecalho de supabase/functions/mercadopago. */
+            const { data: sessao } = await supabase.auth.getSession();
+            const token = sessao?.session?.access_token;
+            if (!token) {
+                setPaymentError("Sua sessao expirou. Entre de novo para concluir a compra.");
+                setLoading(false);
+                return;
+            }
+
             const response = await fetch(`${EDGE_FUNCTION_URL}/process_payment`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-                    Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                    Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
                     formData: {
@@ -229,14 +243,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = (props) => {
                             cpf: nextCpf,
                         },
                     },
-                    userId: userProfile.id,
-                    goldAmount,
-                    amount,
-                    purchaseKind: props.kind,
-                    membershipTier,
                     productId: props.internalProductId || (isMembershipCheckout ? `${membershipTier}_30d` : null),
-                    productLabel: isMembershipCheckout ? membershipName : `${goldAmount} ouro`,
-                    equivalentGold: isMembershipCheckout ? equivalentGold : goldAmount,
                 }),
             });
 

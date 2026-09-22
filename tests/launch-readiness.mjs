@@ -185,6 +185,13 @@ const suites = {
       interactions: ['so a exclusao pode abortar a exclusao', 'limpeza de arquivo avisa e segue', 'o pedido se registra antes de apagar', 'o app continua tendo por onde pedir'],
     },
     {
+      id: 'pagamento-web',
+      label: 'Pagamento web regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'pagamento-web.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['preco e premio saem do catalogo do servidor', 'o dono da compra sai do token', 'o catalogo do servidor bate com o do app', 'o webhook confere assinatura e valor cobrado'],
+    },
+    {
       id: 'tinta-metalica',
       label: 'Tinta metalica regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'tinta-metalica.regression.mjs')]],

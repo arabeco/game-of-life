@@ -179,9 +179,10 @@ export const SKIN_CHEST_POOL = ['VOID'].filter(id => isItemCatalogVisible(id));
  * Agora sao sete, um por patente. O fundo e a unica coisa que diz, sem texto,
  * que o grupo chegou em outro lugar. Por isso nao se escolhe: se conquista.
  *
- * A arte definitiva ainda nao chegou (ver *6 · Fundo do grupo* no handoff).
- * Ate la os sete arquivos existem com paisagens emprestadas, repetidas de duas
- * em duas — entregar e sobrescrever o arquivo, sem mexer em codigo.
+ * A arte chegou em 22/09/2026, e os sete sao o MESMO LUGAR em sete momentos:
+ * mesmo morro, mesmo rio, mesma ponte, mesma cerca no primeiro plano. So o
+ * assentamento cresce, de palicada de madeira a capital dourada. E o que faz a
+ * subida se ler como evolucao em vez de troca de papel de parede.
  */
 export const FUNDO_DA_PATENTE: Record<ClanRankId, string> = {
   feudo: '/clan-backgrounds/feudo.webp',

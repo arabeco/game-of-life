@@ -569,13 +569,14 @@ entregar, o que vale e esta:
 | Roupa das patentes — Escudeiro a Soberano | **9** | 500x500 PNG |
 | Roupa do pacote inicial — Pijama, Corrida, Chuva, Verao | **4** | 500x500 PNG |
 | Cabelo — 4 cortes x 3 cores | **12** | 500x500 PNG |
-| Fundo do grupo — um por patente | **7** | 1599x900 WEBP |
+| ~~Fundo do grupo~~ — entregue em 22/09 | ~~7~~ | 1024x1536 WEBP |
 | ~~Wallpaper do perfil~~ — entregue em 22/09 | ~~4~~ | 512x512 PNG |
 | | **36** | |
 
-Os 25 primeiros ja tem arquivo esperando no nome final, e `npm run arte:pendente`
-lista exatamente quais. Os 7 fundos tem nome final e paisagem emprestada no
-lugar. **Os 4 wallpapers ja chegaram** — ver *3 · Wallpaper*. Faltam 32.
+Faltam **25**: as 13 roupas e os 12 cabelos, todos com arquivo esperando no nome
+final. `npm run arte:pendente` lista exatamente quais.
+
+Os 4 wallpapers e os 7 fundos de grupo **chegaram em 22/09** e estao no app.
 
 **Fora desta conta ficam as 4 pecas de jardim:** elas sao MODELO 3D, e nao
 imagem. Quem desenha PNG nao entrega jardim.

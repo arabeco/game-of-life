@@ -1,6 +1,6 @@
 import { FloatingActionDock } from '../components/FloatingActionDock';
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, PlusIcon, SquareCheckIcon, PanelIcon, FlameIcon, ArchiveBoxIcon, ZapIcon } from '../components/Icons';
+import { ChevronLeftIcon, ChevronRightIcon, PlusIcon, SquareCheckIcon, PanelIcon, ArchiveBoxIcon, ZapIcon } from '../components/Icons';
 import { Search as SearchIcon } from 'lucide-react';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { useConfirmation } from '../hooks/useConfirmation';
@@ -1841,7 +1841,23 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
 
     const allTasksCompleted = checklistItems.every(item => item.completed);
     const hasPendingChecklistItems = checklistItems.some(item => !item.completed);
-    const shouldSurfaceChecklist = currentTime.getHours() >= 20 && hasPendingChecklistItems;
+    /**
+     * O QUE ESTA ESPERANDO NESTE BOTAO — e a que horas isso se diz.
+     *
+     * Antes: `hours >= 20 && hasPendingChecklistItems`. Acender so as oito da
+     * noite e avisar quando nao da mais tempo, e era tarde ate para DESCOBRIR
+     * que o botao existe. Agora acende a qualquer hora, porque so acende para
+     * quem criou item — quem nao criou nao ve luz nenhuma, e quem criou pediu
+     * para ser lembrado.
+     *
+     * Conta os DOIS tipos, que e o que o botao abre: item do dia por marcar, e
+     * sequencia sem a marca de hoje. Contar so um faria o numero mentir sobre
+     * metade do conteudo.
+     */
+    const hojeParaSequencia = formatLocalDateString(currentTime);
+    const sequenciasSemHoje = sequenceItems.filter(item => item.lastMarkedDate !== hojeParaSequencia);
+    const pendenciasDoChecklist = checklistItems.filter(item => !item.completed).length + sequenciasSemHoje.length;
+    const shouldSurfaceChecklist = pendenciasDoChecklist > 0;
     const isToday = formatLocalDateString(currentDate) === getOperationalDateString();
 
     const plannerExpSnapshot = useMemo<PlannerExpSnapshot>(() => {
@@ -2042,18 +2058,15 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     <div className="relative z-10">
                     <div className="relative flex h-11 items-center justify-center px-3 pt-2 text-lg font-bold">
                         <div className="absolute left-3 flex min-w-0 items-center space-x-1" id="planner-tools">
-                            <button onClick={() => setChecklistVisible(true)} className={`planner-soft-control relative rounded-full border px-2 py-1.5 transition-colors ${shouldSurfaceChecklist ? 'border-[var(--skin-accent-color)]/38 bg-[var(--skin-accent-color)]/14 text-[var(--skin-accent-color)] shadow-[0_0_12px_rgba(212,175,55,0.14)]' : 'border-white/8 bg-white/[0.025] text-gray-500 hover:border-white/18 hover:bg-white/[0.055] hover:text-gray-200'}`} title={shouldSurfaceChecklist ? 'Checklist diário: pendencias da noite' : 'Checklist diário'} aria-label="Abrir checklist diário">
-                                <SquareCheckIcon className={`h-4 w-4 ${allTasksCompleted ? 'text-[var(--skin-accent-color)]' : ''}`} />
-                                {shouldSurfaceChecklist && (
-                                    <ClockIcon className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-black/70 p-[1px] text-[var(--skin-accent-color)]" />
-                                )}
-                                {sequenceItems.length > 0 && (
-                                    <span className="absolute -right-1 -top-1 flex min-w-[1rem] items-center justify-center gap-0.5 rounded-full border border-black/30 bg-[var(--skin-accent-color)] px-1 py-[1px] text-[9px] font-black leading-none text-black shadow-[0_4px_10px_rgba(0,0,0,0.25)]">
-                                        <FlameIcon className="h-2.5 w-2.5" />
-                                        {sequenceItems.length}
-                                    </span>
-                                )}
-                            </button>
+                            {/* O BOTAO DO CHECKLIST SAIU DAQUI EM 22/09/2026.
+
+                                Ele era um icone de 16px no canto SUPERIOR ESQUERDO, sem
+                                rotulo, encostado em outro icone igual. Num celular esse e
+                                o ponto mais longe do polegar, e a lista que ele abre e
+                                justamente a que se mexe varias vezes ao dia.
+
+                                Agora ele mora embaixo, ao lado do orbe de EXP. Ver
+                                `planner-checklist-dock` no fim deste arquivo. */}
                             <button id="daily-panel-button" onClick={() => { setDailyPanelDate(formatLocalDateString(currentDate)); setIsDailyPanelVisible(true); }} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white transition-colors" title="Resumo diário">
                                 <PanelIcon className="h-3.5 w-3.5" />
                             </button>
@@ -2230,6 +2243,34 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             </div>
 
             <PlannerFloatingVitals expSnapshot={plannerExpSnapshot} cycleExpBanked={cycleExpBonus || 0} />
+
+            {/* O CHECKLIST, ONDE O POLEGAR ALCANCA.
+
+                Mesma altura do orbe de EXP, do outro lado: os dois sao 'como voce
+                esta', e ficam juntos. O orbe e `pointer-events-none` e centrado,
+                entao este nao pode morar dentro dele — e irmao, e nao filho.
+
+                O numero e o que faz alguem clicar. Icone sozinho nao diz nada, e
+                foi por isso que este botao passou meses invisivel: quem nunca
+                abriu nao tinha como saber o que havia dentro. */}
+            <button
+                id="planner-checklist-dock"
+                type="button"
+                onClick={() => setChecklistVisible(true)}
+                aria-label={pendenciasDoChecklist > 0
+                    ? `Abrir checklist: ${pendenciasDoChecklist} por fazer`
+                    : 'Abrir checklist diario'}
+                className={`planner-soft-control absolute bottom-[calc(0.15rem+var(--safe-area-bottom))] left-3 z-40 flex items-center gap-1.5 rounded-full border px-2.5 py-2 transition-colors ${
+                    shouldSurfaceChecklist
+                        ? 'border-[var(--skin-accent-color)]/38 bg-[var(--skin-accent-color)]/14 text-[var(--skin-accent-color)] shadow-[0_0_12px_rgba(212,175,55,0.14)]'
+                        : 'border-white/8 bg-white/[0.025] text-gray-500 hover:border-white/18 hover:bg-white/[0.055] hover:text-gray-200'
+                }`}
+            >
+                <SquareCheckIcon className="h-4 w-4" />
+                {pendenciasDoChecklist > 0 && (
+                    <span className="text-[11px] font-black tabular-nums leading-none">{pendenciasDoChecklist}</span>
+                )}
+            </button>
 
             {modalData && (
                 <ActionModal

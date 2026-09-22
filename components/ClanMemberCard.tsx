@@ -5,6 +5,7 @@ import { UserProfile, EnrichedClanMember } from '../types';
 import { useGame } from '../contexts/GameContext';
 import { CrownIcon, XIcon } from './Icons';
 import { UserAvatar } from './UserAvatar';
+import { CanvasAvatar } from './CanvasAvatar';
 
 interface ClanMemberCardProps {
     member: EnrichedClanMember;
@@ -30,7 +31,21 @@ export const ClanMemberCard: React.FC<ClanMemberCardProps> = ({ member, isLeader
 
     return (
         <div className="bg-black/20 p-3 rounded-2xl flex items-center space-x-3 border border-white/10 animate-fade-in group">
-            <UserAvatar avatarUrl={member.avatarUrl} nickname={member.nickname} className="w-12 h-12" level={member.level} isOnline={false} showBorder={false} />
+            {/* O CLA E O UNICO LUGAR ONDE OUTRA PESSOA VE O SEU SOBERANO.
+                E ele mostrava uma foto chapada. O `EnrichedClanMember` e o
+                UserProfile inteiro — o `sovereign` sempre esteve carregado
+                aqui, ao lado do avatarUrl, e ninguem desenhava.
+                Sao 125 itens no catalogo cuja graca inteira e ser visto; sem
+                isto, roupa, cabelo e aura nao tem plateia nenhuma.
+                Quem nao montou soberano cai no avatarUrl, que e o que sempre
+                foi. */}
+            {member.sovereign ? (
+                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-black/30">
+                    <CanvasAvatar sovereignConfig={member.sovereign} className="h-full w-full object-contain" width={96} height={96} />
+                </div>
+            ) : (
+                <UserAvatar avatarUrl={member.avatarUrl} nickname={member.nickname} className="w-12 h-12" level={member.level} isOnline={false} showBorder={false} />
+            )}
             <div className="flex-grow min-w-0">
                 <div className="flex items-center space-x-2">
                     <h4 className="font-bold text-white truncate">{member.nickname}</h4>

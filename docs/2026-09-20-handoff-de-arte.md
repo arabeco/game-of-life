@@ -301,7 +301,7 @@ diz, sem texto, que o grupo chegou em outro lugar.
 | Patente | EXP para chegar | O que o nome pede |
 |---|---|---|
 | **Feudo** | 0 | terra de comeco. Madeira, cerca, fogo pequeno — humilde sem ser triste |
-| **Bastiao** | 10.000 | a primeira pedra. Muro, torre baixa, algo que se defende |
+| **Bastiao** | 20.000 | a primeira pedra. Muro, torre baixa, algo que se defende |
 | **Provincia** | 50.000 | deixou de ser um ponto e virou area. Campo, estrada, telhados |
 | **Principado** | 150.000 | ja ha corte. Bandeira, salao, o primeiro sinal de cerimonia |
 | **Reino** | 400.000 | coroa e escala. Castelo inteiro, cidade ao redor |
@@ -315,8 +315,23 @@ sobra para onde ir.
 **Formato:** mesmo do wallpaper de perfil — e o fundo atras do conteudo, entao
 ele nao disputa com texto. O centro fica calmo; a informacao mora nas bordas.
 
-Nao ha item nem nome de arquivo ainda: eles nascem com o desenho, porque sao
-sete e a patente ja da o nome de cada um.
+**Os sete arquivos ja existem, com o nome final:**
+
+```
+public/clan-backgrounds/feudo.webp
+public/clan-backgrounds/bastiao.webp
+public/clan-backgrounds/provincia.webp
+public/clan-backgrounds/principado.webp
+public/clan-backgrounds/reino.webp
+public/clan-backgrounds/dinastia.webp
+public/clan-backgrounds/imperio.webp
+```
+
+Entregar e sobrescrever o arquivo, como no resto. A diferenca destes: no
+lugar do desenho nao ha xadrez magenta, e sim uma paisagem emprestada,
+repetida de duas em duas. Fundo de tela inteira com placeholder feio deixaria
+a tela do grupo impossivel de usar ate a arte chegar. Por isso eles tambem NAO
+aparecem em `npm run arte:pendente` — esta lista aqui e o controle deles.
 
 ---
 

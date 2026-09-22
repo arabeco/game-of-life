@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import type { EnrichedClanMember } from '../types';
 import { useGame } from '../contexts/GameContext';
-import { resolveClanBackground } from '../constants';
+import { fundoDoCla } from '../constants';
 import { ConfirmationModal } from './ConfirmationModal';
 import { ClanManagementModal } from './ClanManagementModal';
 import { CrownIcon, EditIcon, RefreshCwIcon, UsersIcon, XIcon } from './Icons';
@@ -102,7 +102,7 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
         const middle = Math.floor(others.length / 2);
         return [...others.slice(0, middle), leader, ...others.slice(middle)];
     }, [seasonMembers]);
-    const sceneBackground = resolveClanBackground(clan?.backgroundUrl);
+    const sceneBackground = fundoDoCla(clan?.rankId);
     const getSovereignOnlyConfig = (member: EnrichedClanMember) => member.sovereign
         ? {
             ...member.sovereign,

@@ -1,4 +1,4 @@
-import { LevelUnlocks, SovereignConfig, ItemRarity, UnlockCategory, Asset, Skin, Mood, ChestType } from '../types';
+import { LevelUnlocks, SovereignConfig, ItemRarity, UnlockCategory, Asset, Skin, Mood, ChestType, ClanRankId } from '../types';
 import { ITEMS_DB, getCatalogItemsByCategory, getCatalogItems, isItemCatalogVisible, isRankRewardItem } from './items';
 import { ACTIVE_SEASON_ID, GM_SEASONS, GM_SEASON_MISSIONS, GM_SEASON_QUESTS, SEASONS } from './seasonContent';
 import { LIFE_AREAS } from './lifeAreas';
@@ -167,26 +167,42 @@ export const BANNER_UNLOCKS_BY_RANK: Record<string, string[]> = {
 export const SKIN_SEASON_UNLOCKS: Record<string, string[]> = { GOLD: ['sm_3'] };
 export const SKIN_CHEST_POOL = ['VOID'].filter(id => isItemCatalogVisible(id));
 
-export const SANCTUARY_BACKGROUND_OPTIONS = [
-  { id: 'highlands', name: 'Planaltos', value: '/clan-backgrounds/highlands.webp' },
-  { id: 'forest-courtyard', name: 'Refugio verde', value: '/clan-backgrounds/forest-courtyard.webp' },
-  { id: 'coastal-overlook', name: 'Mirante', value: '/clan-backgrounds/coastal-overlook.webp' },
-] as const;
-export const DEFAULT_SANCTUARY_BACKGROUND = SANCTUARY_BACKGROUND_OPTIONS[0].value;
-
-export const resolveClanBackground = (value?: string | null): string => {
-  const normalized = String(value || '').trim();
-  if (SANCTUARY_BACKGROUND_OPTIONS.some(option => option.value === normalized)) return normalized;
-
-  const legacyName = normalized.toLowerCase();
-  if (legacyName.includes('garden') || legacyName.includes('aurora') || legacyName.includes('frost')) {
-    return '/clan-backgrounds/forest-courtyard.webp';
-  }
-  if (legacyName.includes('office') || legacyName.includes('land04') || legacyName.includes('land05')) {
-    return '/clan-backgrounds/coastal-overlook.webp';
-  }
-  return DEFAULT_SANCTUARY_BACKGROUND;
+/**
+ * O FUNDO DO GRUPO E DA PATENTE, NAO DA ESCOLHA DO LIDER.
+ *
+ * Antes eram tres paisagens e um seletor no painel do lider. Escolher entre tres
+ * e uma decisao sem peso: ninguem volta ali depois do primeiro dia, e o fundo
+ * nao dizia nada sobre o grupo. Do outro lado, subir de patente custa dezenas de
+ * milhares de experiencia somadas por varias pessoas — e nao mudava nada que se
+ * visse.
+ *
+ * Agora sao sete, um por patente. O fundo e a unica coisa que diz, sem texto,
+ * que o grupo chegou em outro lugar. Por isso nao se escolhe: se conquista.
+ *
+ * A arte definitiva ainda nao chegou (ver *6 · Fundo do grupo* no handoff).
+ * Ate la os sete arquivos existem com paisagens emprestadas, repetidas de duas
+ * em duas — entregar e sobrescrever o arquivo, sem mexer em codigo.
+ */
+export const FUNDO_DA_PATENTE: Record<ClanRankId, string> = {
+  feudo: '/clan-backgrounds/feudo.webp',
+  bastiao: '/clan-backgrounds/bastiao.webp',
+  provincia: '/clan-backgrounds/provincia.webp',
+  principado: '/clan-backgrounds/principado.webp',
+  reino: '/clan-backgrounds/reino.webp',
+  dinastia: '/clan-backgrounds/dinastia.webp',
+  imperio: '/clan-backgrounds/imperio.webp',
 };
+
+export const DEFAULT_CLAN_BACKGROUND = FUNDO_DA_PATENTE.feudo;
+
+/**
+ * `backgroundUrl` da tabela `clans` continua existindo e e IGNORADO de proposito:
+ * ele guarda a escolha antiga de quem criou o grupo antes desta mudanca, e honrar
+ * essa escolha seria deixar o fundo mentir sobre a patente. A coluna fica para
+ * nao perder o dado, mas quem manda e a patente.
+ */
+export const fundoDoCla = (rankId?: string | null): string =>
+  FUNDO_DA_PATENTE[String(rankId || '').trim().toLowerCase() as ClanRankId] || DEFAULT_CLAN_BACKGROUND;
 
 export const CLAN_EMBLEM_OPTIONS = [
   { id: 'solar', name: 'Solar', value: '/clan-emblems/solar.svg' },

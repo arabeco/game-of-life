@@ -8,7 +8,7 @@ import { ConfirmationModal } from './ConfirmationModal';
 import { AddClanMemberModal } from './AddClanMemberModal';
 import { RecruitmentStatus } from '../types';
 import { UserAvatar } from './UserAvatar';
-import { CLAN_EMBLEM_OPTIONS, resolveClanBackground, SANCTUARY_BACKGROUND_OPTIONS } from '../constants';
+import { CLAN_EMBLEM_OPTIONS } from '../constants';
 import { ClanEmblem } from './ClanEmblem';
 import { getDisplayLevel } from '../constants/lifeAreas';
 
@@ -17,7 +17,6 @@ export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose
     const [name, setName] = useState(clan?.name || '');
     const [icon, setIcon] = useState(clan?.icon || '🏛️');
     const [description, setDescription] = useState(clan?.description || '');
-    const [backgroundUrl, setBackgroundUrl] = useState(resolveClanBackground(clan?.backgroundUrl));
     const [recruitmentStatus, setRecruitmentStatus] = useState<RecruitmentStatus>(clan?.recruitmentStatus || 'Aberto');
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
     const [memberToKick, setMemberToKick] = useState<string | null>(null);
@@ -31,7 +30,7 @@ export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose
         if (isSaving) return;
         setIsSaving(true);
         try {
-            const saved = await updateClan(clan.id, { name, icon, description, backgroundUrl, recruitmentStatus });
+            const saved = await updateClan(clan.id, { name, icon, description, recruitmentStatus });
             if (saved) onClose();
         } finally {
             setIsSaving(false);
@@ -113,28 +112,6 @@ export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose
                                     </button>
                                 ))}
                             </div>
-                        </div>
-
-                        <div className="w-full space-y-2">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center block">Plano de fundo</label>
-                                <div className="grid max-h-72 grid-cols-2 gap-3 overflow-y-auto pr-1">
-                                    {SANCTUARY_BACKGROUND_OPTIONS.map(option => {
-                                        const isSelected = backgroundUrl === option.value;
-                                        return (
-                                            <button
-                                                key={option.id}
-                                                onClick={() => setBackgroundUrl(option.value)}
-                                                className={`relative rounded-xl overflow-hidden border-2 transition-all ${isSelected ? 'border-[var(--skin-accent-color)]' : 'border-white/10 opacity-70 hover:opacity-100'}`}
-                                            >
-                                                <div
-                                                    className="aspect-[16/9] w-full bg-cover bg-center"
-                                                    style={{ backgroundImage: `url(${option.value})` }}
-                                                />
-                                                <span className="absolute inset-x-0 bottom-0 bg-black/70 px-2 py-1 text-[10px] font-bold text-white">{option.name}</span>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
                         </div>
                     </div>
 

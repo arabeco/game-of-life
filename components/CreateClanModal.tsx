@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import { GlassCard } from './GlassCard';
 import { useGame } from '../contexts/GameContext';
 import { IconPickerModal } from './IconPickerModal';
-import { CheckIcon } from './Icons';
 import { RecruitmentStatus } from '../types';
-import { CLAN_EMBLEM_OPTIONS, DEFAULT_SANCTUARY_BACKGROUND, SANCTUARY_BACKGROUND_OPTIONS } from '../constants';
+import { CLAN_EMBLEM_OPTIONS } from '../constants';
 import { GOLD_CLAN_CREATION_COST } from '../constants/goldCatalog';
 import { Portal } from './Portal';
 import { ConfirmationModal } from './ConfirmationModal';
@@ -19,7 +18,6 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
     const [icon, setIcon] = useState<string>(CLAN_EMBLEM_OPTIONS[0].value);
     const [recruitmentStatus, setRecruitmentStatus] = useState<RecruitmentStatus>('Aberto');
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
-    const [backgroundUrl, setBackgroundUrl] = useState<string>(DEFAULT_SANCTUARY_BACKGROUND);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isConfirmingDebit, setIsConfirmingDebit] = useState(false);
     const canAffordClanCreation = (userProfile.wallet?.gold || 0) >= GOLD_CLAN_CREATION_COST;
@@ -32,7 +30,7 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
 
         setIsSubmitting(true);
         try {
-            const created = await createClan({ name, icon, description, clanType: 'Casual', recruitmentStatus, backgroundUrl });
+            const created = await createClan({ name, icon, description, clanType: 'Casual', recruitmentStatus });
             if (created) onClose();
         } finally {
             setIsSubmitting(false);
@@ -112,29 +110,6 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                                     rows={2}
                                     className="w-full rounded-xl border border-[var(--glass-border)] bg-black/30 p-3 text-center text-sm focus:border-[var(--skin-accent-color)] focus:outline-none"
                                 />
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase text-gray-400">Plano de fundo</label>
-                                    <div className="grid max-h-64 grid-cols-2 gap-3 overflow-y-auto pr-1">
-                                        {SANCTUARY_BACKGROUND_OPTIONS.map((option) => {
-                                            const isSelected = backgroundUrl === option.value;
-                                            return (
-                                                <button
-                                                    key={option.id}
-                                                    onClick={() => setBackgroundUrl(option.value)}
-                                                    className={`relative overflow-hidden rounded-xl border-2 transition-all ${isSelected ? 'border-[var(--skin-accent-color)]' : 'border-white/10 opacity-70 hover:opacity-100'}`}
-                                                >
-                                                    <div className="aspect-[16/9] w-full bg-cover bg-center" style={{ backgroundImage: `url(${option.value})` }} title={option.name} />
-                                                    <span className="absolute inset-x-0 bottom-0 bg-black/70 px-2 py-1 text-[10px] font-bold text-white">{option.name}</span>
-                                                    {isSelected && (
-                                                        <div className="absolute inset-0 flex items-center justify-center bg-[var(--skin-accent-color)]/10">
-                                                            <CheckIcon className="h-6 w-6 text-[var(--skin-accent-color)]" />
-                                                        </div>
-                                                    )}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
 
                                 <div>
                                     <label className="text-xs font-bold text-gray-400">Entrada</label>

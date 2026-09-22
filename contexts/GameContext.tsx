@@ -270,9 +270,23 @@ const TUTORIAL_ACTION: Action = {
 
 const isNewUserCheck = () => true;
 
+/*
+ * A PRIMEIRA SUBIDA CUSTA O DOBRO DESDE 22/09/2026.
+ *
+ * Um ciclo de sete dias fechado rende por volta de 3.500 de experiencia para o
+ * grupo. Com dez mil, cinco pessoas ativas passavam de Feudo para Bastiao na
+ * PRIMEIRA semana — a patente chegava antes de o grupo existir de verdade, e o
+ * premio (fragmentos, bau e o fundo novo) saia por uma semana de uso.
+ *
+ * Com vinte mil sao seis ciclos. Um grupo real, onde nem todo mundo fecha ciclo
+ * toda semana, leva de duas a tres semanas. A escada acima de Bastiao nao muda:
+ * o degrau que estava errado era o primeiro.
+ *
+ * Quem ja e Bastiao continua Bastiao: a funcao no banco nao rebaixa ninguem.
+ */
 const CLAN_RANKS: ClanRank[] = [
     { id: 'feudo', name: 'Feudo', expRequired: 0 },
-    { id: 'bastiao', name: 'Bastião', expRequired: 10000 },
+    { id: 'bastiao', name: 'Bastião', expRequired: 20000 },
     { id: 'provincia', name: 'Província', expRequired: 50000 },
     { id: 'principado', name: 'Principado', expRequired: 150000 },
     { id: 'reino', name: 'Reino', expRequired: 400000 },

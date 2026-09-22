@@ -55,7 +55,7 @@ import {
 import { ConfirmationModal } from './ConfirmationModal';
 import type { AppBroadcast } from './AppBroadcastModal';
 import { PLANNER_OPEN_ACTION_MODAL_EVENT, REST_SCREEN_ACTION_VIEW_REQUEST_EVENT, RestScreenActionViewRequestDetail } from '../utils/restScreenActionSession';
-import { BLOCKING_OVERLAY_EVENT } from '../utils/blockingOverlay';
+import { BLOCKING_OVERLAY_EVENT, type BlockingOverlayDetail } from '../utils/blockingOverlay';
 import { ORACLE_SPEECH_EVENT, emitOracleSpeech, type OracleSpeechPayload } from '../utils/oracleSpeech';
 import { getOraclePresenceRules } from '../constants/oraclePresencePolicy';
 import { resolveOracleSpeechTone } from '../constants/oracleSpeechLibrary';
@@ -432,6 +432,19 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     const [viewTransitionVersion, setViewTransitionVersion] = useState(0);
     const [isProfileVisible, setProfileVisible] = useState(false);
     const [isReportsVisible, setReportsVisible] = useState(false);
+    /*
+     * "TEM COISA NA FRENTE" — para o Oraculo nao falar por cima.
+     *
+     * Quem volta depois de sumir encontra uma fila: o ciclo vencido fecha
+     * sozinho e abre premio e relatorio, o reparo fecha os dias atrasados, e o
+     * painel do dia aparece. Somar uma fala do Oraculo a isso e falar com quem
+     * esta lendo outra coisa.
+     *
+     * A fala nao e cancelada, e ADIADA: o efeito volta a rodar quando a fila
+     * esvazia, e ai ela chega sozinha na tela limpa. O que se perde e o
+     * atropelo, nao a fala.
+     */
+    const filaNaFrenteRef = useRef(false);
     /**
      * O painel pendente carrega a DATA, e nao so um sim.
      *
@@ -493,6 +506,14 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             isReportsVisible
         ));
     }, [isProfileVisible, isReportsVisible, isRestScreenVisible, onBlockingOverlayChange]);
+
+    useEffect(() => {
+        const aoAnunciar = (evento: Event) => {
+            filaNaFrenteRef.current = Boolean((evento as CustomEvent<BlockingOverlayDetail>).detail?.visible);
+        };
+        window.addEventListener(BLOCKING_OVERLAY_EVENT, aoAnunciar);
+        return () => window.removeEventListener(BLOCKING_OVERLAY_EVENT, aoAnunciar);
+    }, []);
 
     useEffect(() => {
         void updateInstalledAppBadge(unreadNotificationsCount);
@@ -929,6 +950,10 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         const presenceRules = getOraclePresenceRules(oraclePreferences?.presenceLevel ?? DEFAULT_ORACLE_PRESENCE_LEVEL);
         if (presenceRules.openingLine === 'nunca') return;
         if (isRestScreenVisible || userProfile.id === 'placeholder_user') return;
+        // Nada de falar por cima de premio, relatorio, perfil ou painel do dia.
+        // Ver a nota de `filaNaFrenteRef`: isto adia, nao cancela.
+        if (filaNaFrenteRef.current || isReportsVisible || isProfileVisible) return;
+        if (typeof window !== 'undefined' && (window as any).__glyphPendingCycleResults) return;
         // No Equilibrado ele so fala ao abrir o Planner, que e onde a leitura tem
         // contexto. No Presente, qualquer abertura serve.
         if (presenceRules.openingLine === 'diaria' && currentView !== 'planner') return;

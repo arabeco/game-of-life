@@ -746,6 +746,29 @@ type ApplyExpOptions = {
     contributionSource?: string;
 };
 
+/**
+ * O DIA EM QUE A ULTIMA MISSAO ACABOU.
+ *
+ * Existe para o Oraculo nao oferecer outra no mesmo dia. Quando uma missao
+ * termina — cumprida, abandonada ou vencida — a vaga fica livre na mesma hora, e
+ * `missaoIndividualDisponivel` volta a ser verdadeira imediatamente. Sem esta
+ * marca, a pessoa fechava uma missao e ja era convidada para a proxima antes de
+ * a recompensa sumir da tela.
+ *
+ * Fica no aparelho, e nao no perfil: e uma regra de quando FALAR, nao um dado do
+ * jogo. Perder a marca ao trocar de celular custa um convite adiantado, e nao um
+ * estado errado.
+ */
+const CHAVE_FIM_DE_MISSAO = 'glyph:missao-encerrada-em:';
+
+export const marcarFimDeMissao = (userId: string, dia: string): void => {
+    try { window.localStorage.setItem(`${CHAVE_FIM_DE_MISSAO}${userId}`, dia); } catch { /* sem storage, sem marca */ }
+};
+
+export const missaoEncerradaHoje = (userId: string, hoje: string): boolean => {
+    try { return window.localStorage.getItem(`${CHAVE_FIM_DE_MISSAO}${userId}`) === hoje; } catch { return false; }
+};
+
 const ORACLE_MANUAL_LIBRARY_CATEGORIES: OracleCategory[] = [
     'frases_inspiradoras',
     'reflexoes_filosoficas',
@@ -14781,6 +14804,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
 
             await updateUserProfile(toArenaPactState(null));
+        marcarFimDeMissao(userProfile.id, arenaPactToday);
+            marcarFimDeMissao(userProfile.id, arenaPactToday);
 
             const feitas = Math.max(0, progress.current);
             const alvo = Math.max(1, progress.goal);
@@ -14858,6 +14883,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const missaoIndividualDisponivel = useMemo(() => {
         if (activeArenaPact) return false;
+        /*
+         * Missao que acabou hoje nao vira convite hoje.
+         *
+         * A vaga fica livre no instante em que a missao termina, entao sem esta
+         * linha a pessoa fechava uma e ja era convidada para a proxima antes de a
+         * recompensa sair da tela. Amanha o convite existe; hoje o que aconteceu
+         * ainda e o que aconteceu.
+         */
+        if (missaoEncerradaHoje(userProfile.id, arenaPactToday)) return false;
         if (arenaPactCandidates.length > 0) return true;
         return buildAppScopePacts(allArenas, actions, cycleScopedTasks, arenaPactToday, { lockedArenaIds, allTimeTasks: tasks, diasRestantesDoCiclo }).length > 0;
     }, [actions, activeArenaPact, allArenas, arenaPactCandidates, arenaPactToday, cycleScopedTasks, lockedArenaIds, tasks]);
@@ -14922,6 +14956,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const { error: erroAoEncerrar } = await supabase.rpc('abandon_arena_pact');
             if (erroAoEncerrar) { showToast('Não foi possível trocar de missão agora.', 'error'); throw new Error('PACT_REPLACE_FAILED'); }
             await updateUserProfile(toArenaPactState(null));
+        marcarFimDeMissao(userProfile.id, arenaPactToday);
+            marcarFimDeMissao(userProfile.id, arenaPactToday);
         }
 
         const { data, error } = await supabase.rpc('accept_arena_pact', {
@@ -14946,6 +14982,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const { error } = await supabase.rpc('abandon_arena_pact');
         if (error) { showToast('Não foi possível encerrar o pacto.', 'error'); return; }
         await updateUserProfile(toArenaPactState(null));
+        marcarFimDeMissao(userProfile.id, arenaPactToday);
         showToast('Missão encerrada. O Oráculo pode propor outra quando você pedir.', 'info');
     };
 

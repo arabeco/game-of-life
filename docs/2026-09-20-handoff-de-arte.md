@@ -363,6 +363,35 @@ nenhuma sombra fora da peca. E roupa e cabelo ainda tem uma quinta regra, que e
 a que mais quebra: **o enquadramento e o MESMO do corpo** — mesma altura de
 ombro, mesma cintura, mesma escala.
 
+### A GOLA E UM BURACO, NAO UM PANO
+
+A armadilha que estraga um lote inteiro de uma vez.
+
+Uma IA pedida por "casaco" entrega a peca como foto de produto: dentro do vao da
+gola aparece o AVESSO do casaco, porque numa foto de produto nao ha ninguem
+vestindo. Posta sobre o corpo, esse avesso cai exatamente em cima do pescoco — e
+o pescoco some.
+
+A peca tem de ser desenhada **como se ja estivesse vestida**:
+
+- o vao da gola e **transparente**, porque o pescoco vem do corpo embaixo
+- a boca da manga e transparente, pelo mesmo motivo — a mao vem de baixo
+- o vao entre o braco e o tronco e transparente
+- nada de forro, avesso ou parte de tras: o que ficaria ATRAS do corpo nao
+  existe nesta camada
+
+A regra curta: **transparente em tudo que for corpo.** A roupa e uma camada so,
+por cima — o app nao tem "atras do corpo" para ela, entao o que estiver pintado
+ali ganha do corpo, sempre.
+
+Dois casos parecidos que NAO se resolvem apagando, e sim por configuracao em
+`constants/avatarOffsets.ts` depois que a arte chega:
+
+- **capuz ou gola alta que deve cobrir o cabelo** — a flag e `cabelo: 'porBaixo'`
+  (ja em uso no `SKIN_T1_STREET` e no `SKIN_T3_ALQUIMISTA`)
+- **braco ou perna do corpo aparecendo por cima da roupa** — sao o `cobre` e os
+  `recortes`, que apagam pedacos do CORPO, nunca da roupa
+
 **Os arquivos para abrir junto, e desenhar em cima:**
 
 | Para que serve | Arquivo |

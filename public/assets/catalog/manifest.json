@@ -1,6 +1,6 @@
 {
-  "totalFiles": 168,
-  "totalBytes": 9183584,
+  "totalFiles": 212,
+  "totalBytes": 12515726,
   "assets": [
     {
       "path": "aurora_i.png",
@@ -238,6 +238,21 @@
       "sha256": "21e7c32f260b7d8dbcc780d7f01f4b6cb9810210a563e4f7a75721569404c8d7"
     },
     {
+      "path": "avatars/glyphs/PLACA_COBRE.png",
+      "bytes": 213353,
+      "sha256": "a628e97400802d63319d9dd62adc814f16e089ec491eaa27dcadf3b53c964ab4"
+    },
+    {
+      "path": "avatars/glyphs/PLACA_COURO.png",
+      "bytes": 200356,
+      "sha256": "efb9a63c626d5f52f44525d8e7ff2e2d994125f35428fdb4991bc9b8baa7644e"
+    },
+    {
+      "path": "avatars/glyphs/PLACA_ESMERALDA.png",
+      "bytes": 220003,
+      "sha256": "25385b2b0b4b2131297c406d03001ccb0895e5e0963fbc94d6eae685faf90360"
+    },
+    {
       "path": "avatars/glyphs/PLACA_GELO.png",
       "bytes": 92972,
       "sha256": "9b3b168d48363393e0f2e022cfff4a3bd105ce3cd3424060fa0349390c6fd5e1"
@@ -246,6 +261,11 @@
       "path": "avatars/glyphs/PLACA_MADEIRA.png",
       "bytes": 73433,
       "sha256": "987cd6b1ecbf00bd1dc342663bdb98029f34f0506757cc3fd52a8754d5180e12"
+    },
+    {
+      "path": "avatars/glyphs/PLACA_OBSIDIANA.png",
+      "bytes": 232641,
+      "sha256": "00238beeb7a27929cd3be761982c5c9db5db57c9f184918af2a46a42581a5f2f"
     },
     {
       "path": "avatars/glyphs/PLACA_OURO.png",
@@ -268,6 +288,11 @@
       "sha256": "3fe793ae1cf64334f79075e23097ab669b609454ce4ba73a4ca8e84db0b6236c"
     },
     {
+      "path": "avatars/hair/CABELO_T1_CACHOS_ama.png",
+      "bytes": 20907,
+      "sha256": "39e7b6c2429a24df5ef1836a1846f7f8b2705ca12f938eeea92d115f0158b700"
+    },
+    {
       "path": "avatars/hair/CABELO_T1_CACHOS_cast.png",
       "bytes": 3360,
       "sha256": "aa9e596950cb18efb00c5594ae4103a5b32d1dcf4d92f91eb50b17aee5a465c1"
@@ -276,6 +301,11 @@
       "path": "avatars/hair/CABELO_T1_CACHOS_preto.png",
       "bytes": 2528,
       "sha256": "e9b218f2ad873206d7a1e3e01a38a48309571e728df6f583016a6742efb56f15"
+    },
+    {
+      "path": "avatars/hair/CABELO_T1_MEDIO_RETO_ama.png",
+      "bytes": 7347,
+      "sha256": "cd7336d3090acb0669e842d57ebc73b1fed30c1b58e7180c7e372efb320f387b"
     },
     {
       "path": "avatars/hair/CABELO_T1_MEDIO_RETO_bran.png",
@@ -293,6 +323,51 @@
       "sha256": "155a24eb559cd975da11803b191369bb502d88858ad6d0dd9aa071394f0747bb"
     },
     {
+      "path": "avatars/hair/CABELO_T1_RABO_DE_CAVALO_ama.png",
+      "bytes": 12573,
+      "sha256": "8e6b90110ec82df8074aef87e079b798b7570911a530dafbe51420cb60fb014c"
+    },
+    {
+      "path": "avatars/hair/CABELO_T1_RABO_DE_CAVALO_bran.png",
+      "bytes": 11557,
+      "sha256": "a43a0b868995497342c919e30782621a19a4d8c1f72a0785849fb8f4d1e41029"
+    },
+    {
+      "path": "avatars/hair/CABELO_T1_RABO_DE_CAVALO_cast.png",
+      "bytes": 11554,
+      "sha256": "d046c6664c0185f668c37cfeff0d2ed0e6145c3c12852f5ab37ec401c05241f6"
+    },
+    {
+      "path": "avatars/hair/CABELO_T1_RABO_DE_CAVALO_pre.png",
+      "bytes": 10342,
+      "sha256": "1b5448ff3bfaf7e98a0df56fd13f69506adb5a67e92a93203b07caa587b542fb"
+    },
+    {
+      "path": "avatars/hair/CABELO_T2_COQUE_SOLTO_ama.png",
+      "bytes": 16328,
+      "sha256": "c67f9f5c4a6432ef34a712ab4ec4c1a6d5a5169a2e22a8a90307a9ed15ad1ae9"
+    },
+    {
+      "path": "avatars/hair/CABELO_T2_COQUE_SOLTO_bran.png",
+      "bytes": 15324,
+      "sha256": "e6a055ba2f8e36b6baa9fc0e73218025b29320c372943b5264040b75d4a1eacf"
+    },
+    {
+      "path": "avatars/hair/CABELO_T2_COQUE_SOLTO_cast.png",
+      "bytes": 14739,
+      "sha256": "918ea84971d53bc97d09ed885d7467059fb2c9a0c69850234e0c08a52aab109c"
+    },
+    {
+      "path": "avatars/hair/CABELO_T2_COQUE_SOLTO_pre.png",
+      "bytes": 13385,
+      "sha256": "70336f1bfd9b10f68b91410a7ddd74f1fa41835c56fb519a31526820eb1abfc8"
+    },
+    {
+      "path": "avatars/hair/CABELO_T2_TEXTURED_CROP_ama.png",
+      "bytes": 11374,
+      "sha256": "1df0cf4df45703f3a2347e4a47e06ec6f28850d0f83924f7493828589ef580d5"
+    },
+    {
       "path": "avatars/hair/CABELO_T2_TEXTURED_CROP_bran.png",
       "bytes": 2256,
       "sha256": "26e78398137e47542cc9aaad73255799f8ea66a8abc58cb7d941b4dca9d7d6f4"
@@ -306,6 +381,11 @@
       "path": "avatars/hair/CABELO_T2_TEXTURED_CROP_ver.png",
       "bytes": 2900,
       "sha256": "b2f882841317be4dca8caf3e3a26f3e7f1802af61ba555ef2c18f868b5c13520"
+    },
+    {
+      "path": "avatars/hair/CABELO_T3_DREADS_ama.png",
+      "bytes": 24451,
+      "sha256": "b4de21f3debd10de6caae13f083825f305497eb7e72f8368cedb3e0476bab371"
     },
     {
       "path": "avatars/hair/CABELO_T3_DREADS_bran.png",
@@ -343,6 +423,26 @@
       "sha256": "1799d604aa33576feb3717ae03a4f9ca58d142c50b97b7ef011aadbefa5ee9cc"
     },
     {
+      "path": "avatars/hair/CABELO_T3_UNDERCUT_ama.png",
+      "bytes": 7826,
+      "sha256": "3404855674a7d6098a095bacecf3c4618e59a87994edc0ced5c16c6fc52f1d67"
+    },
+    {
+      "path": "avatars/hair/CABELO_T3_UNDERCUT_bran.png",
+      "bytes": 7121,
+      "sha256": "c4a043c6f46c0c6a0c8dfdd46d17bc9782774a72854ca75cc36754bbb20d55c4"
+    },
+    {
+      "path": "avatars/hair/CABELO_T3_UNDERCUT_cast.png",
+      "bytes": 6959,
+      "sha256": "c3610b052d5fbb79f1df51701cb9cb5b6e07e0cd85cfc8267051edbc4c56e1e9"
+    },
+    {
+      "path": "avatars/hair/CABELO_T3_UNDERCUT_pre.png",
+      "bytes": 6444,
+      "sha256": "93dea2f82ea9d71fb0c50e17a759ea3a0d228e7a66029242096338c43a209d2c"
+    },
+    {
       "path": "avatars/hair/CABELO_T4_ANIME_SPIKES_ama.png",
       "bytes": 2967,
       "sha256": "59932f30989a05d6bd382ccf4e56d99be54ebdd118fa633b4d305c04226fe711"
@@ -363,6 +463,11 @@
       "sha256": "3531441f5dce2ae07fe075d98cb9993f89cc04943697450dc11e2cd235bb96db"
     },
     {
+      "path": "avatars/hair/CABELO_T4_PRINCESA_ama.png",
+      "bytes": 18700,
+      "sha256": "61371d54efafe7d1e8ffe008401d78e553a6abf41adce0d7d04129244dee4ab6"
+    },
+    {
       "path": "avatars/hair/CABELO_T4_PRINCESA_bran.png",
       "bytes": 3206,
       "sha256": "51f50f85f5909422bb3eae1289d901ad5614728a12f784e338fe76229b2846ff"
@@ -376,6 +481,26 @@
       "path": "avatars/hair/CABELO_T4_PRINCESA_preto.png",
       "bytes": 3183,
       "sha256": "7d5e1aa4b5cfd11e3af70acf5b18d0d93de7f28725bb34df7826d55ff7f8ec15"
+    },
+    {
+      "path": "avatars/hair/CABELO_T4_TRANCA_LATERAL_ama.png",
+      "bytes": 11779,
+      "sha256": "cf8b9f165d144f3e9e35965586d17a70c265b0ec977784471fcad7f8ae99f22c"
+    },
+    {
+      "path": "avatars/hair/CABELO_T4_TRANCA_LATERAL_bran.png",
+      "bytes": 10849,
+      "sha256": "0a257e0a8271297b1de66ac2229f2396b9320beabe73c04e624b01faef5f86dc"
+    },
+    {
+      "path": "avatars/hair/CABELO_T4_TRANCA_LATERAL_cast.png",
+      "bytes": 10741,
+      "sha256": "245d2c9c4f231fae4d5853f6550eb2619521bb01ff3423f4fb77ff58b8b899fe"
+    },
+    {
+      "path": "avatars/hair/CABELO_T4_TRANCA_LATERAL_rosa.png",
+      "bytes": 11646,
+      "sha256": "a1b9950c35661401735d32797d3d36b7cd4b56f5694f9627e4619138236a3377"
     },
     {
       "path": "avatars/hair/CABELO_T5_FLUXO_ESPIRITUAL_ama.png",
@@ -468,6 +593,21 @@
       "sha256": "2c4b4318858ec38eb70e4ce42d15868841c043a445710bfa6b20638acf8d7b01"
     },
     {
+      "path": "avatars/SKIN_T1_CHUVA.png",
+      "bytes": 127546,
+      "sha256": "e37bfe672b603f30bb91dada448bdc0e3ca77fbec215d4aa8612365ff4d281a3"
+    },
+    {
+      "path": "avatars/SKIN_T1_CORRIDA.png",
+      "bytes": 57217,
+      "sha256": "95c1e0e9ed8a928339ee501cb13c9a76798909a7310985f31310a4b03abdc41b"
+    },
+    {
+      "path": "avatars/SKIN_T1_ESCUDEIRO.png",
+      "bytes": 118962,
+      "sha256": "79c9b43c1a8e3647979169b90e943cfe7ad66f1f557a6fa7b6f97278b04319d3"
+    },
+    {
       "path": "avatars/SKIN_T1_GYM_RAT.png",
       "bytes": 17759,
       "sha256": "1833bd0b8aad9fba090f1cf5a40e2358c94c03b1138b9e2d249a0d9ae65248a1"
@@ -478,9 +618,19 @@
       "sha256": "03b71c1bef6207f50cb297e5f629dfc7fc8588e33d8033dc82efe7f4e31263c9"
     },
     {
+      "path": "avatars/SKIN_T1_PIJAMA.png",
+      "bytes": 100994,
+      "sha256": "45c0ed2ad5a6784f7e1d1e93feafe66f3f224c9f13f27fff6f6d3b9a97307d56"
+    },
+    {
       "path": "avatars/SKIN_T1_STREET.png",
       "bytes": 30885,
       "sha256": "9a24565b529c5f1d0fbf6eb28690fbde26aac43d199cb29d6e742b782053419e"
+    },
+    {
+      "path": "avatars/SKIN_T1_VERAO.png",
+      "bytes": 84474,
+      "sha256": "ca6d086497dc238ac4c6c078db85266e897bf1124128f00e2b5e62af503ef865"
     },
     {
       "path": "avatars/SKIN_T2_ACADEMICO.png",
@@ -488,9 +638,24 @@
       "sha256": "b271332aa96081b13fe868e0a11e320e3edee92029b7d370e23ab0b5183fdc3e"
     },
     {
+      "path": "avatars/SKIN_T2_BARAO.png",
+      "bytes": 127528,
+      "sha256": "d48300ec197ea034499092611f02e5b513bf4636f483b47c9d0e76feb8b74cab"
+    },
+    {
+      "path": "avatars/SKIN_T2_CAVALEIRO.png",
+      "bytes": 131428,
+      "sha256": "650fd5b0ddd055b4d933955a3510de8109e6c9337b31624a484def39d2c46252"
+    },
+    {
       "path": "avatars/SKIN_T2_EXECUTIVO.png",
       "bytes": 23034,
       "sha256": "b143f2b149a1d776fb5baed23c108c899fd5624c3ca27e3c669582a7770e4b46"
+    },
+    {
+      "path": "avatars/SKIN_T2_LORDE.png",
+      "bytes": 108820,
+      "sha256": "61017e7127485ea48f30a57776bd505584471c2c2b4090246fd1f701c63aa17d"
     },
     {
       "path": "avatars/SKIN_T2_MILITAR.png",
@@ -498,9 +663,19 @@
       "sha256": "ee6fdff99c1b49a314b38d91575481fb9ca81d2f40da36ca8621ca5ad5b8ad55"
     },
     {
+      "path": "avatars/SKIN_T2_OFICINA.png",
+      "bytes": 102603,
+      "sha256": "ad4c76539707a490ba7d2ed10aea7daea4338b41168a16f4de76f1fa3ae2bf98"
+    },
+    {
       "path": "avatars/SKIN_T2_TATICO.png",
       "bytes": 33337,
       "sha256": "11add4a02442664171eddf8de21546ad901122abd98ea1cc0e101ebcb80b4eac"
+    },
+    {
+      "path": "avatars/SKIN_T2_TRILHA.png",
+      "bytes": 112103,
+      "sha256": "3ce6e204340ffbe7434a1997f4855b0d3fc2f24df14651dd03aa0291984352ed"
     },
     {
       "path": "avatars/SKIN_T3_ALQUIMISTA.png",
@@ -508,9 +683,29 @@
       "sha256": "fb834bc5503143cf8a34ae1d81b26ad689b3107a6262c2238ae4bc8eccda8456"
     },
     {
+      "path": "avatars/SKIN_T3_ATELIE.png",
+      "bytes": 106195,
+      "sha256": "e7a5a89d5a7f9e2dae662161b469f89c430fca23a9172c96798fabe219b8e965"
+    },
+    {
+      "path": "avatars/SKIN_T3_CONDE.png",
+      "bytes": 107148,
+      "sha256": "a005d63b81477db05dd96072eb6083459c6f3afc17878fb7482e1c9834888386"
+    },
+    {
+      "path": "avatars/SKIN_T3_DUQUE.png",
+      "bytes": 162929,
+      "sha256": "bc230247df02ca84eae09250a267e3fcbbd6b871fd93adddc0c6fac3a63f4fd5"
+    },
+    {
       "path": "avatars/SKIN_T3_HIBRIDO.png",
       "bytes": 39946,
       "sha256": "3302a3c24a7f011cce2fb1d82e480008bc3c8abedd5ae825d152b03444bd6033"
+    },
+    {
+      "path": "avatars/SKIN_T3_INVERNO.png",
+      "bytes": 124837,
+      "sha256": "33d0ed64db3f78a72c03ff9caff748169974888f4f634a2409e83f04073d41fe"
     },
     {
       "path": "avatars/SKIN_T3_NOMADE.png",
@@ -518,14 +713,39 @@
       "sha256": "cbb7f867c76418d9af4bb3baa7a482b712d3e23c357470247285618c117d591f"
     },
     {
+      "path": "avatars/SKIN_T3_NOTURNO.png",
+      "bytes": 109996,
+      "sha256": "b91ad8b09bc14d2a839c3dbc4b558576be667009ea734706ebc3f0a374c681fc"
+    },
+    {
       "path": "avatars/SKIN_T4_ARMADURA_PLACA.png",
       "bytes": 40568,
       "sha256": "6ebd46760f4421c73651a60a207bacc43955224f045b232ad29705d5fde5fd6b"
     },
     {
+      "path": "avatars/SKIN_T4_EMPREENDEDOR.png",
+      "bytes": 96382,
+      "sha256": "f965943accbeaf66859d167388f2db3585527d7e02418f0418957c2c5cf37860"
+    },
+    {
       "path": "avatars/SKIN_T4_MAGO_CIRCULO.png",
       "bytes": 41580,
       "sha256": "adda92ea8769e2f668d4ddf34c31f633f67e064ae8e185b1685dae1341ec56de"
+    },
+    {
+      "path": "avatars/SKIN_T4_PRINCIPE.png",
+      "bytes": 115061,
+      "sha256": "7d12d3ee6c5f38b7bc72926f61d4ecd3a41ffc53c38b2ab39c910687490015f1"
+    },
+    {
+      "path": "avatars/SKIN_T4_REI.png",
+      "bytes": 172734,
+      "sha256": "95d28329da6467c959219293b3bda1c95c40ecd8b108d225d551d9d0f954e06c"
+    },
+    {
+      "path": "avatars/SKIN_T5_SOBERANO.png",
+      "bytes": 136886,
+      "sha256": "73057c3a8e0b480778152ce85097e1be1634ea2be77ca8038020ef9e5d3f38fb"
     },
     {
       "path": "avatars/SKIN_T5_VESTIDO_REAL.png",

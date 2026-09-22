@@ -60,3 +60,7 @@ temp-garden-typecheck*.txt
 # Saida das corridas de teste (mega-journey): video, print e log por execucao.
 # 92 MB so na primeira leva, e reescrito a cada rodada — e artefato, nao fonte.
 /docs/reports/
+
+# Gerados por `npm run arte:nova` a cada uso: a lista muda a cada leva de arte.
+tools/arte-nova.html
+tools/arte-nova.json

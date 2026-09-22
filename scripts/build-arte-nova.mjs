@@ -26,17 +26,45 @@ const raiz = path.resolve(
 
 const git = (args) => execFileSync('git', args, { cwd: raiz, encoding: 'utf8' });
 
-// `--porcelain` para a saida nao depender de idioma nem de cor. Os dois
-// primeiros caracteres sao o estado; o resto e o caminho.
-const mudadas = git(['status', '--porcelain', '--', 'public/assets/catalog/avatars'])
-    .split('\n')
-    .map((linha) => linha.trim())
-    .filter(Boolean)
-    .map((linha) => ({
-        estado: linha.slice(0, 2).trim(),
-        caminho: linha.slice(2).trim().replace(/^"|"$/g, ''),
-    }))
-    .filter((item) => item.caminho.endsWith('.png'));
+/**
+ * "DESDE QUANDO" NAO E "DESDE O ULTIMO COMMIT".
+ *
+ * A primeira versao olhava so o `git status`, e o defeito apareceu no primeiro
+ * uso: assim que a leva de arte e commitada, a lista zera — justamente quando o
+ * trabalho de ajustar offset comeca. Bancada que se esvazia na hora de usa-la
+ * nao serve para nada.
+ *
+ * A regua passa a ser: o que ainda nao foi commitado MAIS o que o ultimo commit
+ * trouxe. Outro ponto de partida vai por argumento:
+ *
+ *   npm run arte:nova                (desde HEAD~1)
+ *   npm run arte:nova -- HEAD~5      (as cinco ultimas levas)
+ */
+const PASTA = 'public/assets/catalog/avatars';
+const referencia = process.argv[2] || 'HEAD~1';
+
+const porCaminho = new Map();
+
+for (const linha of git(['status', '--porcelain', '--', PASTA]).split('\n')) {
+    const cru = linha.trim();
+    if (!cru) continue;
+    const caminho = cru.slice(2).trim().replace(/^"|"$/g, '');
+    if (caminho.endsWith('.png')) porCaminho.set(caminho, cru.slice(0, 2).trim());
+}
+
+try {
+    for (const linha of git(['diff', '--name-status', referencia, 'HEAD', '--', PASTA]).split('\n')) {
+        const partes = linha.trim().split('\t');
+        const estado = partes[0];
+        const caminho = partes[partes.length - 1];
+        if (!caminho || !caminho.endsWith('.png')) continue;
+        if (!porCaminho.has(caminho)) porCaminho.set(caminho, estado === 'A' ? '??' : 'M');
+    }
+} catch {
+    // Repositorio com um commit so: nao ha HEAD~1, e o `git status` basta.
+}
+
+const mudadas = [...porCaminho].map(([caminho, estado]) => ({ caminho, estado }));
 
 const roupas = mudadas.filter((i) => /\/SKIN_[^/]+\.png$/.test(i.caminho));
 const cabelos = mudadas.filter((i) => i.caminho.includes('/hair/'));
@@ -175,6 +203,26 @@ const html = `<!doctype html>
 </body>
 </html>
 `;
+
+/**
+ * O MESMO DADO, EM JSON, PARA O AVATAR-ALIGN.
+ *
+ * A pagina HTML serve para OLHAR o que chegou. Mas o trabalho de verdade e
+ * ajustar offset, e isso acontece no avatar-align — onde a lista tem setenta
+ * pecas e nada distingue a que chegou hoje da que ja esta certa ha meses.
+ *
+ * Com este arquivo, o align marca as novas e as sobe para o topo do seletor.
+ * Se ele nao existir, o align funciona igual, sem marca nenhuma.
+ */
+fs.mkdirSync(path.join(raiz, 'tools'), { recursive: true });
+fs.writeFileSync(
+    path.join(raiz, 'tools', 'arte-nova.json'),
+    JSON.stringify({
+        geradoEm: new Date().toISOString(),
+        novas: mudadas.map((item) => web(item.caminho)),
+    }, null, 2),
+    'utf8',
+);
 
 const destino = path.join(raiz, 'tools', 'arte-nova.html');
 fs.writeFileSync(destino, html, 'utf8');

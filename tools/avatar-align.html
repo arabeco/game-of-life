@@ -1172,6 +1172,32 @@
     opcoes(els.corpo, corpos, null, GABARITO.corpo);
     opcoes(els.cabelo, cabelos, '(sem cabelo)');
     opcoes(els.roupa, roupas, '(sem roupa)');
+
+    /* AS QUE CHEGARAM AGORA VAO PARA O TOPO, COM MARCA.
+       A lista tem setenta pecas e nada distinguia a que chegou hoje da que ja
+       esta certa ha meses — dava para reajustar a mesma tres vezes. O arquivo
+       vem de `npm run arte:nova`; se nao existir, nada muda aqui. */
+    fetch('/arte-nova.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (dados) {
+      if (!dados || !dados.novas || !dados.novas.length) return;
+      /* Por NOME DE ARQUIVO, e nao por caminho: o JSON guarda o caminho web
+         (`/assets/catalog/avatars/x.png`) e o seletor guarda o do manifesto
+         (`avatars/x.png`). O nome e o unico pedaco que os dois compartilham. */
+      var novas = {};
+      dados.novas.forEach(function (c) { novas[String(c).split('/').pop()] = true; });
+      [els.roupa, els.cabelo, els.extra].forEach(function (sel) {
+        var guardado = sel.value, marcadas = [], resto = [];
+        Array.prototype.slice.call(sel.options).forEach(function (o) {
+          if (o.value && novas[String(o.value).split('/').pop()]) { o.textContent = '● ' + o.textContent; marcadas.push(o); }
+          else resto.push(o);
+        });
+        if (!marcadas.length) return;
+        sel.innerHTML = '';
+        marcadas.concat(resto).forEach(function (o) { sel.appendChild(o); });
+        sel.value = guardado;
+      });
+      els.estado.textContent = dados.novas.length + ' peca(s) novas marcadas com ●';
+    }).catch(function () {});
+
     // Artefato, glifo, orbe, placa e jardim caem todos no mesmo select, e varias
     // dessas pecas ocupam o quadro inteiro. Sem rotulo, escolher uma e loteria.
     agrupar(els.extra, extras);

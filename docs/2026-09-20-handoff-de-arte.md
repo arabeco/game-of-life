@@ -424,6 +424,25 @@ recolore estes: ele carrega o arquivo da cor escolhida. Os nomes na lista dizem
 quais - o `_bran`, `_cast` e `_pre` de cada corte. Sao 4 cortes x 3 cores = 12
 arquivos.
 
+### ONDE O TRABALHO DA ARTE ACABA
+
+**O trabalho acaba no PNG.** Offset NAO e trabalho de quem desenha.
+
+O `constants/avatarOffsets.ts` guarda o ajuste fino de cada peca — alguns pixels
+de x, y e escala, mais o `cobre`, os `recortes` e o `cabelo: 'porBaixo'`. Isso e
+acerto de quem integra, feito DEPOIS que a arte chega, e leva minutos.
+
+Ha uma armadilha ali que ja custou uma tarde: a ferramenta de alinhar
+(`tools/avatar-align.html`) so guarda no **localStorage**, e o app nao le
+localStorage nenhum — ele le o arquivo. Da para ajustar tudo, ver certo na
+ferramenta e nada chegar no app. So chega quem clica em **Copiar bloco** e cola
+o bloco dentro de `constants/avatarOffsets.ts`. Quem nao sabe disso acha que
+achou um bug sem solucao.
+
+Se o encaixe sair torto, isso NAO se resolve redesenhando: sao meia duzia de
+numeros no arquivo. O que se resolve desenhando e so o que este documento pede —
+tamanho, enquadramento e transparencia.
+
 O ajuste fino de encaixe do cabelo vive em `constants/avatarOffsets.ts`, medido
 em pixels a 500x500. Ele corrige alguns pixels; nao salva uma peca desenhada em
 outra escala.

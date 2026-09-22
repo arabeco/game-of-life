@@ -574,7 +574,7 @@ export interface UserProfile {
   // Pacto de arena ativo. Uma missao de cada vez, por decisao de produto.
   // Titulo e recompensa nao moram aqui: saem do molde em utils/arenaPacts.ts.
   arenaPactArenaId?: string | null;
-  arenaPactKind?: 'constancia' | 'conclusao' | 'retomada' | 'volume' | null;
+  arenaPactKind?: 'primeira' | 'constancia' | 'conclusao' | 'retomada' | 'volume' | null;
   arenaPactDifficulty?: 'leve' | 'media' | 'alta' | null;
   arenaPactGoal?: number | null;
   arenaPactStartedOn?: string | null;

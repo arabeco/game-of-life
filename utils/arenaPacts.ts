@@ -31,7 +31,7 @@ import { calculateArenaProgress } from './progressUtilsEngine.js';
  * Nada aqui usa IA. E filtro e contagem sobre dado que ja esta na memoria.
  */
 
-export type ArenaPactKind = 'constancia' | 'conclusao' | 'retomada' | 'volume';
+export type ArenaPactKind = 'primeira' | 'constancia' | 'conclusao' | 'retomada' | 'volume';
 export type ArenaPactDifficulty = 'leve' | 'media' | 'alta';
 
 export interface ArenaPactReward {
@@ -337,6 +337,7 @@ const buildPact = (
    * O motivo, tirado do numero que gerou a escolha. Nunca elogio: sempre fato.
    */
   const motivos: Record<ArenaPactKind, string> = {
+    primeira: 'Você ainda não tem uma frente montada — esta missão é montar a primeira e usá-la uma vez.',
     retomada: stats.daysSinceLastDelivery
       ? `${nome} está parada há ${stats.daysSinceLastDelivery} dias.`
       : `${nome} está parada.`,
@@ -368,6 +369,22 @@ const buildPact = (
   const esfriando = (stats.daysSinceLastDelivery ?? 0) >= 3;
 
   const textos: Record<ArenaPactKind, { title: string; description: string }> = {
+    /*
+     * A MISSAO DE QUEM NAO TEM NADA.
+     *
+     * Todas as outras medem acoes que ja existem, entao quem chega sem arena
+     * nenhuma ficava sem missao — e e justamente quem mais precisa de uma, porque
+     * nao tem o que fazer e nem sabe o que o app espera dela.
+     *
+     * A descricao e os TRES PASSOS, com o gesto no fim. Concluir uma acao se faz
+     * SEGURANDO no planner, e isso nao esta escrito em lugar nenhum da tela: foi
+     * exatamente onde uma pessoa real travou em 13/09. Uma missao que ensina o
+     * gesto vale mais que um tutorial que ninguem reabre.
+     */
+    primeira: {
+      title: 'Montar a primeira frente',
+      description: 'Crie uma arena, crie uma ação dentro dela e conclua essa ação. No planner, segure em cima da ação para concluir.',
+    },
     volume: {
       title: `${esfriando ? 'Salvar' : 'Acelerar'} ${nome}`,
       description: escopoApp
@@ -405,7 +422,9 @@ const buildPact = (
     motivo: motivos[kind],
     reward: ARENA_PACT_REWARDS[difficulty],
     startedOn,
-    ...(kind === 'volume' ? { endsOn } : {}),
+    // A `primeira` tambem tem prazo, e sem ele o medidor devolve vazio para
+    // sempre: a missao existiria sem poder ser cumprida.
+    ...(kind === 'volume' || kind === 'primeira' ? { endsOn } : {}),
   };
 };
 
@@ -532,7 +551,7 @@ export const buildPactsForArena = (stats: ArenaStats, today: string, diasDoCiclo
   return pacts;
 };
 
-const KIND_ORDER: ArenaPactKind[] = ['retomada', 'conclusao', 'volume', 'constancia'];
+const KIND_ORDER: ArenaPactKind[] = ['primeira', 'retomada', 'conclusao', 'volume', 'constancia'];
 
 /**
  * Ate tres propostas: RELEVANCIA primeiro, variedade depois.
@@ -603,7 +622,20 @@ export const buildAppScopePacts = (
   options: ArenaStatsOptions = {},
 ): ArenaPact[] => {
   const sintetica = buildArenaEscopoApp(arenas, actions);
-  if (sintetica.actionIds.length === 0) return [];
+
+  /*
+   * Sem acao nenhuma, a unica missao possivel e a de comecar a existir.
+   *
+   * Aqui o retorno era `[]`, e o painel dizia "registre uma acao para abrir suas
+   * primeiras propostas" — um beco: para ganhar missao e preciso ja fazer o que
+   * a missao existiria para ensinar. Meta 1, faixa leve, o premio que a faixa
+   * leve sempre pagou.
+   */
+  if (sintetica.actionIds.length === 0) {
+    const stats = buildArenaStats(sintetica, actions, tasks, today, options);
+    const dias = Math.max(1, Math.min(VOLUME_TARGETS.leve.days, options.diasRestantesDoCiclo || VOLUME_TARGETS.leve.days));
+    return [buildPact('primeira', 'leve', stats, 1, today, shiftLocalDateString(today, dias - 1))];
+  }
   const stats = buildArenaStats(sintetica, actions, tasks, today, options);
   const meta = metaPorCadencia(stats.deliveryDaysLast30, VOLUME_WINDOW_DAYS, VOLUME_TARGETS.leve.actions, VOLUME_TARGETS.alta.actions);
   return [buildPact(
@@ -641,6 +673,31 @@ export const measurePactProgress = (
   today = getOperationalDateString(),
 ): ArenaPactProgress => {
   const vazio: ArenaPactProgress = { current: 0, goal: pact.goal, percent: 0, completed: false };
+
+  /*
+   * A primeira conta QUALQUER acao concluida, e vem antes da checagem de arena.
+   *
+   * No momento do aceite nao existe arena nem acao — e disso que ela trata. Medir
+   * pelos actionIds do escopo, como as outras fazem, daria zero para sempre,
+   * porque a lista foi congelada vazia quando o pacto nasceu.
+   */
+  if (pact.kind === 'primeira') {
+    if (!pact.endsOn) return vazio;
+    const medivel = new Set(actions.filter((acao) => acao.actionType !== 'Livre').map((acao) => acao.id));
+    const current = tasks.filter((t) => {
+      const date = getTaskOperationalDateString(t);
+      return t.completed && medivel.has(t.actionId)
+        && date >= pact.startedOn && date <= pact.endsOn! && date <= today;
+    }).length;
+    return {
+      current: Math.min(current, pact.goal),
+      goal: pact.goal,
+      percent: Math.min(100, Math.round(current / pact.goal * 100)),
+      completed: current >= pact.goal,
+      windowEnded: today > pact.endsOn,
+    };
+  }
+
   if (!arena) return vazio;
 
   if (pact.kind === 'volume') {

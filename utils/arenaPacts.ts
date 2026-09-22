@@ -154,6 +154,14 @@ const arenaCompletedTasks = (arena: Arena, tasks: ScheduledTask[]): ScheduledTas
 export interface ArenaStatsOptions {
   lockedArenaIds?: ReadonlySet<string>;
   /**
+   * Dias que ainda restam no ciclo aberto, hoje incluso. Ausente = sem ciclo.
+   *
+   * So as faixas de volume que CABEM nele sao oferecidas. Uma missao de 21 dias
+   * dentro de um ciclo de 7 termina depois do lugar onde ela seria cobrada — e o
+   * ciclo e justamente onde a pessoa vai ver se cumpriu.
+   */
+  diasRestantesDoCiclo?: number | null;
+  /**
    * Historico completo, sem recorte de ciclo. So o abandono usa isto.
    *
    * Progresso de arena ZERA a cada ciclo — ArenaCard recorta as tarefas por
@@ -402,7 +410,7 @@ const buildPact = (
 };
 
 /** Todos os pactos que fariam sentido para uma arena. */
-export const buildPactsForArena = (stats: ArenaStats, today: string): ArenaPact[] => {
+export const buildPactsForArena = (stats: ArenaStats, today: string, diasDoCiclo?: number | null): ArenaPact[] => {
   if (!isArenaEligible(stats)) return [];
 
   const pacts: ArenaPact[] = [];
@@ -437,15 +445,88 @@ export const buildPactsForArena = (stats: ArenaStats, today: string): ArenaPact[
   pacts.push(buildPact('constancia', faixaPorMeta(metaConstancia), stats, metaConstancia, today));
 
   if (stats.hasMeasurableProgress) {
-    const metaVolume = metaPorCadencia(stats.deliveryDaysLast30, VOLUME_WINDOW_DAYS, VOLUME_TARGETS.leve.actions, VOLUME_TARGETS.alta.actions);
-    pacts.unshift(buildPact(
-      'volume',
-      faixaPorMeta(metaVolume),
-      stats,
-      metaVolume,
-      today,
-      shiftLocalDateString(today, VOLUME_WINDOW_DAYS - 1),
-    ));
+    /*
+     * AS TRES FAIXAS CHEGAM A TELA. Ate aqui elas eram dado morto.
+     *
+     * `VOLUME_TARGETS` sempre teve leve, media e alta — 3 acoes em 7 dias, 6 em
+     * 14, 10 em 21 — e `metaPorCadencia` usava so o PISO e o TETO para calcular
+     * um unico numero. As faixas do meio nunca existiram para quem escolhe: a
+     * pessoa decidia que TIPO de compromisso queria, e o tamanho vinha decidido.
+     *
+     * Escolher o tamanho e o que separa um compromisso de uma tarefa atribuida.
+     * A cadencia nao some: ela deixa de ser a unica opcao e passa a ser a
+     * RECOMENDADA, que e o papel honesto de um calculo sobre o passado de
+     * alguem.
+     *
+     * E O CICLO FILTRA. Uma missao de 21 dias dentro de um ciclo de 7 e uma
+     * promessa que termina depois do lugar onde ela seria cobrada. Com ciclo
+     * aberto so entram as faixas que cabem nele — e isso resolve sozinho o
+     * problema de a lista ficar comprida, porque e justamente no ciclo curto que
+     * tres opcoes de volume apertariam a tela.
+     */
+    const metaRecomendada = metaPorCadencia(stats.deliveryDaysLast30, VOLUME_WINDOW_DAYS, VOLUME_TARGETS.leve.actions, VOLUME_TARGETS.alta.actions);
+    const faixaRecomendada = faixaPorMeta(metaRecomendada);
+
+    /*
+     * DA PARA SUBIR UM DEGRAU, NUNCA DESCER.
+     *
+     * O premio sai da FAIXA, entao oferecer as tres a todo mundo abriria a porta
+     * dos dois lados: quem entrega todo dia escolheria "leve, 3 acoes" e
+     * receberia por quase nada, e quem nunca entregou nada alcancaria o premio
+     * grande no primeiro dia.
+     *
+     * A cadencia vira PISO, e nao teto: ninguem se compromete com menos do que
+     * ja faz. E o teto e um degrau acima do piso, porque prometer o dobro do que
+     * se comprova e como uma missao costuma ser perdida — e perder a primeira e
+     * bem pior do que ganhar uma pequena.
+     */
+    const ESCADA: ArenaPactDifficulty[] = ['leve', 'media', 'alta'];
+    const degrauDoPiso = ESCADA.indexOf(faixaRecomendada);
+    const faixas = ESCADA.filter((_, degrau) => degrau >= degrauDoPiso && degrau <= degrauDoPiso + 1);
+
+    const volumes = faixas
+      .filter((faixa) => !diasDoCiclo || VOLUME_TARGETS[faixa].days <= diasDoCiclo)
+      // A TABELA VALE PARA AS TRES, e a cadencia so escolhe a ORDEM.
+      //
+      // A primeira versao punha o numero da cadencia na faixa recomendada, por
+      // ser mais fiel a pessoa. So que isso esmagava a escolha: com cadencia 4,
+      // "leve 3x" e "media 4x" viravam quase a mesma coisa, e escolher entre
+      // elas deixava de significar alguma coisa. Tres tamanhos so sao tres
+      // opcoes se forem distantes — 3, 6 e 10.
+      //
+      // A recomendacao nao se perde: ela vira a PRIMEIRA da lista, que e onde o
+      // olho cai e o dedo toca. Sugerir pela ordem diz o mesmo sem tirar o
+      // contraste de quem quer escolher outro tamanho.
+      .map((faixa) => buildPact(
+        'volume',
+        faixa,
+        stats,
+        VOLUME_TARGETS[faixa].actions,
+        today,
+        shiftLocalDateString(today, VOLUME_TARGETS[faixa].days - 1),
+      ))
+      .sort((esq, dir) => (
+        Number(dir.difficulty === faixaRecomendada) - Number(esq.difficulty === faixaRecomendada)
+      ));
+
+    /*
+     * Nenhuma faixa coube no que sobra do ciclo, e mesmo assim ha ciclo aberto.
+     * Fica uma so, do tamanho exato do que resta: uma missao que acaba junto com
+     * o ciclo e melhor que nenhuma, e melhor que uma que o atravessa.
+     */
+    if (volumes.length === 0 && diasDoCiclo && diasDoCiclo > 0) {
+      const metaCurta = Math.max(1, Math.min(metaRecomendada, diasDoCiclo));
+      volumes.push(buildPact(
+        'volume',
+        faixaPorMeta(metaCurta),
+        stats,
+        metaCurta,
+        today,
+        shiftLocalDateString(today, diasDoCiclo - 1),
+      ));
+    }
+
+    pacts.unshift(...volumes);
   }
 
   return pacts;
@@ -490,7 +571,7 @@ export const buildPactCandidates = (
   for (const entry of stats) {
     if (escolhidos.length >= limit) break;
     if (arenasUsadas.has(entry.arena.id)) continue;
-    const daArena = buildPactsForArena(entry, today);
+    const daArena = buildPactsForArena(entry, today, options.diasRestantesDoCiclo);
     if (daArena.length === 0) continue;
 
     const inedito = KIND_ORDER
@@ -542,7 +623,11 @@ export const buildPactCandidatesForArena = (
   tasks: ScheduledTask[],
   today: string,
   options: ArenaStatsOptions = {},
-): ArenaPact[] => buildPactsForArena(buildArenaStats(arena, actions, tasks, today, options), today);
+): ArenaPact[] => buildPactsForArena(
+  buildArenaStats(arena, actions, tasks, today, options),
+  today,
+  options.diasRestantesDoCiclo,
+);
 
 /**
  * Progresso do pacto ativo. So conta o que aconteceu a partir do aceite — aceitar

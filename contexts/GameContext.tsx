@@ -14796,13 +14796,34 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         })();
     }, [activeArenaPact, arenaPactProgress, hasHydratedFromSupabase, isProfileLoaded]);
 
+    /*
+     * QUANTO AINDA CABE NO CICLO, hoje incluso.
+     *
+     * E o filtro das faixas de missao: so entram as que terminam DENTRO do ciclo
+     * aberto. Uma missao de 21 dias num ciclo de 7 acaba depois do lugar onde
+     * ela seria cobrada — e o ciclo e justamente onde a pessoa ve se cumpriu.
+     *
+     * Sem ciclo aberto e null, e ai todas as faixas valem: quem joga so por
+     * rodada nao tem prazo externo para respeitar.
+     */
+    const diasRestantesDoCiclo = useMemo(() => {
+        if (!activeCycle?.endDate) return null;
+        const hoje = arenaPactToday;
+        if (activeCycle.endDate < hoje) return 0;
+        const umDia = 24 * 60 * 60 * 1000;
+        const fim = new Date(`${activeCycle.endDate}T00:00:00`).getTime();
+        const inicio = new Date(`${hoje}T00:00:00`).getTime();
+        if (Number.isNaN(fim) || Number.isNaN(inicio)) return null;
+        return Math.max(1, Math.round((fim - inicio) / umDia) + 1);
+    }, [activeCycle?.endDate, arenaPactToday]);
+
     const arenaPactCandidates = useMemo(
         () => (activeArenaPact
             ? []
             // cycleScopedTasks para o progresso (a arena zera a cada ciclo, e a
             // proposta tem de enxergar o mesmo que a tela); tasks inteiro so
             // para medir abandono, que atravessa ciclos.
-            : buildPactCandidates(allArenas, actions, cycleScopedTasks, arenaPactToday, 3, { lockedArenaIds, allTimeTasks: tasks })),
+            : buildPactCandidates(allArenas, actions, cycleScopedTasks, arenaPactToday, 3, { lockedArenaIds, allTimeTasks: tasks, diasRestantesDoCiclo })),
         [actions, activeArenaPact, allArenas, arenaPactToday, cycleScopedTasks, lockedArenaIds, tasks],
     );
 
@@ -14815,11 +14836,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             // `allArenas.find(id === '')` nunca acha nada — entao a missao geral
             // simplesmente nunca aparecia, mesmo com a tela oferecendo "Tudo junto".
             if (arenaId === ESCOPO_APP) {
-                return buildAppScopePacts(allArenas, actions, cycleScopedTasks, arenaPactToday, { lockedArenaIds, allTimeTasks: tasks });
+                return buildAppScopePacts(allArenas, actions, cycleScopedTasks, arenaPactToday, { lockedArenaIds, allTimeTasks: tasks, diasRestantesDoCiclo });
             }
             const arena = allArenas.find((entry) => entry.id === arenaId);
             if (!arena) return [];
-            return buildPactCandidatesForArena(arena, actions, cycleScopedTasks, arenaPactToday, { lockedArenaIds, allTimeTasks: tasks });
+            return buildPactCandidatesForArena(arena, actions, cycleScopedTasks, arenaPactToday, { lockedArenaIds, allTimeTasks: tasks, diasRestantesDoCiclo });
         },
         [actions, allArenas, arenaPactToday, cycleScopedTasks, lockedArenaIds, tasks],
     );
@@ -14834,10 +14855,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
      *
      * A pergunta certa e "ha alguma missao?", nao "ha alguma arena?".
      */
+
     const missaoIndividualDisponivel = useMemo(() => {
         if (activeArenaPact) return false;
         if (arenaPactCandidates.length > 0) return true;
-        return buildAppScopePacts(allArenas, actions, cycleScopedTasks, arenaPactToday, { lockedArenaIds, allTimeTasks: tasks }).length > 0;
+        return buildAppScopePacts(allArenas, actions, cycleScopedTasks, arenaPactToday, { lockedArenaIds, allTimeTasks: tasks, diasRestantesDoCiclo }).length > 0;
     }, [actions, activeArenaPact, allArenas, arenaPactCandidates, arenaPactToday, cycleScopedTasks, lockedArenaIds, tasks]);
 
     /**

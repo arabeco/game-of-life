@@ -166,11 +166,21 @@ perfil que aparece atrás de tudo.
 A escada de raridade hoje pula — comum, incomum, rara, épica, lendária, lendária.
 Falta corpo no meio.
 
-Os seis de hoje ficam em `public/assets/catalog/avatars/glyphs/PLACA_*.png`, a
-**512x512**, e servem de referencia de estilo. Os quatro novos ainda nao tem
-nome de arquivo porque o item nao foi criado: falta decidir de onde cada um
-sai — ouro, degrau ou bau. Isso nao trava o desenho, so a entrega; quando os
-quatro chegarem, os itens nascem com eles.
+**ENTREGUES EM 22/09/2026.** Os quatro existem, com item, preco e porta na loja
+de ouro. Ficou dois por degrau, que e o corpo que faltava no meio:
+
+| Nova | Degrau | Ouro | Arquivo |
+|---|---|---|---|
+| **Placa Couro** | comum | 22 | `PLACA_COURO.png` |
+| **Placa Cobre** | incomum | 48 | `PLACA_COBRE.png` |
+| **Placa Obsidiana** | rara | 105 | `PLACA_OBSIDIANA.png` |
+| **Placa Esmeralda** | epica | 215 | `PLACA_ESMERALDA.png` |
+
+Todas em `public/assets/catalog/avatars/glyphs/`, a **512x512**. Os seis
+anteriores continuam servindo de referencia de estilo — e foi assim que estas
+quatro sairam certas: tres delas mandadas como referencia, uma por degrau, para
+a riqueza crescer junto com a raridade em vez de as quatro sairem com o mesmo
+peso.
 
 ---
 
@@ -560,12 +570,12 @@ entregar, o que vale e esta:
 | Roupa do pacote inicial — Pijama, Corrida, Chuva, Verao | **4** | 500x500 PNG |
 | Cabelo — 4 cortes x 3 cores | **12** | 500x500 PNG |
 | Fundo do grupo — um por patente | **7** | 1599x900 WEBP |
-| Wallpaper do perfil | **4** | 512x512 PNG |
+| ~~Wallpaper do perfil~~ — entregue em 22/09 | ~~4~~ | 512x512 PNG |
 | | **36** | |
 
 Os 25 primeiros ja tem arquivo esperando no nome final, e `npm run arte:pendente`
 lista exatamente quais. Os 7 fundos tem nome final e paisagem emprestada no
-lugar. Os 4 wallpapers ainda nao tem nome — ver *3 · Wallpaper*.
+lugar. **Os 4 wallpapers ja chegaram** — ver *3 · Wallpaper*. Faltam 32.
 
 **Fora desta conta ficam as 4 pecas de jardim:** elas sao MODELO 3D, e nao
 imagem. Quem desenha PNG nao entrega jardim.

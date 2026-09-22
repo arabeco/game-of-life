@@ -361,9 +361,13 @@ export const ITEMS_DB: ItemDef[] = [
 
     // --- PLACAS ---
     { id: 'item_plate_1_001', name: 'Placa Madeira', category: 'plate', tier: 1, rarity: 'common', icon: '🪵', imageUrl: `${GLYPHS_BASE_URL}/PLACA_MADEIRA.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_plate_1_001 },
+    { id: 'item_plate_1_002', name: 'Placa Couro', category: 'plate', tier: 1, rarity: 'common', icon: '🟫', imageUrl: `${GLYPHS_BASE_URL}/PLACA_COURO.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_plate_1_002 },
     { id: 'item_plate_2_001', name: 'Placa Pedra', category: 'plate', tier: 2, rarity: 'uncommon', icon: '🪨', imageUrl: `${GLYPHS_BASE_URL}/PLACA_PEDRA.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_plate_2_001 },
+    { id: 'item_plate_2_002', name: 'Placa Cobre', category: 'plate', tier: 2, rarity: 'uncommon', icon: '🟠', imageUrl: `${GLYPHS_BASE_URL}/PLACA_COBRE.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_plate_2_002 },
     { id: 'item_plate_3_001', name: 'Placa Prata', category: 'plate', tier: 3, rarity: 'rare', icon: '⚪', imageUrl: `${GLYPHS_BASE_URL}/PLACA_PRATA.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_plate_3_001 },
+    { id: 'item_plate_3_002', name: 'Placa Obsidiana', category: 'plate', tier: 3, rarity: 'rare', icon: '⚫', imageUrl: `${GLYPHS_BASE_URL}/PLACA_OBSIDIANA.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_plate_3_002 },
     { id: 'item_plate_4_001', name: 'Placa Roxa', category: 'plate', tier: 4, rarity: 'epic', icon: '🟣', imageUrl: `${GLYPHS_BASE_URL}/PLACA_ROXA.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_plate_4_001 },
+    { id: 'item_plate_4_002', name: 'Placa Esmeralda', category: 'plate', tier: 4, rarity: 'epic', icon: '🟢', imageUrl: `${GLYPHS_BASE_URL}/PLACA_ESMERALDA.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_plate_4_002 },
     { id: 'item_plate_5_001', name: 'Placa Ouro', category: 'plate', tier: 5, rarity: 'legendary', icon: '🟡', imageUrl: `${GLYPHS_BASE_URL}/PLACA_OURO.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_plate_5_001 },
     { id: 'item_plate_5_002', name: 'Placa Gelo', category: 'plate', tier: 5, rarity: 'legendary', icon: '❄️', imageUrl: `${GLYPHS_BASE_URL}/PLACA_GELO.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_plate_5_002 },
 

@@ -5,6 +5,7 @@ import { buildLegacyPlaqueSummary } from './LegacyPlaqueArtifact';
 import { UserAvatar } from './UserAvatar';
 import { getDisplayLevel } from '../constants/lifeAreas';
 import { getLegacyPlaqueColor } from '../constants/legacyPlaqueColors';
+import { tintaMetalicaCom } from './MetalReportCard';
 
 interface LegacyGrandPlaqueProps {
     eras: LegacyEraSummary[];
@@ -103,13 +104,9 @@ export const LegacyGrandPlaque: React.FC<LegacyGrandPlaqueProps> = ({
     const molduraCortada = (canto: number) => ({
         clipPath: `polygon(${canto}px 0, calc(100% - ${canto}px) 0, 100% ${canto}px, 100% calc(100% - ${canto}px), calc(100% - ${canto}px) 100%, ${canto}px 100%, 0 calc(100% - ${canto}px), 0 ${canto}px)`,
     });
-    const tintaMetalica: React.CSSProperties = {
-        background: `linear-gradient(103deg, ${cor.metalMid} 2%, ${cor.metalLight} 26%, #fff8ea 44%, ${cor.metalLight} 62%, ${cor.metalMid} 88%, ${cor.metalLight} 100%)`,
-        backgroundClip: 'text',
-        WebkitBackgroundClip: 'text',
-        WebkitTextFillColor: 'transparent',
-        filter: 'drop-shadow(0 2px 2px rgba(0,0,0,.75))',
-    };
+    const tintaMetalica: React.CSSProperties = tintaMetalicaCom(
+        `linear-gradient(103deg, ${cor.metalMid} 2%, ${cor.metalLight} 26%, #fff8ea 44%, ${cor.metalLight} 62%, ${cor.metalMid} 88%, ${cor.metalLight} 100%)`,
+    );
     /*
      * SO A PATENTE.
      *

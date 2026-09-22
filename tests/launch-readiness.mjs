@@ -171,6 +171,13 @@ const suites = {
       interactions: ['cada quadro responde uma pergunta diferente', 'um numero aparece uma vez so', 'o melhor dia e a maior sequencia saem do banco para a tela', 'a comparacao com o historico deixa de ser so do Platinum'],
     },
     {
+      id: 'tinta-metalica',
+      label: 'Tinta metalica regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'tinta-metalica.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['drop-shadow nao volta para cima do recorte por texto', 'o numero nao vira um tijolo dourado', 'a tinta metalica tem um dono so'],
+    },
+    {
       id: 'xp-scale',
       label: 'XP scale regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'xp-scale.regression.mjs')]],

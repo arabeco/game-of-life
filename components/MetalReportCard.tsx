@@ -162,19 +162,52 @@ const PLATE_FINISHES: Record<MetalReportRank, PlateFinish> = {
 export const getPlateFinish = (rank: string): PlateFinish => PLATE_FINISHES[getMetalRankPalette(rank).rank];
 
 /**
- * A TINTA METALICA DO APP.
+ * A TINTA METALICA DO APP, NUM LUGAR SO.
  *
- * O mesmo gradiente de 103 graus que a placa de ciclo e a do legado usam, preso
- * ao texto por `background-clip`. Ela sobrevive a captura de imagem da tela de
- * compartilhamento porque a lib e `html-to-image`, que renderiza CSS de verdade.
+ * O gradiente de 103 graus preso ao texto por `background-clip`. Ela sobrevive a
+ * captura de imagem da tela de compartilhamento porque a lib e `html-to-image`,
+ * que renderiza CSS de verdade.
+ *
+ * A PROFUNDIDADE VEM DE `text-shadow`, E NAO DE `filter`.
+ *
+ * Era `filter: drop-shadow(...)` no mesmo elemento do `background-clip: text`, e
+ * essa dupla e frágil: o filtro joga o elemento numa superficie de composicao
+ * propria, e em algumas maquinas o recorte pelo texto se perde na rasterizacao.
+ * Quando isso acontece nao sobra texto ilegivel — sobra o RETANGULO do gradiente
+ * inteiro, um tijolo dourado no lugar do numero.
+ *
+ * Em 22/09/2026 chegou a tela assim: os seis quadros do relatorio com todo
+ * numero virado bloco, e legiveis exatamente os valores que levam `tom` — que
+ * sao os unicos que NAO passam por aqui. Nao reproduz em toda maquina, e por
+ * isso mesmo nao da para deixar: falha de compositor depende de GPU e driver, e
+ * o app nao escolhe nenhum dos dois.
+ *
+ * `text-shadow` desenha a partir da propria forma da letra, entao ele convive
+ * com o fill transparente e nao cria superficie nenhuma.
+ *
+ * A sombra ficou MAIS FRACA que a do filtro, e por um motivo que so aparece
+ * olhando. O drop-shadow sombreava o RESULTADO ja composto, entao a sombra caia
+ * limpa atras do glifo cheio. A text-shadow desenha antes, a partir da forma da
+ * letra, e o gradiente pinta por cima: nas bordas suavizadas, onde o glifo e
+ * meio transparente, a sombra atravessa e acinzenta o ouro. Quanto mais forte a
+ * sombra, mais cinza o numero — que e o oposto do que ela existe para fazer.
+ *
+ * `0 2px 3px` a 50% ainda descola a letra do fundo escuro e nao suja mais nada.
  */
-export const tintaMetalicaDo = (finish: PlateFinish): React.CSSProperties => ({
-  background: `linear-gradient(103deg, ${finish.mid} 2%, ${finish.pale} 26%, #fff8ea 44%, ${finish.pale} 62%, ${finish.mid} 88%, ${finish.pale} 100%)`,
+export const SOMBRA_DA_TINTA_METALICA = '0 2px 3px rgba(0,0,0,.5)';
+
+/** A tinta a partir de um gradiente qualquer — a placa, o codex, a loja. */
+export const tintaMetalicaCom = (gradiente: string): React.CSSProperties => ({
+  background: gradiente,
   backgroundClip: 'text',
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
-  filter: 'drop-shadow(0 3px 4px rgba(0,0,0,.8))',
+  textShadow: SOMBRA_DA_TINTA_METALICA,
 });
+
+export const tintaMetalicaDo = (finish: PlateFinish): React.CSSProperties => tintaMetalicaCom(
+  `linear-gradient(103deg, ${finish.mid} 2%, ${finish.pale} 26%, #fff8ea 44%, ${finish.pale} 62%, ${finish.mid} 88%, ${finish.pale} 100%)`,
+);
 
 const plateOutline = (i: number) => `${18+i},${i} ${302-i},${i} ${320-i},${18+i} ${320-i},${512-i} ${302-i},${530-i} ${18+i},${530-i} ${i},${512-i} ${i},${18+i}`;
 

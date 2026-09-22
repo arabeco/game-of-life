@@ -166,6 +166,12 @@ perfil que aparece atrás de tudo.
 A escada de raridade hoje pula — comum, incomum, rara, épica, lendária, lendária.
 Falta corpo no meio.
 
+Os seis de hoje ficam em `public/assets/catalog/avatars/glyphs/PLACA_*.png`, a
+**512x512**, e servem de referencia de estilo. Os quatro novos ainda nao tem
+nome de arquivo porque o item nao foi criado: falta decidir de onde cada um
+sai — ouro, degrau ou bau. Isso nao trava o desenho, so a entrega; quando os
+quatro chegarem, os itens nascem com eles.
+
 ---
 
 ## 4 · Jardim — quatro peças para o sexto kit
@@ -342,12 +348,20 @@ peca cai. Roupa e cabelo nao sao ilustracoes soltas, sao CAMADAS sobre um corpo
 que ja existe, e nada e recortado, redimensionado ou ajustado depois. O arquivo
 entregue e posto por cima do corpo pixel a pixel, do jeito que chegou.
 
-| Regra | Valor |
-|---|---|
-| Tamanho | **500x500**, sempre |
-| Fundo | **transparente**. Nenhum fundo, nenhuma moldura, nenhuma sombra fora da peca |
-| Enquadramento | o MESMO do corpo: mesma altura de ombro, mesma cintura, mesma escala |
-| Formato | PNG |
+**As quatro familias, e o arquivo de cada uma.** Nao e um tamanho so: peca de
+vestir e peca de fundo vivem em lugares diferentes da tela.
+
+| Familia | Tamanho | Fundo | Formato |
+|---|---|---|---|
+| Roupa | **500x500** | **transparente** | PNG |
+| Cabelo | **500x500** | **transparente** | PNG |
+| Wallpaper (a `placa` do perfil) | **512x512** | cheio, sem transparencia | PNG |
+| Fundo do grupo | **1599x900** | cheio, sem transparencia | WEBP |
+
+Transparente quer dizer transparente mesmo: nenhum fundo, nenhuma moldura,
+nenhuma sombra fora da peca. E roupa e cabelo ainda tem uma quinta regra, que e
+a que mais quebra: **o enquadramento e o MESMO do corpo** — mesma altura de
+ombro, mesma cintura, mesma escala.
 
 **Os arquivos para abrir junto, e desenhar em cima:**
 
@@ -358,6 +372,8 @@ entregue e posto por cima do corpo pixel a pixel, do jeito que chegou.
 | roupa pronta, de referencia | `public/assets/catalog/avatars/SKIN_T1_CACADOR.png` |
 | roupa pronta, de referencia | `public/assets/catalog/avatars/SKIN_T1_NAUFRAGO.png` |
 | cabelo pronto, de referencia | `public/assets/catalog/avatars/hair/CABELO_T1_MEDIO_RETO_cast.png` |
+| wallpaper pronto, de referencia | `public/assets/catalog/avatars/glyphs/PLACA_PEDRA.png` |
+| wallpaper pronto, de referencia | `public/assets/catalog/avatars/glyphs/PLACA_ROXA.png` |
 
 Os oito corpos sao `body_masc_1..4` e `body_fem_1..4`: os quatro numeros sao
 tons de pele do MESMO desenho. Por isso bastam dois abertos - o que muda entre
@@ -454,6 +470,28 @@ nome de arquivo — os degraus delas não foram decididos. Ficam para quando for
 
 E mais **7 fundos de grupo**, um por patente — ver *6 · Fundo do grupo*. Eles
 acabam junto com as 26, e sao o premio de o grupo subir.
+
+### A mesma conta, em ARQUIVOS
+
+Desenho e arquivo nao sao a mesma coisa: um corte de cabelo sai em tres cores,
+e a roupa das patentes sao nove desenhos numa familia so. Para quem vai
+entregar, o que vale e esta:
+
+| O que | Arquivos | Tamanho |
+|---|---|---|
+| Roupa das patentes — Escudeiro a Soberano | **9** | 500x500 PNG |
+| Roupa do pacote inicial — Pijama, Corrida, Chuva, Verao | **4** | 500x500 PNG |
+| Cabelo — 4 cortes x 3 cores | **12** | 500x500 PNG |
+| Fundo do grupo — um por patente | **7** | 1599x900 WEBP |
+| Wallpaper do perfil | **4** | 512x512 PNG |
+| | **36** | |
+
+Os 25 primeiros ja tem arquivo esperando no nome final, e `npm run arte:pendente`
+lista exatamente quais. Os 7 fundos tem nome final e paisagem emprestada no
+lugar. Os 4 wallpapers ainda nao tem nome — ver *3 · Wallpaper*.
+
+**Fora desta conta ficam as 4 pecas de jardim:** elas sao MODELO 3D, e nao
+imagem. Quem desenha PNG nao entrega jardim.
 
 E, fora desta conta, **5 por temporada nova** — skin, borda, banner, insígnia e a
 vitrine do tema. As 26 acabam; essas cinco voltam sempre.

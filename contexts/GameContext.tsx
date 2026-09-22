@@ -8667,6 +8667,25 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             let closedCount = 0;
             let skippedForTaskLoad = false;
 
+            /*
+             * O QUE VOLTA PARA A BAY PRECISA SER DITO.
+             *
+             * O reparo fecha ate 21 dias atrasados de uma vez, e cada dia
+             * devolve para o estoque as acoes marcadas que nao foram feitas.
+             * Isso ja funcionava — e funcionava em SILENCIO. Quem passou uma
+             * semana fora abria o app e as coisas simplesmente tinham mudado de
+             * lugar: a acao nao estava mais no dia em que ela tinha marcado, e
+             * ninguem explicou que ela voltou a estar disponivel.
+             *
+             * Contado ANTES do laco, porque depois dele as tarefas ja perderam o
+             * horario e nao ha mais como distinguir o que voltou do que nunca
+             * chegou a ser marcado.
+             */
+            const voltaramParaOEstoque = tasks.filter((task) => {
+                const dia = getTaskOperationalDateString(task);
+                return Boolean(dia) && dia < todayString && !task.completed && Number(task.startTime) >= 0;
+            }).length;
+
             for (const row of rows) {
                 if (cancelled) return;
 
@@ -8700,6 +8719,22 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             if (closedCount > 0 && activeCycle) {
                 await refreshOpenCycleDerivedState(activeCycle);
+            }
+
+            /*
+             * Uma mensagem so, depois do laco — e nao uma por dia fechado.
+             *
+             * Quem volta de uma semana fora receberia sete avisos iguais em
+             * sequencia, que e a forma mais rapida de a pessoa parar de ler
+             * qualquer aviso do app.
+             */
+            if (closedCount > 0 && voltaramParaOEstoque > 0) {
+                showToast(
+                    voltaramParaOEstoque === 1
+                        ? 'Uma ação marcada e não feita voltou para o estoque.'
+                        : `${voltaramParaOEstoque} ações marcadas e não feitas voltaram para o estoque.`,
+                    'info',
+                );
             }
 
             if (!skippedForTaskLoad) {

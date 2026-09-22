@@ -1854,10 +1854,25 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
      * sequencia sem a marca de hoje. Contar so um faria o numero mentir sobre
      * metade do conteudo.
      */
-    const hojeParaSequencia = formatLocalDateString(currentTime);
+    // A data OPERACIONAL, e nao a do calendario: e a mesma que a linha da
+    // sequencia usa para decidir se foi marcada hoje. Com a local, entre a
+    // meia-noite e as quatro o botao e a lista discordariam.
+    const hojeParaSequencia = getOperationalDateString();
     const sequenciasSemHoje = sequenceItems.filter(item => item.lastMarkedDate !== hojeParaSequencia);
     const pendenciasDoChecklist = checklistItems.filter(item => !item.completed).length + sequenciasSemHoje.length;
-    const shouldSurfaceChecklist = pendenciasDoChecklist > 0;
+    const totalDoChecklist = checklistItems.length + sequenceItems.length;
+    /**
+     * TRES ESTADOS, e nao dois.
+     *
+     *   vazio    — nao ha nada dentro. Apagado, porque nao ha o que cobrar.
+     *   pendente — ha coisa por fazer. Aceso, a qualquer hora.
+     *   completo — acabou tudo hoje. Preenchido, que e diferente de apagado.
+     *
+     * Sem o terceiro, terminar o dia devolvia o botao ao mesmo cinza de quem
+     * nunca criou nada — a pessoa fazia tudo e a tela nao reconhecia.
+     */
+    const estadoDoChecklist: 'vazio' | 'pendente' | 'completo' =
+        totalDoChecklist === 0 ? 'vazio' : pendenciasDoChecklist > 0 ? 'pendente' : 'completo';
     const isToday = formatLocalDateString(currentDate) === getOperationalDateString();
 
     const plannerExpSnapshot = useMemo<PlannerExpSnapshot>(() => {
@@ -2257,17 +2272,23 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 id="planner-checklist-dock"
                 type="button"
                 onClick={() => setChecklistVisible(true)}
-                aria-label={pendenciasDoChecklist > 0
-                    ? `Abrir checklist: ${pendenciasDoChecklist} por fazer`
-                    : 'Abrir checklist diario'}
+                aria-label={
+                    estadoDoChecklist === 'pendente'
+                        ? 'Abrir checklist: ' + pendenciasDoChecklist + ' por fazer'
+                        : estadoDoChecklist === 'completo'
+                            ? 'Abrir checklist: tudo feito hoje'
+                            : 'Abrir checklist diario'
+                }
                 className={`planner-soft-control absolute bottom-[calc(0.15rem+var(--safe-area-bottom))] left-3 z-40 flex items-center gap-1.5 rounded-full border px-2.5 py-2 transition-colors ${
-                    shouldSurfaceChecklist
+                    estadoDoChecklist === 'pendente'
                         ? 'border-[var(--skin-accent-color)]/38 bg-[var(--skin-accent-color)]/14 text-[var(--skin-accent-color)] shadow-[0_0_12px_rgba(212,175,55,0.14)]'
-                        : 'border-white/8 bg-white/[0.025] text-gray-500 hover:border-white/18 hover:bg-white/[0.055] hover:text-gray-200'
+                        : estadoDoChecklist === 'completo'
+                            ? 'border-[var(--skin-accent-color)]/70 bg-[var(--skin-accent-color)] text-black shadow-[0_0_14px_rgba(212,175,55,0.22)]'
+                            : 'border-white/8 bg-white/[0.025] text-gray-500 hover:border-white/18 hover:bg-white/[0.055] hover:text-gray-200'
                 }`}
             >
                 <SquareCheckIcon className="h-4 w-4" />
-                {pendenciasDoChecklist > 0 && (
+                {estadoDoChecklist === 'pendente' && (
                     <span className="text-[11px] font-black tabular-nums leading-none">{pendenciasDoChecklist}</span>
                 )}
             </button>

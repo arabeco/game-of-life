@@ -206,6 +206,13 @@ const suites = {
       interactions: ['a porta do app nao aceita destino', 'a porta que aceita destino so o servidor alcanca', 'as duas validam o tipo contra ChestType', 'o app chama a porta certa'],
     },
     {
+      id: 'journal-egress',
+      label: 'Journal egress regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'journal-egress.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['o contexto nao conhece o diario', 'o indice nao traz o texto das paginas', 'ler e salvar sao de uma pagina so', 'o diario e so de quem escreveu'],
+    },
+    {
       id: 'tinta-metalica',
       label: 'Tinta metalica regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'tinta-metalica.regression.mjs')]],

@@ -1,9 +1,9 @@
 # Launch Readiness Report
 
-- Generated at: 2026-09-22T13:47:08.237Z
+- Generated at: 2026-09-22T19:03:59.069Z
 - Suite: `core`
 - Smoke URL: `http://127.0.0.1:3011/`
-- Build: PASS (18.6s)
+- Build: PASS (19.6s)
 
 ## Checks
 
@@ -31,13 +31,13 @@
 - Simulates: confere progresso de arenas
 - Simulates: garante insignias acumulaveis
 
-### PASS - Oracle cycle coach regression (0.2s)
+### PASS - Oracle cycle coach regression (0.1s)
 - Kind: `logic`
 - Simulates: le ritmo do ciclo localmente
 - Simulates: prioriza arena em risco
 - Simulates: oferece apenas navegacao segura
 
-### PASS - Reward modal priority regression (0.2s)
+### PASS - Reward modal priority regression (0.1s)
 - Kind: `logic`
 - Simulates: nao mostra passagem antiga a conta nova
 - Simulates: evita sobreposicao entre dicas, temporada e recompensas
@@ -71,7 +71,7 @@
 - Simulates: constancia conta dias e nao acoes
 - Simulates: entrega anterior ao aceite nao conta
 
-### PASS - Cycle scheduling regression (0.1s)
+### PASS - Cycle scheduling regression (0.2s)
 - Kind: `logic`
 - Simulates: renovar uma arena nao expulsa as outras do ciclo
 - Simulates: a virada reagenda as acoes recorrentes
@@ -133,6 +133,34 @@
 - Simulates: limpeza de arquivo avisa e segue
 - Simulates: o pedido se registra antes de apagar
 - Simulates: o app continua tendo por onde pedir
+
+### PASS - Pagamento web regression (0.1s)
+- Kind: `logic`
+- Simulates: preco e premio saem do catalogo do servidor
+- Simulates: o dono da compra sai do token
+- Simulates: o catalogo do servidor bate com o do app
+- Simulates: o webhook confere assinatura e valor cobrado
+
+### PASS - Economia descontos regression (0.1s)
+- Kind: `logic`
+- Simulates: a tela e o banco descontam igual
+- Simulates: o preco final em ouro bate
+- Simulates: o custo com plano nao volta a ser numero fixo
+- Simulates: o credito antigo continua honrado
+
+### PASS - Bau com dono regression (0.1s)
+- Kind: `logic`
+- Simulates: a porta do app nao aceita destino
+- Simulates: a porta que aceita destino so o servidor alcanca
+- Simulates: as duas validam o tipo contra ChestType
+- Simulates: o app chama a porta certa
+
+### PASS - Journal egress regression (0.1s)
+- Kind: `logic`
+- Simulates: o contexto nao conhece o diario
+- Simulates: o indice nao traz o texto das paginas
+- Simulates: ler e salvar sao de uma pagina so
+- Simulates: o diario e so de quem escreveu
 
 ### PASS - Tinta metalica regression (0.1s)
 - Kind: `logic`
@@ -217,14 +245,14 @@
 - Simulates: valida progresso de campanha/arena
 - Simulates: confere score, atlas e mutacoes utilitarias
 
-### PASS - Onboarding happy path (17.2s)
+### PASS - Onboarding happy path (20.2s)
 - Kind: `browser`
 - Simulates: entra com conta temporaria
 - Simulates: atravessa onboarding
 - Simulates: cria arena/acao inicial
 - Simulates: chega no fluxo principal sem travar
 
-### PASS - Campaign quiz flow (12.3s)
+### PASS - Campaign quiz flow (13.1s)
 - Kind: `browser`
 - Simulates: abre loja de campanhas
 - Simulates: roda quiz gratis
@@ -239,7 +267,7 @@
 - Simulates: abre relatorio e reward flow
 - Error: Cycle report flow failed with exit 1
 
-### PASS - UI shell smoke (9.8s)
+### PASS - UI shell smoke (10.1s)
 - Kind: `browser`
 - Simulates: abre shell principal
 - Simulates: navega views centrais

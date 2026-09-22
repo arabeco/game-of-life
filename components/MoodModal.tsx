@@ -55,7 +55,26 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         // custam cerca de um kilobyte, e so quem abre paga por eles.
     }, []);
     
-    const moodLabels = ['VERGONHA', 'CORAGEM', 'AMOR', 'PAZ', 'ILUMINADO'];
+    /**
+     * A REGUA MENTIA, E MENTIA MUITO.
+     *
+     * Eram cinco palavras fixas espalhadas por igual — VERGONHA, CORAGEM, AMOR,
+     * PAZ, ILUMINADO — como se a escala fosse linear. Ela nao e: ha dezessete
+     * humores, sete deles nos primeiros 35%, e os quatro de cima espremidos nos
+     * ultimos 25%. Coragem estava escrita em 25% e mora em 50%; Amor estava em
+     * 50% e mora em 80%.
+     *
+     * Quem arrastava a bolinha ate a palavra recebia outro humor, e concluia
+     * que a bolinha estava errada. A bolinha estava certa.
+     *
+     * Agora os marcos saem de MOODS_DATA: pergunta-se qual humor vive em 0, 25,
+     * 50, 75 e 100, e escreve-se esse. Mudar as faixas passa a corrigir a regua
+     * sozinho, em vez de deixar as duas se afastarem em silencio.
+     */
+    const marcosDaRegua = [0, 25, 50, 75, 100].map((posicao) => ({
+        posicao,
+        label: resolveMood(posicao).label.toUpperCase(),
+    }));
 
     return (
         <Portal>
@@ -89,8 +108,26 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         className="mood-slider"
                         style={sliderTrackStyle}
                     />
-                    <div className="flex justify-between text-[10px] text-gray-400 font-bold px-1">
-                        {moodLabels.map(label => <span key={label}>{label}</span>)}
+                    {/* Cada marco no SEU lugar, e nao espalhados por igual.
+                        `justify-between` distribuia pelo espaco que sobrava, o que so
+                        coincide com o valor quando a escala e linear — e esta nao e. */}
+                    <div className="relative h-4 px-1">
+                        {marcosDaRegua.map(({ posicao, label }) => (
+                            <span
+                                key={posicao}
+                                className="absolute top-0 whitespace-nowrap text-[10px] font-bold text-gray-400"
+                                style={{
+                                    left: posicao + '%',
+                                    transform: posicao === 0
+                                        ? 'translateX(0)'
+                                        : posicao === 100
+                                            ? 'translateX(-100%)'
+                                            : 'translateX(-50%)',
+                                }}
+                            >
+                                {label}
+                            </span>
+                        ))}
                     </div>
 
                     {/* Registrar tem nome e numero na frente: e a pessoa dizendo

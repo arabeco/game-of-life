@@ -74,6 +74,7 @@ import {
     writeOracleSpeechMemory,
 } from '../utils/oracleSpeechMemory';
 import { getOperationalDateString, shiftLocalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
+import { atualizarEmSegundoPlano, exigirAtualizacaoAgora } from '../utils/atualizacaoDoApp';
 import './auth-shell.css';
 
 const AssetsView = React.lazy(() => import('../views/AssetsView').then((m) => ({ default: m.AssetsView })));
@@ -1619,6 +1620,23 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         return () => window.removeEventListener('openRewardVideoPreview', handleOpenRewardVideoPreview);
     }, []);
 
+    /*
+     * A ATUALIZACAO DE ROTINA, UMA VEZ POR ABERTURA.
+     *
+     * Baixa em segundo plano e so avisa quando esta pronta para reiniciar —
+     * ninguem e interrompido. O ganho nao e a comodidade: e que uma base que se
+     * mantem atual sozinha quase nunca precisa da trava de emergencia, e a trava
+     * e a parte que da trabalho para todo mundo.
+     *
+     * Fora da Play — navegador, `npm run dev`, APK instalado a mao — a funcao
+     * devolve 'indisponivel' e nada acontece. Se a pessoa recusar, recusou: nao
+     * se pergunta de novo na mesma sessao.
+     */
+    useEffect(() => {
+        if (!isProfileLoaded) return;
+        void atualizarEmSegundoPlano();
+    }, [isProfileLoaded]);
+
     useEffect(() => {
         if (!isProfileLoaded) return;
         if (!userProfile.id || userProfile.id === 'placeholder_user') return;
@@ -1913,9 +1931,42 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
     }, [addProfileFlag, pendingAppBroadcast]);
 
     const handleAppBroadcastCta = useCallback((broadcast: AppBroadcast) => {
-        handleCloseAppBroadcast(broadcast);
+        /*
+         * COMUNICADO TRAVADO NAO FECHA NEM PELO BOTAO.
+         *
+         * `dismissible: false` ja tirava o X e o clique fora, mas este handler
+         * fechava o modal ANTES de abrir o link — entao bastava tocar em
+         * "atualizar" para voltar ao app com o defeito, e a trava virava um
+         * aviso insistente em vez de um cadeado.
+         *
+         * E o cadeado tem uma razao que a atualizacao nativa do Google nao
+         * cobre: ela so aparece quando ja existe versao nova publicada. Quando o
+         * problema e descoberto as tres da manha e o conserto ainda nem foi
+         * escrito, isto aqui e a unica coisa que para a versao ruim.
+         */
+        const travado = broadcast.dismissible === false;
+        if (!travado) handleCloseAppBroadcast(broadcast);
 
         if (broadcast.ctaType === 'url' && broadcast.ctaTarget) {
+            /*
+             * NUM COMUNICADO TRAVADO, O BOTAO E A ATUALIZACAO DE VERDADE.
+             *
+             * Abrir a ficha da loja no navegador funciona e e ruim: joga a
+             * pessoa para fora do app, ela precisa achar o botao certo numa
+             * pagina cheia, e volta sozinha se voltar. A Play tem a tela dela,
+             * por dentro do app, que baixa e reinstala sem soltar ninguem.
+             *
+             * O link continua sendo o plano B — e nao um plano B teorico: fora
+             * da Play, sem Play Services, ou com a versao nova ainda nao
+             * propagada, a API nativa nao tem o que oferecer.
+             */
+            if (travado) {
+                void exigirAtualizacaoAgora().then((resultado) => {
+                    if (resultado === 'iniciada' || resultado === 'nao_permitida') return;
+                    window.open(broadcast.ctaTarget!, '_blank', 'noopener,noreferrer');
+                });
+                return;
+            }
             window.open(broadcast.ctaTarget, '_blank', 'noopener,noreferrer');
             return;
         }

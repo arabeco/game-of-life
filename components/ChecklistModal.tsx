@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useGame, getOperationalDateString } from '../contexts/GameContext';
 import { ChecklistItem, SequenceItem } from '../types';
 import { GlassCard } from './GlassCard';
-import { CheckIcon, EditIcon, FlameIcon, LinkIcon, MinusIcon, PlusIcon, Trash2Icon, XIcon } from './Icons';
+import { CheckIcon, EditIcon, FlameIcon, MinusIcon, PlusIcon, Trash2Icon, XIcon } from './Icons';
 import { Portal } from './Portal';
 
 type ChecklistTab = 'checklist' | 'sequence';
@@ -197,12 +197,12 @@ const SequenceRow: React.FC<SequenceRowProps> = ({ item, onMarkToday, onUpdate, 
                 >
                     <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl border transition-all ${
                         markedToday
-                            ? 'border-emerald-400/60 bg-emerald-400/15 text-emerald-300'
+                            ? 'border-amber-400/60 bg-amber-400/15 text-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.18)]'
                             : justReset
                                 ? 'border-rose-400/50 bg-rose-400/12 text-rose-300'
-                                : 'border-[var(--skin-accent-color)]/35 bg-[var(--skin-accent-color)]/10 text-[var(--skin-accent-color)]'
+                                : 'border-rose-400/25 bg-rose-400/[0.06] text-rose-300/60'
                     }`}>
-                        {markedToday ? <CheckIcon className="h-5 w-5" /> : <LinkIcon className="h-5 w-5" />}
+                        <FlameIcon className={`h-5 w-5 transition-opacity ${markedToday ? 'opacity-100' : 'opacity-45'}`} />
                     </div>
                     <div className="min-w-0 flex-1">
                         {isEditing ? (

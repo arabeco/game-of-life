@@ -163,12 +163,28 @@ serve(async (req) => {
         p_user_id: userId,
       });
 
+      /*
+       * O CONVITE OURO NAO PODE DERRUBAR O APAGAR CONTA.
+       *
+       * O convite ouro saiu do produto faz tempo: nada no app chama
+       * `check_golden_invite` nem `consume_golden_invite`, e a tabela nao recebe
+       * linha nova. Esta soltura continua aqui so para limpar reservas antigas.
+       *
+       * Mas ela lancava. Uma funcionalidade morta segurava a unica que NAO pode
+       * falhar — apagar a conta e exigencia da Play, e quem pede isso costuma
+       * estar irritado ou com pressa. Se um dia essa funcao sumir do banco, a
+       * exclusao passaria a estourar por causa de um recurso que ninguem usa.
+       *
+       * Agora ela avisa e segue. A reserva que sobrar e uma linha orfa numa
+       * tabela desligada; a conta, que e o que a pessoa pediu, vai embora.
+       */
       if (releaseError) {
-        throw new Error(`Failed to release provisional golden invite: ${releaseError.message}`);
+        console.warn("Golden invite release skipped:", releaseError.message);
       }
 
+      // Mesma razao do aviso acima: reserva orfa nao vale uma conta que nao apaga.
       if (releaseData?.success === false) {
-        throw new Error(releaseData.error || "Failed to release provisional golden invite.");
+        console.warn("Golden invite release refused:", releaseData.error || "sem motivo");
       }
     }
 
@@ -185,11 +201,13 @@ serve(async (req) => {
       });
 
       if (blockError) {
-        throw new Error(`Failed to register deleted account block: ${blockError.message}`);
+        // O bloqueio de reentrada e politica, nao e a exclusao. Sem ele a conta
+        // ainda vai embora; com ele barrando, ela ficaria.
+        console.warn("Failed to register deleted account block; continuing:", blockError.message);
       }
 
       if (blockData?.success === false) {
-        throw new Error(blockData.error || "Failed to register deleted account block.");
+        console.warn("Deleted account block refused; continuing:", blockData.error || "sem motivo");
       }
     }
 
@@ -197,8 +215,20 @@ serve(async (req) => {
       "list_account_storage_objects",
       { p_user_id: userId },
     );
+    /*
+     * ARQUIVO QUE SOBRA E MENOR QUE CONTA QUE NAO APAGA.
+     *
+     * A varredura do storage rodava ANTES da exclusao de verdade e lancava. Um
+     * bucket fora do ar, uma permissao trocada ou uma queda de rede no meio
+     * derrubavam tudo — e a pessoa ja tinha lido "pedido registrado". Ela pediu
+     * para sumir, o app respondeu que sim, e a conta continuava de pe.
+     *
+     * Limpar arquivo e obrigacao, mas e uma obrigacao MENOR que apagar a conta.
+     * Quando a varredura falha, o que sobra e um arquivo orfao num bucket, que
+     * se varre depois. O que nao pode sobrar e a conta.
+     */
     if (storageListError) {
-      throw new Error(`Failed to list account storage objects: ${storageListError.message}`);
+      console.warn("Account storage listing failed; deleting the account anyway:", storageListError.message);
     }
 
     const filesByBucket = new Map<string, string[]>();
@@ -213,8 +243,10 @@ serve(async (req) => {
       for (let index = 0; index < files.length; index += 100) {
         const batch = files.slice(index, index + 100);
         const { error: removeError } = await supabaseAdmin.storage.from(bucket).remove(batch);
+        // Mesma razao da varredura: o arquivo que ficar e problema de faxina.
         if (removeError) {
-          throw new Error(`Failed to remove storage objects from ${bucket}: ${removeError.message}`);
+          console.warn(`Failed to remove storage objects from ${bucket}; continuing:`, removeError.message);
+          continue;
         }
         removedFiles = removedFiles.concat(batch.map((name) => `${bucket}/${name}`));
       }

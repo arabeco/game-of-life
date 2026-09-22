@@ -178,6 +178,13 @@ const suites = {
       interactions: ['cada quadro responde uma pergunta diferente', 'um numero aparece uma vez so', 'o melhor dia e a maior sequencia saem do banco para a tela', 'a comparacao com o historico deixa de ser so do Platinum'],
     },
     {
+      id: 'apagar-conta',
+      label: 'Apagar conta regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'apagar-conta.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['so a exclusao pode abortar a exclusao', 'limpeza de arquivo avisa e segue', 'o pedido se registra antes de apagar', 'o app continua tendo por onde pedir'],
+    },
+    {
       id: 'tinta-metalica',
       label: 'Tinta metalica regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'tinta-metalica.regression.mjs')]],

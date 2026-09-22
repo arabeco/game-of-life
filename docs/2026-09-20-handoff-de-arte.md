@@ -356,7 +356,17 @@ vestir e peca de fundo vivem em lugares diferentes da tela.
 | Roupa | **500x500** | **transparente** | PNG |
 | Cabelo | **500x500** | **transparente** | PNG |
 | Wallpaper (a `placa` do perfil) | **512x512** | cheio, sem transparencia | PNG |
-| Fundo do grupo | **1599x900** | cheio, sem transparencia | WEBP |
+| Fundo do grupo | **1080x1620** (retrato 2:3) | cheio, sem transparencia | WEBP |
+
+**O fundo do grupo e RETRATO, e nao paisagem.** Ele nao e papel de parede
+atras da tela toda: e uma faixa no ALTO do modal, largura inteira por 590px de
+altura, com `object-cover`. No celular isso da uma caixa de ~380x590 — retrato.
+Numa tela grande o modal para em 576px e a caixa fica quase quadrada.
+
+Uma imagem 16:9 ali perde as duas laterais inteiras: sobra a faixa do meio, e a
+composicao das bordas some. Por isso 2:3, e por isso **o que importa fica no
+CENTRO** — a caixa varia de retrato a quadrado conforme o aparelho, entao as
+bordas sao a primeira coisa a ser cortada, em cima, embaixo ou dos lados.
 
 Transparente quer dizer transparente mesmo: nenhum fundo, nenhuma moldura,
 nenhuma sombra fora da peca. E roupa e cabelo ainda tem uma quinta regra, que e

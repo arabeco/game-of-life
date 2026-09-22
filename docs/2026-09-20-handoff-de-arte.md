@@ -286,6 +286,40 @@ estão os vazios, coleção por coleção.
 
 ---
 
+## 6 · Fundo do grupo — sete, um por patente
+
+**7 desenhos.** E eles nao sao enfeite: sao o PREMIO de subir de patente.
+
+Um grupo comeca em Feudo e sobe somando experiencia dos ciclos fechados por
+todos os membros. Ate agora isso acontecia em silencio — o `rank_id` trocava no
+banco e ninguem via. Agora a subida paga fragmentos e bau a cada membro, e muda
+o fundo do grupo, que e a parte que TODO MUNDO ve ao abrir.
+
+E por isso que sao sete desenhos e nao sete cores: o fundo e a unica coisa que
+diz, sem texto, que o grupo chegou em outro lugar.
+
+| Patente | EXP para chegar | O que o nome pede |
+|---|---|---|
+| **Feudo** | 0 | terra de comeco. Madeira, cerca, fogo pequeno — humilde sem ser triste |
+| **Bastiao** | 10.000 | a primeira pedra. Muro, torre baixa, algo que se defende |
+| **Provincia** | 50.000 | deixou de ser um ponto e virou area. Campo, estrada, telhados |
+| **Principado** | 150.000 | ja ha corte. Bandeira, salao, o primeiro sinal de cerimonia |
+| **Reino** | 400.000 | coroa e escala. Castelo inteiro, cidade ao redor |
+| **Dinastia** | 1.000.000 | tempo. O que se ve e a SUCESSAO — brasoes, geracoes, arquivo |
+| **Imperio** | 2.500.000 | alcance. Mapa, mar, terras que nao cabem no quadro |
+
+A escada de peso importa mais que o tema: de Feudo a Imperio sao 250 vezes mais
+experiencia, e o desenho tem de crescer junto. Se o Feudo ja for grandioso, nao
+sobra para onde ir.
+
+**Formato:** mesmo do wallpaper de perfil — e o fundo atras do conteudo, entao
+ele nao disputa com texto. O centro fica calmo; a informacao mora nas bordas.
+
+Nao ha item nem nome de arquivo ainda: eles nascem com o desenho, porque sao
+sete e a patente ja da o nome de cada um.
+
+---
+
 ## Os arquivos, com o nome final
 
 **Tudo já está ligado no app.** Os itens existem, os degraus apontam para eles, o
@@ -362,6 +396,9 @@ nome de arquivo — os degraus delas não foram decididos. Ficam para quando for
 | Wallpaper | 6 | 10 | **4** |
 | Jardim (3D) | 15 peças | 19 | **4** |
 | | | | **26** |
+
+E mais **7 fundos de grupo**, um por patente — ver *6 · Fundo do grupo*. Eles
+acabam junto com as 26, e sao o premio de o grupo subir.
 
 E, fora desta conta, **5 por temporada nova** — skin, borda, banner, insígnia e a
 vitrine do tema. As 26 acabam; essas cinco voltam sempre.

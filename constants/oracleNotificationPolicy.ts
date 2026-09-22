@@ -94,6 +94,17 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     icon: 'C',
     label: 'Ciclo',
   },
+  /* A patente do cla e conquista de VARIAS pessoas ao longo de semanas, e paga
+     fragmentos e bau a cada membro. Merece badge: ela nao volta, e se passar
+     despercebida a pessoa nunca descobre que recebeu. */
+  clan_rank_up: {
+    lane: 'progress',
+    priority: 'actionable',
+    badge: true,
+    gameVisible: true,
+    icon: 'C',
+    label: 'Grupo',
+  },
   cycle_finalized: {
     lane: 'progress',
     priority: 'progress',

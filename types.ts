@@ -1729,6 +1729,7 @@ export type NotificationType =
   | 'competition_result'
   | 'action_reminder'
   | 'cycle_deadline'
+  | 'clan_rank_up'
   | 'system';
 export interface NotificationMetadata {
   /** Presente de item: quem mandou e o que veio. */

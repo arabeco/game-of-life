@@ -1585,6 +1585,23 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
             .sort((esquerda, direita) => esquerda.createdAt.localeCompare(direita.createdAt))[0] || null,
         [notifications],
     );
+    /*
+     * O CLA SUBIU, E ATE AGORA ISSO ACONTECIA EM SILENCIO.
+     *
+     * A patente PESSOAL sobe com modal e insignia. A do cla — que depende de
+     * todo mundo e leva semanas — nao tinha nem toast: o `rank_id` trocava no
+     * banco e pronto. Quem contribuiu nao via o resultado de ter contribuido,
+     * que e a unica coisa que faz alguem contribuir de novo.
+     *
+     * A notificacao E o estado, como no presente recebido: marcar como lida ao
+     * fechar e o que impede o modal de voltar a cada abertura.
+     */
+    const claSubiuDePatente = useMemo(
+        () => notifications
+            .filter((item) => item.type === 'clan_rank_up' && !item.read)
+            .sort((esquerda, direita) => esquerda.createdAt.localeCompare(direita.createdAt))[0] || null,
+        [notifications],
+    );
     const { isTutorialCompleted } = useTutorial();
     const [isOnline, setIsOnline] = useState(typeof navigator === 'undefined' ?true : navigator.onLine);
     const { trigger } = useSensoryFeedback();
@@ -2308,6 +2325,27 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                         emblema={getRewardEmblemUrl('geral')}
                         tom={getRewardToneRgb('geral')}
                         onClose={() => { void markNotificationRead(presenteRecebido.id); }}
+                    />
+                )}
+                {claSubiuDePatente && (
+                    <RewardPackModal
+                        open
+                        payload={{
+                            itemIds: [],
+                            eyebrow: '',
+                            title: 'O grupo subiu de patente!',
+                            subtitle: claSubiuDePatente.content,
+                            summary: 'Todo mundo do grupo recebeu. O fundo do grupo mudou junto.',
+                            buttonLabel: 'Ver o grupo',
+                            itemSectionTitle: 'O que chegou',
+                            emptyMessage: [
+                                claSubiuDePatente.metadata?.fragments ? `+${claSubiuDePatente.metadata.fragments} fragmentos` : null,
+                                claSubiuDePatente.metadata?.chestType ? `1 baú ${claSubiuDePatente.metadata.chestType}` : null,
+                            ].filter(Boolean).join(' · ') || 'Recompensa entregue.',
+                        }}
+                        emblema={getRewardEmblemUrl('geral')}
+                        tom={getRewardToneRgb('geral')}
+                        onClose={() => { void markNotificationRead(claSubiuDePatente.id); }}
                     />
                 )}
                 {shouldShowPremiumReward && (

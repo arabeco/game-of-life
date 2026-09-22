@@ -160,7 +160,22 @@ export const ArenaPactProposal: React.FC<{ onClose?: () => void; substituindo?: 
     );
 
     if (substituindo ? !activeArenaPact : activeArenaPact) return null;
-    if (!substituindo && arenaPactCandidates.length === 0) return null;
+    /*
+     * A PERGUNTA E "HA ALGUMA MISSAO?", E NAO "HA ALGUMA ARENA?".
+     *
+     * Este portao lia `arenaPactCandidates`, que e a lista POR ARENA. Quando
+     * nenhuma arena individual qualificava, o componente inteiro devolvia null —
+     * mesmo com o "Tudo junto" disponivel, que e justamente a missao que existe
+     * quando nenhuma frente sozinha rende uma.
+     *
+     * O efeito era o pior possivel: `missaoIndividualDisponivel` dizia que havia
+     * missao (ela ja pergunta certo, incluindo o escopo do app), o Oraculo
+     * oferecia, a pessoa tocava em "Escolher missao" — e nao aparecia nada.
+     *
+     * `arenasComPacto` ja soma as duas coisas, entao perguntar a ele e perguntar
+     * o mesmo que o resto do app pergunta.
+     */
+    if (!substituindo && arenasComPacto.length === 0) return null;
 
     const handleAccept = (pact: ArenaPact) => {
         setBusy(true);

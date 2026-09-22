@@ -242,22 +242,6 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         </div>
                     </div>
                 )}
-
-                <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/56">
-                            Rascunho operacional
-                        </p>
-                        <p className="text-[10px] text-white/35">zera no próximo dia operacional</p>
-                    </div>
-                    <textarea
-                        value={dailyCommitment.operationalScratch || ''}
-                        onChange={(event) => updateOperationalScratch(event.target.value)}
-                        rows={4}
-                        placeholder="Anotações rapidas, pendencias, lembretes do dia..."
-                        className="w-full resize-none rounded-2xl border border-white/12 bg-black/55 px-3 py-3 text-sm text-white/88 placeholder:text-white/25 focus:outline-none focus:border-[var(--skin-accent-color)]"
-                    />
-                </div>
                 </>
                 )}
             </GlassCard>

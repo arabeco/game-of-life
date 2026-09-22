@@ -287,6 +287,8 @@ const SequenceRow: React.FC<SequenceRowProps> = ({ item, onMarkToday, onUpdate, 
 export const ChecklistModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const {
         userProfile,
+        dailyCommitment,
+        updateOperationalScratch,
         checklistItems,
         sequenceItems,
         toggleChecklistItem,
@@ -395,6 +397,32 @@ export const ChecklistModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
                                     <PlusIcon className="h-5 w-5" />
                                 </button>
                             </div>
+
+                            {/* O RASCUNHO DO DIA VEIO DO MODAL DE HUMOR.
+
+                                Ele e `dailyCommitment.operationalScratch`: nasce e zera
+                                com o dia operacional. Isso o torna irmao do checklist —
+                                lista de mercado, lembrete de ligar para alguem, o que
+                                nao vale virar item mas some amanha de qualquer jeito.
+
+                                No Humor ele fazia o oposto: duas areas de escrever na
+                                mesma tela, uma que zera e outra que nunca zera. */}
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/56">
+                            Rascunho operacional
+                        </p>
+                        <p className="text-[10px] text-white/35">zera no próximo dia operacional</p>
+                    </div>
+                    <textarea
+                        value={dailyCommitment.operationalScratch || ''}
+                        onChange={(event) => updateOperationalScratch(event.target.value)}
+                        rows={4}
+                        placeholder="Anotações rapidas, pendencias, lembretes do dia..."
+                        className="w-full resize-none rounded-2xl border border-white/12 bg-black/55 px-3 py-3 text-sm text-white/88 placeholder:text-white/25 focus:outline-none focus:border-[var(--skin-accent-color)]"
+                    />
+                </div>
+
                         </>
                     ) : (
                         <>

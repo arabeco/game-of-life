@@ -335,6 +335,46 @@ aparecem em `npm run arte:pendente` — esta lista aqui e o controle deles.
 
 ---
 
+## O encaixe - o que abrir junto com este documento
+
+Ate aqui o documento diz O QUE desenhar. Falta o que ele nao diz sozinho: ONDE a
+peca cai. Roupa e cabelo nao sao ilustracoes soltas, sao CAMADAS sobre um corpo
+que ja existe, e nada e recortado, redimensionado ou ajustado depois. O arquivo
+entregue e posto por cima do corpo pixel a pixel, do jeito que chegou.
+
+| Regra | Valor |
+|---|---|
+| Tamanho | **500x500**, sempre |
+| Fundo | **transparente**. Nenhum fundo, nenhuma moldura, nenhuma sombra fora da peca |
+| Enquadramento | o MESMO do corpo: mesma altura de ombro, mesma cintura, mesma escala |
+| Formato | PNG |
+
+**Os arquivos para abrir junto, e desenhar em cima:**
+
+| Para que serve | Arquivo |
+|---|---|
+| corpo masculino | `public/assets/catalog/avatars/body_masc_1.png` |
+| corpo feminino | `public/assets/catalog/avatars/body_fem_1.png` |
+| roupa pronta, de referencia | `public/assets/catalog/avatars/SKIN_T1_CACADOR.png` |
+| roupa pronta, de referencia | `public/assets/catalog/avatars/SKIN_T1_NAUFRAGO.png` |
+| cabelo pronto, de referencia | `public/assets/catalog/avatars/hair/CABELO_T1_MEDIO_RETO_cast.png` |
+
+Os oito corpos sao `body_masc_1..4` e `body_fem_1..4`: os quatro numeros sao
+tons de pele do MESMO desenho. Por isso bastam dois abertos - o que muda entre
+os quatro e a cor, e o que a roupa tem de resolver e a silhueta, que e uma por
+genero. Ver *A regra que muda tudo*.
+
+**Cabelo sai em tres cores por corte, e as tres sao desenho.** O app nao
+recolore estes: ele carrega o arquivo da cor escolhida. Os nomes na lista dizem
+quais - o `_bran`, `_cast` e `_pre` de cada corte. Sao 4 cortes x 3 cores = 12
+arquivos.
+
+O ajuste fino de encaixe do cabelo vive em `constants/avatarOffsets.ts`, medido
+em pixels a 500x500. Ele corrige alguns pixels; nao salva uma peca desenhada em
+outra escala.
+
+---
+
 ## Os arquivos, com o nome final
 
 **Tudo já está ligado no app.** Os itens existem, os degraus apontam para eles, o

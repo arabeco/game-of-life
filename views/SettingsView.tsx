@@ -12,6 +12,7 @@ import { CodexLibrary } from '../components/CodexLibrary';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { OracleSettingsModal } from '../components/OracleSettingsModal';
 import { BillingCheckoutGate } from '../components/Store/BillingCheckoutGate';
+import { Capacitor } from '@capacitor/core';
 import { supabase } from '../supabaseClient';
 import { SpectatorArenaModal } from '../components/SpectatorArenaModal';
 import { CODEXES, getCatalogItemsByCategory } from '../constants/items';
@@ -1582,187 +1583,153 @@ const ChallengeSelectionModal: React.FC<{ title?: string; onClose: () => void; o
     );
 };
 
-type FeedbackQuestion = { id: number; label: string; category: 'Uso' | 'Dopamina' | 'Valor' };
+/**
+ * REPORTAR PROBLEMA — NO LUGAR DA PESQUISA DO BETA.
+ *
+ * Aqui morava um questionario de quinze perguntas de 1 a 5 — fluidez do
+ * planner, dopamina, valor percebido — com um campo de notas no fim. Ele servia
+ * para medir o beta, e o beta acabou.
+ *
+ * E ele nunca serviu para a outra coisa, que e a que falta: quem acabou de
+ * travar nao responde questionario. A pessoa fecha o app e, se estiver muito
+ * irritada, escreve na loja — onde a resposta demora dias e fica publica.
+ *
+ * Entao sobra o caminho curto: um campo, um botao.
+ *
+ * O QUE VAI JUNTO SEM A PESSOA DIGITAR.
+ *
+ * Relato de bug sem versao e sem aparelho quase nao da para agir: "nao abriu" e
+ * verdade em cem situacoes diferentes. A versao, a plataforma e a tela de onde
+ * o relato saiu vao anexadas sozinhas. Ninguem precisa saber o numero da versao
+ * que esta usando para merecer ajuda.
+ *
+ * Grava na MESMA `feedback_reports`, que ja existe e ja tem policy. O
+ * `responses` e jsonb, entao o formato novo entra sem migracao — e os relatos
+ * antigos do beta continuam legiveis pelo campo `tipo`, que so os novos tem.
+ */
+type CanalDoRelato = 'bug' | 'ideia';
 
-const feedbackQuestions: FeedbackQuestion[] = [
-    { id: 1, label: 'Fluidez do Planner', category: 'Uso' },
-    { id: 2, label: 'Estabilidade do app', category: 'Uso' },
-    { id: 3, label: 'Painel diário e fechamento', category: 'Uso' },
-    { id: 4, label: 'Senso de Progresso (XP & Níveis)', category: 'Dopamina' },
-    { id: 5, label: 'Identidade Visual (UI & Avatar)', category: 'Dopamina' },
-    { id: 6, label: 'Mecânica do Santuário (Manutenção)', category: 'Dopamina' },
-    { id: 7, label: 'Pressão Social (Clãs & Vínculos)', category: 'Valor' },
-    { id: 8, label: 'Utilidade das campanhas (templates)', category: 'Valor' },
-    { id: 9, label: 'Impacto na Realidade', category: 'Valor' },
-    { id: 10, label: 'Nível de Recomendação (NPS)', category: 'Valor' },
-];
-
-const getSovereignLabel = (value: number) => {
-    const rounded = Math.max(1, Math.min(5, Math.round(value)));
-    if (rounded === 1) return 'Péssimo / Caos';
-    if (rounded === 2) return 'Fraco';
-    if (rounded === 3) return 'Aceitável';
-    if (rounded === 4) return 'Muito Bom';
-    return 'Excelente / Soberano';
-};
-
-const getSovereignPhrase = (questionId: number, value: number) => {
-    const rounded = Math.max(1, Math.min(5, Math.round(value)));
-    const usage = questionId <= 3;
-    const dopamine = questionId >= 4 && questionId <= 6;
-    const valueBlock = questionId >= 7;
-
-    const prefix = usage ? 'Uso:' : dopamine ? 'Dopamina:' : 'Valor:';
-
-    if (rounded === 1) return `${prefix} em colapso. Precisa de reforço imediato.`;
-    if (rounded === 2) return `${prefix} instável. Dá pra usar, mas sangra fricção.`;
-    if (rounded === 3) return `${prefix} funcional. Ainda falta impacto e polimento.`;
-    if (rounded === 4) return `${prefix} forte. Começa a parecer uma ferramenta séria.`;
-    return `${prefix} soberano. Está virando extensão da mente.`;
-};
-
-const SovereignSlider: React.FC<{ value: number; onChange: (next: number) => void }> = ({ value, onChange }) => {
-    const clamped = Math.max(1, Math.min(5, value));
-    const pct = ((clamped - 1) / 4) * 100;
-    const fill = pct < 20 ? 'rgba(239,68,68,0.85)' : pct < 70 ? 'var(--skin-accent-color)' : 'var(--skin-accent-color)';
-    const track = `linear-gradient(90deg, ${fill} 0%, ${fill} ${pct}%, rgba(255,255,255,0.08) ${pct}%, rgba(255,255,255,0.08) 100%)`;
-
-    return (
-        <div className="relative w-full">
-            <div className="h-3 rounded-full border border-white/10" style={{ background: track }} />
-            <div
-                className="absolute top-1/2 -translate-y-1/2 w-5 h-5 rotate-45 bg-black/70 border border-[var(--skin-accent-color)] shadow-[0_0_12px_var(--sephirot-glow-color)]"
-                style={{ left: `calc(${pct}% - 10px)` }}
-            />
-            <input
-                type="range"
-                min={1}
-                max={5}
-                step={0.1}
-                value={clamped}
-                onChange={(e) => onChange(Number(e.target.value))}
-                className="absolute inset-0 w-full h-6 opacity-0"
-            />
-        </div>
-    );
-};
-
-const FeedbackBetaModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { userProfile } = useGame();
-    const [answers, setAnswers] = useState<Record<number, number>>(() => {
-        const initial: Record<number, number> = {};
-        for (const q of feedbackQuestions) initial[q.id] = 3;
-        return initial;
-    });
-    const [notes, setNotes] = useState('');
-    const [sending, setSending] = useState(false);
+const ReportarProblemaModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+    const [canal, setCanal] = useState<CanalDoRelato>('bug');
+    const [texto, setTexto] = useState('');
+    const [enviando, setEnviando] = useState(false);
     const [status, setStatus] = useState<string | null>(null);
 
-    const sendReport = async () => {
-        setSending(true);
-        setStatus('Enviando dados para o QG...');
+    const enviar = async () => {
+        const relato = texto.trim();
+        if (relato.length < 10) {
+            setStatus('Escreve um pouco mais — sem o que aconteceu não dá para procurar.');
+            return;
+        }
 
+        setEnviando(true);
+        setStatus(null);
         try {
-            const { data: sessionData } = await supabase.auth.getSession();
-            const uid = sessionData.session?.user.id;
-            if (!uid || !isUuid(uid)) {
-                setStatus('Faça login para enviar o relatório.');
-                setSending(false);
+            const { data: sessao } = await supabase.auth.getUser();
+            const uid = sessao?.user?.id;
+            if (!uid) {
+                setStatus('Entre na conta para enviar.');
+                setEnviando(false);
                 return;
             }
 
-            const payload = {
-                schemaVersion: 1,
-                questions: feedbackQuestions.map(q => ({
-                    id: q.id,
-                    label: q.label,
-                    category: q.category,
-                    value: Number((answers[q.id] ?? 3).toFixed(1)),
-                })),
-                notes: notes.trim() || undefined,
-                client: {
-                    submittedAt: new Date().toISOString(),
-                },
-            };
-
             const { error } = await supabase.from('feedback_reports').insert({
                 user_id: uid,
-                responses: payload,
+                responses: {
+                    tipo: canal,
+                    relato,
+                    // O contexto que transforma "nao abriu" em algo procuravel.
+                    contexto: {
+                        versao: typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'desconhecida',
+                        plataforma: Capacitor.getPlatform?.() || 'web',
+                        nativo: Capacitor.isNativePlatform?.() || false,
+                        tela: typeof window !== 'undefined'
+                            ? `${window.innerWidth}x${window.innerHeight}`
+                            : null,
+                        idioma: typeof navigator !== 'undefined' ? navigator.language : null,
+                        quando: new Date().toISOString(),
+                    },
+                },
             });
 
             if (error) {
                 setStatus(error.message);
-                setSending(false);
+                setEnviando(false);
                 return;
             }
 
-            setStatus('Relatório enviado.');
-            window.setTimeout(() => {
-                setSending(false);
-                onClose();
-            }, 700);
-        } catch (e: any) {
-            setStatus(e?.message || 'Falha ao enviar.');
-            setSending(false);
+            setStatus('Recebido. Obrigado — isso ajuda mais do que parece.');
+            setTexto('');
+            setTimeout(onClose, 1400);
+        } catch (erro) {
+            setStatus(erro instanceof Error ? erro.message : 'Não consegui enviar agora.');
+            setEnviando(false);
         }
     };
 
     return (
         <Portal>
-            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center animate-fade-in" onClick={onClose}>
-                <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
-                    <div className="flex justify-between items-center">
+            <div className="fixed inset-0 z-[120] flex items-end justify-center bg-black/70 p-0 sm:items-center sm:p-4">
+                <GlassCard className="ui-modal-panel w-full max-w-md space-y-4 rounded-b-none p-5 sm:rounded-b-2xl">
+                    <div className="flex items-start justify-between gap-3">
                         <div>
-                            <div className="text-xs font-bold uppercase tracking-wider accent-text">Relatório de Inteligência Beta</div>
-                            <div className="text-[10px] text-gray-500">ID: {userProfile.nickname}</div>
+                            <h2 className="text-base font-black uppercase tracking-[0.14em]">Reportar problema</h2>
+                            <p className="mt-1 text-xs text-gray-400">
+                                Some coisas só aparecem no seu aparelho. Conta o que aconteceu.
+                            </p>
                         </div>
-                        <button aria-label="Fechar" onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
+                        <button onClick={onClose} className="shrink-0 rounded-lg p-1 text-gray-400 hover:text-white">
+                            <XIcon className="h-5 w-5" />
+                        </button>
                     </div>
 
-                    <div className="space-y-5 max-h-[62vh] overflow-y-auto pr-1">
-                        {feedbackQuestions.map(q => {
-                            const v = answers[q.id] ?? 3;
-                            return (
-                                <div key={q.id} className="bg-black/20 border border-white/10 rounded-2xl p-3 space-y-2">
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="flex-1">
-                                            <div className="text-[10px] font-black tracking-widest text-gray-500">{q.category.toUpperCase()}</div>
-                                            <div className="text-sm font-bold text-white">{q.id}. {q.label}</div>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="text-2xl font-black accent-text">{v.toFixed(1)}</div>
-                                            <div className="text-[10px] font-bold text-gray-400">{getSovereignLabel(v)}</div>
-                                        </div>
-                                    </div>
-
-                                    <SovereignSlider value={v} onChange={(next) => setAnswers(prev => ({ ...prev, [q.id]: next }))} />
-                                    <div className="text-xs text-gray-400">{getSovereignPhrase(q.id, v)}</div>
-                                </div>
-                            );
-                        })}
-
-                        <div className="bg-black/20 border border-white/10 rounded-2xl p-3 space-y-2">
-                        <div className="text-xs font-bold text-gray-400">Observações Táticas (Bugs ou Ideias)</div>
-                            <textarea
-                                value={notes}
-                                onChange={(e) => setNotes(e.target.value)}
-                                rows={5}
-                                className="w-full px-3 py-2 bg-black/30 border border-white/10 rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] text-sm"
-                                placeholder="Descreva o bug, a ideia ou o ajuste que você quer ver no campo."
-                            />
-                        </div>
+                    <div className="grid grid-cols-2 gap-2">
+                        {([
+                            { id: 'bug' as const, rotulo: 'Algo quebrou' },
+                            { id: 'ideia' as const, rotulo: 'Tenho uma ideia' },
+                        ]).map((opcao) => (
+                            <button
+                                key={opcao.id}
+                                onClick={() => setCanal(opcao.id)}
+                                className={`rounded-xl border px-3 py-2.5 text-xs font-bold tracking-wide transition-all ${
+                                    canal === opcao.id
+                                        ? 'border-[var(--skin-accent-color)] bg-[var(--skin-accent-color)]/15 text-white'
+                                        : 'border-white/10 bg-black/20 text-gray-400 hover:bg-black/30'
+                                }`}
+                            >
+                                {opcao.rotulo}
+                            </button>
+                        ))}
                     </div>
+
+                    <textarea
+                        value={texto}
+                        onChange={(e) => setTexto(e.target.value)}
+                        rows={6}
+                        autoFocus
+                        className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm focus:border-[var(--skin-accent-color)] focus:outline-none"
+                        placeholder={canal === 'bug'
+                            ? 'O que você estava fazendo, e o que aconteceu em vez do esperado.'
+                            : 'O que você gostaria de ver, e por quê.'}
+                    />
+
+                    <p className="text-[10.5px] leading-relaxed text-gray-500">
+                        Vão junto a versão do app e o modelo de tela — só isso, e é o que
+                        permite achar o problema sem ficar te perguntando.
+                    </p>
 
                     {status && (
-                        <div className={`text-center text-xs ${sending ? 'text-[var(--ui-text-accent)] animate-pulse' : 'text-gray-400'}`}>{status}</div>
+                        <div className={`text-center text-xs ${enviando ? 'animate-pulse text-[var(--ui-text-accent)]' : 'text-gray-300'}`}>
+                            {status}
+                        </div>
                     )}
 
                     <button
-                        onClick={sendReport}
-                        disabled={sending}
-                        className="w-full py-3 rounded-xl luxe-skin-button disabled:opacity-60"
+                        onClick={enviar}
+                        disabled={enviando}
+                        className="luxe-skin-button w-full rounded-xl py-3 disabled:opacity-60"
                     >
-                        {sending ? 'ENVIANDO DADOS PARA O QG...' : 'ENVIAR RELATÓRIO'}
+                        {enviando ? 'ENVIANDO...' : 'ENVIAR'}
                     </button>
                 </GlassCard>
             </div>
@@ -2144,7 +2111,7 @@ const PreferenciasTab: React.FC = () => {
                     onClick={() => setFeedbackOpen(true)}
                     className="w-full py-4 rounded-xl border border-white/10 bg-black/20 hover:bg-black/30 font-bold text-xs tracking-widest accent-text flex items-center justify-center gap-2 transition-all"
                 >
-                    <span>📊</span> ENVIAR FEEDBACK BETA
+                    <span>🛠️</span> REPORTAR PROBLEMA
                 </button>
             </section>
 
@@ -2189,7 +2156,7 @@ const PreferenciasTab: React.FC = () => {
                     onRedeem={handleRedeemCode}
                 />
             )}
-            {isFeedbackOpen && <FeedbackBetaModal onClose={() => setFeedbackOpen(false)} />}
+            {isFeedbackOpen && <ReportarProblemaModal onClose={() => setFeedbackOpen(false)} />}
             <RewardPackModal
                 open={!!premioResgatado}
                 payload={premioResgatado}

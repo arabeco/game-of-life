@@ -102,7 +102,7 @@ const { countCoachLines, COACH_LINE_STATES } = await import('../utils/oracleCoac
 // O banco cresceu de 10 para 14 situacoes e este numero ficou para tras — ja
 // falhava antes desta leva. Ele existe para que ESTADO NOVO exija fala nova em
 // quatro tons, entao acompanhar o crescimento e o comportamento certo.
-assert.equal(COACH_LINE_STATES.length, 14, 'catorze situacoes de abertura');
+assert.equal(COACH_LINE_STATES.length, 15, 'quinze situacoes de abertura');
 assert.ok(countCoachLines() >= 80, `abertura precisa de estoque; tem ${countCoachLines()}`);
 
 const ausente = { ...baseContext, daysSinceLastPlannerOpen: 5 };

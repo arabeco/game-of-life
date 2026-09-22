@@ -180,6 +180,42 @@ export const COACH_LINES: Record<string, CoachToneLines> = {
    * diferentes — a meta ja esta nas repeticoes, o prazo e que falta, compromisso
    * se assume quando da vontade — continua sendo conversa.
    */
+  /*
+   * A MISSAO NAO E MAIS UMA TAREFA — E O CONTRARIO DISSO.
+   *
+   * Nenhuma destas frases pede que a pessoa configure alguma coisa. A missao se
+   * monta sozinha a partir das acoes que ja existem; o que ela acrescenta e uma
+   * medida ("tantas ate tal dia") sobre o que a pessoa ja faria de qualquer
+   * jeito. Por isso o verbo e sempre ESCOLHER, nunca criar.
+   *
+   * E nenhuma cobra por nao ter uma. Quem nao tem missao nao recusou: nao sabia.
+   */
+  sem_missao: {
+    neutro: [
+      'Você pode escolher uma missão. Ela mede o que você já faz, sem pedir nada novo.',
+      'Tem missão disponível para você. É um número e um prazo em cima do que já está aí.',
+      'A missão vira uma meta só, com data. {acao} já conta para ela.',
+      'Dá para pegar uma missão agora. Nada para configurar: ela usa suas ações.',
+    ],
+    coach: [
+      'Escolhe uma missão. Ela transforma o que você já faz em algo com placar.',
+      'Pega uma missão hoje. {acao} já entra na conta dela.',
+      'Missão liberada. Uma meta, um prazo, e você continua fazendo o mesmo.',
+      'Escolhe uma missão pequena. O tamanho certo é o que você fecha sem pensar.',
+    ],
+    reflexivo: [
+      'Existe missão para você escolher. O que você quer que ela meça?',
+      'A missão dá um prazo ao que você vem fazendo. Vale a pena colocar um agora?',
+      'Uma missão é uma promessa curta consigo. Tem alguma frente pedindo isso?',
+      'Você pode medir uma frente por algumas semanas. Qual delas ficaria melhor com isso?',
+    ],
+    calmo: [
+      'Tem uma missão esperando, sem pressa. Ela só mede o que você já faz.',
+      'Se quiser, escolhe uma missão. Ela não pede nada além do que já está no lugar.',
+      'A missão é opcional e some se você não quiser. Fica disponível.',
+      'Dá para escolher uma missão quando der vontade. {acao} já conta nela.',
+    ],
+  },
   sem_ciclo: {
     neutro: [
       'Você tem arena e não tem ciclo aberto. O ciclo é o que dá começo e fim ao período.',

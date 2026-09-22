@@ -44,6 +44,7 @@ export type OracleCandidateType =
   | 'ausente'
   | 'arena_retomada'
   | 'sem_ciclo'
+  | 'sem_missao'
   | 'ciclo_longo'
   | 'sem_entrega'
   | 'arena_atrasada'
@@ -60,6 +61,7 @@ export const ORACLE_CANDIDATE_TYPES: readonly OracleCandidateType[] = [
   'ausente',
   'arena_retomada',
   'sem_ciclo',
+  'sem_missao',
   'ciclo_longo',
   'sem_entrega',
   'arena_atrasada',
@@ -125,6 +127,25 @@ export const ORACLE_CANDIDATE_WEIGHTS: Record<OracleCandidateType, OracleCandida
     importance: 4, urgency: 3, novelty: 2, actionability: 5,
     cooldownDays: 2, // Dois dias: com um, quem esta sem ciclo ouvia sobre ciclo dia sim dia nao — e a solucao proposta e sempre a mesma, entao repetir nao acrescenta.
     why: 'Sem ciclo nada mais funciona, e resolver e um toque. Acionabilidade máxima, urgência média porque não piora sozinho.',
+  },
+  /*
+   * A MISSAO EXISTIA E NINGUEM SABIA.
+   *
+   * Medido numa conta real em 22/09: a pessoa instalou, criou uma acao, e a
+   * missao individual estava liberada para ela desde o primeiro dia. Ela nunca
+   * teve uma. Para chegar la e preciso abrir o Oraculo, achar a aba Missao e
+   * tocar em "Escolher missao" — tres passos que ninguem descobre sozinho, e
+   * nada no app aponta para eles.
+   *
+   * Acionabilidade maxima: e um toque, e o que ela entrega e justamente
+   * direcao, que e o que falta em quem acabou de chegar. Urgencia baixa porque
+   * nao piora sozinho. E cooldown de tres dias, nao dois: oferecer missao dia
+   * sim dia nao vira cobranca, e quem nao quis ontem nao mudou de ideia hoje.
+   */
+  sem_missao: {
+    importance: 4, urgency: 2, novelty: 3, actionability: 5,
+    cooldownDays: 3,
+    why: 'A missão individual da direcao e sai num toque. Quem nao tem uma normalmente nao sabe que ela existe, e nao por ter recusado.',
   },
   ciclo_longo: {
     importance: 3, urgency: 2, novelty: 2, actionability: 4,
@@ -228,6 +249,8 @@ export interface OracleCandidateInput {
   hourOfDay?: number | null;
   /** TODAS as arenas ranqueadas, nao so a primeira. Ausente = comportamento antigo. */
   arenas?: PlannerCoachArena[];
+  /** Ha missao individual liberada e nenhuma em curso. Ausente = nao oferecer. */
+  missaoIndividualDisponivel?: boolean;
 }
 
 export interface OracleCandidate {
@@ -326,6 +349,18 @@ const detectCycleIssues = (input: OracleCandidateInput): OracleCandidate[] => {
   const saida: OracleCandidate[] = [];
   const decorrido = fracaoDecorrida(input);
   const diaDoCiclo = input.cycleDayNumber ?? 0;
+
+  /*
+   * So se ela ja tem o que fazer.
+   *
+   * Oferecer missao a quem nao tem acao nenhuma e oferecer um compromisso sobre
+   * o vazio — e a propria missao se monta a partir das acoes existentes. Com
+   * acao no lugar, a missao deixa de ser mais uma coisa para configurar e passa
+   * a ser o que da sentido ao que ja esta la.
+   */
+  if (input.missaoIndividualDisponivel && input.actionsCount > 0) {
+    saida.push(build('sem_missao', { acao: input.priorityActionName }));
+  }
 
   if (!input.hasActiveCycle && input.arenasCount > 0) {
     // A acao prioritaria vai junto: sem ciclo, a saida util costuma ser executar

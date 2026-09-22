@@ -417,7 +417,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     onBlockingOverlayChange,
 }) => {
     const { isBuilderMode, draftName, setDraftName, exitBuilderMode, packDraftToJson } = useCodexBuilder();
-    const { userProfile, activeTheme, notifications, showToast, assets, actions, tasks, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, achievementUnlocked, updateUserProfile, reports, activeArenaPact, arenaPactProgress } = useGame();
+    const { userProfile, activeTheme, notifications, showToast, assets, actions, tasks, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, achievementUnlocked, updateUserProfile, reports, activeArenaPact, arenaPactProgress, missaoIndividualDisponivel } = useGame();
     const historyReady = useRef(false);
 
     const effectiveUiSkin = resolveUiSkinId(userProfile.skin || 'BASIC');
@@ -1002,6 +1002,18 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             cycleDayNumber: oracleContext.cycleDayNumber,
             dailyProofStreakCurrent: oracleContext.dailyProofStreakCurrent,
             hourOfDay: new Date().getHours(),
+            /*
+             * A MISSAO PRECISA SER OFERECIDA, E NAO PROCURADA.
+             *
+             * Numa conta real de 22/09 a missao individual estava liberada desde
+             * o primeiro dia e a pessoa nunca teve uma: para chegar ate ela e
+             * preciso abrir o Oraculo, achar a aba Missao e tocar em "Escolher
+             * missao". Ninguem descobre isso, e nada no app apontava para la.
+             *
+             * O arbitro decide se vale falar agora — com cooldown de tres dias,
+             * porque oferecer missao todo dia vira cobranca.
+             */
+            missaoIndividualDisponivel,
             // TODAS as arenas, nao so focusArenaSignal.
             //
             // O contexto ja calculava ate seis, ranqueadas por gravidade, e esta

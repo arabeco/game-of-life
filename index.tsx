@@ -4,6 +4,18 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
 import { shouldUseBrowserServiceWorker } from './utils/runtimePlatform';
+import { iniciarRelatorioDeErros } from './utils/relatorioDeErros';
+
+/*
+ * ANTES DE QUALQUER COISA, INCLUSIVE DO REACT.
+ *
+ * Um erro no arranque — import que nao resolve, variavel de ambiente faltando —
+ * e justamente o que deixa a tela branca e nao deixa rastro. Se o relatorio
+ * subir depois do React, esse e o erro que ele nunca vai ver.
+ *
+ * Sem `VITE_SENTRY_DSN` a funcao sai na primeira linha e nada acontece.
+ */
+void iniciarRelatorioDeErros();
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

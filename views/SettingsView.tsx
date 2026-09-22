@@ -1678,7 +1678,7 @@ const ReportarProblemaModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
                                 Some coisas só aparecem no seu aparelho. Conta o que aconteceu.
                             </p>
                         </div>
-                        <button onClick={onClose} className="shrink-0 rounded-lg p-1 text-gray-400 hover:text-white">
+                        <button onClick={onClose} aria-label="Fechar" className="shrink-0 rounded-lg p-1 text-gray-400 hover:text-white">
                             <XIcon className="h-5 w-5" />
                         </button>
                     </div>

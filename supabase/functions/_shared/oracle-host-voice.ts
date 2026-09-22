@@ -33,6 +33,9 @@ export type OracleHostContext = {
    * ciclo nao precisa preencher, e a regra abaixo trata a ausencia. */
   cycleDayNumber?: number | null;
   cycleTotalDays?: number | null;
+  /** Em que parte do dia a pessoa esta. Opcional: quem nao informa e tratado
+   * como dia ja andado, que e o comportamento de antes. */
+  timeOfDay?: "madrugada" | "manha" | "tarde" | "noite" | null;
   cyclePendingActions?: number;
   pendingActionsToday: number;
   overdueActions: number;
@@ -332,6 +335,25 @@ const getContextDate = (context: OracleHostContext): string | null => {
 const CICLO_MINIMO_PARA_RISCO = 0.25;
 const DIAS_MINIMOS_PARA_RISCO = 3;
 
+/**
+ * O DIA SO PODE SER JULGADO DEPOIS DE ACONTECER.
+ *
+ * "Disperso" e "escopo pesado" saem de `pendingActionsToday` — quantas coisas
+ * estao marcadas para HOJE. De manha isso nao e dispersao nem excesso: e o
+ * plano. Quem acordou as sete com quatro acoes marcadas nao fez nada de errado;
+ * fez uma agenda.
+ *
+ * E o mesmo defeito que o ciclo tinha em 21/09, um nivel abaixo: ler o plano
+ * como se fosse resultado. Ali um dia cheio virava "ciclo perdido"; aqui vira
+ * "o dia esta espalhado", as sete da manha.
+ *
+ * Quem nao informa a hora continua sendo julgado como antes — o campo e
+ * opcional e a ausencia nao pode calar um diagnostico legitimo.
+ */
+const oDiaJaAndou = (context: OracleHostContext): boolean => (
+  context.timeOfDay !== "madrugada" && context.timeOfDay !== "manha"
+);
+
 const cicloJaPodeSerPerdido = (context: OracleHostContext): boolean => {
   // Sem ciclo nao ha ciclo a perder. Quem joga so por rodada nao recebe aviso
   // sobre um ciclo que nao abriu.
@@ -401,12 +423,14 @@ export const deriveOracleHostOperationalState = (
     return "atrasado";
   }
 
-  if (context.pendingActionsToday >= 6 || (context.cyclePendingActions || 0) >= 8) {
-    return "escopo_pesado";
-  }
+  if (oDiaJaAndou(context)) {
+    if (context.pendingActionsToday >= 6 || (context.cyclePendingActions || 0) >= 8) {
+      return "escopo_pesado";
+    }
 
-  if (context.pendingActionsToday >= 4) {
-    return "disperso";
+    if (context.pendingActionsToday >= 4) {
+      return "disperso";
+    }
   }
 
   if (context.staleArenas.length > 0) {

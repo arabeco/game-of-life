@@ -164,6 +164,13 @@ const suites = {
       interactions: ['o dia 1 nao recebe "salve o que puder"', 'um dia cheio pela frente nao e ciclo perdido', 'sem ciclo nao ha risco de ciclo', 'mais tarde o aviso continua vindo'],
     },
     {
+      id: 'manha-sem-veredito',
+      label: 'Manha nao tem veredito regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'manha-nao-tem-veredito.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['as sete da manha o plano nao e diagnostico', 'a tarde o diagnostico volta inteiro', 'a frase fala da arena e nao do dia', 'nenhuma frase promete que uma acao resolve o dia'],
+    },
+    {
       id: 'relatorio-sem-repeticao',
       label: 'Relatorio sem repeticao regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'relatorio-sem-repeticao.regression.mjs')]],

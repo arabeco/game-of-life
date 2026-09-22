@@ -44,6 +44,23 @@ type OracleLineTemplate =
 const semNenhumaArena = (context: OracleLineContext) =>
   !(typeof context.totalArenas === "number" && context.totalArenas > 0);
 
+/**
+ * O DIA SO PODE SER JULGADO DEPOIS DE ACONTECER.
+ *
+ * Em 22/09 chegou "O dia esta sem trilho" as SETE DA MANHA. Nao havia dia
+ * ainda: a pessoa tinha acabado de acordar, e o app ja tinha um veredito sobre
+ * ele. Se ela acorda as sete, as oito ou as dez, recebe a mesma sentenca sobre
+ * uma coisa que nao comecou.
+ *
+ * E o mesmo defeito que o ciclo tinha — "salve o que puder" no dia 1 —, um
+ * nivel abaixo: ler o PLANO como se fosse resultado.
+ *
+ * De manha o Oraculo aponta para a frente. Ler o que aconteceu e coisa de quem
+ * ja viu acontecer.
+ */
+const depoisQueODiaAndou = (context: OracleLineContext) =>
+  context.timeOfDay === "tarde" || context.timeOfDay === "noite";
+
 const STATE_LINES: Record<OracleHostOperationalState, OracleLineTemplate[]> = {
   sem_direcao: [
     { text: "Você ainda não tem uma arena. Escolhe uma area e cria a primeira: e o que faz o resto do app comecar a existir.", requires: semNenhumaArena },
@@ -51,13 +68,27 @@ const STATE_LINES: Record<OracleHostOperationalState, OracleLineTemplate[]> = {
     { text: "Sem direcao definida. Comeca pelo que você faria de qualquer jeito hoje e transforma em arena.", requires: semNenhumaArena },
     // Para quem JA tem arenas e caiu aqui por falta de meta: o estado e o mesmo,
     // o fato nao e. Sem estas duas, o banco ficaria mudo nesse caso.
-    "O dia esta sem trilho. Uma ação curta em {arena} ja resolve.",
-    "Tem estrutura montada, falta o tamanho de hoje. Escolhe uma frente e define uma meta pequena.",
+    //
+    // E O FATO ERA OUTRO. Estas duas diziam "o dia esta sem trilho", mas o que
+    // dispara este estado, para quem ja tem arena, e `criar_meta_minima`: uma
+    // arena cujas acoes sao livres ou sem contador, entao o avanco dela nao tem
+    // como ser medido. Isso e sobre a ARENA, e nao sobre o dia — e virava uma
+    // sentenca sobre o dia da pessoa as sete da manha.
+    //
+    // "Uma acao curta ja resolve" tambem saiu. Resolve o que? Uma acao nao
+    // conserta um dia, e prometer isso diz de quebra que o resto nao importa.
+    "{arena} não tem como medir avanço: as ações dela são livres ou sem contador.",
+    "Falta uma meta em {arena} — sem ela, o que você fizer lá não vira progresso na tela.",
+    "Tem estrutura montada, falta o tamanho. Uma meta pequena em {arena} já basta para ela contar.",
   ],
   disperso: [
+    // As duas primeiras servem a qualquer hora: elas dizem quantas coisas ha e
+    // sugerem uma ordem. Nao ha veredito nelas.
     "Você tem {pendentes} pendencias hoje espalhadas. Escolhe uma e fecha antes de abrir outra frente.",
     "Muita coisa aberta ao mesmo tempo. Fechar uma pequena vale mais que adiantar tres pela metade.",
-    "O dia esta espalhado. {arena} e a que mais precisa de você agora.",
+    // Esta afirma sobre o dia, entao espera o dia andar. De manha, quatro coisas
+    // marcadas nao sao dispersao: sao o plano.
+    { text: "O dia esta espalhado. {arena} e a que mais precisa de você agora.", requires: depoisQueODiaAndou },
   ],
   atrasado: [
     "Você tem {overdue} ações vencidas. Não precisa recuperar tudo: pega a mais antiga e resolve.",

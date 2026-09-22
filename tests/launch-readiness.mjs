@@ -199,6 +199,13 @@ const suites = {
       interactions: ['a tela e o banco descontam igual', 'o preco final em ouro bate', 'o custo com plano nao volta a ser numero fixo', 'o credito antigo continua honrado'],
     },
     {
+      id: 'bau-com-dono',
+      label: 'Bau com dono regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'bau-com-dono.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['a porta do app nao aceita destino', 'a porta que aceita destino so o servidor alcanca', 'as duas validam o tipo contra ChestType', 'o app chama a porta certa'],
+    },
+    {
       id: 'tinta-metalica',
       label: 'Tinta metalica regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'tinta-metalica.regression.mjs')]],

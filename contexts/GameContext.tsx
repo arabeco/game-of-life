@@ -10464,9 +10464,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const userId = getSupabaseUserId();
         if (!userId) return false;
 
-        // Use RPC or direct insert
-        const { error } = await supabase.rpc('grant_chest', {
-            p_user_id: userId,
+        /**
+         * `grant_my_chest` NAO RECEBE O DESTINO, e e por isso que ela existe.
+         *
+         * A antiga era `grant_chest(p_user_id, p_chest_type)`: o destino era um
+         * parametro, e ela estava liberada para `anon` e `PUBLIC`. Qualquer
+         * pessoa na internet, sem conta, inseria bau em qualquer id — bastava a
+         * URL do projeto, que vive neste bundle.
+         *
+         * Esta so sabe uma conta, a de quem chamou. A antiga continua existindo
+         * porque o servidor precisa pagar bau para OUTRAS pessoas (o anuncio de
+         * patente do cla paga todos os membros), mas saiu do alcance do app.
+         */
+        const { error } = await supabase.rpc('grant_my_chest', {
             p_chest_type: chestType
         });
 

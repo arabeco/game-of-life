@@ -1,6 +1,6 @@
 # Launch Readiness Report
 
-- Generated at: 2026-09-23T16:39:29.942Z
+- Generated at: 2026-09-23T16:47:58.299Z
 - Suite: `full`
 - Smoke URL: `http://127.0.0.1:3011/`
 - Build: SKIPPED
@@ -169,6 +169,13 @@
 - Simulates: a tela so muda depois da confirmacao
 - Simulates: a rodada nao fecha por um ciclo que nao nasceu
 - Simulates: a falha vira aviso e nao console.error
+
+### PASS - Widget conta o dia certo regression (0.1s)
+- Kind: `logic`
+- Simulates: o numero do dia e elapsedDays + 1
+- Simulates: o snapshot leva o rotulo pronto
+- Simulates: o widget usa o rotulo em vez de remontar
+- Simulates: a linha de Tempo continua sendo dias decorridos
 
 ### PASS - Tinta metalica regression (0.1s)
 - Kind: `logic`

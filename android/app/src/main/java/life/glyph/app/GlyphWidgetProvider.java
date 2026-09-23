@@ -162,7 +162,21 @@ public class GlyphWidgetProvider extends AppWidgetProvider {
             String period = !startDate.isEmpty() && !endDate.isEmpty()
                 ? startDate + "-" + endDate
                 : endDate;
-            String day = elapsedDays > 0 && totalDays > 0 ? "Dia " + elapsedDays + "/" + totalDays : subtitle;
+            // O ROTULO DO DIA VEM PRONTO DO APP, E NAO E REMONTADO AQUI.
+            //
+            // Antes esta linha escrevia "Dia " + elapsedDays, e elapsedDays e o
+            // numero de dias DECORRIDOS: num ciclo comecado dia 21, no dia 23 ele
+            // vale 2. Mas o dia 21 e o dia 1, entao o dia 23 e o dia 3 — e o
+            // widget mostrava 2 enquanto o app mostrava 3 na mesma hora.
+            //
+            // Somar 1 aqui consertaria o numero e manteria o defeito: duas contas
+            // do mesmo rotulo, em dois runtimes, livres para divergir de novo. O
+            // app ja calcula essa frase (getCycleTimingSummary.statusLabel) e ja a
+            // manda no snapshot; faltava so usa-la. A remontagem fica como ultimo
+            // recurso, para snapshot velho que ainda nao traga o campo.
+            String day = !dayLabel.isEmpty()
+                ? dayLabel
+                : (elapsedDays > 0 && totalDays > 0 ? "Dia " + (elapsedDays + 1) + "/" + totalDays : subtitle);
 
             return new WidgetCopy(
                 trim(title.toUpperCase(), 28),

@@ -220,6 +220,13 @@ const suites = {
       interactions: ['o insert do ciclo e esperado', 'o insert pede a linha de volta', 'a tela so muda depois da confirmacao', 'a rodada nao fecha por um ciclo que nao nasceu', 'a falha vira aviso e nao console.error'],
     },
     {
+      id: 'widget-conta-o-dia-certo',
+      label: 'Widget conta o dia certo regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'widget-conta-o-dia-certo.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['o numero do dia e elapsedDays + 1', 'o snapshot leva o rotulo pronto', 'o widget usa o rotulo em vez de remontar', 'a linha de Tempo continua sendo dias decorridos'],
+    },
+    {
       id: 'tinta-metalica',
       label: 'Tinta metalica regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'tinta-metalica.regression.mjs')]],

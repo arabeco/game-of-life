@@ -7289,9 +7289,40 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return true;
     };
 
+    /**
+     * A COMPRA PASSA A COMPRAR.
+     *
+     * Isto era um toast e um `return false`. Do outro lado, a capacidade dizia
+     * `unlimited: true` para tudo e um limite que era sempre igual ao que ja
+     * tinha sido usado — ninguem era barrado, entao nao havia espaco a vender.
+     * Os dois stubs se sustentavam: um nao vendia porque o outro nao limitava.
+     *
+     * O preco vem do servidor e o debito acontece na mesma transacao que
+     * concede o espaco. O resumo volta junto para a tela nao precisar recarregar
+     * a capacidade logo depois de mexer nela.
+     */
     const buyRelationshipCapacitySlot = async (slotType: RelationshipCapacitySlotType): Promise<boolean> => {
-        showToast('A camada social agora funciona so por ouro.', 'info');
-        return false;
+        const { data, error } = await supabase.rpc('buy_relationship_capacity_slot', { p_slot_type: slotType });
+        if (error) {
+            const recusa = String(error.message || '');
+            showToast(
+                recusa.includes('Insufficient gold')
+                    ? 'Ouro insuficiente para abrir outro espaço.'
+                    : recusa.includes('nao se compra')
+                        ? 'Esse espaço não tem limite — não há o que comprar.'
+                        : 'Não consegui abrir o espaço. Tente de novo.',
+                'error',
+            );
+            return false;
+        }
+
+        const cobrado = Number((data as any)?.charged ?? 0);
+        const saldo = (data as any)?.new_gold;
+        if (Number.isFinite(Number(saldo))) {
+            updateUserProfile({ wallet: { ...userProfile.wallet, gold: Number(saldo) } });
+        }
+        showToast(`Espaço aberto. Débito de ${cobrado} Ouro confirmado.`, 'success');
+        return true;
     };
 
     const createLinkedRelationshipArena = async (

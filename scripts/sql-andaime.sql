@@ -177,3 +177,23 @@ insert into public.store_prices (id, kind, gold_price) values
 on conflict (id) do nothing;
 
 create table if not exists public.user_inventory (user_id uuid, item_id text);
+
+-- Vinculos e arenas compartilhadas.
+create table if not exists public.relationship_links (
+  id uuid primary key,
+  link_type text,
+  mentor_id uuid,
+  pupil_id uuid,
+  ended_at timestamptz,
+  expires_at timestamptz
+);
+create table if not exists public.relationship_link_arenas (
+  id uuid primary key,
+  relationship_link_id uuid,
+  arena_id uuid,
+  created_by_user_id uuid,
+  created_at timestamptz default now(),
+  completed_at timestamptz,
+  metadata jsonb
+);
+create table if not exists public.arenas (id uuid primary key, user_id uuid, name text);

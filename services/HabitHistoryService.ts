@@ -53,7 +53,11 @@ export const marcarHabito = async (
     .from('habit_marks')
     .upsert(
       { user_id: userId, marked_on: markedOn, kind, item_id: itemId, title: String(title || '').slice(0, 120) },
-      { onConflict: 'user_id,marked_on,kind,item_id' },
+      // `ignoreDuplicates` gera ON CONFLICT DO NOTHING, e nao DO UPDATE. Isto
+      // e de proposito duas vezes: a tabela nao concede UPDATE (a marca existe
+      // ou nao existe), e o titulo guardado e um retrato — renomear o item hoje
+      // nao pode reescrever o nome que o relatorio de um ciclo antigo mostra.
+      { onConflict: 'user_id,marked_on,kind,item_id', ignoreDuplicates: true },
     );
   if (error) console.warn('[habito] nao consegui anotar a marca:', error.message);
 };

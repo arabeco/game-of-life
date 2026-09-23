@@ -2589,8 +2589,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
 
-        // Update Local State Optimistically or Refetch
-        const newGold = (userProfile.wallet?.gold || 0) - cost;
+        // QUEM DIZ QUANTO FOI COBRADO E O SERVIDOR.
+        //
+        // Aqui se descontava , que e o preco que ESTA TELA calculou. Isso
+        // valia enquanto a RPC cobrava o valor que o cliente mandava; agora ela
+        // le o preco do catalogo e aplica o desconto de renovacao por conta
+        // propria. Se os dois divergirem — catalogo do app desatualizado, por
+        // exemplo — descontar o palpite deixaria a carteira na tela mentindo ate
+        // a proxima hidratacao.
+        const cobrado = Number((data as any)?.charged ?? cost);
+        const saldoDoServidor = (data as any)?.new_gold;
+        const newGold = Number.isFinite(Number(saldoDoServidor))
+            ? Number(saldoDoServidor)
+            : (userProfile.wallet?.gold || 0) - cobrado;
         updateUserProfile({ wallet: { ...userProfile.wallet, gold: newGold } });
 
         if (type === 'exclusive') {
@@ -2607,7 +2618,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 expBoostExpiresAt,
                 expBoostProductId: boost.id,
             });
-            showToast(`Débito de ${cost} Ouro confirmado. ${boost.name} ativo.`, "success");
+            showToast(`Débito de ${cobrado} Ouro confirmado. ${boost.name} ativo.`, "success");
             return;
         } else if (type === 'premium') {
             const membershipProduct = getGoldMembershipProduct(itemId) || GOLD_PREMIUM_PRODUCT;
@@ -2646,13 +2657,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             });
             showToast(
                 options?.successMessage
-                    || `Débito de ${cost} Ouro confirmado. ${nextSubscriptionTier === 'platinum' ? 'Platinum' : 'Premium'} renovado por 30 dias.`,
+                    || `Débito de ${cobrado} Ouro confirmado. ${nextSubscriptionTier === 'platinum' ? 'Platinum' : 'Premium'} renovado por 30 dias.`,
                 "success",
             );
             return;
         }
 
-        showToast(`Débito de ${cost} Ouro. Ativo adicionado ao Arsenal.`, "success");
+        showToast(`Débito de ${cobrado} Ouro. Ativo adicionado ao Arsenal.`, "success");
     };
 
     /**

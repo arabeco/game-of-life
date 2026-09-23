@@ -1,13 +1,13 @@
 # Launch Readiness Report
 
-- Generated at: 2026-09-23T18:51:52.187Z
+- Generated at: 2026-09-23T18:57:19.209Z
 - Suite: `full`
 - Smoke URL: `http://127.0.0.1:3011/`
 - Build: SKIPPED
 
 ## Checks
 
-### PASS - Avatar offsets regression (0.3s)
+### PASS - Avatar offsets regression (0.2s)
 - Kind: `logic`
 - Simulates: tabela vazia desenha igual ao comportamento antigo
 - Simulates: escala cresce do centro da peca
@@ -19,7 +19,7 @@
 - Simulates: impede a letra solta voltar no lugar do simbolo
 - Simulates: fixa a altura do card de item
 
-### PASS - Item art regression (0.3s)
+### PASS - Item art regression (0.2s)
 - Kind: `logic`
 - Simulates: confere que todo imageUrl existe no disco
 - Simulates: trava as categorias que ainda vivem de emoji
@@ -31,13 +31,13 @@
 - Simulates: confere progresso de arenas
 - Simulates: garante insignias acumulaveis
 
-### PASS - Oracle cycle coach regression (0.2s)
+### PASS - Oracle cycle coach regression (0.1s)
 - Kind: `logic`
 - Simulates: le ritmo do ciclo localmente
 - Simulates: prioriza arena em risco
 - Simulates: oferece apenas navegacao segura
 
-### PASS - Reward modal priority regression (0.2s)
+### PASS - Reward modal priority regression (0.1s)
 - Kind: `logic`
 - Simulates: nao mostra passagem antiga a conta nova
 - Simulates: evita sobreposicao entre dicas, temporada e recompensas
@@ -65,7 +65,7 @@
 - Simulates: assinatura vencida nao paga bonus
 - Simulates: vitrine sai do mesmo numero do calculo
 
-### PASS - Arena pacts regression (0.2s)
+### PASS - Arena pacts regression (0.1s)
 - Kind: `logic`
 - Simulates: nao propoe arena arquivada, travada, vazia ou concluida
 - Simulates: constancia conta dias e nao acoes
@@ -177,6 +177,15 @@
 - Simulates: o widget usa o rotulo em vez de remontar
 - Simulates: a linha de Tempo continua sendo dias decorridos
 
+### PASS - Loja cobra o preco dela regression (0.1s)
+- Kind: `logic`
+- Simulates: p_cost_gold nao decide nada
+- Simulates: o preco sai de items e store_prices
+- Simulates: item de bau/patente nao se compra
+- Simulates: o desconto de renovacao e conferido no servidor
+- Simulates: o debito continua atomico
+- Simulates: a tela mostra o que foi cobrado
+
 ### PASS - Tinta metalica regression (0.1s)
 - Kind: `logic`
 - Simulates: drop-shadow nao volta para cima do recorte por texto
@@ -218,7 +227,7 @@
 - Simulates: a presenca e o corte de relevancia
 - Simulates: sem candidato ele fica quieto
 
-### PASS - Oracle presence policy regression (0.6s)
+### PASS - Oracle presence policy regression (0.5s)
 - Kind: `logic`
 - Simulates: presenca decide o que ele fala
 - Simulates: aviso decide onde chega

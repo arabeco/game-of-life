@@ -227,6 +227,13 @@ const suites = {
       interactions: ['o numero do dia e elapsedDays + 1', 'o snapshot leva o rotulo pronto', 'o widget usa o rotulo em vez de remontar', 'a linha de Tempo continua sendo dias decorridos'],
     },
     {
+      id: 'loja-cobra-o-preco-dela',
+      label: 'Loja cobra o preco dela regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'loja-cobra-o-preco-dela.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['p_cost_gold nao decide nada', 'o preco sai de items e store_prices', 'item de bau/patente nao se compra', 'o desconto de renovacao e conferido no servidor', 'o debito continua atomico', 'a tela mostra o que foi cobrado'],
+    },
+    {
       id: 'tinta-metalica',
       label: 'Tinta metalica regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'tinta-metalica.regression.mjs')]],

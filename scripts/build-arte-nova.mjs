@@ -126,7 +126,7 @@ const pecaHtml = (item) => {
           </label>
           <span class="etiqueta ${novo ? 'nova' : 'trocada'}">${novo ? 'nova' : 'substituida'}</span>
         </header>
-        <div class="corpos${item.caminho.includes('/hair/') ? ' so-cabeca' : ''}">
+        <div class="corpos${item.caminho.includes('/hair/') ? ' so-cabeca' : ''}${/SKIN_/.test(item.caminho) ? ' com-punho' : ''}">
           ${CORPOS.map((corpo) => `
             <figure>
               <div class="palco">
@@ -141,6 +141,14 @@ const pecaHtml = (item) => {
             </div>
             <figcaption>sozinha</figcaption>
           </figure>
+          ${/SKIN_/.test(item.caminho) ? `
+          <figure>
+            <div class="palco punho">
+              <img class="corpo" src="${CORPOS[0].url}" alt="">
+              <img class="peca-arte" src="${web(item.caminho)}" alt="">
+            </div>
+            <figcaption>punho</figcaption>
+          </figure>` : ''}
         </div>
       </article>`;
 };
@@ -166,7 +174,7 @@ const html = `<!doctype html>
   h2 { font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
        color: #b9bec6; margin: 28px 0 12px; }
   h2 small { color: #6f757d; font-weight: 400; }
-  .grade { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
+  .grade { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(410px, 1fr)); }
   .peca { border: 1px solid var(--borda); border-radius: 14px; background: #101318; padding: 12px; }
   .peca.ok { opacity: .38; }
   .peca header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
@@ -177,7 +185,16 @@ const html = `<!doctype html>
               border-radius: 999px; padding: 3px 8px; white-space: nowrap; }
   .etiqueta.nova { background: rgba(120,200,120,.14); color: #92d692; }
   .etiqueta.trocada { background: rgba(212,175,55,.14); color: #d4af37; }
-  .corpos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  /* minmax(0, 1fr) e nao 1fr: o segundo tem minimo AUTO, e as legendas
+     (MASCULINO, FEMININO) seguravam a largura minima da coluna — as quatro
+     somadas estouravam o card e a ultima saia para fora dele. */
+  .corpos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .corpos.com-punho { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  /* O PUNHO E ONDE A MANGA ENCONTRA A MAO — e onde tres levas de correcao
+     moraram. Ampliado, porque no corpo inteiro ele tem uns vinte pixels e
+     qualquer defeito ali some. O recorte e o mesmo dos dois bracos: x 274..334,
+     y 250..295 do quadro de 500. */
+  .punho img { transform: scale(7); transform-origin: 61% 55%; }
   .palco { position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: #0b0d10; }
   .palco img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
   /* CABELO PRECISA DE ZOOM NA CABECA.
@@ -193,7 +210,7 @@ const html = `<!doctype html>
       linear-gradient(-45deg, transparent 75%, #1a1d22 75%);
     background-size: 14px 14px;
     background-position: 0 0, 0 7px, 7px -7px, -7px 0; }
-  figcaption { font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
+  figcaption { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
                color: #6f757d; text-align: center; margin-top: 4px; }
   .aviso { color: #8b8f96; border-left: 2px solid rgba(212,175,55,.4); padding-left: 10px; margin: 0 0 24px; }
   .vazio { border: 1px dashed var(--borda); border-radius: 14px; padding: 28px; text-align: center; color: #6f757d; }

@@ -450,6 +450,7 @@ function parseArgs(argv) {
     list: false,
     skipBuild: false,
     skipServer: false,
+    logicOnly: false,
     reportPath: defaultReportPath,
     port: Number(process.env.SMOKE_PORT || 3011),
     smokeUrl: process.env.SMOKE_URL || '',
@@ -464,6 +465,12 @@ function parseArgs(argv) {
     else if (arg === '--list') options.list = true;
     else if (arg === '--skip-build') options.skipBuild = true;
     else if (arg === '--skip-server') options.skipServer = true;
+    // O portao inteiro precisa de build, servidor estatico, Edge e credenciais
+    // reais do Supabase — coisas que uma maquina de CI nao tem de graca. Os
+    // testes de logica nao precisam de nada disso: sao node puro lendo o
+    // codigo. Este recorte existe para que o CI possa rodar a parte que ele
+    // CONSEGUE rodar, em vez de nao rodar nada.
+    else if (arg === '--logic-only') options.logicOnly = true;
     else if (arg.startsWith('--suite=')) options.suite = arg.slice('--suite='.length);
     else if (arg.startsWith('--report=')) options.reportPath = path.resolve(repoRoot, arg.slice('--report='.length));
     else if (arg.startsWith('--port=')) options.port = Number(arg.slice('--port='.length));
@@ -675,7 +682,13 @@ function writeReport({ suiteName, entries, results, reportPath, smokeUrl, buildS
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  const entries = buildSuiteEntries(options.suite);
+  let entries = buildSuiteEntries(options.suite);
+  if (options.logicOnly) {
+    entries = entries.filter((entry) => entry.kind !== 'browser');
+    // Sem teste de navegador nao ha o que servir, e `npm run build` e o passo
+    // mais caro da fila. Pular aqui e consequencia do recorte, nao atalho.
+    options.skipBuild = true;
+  }
   const smokeUrl = options.smokeUrl || makeSmokeUrl(options.port);
 
   if (options.list || options.dryRun) {
@@ -774,6 +787,17 @@ async function main() {
       console.log(`${result?.status || 'PLANNED'}  ${entry.label}${duration}`);
     });
     console.log(`\nStill manual: ${manualQaNotes.join(', ')}.`);
+
+    // O `--keep-going` fazia o portao MENTIR. Ele existe para nao parar no
+    // primeiro erro e deixar o resto da fila sem rodar — mas o erro engolido
+    // nunca era relancado, entao `main()` resolvia e o processo saia com 0.
+    // Passava despercebido enquanto um humano lia a lista na tela; numa maquina
+    // de CI, que so olha o codigo de saida, isso viraria bolinha verde com
+    // teste vermelho dentro. Seguir em frente e continuar a fila, nao aprovar.
+    const falhas = results.filter((item) => item.status === 'FAIL');
+    if (falhas.length > 0) {
+      throw new Error(`${falhas.length} verificacao(oes) falharam: ${falhas.map((item) => item.label).join(', ')}`);
+    }
   } finally {
     await stopStaticServer(server);
     writeReport({

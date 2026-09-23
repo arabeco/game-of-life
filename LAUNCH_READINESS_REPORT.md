@@ -1,9 +1,9 @@
 # Launch Readiness Report
 
-- Generated at: 2026-09-23T13:46:03.480Z
-- Suite: `core`
+- Generated at: 2026-09-23T16:19:48.777Z
+- Suite: `full`
 - Smoke URL: `http://127.0.0.1:3011/`
-- Build: PASS (21.2s)
+- Build: SKIPPED
 
 ## Checks
 
@@ -31,7 +31,7 @@
 - Simulates: confere progresso de arenas
 - Simulates: garante insignias acumulaveis
 
-### PASS - Oracle cycle coach regression (0.2s)
+### PASS - Oracle cycle coach regression (0.1s)
 - Kind: `logic`
 - Simulates: le ritmo do ciclo localmente
 - Simulates: prioriza arena em risco
@@ -162,16 +162,17 @@
 - Simulates: ler e salvar sao de uma pagina so
 - Simulates: o diario e so de quem escreveu
 
-### PASS - Tinta metalica regression (0.3s)
+### PASS - Tinta metalica regression (0.2s)
 - Kind: `logic`
 - Simulates: drop-shadow nao volta para cima do recorte por texto
 - Simulates: o numero nao vira um tijolo dourado
 - Simulates: a tinta metalica tem um dono so
 
-### PASS - XP scale regression (0.1s)
+### FAIL - XP scale regression
 - Kind: `logic`
 - Simulates: missoes, jornadas e pactos usam a mesma escala
 - Simulates: nenhuma recompensa passa de 500 XP
+- Error: XP scale regression failed with exit 1
 
 ### PASS - Mission reward unification regression (0.1s)
 - Kind: `logic`
@@ -203,7 +204,7 @@
 - Simulates: a presenca e o corte de relevancia
 - Simulates: sem candidato ele fica quieto
 
-### PASS - Oracle presence policy regression (0.5s)
+### PASS - Oracle presence policy regression (0.6s)
 - Kind: `logic`
 - Simulates: presenca decide o que ele fala
 - Simulates: aviso decide onde chega
@@ -244,33 +245,6 @@
 - Simulates: recalcula o core loop
 - Simulates: valida progresso de campanha/arena
 - Simulates: confere score, atlas e mutacoes utilitarias
-
-### PASS - Onboarding happy path (19.7s)
-- Kind: `browser`
-- Simulates: entra com conta temporaria
-- Simulates: atravessa onboarding
-- Simulates: cria arena/acao inicial
-- Simulates: chega no fluxo principal sem travar
-
-### PASS - Campaign quiz flow (13.2s)
-- Kind: `browser`
-- Simulates: abre loja de campanhas
-- Simulates: roda quiz gratis
-- Simulates: reabre quiz completo
-- Simulates: instala campanha e confirma menu
-
-### PASS - Cycle report flow (21.3s)
-- Kind: `browser`
-- Simulates: cria ciclo real
-- Simulates: conclui tarefas
-- Simulates: fecha ciclo
-- Simulates: abre relatorio e reward flow
-
-### PASS - UI shell smoke (10.8s)
-- Kind: `browser`
-- Simulates: abre shell principal
-- Simulates: navega views centrais
-- Simulates: garante que a casca da app sobe sem overlay travando
 
 ## Manual QA Still Required
 

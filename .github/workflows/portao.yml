@@ -1,0 +1,80 @@
+# O PORTAO, RODANDO SOZINHO.
+#
+# A suite tem 43 verificacoes. Trinta e nove sao logica pura: node lendo o
+# codigo, sem rede, sem banco, sem navegador. Quatro abrem um Chrome de verdade
+# contra um Supabase de verdade, criando usuarios temporarios — essas precisam
+# de credenciais e ficam de fora daqui de proposito.
+#
+# Deixar as quatro fora nao e desleixo: e a diferenca entre um portao que roda
+# em sete segundos a cada push e um que ninguem configura e por isso nunca roda.
+# As quatro continuam sendo rodadas a mao antes de publicar, junto do QA manual
+# que o proprio relatorio lista no fim.
+
+name: Portão
+
+on:
+  push:
+  pull_request:
+    branches: [main]
+  # Botao de rodar a mao na aba Actions, para quando a duvida bater fora de um push.
+  workflow_dispatch:
+
+# Push seguido de push na mesma branch: o mais novo cancela o mais velho, em vez
+# de deixar os dois brigando por runner.
+concurrency:
+  group: portao-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  logica:
+    name: Tipos + 39 verificações de lógica
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Mesma versao da maquina onde a suite foi escrita.
+          node-version: '24'
+          cache: npm
+
+      # `npm ci` e nao `npm install`: instala exatamente o que esta no lockfile
+      # e falha se ele divergir do package.json, em vez de resolver sozinho e
+      # rodar os testes contra um conjunto de dependencias que ninguem viu.
+      - name: Instalar dependências
+        run: npm ci
+
+      # Nenhum segredo de verdade nunca foi parar no historico deste repo, e a
+      # ideia aqui e que continue assim. O keystore e o service-role nao podem
+      # entrar nem uma vez: uma vez commitado, um segredo esta vazado para
+      # sempre, porque apagar depois nao apaga do historico.
+      - name: Nenhum segredo versionado
+        run: |
+          set -euo pipefail
+          achados=$(git ls-files | grep -Ei '(^|/)\.env($|\.)|\.(keystore|jks|p12|pem)$' || true)
+          if [ -n "$achados" ]; then
+            echo "::error::arquivo sensível versionado:"
+            echo "$achados"
+            exit 1
+          fi
+          echo "ok: nenhum .env, keystore ou chave versionada"
+
+      - name: Tipos
+        run: npx tsc --noEmit
+
+      # `--keep-going` mostra TODAS as falhas de uma vez em vez de parar na
+      # primeira; o codigo de saida continua vermelho se qualquer uma falhar.
+      - name: Verificações de lógica
+        run: node tests/launch-readiness.mjs --suite=full --logic-only --keep-going
+
+      # `if: always()` de proposito: o relatorio interessa mais quando algo
+      # falhou, que e justamente quando o passo anterior aborta o job.
+      - name: Guardar o relatório
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: launch-readiness-report
+          path: LAUNCH_READINESS_REPORT.md
+          if-no-files-found: warn

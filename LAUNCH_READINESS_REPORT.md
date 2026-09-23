@@ -1,6 +1,6 @@
 # Launch Readiness Report
 
-- Generated at: 2026-09-23T19:12:42.926Z
+- Generated at: 2026-09-23T19:35:00.658Z
 - Suite: `full`
 - Smoke URL: `http://127.0.0.1:3011/`
 - Build: SKIPPED
@@ -65,7 +65,7 @@
 - Simulates: assinatura vencida nao paga bonus
 - Simulates: vitrine sai do mesmo numero do calculo
 
-### PASS - Arena pacts regression (0.2s)
+### PASS - Arena pacts regression (0.1s)
 - Kind: `logic`
 - Simulates: nao propoe arena arquivada, travada, vazia ou concluida
 - Simulates: constancia conta dias e nao acoes
@@ -185,6 +185,14 @@
 - Simulates: o desconto de renovacao e conferido no servidor
 - Simulates: o debito continua atomico
 - Simulates: a tela mostra o que foi cobrado
+
+### PASS - Perfil nao se escreve a mao regression (0.1s)
+- Kind: `logic`
+- Simulates: as nove colunas de economia ficam fora da concessao
+- Simulates: o revoke de tabela vem antes do grant por coluna
+- Simulates: o saldo e o maior entre wallet e a coluna gold
+- Simulates: anon nao escreve perfil
+- Simulates: ninguem trunca user_profiles
 
 ### PASS - Tinta metalica regression (0.1s)
 - Kind: `logic`

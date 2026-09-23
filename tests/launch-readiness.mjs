@@ -234,6 +234,13 @@ const suites = {
       interactions: ['p_cost_gold nao decide nada', 'o preco sai de items e store_prices', 'item de bau/patente nao se compra', 'o desconto de renovacao e conferido no servidor', 'o debito continua atomico', 'a tela mostra o que foi cobrado'],
     },
     {
+      id: 'perfil-nao-se-escreve-a-mao',
+      label: 'Perfil nao se escreve a mao regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'perfil-nao-se-escreve-a-mao.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['as nove colunas de economia ficam fora da concessao', 'o revoke de tabela vem antes do grant por coluna', 'o saldo e o maior entre wallet e a coluna gold', 'anon nao escreve perfil', 'ninguem trunca user_profiles'],
+    },
+    {
       id: 'tinta-metalica',
       label: 'Tinta metalica regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'tinta-metalica.regression.mjs')]],

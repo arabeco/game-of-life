@@ -301,11 +301,6 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
         ));
     };
 
-    const relationshipSubtitleForProfile = (profileId: string) => {
-        const activeTypes = Array.from(new Set(activeRelationshipsForProfile(profileId).map(link => relationLabel(link.linkType))));
-        return activeTypes.length > 0 ? activeTypes.join(' • ') : undefined;
-    };
-
     const resolveRelationshipProfile = (profileId: string) =>
         friends.find(friend => friend.id === profileId) ||
         relationshipProfiles[profileId] ||
@@ -849,7 +844,10 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
                                         <SocialCard
                                             key={player.id}
                                             profile={player}
-                                            subtitle={relationshipSubtitleForProfile(player.id)}
+                                            /* Mesma repeticao do card de aliado: os selos
+                                               ja dizem o vinculo. Este card tem ainda um
+                                               botao a direita, entao a vaga disputada aqui
+                                               e mais apertada. */
                                             badges={relationshipBadgesForProfile(player.id)}
                                             onClick={() => setSelectedProfile(player)}
                                             actions={
@@ -882,7 +880,10 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
                             <SocialCard
                                 key={friend.id}
                                 profile={friend}
-                                subtitle={relationshipSubtitleForProfile(friend.id)}
+                                /* Os selos JA dizem o vinculo, ao lado do nome. O
+                                   subtitulo dizia o mesmo, do outro lado do card —
+                                   "Parceria" duas vezes — e ainda tomava a vaga do
+                                   grupo, que so tem aquele lugar para aparecer. */
                                 badges={relationshipBadgesForProfile(friend.id)}
                                 onClick={() => setSelectedProfile(friend)}
                             />

@@ -15,7 +15,12 @@ export const SocialCard: React.FC<{
 }> = ({ profile, subtitle, badges, actions, onClick }) => {
     return (
         <div
-            className={`h-16 rounded-3xl relative overflow-hidden border border-[var(--glass-border)] group ${onClick ? 'cursor-pointer hover:border-white/30 transition-colors' : ''}`}
+            /* `h-16` fixo com `overflow-hidden` cortava o proprio conteudo. A coluna
+               do meio empilha nome, selos e banner, e tres coisas nao cabem em
+               64px — o que sobrava era aparado sem aviso. `min-h-16` mantem a
+               altura de sempre para o card simples e deixa crescer quando ha
+               selo, em vez de esconder. */
+            className={`min-h-16 rounded-3xl relative overflow-hidden border border-[var(--glass-border)] group ${onClick ? 'cursor-pointer hover:border-white/30 transition-colors' : ''}`}
             onClick={onClick}
         >
             <div className="absolute inset-0">
@@ -48,15 +53,20 @@ export const SocialCard: React.FC<{
 
                 <div className="flex flex-col items-end justify-center text-right pr-2 flex-shrink-0">
                     <span className="social-card-kicker text-[9px] font-bold text-gray-500 uppercase tracking-widest opacity-60 mb-0.5">
-                        {subtitle ? 'INFO' : (profile.clanName ? 'GRUPO' : '')}
+                        {/* O GRUPO PERDIA A VAGA PARA UMA INFORMACAO REPETIDA.
+                            Quem tem vinculo tem subtitulo, e o subtitulo dizia o
+                            MESMO que os selos ao lado do nome — "Parceria" duas
+                            vezes no mesmo card, e o grupo sumindo para caber a
+                            repeticao. O grupo vem primeiro: ele so existe aqui. */}
+                        {profile.clanName ? 'GRUPO' : (subtitle ? 'INFO' : '')}
                     </span>
                     <div className="social-card-meta text-[10px] text-gray-300 flex items-center gap-1 opacity-90 bg-black/20 px-1.5 py-0.5 rounded-md border border-white/5">
-                        {subtitle ?? (
+                        {profile.clanName ? (
                             <>
                                 {profile.clanIcon && <ClanEmblem value={profile.clanIcon} className="h-4 w-4 text-xs" />}
-                                <span className="max-w-[70px] truncate font-medium">{profile.clanName || 'Sem Grupo'}</span>
+                                <span className="max-w-[70px] truncate font-medium">{profile.clanName}</span>
                             </>
-                        )}
+                        ) : (subtitle ?? <span className="max-w-[70px] truncate font-medium">Sem Grupo</span>)}
                     </div>
                 </div>
 

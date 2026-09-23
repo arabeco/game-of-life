@@ -646,6 +646,34 @@ try {
   await clickByText('CONFIRMAR');
   checkpoints.push('cycle-end-confirmed');
 
+
+  /**
+   * O PREMIO VEM ANTES DO RELATORIO, E O TESTE NAO SABIA.
+   *
+   * Desde `da3581f` o fecho de ciclo abre primeiro o modal de recompensa —
+   * "CICLO CONCLUIDO!", com a EXP, o bau e as insignias — e o relatorio so
+   * aparece depois, por um botao dele. O teste tinha sido escrito quando a
+   * ordem era a inversa.
+   *
+   * O sintoma era enganoso: `#report-summary-card-capture` EXISTE no momento em
+   * que o modal sobe, entao a espera passava. O teste comecava a virar slides,
+   * o modal assumia a tela, o carrossel desmontava, e o clique seguinte nao
+   * achava nada. Por isso ele falhava ora no slide 3, ora no 4 — corrida, e nao
+   * logica.
+   *
+   * Agora o teste faz o que a pessoa faz: le o premio e clica para ver o
+   * relatorio.
+   */
+  await waitFor(
+    'reward modal after cycle close',
+    `(() => Array.from(document.querySelectorAll('button')).some((node) => (node.innerText || '').toLowerCase().includes('ver o relat')))()`,
+    20000,
+  );
+  checkpoints.push('cycle-reward-shown');
+
+  await clickByText('Ver o relat');
+  await sleep(400);
+
   await waitFor('report results', `(() => document.querySelector('#report-summary-card-capture') instanceof HTMLElement)()`, 20000);
   checkpoints.push('report-results-open');
 

@@ -18,6 +18,8 @@ import { useAssetsOverviewLayoutConfig } from '../hooks/useAssetsOverviewLayoutC
 import { calculateArenaProgress } from '../utils/progressUtils';
 import { filterTasksAfterFreeProgressReset } from '../utils/freeProgressScope';
 import { formatDate, getCycleTimingSummary } from '../utils/dateUtils';
+import { buildCycleWidgetSnapshot } from '../utils/widgetSnapshots';
+import { getMetalRankPalette } from '../components/MetalReportCard';
 import { getProfileBackgroundPrimarySource, isCssProfileBackground } from '../utils/profileBackgrounds';
 import { getTaskExp } from '../utils/taskExp';
 import type { Action, Asset, Slot, SlotValue } from '../types';
@@ -280,6 +282,30 @@ export const AssetsView: React.FC = () => {
             endDate: activeCycle.endDate,
         };
     }, [activeCycle, allArenas, dailyCommitment?.date, actions, cycleScopedTasks]);
+
+    /*
+     * O PATAMAR DA FAIXA SAI DA MESMA FONTE DO WIDGET.
+     *
+     * A moldura do widget nao e enfeite: ela mostra o MATERIAL do patamar, com
+     * `edge` e `trim` de METAL_RANKS. A faixa daqui era so uma borda na cor da
+     * skin, e por isso parecia de outra familia — mesma informacao, outra
+     * linguagem.
+     *
+     * A nota vem de `buildCycleWidgetSnapshot`, que e exatamente o que alimenta
+     * o widget e o MiniCycleHUD. Calcular uma nota propria aqui criaria a
+     * terceira regua do mesmo numero, que e o defeito que este projeto ja
+     * pagou caro para tirar de tres lugares hoje.
+     */
+    const patamarDoCiclo = useMemo(() => {
+        if (!activeCycle) return null;
+        const snapshot = buildCycleWidgetSnapshot({
+            cycle: activeCycle,
+            tasks: cycleScopedTasks,
+            actions,
+            arenas: allArenas,
+        });
+        return snapshot ? getMetalRankPalette(snapshot.grade) : null;
+    }, [activeCycle, actions, allArenas, cycleScopedTasks]);
 
     useLayoutEffect(() => {
         const summaryCard = cycleSummaryRef.current;
@@ -706,9 +732,17 @@ export const AssetsView: React.FC = () => {
                                 onClick={handleOpenReports}
                                 className={`group w-full overflow-hidden border border-white/10 px-3 text-left backdrop-blur-[10px] transition-all duration-300 hover:-translate-y-[1px] ${activeCycle ? 'max-w-[300px] rounded-[14px] pb-1.5 pt-0.5' : 'max-w-[214px] rounded-[12px] py-1.5'}`}
                                 style={{
-                                    borderColor: rgbaString(cycleAccentRgb, 0.32),
+                                    /* A CHAPA MOSTRA O TOM, A BORDA MOSTRA O MATERIAL.
+                                       Mesma divisao do widget: o fundo segue a cor da
+                                       skin, e a moldura e o metal do patamar — `edge`
+                                       por fora, `trim` como o fio de luz por dentro.
+                                       Sem ciclo aberto nao ha patamar, e a faixa volta
+                                       a ser so a cor da skin. */
+                                    borderColor: patamarDoCiclo?.edge || rgbaString(cycleAccentRgb, 0.32),
                                     backgroundImage: `radial-gradient(circle at 18% 10%, ${rgbaString(cycleAccentRgb, 0.24)} 0%, transparent 34%), linear-gradient(180deg, rgba(31,38,48,0.94) 0%, rgba(13,17,22,0.98) 100%)`,
-                                    boxShadow: `0 16px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 1px ${rgbaString(cycleAccentRgb, 0.12)}`,
+                                    boxShadow: patamarDoCiclo
+                                        ? `0 16px 32px rgba(0,0,0,0.26), inset 0 1px 0 ${patamarDoCiclo.trim}55, 0 0 0 1px ${patamarDoCiclo.edge}3d, 0 0 14px ${patamarDoCiclo.glow}`
+                                        : `0 16px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 1px ${rgbaString(cycleAccentRgb, 0.12)}`,
                                     minHeight: activeCycle ? '58px' : '34px',
                                 }}
                             >

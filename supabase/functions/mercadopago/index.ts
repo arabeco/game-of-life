@@ -485,8 +485,13 @@ serve(async (req) => {
 
     return new Response("Not Found", { status: 404 });
   } catch (error) {
-    console.error("[Glyph Pay] Fatal Error:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
+    // `error` e `unknown` porque qualquer coisa pode ser lancada, e nem tudo
+    // tem `.message`. Ler o campo direto rendia `{"error": undefined}`, que
+    // vira `{}` no JSON: o unico lugar que explicaria a falha de um pagamento
+    // devolvia uma chave vazia.
+    const motivo = error instanceof Error ? error.message : String(error);
+    console.error("[Glyph Pay] Fatal Error:", motivo);
+    return new Response(JSON.stringify({ error: motivo }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

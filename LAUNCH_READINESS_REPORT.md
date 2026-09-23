@@ -1,6 +1,6 @@
 # Launch Readiness Report
 
-- Generated at: 2026-09-23T19:01:41.090Z
+- Generated at: 2026-09-23T19:12:42.926Z
 - Suite: `full`
 - Smoke URL: `http://127.0.0.1:3011/`
 - Build: SKIPPED
@@ -19,7 +19,7 @@
 - Simulates: impede a letra solta voltar no lugar do simbolo
 - Simulates: fixa a altura do card de item
 
-### PASS - Item art regression (0.2s)
+### PASS - Item art regression (0.3s)
 - Kind: `logic`
 - Simulates: confere que todo imageUrl existe no disco
 - Simulates: trava as categorias que ainda vivem de emoji
@@ -65,7 +65,7 @@
 - Simulates: assinatura vencida nao paga bonus
 - Simulates: vitrine sai do mesmo numero do calculo
 
-### PASS - Arena pacts regression (0.1s)
+### PASS - Arena pacts regression (0.2s)
 - Kind: `logic`
 - Simulates: nao propoe arena arquivada, travada, vazia ou concluida
 - Simulates: constancia conta dias e nao acoes
@@ -106,14 +106,14 @@
 - Simulates: cada um cai na sua aba
 - Simulates: um banco de textos so para o app e para o cron
 
-### PASS - Ciclo recem-nascido regression (0.2s)
+### PASS - Ciclo recem-nascido regression (0.1s)
 - Kind: `logic`
 - Simulates: o dia 1 nao recebe "salve o que puder"
 - Simulates: um dia cheio pela frente nao e ciclo perdido
 - Simulates: sem ciclo nao ha risco de ciclo
 - Simulates: mais tarde o aviso continua vindo
 
-### PASS - Manha nao tem veredito regression (0.2s)
+### PASS - Manha nao tem veredito regression (0.1s)
 - Kind: `logic`
 - Simulates: as sete da manha o plano nao e diagnostico
 - Simulates: a tarde o diagnostico volta inteiro

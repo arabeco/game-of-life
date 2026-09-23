@@ -1279,6 +1279,15 @@ export interface RelationshipCapacityEntry {
   purchased: number;
   costGold: number;
   requiresPremium: boolean;
+  /**
+   * Esta capacidade nao limita nada.
+   *
+   * O banco sempre devolveu este campo, e o tipo nunca o declarou — enquanto
+   * TODAS as capacidades eram ilimitadas, nao fazia diferenca. Agora a arena
+   * vinculada limita de verdade e as outras quatro seguem abertas, entao a
+   * tela precisa saber distinguir "0 de 1" de "nao ha limite".
+   */
+  unlimited?: boolean;
 }
 
 export interface RelationshipCapacitySummary {

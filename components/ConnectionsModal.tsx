@@ -11,6 +11,7 @@ import type {
   RelationshipLinkInvite,
   RelationshipLinkType,
   UserProfile,
+  RelationshipCapacitySummary,
 } from '../types';
 import { supabase } from '../supabaseClient';
 import { APP_NAVIGATE_EVENT, type AppNavigatePayload } from '../utils/arenaAttention';
@@ -237,6 +238,7 @@ export const ConnectionsModal: React.FC<{
     createRelationshipInvite,
     endRelationshipLink,
     fetchRelationshipHubData,
+    buyRelationshipCapacitySlot,
     friends,
     getActionsForArena,
     respondToRelationshipInvite,
@@ -253,6 +255,12 @@ export const ConnectionsModal: React.FC<{
   const [invites, setInvites] = useState<RelationshipLinkInvite[]>([]);
   const [links, setLinks] = useState<RelationshipLink[]>([]);
   const [linkedArenas, setLinkedArenas] = useState<LinkedRelationshipArena[]>([]);
+  /* O resumo de capacidade JA vinha do hub e era descartado aqui. Enquanto a
+     regra era de enfeite — limite sempre igual ao usado, `unlimited: true` —
+     guardar nao adiantava nada. Agora ela conta, e sem isto a pessoa continua
+     sem saber quantos espacos tem nem que da para abrir outro. */
+  const [capacidade, setCapacidade] = useState<RelationshipCapacitySummary | null>(null);
+  const [comprandoEspaco, setComprandoEspaco] = useState(false);
   const [competitionChallenges, setCompetitionChallenges] = useState<RelationshipCompetitionChallenge[]>([]);
   const [profiles, setProfiles] = useState<Record<string, ProfileLite>>({});
   const [activeType, setActiveType] = useState<VisibleConnectionType>(initialTab);
@@ -355,6 +363,7 @@ export const ConnectionsModal: React.FC<{
       setInvites(nextInvites);
       setLinks(nextLinks);
       setLinkedArenas(hub.linkedArenas || []);
+      setCapacidade(hub.summary || null);
       setCompetitionChallenges(hub.competitionChallenges || []);
       setProfiles(seeded);
     } catch (error) {
@@ -597,6 +606,49 @@ export const ConnectionsModal: React.FC<{
 
             <section>
               <h3 className="text-[10px] font-black uppercase tracking-[0.18em] text-white/45">Ativas</h3>
+
+              {/*
+                * A REGRA DO ESPACO, ESCRITA ONDE ELA ACONTECE.
+                *
+                * Ela existia so no banco, e nem la contava: o limite era sempre
+                * igual ao usado e tudo dizia `unlimited`. Agora conta — e uma
+                * regra que ninguem ve e uma regra que ninguem segue. A frase e
+                * curta de proposito: uma arena viva por conexao, concluida
+                * libera, e o resto se compra.
+                */}
+              {capacidade?.linked_arena && !capacidade.linked_arena.unlimited && (
+                <div className="mt-2 flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[10px] font-black uppercase tracking-[0.14em] text-white/70">
+                      Arenas compartilhadas
+                      <span className="ml-1.5 tabular-nums text-[var(--skin-accent-color)]">
+                        {capacidade.linked_arena.used} de {capacidade.linked_arena.limit}
+                      </span>
+                    </div>
+                    <div className="mt-0.5 text-[9px] leading-[1.35] text-white/42">
+                      Uma por conexão. Concluída libera o espaço.
+                    </div>
+                  </div>
+                  {capacidade.linked_arena.used >= capacidade.linked_arena.limit && (
+                    <button
+                      type="button"
+                      disabled={comprandoEspaco}
+                      onClick={async () => {
+                        setComprandoEspaco(true);
+                        const ok = await buyRelationshipCapacitySlot('linked_arena');
+                        // O resumo so muda no servidor, entao a faixa tem de
+                        // reler. Sem isto ela continuaria dizendo o limite
+                        // velho logo depois de o ouro sair.
+                        if (ok) await refresh();
+                        setComprandoEspaco(false);
+                      }}
+                      className="shrink-0 rounded-lg border border-[var(--skin-accent-color)]/35 bg-[var(--skin-accent-color)]/12 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.12em] text-[var(--skin-accent-color)] transition-colors hover:bg-[var(--skin-accent-color)]/20 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {comprandoEspaco ? '...' : <>Abrir espaço · {capacidade.linked_arena.costGold} {'\u{1FA99}'}</>}
+                    </button>
+                  )}
+                </div>
+              )}
               {loading ? (
                 <div className="mt-3 h-24 animate-pulse rounded-lg bg-white/5" />
               ) : visibleLinks.length === 0 ? (

@@ -6619,6 +6619,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             purchased: Number(entry?.purchased ?? 0),
             costGold: Number(entry?.costGold ?? 0),
             requiresPremium: Boolean(entry?.requiresPremium),
+            unlimited: Boolean(entry?.unlimited),
         });
 
         return {

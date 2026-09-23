@@ -64,7 +64,12 @@ assert.match(fechoDaRodada, /setFreeProgressResetMarker/, 'e marca o inicio da r
 // Absorver o acumulado para dentro do ciclo faria a experiencia de antes entrar
 // num relatorio que nao mediu aqueles dias.
 
-const inicioDoCiclo = trecho('const startCycle = (', 'const trimmedName', 'inicio do ciclo');
+// A janela e a funcao inteira, e nao mais o trecho ate :
+// desde que o ciclo passou a so existir depois que o banco confirma, o
+// concludeFreeRound acontece DEPOIS do insert — fechar a rodada por um ciclo
+// que pode nao nascer deixava a pessoa sem os dois lados da troca. A ordem
+// exata e guardada por ciclo-so-existe-no-banco.regression.mjs.
+const inicioDoCiclo = trecho('const startCycle = async (', 'const updateCycle =', 'inicio do ciclo');
 assert.match(inicioDoCiclo, /concludeFreeRound\('ciclo'\)/, 'abrir ciclo fecha e paga a rodada');
 
 // --- 4. o fecho do ciclo nao recalcula a base -------------------------------

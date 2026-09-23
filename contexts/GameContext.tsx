@@ -1001,7 +1001,7 @@ export interface GameContextType {
     declineFriendRequest: (requestId: string) => Promise<void>;
     cancelFriendRequest: (requestId: string) => Promise<void>;
     updateAllAssetLevels: (levels: Record<string, number>, levelDescriptions?: Record<string, string[]>) => boolean;
-    startCycle: (name: string, endDate: string, startDate?: string) => Cycle | null;
+    startCycle: (name: string, endDate: string, startDate?: string) => Promise<Cycle | null>;
     updateCycle: (cycleId: string, updates: Partial<Pick<Cycle, 'name' | 'endDate'>>) => Promise<void>;
     endCycle: (currentAssets: Asset[], currentActions: Action[]) => Promise<EndCycleResult>;
     applyExp: (expGained: number, options?: ApplyExpOptions) => void;
@@ -9764,7 +9764,33 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     // Devolve o ciclo criado, ou null se nada foi criado. Quem chama precisa
     // saber: a virada so pode reagendar as acoes se o ciclo realmente nasceu.
-    const startCycle = (name: string, endDate: string, startDate?: string, arenaIds?: string[]): Cycle | null => {
+    /**
+     * O CICLO SO EXISTE DEPOIS QUE O BANCO DIZ QUE EXISTE.
+     *
+     * Antes daqui, esta funcao mexia no estado local, devolvia o ciclo como se
+     * tivesse dado certo, e SO ENTAO disparava o insert — sem esperar, e com o
+     * erro indo parar num `console.error` que ninguem le num celular:
+     *
+     *     setActiveCycle(newCycle);
+     *     supabase.from('cycles').insert(...).then(({ error }) => {
+     *         if (error) console.error(...);
+     *     });
+     *     return newCycle;
+     *
+     * Quando o insert falhava, o ciclo passava a viver so na memoria do React —
+     * que nao tem copia local nenhuma (`useState<Cycle | null>(() => null)`).
+     * A tela mostrava o ciclo rodando normalmente por dias, porque no Android o
+     * app fica vivo em segundo plano. No primeiro fechamento de verdade, a
+     * hidratacao ia ao Supabase, nao achava nada, e a pessoa acordava sem ciclo
+     * e sem relatorio — tendo perdido os dias no meio.
+     *
+     * Aconteceu, em 21/09/2026: o ciclo seguinte ao CICLO ZERO nunca chegou ao
+     * banco, e o aviso disso existiu apenas no console de um celular.
+     *
+     * Agora o banco vem primeiro. Se ele recusar, nada acontece: nem estado,
+     * nem rodada fechada, nem marca d'agua movida — e a pessoa ve o erro.
+     */
+    const startCycle = async (name: string, endDate: string, startDate?: string, arenaIds?: string[]): Promise<Cycle | null> => {
         const userId = getSupabaseUserId();
         if (!userId) return null;
         const today = getLocalDateString();
@@ -9772,12 +9798,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             showToast('Você já tem um ciclo ativo ou agendado. Encerre ou remova o atual antes de criar outro.', 'error');
             return null;
         }
-        // Abrir ciclo FECHA a rodada, e paga o que ela acumulou.
-        //
-        // A alternativa seria absorver o acumulado para dentro do ciclo, mas ai a
-        // experiencia de antes entraria num relatorio que nao mediu aqueles dias —
-        // o ciclo diria ter produzido o que aconteceu fora dele.
-        concludeFreeRound('ciclo');
 
         const trimmedName = name.trim();
         const normalizedStartDate = (startDate || today).trim();
@@ -9803,7 +9823,43 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             arenaIds: arenaIds || assets.flatMap(a => a.arenas.filter(ar => !ar.isArchived).map(ar => ar.id)),
             seasonId: activeRuntimeSeasonId
         };
+
+        // O `select().single()` nao e enfeite: sem ele, o insert pode ser
+        // recusado pela RLS e ainda assim voltar sem erro e sem linha. Exigir a
+        // linha de volta e o que transforma "mandei" em "existe".
+        const { data: cicloGravado, error } = await supabase
+            .from('cycles')
+            .insert({
+                id: newCycle.id,
+                user_id: userId,
+                name: newCycle.name,
+                start_date: newCycle.startDate,
+                end_date: newCycle.endDate,
+                arena_ids: newCycle.arenaIds,
+                season_id: activeRuntimeSeasonId,
+            })
+            .select('id')
+            .single();
+
+        if (error || !cicloGravado?.id) {
+            console.error('Supabase start cycle error:', error?.message || 'o banco nao confirmou o ciclo');
+            showToast('Não consegui criar o ciclo. Verifique a conexão e tente de novo.', 'error');
+            return null;
+        }
+
+        // Daqui para baixo o ciclo existe no banco, e so por isso o estado local
+        // pode mudar. A ordem importa: fechar a rodada paga EXP e move a marca
+        // d'agua do progresso livre, e fazer isso antes do insert deixava a
+        // pessoa sem a rodada E sem o ciclo quando a gravacao falhava.
+        //
+        // Abrir ciclo FECHA a rodada, e paga o que ela acumulou.
+        //
+        // A alternativa seria absorver o acumulado para dentro do ciclo, mas ai a
+        // experiencia de antes entraria num relatorio que nao mediu aqueles dias —
+        // o ciclo diria ter produzido o que aconteceu fora dele.
+        concludeFreeRound('ciclo');
         setCycleExpBonus(0);
+
         if (normalizedStartDate > today) {
             setActiveCycle(null);
             setUpcomingCycle(newCycle);
@@ -9813,20 +9869,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             setActiveCycle(newCycle);
             setFreeProgressResetMarker(new Date().toISOString(), false);
         }
-
-        // Sync to Supabase
-        const snakeCaseCycle = {
-            id: newCycle.id,
-            user_id: userId,
-            name: newCycle.name,
-            start_date: newCycle.startDate,
-            end_date: newCycle.endDate,
-            arena_ids: newCycle.arenaIds,
-            season_id: activeRuntimeSeasonId
-        };
-        supabase.from('cycles').insert(snakeCaseCycle).then(({ error }) => {
-            if (error) console.error("Supabase start cycle error:", error.message);
-        });
 
         return newCycle;
     };
@@ -10801,7 +10843,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             changes: arenaChanges,
         });
 
-        const createdCycle = startCycle(
+        const createdCycle = await startCycle(
             cycleDetails.name,
             cycleDetails.endDate,
             cycleDetails.startDate,

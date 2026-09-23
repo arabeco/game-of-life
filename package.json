@@ -62,7 +62,8 @@
     "test:regras-desbloqueio": "node tests/regras-de-desbloqueio.regression.mjs",
     "arte:pendente": "node scripts/placeholders-pendentes.mjs",
     "arte:nova": "node scripts/build-arte-nova.mjs",
-    "test:nota-do-ciclo": "node tests/nota-do-ciclo.regression.mjs"
+    "test:nota-do-ciclo": "node tests/nota-do-ciclo.regression.mjs",
+    "test:ciclo-no-banco": "node tests/ciclo-so-existe-no-banco.regression.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.0",

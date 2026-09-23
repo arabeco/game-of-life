@@ -213,6 +213,13 @@ const suites = {
       interactions: ['o contexto nao conhece o diario', 'o indice nao traz o texto das paginas', 'ler e salvar sao de uma pagina so', 'o diario e so de quem escreveu'],
     },
     {
+      id: 'ciclo-so-existe-no-banco',
+      label: 'Ciclo so existe no banco regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'ciclo-so-existe-no-banco.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['o insert do ciclo e esperado', 'o insert pede a linha de volta', 'a tela so muda depois da confirmacao', 'a rodada nao fecha por um ciclo que nao nasceu', 'a falha vira aviso e nao console.error'],
+    },
+    {
       id: 'tinta-metalica',
       label: 'Tinta metalica regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'tinta-metalica.regression.mjs')]],

@@ -1,6 +1,6 @@
 # Launch Readiness Report
 
-- Generated at: 2026-09-23T16:19:48.777Z
+- Generated at: 2026-09-23T16:39:29.942Z
 - Suite: `full`
 - Smoke URL: `http://127.0.0.1:3011/`
 - Build: SKIPPED
@@ -65,7 +65,7 @@
 - Simulates: assinatura vencida nao paga bonus
 - Simulates: vitrine sai do mesmo numero do calculo
 
-### PASS - Arena pacts regression (0.2s)
+### PASS - Arena pacts regression (0.1s)
 - Kind: `logic`
 - Simulates: nao propoe arena arquivada, travada, vazia ou concluida
 - Simulates: constancia conta dias e nao acoes
@@ -162,17 +162,24 @@
 - Simulates: ler e salvar sao de uma pagina so
 - Simulates: o diario e so de quem escreveu
 
-### PASS - Tinta metalica regression (0.2s)
+### PASS - Ciclo so existe no banco regression (0.1s)
+- Kind: `logic`
+- Simulates: o insert do ciclo e esperado
+- Simulates: o insert pede a linha de volta
+- Simulates: a tela so muda depois da confirmacao
+- Simulates: a rodada nao fecha por um ciclo que nao nasceu
+- Simulates: a falha vira aviso e nao console.error
+
+### PASS - Tinta metalica regression (0.1s)
 - Kind: `logic`
 - Simulates: drop-shadow nao volta para cima do recorte por texto
 - Simulates: o numero nao vira um tijolo dourado
 - Simulates: a tinta metalica tem um dono so
 
-### FAIL - XP scale regression
+### PASS - XP scale regression (0.1s)
 - Kind: `logic`
 - Simulates: missoes, jornadas e pactos usam a mesma escala
 - Simulates: nenhuma recompensa passa de 500 XP
-- Error: XP scale regression failed with exit 1
 
 ### PASS - Mission reward unification regression (0.1s)
 - Kind: `logic`
@@ -204,7 +211,7 @@
 - Simulates: a presenca e o corte de relevancia
 - Simulates: sem candidato ele fica quieto
 
-### PASS - Oracle presence policy regression (0.6s)
+### PASS - Oracle presence policy regression (0.5s)
 - Kind: `logic`
 - Simulates: presenca decide o que ele fala
 - Simulates: aviso decide onde chega
@@ -228,7 +235,7 @@
 - Simulates: salva a ordem no banco
 - Simulates: mantem conclusoes fora da baia
 
-### PASS - Displayed level scale regression (0.2s)
+### PASS - Displayed level scale regression (0.1s)
 - Kind: `logic`
 - Simulates: confere que area e Indice usam o mesmo fator
 - Simulates: proibe nivel cru na tela

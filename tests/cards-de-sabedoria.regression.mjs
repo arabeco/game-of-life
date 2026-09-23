@@ -109,32 +109,49 @@ assert.doesNotMatch(
 );
 
 // ---------------------------------------------------------------------------
-// 4. O ROTEAMENTO LE O PROPOSITO, E AS DUAS PONTAS LEEM O MESMO.
+// 4. SABEDORIA E LISTA DE PERMISSAO, E AS DUAS PONTAS LEEM A MESMA.
 //
-// A hidratacao e o filtro da aba ja discordaram uma vez. Por isso os dois
-// chamam a MESMA funcao: se alguem mudar uma regra, muda para as duas.
+// A regra era por EXCLUSAO: tudo que nao fosse leitura de ciclo caia em
+// Sabedoria. Uma aba definida pelo que NAO tem herda tudo o que nascer depois —
+// foi assim que o card do coach ("voce ja provou que consegue") entrou ali, por
+// nao ser leitura de ciclo. Agora ela e definida pelo que tem: card da
+// biblioteca.
+//
+// A hidratacao e o filtro da aba ja discordaram uma vez, e discordaram de novo
+// quando so a hidratacao foi corrigida. Por isso os dois chamam a MESMA funcao.
 // ---------------------------------------------------------------------------
 
 assert.match(
   chat,
-  /const PROPOSITOS_DO_DIA = new Set\(\['cycle_insight'\]\)/,
-  'A leitura do ciclo precisa estar marcada como assunto de "Dia e ciclo".',
+  /const PROPOSITOS_DE_BIBLIOTECA = new Set\(\['premium_content_card'\]\)/,
+  'So o card que saiu da biblioteca pertence a Sabedoria; a lista precisa ser de permissao.',
 );
 
-const usosDoRoteador = chat.match(/ehDoDiaEDoCiclo\(/g) || [];
+const usosDoRoteador = chat.match(/ehCardDeBiblioteca\(/g) || [];
 assert.ok(
   usosDoRoteador.length >= 2,
-  `As duas pontas (hidratacao e filtro) precisam chamar ehDoDiaEDoCiclo. Chamadas encontradas: ${usosDoRoteador.length}`,
+  `As duas pontas (hidratacao e filtro) precisam chamar ehCardDeBiblioteca. Chamadas encontradas: ${usosDoRoteador.length}`,
 );
+
 assert.match(
   chat,
-  /section: ehDoDiaEDoCiclo\(feedMessage\.category, feedMessage\.contextSnapshot\?\.purpose\)/,
-  'A hidratacao roteava so pela categoria, e era por isso que a leitura caia em Sabedoria.',
+  /section: ehCardDeBiblioteca\(feedMessage\.deliveryType, feedMessage\.category, feedMessage\.contextSnapshot\?\.purpose\) \? 'wisdom' : 'guidance'/,
+  'A hidratacao precisa rotear pela origem do card, e nao pelo que ele nao e.',
 );
+
 assert.match(
   chat,
-  /wisdomIds = new Set\(\(oracleMessages \|\| \[\]\)\.filter\(message => [^\n]*!ehDoDiaEDoCiclo\(message\.category, message\.contextSnapshot\?\.purpose\)\)/,
-  'O filtro da aba Sabedoria precisa excluir a leitura pelo mesmo criterio da hidratacao.',
+  /wisdomIds = new Set\(\(oracleMessages \|\| \[\]\)\.filter\(message => [^\n]*ehCardDeBiblioteca\(message\.deliveryType, message\.category, message\.contextSnapshot\?\.purpose\)\)/,
+  'O filtro da aba precisa usar o mesmo criterio da hidratacao, senao o card volta a entrar por ele.',
+);
+
+// Card gravado antes de o proposito existir na coluna nao tem como ser
+// classificado pela origem. Mandar o historico inteiro para a outra aba seria
+// pior que o defeito, entao ali vale a regra antiga.
+assert.match(
+  chat,
+  /if \(!purpose\) return !ehLeitura\(category\);/,
+  'O card antigo, sem proposito gravado, precisa manter a regra de antes.',
 );
 
 // ---------------------------------------------------------------------------

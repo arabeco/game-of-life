@@ -41,7 +41,20 @@ const git = (args) => execFileSync('git', args, { cwd: raiz, encoding: 'utf8' })
  *   npm run arte:nova -- HEAD~5      (as cinco ultimas levas)
  */
 const PASTA = 'public/assets/catalog/avatars';
-const referencia = process.argv[2] || 'HEAD~1';
+/**
+ * O PADRAO E "DESDE A ULTIMA LEVA DE ARTE", e nao HEAD~1.
+ *
+ * HEAD~1 parecia bastar e nao bastou: commitei a arte, depois commitei um
+ * conserto de ferramenta, e a janela deslizou por cima da leva — a lista voltou
+ * a zero na segunda vez que foi usada. Contar commits e fragil porque nem todo
+ * commit tem a ver com arte.
+ *
+ * Entao a referencia se descobre: qual foi o ultimo commit que mexeu nesta
+ * pasta, e compara-se a partir do PAI dele. Assim a leva inteira aparece,
+ * independente de quantos commits vieram depois.
+ */
+const ultimoDeArte = git(['log', '-1', '--format=%H', '--', PASTA]).trim();
+const referencia = process.argv[2] || (ultimoDeArte ? ultimoDeArte + '^' : 'HEAD');
 
 const porCaminho = new Map();
 

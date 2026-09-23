@@ -1,6 +1,6 @@
 # Launch Readiness Report
 
-- Generated at: 2026-09-23T18:57:19.209Z
+- Generated at: 2026-09-23T19:01:41.090Z
 - Suite: `full`
 - Smoke URL: `http://127.0.0.1:3011/`
 - Build: SKIPPED
@@ -106,14 +106,14 @@
 - Simulates: cada um cai na sua aba
 - Simulates: um banco de textos so para o app e para o cron
 
-### PASS - Ciclo recem-nascido regression (0.1s)
+### PASS - Ciclo recem-nascido regression (0.2s)
 - Kind: `logic`
 - Simulates: o dia 1 nao recebe "salve o que puder"
 - Simulates: um dia cheio pela frente nao e ciclo perdido
 - Simulates: sem ciclo nao ha risco de ciclo
 - Simulates: mais tarde o aviso continua vindo
 
-### PASS - Manha nao tem veredito regression (0.1s)
+### PASS - Manha nao tem veredito regression (0.2s)
 - Kind: `logic`
 - Simulates: as sete da manha o plano nao e diagnostico
 - Simulates: a tarde o diagnostico volta inteiro

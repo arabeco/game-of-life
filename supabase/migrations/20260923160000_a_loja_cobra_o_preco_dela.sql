@@ -68,6 +68,7 @@ declare
   v_novo_saldo  integer;
   v_tier        text;
   v_expira      timestamptz;
+  v_id_do_nivel text;
   v_com_desconto boolean := false;
 begin
   if v_user is null then
@@ -116,10 +117,16 @@ begin
     from public.user_profiles up
     where up.id = v_user;
 
+    -- O `case` sai da condicao do IF de proposito. Dentro dela, o plpgsql
+    -- procura o THEN que fecha o proprio IF e encontra primeiro o THEN do
+    -- CASE: o resto do arquivo e engolido e o erro aparece como "syntax error
+    -- at end of input", apontando para uma linha que nao tem nada de errado.
+    v_id_do_nivel := case when v_tier = 'platinum' then 'platinum_30d' else 'premium_30d' end;
+
     if v_expira is not null
        and v_expira > now()
        and ceil(extract(epoch from (v_expira - now())) / 86400.0) <= 3
-       and p_item_id = case when v_tier = 'platinum' then 'platinum_30d' else 'premium_30d' end
+       and p_item_id = v_id_do_nivel
     then
       -- Mesma conta do cliente: Math.round(base * 0.9).
       v_preco := greatest(0, round(v_base * 0.9))::integer;

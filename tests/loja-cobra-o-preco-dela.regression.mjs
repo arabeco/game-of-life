@@ -102,4 +102,32 @@ assert.ok(
   'o app voltou a descontar o preco que ele mesmo calculou',
 );
 
+// ---------------------------------------------------------------------------
+// 6. UMA ARMADILHA DE PLPGSQL QUE JA CUSTOU UMA RODADA.
+// ---------------------------------------------------------------------------
+
+/*
+ * `if ... and x = case when ... then 'a' else 'b' end then` NAO COMPILA.
+ *
+ * O plpgsql procura o THEN que fecha o proprio IF e encontra primeiro o THEN
+ * do CASE. Dali em diante ele engole o resto do arquivo, e o erro sai como
+ * "syntax error at end of input" apontando para uma linha que nao tem nada de
+ * errado — o que manda quem le investigar o lugar errado.
+ *
+ * O conserto e sempre o mesmo: calcular o CASE numa variavel antes do IF.
+ *
+ * Isto e um remendo de leitura, e nao um compilador: aqui nao ha Postgres para
+ * validar o arquivo antes de manda-lo. Guarda a forma exata que ja quebrou.
+ */
+const linhasDeCondicao = codigo
+  .split('\n')
+  .filter((linha) => /^\s*(if|elsif)\b/.test(linha) || /^\s+and\b/.test(linha));
+
+for (const linha of linhasDeCondicao) {
+  assert.ok(
+    !/\bcase\s+when\b/.test(linha),
+    `condicao de IF com CASE dentro nao compila em plpgsql; calcule antes numa variavel: ${linha.trim()}`,
+  );
+}
+
 console.log('[ok] a loja cobra o preco dela');

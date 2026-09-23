@@ -539,8 +539,15 @@ export const CodexStore: React.FC = () => {
                                                     <span className="text-[11px] leading-none text-white/80">{codex.duration_days}</span>
                                                     <span>dias</span>
                                                     <span className="px-1 text-white/20">·</span>
+                                                    {/* "2 acoes" num plano de 14 dias se le como o TOTAL da
+                                                        campanha, e vende ela por um quatorze avos do que ela
+                                                        e: sao 2 acoes que voltam todo dia. O numero aqui e
+                                                        `preview.actions.length`, que conta acao distinta e
+                                                        nao ocorrencia — a palavra e que estava mentindo pelo
+                                                        numero. "Por dia" diz o que ele significa sem
+                                                        inventar um total que o preview nao carrega. */}
                                                     <span className="text-[11px] leading-none text-white/80">{actionCount}</span>
-                                                    <span>{actionCount === 1 ? 'ação' : 'ações'}</span>
+                                                    <span>{actionCount === 1 ? 'ação por dia' : 'ações por dia'}</span>
                                                 </div>
                                             </div>
                                         </button>

@@ -63,6 +63,16 @@
   color: #f6f1e7; overflow: hidden; box-shadow: inset 0 1px 0 #ffffff16;
 }
 .daily-postcard-header, .daily-postcard-section-label, .daily-postcard-footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-shrink: 0; }
+
+/* O CHANFRO COME LETRA NOS DOIS CANTOS QUE ELE CORTA.
+   A placa e recortada por clipPath — 32px no topo-esquerdo, 46px no rodape-
+   direito — e o padding do cartao e uniforme. Nos cantos retos ele basta; nos
+   dois cortados, nao: a diagonal passa por dentro do texto e "MEU DIA"
+   aparecia como "EU DIA".
+   O recuo vai so onde o corte esta, e so na linha que encosta nele, para nao
+   estreitar o cartao inteiro por causa de dois cantos. */
+.daily-postcard-header { padding-left: 22px; }
+.daily-postcard-footer { padding-right: 34px; }
 .daily-postcard-header time { font-size: 11px; color: #d2cabc; }
 .daily-postcard-brand { font-size: 13px; letter-spacing: .18em; color: #f1d595; font-weight: 800; }
 .daily-postcard-brand span { display: block; font-size: 8px; letter-spacing: .2em; color: #d2cabc; margin-top: 3px; }

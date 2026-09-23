@@ -54,7 +54,29 @@ const PASTA = 'public/assets/catalog/avatars';
  * independente de quantos commits vieram depois.
  */
 const ultimoDeArte = git(['log', '-1', '--format=%H', '--', PASTA]).trim();
-const referencia = process.argv[2] || (ultimoDeArte ? ultimoDeArte + '^' : 'HEAD');
+const argumento = process.argv.slice(2).find((a) => !a.startsWith('--') && !process.argv.includes('--pular=' + a) && process.argv[process.argv.indexOf('--pular') + 1] !== a);
+const referencia = argumento || (ultimoDeArte ? ultimoDeArte + '^' : 'HEAD');
+
+/**
+ * O QUE PULAR — para nao tunar offset de peca que vai mudar de novo.
+ *
+ * Offset medido sobre arte que ainda vai ser corrigida e trabalho jogado fora,
+ * e pior que isso: quando a arte nova chegar, o offset velho continua la
+ * errando com confianca.
+ *
+ *   npm run arte:nova -- --pular SKIN_T3_DUQUE.png,SKIN_T4_REI.png
+ */
+const pular = new Set(
+    (process.argv.find((a) => a.startsWith('--pular=')) || '').replace('--pular=', '')
+        .split(',').map((s) => s.trim()).filter(Boolean),
+);
+const indicePular = process.argv.indexOf('--pular');
+if (indicePular > -1 && process.argv[indicePular + 1]) {
+    for (const nome of process.argv[indicePular + 1].split(',')) {
+        const limpo = nome.trim();
+        if (limpo) pular.add(limpo);
+    }
+}
 
 const porCaminho = new Map();
 
@@ -77,7 +99,9 @@ try {
     // Repositorio com um commit so: nao ha HEAD~1, e o `git status` basta.
 }
 
-const mudadas = [...porCaminho].map(([caminho, estado]) => ({ caminho, estado }));
+const mudadas = [...porCaminho]
+    .filter(([caminho]) => !pular.has(path.basename(caminho)))
+    .map(([caminho, estado]) => ({ caminho, estado }));
 
 const roupas = mudadas.filter((i) => /\/SKIN_[^/]+\.png$/.test(i.caminho));
 const cabelos = mudadas.filter((i) => i.caminho.includes('/hair/'));

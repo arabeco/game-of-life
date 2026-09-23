@@ -609,7 +609,15 @@ export const CodexStore: React.FC = () => {
                                                       */}
                                                     {purchasing === codex.id ? '...' : isFree ? 'Gratis' : (
                                                         <>
-                                                            <span>{goldPrice}</span>
+                                                            {listPrice > goldPrice && (
+                                                                <span
+                                                                    className="rounded-[5px] px-1 py-[1px] text-[8px] leading-none tracking-[0.1em]"
+                                                                    style={{ background: 'rgba(0,0,0,0.34)', color: tomDaCampanha }}
+                                                                >
+                                                                    {'−'}{Math.round((1 - goldPrice / listPrice) * 100)}%
+                                                                </span>
+                                                            )}
+                                                            <span className="text-[13px] leading-none tabular-nums">{goldPrice}</span>
                                                             <span aria-hidden>{'\u{1FA99}'}</span>
                                                         </>
                                                     )}

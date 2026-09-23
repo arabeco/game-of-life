@@ -168,6 +168,30 @@ const ArenaProgress: React.FC<{
   // sendo a unica fonte que existe — o ciclo da outra pessoa nao chega aqui.
   const usarContexto = Boolean(arenaViva);
 
+  /*
+   * CONCLUIDA NAO VOLTA A ZERO QUANDO O CICLO VIRA.
+   *
+   * O selo dizia "Concluiu" e a barra embaixo dizia 0%, ao mesmo tempo, sobre a
+   * mesma arena. Nao era desacordo entre duas contas: a conta estava certa e a
+   * pergunta e que estava errada. O progresso e recortado pelo ciclo aberto, e
+   * fechar o ciclo move a marca d'agua — a janela esvazia e a porcentagem cai,
+   * mesmo tendo sido 100% no dia em que foi entregue.
+   *
+   * Quem terminou terminou. Havendo carimbo, a barra para de perguntar as
+   * tarefas e passa a mostrar o fato: cheia, com a data. O carimbo e o unico
+   * dado que atravessa o vinculo de qualquer jeito — as tarefas do outro nao
+   * chegam aqui.
+   *
+   * SO NA VISAO DO PAR. Sendo sua, a fonte viva existe e manda: a arena tem de
+   * continuar contando as tarefas como conta na aba Arenas. Congelar os dois
+   * lados trocaria um numero errado por outro — o seu passaria a mentir para
+   * cima, dizendo 100% de uma arena que voce reabriu.
+   */
+  const concluida = Boolean(entry.completedAt);
+  const diaDaConclusao = entry.completedAt
+    ? new Date(entry.completedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+    : '';
+
   return (
     <div className="flex flex-col gap-1">
       {/*
@@ -181,9 +205,9 @@ const ArenaProgress: React.FC<{
       */}
       <div className="flex items-center gap-1.5 px-0.5">
         <span className="min-w-0 flex-1 truncate text-[9px] font-black uppercase tracking-[0.16em] text-white/45">{owner}</span>
-        {entry.completedAt && (
+        {concluida && (
           <span className="shrink-0 rounded-full border border-emerald-300/25 bg-emerald-400/10 px-1.5 py-[1px] text-[8px] font-black uppercase tracking-[0.1em] text-emerald-200">
-            Concluiu
+            Concluiu {diaDaConclusao}
           </span>
         )}
       </div>
@@ -192,7 +216,7 @@ const ArenaProgress: React.FC<{
         actions={(usarContexto ? acoesVivas : entry.actions) || entry.actions || []}
         tasks={usarContexto ? undefined : (entry.tasks || [])}
         relationshipBadgeType={entry.linkType ?? null}
-        progressPercent={usarContexto ? undefined : (progress.percent ?? undefined)}
+        progressPercent={usarContexto ? undefined : (concluida ? 100 : (progress.percent ?? undefined))}
         onClick={onOpen}
         variant="compact"
       />

@@ -184,6 +184,7 @@
     <option value="1.5">1,5×</option>
     <option value="2">2×</option>
     <option value="3">3×</option>
+    <option value="punho">Punho 6× — onde a manga encontra a mao</option>
   </select>
 </aside>
 
@@ -1022,11 +1023,45 @@
       var caixa = document.querySelector('.palco').getBoundingClientRect();
       escala = Math.min((caixa.width - 18) / 500, (caixa.height - 18) / 500, 1);
       escala = Math.max(0.35, escala);
+    } else if (valor === 'punho') {
+      escala = 1;
     } else {
       escala = parseFloat(valor);
     }
     tela.style.width = (500 * escala) + 'px';
     tela.style.height = tela.style.width;
+
+    /* O PUNHO E ONDE TRES LEVAS DE CORRECAO MORARAM.
+       No corpo inteiro o encontro da manga com a mao tem uns vinte pixels:
+       qualquer defeito ali some, e a conferencia virava mandar recorte por
+       chat a cada rodada. Aqui a vista pula direto para ele — centro em
+       (250, 272) do quadro de 500, que e a linha dos dois pulsos. */
+    if (valor === 'punho') {
+      /* TRANSFORM, E NAO ROLAGEM.
+         O palco centra com flex e tem overflow auto — quando o conteudo fica
+         maior que ele, o canto de cima e da esquerda fica INALCANCAVEL pela
+         rolagem, que e a armadilha classica de flex centrado com overflow.
+         Rolar levava a vista para um lugar vazio.
+         Com transform a tela continua do tamanho do palco e o zoom acontece
+         por cima, ancorado no pulso: (304, 272) de 500 = 61% e 54%. */
+      /* `transform-origin` FIXA um ponto, nao o centraliza — foi o primeiro
+         jeito que eu escrevi e a vista caia no cinto, com o pulso encostado na
+         borda. Ancorando no centro e deslocando DEPOIS da escala, o ponto
+         escolhido vai parar no meio do palco:
+             ponto aparece em  centro + (ponto - centro) * escala
+         entao o deslocamento e menos isso. */
+      var FOCO = { x: 304, y: 272 };   // o pulso direito, no quadro de 500
+      var k = 6;
+      var dx = (FOCO.x - 250) * k;
+      var dy = (FOCO.y - 250) * k;
+      tela.style.width = '500px';
+      tela.style.height = '500px';
+      tela.style.transformOrigin = 'center';
+      tela.style.transform = 'translate(' + (-dx) + 'px,' + (-dy) + 'px) scale(' + k + ')';
+    } else {
+      tela.style.transform = '';
+      tela.style.transformOrigin = '';
+    }
   }
   els.zoom.onchange = aplicarZoom;
 

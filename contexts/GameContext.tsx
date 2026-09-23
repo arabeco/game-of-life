@@ -3120,6 +3120,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             startDate,
             endDate,
             performanceScore: Number(rawReport.performanceScore ?? row.performance_score ?? 0),
+            // A nota GRAVADA vence. Ela nao era lida de volta, entao todo
+            // relatorio guardado tinha a letra recalculada na leitura pela regua
+            // do score — e a regua nova, que limita pelo porte do ciclo, so valia
+            // no instante do fecho. Duas leituras do mesmo relatorio podiam
+            // mostrar letras diferentes conforme a regua mudasse.
+            grade: typeof rawReport.grade === 'string' && rawReport.grade ? rawReport.grade : null,
+            gradeCeilingReason: typeof rawReport.gradeCeilingReason === 'string' ? rawReport.gradeCeilingReason : null,
             cycleName: String(rawReport.cycleName || row.name || 'Ciclo'),
             seasonId: rawReport.seasonId || row.season_id || undefined,
             clanPoints: typeof rawReport.clanPoints === 'number' ? rawReport.clanPoints : Number(rawReport.clanPoints || 0),
@@ -10248,6 +10255,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             endDate,
             performanceScore,
             grade: notaDoFecho.nota,
+            gradeCeilingReason: notaDoFecho.motivoDoTeto,
             cycleName: cycle?.name,
             seasonId: cycleSeasonId,
             metrics: {

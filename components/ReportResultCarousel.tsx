@@ -694,7 +694,15 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 // A frase segue a LETRA que esta na tela, e nao o score que deixou
                 // de decidir a letra. Um ciclo de 100% em cinco dias mostrava "B"
                 // com "Plano honrado em alto patamar. Raro e preciso." embaixo.
-                remate={falaDaNota(notaDoRelatorio).phrase}
+                /* O MOTIVO VENCE A FRASE, QUANDO HOUVE UM.
+                   Este comentario descrevia este comportamento antes de ele
+                   existir: so a frase era passada, e o motivo do teto era
+                   calculado no fecho e jogado fora. Um ciclo de 99 pontos
+                   mostrava "A" com "Execucao solida" embaixo, e a pessoa nao
+                   tinha como saber que o que faltou foram DIAS de ciclo, e nao
+                   esforco. Frase bonita a gente le uma vez; motivo a gente usa
+                   no proximo ciclo. */
+                remate={report.gradeCeilingReason || falaDaNota(notaDoRelatorio).phrase}
             />
         );
     };

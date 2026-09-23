@@ -829,6 +829,14 @@ export interface Report {
   performanceScore: number;
   /** A nota do ciclo, de SS a E. Sai do notaDoCiclo no fecho. */
   grade?: string | null;
+  /**
+   * O que SEGUROU a nota, quando o teto do porte cortou o que a execucao
+   * conquistou. Null quando o teto nao encostou.
+   *
+   * Sem isto, um ciclo de 99 pontos mostra "A" e uma frase generica, e nao ha
+   * como a pessoa descobrir que faltaram dias de ciclo e nao esforco.
+   */
+  gradeCeilingReason?: string | null;
   metrics: {
     actionsCompleted: number;
     totalPlannedActions: number;

@@ -4,6 +4,7 @@ import { SOVEREIGN_ASSETS, FACE_FEATURES_URL, DEFAULT_SOVEREIGN_CONFIG } from '.
 import { ITEMS_DB } from '../constants/items';
 import { getBodyUrl, getHairUrl, BODY_DB, HAIR_DB } from '../constants/skins';
 import { applyAvatarOffset, getAvatarOffset, getMascaraDoCorpo, getModoDoCabelo } from '../constants/avatarOffsets';
+import { drawHandsInFront } from '../constants/avatarHands';
 import { drawAuraCanvasEffect } from '../utils/auraVisuals';
 
 interface CanvasAvatarProps {
@@ -223,6 +224,13 @@ export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({
 
                 if (!isMounted) return;
 
+                // Copia o corpo antes dos recortes da roupa: as 15 mangas
+                // corrigidas precisam da mao original na camada da frente.
+                const camadaMaos = document.createElement('canvas');
+                camadaMaos.width = width;
+                camadaMaos.height = height;
+                camadaMaos.getContext('2d')?.drawImage(camadaCorpo, 0, 0);
+
                 // 2. Face Features
                 if (bodyUrl && FACE_FEATURES_URL) {
                     await loadAndDrawImage(FACE_FEATURES_URL, { alvo: ctxCorpo });
@@ -284,6 +292,8 @@ export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({
                 await loadAndDrawImage(outfitUrl);
 
                 if (!isMounted) return;
+
+                drawHandsInFront(offscreenCtx, camadaMaos, outfitUrl, width, height);
 
                 if (modoDoCabelo === 'porCima') {
                     await desenharCabelo();

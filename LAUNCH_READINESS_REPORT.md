@@ -1,9 +1,9 @@
 # Launch Readiness Report
 
-- Generated at: 2026-09-23T10:05:58.557Z
+- Generated at: 2026-09-23T13:46:03.480Z
 - Suite: `core`
 - Smoke URL: `http://127.0.0.1:3011/`
-- Build: PASS (20.3s)
+- Build: PASS (21.2s)
 
 ## Checks
 
@@ -71,7 +71,7 @@
 - Simulates: constancia conta dias e nao acoes
 - Simulates: entrega anterior ao aceite nao conta
 
-### PASS - Cycle scheduling regression (0.2s)
+### PASS - Cycle scheduling regression (0.1s)
 - Kind: `logic`
 - Simulates: renovar uma arena nao expulsa as outras do ciclo
 - Simulates: a virada reagenda as acoes recorrentes
@@ -203,7 +203,7 @@
 - Simulates: a presenca e o corte de relevancia
 - Simulates: sem candidato ele fica quieto
 
-### PASS - Oracle presence policy regression (0.6s)
+### PASS - Oracle presence policy regression (0.5s)
 - Kind: `logic`
 - Simulates: presenca decide o que ele fala
 - Simulates: aviso decide onde chega
@@ -245,28 +245,28 @@
 - Simulates: valida progresso de campanha/arena
 - Simulates: confere score, atlas e mutacoes utilitarias
 
-### PASS - Onboarding happy path (21.5s)
+### PASS - Onboarding happy path (19.7s)
 - Kind: `browser`
 - Simulates: entra com conta temporaria
 - Simulates: atravessa onboarding
 - Simulates: cria arena/acao inicial
 - Simulates: chega no fluxo principal sem travar
 
-### PASS - Campaign quiz flow (13.0s)
+### PASS - Campaign quiz flow (13.2s)
 - Kind: `browser`
 - Simulates: abre loja de campanhas
 - Simulates: roda quiz gratis
 - Simulates: reabre quiz completo
 - Simulates: instala campanha e confirma menu
 
-### PASS - Cycle report flow (22.0s)
+### PASS - Cycle report flow (21.3s)
 - Kind: `browser`
 - Simulates: cria ciclo real
 - Simulates: conclui tarefas
 - Simulates: fecha ciclo
 - Simulates: abre relatorio e reward flow
 
-### PASS - UI shell smoke (9.8s)
+### PASS - UI shell smoke (10.8s)
 - Kind: `browser`
 - Simulates: abre shell principal
 - Simulates: navega views centrais

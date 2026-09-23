@@ -117,20 +117,14 @@ const naPasta = (relativo) => fs.existsSync(path.join(root, 'public', relativo.r
 // vazio. O problema e que sumir nao da erro, nao aparece em log e nao tem tela
 // de aviso — o item simplesmente deixa de existir para quem joga.
 //
-// Por isso a lista fica fixada aqui, e nao vazia. Estes tres ja estavam
-// escondidos antes de cabelo virar obrigatorio, e sao o grupo E do
-// docs/2026-09-02-brief-de-assets.md. Quando a arte deles entrar, apague a
-// entrada correspondente. Se um item NOVO aparecer aqui, foi cadastrado sem PNG
-// e ninguem ia notar.
+// Por isso a lista fica fixada aqui, e nao vazia. Quando a arte de um item
+// entra, sua entrada e apagada. Se um item NOVO aparecer aqui, foi cadastrado
+// sem PNG e ninguem ia notar.
 {
-    // A roupa do Soberano saiu daqui em 20/09/2026. Nao porque o desenho chegou:
-    // porque ela ganhou um PNG de mentira no nome final
-    // (SKIN_T5_SOBERANO.png, xadrez magenta) para o resto do jogo poder ser
-    // ligado enquanto a arte nao vem. Quando o desenho chegar e so sobrescrever
-    // o arquivo — nenhuma linha muda, e esta lista continua com dois.
+    // Soberano e Empreendedor ja receberam PNGs. A borda ainda nao entrou
+    // porque esta fora do escopo atual de skins e cabelos.
     const conhecidos = [
         'item_border_4_002',        // Borda Soberano, epico
-        'item_skin_exclusive_001',  // Empreendedor, epico
     ];
     const pendentes = ITEM_IDS_PENDING_ART.slice().sort();
     assert.deepEqual(

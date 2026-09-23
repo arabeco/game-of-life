@@ -2612,9 +2612,22 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const boost = getGoldBoostProduct(itemId);
             if (!boost) return;
 
-            const expBoostExpiresAt = getNextExpBoostExpiryAt(boost.durationHours, userProfile.expBoostExpiresAt);
+            // QUEM CONCEDE E QUEM COBRA.
+            //
+            // O boost era entregue aqui, por um update de perfil separado do
+            // debito. Dois atos, e so o primeiro vigiado — dava para pular o
+            // primeiro. Agora a propria buy_store_item concede, na mesma
+            // transacao em que cobra, e devolve o que gravou.
+            //
+            // O calculo local fica como reserva para a resposta antiga, de um
+            // servidor que ainda nao tenha a versao nova. Ele nao decide nada:
+            // o banco ja recusa escrita nessas colunas.
+            const expBoostExpiresAt = String(
+                (data as any)?.boost_expires_at
+                || getNextExpBoostExpiryAt(boost.durationHours, userProfile.expBoostExpiresAt),
+            );
             updateUserProfile({
-                expBoostMultiplier: boost.multiplier ?? 1,
+                expBoostMultiplier: Number((data as any)?.boost_multiplier ?? boost.multiplier ?? 1),
                 expBoostExpiresAt,
                 expBoostProductId: boost.id,
             });
@@ -9020,6 +9033,20 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 return;
             }
             const allowedKeys: (keyof UserProfile)[] = [
+                // O QUE SAIU DAQUI, E POR QUE.
+                //
+                // `chests`, os tres creditos e os tres campos de boost foram
+                // retirados da coluna gravavel pelo cliente em
+                // 20260923200000_quem_cobra_entrega. Deixa-los aqui faria o
+                // aplicativo mandar um UPDATE que o banco recusa, e a recusa
+                // so vira `console.error` — uma falha que ninguem ve.
+                //
+                // Nenhum deles era decisao do cliente: os creditos e o bau ja
+                // vinham da resposta do RPC, e o boost agora e concedido pela
+                // propria buy_store_item, no mesmo ato que cobra por ele.
+                //
+                // O estado local continua sendo atualizado normalmente: este
+                // filtro so decide o que sobe para o banco.
                 'email',
                 'termsVersion',
                 'termsAcceptedAt',
@@ -9061,7 +9088,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'lastLevelUpdate',
                 'nobility',
                 'mood',
-                'chests',
                 'unlockedItems',
                 'unlockedSkins',
                 'completedSeasonMissions',
@@ -9109,12 +9135,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'betaRewardPending',
                 'betaRewardShownAt',
                 'betaRewardPayload',
-                'legacyProjectionSceneCredits',
-                'campaignQuizFreeCredits',
-                'campaignQuizMediumCredits',
-                'expBoostMultiplier',
-                'expBoostExpiresAt',
-                'expBoostProductId',
                 'themePreference',
                 'arenasViewMode',
                 'plannerViewMode',

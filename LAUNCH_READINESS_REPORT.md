@@ -1,6 +1,6 @@
 # Launch Readiness Report
 
-- Generated at: 2026-09-23T19:35:00.658Z
+- Generated at: 2026-09-23T20:08:06.087Z
 - Suite: `full`
 - Smoke URL: `http://127.0.0.1:3011/`
 - Build: SKIPPED
@@ -31,13 +31,13 @@
 - Simulates: confere progresso de arenas
 - Simulates: garante insignias acumulaveis
 
-### PASS - Oracle cycle coach regression (0.1s)
+### PASS - Oracle cycle coach regression (0.2s)
 - Kind: `logic`
 - Simulates: le ritmo do ciclo localmente
 - Simulates: prioriza arena em risco
 - Simulates: oferece apenas navegacao segura
 
-### PASS - Reward modal priority regression (0.1s)
+### PASS - Reward modal priority regression (0.2s)
 - Kind: `logic`
 - Simulates: nao mostra passagem antiga a conta nova
 - Simulates: evita sobreposicao entre dicas, temporada e recompensas
@@ -65,7 +65,7 @@
 - Simulates: assinatura vencida nao paga bonus
 - Simulates: vitrine sai do mesmo numero do calculo
 
-### PASS - Arena pacts regression (0.1s)
+### PASS - Arena pacts regression (0.2s)
 - Kind: `logic`
 - Simulates: nao propoe arena arquivada, travada, vazia ou concluida
 - Simulates: constancia conta dias e nao acoes

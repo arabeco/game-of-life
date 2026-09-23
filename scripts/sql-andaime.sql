@@ -160,3 +160,20 @@ create table if not exists public.cycles (
   season_id text,
   banked_exp_bonus integer
 );
+
+-- Criada pela migracao 20260923160000. Migracao posterior que fale de precos
+-- precisa dela de pe para ser analisada.
+create table if not exists public.store_prices (
+  id text primary key,
+  kind text not null,
+  gold_price integer not null,
+  label text not null default ''
+);
+insert into public.store_prices (id, kind, gold_price) values
+  ('boost_xp_24h', 'boost', 50),
+  ('boost_xp_7d', 'boost', 200),
+  ('premium_30d', 'premium', 200),
+  ('platinum_30d', 'premium', 500)
+on conflict (id) do nothing;
+
+create table if not exists public.user_inventory (user_id uuid, item_id text);

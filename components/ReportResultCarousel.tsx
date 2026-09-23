@@ -19,6 +19,7 @@ import { ShareChoiceSheet } from './ShareChoiceSheet';
 import './report-ui.css';
 import { emitAppSensoryCue } from '../utils/sensoryCue';
 import { getChestVisual, withAlpha } from '../constants/rarityVisuals';
+import { diasDaJanela, resumoDoCiclo, type HabitoNoCiclo } from '../services/HabitHistoryService';
 const ReportRadarChart = React.lazy(() => import('./ReportRadarChart').then((m) => ({ default: m.ReportRadarChart })));
 
 // Helper functions (duplicated to avoid circular dependencies)
@@ -171,6 +172,30 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
      * de tempo decorrido dava 0% num ciclo de um dia. Sobrou uma so, inclusiva,
      * que serve aos dois usos.
      */
+
+    /**
+     * OS HABITOS DO CICLO, BUSCADOS SO QUANDO O RELATORIO ABRE.
+     *
+     * O checklist e a sequencia sao a unica parte do app que a pessoa esta de
+     * fato tentando MUDAR, e o relatorio nao falava deles. Nao por escolha: o
+     * app guardava so o dia de hoje, entao "17 de 30" nao tinha como ser
+     * respondido.
+     *
+     * A leitura e por janela e acontece aqui, na montagem — nao na abertura do
+     * app. Quem nunca fecha ciclo nunca paga por isto.
+     */
+    const [habitos, setHabitos] = useState<HabitoNoCiclo[]>([]);
+    useEffect(() => {
+        const userId = userProfile?.id;
+        if (!userId || !report.startDate || !report.endDate) return;
+        let vivo = true;
+        void resumoDoCiclo(userId, String(report.startDate).slice(0, 10), String(report.endDate).slice(0, 10))
+            .then((lista) => { if (vivo) setHabitos(lista); });
+        return () => { vivo = false; };
+    }, [userProfile?.id, report.startDate, report.endDate]);
+
+    const diasDoCiclo = diasDaJanela(String(report.startDate).slice(0, 10), String(report.endDate).slice(0, 10));
+
     const totalDays = Math.max(1, daysBetween(new Date(report.startDate), new Date(report.endDate)) + 1);
 
     // Calculate Time Progress
@@ -759,12 +784,66 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         );
     };
 
+    /**
+     * O HABITO NO CICLO — e so aparece quando tem o que dizer.
+     *
+     * Esta e a regra que o rodape do planner aprendeu do jeito dificil e esta
+     * registrada la: "numero que aparece e nunca e mencionado e o pior dos dois
+     * mundos — parece que importa, e nao acontece nada". Sem marca no periodo,
+     * o slide nao existe; nada de "0 de 30" nem de quadro vazio.
+     *
+     * E mostra os DOIS numeros porque eles dizem coisas diferentes: quantos
+     * dias aconteceu, e qual foi a maior corrida seguida. Um habito de 17 dias
+     * espalhados e um de 17 seguidos sao a mesma soma e nao sao a mesma coisa.
+     */
+    const renderHabitsSlide = () => {
+        const campeao = habitos[0];
+        return (
+            <SlideCartaz
+                rank={notaDoRelatorio}
+                titulo="Hábitos"
+                numero={`${campeao.dias}`}
+                sufixo={`/${diasDoCiclo}`}
+                rotulo={campeao.title || 'o hábito que mais apareceu'}
+                figura={(
+                    <div className="flex h-full w-full flex-col justify-center gap-1.5 px-1">
+                        {habitos.slice(0, 5).map((h) => (
+                            <div key={`${h.kind}-${h.itemId}`} className="flex items-center gap-2">
+                                <span className="min-w-0 flex-1 truncate text-[11px] text-white/78">{h.title || 'Sem nome'}</span>
+                                <span className="h-1 flex-[2] overflow-hidden rounded-full bg-white/8">
+                                    <span
+                                        className="block h-full rounded-full bg-[var(--skin-accent-color)]"
+                                        style={{ width: `${Math.round((h.dias / Math.max(diasDoCiclo, 1)) * 100)}%` }}
+                                    />
+                                </span>
+                                <span className="w-16 shrink-0 text-right font-mono text-[11px] tabular-nums text-white/70">
+                                    {h.dias}/{diasDoCiclo}
+                                </span>
+                                <span className="w-20 shrink-0 text-right text-[10px] text-white/38">
+                                    {h.maiorSequencia > 1 ? `${h.maiorSequencia} seguidos` : ''}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+                /* DOIS NUMEROS PORQUE ELES DIZEM COISAS DIFERENTES.
+                   Dezessete dias espalhados e dezessete seguidos sao a mesma
+                   soma e nao sao a mesma conquista — a segunda e a que custa. */
+                legenda={habitos.some((h) => h.maiorSequencia > 1) ? [
+                    { rotulo: 'Maior seguida', valor: `${Math.max(...habitos.map((h) => h.maiorSequencia))} dias` },
+                ] : []}
+            />
+        );
+    };
+
+
     const slides = [
         renderExecutionSlide,
         ...(weeklyAtlas.length > 0 ? [renderAtlasSlide] : []),
         renderTerritorySlide,
         renderAchievementsSlide,
         ...(showComparisonSlide ? [renderComparisonSlide] : []),
+        ...(habitos.length > 0 ? [renderHabitsSlide] : []),
         renderVerdictSlide,
         renderRewardSlide
     ];

@@ -1,13 +1,13 @@
 # Launch Readiness Report
 
-- Generated at: 2026-09-23T09:57:25.968Z
+- Generated at: 2026-09-23T10:05:58.557Z
 - Suite: `core`
 - Smoke URL: `http://127.0.0.1:3011/`
-- Build: PASS (24.4s)
+- Build: PASS (20.3s)
 
 ## Checks
 
-### PASS - Avatar offsets regression (0.3s)
+### PASS - Avatar offsets regression (0.2s)
 - Kind: `logic`
 - Simulates: tabela vazia desenha igual ao comportamento antigo
 - Simulates: escala cresce do centro da peca
@@ -19,7 +19,7 @@
 - Simulates: impede a letra solta voltar no lugar do simbolo
 - Simulates: fixa a altura do card de item
 
-### PASS - Item art regression (0.5s)
+### PASS - Item art regression (0.3s)
 - Kind: `logic`
 - Simulates: confere que todo imageUrl existe no disco
 - Simulates: trava as categorias que ainda vivem de emoji
@@ -37,7 +37,7 @@
 - Simulates: prioriza arena em risco
 - Simulates: oferece apenas navegacao segura
 
-### PASS - Reward modal priority regression (0.2s)
+### PASS - Reward modal priority regression (0.1s)
 - Kind: `logic`
 - Simulates: nao mostra passagem antiga a conta nova
 - Simulates: evita sobreposicao entre dicas, temporada e recompensas
@@ -47,25 +47,25 @@
 - Simulates: remove planejamento diario do widget
 - Simulates: mostra acoes feitas, XP e arenas tocadas
 
-### PASS - Daily reading regression (0.2s)
+### PASS - Daily reading regression (0.1s)
 - Kind: `logic`
 - Simulates: fala sobre o dia corrente, nao so sobre dias fechados
 - Simulates: a assinatura muda a regua e nao o elogio
 - Simulates: dia abaixo da media nao soa como falha
 
-### PASS - Cycle comparison regression (0.2s)
+### PASS - Cycle comparison regression (0.1s)
 - Kind: `logic`
 - Simulates: o ciclo nao entra na propria referencia
 - Simulates: dias sem entrega conta invertido
 - Simulates: mediana aguenta ciclo extremo
 
-### PASS - Subscription XP bonus regression (0.2s)
+### PASS - Subscription XP bonus regression (0.1s)
 - Kind: `logic`
 - Simulates: platinum rende mais que premium
 - Simulates: assinatura vencida nao paga bonus
 - Simulates: vitrine sai do mesmo numero do calculo
 
-### PASS - Arena pacts regression (0.3s)
+### PASS - Arena pacts regression (0.2s)
 - Kind: `logic`
 - Simulates: nao propoe arena arquivada, travada, vazia ou concluida
 - Simulates: constancia conta dias e nao acoes
@@ -77,17 +77,17 @@
 - Simulates: a virada reagenda as acoes recorrentes
 - Simulates: o agendamento para no fim do ciclo, nao em 365 dias
 
-### PASS - Continuar sem ciclo regression (0.2s)
+### PASS - Continuar sem ciclo regression (0.1s)
 - Kind: `logic`
 - Simulates: fechar o ciclo e continuar nao deixa as arenas cheias
 - Simulates: a experiencia do ciclo nao volta na rodada e nao e paga duas vezes
 
-### PASS - Rodada nao paga duas vezes regression (0.2s)
+### PASS - Rodada nao paga duas vezes regression (0.1s)
 - Kind: `logic`
 - Simulates: concluir a rodada no meio do dia nao devolve o dia ja pago
 - Simulates: a marca na virada do dia conta o proprio dia
 
-### PASS - Regras de desbloqueio regression (0.3s)
+### PASS - Regras de desbloqueio regression (0.2s)
 - Kind: `logic`
 - Simulates: nenhuma borda ou banner fica sem caminho
 - Simulates: regra nao promete item que nao existe
@@ -99,21 +99,21 @@
 - Simulates: o SS pede um mes impecavel e nao um mes comprido
 - Simulates: o bau sai da nota e de mais nada
 
-### PASS - Cards de sabedoria regression (0.2s)
+### PASS - Cards de sabedoria regression (0.1s)
 - Kind: `logic`
 - Simulates: o card do dia nasce ligado
 - Simulates: a leitura do ciclo e o card de tema nao dividem a vaga do dia
 - Simulates: cada um cai na sua aba
 - Simulates: um banco de textos so para o app e para o cron
 
-### PASS - Ciclo recem-nascido regression (0.2s)
+### PASS - Ciclo recem-nascido regression (0.1s)
 - Kind: `logic`
 - Simulates: o dia 1 nao recebe "salve o que puder"
 - Simulates: um dia cheio pela frente nao e ciclo perdido
 - Simulates: sem ciclo nao ha risco de ciclo
 - Simulates: mais tarde o aviso continua vindo
 
-### PASS - Manha nao tem veredito regression (0.2s)
+### PASS - Manha nao tem veredito regression (0.1s)
 - Kind: `logic`
 - Simulates: as sete da manha o plano nao e diagnostico
 - Simulates: a tarde o diagnostico volta inteiro
@@ -162,13 +162,13 @@
 - Simulates: ler e salvar sao de uma pagina so
 - Simulates: o diario e so de quem escreveu
 
-### PASS - Tinta metalica regression (0.4s)
+### PASS - Tinta metalica regression (0.3s)
 - Kind: `logic`
 - Simulates: drop-shadow nao volta para cima do recorte por texto
 - Simulates: o numero nao vira um tijolo dourado
 - Simulates: a tinta metalica tem um dono so
 
-### PASS - XP scale regression (0.2s)
+### PASS - XP scale regression (0.1s)
 - Kind: `logic`
 - Simulates: missoes, jornadas e pactos usam a mesma escala
 - Simulates: nenhuma recompensa passa de 500 XP
@@ -185,25 +185,25 @@
 - Simulates: abrir ciclo fecha a rodada
 - Simulates: o fecho do ciclo nao recalcula a base ja paga
 
-### PASS - Oracle reaction regression (0.2s)
+### PASS - Oracle reaction regression (0.1s)
 - Kind: `logic`
 - Simulates: a reacao nao repete a frase anterior
 - Simulates: a primeira acao depois de uma pausa tem fala propria
 - Simulates: a dica de tela olha o que existe na tela
 
-### PASS - Sensory grammar regression (0.2s)
+### PASS - Sensory grammar regression (0.1s)
 - Kind: `logic`
 - Simulates: tres pesos e nada colidindo
 - Simulates: fechar ciclo nao vibra como fechar painel
 - Simulates: o marco de sequencia tem pulso proprio
 
-### PASS - Oracle arbiter regression (0.3s)
+### PASS - Oracle arbiter regression (0.2s)
 - Kind: `logic`
 - Simulates: as seis arenas competem em vez de morrer no ranking
 - Simulates: a presenca e o corte de relevancia
 - Simulates: sem candidato ele fica quieto
 
-### PASS - Oracle presence policy regression (1.6s)
+### PASS - Oracle presence policy regression (0.6s)
 - Kind: `logic`
 - Simulates: presenca decide o que ele fala
 - Simulates: aviso decide onde chega
@@ -215,7 +215,7 @@
 - Simulates: a tela de descanso respeita as duas barras
 - Simulates: preferencia que ainda nao chegou nao vira botao morto
 
-### PASS - Relationship link as timed product regression (0.2s)
+### PASS - Relationship link as timed product regression (0.1s)
 - Kind: `logic`
 - Simulates: o preco exibido e o preco cobrado
 - Simulates: renovar custa menos que criar
@@ -227,7 +227,7 @@
 - Simulates: salva a ordem no banco
 - Simulates: mantem conclusoes fora da baia
 
-### PASS - Displayed level scale regression (0.3s)
+### PASS - Displayed level scale regression (0.2s)
 - Kind: `logic`
 - Simulates: confere que area e Indice usam o mesmo fator
 - Simulates: proibe nivel cru na tela
@@ -245,28 +245,28 @@
 - Simulates: valida progresso de campanha/arena
 - Simulates: confere score, atlas e mutacoes utilitarias
 
-### PASS - Onboarding happy path (17.9s)
+### PASS - Onboarding happy path (21.5s)
 - Kind: `browser`
 - Simulates: entra com conta temporaria
 - Simulates: atravessa onboarding
 - Simulates: cria arena/acao inicial
 - Simulates: chega no fluxo principal sem travar
 
-### PASS - Campaign quiz flow (12.9s)
+### PASS - Campaign quiz flow (13.0s)
 - Kind: `browser`
 - Simulates: abre loja de campanhas
 - Simulates: roda quiz gratis
 - Simulates: reabre quiz completo
 - Simulates: instala campanha e confirma menu
 
-### PASS - Cycle report flow (22.9s)
+### PASS - Cycle report flow (22.0s)
 - Kind: `browser`
 - Simulates: cria ciclo real
 - Simulates: conclui tarefas
 - Simulates: fecha ciclo
 - Simulates: abre relatorio e reward flow
 
-### PASS - UI shell smoke (10.9s)
+### PASS - UI shell smoke (9.8s)
 - Kind: `browser`
 - Simulates: abre shell principal
 - Simulates: navega views centrais

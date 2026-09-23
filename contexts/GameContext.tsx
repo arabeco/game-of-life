@@ -19,6 +19,7 @@ import { BIOLOGICAL_MACHINE_CODEX } from '../data/initialCodex';
 import { NOBILITY_RANKS, RANK_REWARDS } from '../constants/nobility';
 import { supabase } from '../supabaseClient';
 import { deriveLegacySentinelMode, getOracleModeConfig } from '../constants/oracle';
+import { desmarcarHabito, marcarHabito } from '../services/HabitHistoryService';
 import { SupabaseService } from '../services/SupabaseService';
 import { rateLimiter } from '../services/SimpleRateLimiter';
 import type { Session } from '@supabase/supabase-js';
@@ -11103,8 +11104,27 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }, [clan?.id, clanQuestProgress]);
 
 
+    /**
+     * MARCAR TAMBEM VIRA HISTORIA, e nao so estado de hoje.
+     *
+     * `checklist_items` guarda UM dia, sobrescrito toda noite — entao o app
+     * nunca soube em que dias a pessoa fez. "17 de 30" era impossivel de
+     * responder por falta do dado, nao por falta de consulta.
+     *
+     * A anotacao e solta de proposito (`void`): ela nao pode atrasar nem
+     * derrubar o gesto de marcar. Se falhar, o relatorio mostra um dia a menos
+     * e a vida segue; se travasse, a pessoa acharia que o item nao marcou.
+     */
     const toggleChecklistItem = (id: string) => {
-        setChecklistItems(prev => prev.map(item => item.id === id ?{ ...item, completed: !item.completed } : item));
+        const alvo = checklistItems.find(item => item.id === id);
+        setChecklistItems(prev => prev.map(item => item.id === id ? { ...item, completed: !item.completed } : item));
+
+        const userId = getSupabaseUserId();
+        if (!userId || !alvo) return;
+        const hoje = getOperationalDateString();
+        void (alvo.completed
+            ? desmarcarHabito(userId, hoje, 'checklist', id)
+            : marcarHabito(userId, hoje, 'checklist', id, alvo.text));
     };
     const addChecklistItem = (text: string) => {
         if (!text.trim()) return;
@@ -11144,6 +11164,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const markSequenceItemToday = (id: string) => {
         const today = getOperationalDateString();
+        const alvo = sequenceItems.find(item => item.id === id);
         setSequenceItems(prev => prev.map(item => {
             if (item.id !== id) return item;
             if (item.lastMarkedDate === today) return item;
@@ -11154,6 +11175,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 updatedAt: new Date().toISOString(),
             };
         }));
+
+        // O contador de `sequence_items` atravessa ciclos e some quando a
+        // pessoa zera. O relatorio fala de UM ciclo, entao ele precisa das
+        // datas — e elas so existem se forem anotadas aqui.
+        const userId = getSupabaseUserId();
+        if (!userId || !alvo || alvo.lastMarkedDate === today) return;
+        void marcarHabito(userId, today, 'sequencia', id, alvo.title);
     };
 
     const adjustSequenceItemDays = (id: string, delta: number) => {

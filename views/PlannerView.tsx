@@ -2284,7 +2284,14 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                         ? 'border-[var(--skin-accent-color)]/38 bg-[var(--skin-accent-color)]/14 text-[var(--skin-accent-color)] shadow-[0_0_12px_rgba(212,175,55,0.14)]'
                         : estadoDoChecklist === 'completo'
                             ? 'border-[var(--skin-accent-color)]/70 bg-[var(--skin-accent-color)] text-black shadow-[0_0_14px_rgba(212,175,55,0.22)]'
-                            : 'border-white/8 bg-white/[0.025] text-gray-500 hover:border-white/18 hover:bg-white/[0.055] hover:text-gray-200'
+                            /* O VAZIO TAMBEM E A COR DA SKIN, SO QUE BAIXA.
+                           Ele era branco a 8% sobre fundo escuro: sumia. Um botao
+                           que nao se enxerga nao e discreto, e invisivel — e este
+                           e o unico caminho para o checklist na tela. Os tres
+                           estados passam a ser o mesmo tom em tres forcas, como o
+                           "+" do outro lado, para a leitura ser de INTENSIDADE e
+                           nao de cor trocada. */
+                        : 'border-[var(--skin-accent-color)]/30 bg-black/35 text-[var(--skin-accent-color)]/60 hover:border-[var(--skin-accent-color)]/55 hover:bg-[var(--skin-accent-color)]/10 hover:text-[var(--skin-accent-color)]'
                 }`}
             >
                 <SquareCheckIcon className="h-4 w-4" />

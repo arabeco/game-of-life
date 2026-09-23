@@ -47,13 +47,34 @@ const isReading = (id?: string) => id === READING_FEED_ID || id === CYCLE_READIN
 const CATEGORIAS_DE_LEITURA = new Set(['analise_padroes']);
 const ehLeitura = (category?: string | null) => Boolean(category && CATEGORIAS_DE_LEITURA.has(category));
 
-/** Propositos que falam do estado da pessoa. Vao para "Dia e ciclo". */
-const PROPOSITOS_DO_DIA = new Set(['cycle_insight']);
+/**
+ * SABEDORIA E SO O CARD TEMATICO, E A LISTA E DE PERMISSAO.
+ *
+ * A regra era por EXCLUSAO: tudo que nao fosse leitura de ciclo caia em
+ * Sabedoria. Funcionava enquanto so existissem dois tipos de card — e parou de
+ * funcionar quando o coach passou a falar. "Voce ja provou que consegue" e
+ * sobre os seus numeros, nao e tema nenhum, e mesmo assim entrava ali, porque
+ * nao era leitura de ciclo.
+ *
+ * Uma aba definida pelo que ela NAO tem herda tudo o que nascer depois. Entao
+ * ela passa a ser definida pelo que tem: card que saiu da BIBLIOTECA, que e o
+ * unico que e tema de verdade. Qualquer coisa nova que fale da pessoa nasce em
+ * "Dia e ciclo" sem ninguem precisar lembrar de exclui-la daqui.
+ */
+const PROPOSITOS_DE_BIBLIOTECA = new Set(['premium_content_card']);
 
-/** Um card e de "Dia e ciclo" quando o ASSUNTO e a pessoa — por tema ou por proposito. */
-const ehDoDiaEDoCiclo = (category?: string | null, purpose?: string | null) => (
-    ehLeitura(category) || Boolean(purpose && PROPOSITOS_DO_DIA.has(purpose))
-);
+const ehCardDeBiblioteca = (
+    deliveryType?: string | null,
+    category?: string | null,
+    purpose?: string | null,
+) => {
+    if (deliveryType !== 'feed') return false;
+    // Card gravado antes de o proposito existir na coluna: sem ele nao da para
+    // saber a origem, e mandar o historico inteiro para a outra aba seria pior
+    // que o defeito. Ali vale a regra antiga.
+    if (!purpose) return !ehLeitura(category);
+    return PROPOSITOS_DE_BIBLIOTECA.has(purpose);
+};
 
 interface Message {
   section?: 'guidance' | 'wisdom';
@@ -361,7 +382,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
     const feedCards: Message[] = recentFeedCards.slice(-30).map((feedMessage) => ({
       role: 'assistant',
-      section: ehDoDiaEDoCiclo(feedMessage.category, feedMessage.contextSnapshot?.purpose) ? 'guidance' : (feedMessage.deliveryType === 'feed' ? 'wisdom' : 'guidance'),
+      section: ehCardDeBiblioteca(feedMessage.deliveryType, feedMessage.category, feedMessage.contextSnapshot?.purpose) ? 'wisdom' : 'guidance',
       content: feedMessage.content,
       timestamp: new Date(feedMessage.createdAt),
       mode: feedMessage.mode,
@@ -707,7 +728,10 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   // If isEmbedded is true, we render a smaller status bar inside the chat area if header is hidden
   const showStatusPill = hideHeader;
 
-  const wisdomIds = new Set((oracleMessages || []).filter(message => message.deliveryType === 'feed' && message.contextSnapshot?.purpose !== 'oracle_speech' && !ehDoDiaEDoCiclo(message.category, message.contextSnapshot?.purpose)).map(message => message.id));
+  // Mesma lista de permissao da linha que monta `section`. Eram duas decisoes do
+  // mesmo destino em dois lugares, e a segunda continuava sendo por exclusao:
+  // arrumar so a primeira deixaria o card do coach entrando por aqui.
+  const wisdomIds = new Set((oracleMessages || []).filter(message => message.contextSnapshot?.purpose !== 'oracle_speech' && ehCardDeBiblioteca(message.deliveryType, message.category, message.contextSnapshot?.purpose)).map(message => message.id));
   const visibleMessages = section === 'mission' ? [] : messages.filter(message => section === 'wisdom' ? (message.section === 'wisdom' || wisdomIds.has(message.feedId || '')) : !(message.section === 'wisdom' || wisdomIds.has(message.feedId || '')));
 
   const content = (

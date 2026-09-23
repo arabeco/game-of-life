@@ -518,6 +518,27 @@ export const SeasonView: React.FC = () => {
 
     // Counts only what the player actually took on; season missions are assigned, not chosen.
     const individualSlotCount = activeSystemQuests.length + activeIndividualQuests.length + (activeArenaPact ? 1 : 0);
+
+    /*
+     * "1/1 MISSAO" NAO DIZIA QUAL.
+     *
+     * O contador soma TRES coisas diferentes — missao de sistema, missao
+     * individual e pacto de arena — e mostrava so o total. Quem olhava via o
+     * espaco ocupado e nao tinha como saber por quem, nem o que fazer para
+     * libera-lo. Um numero que junta tres origens nao informa: ele avisa que
+     * existe algo a descobrir em outro lugar.
+     *
+     * A regra em si esta certa e e antiga — "um compromisso de cada vez", como
+     * o proprio painel do Oraculo diz. O que faltava era a frase dizer de quem
+     * e o compromisso.
+     */
+    const ocupacaoDoSlot = activeArenaPact
+        ? 'Ocupado por um pacto de arena'
+        : activeSystemQuests.length > 0
+            ? 'Ocupado por uma missão inicial'
+            : activeIndividualQuests.length > 0
+                ? 'Ocupado pela sua missão'
+                : 'Livre — escolha uma';
     const chosenMissionCount = activeSystemQuests.length
         + activeIndividualQuests.length
         + activeClanQuests.length
@@ -672,7 +693,7 @@ export const SeasonView: React.FC = () => {
                             {(individualSlotCount > 0 || missaoIndividualDisponivel) && (
                                 <MissionSection
                                     title="Sua escolha"
-                                    hint={`${individualSlotCount}/1 missão`}
+                                    hint={ocupacaoDoSlot}
                                     count={individualSlotCount}
                                     mostrarCabecalho={mostrarCabecalhoDeGrupo}
                                 >

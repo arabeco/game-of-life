@@ -9,6 +9,7 @@ import { GM_SEASON_MISSIONS } from '../constants/seasonContent';
 import { buildSeasonFromConfig, getEraCalendarYears, getNextSeasonConfig, getSeasonConfigById, isGenesisSeason, resolveSeasonArchiveLogEntry, resolveSeasonBackgroundUrl, resolveSeasonLoreText } from '../utils/seasonPresentation';
 import { calculateArenaProgress } from '../utils/progressUtils';
 import { REWARD_PLATE_VIEWPORT_STYLE } from '../constants/rewardPlateStyles';
+import { getChestDisplayName } from '../constants/rarityVisuals';
 
 const DetailModalShell: React.FC<{
     title: string;

@@ -39,7 +39,14 @@ assert.match(seasonDetail, /Missão pessoal/);
 assert.match(seasonDetail, /Como concluir/);
 // The chest/gold/XP summary still has to reach the detail modal, even though it is
 // no longer rendered as the literal "{rewardLabel} + insignia" string.
-assert.match(seasonDetail, /const rewardLabel = rewardChest === 'Season'/);
+//
+// A ancora era a regra INTEIRA escrita aqui dentro (`=== 'Season' ? ...`), e era
+// ela o defeito: o nome do bau tem uma fonte, `getChestDisplayName`, e o modal
+// mantinha uma copia propria. Hoje as duas diziam a mesma coisa; amanha e uma
+// mudanca de distancia de discordarem. O que este teste guarda e o que sempre
+// quis guardar — que o resumo chega ao modal — agora pela fonte unica.
+assert.match(seasonDetail, /const rewardLabel = rewardChest \? getChestDisplayName\(rewardChest\)/);
+assert.match(seasonDetail, /import \{ getChestDisplayName \}/);
 assert.match(seasonDetail, /rewardSummary/);
 assert.doesNotMatch(seasonDetail, />Aceitar missao</);
 assert.doesNotMatch(seasonDetail, /RESGATAR RECOMPENSA/i);

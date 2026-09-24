@@ -814,6 +814,12 @@ export const SeasonView: React.FC = () => {
                                         icon={quest.actionTemplate.icon}
                                         artUrl={quest.artUrl}
                                         metaLabel={activeSystemQuests.length > 0 ? 'Substitui a atual' : 'Missão'}
+                                        /* A FAIXA DE COR EXISTIA E NAO CHEGAVA AQUI.
+                                           `QUEST_FAMILY_COLOR` foi feita para dizer de onde a
+                                           missao vem sem ninguem ler rotulo, e as disponiveis
+                                           nao passavam `family` — tres grupos empilhados sem
+                                           cabecalho e sem cor, identicos entre si. */
+                                        family="iniciante"
                                         isAccepted={false}
                                         progress={0}
                                         reward={formatQuestReward(quest)}
@@ -827,6 +833,7 @@ export const SeasonView: React.FC = () => {
                                         icon={quest.actionTemplate.icon}
                                         artUrl={quest.artUrl}
                                         metaLabel="Cria uma arena"
+                                        family="individual"
                                         isAccepted={false}
                                         progress={0}
                                         reward={formatQuestReward(quest)}
@@ -840,6 +847,7 @@ export const SeasonView: React.FC = () => {
                                         icon={quest.actionTemplate.icon}
                                         artUrl={quest.artUrl}
                                         metaLabel="Missão do grupo"
+                                        family="grupo"
                                         isAccepted={false}
                                         progress={0}
                                         participants={clanQuestParticipants[quest.id] || 0}

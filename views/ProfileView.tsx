@@ -802,6 +802,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                         onClick={() => {
                                             void shareElementWithFeedback(showToast, 'shareable-profile', {
                                                 title: `Perfil de ${displayProfile.nickname} - Life OS`,
+                                                text: 'Olha só meu perfil no Glyph.',
                                                 preparingMessage: 'Preparando compartilhamento do perfil...',
                                                 sharedMessage: 'Perfil compartilhado.',
                                                 cancelledMessage: 'Compartilhamento cancelado.',

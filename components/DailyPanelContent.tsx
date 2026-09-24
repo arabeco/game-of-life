@@ -355,6 +355,7 @@ export const DailyPanelContent: React.FC<{
         if (ehHoje) return;
         void shareElementWithFeedback(showToast, 'daily-summary-capture-area', {
             title: 'Meu Resumo Diário - Glyph',
+            text: 'Veja como foi meu dia no Glyph.',
             preparingMessage: 'Preparando resumo...',
             sharedMessage: 'Resumo diário compartilhado.',
             cancelledMessage: 'Compartilhamento cancelado.',

@@ -183,6 +183,7 @@ export const MasteryView: React.FC<{ onClose?: () => void; embedded?: boolean }>
                         onClick={() => {
                             void shareElementWithFeedback(showToast, 'mastery-capture-area', {
                                 title: 'Minha Maestria - Life OS',
+                                text: 'Minha maestria no Glyph.',
                                 preparingMessage: 'Preparando compartilhamento da maestria...',
                                 sharedMessage: 'Maestria compartilhada.',
                                 cancelledMessage: 'Compartilhamento cancelado.',

@@ -2410,6 +2410,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         const { shareElementWithFeedback } = await import('../components/Share');
         await shareElementWithFeedback(showToast, 'report-summary-card-capture', {
             title: `Relatório de Ciclo ${formatDate(report.startDate)} - Life OS`,
+            text: 'Fechei mais um ciclo no Glyph.',
             preparingMessage: 'Preparando compartilhamento do relatório...',
             sharedMessage: 'Relatório compartilhado.',
             cancelledMessage: 'Compartilhamento cancelado.',

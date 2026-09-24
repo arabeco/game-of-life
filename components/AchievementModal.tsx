@@ -528,6 +528,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                     onShareImage={() => {
                         void shareElementWithFeedback(showToast, ID_DA_PLACA, {
                             title: `${title} — GLYPH`,
+                            text: 'Conquista nova no Glyph.',
                             preparingMessage: 'Preparando a imagem...',
                             sharedMessage: 'Imagem compartilhada.',
                             cancelledMessage: 'Compartilhamento cancelado.',

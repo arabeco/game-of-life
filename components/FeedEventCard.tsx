@@ -245,7 +245,7 @@ export const FeedEventCard: React.FC<{ event: FeedEvent }> = ({ event }) => {
                 </div>
             </div>
             <div className="feed-daily-controls">
-                <button className="feed-share-control" aria-label="Compartilhar cartão diário" onClick={() => void shareElementWithFeedback(showToast, `feed-event-${event.id}`, {title: `Dia de ${authorName} — GLYPH`})}>
+                <button className="feed-share-control" aria-label="Compartilhar cartão diário" onClick={() => void shareElementWithFeedback(showToast, `feed-event-${event.id}`, {title: `Dia de ${authorName} — GLYPH`, text: `O dia de @${authorName} no Glyph.`})}>
                     <ShareIcon className="h-4 w-4" /> Compartilhar imagem
                 </button>
                 {botaoDeCurtir}

@@ -25,6 +25,15 @@ export type ExportElementResult = 'shared' | 'downloaded' | 'cancelled';
 
 interface ShareWithFeedbackOptions {
     title?: string;
+    /**
+     * A legenda que vai junto da imagem.
+     *
+     * Opcional porque nem todo destino a usa: varios apps descartam o texto
+     * quando ha arquivo anexado, e o compartilhador nao devolve qual fez o que.
+     * Ela e um acrescimo para onde funciona, e nunca o recado — a imagem tem de
+     * se explicar sozinha.
+     */
+    text?: string;
     preparingMessage?: string;
     sharedMessage?: string;
     cancelledMessage?: string;
@@ -156,7 +165,7 @@ const blobParaBase64 = (blob: Blob): Promise<string> => new Promise((resolve, re
     leitor.readAsDataURL(blob);
 });
 
-const compartilharNativo = async (blob: Blob, title: string, fileName: string): Promise<NativeShareResult> => {
+const compartilharNativo = async (blob: Blob, title: string, fileName: string, text?: string): Promise<NativeShareResult> => {
     if (!Capacitor.isNativePlatform()) return 'unavailable';
 
     try {
@@ -170,7 +179,11 @@ const compartilharNativo = async (blob: Blob, title: string, fileName: string): 
             directory: Directory.Cache,
         });
 
-        await CapacitorShare.share({ title, files: [uri], dialogTitle: title });
+        /* `text` vai junto quando existe. Nem todo destino usa: varios apps
+           descartam a legenda quando ha arquivo anexado, e o compartilhador nao
+           conta qual fez o que. Entao ela e um acrescimo, nunca a mensagem —
+           a imagem tem de se explicar sozinha. */
+        await CapacitorShare.share({ title, text, files: [uri], dialogTitle: title });
         return 'shared';
     } catch (error) {
         if (isShareCancelledError(error)) return 'cancelled';
@@ -192,7 +205,7 @@ const isShareCancelledError = (error: unknown) => {
         || normalized.includes('aborted a request');
 };
 
-const tryShareFile = async (file: File, title: string) => {
+const tryShareFile = async (file: File, title: string, text?: string) => {
     if (typeof navigator === 'undefined' || typeof navigator.share !== 'function') {
         return 'unavailable' as NativeShareResult;
     }
@@ -204,6 +217,7 @@ const tryShareFile = async (file: File, title: string) => {
         await navigator.share({
             files: [file],
             title,
+            ...(text ? { text } : {}),
         });
         return 'shared' as NativeShareResult;
     } catch (error) {
@@ -217,7 +231,8 @@ const tryShareFile = async (file: File, title: string) => {
 
 export const handleShare = async (
     elementId: string,
-    title: string = 'Meu Progresso - GLYPH'
+    title: string = 'Meu Progresso - GLYPH',
+    text?: string
 ): Promise<ShareResult> => {
     /*
      * A CAPTURA VEM PRIMEIRO, e a guarda de navigator.share saiu daqui.
@@ -230,7 +245,7 @@ export const handleShare = async (
     const element = getTargetElement(elementId);
     const blob = await captureElementBlob(element, '#101010');
 
-    const nativo = await compartilharNativo(blob, title, 'glyph.png');
+    const nativo = await compartilharNativo(blob, title, 'glyph.png', text);
     if (nativo === 'shared' || nativo === 'cancelled') return nativo;
 
     const file = new File([blob], 'share.png', { type: 'image/png' });
@@ -251,6 +266,7 @@ export const shareElementWithFeedback = async (
     elementId: string,
     {
         title = 'Meu Progresso - Life OS',
+        text,
         preparingMessage = 'Preparando compartilhamento...',
         sharedMessage = 'Imagem compartilhada.',
         cancelledMessage = 'Compartilhamento cancelado.',
@@ -261,7 +277,7 @@ export const shareElementWithFeedback = async (
     showToast(preparingMessage, 'info');
 
     try {
-        const result = await handleShare(elementId, title);
+        const result = await handleShare(elementId, title, text);
         if (result === 'cancelled') {
             showToast(cancelledMessage, 'info');
             return result;

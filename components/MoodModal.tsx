@@ -13,6 +13,20 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [historico, setHistorico] = React.useState<Array<{ value: number; recordedAt: string }>>([]);
     const [registrando, setRegistrando] = React.useState(false);
     const [aba, setAba] = useState<'humor' | 'diario'>('humor');
+
+    /*
+     * A FRASE NASCE JUNTO DO HUMOR, E NAO NOUTRA ABA.
+     *
+     * Registrar ja escrevia no diario — com a frase enlatada "Estava me
+     * sentindo assim.", que e o que sobra quando ninguem perguntou nada. E
+     * quem quisesse dizer o que estava pensando tinha de sair daqui, abrir a
+     * outra aba e escrever um texto solto, que entao nao carregava humor
+     * nenhum.
+     *
+     * Sao o mesmo gesto: a pessoa senta para dizer como esta. O nivel e a
+     * frase saem da mesma sentada, e o cabecalho carimba os dois juntos.
+     */
+    const [frase, setFrase] = useState('');
     const [localMood, setLocalMood] = useState(userProfile.mood);
 
     const resolveMood = (value: number) => 
@@ -61,8 +75,9 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 void anexarEntrada(
                     userProfile.id,
                     cabecalhoDeHoje() + ' · ' + currentMoodInfo.label,
-                    'Estava me sentindo assim.',
+                    frase.trim() || 'Estava me sentindo assim.',
                 );
+                setFrase('');
             }
         } finally {
             setRegistrando(false);
@@ -175,15 +190,36 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         ))}
                     </div>
 
+                    {/* O campo fica ENTRE a regua e o botao, que e a ordem do
+                        gesto: escolhe o nivel, diz por que, registra os dois. Ele
+                        nunca e obrigatorio — quem so quer arrastar a bolinha
+                        continua arrastando e pronto. */}
+                    <textarea
+                        id="mood-frase"
+                        value={frase}
+                        onChange={(evento) => setFrase(evento.target.value.slice(0, 600))}
+                        rows={3}
+                        placeholder="Como está se sentindo? O que está pensando?"
+                        className="w-full resize-none rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-[13px] leading-[1.45] text-white/88 placeholder:text-white/30 focus:border-[var(--skin-accent-color)]/45 focus:outline-none"
+                    />
+
                     {/* Registrar tem nome e numero na frente: e a pessoa dizendo
-                        "hoje eu estou assim", nao o app anotando o dedo dela. */}
+                        "hoje eu estou assim", nao o app anotando o dedo dela.
+
+                        Escrever sozinho tambem vale: quem nao mexeu na regua mas
+                        tem o que dizer nao pode ficar com o botao apagado — a
+                        frase e registro tanto quanto o numero. */}
                     <button
                         type="button"
                         onClick={() => { void handleRegistrar(); }}
-                        disabled={!mudou || registrando}
+                        disabled={(!mudou && !frase.trim()) || registrando}
                         className="luxe-skin-button w-full rounded-xl py-2.5 text-[11px] font-black uppercase tracking-[0.14em] disabled:cursor-not-allowed disabled:opacity-40"
                     >
-                        {registrando ? '...' : mudou ? `Registrar · ${currentMoodInfo.label} (${currentMoodInfo.level})` : 'Já registrado'}
+                        {registrando
+                            ? '...'
+                            : (mudou || frase.trim())
+                                ? `Registrar · ${currentMoodInfo.label} (${currentMoodInfo.level})`
+                                : 'Já registrado'}
                     </button>
                 </div>
 

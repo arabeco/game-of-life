@@ -268,6 +268,27 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
 
     const primary = config.primaryDisplay || 'sovereign';
 
+    /*
+     * MOSTRAR NO PERFIL E UMA ESCOLHA, E ELA MORA NO MESMO CAMPO.
+     *
+     * `primaryDisplay` sempre respondeu "o que aparece", e "nada" e uma das
+     * respostas — por isso `'none'` em vez de um booleano ao lado, que acabaria
+     * discordando dele.
+     *
+     * Desligar guarda o modo anterior no proprio gesto de religar: voltar
+     * escolhe `sovereign` ou `item` conforme o que estiver em edicao, para
+     * ninguem perder a montagem so por ter escondido.
+     */
+    const apareceNoPerfil = config.primaryDisplay !== 'none';
+    const alternarAparicao = () => {
+        setConfig(p => ({
+            ...p,
+            primaryDisplay: p.primaryDisplay === 'none'
+                ? (activeMode === 'artifact' ? 'item' : 'sovereign')
+                : 'none',
+        }));
+    };
+
     return (
         <Portal>
             <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[10000] flex items-center justify-center animate-fade-in" onClick={onClose}>
@@ -376,6 +397,43 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                         </div>
 
                     </div>
+                </div>
+
+                {/* O interruptor fica junto dos previews, que e onde a pessoa
+                    acabou de decidir o que mostrar — e nao perdido no fim da
+                    lista de pecas. */}
+                <div className="flex items-center justify-between gap-3 border-b border-white/5 bg-black/20 px-4 py-2.5 shrink-0">
+                    <div className="min-w-0">
+                        <div className="text-[11px] font-black uppercase tracking-[0.12em] text-white/78">Mostrar no perfil</div>
+                        <div className="mt-0.5 text-[9px] leading-[1.35] text-white/42">
+                            {/* A frase diz PERFIL e nao "em todo lugar", porque a lista
+                                de membros do grupo monta o soberano com
+                                `primaryDisplay: 'sovereign'` fixo e ignora esta
+                                escolha. Prometer mais do que o interruptor faz
+                                seria pior do que ele nao existir. */}
+                            {apareceNoPerfil ? 'A miniatura aparece no seu perfil.' : 'Seu perfil não mostra a miniatura.'}
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        role="switch"
+                        aria-checked={apareceNoPerfil}
+                        aria-label="Mostrar a miniatura no perfil"
+                        onClick={alternarAparicao}
+                        className={`relative h-6 w-11 shrink-0 rounded-full border transition-colors ${
+                            apareceNoPerfil
+                                ? 'border-[var(--skin-accent-color)]/60 bg-[var(--skin-accent-color)]/30'
+                                : 'border-white/15 bg-white/8'
+                        }`}
+                    >
+                        <span
+                            className={`absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full transition-all ${
+                                apareceNoPerfil
+                                    ? 'left-[22px] bg-[var(--skin-accent-color)]'
+                                    : 'left-[3px] bg-white/45'
+                            }`}
+                        />
+                    </button>
                 </div>
 
                 {/* Controls Section */}

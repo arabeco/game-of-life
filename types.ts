@@ -415,7 +415,17 @@ export interface SovereignConfig {
   aura: string; // NEW: Aura slot
   sovereignPlate?: string; // NEW: Placa slot for Sovereign
   artifactPlate?: string; // NEW: Placa slot for Artifact
-  primaryDisplay?: 'sovereign' | 'item'; // Preferred miniature display
+  /**
+   * O que a miniatura do perfil mostra — e `'none'` e nao mostrar nada.
+   *
+   * O terceiro valor cabe aqui em vez de virar um booleano proprio: a escolha
+   * sempre foi "o que aparece", e "nada" e uma das respostas. Dois campos
+   * decidindo a mesma vaga acabariam se contradizendo.
+   *
+   * Ausente quer dizer que a pessoa nunca escolheu, e isso nao e o mesmo que
+   * ter escolhido o soberano — ver `UnifiedSovereignDisplay`.
+   */
+  primaryDisplay?: 'sovereign' | 'item' | 'none';
 }
 
 export type UnlockCategory = 'bodyStyles' | 'hairStyles' | 'outfits' | 'artifacts' | 'codexes' | 'skins' | 'borders' | 'banners' | 'auras' | 'plates' | 'ornament' | 'insignias' | 'ui_skins';

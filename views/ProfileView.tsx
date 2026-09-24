@@ -162,7 +162,25 @@ const UnifiedSovereignDisplay: React.FC<{
 }> = ({ sovereignConfig, onClick, className }) => {
     if (!sovereignConfig) return null;
 
-    const { primaryDisplay = 'sovereign' } = sovereignConfig;
+    /*
+     * QUEM NAO QUER MOSTRAR, NAO MOSTRA. E QUEM NUNCA ESCOLHEU TAMBEM NAO,
+     * ENQUANTO ESTIVER SEM ROUPA.
+     *
+     * `primaryDisplay` ausente nao e o mesmo que ter escolhido o soberano: e
+     * nunca ter aberto o editor. Como `DEFAULT_SOVEREIGN_CONFIG` nasce com
+     * `outfit: 'none'`, toda conta nova exibia um avatar de cueca no perfil —
+     * a primeira impressao do app, e a pior possivel.
+     *
+     * Entao o padrao nao e "ligado" nem "desligado": e ligado QUANDO HA O QUE
+     * MOSTRAR. Quem se vestiu ve o soberano sem ter pedido; quem acabou de
+     * chegar nao ve nada ate escolher. E `'none'` continua sendo escolha
+     * explicita, que vale mesmo vestido.
+     */
+    const escolha = sovereignConfig.primaryDisplay;
+    if (escolha === 'none') return null;
+    if (escolha === undefined && (sovereignConfig.outfit || 'none') === 'none') return null;
+
+    const primaryDisplay = escolha ?? 'sovereign';
     const isInteractive = !!onClick;
 
     // Helper to get asset URL

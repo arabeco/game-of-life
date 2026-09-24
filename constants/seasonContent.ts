@@ -208,15 +208,20 @@ export const SEASONS: Record<string, SeasonConfig> = {
       {
         id: 'quest-warrior',
         // Eram 50 flexoes: 5 series de 5 min, 25 minutos no total contra as 7h30
-        // do Erudito pelo mesmo bau. Agora sao 200, o que poe a jornada na mesma
-        // ordem de grandeza das outras duas sem virar exagero.
+        // do Erudito pelo mesmo bau. Foram para 200, e continuavam custando 1h40
+        // contra as 5h do Andarilho — a mais barata por larga margem, e a unica
+        // que alguem faria se as tres valem o mesmo.
+        //
+        // Agora sao 300: 30 series de 5 min, 2h30. Segue abaixo das outras duas
+        // DE PROPOSITO — flexao custa mais por minuto que caminhada ou leitura,
+        // entao igualar o relogio desigualaria o esforco.
         title: 'O Guerreiro',
-        description: 'Complete 200 flexoes no acumulado para fortalecer o corpo. (Recompensa: 1 Bau Mitico)',
+        description: 'Complete 300 flexões no acumulado para fortalecer o corpo. (Recompensa: 1 Baú Mítico)',
         type: 'individual',
         category: 'physical',
         season_id: 'season-genesis-0',
-        actionTemplate: { name: 'Flexões (x10)', description: 'Fazer 10 flexões com boa forma.', duration: 5, icon: '💪', repetitions: 20 },
-        requirements: { totalReps: 20 },
+        actionTemplate: { name: 'Flexões (x10)', description: 'Fazer 10 flexões com boa forma.', duration: 5, icon: '💪', repetitions: 30 },
+        requirements: { totalReps: 30 },
         rewards: { xp: 300, gold: 0 },
         reward_type: 'chest',
         reward_value: 'Season',

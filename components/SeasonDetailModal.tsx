@@ -103,7 +103,12 @@ export const QuestDetailModal: React.FC<{
     };
 
     const rewardChest = getQuestRewardChest(quest);
-    const rewardLabel = rewardChest === 'Season' ? 'Baú Mítico' : rewardChest ? `Baú ${rewardChest}` : 'Sem baú';
+    /* O nome do bau tem UMA fonte: `getChestDisplayName`. Esta linha repetia a
+       regra por conta propria — hoje diz a mesma coisa, e era so uma mudanca de
+       distancia de discordar dela. A chave persistida continua sendo `Season`;
+       o nome exibido e "Baú Mítico"; o arquivo de arte se chama bau_epico.png
+       por heranca, e nao e o nome de nada. */
+    const rewardLabel = rewardChest ? getChestDisplayName(rewardChest) : 'Sem baú';
     const rewardGold = Number((quest as SeasonQuest & { rewardGold?: number }).rewardGold || 0);
     const rewardItemCount = quest.rewards.items?.length || 0;
     const rewardSummary = rewardGold > 0

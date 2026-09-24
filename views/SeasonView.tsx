@@ -451,6 +451,25 @@ export const SeasonView: React.FC = () => {
         showToast('Missão removida. Seu progresso foi mantido.', 'info');
     };
 
+    /*
+     * JORNADA DE TEMPORADA NAO E MISSAO PESSOAL.
+     *
+     * As tres da Genesis — Andarilho, Erudito, Guerreiro — tem
+     * `type: 'individual'`, porque quem as cumpre e uma pessoa e nao o grupo.
+     * Mas elas tambem tem `season_id`, e e dali que vem a insignia e o tema: sao
+     * DA TEMPORADA.
+     *
+     * Ate aqui o card delas saia amarelo, a cor de "individual", igualzinho a um
+     * pacto de arena que o app inventou para voce hoje. A faixa de cor existe
+     * justamente para dizer de onde a missao vem sem ninguem ler rotulo — e
+     * estava dizendo errado nas tres que mais importam.
+     */
+    const familiaDaQuest = (quest: SelectableQuest): SeasonQuestFamily => (
+        (quest as any)?.season_id && (quest as any).season_id === activeSeason?.id
+            ? 'temporada'
+            : 'individual'
+    );
+
     const individualQuests = useMemo(
         () => quests.filter((quest) => (
             quest.type === 'individual'
@@ -833,7 +852,7 @@ export const SeasonView: React.FC = () => {
                                         icon={quest.actionTemplate.icon}
                                         artUrl={quest.artUrl}
                                         metaLabel="Cria uma arena"
-                                        family="individual"
+                                        family={familiaDaQuest(quest)}
                                         isAccepted={false}
                                         progress={0}
                                         reward={formatQuestReward(quest)}

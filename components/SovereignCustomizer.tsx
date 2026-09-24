@@ -296,25 +296,30 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
         indice === 0 ? (config.artifact || 'none') : (config.extraArtifacts?.[indice - 1] || 'none')
     );
 
+    /*
+     * ARTEFATO JA POSTO NAO SE ESCOLHE DE NOVO.
+     *
+     * A primeira versao disto aceitava o clique e esvaziava a vaga antiga. Era
+     * correto e era ruim: a pessoa punha na vaga 2 e a vaga 1 esvaziava sem ela
+     * ter pedido, e so ia entender olhando a vitrine.
+     *
+     * Agora a peca ja usada aparece afundada na grade e nao aceita clique.
+     * `none` e a excecao obvia: vaga vazia nao ocupa nada, e varias podem
+     * estar vazias ao mesmo tempo.
+     */
+    const usadoEmOutraVaga = (id: string) => {
+        if (id === 'none') return false;
+        return [0, 1, 2].some(indice => indice !== slotAtivo && artefatoDoSlot(indice) === id);
+    };
+
     const porArtefatoNoSlot = (id: string) => {
+        if (usadoEmOutraVaga(id)) return;
         setConfig(anterior => {
+            if (slotAtivo === 0) return { ...anterior, artifact: id };
             const extras = [...(anterior.extraArtifacts || [])];
             while (extras.length < 2) extras.push('none');
-
-            // O mesmo artefato em duas vagas mostraria a peca duplicada na
-            // vitrine e faria parecer defeito. Escolher onde ele ja estava
-            // esvazia a vaga antiga em vez de cloná-lo.
-            let destaque = anterior.artifact || 'none';
-            if (id !== 'none') {
-                if (slotAtivo !== 0 && destaque === id) destaque = 'none';
-                for (let i = 0; i < extras.length; i += 1) {
-                    if (extras[i] === id && i !== slotAtivo - 1) extras[i] = 'none';
-                }
-            }
-
-            if (slotAtivo === 0) return { ...anterior, artifact: id, extraArtifacts: extras };
             extras[slotAtivo - 1] = id;
-            return { ...anterior, artifact: destaque, extraArtifacts: extras };
+            return { ...anterior, extraArtifacts: extras };
         });
     };
 
@@ -612,6 +617,7 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                                 <div className="grid grid-cols-5 gap-2 overflow-y-auto pr-1 pb-2 custom-scrollbar">
                                     {getOwnedList(SOVEREIGN_ASSETS.artifacts, 'artifacts').map(item => {
                                         const isSelected = artefatoDoSlot(slotAtivo) === item.id;
+                                        const jaUsado = usadoEmOutraVaga(item.id);
                                         const assetWithRarity = item as any;
                                         const rarityVisual = getRarityVisual(assetWithRarity.rarity);
                                         
@@ -619,7 +625,19 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                                             <button
                                                 key={item.id}
                                                 onClick={() => porArtefatoNoSlot(item.id)}
-                                                className={`relative aspect-square rounded-md border flex flex-col items-center justify-center bg-black/40 transition-all ${isSelected ? 'border-white bg-white/10' : 'border-white/10 hover:bg-white/5'}`}
+                                                disabled={jaUsado}
+                                                title={jaUsado ? 'Já está em outra vaga' : item.name}
+                                                /* Afundado: sombra para dentro, sem brilho e sem
+                                                   hover. Ele nao some da grade de proposito — some
+                                                   pareceria que a peca foi perdida, e ela esta ali
+                                                   do lado, numa vaga. */
+                                                className={`relative aspect-square rounded-md border flex flex-col items-center justify-center transition-all ${
+                                                    jaUsado
+                                                        ? 'cursor-not-allowed border-black/50 bg-black/70 opacity-40 shadow-[inset_0_2px_6px_rgba(0,0,0,0.9)]'
+                                                        : isSelected
+                                                            ? 'border-white bg-white/10 bg-black/40'
+                                                            : 'border-white/10 bg-black/40 hover:bg-white/5'
+                                                }`}
                                             >
                                                 <div className="flex items-center justify-center w-full h-full p-1">
                                                     <ItemArt

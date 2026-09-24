@@ -10,6 +10,7 @@ import { UserAvatar } from './UserAvatar';
 import { Sovereign } from './Avatar';
 import { ClanEmblem } from './ClanEmblem';
 import { getDisplayLevel } from '../constants/lifeAreas';
+import { SovereignVitrineModal } from './SovereignVitrine';
 
 type ClanOverviewTab = 'headquarters' | 'members';
 
@@ -106,6 +107,10 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
     /* A aura fica, pelo mesmo motivo do perfil: ela e parte do visual do
        soberano, e nao um dos outros modos de exibicao. O que sai daqui e o
        artefato e as placas. */
+    /* Quem esta com a vitrine aberta. O palco mostra a miniatura; a vitrine e
+       onde o que a pessoa montou cabe no tamanho de gente. */
+    const [membroNaVitrine, setMembroNaVitrine] = useState<EnrichedClanMember | null>(null);
+
     const getSovereignOnlyConfig = (member: EnrichedClanMember) => member.sovereign
         ? {
             ...member.sovereign,
@@ -226,12 +231,21 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
                                                         className={`relative flex w-[104px] shrink-0 flex-col items-center origin-bottom ${member.role === 'leader' ? 'scale-110' : ''}`}
                                                         style={{ zIndex: member.role === 'leader' ? 20 : Math.max(1, 10 - index) }}
                                                     >
-                                                        <div className="relative h-[178px] w-[104px] overflow-hidden drop-shadow-[0_12px_14px_rgba(0,0,0,0.85)]">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setMembroNaVitrine(member)}
+                                                            aria-label={`Ver o soberano de ${member.nickname}`}
+                                                            className="relative h-[178px] w-[104px] overflow-hidden drop-shadow-[0_12px_14px_rgba(0,0,0,0.85)] transition-transform hover:scale-[1.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--skin-accent-color)]"
+                                                        >
+                                                            {/* No palco o soberano vai sem artefato — la ele e uma
+                                                                silhueta numa fileira, e peca solta viraria ruido.
+                                                                Na vitrine vai a config INTEIRA, que e onde os tres
+                                                                artefatos tem tamanho para serem vistos. */}
                                                             <Sovereign
                                                                 sovereignConfig={getSovereignOnlyConfig(member)}
                                                                 className="absolute left-1/2 top-1/2 h-[142%] w-[142%] -translate-x-1/2 -translate-y-1/2 object-contain"
                                                             />
-                                                        </div>
+                                                        </button>
                                                         <div className="relative -mt-5 max-w-[96px] rounded-full border border-white/12 bg-black/75 px-2 py-1 text-center backdrop-blur-sm">
                                                             <p className="truncate text-[8px] font-black uppercase tracking-[0.05em] text-white/82">{member.nickname}</p>
                                                         </div>
@@ -306,6 +320,13 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
                             </div>
             </ClanOverviewShell>
             {isManaging && <ClanManagementModal onClose={() => setIsManaging(false)} />}
+            {membroNaVitrine && (
+                <SovereignVitrineModal
+                    config={membroNaVitrine.sovereign}
+                    nickname={membroNaVitrine.nickname}
+                    onClose={() => setMembroNaVitrine(null)}
+                />
+            )}
             {isConfirmingLeave && (
                 <ConfirmationModal
                     title="Sair do grupo"

@@ -411,7 +411,20 @@ export interface SovereignConfig {
   hairStyle: string;
   hairColor: string;
   outfit: string;
+  /** O artefato em DESTAQUE. E o unico que o perfil mostra. */
   artifact: string;
+  /**
+   * Os outros dois artefatos da vitrine — os que NAO estao em destaque.
+   *
+   * Ficam separados de `artifact` de proposito. Aquele campo e lido em vinte
+   * lugares, das telas 3D do jardim aos modais de cla, e todos esperam UM id.
+   * Guardar os tres numa lista so obrigaria cada um deles a saber qual e o
+   * primeiro — vinte chances de discordarem sobre o mesmo destaque.
+   *
+   * Quem ja tinha um artefato equipado vira "destaque + dois vazios" sem
+   * migracao nenhuma.
+   */
+  extraArtifacts?: string[];
   aura: string; // NEW: Aura slot
   sovereignPlate?: string; // NEW: Placa slot for Sovereign
   artifactPlate?: string; // NEW: Placa slot for Artifact

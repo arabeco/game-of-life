@@ -10,6 +10,7 @@ import { ImagePreloader } from './ImagePreloader';
 import { Portal } from './Portal';
 import { getRarityVisual, withAlpha } from '../constants/rarityVisuals';
 import { ItemArt } from './ItemArt';
+import { SovereignVitrine } from './SovereignVitrine';
 
 interface SovereignCustomizerProps {
     initialConfig?: SovereignConfig;
@@ -269,6 +270,55 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
     const primary = config.primaryDisplay || 'sovereign';
 
     /*
+     * VER ANTES DE MEXER.
+     *
+     * A tela abria com corpo, cabelo, pele e roupa todos em seletor, de uma vez.
+     * Quem so queria olhar o que montou nao tinha onde — e quem chegava aqui
+     * pelo soberano de OUTRA pessoa nao podia chegar, porque nao havia caminho.
+     *
+     * Agora ela nasce vitrine. Os seletores continuam os mesmos, um toque
+     * depois.
+     */
+    const [modo, setModo] = useState<'vitrine' | 'edicao'>('vitrine');
+
+    /*
+     * QUAL DAS TRES VAGAS A GRADE ESTA ENCHENDO.
+     *
+     * A grade de artefatos escrevia sempre em `config.artifact`. Com tres vagas
+     * ela precisa saber em qual esta mexendo, senao escolher o segundo apagaria
+     * o primeiro — e a pessoa descobriria isso depois, olhando a vitrine.
+     *
+     * Zero e o DESTAQUE, que e o unico que o perfil mostra.
+     */
+    const [slotAtivo, setSlotAtivo] = useState(0);
+
+    const artefatoDoSlot = (indice: number) => (
+        indice === 0 ? (config.artifact || 'none') : (config.extraArtifacts?.[indice - 1] || 'none')
+    );
+
+    const porArtefatoNoSlot = (id: string) => {
+        setConfig(anterior => {
+            const extras = [...(anterior.extraArtifacts || [])];
+            while (extras.length < 2) extras.push('none');
+
+            // O mesmo artefato em duas vagas mostraria a peca duplicada na
+            // vitrine e faria parecer defeito. Escolher onde ele ja estava
+            // esvazia a vaga antiga em vez de cloná-lo.
+            let destaque = anterior.artifact || 'none';
+            if (id !== 'none') {
+                if (slotAtivo !== 0 && destaque === id) destaque = 'none';
+                for (let i = 0; i < extras.length; i += 1) {
+                    if (extras[i] === id && i !== slotAtivo - 1) extras[i] = 'none';
+                }
+            }
+
+            if (slotAtivo === 0) return { ...anterior, artifact: id, extraArtifacts: extras };
+            extras[slotAtivo - 1] = id;
+            return { ...anterior, artifact: destaque, extraArtifacts: extras };
+        });
+    };
+
+    /*
      * MOSTRAR NO PERFIL E UMA ESCOLHA, E ELA MORA NO MESMO CAMPO.
      *
      * `primaryDisplay` sempre respondeu "o que aparece", e "nada" e uma das
@@ -306,6 +356,13 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                     </button>
                 </div>
 
+                {modo === 'vitrine' && (
+                    <div className="flex-1 overflow-y-auto p-5">
+                        <SovereignVitrine config={config} onEditar={() => setModo('edicao')} />
+                    </div>
+                )}
+
+                {modo === 'edicao' && (<>
                 {/* Preview Section (2 Slots) */}
                 <div className="p-4 bg-black/20 border-b border-white/5 flex gap-4 justify-center items-stretch shrink-0">
                     
@@ -527,16 +584,41 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                         <div className="space-y-3 animate-fade-in h-full flex flex-col">
                             <div className="flex-1 flex flex-col min-h-0">
                                 <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500 block text-center mb-2">Selecione um Artefato</span>
+
+                                {/* As tres vagas. A grade abaixo enche a que estiver
+                                    escolhida — sem isto, escolher o segundo apagaria
+                                    o primeiro sem aviso. */}
+                                <div className="mb-2 flex justify-center gap-1.5">
+                                    {[0, 1, 2].map(indice => {
+                                        const ocupado = artefatoDoSlot(indice) !== 'none';
+                                        const ativo = slotAtivo === indice;
+                                        return (
+                                            <button
+                                                key={`vaga-${indice}`}
+                                                type="button"
+                                                onClick={() => setSlotAtivo(indice)}
+                                                className={`rounded-lg border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] transition-colors ${
+                                                    ativo
+                                                        ? 'border-[var(--skin-accent-color)] bg-[var(--skin-accent-color)]/18 text-[var(--skin-accent-color)]'
+                                                        : 'border-white/12 text-white/45 hover:border-white/25 hover:text-white/70'
+                                                }`}
+                                            >
+                                                {indice === 0 ? 'Destaque' : `Vaga ${indice + 1}`}
+                                                {ocupado && <span className="ml-1 opacity-60">•</span>}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                                 <div className="grid grid-cols-5 gap-2 overflow-y-auto pr-1 pb-2 custom-scrollbar">
                                     {getOwnedList(SOVEREIGN_ASSETS.artifacts, 'artifacts').map(item => {
-                                        const isSelected = config.artifact === item.id;
+                                        const isSelected = artefatoDoSlot(slotAtivo) === item.id;
                                         const assetWithRarity = item as any;
                                         const rarityVisual = getRarityVisual(assetWithRarity.rarity);
                                         
                                         return (
                                             <button
                                                 key={item.id}
-                                                onClick={() => setConfig(p => ({ ...p, artifact: item.id }))}
+                                                onClick={() => porArtefatoNoSlot(item.id)}
                                                 className={`relative aspect-square rounded-md border flex flex-col items-center justify-center bg-black/40 transition-all ${isSelected ? 'border-white bg-white/10' : 'border-white/10 hover:bg-white/5'}`}
                                             >
                                                 <div className="flex items-center justify-center w-full h-full p-1">
@@ -573,20 +655,34 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
 
                 </div>
 
+                </>)}
+
                 {/* Footer Buttons */}
+                {/* Na vitrine nao ha o que cancelar nem salvar: nada foi mexido.
+                    Oferecer "Salvar" antes de existir mudanca ensina a clicar sem
+                    ler, e depois o clique que importa passa batido. */}
                 <div className="p-4 bg-black/40 border-t border-white/10 flex gap-3">
-                     <button 
-                        onClick={onClose}
-                        className="flex-1 py-3 rounded-xl bg-gray-800 hover:bg-gray-700 text-white text-xs font-bold transition-colors uppercase tracking-widest"
-                    >
-                        Cancelar
-                    </button>
-                    <button 
-                        onClick={() => onSave(config)}
-                        className="flex-1 py-3 rounded-xl luxe-skin-button"
-                    >
-                        Salvar
-                    </button>
+                    {modo === 'vitrine' ? (
+                        <button
+                            onClick={onClose}
+                            className="flex-1 py-3 rounded-xl bg-gray-800 hover:bg-gray-700 text-white text-xs font-bold transition-colors uppercase tracking-widest"
+                        >
+                            Fechar
+                        </button>
+                    ) : (<>
+                        <button
+                            onClick={() => setModo('vitrine')}
+                            className="flex-1 py-3 rounded-xl bg-gray-800 hover:bg-gray-700 text-white text-xs font-bold transition-colors uppercase tracking-widest"
+                        >
+                            Voltar
+                        </button>
+                        <button
+                            onClick={() => onSave(config)}
+                            className="flex-1 py-3 rounded-xl luxe-skin-button"
+                        >
+                            Salvar
+                        </button>
+                    </>)}
                 </div>
             </GlassCard>
 

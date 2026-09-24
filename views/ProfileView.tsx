@@ -11,6 +11,7 @@ import { SKINS_DATA, BORDERS_DATA } from '../constants';
 import { SOVEREIGN_ASSETS } from '../constants/avatar';
 import { Sovereign } from '../components/Avatar';
 import { SovereignCustomizer } from '../components/SovereignCustomizer';
+import { SovereignVitrineModal } from '../components/SovereignVitrine';
 import { AvatarUploadModal } from '../components/AvatarUploadModal';
 import { shareElementWithFeedback } from '../components/Share';
 import { Portal } from '../components/Portal';
@@ -1166,6 +1167,11 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                         {displayProfile.sovereign && (
                             <UnifiedSovereignDisplay
                                 sovereignConfig={displayProfile.sovereign}
+                                /* Clicar abre a VITRINE, que e onde o soberano se ve
+                                   inteiro e os tres artefatos tem tamanho. Sendo seu,
+                                   ela leva ao editor por um botao; sendo de outra
+                                   pessoa, ela e so de ver — antes disto, o clique no
+                                   perfil alheio abria o editor com a config DELE. */
                                 onClick={() => setIsSovereignModalOpen(true)}
                                 className="absolute top-[60px] right-4 w-[70px] h-[95px]"
                             />
@@ -1225,14 +1231,26 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
             )}
             {PRODUCT_FEATURES.personalGarden && isGardenOpen && <Garden3DModal onClose={() => setGardenOpen(false)} profile={displayProfile} />}
             {isSovereignModalOpen && (
-                <SovereignCustomizer
-                    initialConfig={userProfile.sovereign}
-                    onSave={(newConfig) => {
-                        updateUserProfile({ sovereign: newConfig });
-                        setIsSovereignModalOpen(false);
-                    }}
-                    onClose={() => setIsSovereignModalOpen(false)}
-                />
+                isOwnProfile ? (
+                    <SovereignCustomizer
+                        initialConfig={userProfile.sovereign}
+                        onSave={(newConfig) => {
+                            updateUserProfile({ sovereign: newConfig });
+                            setIsSovereignModalOpen(false);
+                        }}
+                        onClose={() => setIsSovereignModalOpen(false)}
+                    />
+                ) : (
+                    /* O perfil de outra pessoa nao pode abrir o editor. Ele abria:
+                       o `SovereignCustomizer` era montado com a SUA config mesmo
+                       quando o clique vinha do soberano alheio, entao mexer ali e
+                       salvar sobrescrevia o seu proprio. */
+                    <SovereignVitrineModal
+                        config={displayProfile.sovereign}
+                        nickname={displayProfile.nickname}
+                        onClose={() => setIsSovereignModalOpen(false)}
+                    />
+                )
             )}
         </Portal>
     );

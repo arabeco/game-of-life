@@ -793,38 +793,14 @@ export const SeasonView: React.FC = () => {
                           * que acontece: apontando para baixo, abre; girada, fecha. Nenhuma
                           * palavra disputando sentido com outra.
                           */}
-                        {completedEntries.length > 0 && (
-                            <div>
-                                <button
-                                    type="button"
-                                    onClick={() => setCompletedOpen((open) => !open)}
-                                    aria-expanded={isCompletedOpen}
-                                    className="flex w-full items-baseline gap-2 px-1 py-1 text-left"
-                                >
-                                    <CheckIcon className="h-3.5 w-3.5 shrink-0 translate-y-0.5 text-green-400/80" />
-                                    <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/62">Concluídas</span>
-                                    <span className="text-[9px] font-bold text-white/28">{completedEntries.length}</span>
-                                    <ChevronDownIcon
-                                        className={`ml-auto h-3.5 w-3.5 shrink-0 translate-y-0.5 text-white/38 transition-transform duration-200 ${isCompletedOpen ? 'rotate-180' : ''}`}
-                                    />
-                                </button>
-                                {isCompletedOpen && (
-                                    <div className="mt-2 space-y-1">
-                                        {completedEntries.map((entry) => (
-                                            <div key={entry.id} className="flex items-center gap-2.5 rounded-lg border border-white/6 bg-black/20 px-2.5 py-2">
-                                                <span className="text-sm" aria-hidden="true">{entry.icon || '📜'}</span>
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="truncate text-[11px] font-bold text-white/72">{entry.title}</p>
-                                                    {entry.reward && <p className="truncate text-[9px] text-amber-200/50">{entry.reward}</p>}
-                                                </div>
-                                                <CheckIcon className="h-4 w-4 shrink-0 text-green-400/70" />
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                        {/* DISPONIVEIS VEM ANTES DE CONCLUIDAS.
 
+                            Concluida e historico: responde "o que ja foi", e
+                            ninguem abre esta aba para saber isso. Disponivel
+                            responde "o que eu posso pegar agora", que e o motivo
+                            de entrar aqui — e estava embaixo do historico, que
+                            cresce para sempre e ia empurrando a escolha para
+                            longe a cada missao fechada. */}
                         {isMissionLibraryOpen && (
                             <div className="space-y-2 rounded-xl border border-white/8 bg-black/15 p-2.5">
                                 <div className="flex items-center justify-between px-1 pb-1">
@@ -873,6 +849,38 @@ export const SeasonView: React.FC = () => {
                                 ))}
                                 {availableSystemQuests.length === 0 && availableIndividualQuests.length === 0 && availableClanQuests.length === 0 && (
                                     <p className="py-3 text-center text-[10px] text-white/42">Nenhuma missão disponível.</p>
+                                )}
+                            </div>
+                        )}
+
+                        {completedEntries.length > 0 && (
+                            <div>
+                                <button
+                                    type="button"
+                                    onClick={() => setCompletedOpen((open) => !open)}
+                                    aria-expanded={isCompletedOpen}
+                                    className="flex w-full items-baseline gap-2 px-1 py-1 text-left"
+                                >
+                                    <CheckIcon className="h-3.5 w-3.5 shrink-0 translate-y-0.5 text-green-400/80" />
+                                    <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/62">Concluídas</span>
+                                    <span className="text-[9px] font-bold text-white/28">{completedEntries.length}</span>
+                                    <ChevronDownIcon
+                                        className={`ml-auto h-3.5 w-3.5 shrink-0 translate-y-0.5 text-white/38 transition-transform duration-200 ${isCompletedOpen ? 'rotate-180' : ''}`}
+                                    />
+                                </button>
+                                {isCompletedOpen && (
+                                    <div className="mt-2 space-y-1">
+                                        {completedEntries.map((entry) => (
+                                            <div key={entry.id} className="flex items-center gap-2.5 rounded-lg border border-white/6 bg-black/20 px-2.5 py-2">
+                                                <span className="text-sm" aria-hidden="true">{entry.icon || '📜'}</span>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="truncate text-[11px] font-bold text-white/72">{entry.title}</p>
+                                                    {entry.reward && <p className="truncate text-[9px] text-amber-200/50">{entry.reward}</p>}
+                                                </div>
+                                                <CheckIcon className="h-4 w-4 shrink-0 text-green-400/70" />
+                                            </div>
+                                        ))}
+                                    </div>
                                 )}
                             </div>
                         )}

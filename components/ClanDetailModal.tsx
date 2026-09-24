@@ -1485,12 +1485,17 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
                                                             const member = enrichedClanMembers.find(m => m.id === presence.userId);
                                                             if (!member) return null;
 
-                                                            // Force "Boneco" Config
+                                                            /* Force "Boneco" Config — o que sai sao os OUTROS
+                                                               modos de exibicao: artefato e as placas deles. A
+                                                               aura NAO sai: ela e do soberano, como a roupa e o
+                                                               cabelo, e o perfil ja a trata assim. Zera-la so
+                                                               aqui fazia quem equipava aura ver no proprio
+                                                               perfil e desaparecer para o grupo — o unico lugar
+                                                               onde os outros olhariam. */
                                                             const forceBodyConfig = member.sovereign ? {
                                                                 ...member.sovereign,
                                                                 artifact: 'none',
                                                                 artifactPlate: 'none',
-                                                                aura: 'none',
                                                                 sovereignPlate: 'none',
                                                                 primaryDisplay: 'sovereign' as const
                                                             } : undefined;

@@ -103,11 +103,13 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
         return [...others.slice(0, middle), leader, ...others.slice(middle)];
     }, [seasonMembers]);
     const sceneBackground = fundoDoCla(clan?.rankId);
+    /* A aura fica, pelo mesmo motivo do perfil: ela e parte do visual do
+       soberano, e nao um dos outros modos de exibicao. O que sai daqui e o
+       artefato e as placas. */
     const getSovereignOnlyConfig = (member: EnrichedClanMember) => member.sovereign
         ? {
             ...member.sovereign,
             artifact: 'none',
-            aura: 'none',
             sovereignPlate: 'none',
             artifactPlate: 'none',
             primaryDisplay: 'sovereign' as const,

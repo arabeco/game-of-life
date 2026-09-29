@@ -61,7 +61,10 @@ const regraDoScore = folhaDaPlaca.slice(
   folhaDaPlaca.indexOf('.metal-report-card__score,'),
   folhaDaPlaca.indexOf('.metal-report-card__score {'),
 );
-for (const pedaco of ['118deg', '18%', '#fffaf0 48%', '78%', 'drop-shadow(0 1px 1px rgba(0, 0, 0, .8))']) {
+// A sombra virou DUAS em 29/09/2026, quando os oito patamares ganharam pedra:
+// a de 1px bastava no gradiente escuro e sumia no marmore claro. O que este
+// teste guarda nao e o valor — e as duas pontas carregarem o MESMO valor.
+for (const pedaco of ['118deg', '18%', '#fffaf0 48%', '78%', 'drop-shadow(0 0 2px rgba(0, 0, 0, .62)) drop-shadow(0 1px 1px rgba(0, 0, 0, .85))']) {
   assert.ok(
     regraDoScore.includes(pedaco),
     `a placa mudou e o helper nao: "${pedaco}" sumiu de .metal-report-card__score`,

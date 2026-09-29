@@ -243,7 +243,21 @@ export const tintaMetalicaCom = (gradiente: string, corDeReserva: string): React
   backgroundClip: 'text',
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
-  filter: 'drop-shadow(0 1px 1px rgba(0, 0, 0, .8))',
+  /*
+   * O CONTORNO, E POR QUE NAO E UM `text-stroke`.
+   *
+   * A letra e pintada por gradiente recortado no texto
+   * (`background-clip: text`), entao um traco desenharia POR CIMA da tinta e
+   * apagaria o metal. Duas sombras resolvem sem tocar no preenchimento: a
+   * primeira espalha em volta e faz as vezes de borda, a segunda assenta a
+   * letra para baixo.
+   *
+   * Era so a segunda, com 1px. Basta em pedra escura e some na clara — na
+   * Prata fria os rotulos pequenos ficavam ilegiveis sobre o marmore. O
+   * contorno resolve em QUALQUER pedra, e sem trocar o metal de cada patamar
+   * por um dourado unico: assim o B continua prata e o C continua bronze.
+   */
+  filter: 'drop-shadow(0 0 2px rgba(0, 0, 0, .62)) drop-shadow(0 1px 1px rgba(0, 0, 0, .85))',
 });
 
 /** O gradiente da placa, com as cores de um acabamento qualquer. */

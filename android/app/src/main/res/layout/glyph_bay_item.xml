@@ -9,8 +9,8 @@
     android:orientation="horizontal"
     android:paddingLeft="10dp"
     android:paddingRight="8dp"
-    android:paddingTop="7dp"
-    android:paddingBottom="7dp">
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp">
 
     <LinearLayout
         android:layout_width="0dp"
@@ -58,7 +58,7 @@
         android:minWidth="52dp"
         android:paddingLeft="8dp"
         android:paddingRight="8dp"
-        android:text="FEITO"
+        android:text="SELECIONAR"
         android:textColor="#211B0A"
         android:textSize="8sp"
         android:textStyle="bold" />

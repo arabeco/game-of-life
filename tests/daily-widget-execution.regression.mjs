@@ -33,6 +33,13 @@ assert.match(widgetSnapshotSource, /touchedArenaCount/);
 assert.match(widgetSnapshotSource, /openActionCount/);
 assert.match(widgetSnapshotSource, /todayActions/);
 assert.match(widgetSnapshotSource, /quickActions/);
+assert.match(widgetSnapshotSource, /isUnlimited: group\.isUnlimited/);
+assert.match(widgetSnapshotSource, /scheduledTodayCount/);
+assert.match(widgetSnapshotSource, /bayActionCount/);
+assert.match(widgetSnapshotSource, /notaDoCiclo\(\{/);
+assert.match(widgetSnapshotSource, /completionRateForGrade/);
+assert.match(widgetSnapshotSource, /grade: notaDoWidget/);
+assert.doesNotMatch(widgetSnapshotSource, /getScoreGrade\(currentScore\)/);
 assert.doesNotMatch(widgetSnapshotSource, /if \(!activeCycle \|\| !dailyCommitment\)/);
 assert.match(widgetProvider, /HOJE NO GLYPH/);
 assert.match(widgetProvider, /ACTION_TAB_TODAY/);
@@ -41,7 +48,13 @@ assert.match(widgetProvider, /"FAZER"/);
 // Concluir mora na barra de baixo; a linha so escolhe. Os dois rotulos juntos sao
 // a prova de que ha um caminho unico: a linha marca "ESCOLHIDA", a barra "CONCLUIR".
 assert.match(widgetLayout, /android:text="CONCLUIR"/);
-assert.match(bayServiceSource, /isSelected \? "ESCOLHIDA" : "FEITO"/);
+assert.match(widgetLayout, /android:text="CANCELAR"/);
+assert.match(bayServiceSource, /isSelected \? "ESCOLHIDA" : "ESCOLHER"/);
+assert.match(bayServiceSource, /!item\.isUnlimited && item\.count > 1/);
+assert.match(bayServiceSource, /MODE_TODAY/);
+assert.match(widgetProvider, /ACTION_CANCEL/);
+assert.match(widgetProvider, /MODE_TODAY/);
+assert.doesNotMatch(widgetProvider, /Math\.min\(3, items\.length\(\)\)/);
 assert.match(widgetProvider, /ACTIONS_IN_FLIGHT\.add/);
 assert.match(widgetProvider, /\/functions\/v1\/widget-action/);
 assert.match(widgetProvider, /refreshSession/);
@@ -49,6 +62,8 @@ assert.match(widgetProvider, /life\.glyph\.app:\/\/widget\/planner/);
 assert.doesNotMatch(widgetProvider, /programadas|estoque|Planejando/);
 assert.match(edgeFunctionSource, /auth\.getUser/);
 assert.match(edgeFunctionSource, /\.eq\("user_id", user\.id\)/);
+assert.match(edgeFunctionSource, /update\(\{ completed: true, start_time: safeStartTime, duration: safeDuration \}\)/);
+assert.match(edgeFunctionSource, /from\("scheduled_tasks"\)\.insert/);
 assert.match(edgeFunctionSource, /repeatedTasks/);
 assert.match(edgeFunctionSource, /daily_proof_streak/);
 

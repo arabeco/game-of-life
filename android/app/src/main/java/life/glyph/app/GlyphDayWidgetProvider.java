@@ -36,6 +36,7 @@ public class GlyphDayWidgetProvider extends AppWidgetProvider {
     private static final String ACTION_TAB_DO = "life.glyph.app.widget.TAB_DO";
     private static final String ACTION_COMPLETE = "life.glyph.app.widget.COMPLETE";
     private static final String ACTION_SELECT = "life.glyph.app.widget.SELECT";
+    private static final String ACTION_CANCEL = "life.glyph.app.widget.CANCEL";
     private static final String SELECTED_KEY_PREFIX = "glyph_widget_selected_";
     private static final String EXTRA_ACTION_ID = "action_id";
     private static final String TAB_KEY_PREFIX = "glyph_day_widget_tab_";
@@ -69,6 +70,13 @@ public class GlyphDayWidgetProvider extends AppWidgetProvider {
             // da selecao sem agir.
             String next = selectedId != null && selectedId.equals(current) ? "" : (selectedId == null ? "" : selectedId);
             prefs.edit().putString(SELECTED_KEY_PREFIX + appWidgetId, next).apply();
+            updateWidget(context, AppWidgetManager.getInstance(context), appWidgetId);
+            return;
+        }
+
+        if (ACTION_CANCEL.equals(action)) {
+            context.getSharedPreferences(GlyphWidgetPlugin.PREFS_GROUP, Context.MODE_PRIVATE)
+                    .edit().remove(SELECTED_KEY_PREFIX + appWidgetId).apply();
             updateWidget(context, AppWidgetManager.getInstance(context), appWidgetId);
             return;
         }
@@ -108,6 +116,7 @@ public class GlyphDayWidgetProvider extends AppWidgetProvider {
             // e leitura curta do dia, nao uma lista para agir.
             Intent adapter = new Intent(context, GlyphBayWidgetService.class);
             adapter.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
+            adapter.putExtra(GlyphBayWidgetService.EXTRA_MODE, GlyphBayWidgetService.MODE_BAY);
             adapter.setData(Uri.parse(adapter.toUri(Intent.URI_INTENT_SCHEME)));
             views.setRemoteAdapter(R.id.glyph_day_list, adapter);
 
@@ -144,20 +153,26 @@ public class GlyphDayWidgetProvider extends AppWidgetProvider {
                 views.setOnClickPendingIntent(R.id.glyph_day_selection_complete,
                         PendingIntent.getBroadcast(context, appWidgetId + 60000, concluir, flags));
 
-                // Agendar abre o planner naquela acao. A viagem e de ida: o widget
-                // nao tem como trazer a pessoa de volta depois de entrar no app.
+                // A selecao e a confirmacao do widget. Cancelar apenas fecha esta
+                // camada; nao abre o app nem deixa um segundo caminho concorrendo
+                // com a conclusao direta.
                 views.setOnClickPendingIntent(R.id.glyph_day_selection_schedule,
-                        plannerIntentForAction(context, appWidgetId, selected.actionId));
+                        providerIntent(context, appWidgetId, ACTION_CANCEL, 35, null));
             } else {
                 views.setViewVisibility(R.id.glyph_day_selection_bar, View.GONE);
             }
             views.setViewVisibility(R.id.glyph_day_empty, rows.isEmpty() ? View.VISIBLE : View.GONE);
-            views.setTextViewText(R.id.glyph_day_empty, "NADA NA BAIA AGORA.");
+            views.setTextViewText(R.id.glyph_day_empty, "NADA DISPONÍVEL AGORA.");
         } else {
-            views.setViewVisibility(R.id.glyph_day_list, View.GONE);
+            Intent adapter = new Intent(context, GlyphBayWidgetService.class);
+            adapter.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
+            adapter.putExtra(GlyphBayWidgetService.EXTRA_MODE, GlyphBayWidgetService.MODE_TODAY);
+            adapter.setData(Uri.parse(adapter.toUri(Intent.URI_INTENT_SCHEME)));
+            views.setRemoteAdapter(R.id.glyph_day_list, adapter);
+            views.setViewVisibility(R.id.glyph_day_list, rows.isEmpty() ? View.GONE : View.VISIBLE);
             views.setViewVisibility(R.id.glyph_day_selection_bar, View.GONE);
-            views.setViewVisibility(R.id.glyph_day_empty, View.VISIBLE);
-            views.setTextViewText(R.id.glyph_day_empty, buildTodaySummary(rows));
+            views.setViewVisibility(R.id.glyph_day_empty, rows.isEmpty() ? View.VISIBLE : View.GONE);
+            views.setTextViewText(R.id.glyph_day_empty, "NADA AGENDADO PARA HOJE.");
         }
 
         views.setOnClickPendingIntent(R.id.glyph_day_tab_today, providerIntent(context, appWidgetId, ACTION_TAB_TODAY, 10, null));
@@ -168,22 +183,6 @@ public class GlyphDayWidgetProvider extends AppWidgetProvider {
         // redesenha a moldura, nao os itens. Sem este aviso a baia congela no que
         // foi lido da primeira vez.
         manager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.glyph_day_list);
-    }
-
-    /**
-     * O planner em uma linha. A aba de hoje e leitura curta — quem quer agir usa a
-     * baia, que e a aba de abertura e tem a lista rolavel.
-     */
-    private static String buildTodaySummary(List<RowData> rows) {
-        if (rows.isEmpty()) return "NADA AGENDADO PARA HOJE.";
-        StringBuilder resumo = new StringBuilder();
-        int limite = Math.min(rows.size(), 3);
-        for (int index = 0; index < limite; index++) {
-            if (index > 0) resumo.append("  ·  ");
-            resumo.append(trim(rows.get(index).text, 24));
-        }
-        if (rows.size() > limite) resumo.append("  +").append(rows.size() - limite);
-        return resumo.toString();
     }
 
     private static PendingIntent providerIntent(Context context, int widgetId, String action, int offset, String actionId) {
@@ -384,10 +383,11 @@ public class GlyphDayWidgetProvider extends AppWidgetProvider {
             String subtitle = cycleName.isEmpty() ? "Sem ciclo ativo" : trim(cycleName + (cycleDay.isEmpty() ? "" : " · " + cycleDay), 40);
             List<RowData> today = parseTodayRows(daily.optJSONArray("todayActions"));
             List<RowData> quick = parseQuickRows(daily.optJSONArray("quickActions"));
-            if (today.isEmpty()) today.add(new RowData("", "Nenhuma ação registrada hoje", false));
-            if (quick.isEmpty()) quick.add(new RowData("", "Nada disponível agora", false));
-            String footer = daily.optInt("completedAllCount", 0) + " feitas · " + daily.optInt("touchedArenaCount", 0) + " arenas · +" + daily.optInt("earnedExp", 0) + " XP";
-            return new WidgetData(subtitle, today, quick, footer);
+            int completedCount = daily.optInt("completedAllCount", 0);
+            int scheduledCount = daily.optInt("scheduledTodayCount", 0);
+            int bayCount = daily.optInt("bayActionCount", 0);
+            String footer = completedCount + " feitas · " + scheduledCount + " agenda · " + bayCount + " disponíveis";
+            return new WidgetData(subtitle, today, quick, footer, completedCount, scheduledCount, bayCount);
         } catch (Exception error) {
             return WidgetData.empty("Abra o GLYPH para sincronizar");
         }
@@ -396,7 +396,7 @@ public class GlyphDayWidgetProvider extends AppWidgetProvider {
     private static List<RowData> parseTodayRows(JSONArray items) {
         List<RowData> rows = new ArrayList<>();
         if (items == null) return rows;
-        for (int i = 0; i < Math.min(3, items.length()); i++) {
+        for (int i = 0; i < items.length(); i++) {
             JSONObject item = items.optJSONObject(i);
             if (item == null) continue;
             int start = item.optInt("startTime", -1);
@@ -409,10 +409,11 @@ public class GlyphDayWidgetProvider extends AppWidgetProvider {
     private static List<RowData> parseQuickRows(JSONArray items) {
         List<RowData> rows = new ArrayList<>();
         if (items == null) return rows;
-        for (int i = 0; i < Math.min(3, items.length()); i++) {
+        for (int i = 0; i < items.length(); i++) {
             JSONObject item = items.optJSONObject(i);
             if (item == null) continue;
-            String count = item.optInt("count", 1) > 1 ? " ×" + item.optInt("count") : "";
+            String count = !item.optBoolean("isUnlimited", false) && item.optInt("count", 1) > 1
+                    ? " ×" + item.optInt("count") : "";
             String text = item.optString("icon", "•") + " " + item.optString("name", "Ação") + count + "\n" + item.optString("arenaName", "Sem arena");
             rows.add(new RowData(item.optString("actionId", ""), text, true));
         }
@@ -453,11 +454,21 @@ public class GlyphDayWidgetProvider extends AppWidgetProvider {
         final List<RowData> todayActions;
         final List<RowData> quickActions;
         final String footer;
-        WidgetData(String subtitle, List<RowData> today, List<RowData> quick, String footer) { this.subtitle = subtitle; this.todayActions = today; this.quickActions = quick; this.footer = footer; }
+        final int completedCount;
+        final int scheduledCount;
+        final int bayCount;
+        WidgetData(String subtitle, List<RowData> today, List<RowData> quick, String footer, int completedCount, int scheduledCount, int bayCount) {
+            this.subtitle = subtitle;
+            this.todayActions = today;
+            this.quickActions = quick;
+            this.footer = footer;
+            this.completedCount = completedCount;
+            this.scheduledCount = scheduledCount;
+            this.bayCount = bayCount;
+        }
         static WidgetData empty(String subtitle) {
             List<RowData> empty = new ArrayList<>();
-            empty.add(new RowData("", "Nenhuma ação disponível", false));
-            return new WidgetData(subtitle, empty, empty, "Abra o app para atualizar");
+            return new WidgetData(subtitle, empty, empty, "Abra o app para atualizar", 0, 0, 0);
         }
     }
 }

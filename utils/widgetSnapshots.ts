@@ -9,8 +9,9 @@ import {
   OraclePreferences,
   ScheduledTask,
 } from '../types';
-import { getCycleTimingSummary, getScoreGrade } from './dateUtils';
-import { buildDailyArenaFocus, buildDailyPanelStockOptions, filterCycleTasksByScope } from './coreLoopUtils.js';
+import { getCycleTimingSummary } from './dateUtils';
+import { falaDaNota, notaDoCiclo } from './cycleGrade.js';
+import { buildActionPoolByDate, buildDailyArenaFocus, filterCycleTasksByScope } from './coreLoopUtils.js';
 import { getOperationalDateString, taskMatchesOperationalDate } from './operationalDay.js';
 import { hasScheduledTime } from './taskDomain.js';
 import type { RestScreenActionSessionDetail } from './restScreenActionSession';
@@ -81,8 +82,10 @@ export interface DailyWidgetSnapshot {
   focusArena: ReturnType<typeof buildDailyArenaFocus>;
   checklistCompleted: number;
   checklistTotal: number;
-  availableGroups: Array<{ count: number; action: Action; ids: string[] }>;
+  availableGroups: Array<{ count: number; isUnlimited: boolean; action: Action; ids: string[] }>;
   availableUnitCount: number;
+  scheduledTodayCount: number;
+  bayActionCount: number;
   freeModeCompletedCount: number;
   freeModeTotalCount: number;
   potentialExpFromActions: number;
@@ -211,6 +214,7 @@ export const buildCycleWidgetSnapshot = ({
 
   const timing = getCycleTimingSummary(cycle.startDate, cycle.endDate, todayDate);
   const actionArenaNameById = buildActionArenaNameMap(actions, arenas);
+  const actionTypeById = new Map(actions.map((action) => [action.id, action.actionType]));
   const isQuestActionId = (actionId: string) => normalizeArenaName(actionArenaNameById.get(actionId)).includes('quests');
 
   const cycleTasks = filterCycleTasksByScope(tasks, actions, cycle, cycle.startDate, cycle.endDate);
@@ -238,7 +242,26 @@ export const buildCycleWidgetSnapshot = ({
   const consistencyBonus = consistencyDays >= 4 ? 5 : 0;
   const totalFidelityBonus = totalTaskCount > 0 && safeCompletedTaskCount === totalTaskCount ? 5 : 0;
   const currentScore = Math.round(taskProgressPercent + milestoneBonus + questBonus + consistencyBonus + totalFidelityBonus);
-  const scoreInfo = getScoreGrade(currentScore);
+  // A nota de previsão do widget usa a mesma régua do fechamento. Antes ela
+  // somava bônus e convertia 95 pontos em S; ao fechar, o relatório aplicava
+  // corretamente o teto de porte do ciclo e uma semana aparecia como A.
+  const scoredCycleTasks = cycleTasks.filter((task) => actionTypeById.get(task.actionId) !== 'Livre');
+  const completedScoredCycleTasks = scoredCycleTasks.filter((task) => task.completed);
+  const completionRateForGrade = scoredCycleTasks.length > 0
+    ? (completedScoredCycleTasks.length / scoredCycleTasks.length) * 100
+    : 100;
+  const honoredHoursForGrade = completedScoredCycleTasks.reduce((sum, task) => {
+    const action = actions.find((candidate) => candidate.id === task.actionId);
+    const duration = Number.isFinite(task.duration) ? task.duration : action?.duration || 0;
+    return sum + duration / 60;
+  }, 0);
+  const notaDoWidget = notaDoCiclo({
+    conclusaoPct: completionRateForGrade,
+    acoesPlanejadas: scoredCycleTasks.length,
+    acoesConcluidas: completedScoredCycleTasks.length,
+    dias: timing.totalDays,
+    horas: honoredHoursForGrade,
+  }).nota;
 
   return {
     cycleId: cycle.id,
@@ -260,8 +283,8 @@ export const buildCycleWidgetSnapshot = ({
     totalFidelityBonus,
     consistencyDays,
     currentScore,
-    grade: scoreInfo.grade,
-    gradeColorClass: scoreInfo.color,
+    grade: notaDoWidget,
+    gradeColorClass: falaDaNota(notaDoWidget).color,
     timingLabel: timing.statusLabel,
   };
 };
@@ -332,6 +355,8 @@ export const buildDailyWidgetSnapshot = ({
       checklistTotal,
       availableGroups: [],
       availableUnitCount: 0,
+      scheduledTodayCount: todaysTasks.filter((task) => !task.completed && hasScheduledTime(task)).length,
+      bayActionCount: 0,
       freeModeCompletedCount: completedTasks.length,
       freeModeTotalCount: todaysTasks.length,
       potentialExpFromActions,
@@ -379,12 +404,21 @@ export const buildDailyWidgetSnapshot = ({
   };
   const commitmentStats = buildCommitmentStatsSnapshot(tasks, executionCommitment, actions);
   const focusArena = buildDailyArenaFocus(commitmentStats.scoredTasksWithStatus, actions, arenas);
-  const availableGroups = buildDailyPanelStockOptions(actions, taskPool, tasks, executionCommitment) as Array<{
-    count: number;
-    action: Action;
-    ids: string[];
-  }>;
-  const availableUnitCount = availableGroups.reduce((sum, group) => sum + group.count, 0);
+  // O widget precisa saber que Livre e ilimitada. A versao resumida do painel
+  // devolvia apenas `count: 99`, o que acabava vazando como "x99" no Android.
+  const actionById = new Map(actions.map((action) => [action.id, action]));
+  const availableGroups = Object.entries(
+    buildActionPoolByDate(actions, taskPool, tasks, executionCommitment.date, executionCommitment.taskIds),
+  )
+    .filter(([, payload]) => payload.isUnlimited || payload.count > 0)
+    .map(([actionId, payload]) => ({
+      count: payload.count,
+      isUnlimited: payload.isUnlimited,
+      action: actionById.get(actionId),
+      ids: [actionId],
+    }))
+    .filter((group): group is { count: number; isUnlimited: boolean; action: Action; ids: string[] } => Boolean(group.action));
+  const availableUnitCount = availableGroups.reduce((sum, group) => sum + (group.isUnlimited ? 1 : group.count), 0);
   const cycleTiming = getCycleTimingSummary(activeCycle.startDate, activeCycle.endDate, operationalDate);
   const cycleArenaIds = new Set(activeCycle.arenaIds || []);
   const scopedArenas = cycleArenaIds.size > 0 ? arenas.filter((arena) => cycleArenaIds.has(arena.id)) : arenas;
@@ -426,6 +460,8 @@ export const buildDailyWidgetSnapshot = ({
     checklistTotal,
     availableGroups,
     availableUnitCount,
+    scheduledTodayCount: todaysTasks.filter((task) => !task.completed && hasScheduledTime(task)).length,
+    bayActionCount: availableGroups.length,
     freeModeCompletedCount: 0,
     freeModeTotalCount: 0,
     potentialExpFromActions: 0,
@@ -459,6 +495,7 @@ export const buildDailyWidgetSnapshot = ({
         icon: group.action.icon || '•',
         arenaName: actionArenaById.get(group.action.id) || 'Sem arena',
         count: group.count,
+        isUnlimited: group.isUnlimited,
         // Ja tem horario marcado hoje. Vira um ponto no canto da linha em vez de
         // uma lista separada: agendada NAO esta na baia, entao separar duplicaria
         // ou sumiria com ela — quem agenda e quem so conclui usam a mesma lista.

@@ -16,9 +16,8 @@ import { notaDoCiclo, bauDaNota } from '../utils/cycleGrade.js';
  * limita o teto — sem isso, uma semana perfeita e um mes perfeito valeriam o
  * mesmo, e o bau viraria torneira. O bau sai da nota, direto.
  *
- * O SS pede mais que tempo porque tempo sozinho se espera. Ele cobra que NADA
- * tenha falhado — acoes, metas, dias — e que as cinco areas da vida estejam
- * vivas no ciclo. Um mes impecavel, e nao um mes comprido.
+ * S e SS aceitam ate 5% de falhas. SSS exige acoes e metas completas,
+ * presenca diaria e as cinco areas vivas no ciclo.
  */
 
 // --- 1. os tres casos que decidiram o desenho -------------------------------
@@ -39,8 +38,9 @@ import { notaDoCiclo, bauDaNota } from '../utils/cycleGrade.js';
 
 {
     const comFolga = (pct) => notaDoCiclo({ conclusaoPct: pct, dias: 28, horas: 180 }).nota;
-    assert.equal(comFolga(96), 'S');
-    assert.equal(comFolga(95), 'S');
+    assert.equal(comFolga(100), 'SS');
+    assert.equal(comFolga(96), 'SS');
+    assert.equal(comFolga(95), 'SS');
     assert.equal(comFolga(94), 'A');
     assert.equal(comFolga(85), 'A');
     assert.equal(comFolga(84), 'B');
@@ -61,16 +61,21 @@ import { notaDoCiclo, bauDaNota } from '../utils/cycleGrade.js';
 {
     assert.equal(notaDoCiclo({ conclusaoPct: 40, dias: 365, horas: 2000 }).nota, 'D');
     assert.equal(notaDoCiclo({ conclusaoPct: 95, dias: 13 }).nota, 'A', 'faltou um dia para o teto de S');
-    assert.equal(notaDoCiclo({ conclusaoPct: 95, dias: 14 }).nota, 'S');
+    assert.equal(notaDoCiclo({ conclusaoPct: 95, dias: 14, horas: 60 }).nota, 'S');
+    assert.equal(notaDoCiclo({ conclusaoPct: 95, dias: 14, horas: 59 }).nota, 'A');
+    assert.equal(notaDoCiclo({ conclusaoPct: 95, dias: 28, horas: 179 }).nota, 'S');
+    assert.equal(notaDoCiclo({ conclusaoPct: 95, dias: 28, horas: 180 }).nota, 'SS');
     assert.equal(notaDoCiclo({ conclusaoPct: 85, dias: 6 }).nota, 'B', 'faltou um dia para o teto de A');
 }
 
-// --- 4. o SS, e as cinco portas que ele tem de atravessar -------------------
+// --- 4. o SSS, e as portas que ele tem de atravessar ------------------------
 
 const ssPerfeito = {
     conclusaoPct: 100,
     dias: 28,
-    horas: 180,
+    horas: 200,
+    acoesPlanejadas: 120,
+    acoesConcluidas: 120,
     metasSeladas: 7,
     metasPlanejadas: 7,
     diasZerados: 0,
@@ -78,35 +83,37 @@ const ssPerfeito = {
 };
 
 {
-    assert.equal(notaDoCiclo(ssPerfeito).nota, 'SS');
+    assert.equal(notaDoCiclo(ssPerfeito).nota, 'SSS');
 
     const semUma = (mudanca, porque) => {
         const nota = notaDoCiclo({ ...ssPerfeito, ...mudanca }).nota;
-        assert.notEqual(nota, 'SS', `SS passou ${porque}`);
+        assert.notEqual(nota, 'SSS', `SSS passou ${porque}`);
         return nota;
     };
 
     semUma({ conclusaoPct: 99 }, 'com uma acao falhada');
+    semUma({ acoesConcluidas: 119 }, 'com uma acao faltando e percentual arredondado em 100');
     semUma({ dias: 27 }, 'com 27 dias');
-    semUma({ horas: 179 }, 'com 179 horas');
+    semUma({ horas: 199 }, 'com 199 horas');
+    semUma({ horas: 199.9 }, 'com horas arredondadas para 200');
     semUma({ metasSeladas: 6 }, 'com uma meta aberta');
     semUma({ diasZerados: 1 }, 'com um dia zerado');
     semUma({ areasAtivas: 4 }, 'com uma area abandonada');
 }
 
-// --- 5. cair do SS para no maximo aquilo ------------------------------------
+// --- 5. cair do SSS para SS --------------------------------------------------
 //
-// Quem fez 100% em 28 dias e falhou so a area nao vira B. Ele perde o SS e fica
-// com o melhor que conquistou — que e S, porque 28 dias passam do teto de S.
+// Quem fez 100% em 28 dias e falhou so a area perde o SSS, mas preserva SS.
 
 {
-    assert.equal(notaDoCiclo({ ...ssPerfeito, areasAtivas: 4 }).nota, 'S');
-    assert.equal(notaDoCiclo({ ...ssPerfeito, diasZerados: 2 }).nota, 'S');
+    assert.equal(notaDoCiclo({ ...ssPerfeito, areasAtivas: 4 }).nota, 'SS');
+    assert.equal(notaDoCiclo({ ...ssPerfeito, diasZerados: 2 }).nota, 'SS');
 }
 
 // --- 6. o bau sai da nota, e so dela ----------------------------------------
 
 {
+    assert.equal(bauDaNota('SSS'), 'Lendário');
     assert.equal(bauDaNota('SS'), 'Lendário');
     assert.equal(bauDaNota('S'), 'Épico');
     assert.equal(bauDaNota('A'), 'Raro');
@@ -124,7 +131,7 @@ const ssPerfeito = {
 {
     const capado = notaDoCiclo({ conclusaoPct: 100, dias: 5 });
     assert.equal(capado.nota, 'B');
-    assert.equal(capado.notaPelaConclusao, 'SS');
+    assert.equal(capado.notaPelaConclusao, 'SSS');
     assert.ok(capado.motivoDoTeto, 'a nota foi limitada e nao disse por que');
     assert.match(capado.motivoDoTeto, /dias/i);
 

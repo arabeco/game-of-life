@@ -1,3 +1,192 @@
 html,body,#root{height:auto!important;min-height:100%;overflow:visible!important}body{position:static!important;inset:auto!important;background:#080b0f!important;color:#ece7df;font-family:Arial,Helvetica,sans-serif!important;touch-action:auto!important}.plates-gallery{max-width:1480px;margin:auto;padding:36px 24px}.plates-gallery header{text-align:center;margin-bottom:24px}.plates-gallery header p{font-size:12px;color:#aeb6bf}.plates-gallery h1{font:400 36px/1.2 Georgia,serif;margin:14px 0}.plates-gallery nav{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px;margin-bottom:32px}.plates-gallery button{padding:10px 16px;border:1px solid #68737e;border-radius:8px;color:#eee;background:#131922}.plates-gallery button[aria-pressed=true]{border-color:#e3cf9c;background:#302b20}.plates-gallery label{font-size:13px;display:flex;align-items:center;gap:8px;padding:10px}.plates-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,320px));gap:28px;justify-content:center;align-items:start}.compact-grid{grid-template-columns:repeat(auto-fit,226px)}.plate-sample{min-width:0;width:100%;margin:0}.plate-sample h2{font:500 13px/1.4 Arial,sans-serif;text-align:center;color:#bec6ce;margin:0 0 14px}.uses-grid{display:flex;align-items:flex-start;flex-wrap:wrap;justify-content:center;gap:28px}.uses-grid .plate-sample{width:320px;max-width:100%}.uses-grid .narrow{width:226px}.uses-grid .export{width:440px}@media(max-width:400px){.plates-gallery{padding:24px 12px}.plates-grid{grid-template-columns:minmax(0,320px)}.compact-grid{grid-template-columns:minmax(0,226px)}}
 
 .capture-proof{margin:24px auto;max-width:440px;text-align:center}.capture-proof img{display:block;width:100%;height:auto;margin:12px auto}.plates-gallery [role=status]{text-align:center;font-size:13px;color:#bcc9bf}
+
+.contrast-study__intro{max-width:680px;margin:0 auto 28px;text-align:center;color:#bcc7d0;font-size:14px;line-height:1.5}
+.contrast-study__detail{margin:12px 4px 0;text-align:center;color:#aeb9c2;font-size:12px;line-height:1.4}
+.contrast-grid .plate-sample{padding-bottom:16px}
+.contrast-grid.compact-grid{grid-template-columns:repeat(6,minmax(0,226px));gap:12px}
+.contrast-reference{margin:64px auto 0}
+.contrast-reference>h2{text-align:center;font:500 14px Arial,sans-serif;color:#bec6ce;margin:0 0 20px}
+.contrast-reference__plates{display:flex;flex-wrap:wrap;justify-content:center;gap:24px}
+.contrast-reference__plates .plate-sample{width:226px}
+@media(max-width:1250px){.contrast-grid.compact-grid{grid-template-columns:repeat(auto-fit,minmax(205px,226px))}}
+
+/* Gallery-only neighbors of the SS lettering on the same SSS stone. */
+.plates-gallery .sss-contrast-ss[data-rank="SSS"] .metal-report-card__rank{
+  color:#ffe4a2;
+  background-image:linear-gradient(125deg,#b38c46,#f9e6b2 42%,#d8b16b 65%,#806033);
+  -webkit-text-stroke:.8px #47331c;
+  filter:drop-shadow(0 3px 2px #0009)
+}
+.plates-gallery .sss-contrast-ss[data-rank="SSS"] .metal-report-card__score,
+.plates-gallery .sss-contrast-ss[data-rank="SSS"] .metal-report-card__title,
+.plates-gallery .sss-contrast-ss[data-rank="SSS"] .metal-report-card__metric-value{
+  color:#ffe4a2;
+  background:linear-gradient(118deg,#c39a51 0%,#ffe4a2 18%,#fffaf0 48%,#ffe4a2 78%,#c39a51 100%);
+  background-clip:text;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  -webkit-text-stroke:.5px #4b3822;
+  filter:drop-shadow(0 1px 1px #000c)
+}
+
+.plates-gallery .sss-contrast-ss-bronze[data-rank="SSS"] .metal-report-card__rank{
+  -webkit-text-stroke:1.45px #3f2914;
+  filter:drop-shadow(0 3px 2px #000b)
+}
+.plates-gallery .sss-contrast-ss-bronze[data-rank="SSS"] .metal-report-card__score,
+.plates-gallery .sss-contrast-ss-bronze[data-rank="SSS"] .metal-report-card__title,
+.plates-gallery .sss-contrast-ss-bronze[data-rank="SSS"] .metal-report-card__metric-value{
+  color:#64441f;
+  background:linear-gradient(180deg,#936325 0%,#efd096 17%,#fff4d1 29%,#fff9e5 54%,#fce5b3 78%,#b67d33 100%);
+  background-clip:text;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  -webkit-text-stroke:.9px #2b1c0e;
+  paint-order:stroke fill;
+  text-shadow:none;
+  filter:drop-shadow(.6px 1px 0 #35210f) drop-shadow(0 1px 1px #0009)
+}
+.plates-gallery .sss-contrast-ss-bronze[data-rank="SSS"] .metal-report-card__title{font-weight:600}
+.plates-gallery .sss-contrast-ss-bronze[data-rank="SSS"] :is(.metal-report-card__score,.metal-report-card__metric-value){font-weight:700}
+
+/* The bluer stone needs a slightly deeper gold on the smaller lettering. */
+.plates-gallery .sss-contrast-ss-stone[data-rank="SSS"] :is(.metal-report-card__score,.metal-report-card__title,.metal-report-card__metric-value){
+  background:linear-gradient(118deg,#805723 0%,#c6a061 18%,#f6dfab 48%,#c6a061 78%,#805723 100%);
+  background-clip:text;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  -webkit-text-stroke:.65px #35230f;
+  filter:drop-shadow(0 1px 1px #34220cb3)
+}
+.plates-gallery .sss-contrast-ss-stone[data-rank="SSS"] :is(.metal-report-card__rail,.metal-report-card__metric-label){color:#584b38}
+
+/* Text-only comparisons on the blue 1B stone; the large SSS never changes. */
+.plates-gallery .sss-gold-study-ivory[data-rank="SSS"]{
+  --gold-face:linear-gradient(180deg,#805322 0%,#d9b36d 20%,#fff1cb 42%,#fff8df 56%,#d7ad67 78%,#67411b 100%);
+  --gold-rim:#342311;
+  --gold-stroke:.75px;
+  --gold-shadow:drop-shadow(0 1px 1px #26190bc2)
+}
+.plates-gallery .sss-gold-study-facets[data-rank="SSS"]{
+  --gold-face:linear-gradient(105deg,#60401c 0%,#af8038 22%,#fff1c1 43%,#dfb96f 61%,#805921 82%,#523618 100%);
+  --gold-rim:#382411;
+  --gold-stroke:.7px;
+  --gold-shadow:drop-shadow(0 1px 1px #26190bbd)
+}
+.plates-gallery .sss-gold-study-deep[data-rank="SSS"]{
+  --gold-face:linear-gradient(180deg,#523716 0%,#916424 32%,#f8db9e 46%,#fff0c0 54%,#a77834 66%,#4c3317 100%);
+  --gold-rim:#281b10;
+  --gold-stroke:.6px;
+  --gold-shadow:drop-shadow(0 1px 1px #1f150bbc)
+}
+.plates-gallery .sss-gold-study-champagne[data-rank="SSS"]{
+  --gold-face:linear-gradient(180deg,#6c5435 0%,#c9ac79 24%,#fff6df 47%,#f4e6c9 57%,#b59765 78%,#60492d 100%);
+  --gold-rim:#3d2d1b;
+  --gold-stroke:.75px;
+  --gold-shadow:drop-shadow(0 1px 1px #2b2012b8)
+}
+.plates-gallery .sss-gold-study-emboss[data-rank="SSS"]{
+  --gold-face:linear-gradient(115deg,#69471e 0%,#d2a762 28%,#fff2c6 48%,#e1b36d 68%,#6b471e 100%);
+  --gold-rim:#36220f;
+  --gold-stroke:.7px;
+  --gold-shadow:drop-shadow(0 -1px 0 #f6dea899) drop-shadow(1px 1px 0 #4c3117) drop-shadow(0 2px 1px #201407a6)
+}
+.plates-gallery .sss-gold-study-calm[data-rank="SSS"]{
+  --gold-face:linear-gradient(180deg,#77501f 0%,#d9a95d 24%,#fff1c6 43%,#fff8df 55%,#b47a31 79%,#674217 100%);
+  --gold-rim:#35230f;
+  --gold-stroke:.95px;
+  --gold-shadow:drop-shadow(0 -1px 0 #fff0c2a6) drop-shadow(1px 1px 0 #39260f) drop-shadow(0 2px 1px #201407bf)
+}
+.plates-gallery .sss-gold-study[data-rank="SSS"] :is(.metal-report-card__score,.metal-report-card__title,.metal-report-card__metric-value){
+  background:var(--gold-face);
+  background-clip:text;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  -webkit-text-stroke:var(--gold-stroke) var(--gold-rim);
+  filter:var(--gold-shadow)
+}
+.plates-gallery .sss-gold-study[data-rank="SSS"] .metal-report-card__title{font-weight:600}
+.plates-gallery .sss-gold-study[data-rank="SSS"] :is(.metal-report-card__score,.metal-report-card__metric-value){font-weight:700}
+.plates-gallery .sss-gold-study-calm[data-rank="SSS"] :is(.metal-report-card__rail,.metal-report-card__metric-label){color:#314c5b;font-weight:600}
+.plates-gallery .sss-gold-study-calm[data-rank="SSS"] :is(.metal-report-card__score,.metal-report-card__title,.metal-report-card__metric-value){paint-order:stroke fill}
+.plates-gallery .sss-gold-study-calm[data-rank="SSS"] .metal-report-card__metric-value{-webkit-text-stroke:1.4px #30200e}
+.plates-gallery .sss-gold-study-calm.metal-report-card--compact[data-rank="SSS"] .metal-report-card__metric-value{font-size:18px}
+
+/* Five alternative text metals; the first SS gold study stays untouched. */
+.plates-gallery .sss-contrast-ss-platinum[data-rank="SSS"]{
+  --study-rank:linear-gradient(90deg,#344955,#9babb5 32%,#f8fcff 49%,#8fa3af 67%,#344955);
+  --study-text:linear-gradient(90deg,#3a4c58,#798e9a 31%,#dbe7ed 48%,#68818e 65%,#344651);
+  --study-edge:#293a45;
+  --study-muted:#506875;
+  --study-glow:#e8f7ffb3
+}
+.plates-gallery .sss-contrast-ss-mineral[data-rank="SSS"]{
+  --study-rank:linear-gradient(90deg,#103440,#347383 34%,#b4d8dc 49%,#347080 65%,#103440);
+  --study-text:linear-gradient(90deg,#123c49,#347382 33%,#92bdc5 48%,#286575 65%,#123c49);
+  --study-edge:#0b303b;
+  --study-muted:#315a68;
+  --study-glow:#c5eced99
+}
+.plates-gallery .sss-contrast-ss-cold-bronze[data-rank="SSS"]{
+  --study-rank:linear-gradient(90deg,#4c3d38,#997f70 33%,#dfcbb9 49%,#896f62 66%,#493a36);
+  --study-text:linear-gradient(90deg,#4b3c38,#91776a 34%,#c9b3a2 49%,#7f665c 65%,#483a36);
+  --study-edge:#372e2c;
+  --study-muted:#6a5650;
+  --study-glow:#f6e3d299
+}
+.plates-gallery .sss-contrast-ss-graphite[data-rank="SSS"]{
+  --study-rank:linear-gradient(90deg,#222d33,#667a84 34%,#d4e0e5 49%,#536872 65%,#222d33);
+  --study-text:linear-gradient(90deg,#26333a,#647882 33%,#b8cbd2 48%,#526974 65%,#26333a);
+  --study-edge:#19252c;
+  --study-muted:#455660;
+  --study-glow:#e0f0f7aa
+}
+.plates-gallery .sss-contrast-ss-champagne[data-rank="SSS"]{
+  --study-rank:linear-gradient(90deg,#5e564e,#b0a392 33%,#f1ece2 49%,#9d8e7d 66%,#5b534c);
+  --study-text:linear-gradient(90deg,#5b534c,#a39686 32%,#dfd5c6 48%,#897c6d 65%,#574f48);
+  --study-edge:#403a35;
+  --study-muted:#71685e;
+  --study-glow:#fff7eaaa
+}
+.plates-gallery .sss-contrast-ss:is(.sss-contrast-ss-platinum,.sss-contrast-ss-mineral,.sss-contrast-ss-cold-bronze,.sss-contrast-ss-graphite,.sss-contrast-ss-champagne)[data-rank="SSS"] .metal-report-card__rank{
+  color:var(--study-edge);
+  background-image:var(--study-rank);
+  -webkit-text-stroke:.9px var(--study-edge);
+  filter:drop-shadow(0 1px 0 var(--study-glow)) drop-shadow(0 2px 2px #15232a91)
+}
+.plates-gallery .sss-contrast-ss:is(.sss-contrast-ss-platinum,.sss-contrast-ss-mineral,.sss-contrast-ss-cold-bronze,.sss-contrast-ss-graphite,.sss-contrast-ss-champagne)[data-rank="SSS"] :is(.metal-report-card__score,.metal-report-card__title,.metal-report-card__metric-value){
+  color:var(--study-edge);
+  background:var(--study-text);
+  background-clip:text;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  -webkit-text-stroke:.6px var(--study-edge);
+  filter:drop-shadow(0 1px 1px #1c2c328f)
+}
+.plates-gallery .sss-contrast-ss:is(.sss-contrast-ss-platinum,.sss-contrast-ss-mineral,.sss-contrast-ss-cold-bronze,.sss-contrast-ss-graphite,.sss-contrast-ss-champagne)[data-rank="SSS"] :is(.metal-report-card__rail,.metal-report-card__metric-label){
+  color:var(--study-muted)
+}
+
+/* Bicolor metal: ivory face, deep petroleum rim and a narrow champagne glint. */
+.plates-gallery .sss-contrast-ss-jewel[data-rank="SSS"] .metal-report-card__rank{
+  color:#eef2ee;
+  background-image:linear-gradient(180deg,#e1c995 0%,#fff7e9 7%,#f5f8f5 24%,#e4eff0 57%,#aec4cc 100%);
+  -webkit-text-stroke:1.25px #123c4c;
+  filter:drop-shadow(-.5px -1px 0 #d8b77f) drop-shadow(1.5px 1.5px 0 #123a49) drop-shadow(0 2px 1px #213b49a6)
+}
+.plates-gallery .sss-contrast-ss-jewel[data-rank="SSS"] :is(.metal-report-card__score,.metal-report-card__title,.metal-report-card__metric-value){
+  color:#eef2ee;
+  background:linear-gradient(180deg,#b5cbd0 0%,#f7faf7 30%,#fffdf7 50%,#f7faf7 70%,#b5cbd0 100%);
+  background-clip:text;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  -webkit-text-stroke:.65px #123c4c;
+  filter:drop-shadow(0 -.6px 0 #d8b77f) drop-shadow(.7px .8px 0 #123a49) drop-shadow(0 1px 1px #203a4880)
+}
+.plates-gallery .sss-contrast-ss-jewel[data-rank="SSS"] .metal-report-card__title{font-weight:600}
+.plates-gallery .sss-contrast-ss-jewel[data-rank="SSS"] :is(.metal-report-card__score,.metal-report-card__metric-value){font-weight:700}
+.plates-gallery .sss-contrast-ss-jewel[data-rank="SSS"] :is(.metal-report-card__rail,.metal-report-card__metric-label){
+  color:#365966
+}

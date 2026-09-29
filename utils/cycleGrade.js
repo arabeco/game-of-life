@@ -32,7 +32,8 @@ const qualifiesForTopGrade = (fairness) => !!fairness
  * no mesmo cartao.
  */
 const FALA_DA_NOTA = {
-    SS: { color: 'text-rose-400', phrase: 'Ciclo perfeito. Excelência em cada compromisso.' },
+    SSS: { color: 'text-cyan-100', phrase: 'Ciclo absoluto. Cada compromisso foi honrado.' },
+    SS: { color: 'text-rose-400', phrase: 'Excelência sustentada em um ciclo de alta exigência.' },
     S: { color: 'text-purple-400', phrase: 'Plano honrado em alto patamar. Raro e preciso.' },
     A: { color: 'text-amber-300', phrase: 'Execucao solida. O ciclo foi honrado.' },
     B: { color: 'text-yellow-400', phrase: 'Bom ciclo. Algumas brechas a selar.' },
@@ -75,12 +76,12 @@ export const getScoreGrade = (score, fairness) => {
  * ========================================================================== */
 
 /** Da melhor para a pior. A ordem importa: o teto e um corte nesta lista. */
-const ESCADA = ['SS', 'S', 'A', 'B', 'C', 'D', 'E'];
+const ESCADA = ['SSS', 'SS', 'S', 'A', 'B', 'C', 'D', 'E'];
 
 /** O que a execucao conquistou, antes de qualquer teto. */
 const notaPelaConclusao = (pct) => {
-    if (pct >= 100) return 'SS';
-    if (pct >= 95) return 'S';
+    if (pct >= 100) return 'SSS';
+    if (pct >= 95) return 'SS';
     if (pct >= 85) return 'A';
     if (pct >= 70) return 'B';
     if (pct >= 50) return 'C';
@@ -94,9 +95,8 @@ const notaPelaConclusao = (pct) => {
  * Sem ele, uma semana perfeita e um mes perfeito valeriam o mesmo, e o bau
  * viraria torneira: bastaria encadear ciclos de tres dias.
  *
- * As portas do SS nao sao so tempo, porque tempo sozinho se espera. Ele cobra
- * que NADA tenha falhado — acoes, metas, dias — e que as cinco areas da vida
- * estejam vivas. Um mes impecavel, e nao um mes comprido.
+ * O SSS exige execucao real perfeita, metas seladas, presenca diaria e as
+ * cinco areas vivas. S e SS aceitam pequenas falhas a partir de 95%.
  */
 const tetoDoPorte = (e) => {
     const dias = Number(e?.dias) || 0;
@@ -105,18 +105,22 @@ const tetoDoPorte = (e) => {
     const metasSeladas = Number(e?.metasSeladas) || 0;
     const diasZerados = Number(e?.diasZerados) || 0;
     const areasAtivas = Number(e?.areasAtivas) || 0;
+    const acoesPlanejadas = Number(e?.acoesPlanejadas) || 0;
+    const acoesConcluidas = Number(e?.acoesConcluidas) || 0;
 
-    const impecavel = metasPlanejadas > 0
+    const impecavel = acoesPlanejadas > 0
+        && acoesConcluidas === acoesPlanejadas
+        && metasPlanejadas > 0
         && metasSeladas >= metasPlanejadas
         && diasZerados === 0
         && areasAtivas >= 5;
 
-    if (dias >= 28 && horas >= 180 && impecavel) return { teto: 'SS', motivo: null };
+    if (dias >= 28 && horas >= 200 && impecavel) return { teto: 'SSS', motivo: null };
     if (dias >= 28 && horas >= 180) {
-        return { teto: 'S', motivo: 'O SS pede um ciclo sem nenhuma falha e com as cinco áreas vivas.' };
+        return { teto: 'SS', motivo: 'O SSS pede 200 horas, execução perfeita, todas as metas, todos os dias e as cinco áreas vivas.' };
     }
-    if (dias >= 14) return { teto: 'S', motivo: 'O SS pede 28 dias e 180 horas honradas.' };
-    if (dias >= 7) return { teto: 'A', motivo: 'O S pede 14 dias de ciclo.' };
+    if (dias >= 14 && horas >= 60) return { teto: 'S', motivo: 'O SS pede 28 dias e 180 horas honradas.' };
+    if (dias >= 7) return { teto: 'A', motivo: 'O S pede 14 dias e 60 horas honradas.' };
     return { teto: 'B', motivo: 'O A pede 7 dias de ciclo.' };
 };
 
@@ -148,6 +152,7 @@ export const notaDoCiclo = (evidencia) => {
 };
 
 const BAU_DA_NOTA = {
+    SSS: 'Lendário',
     SS: 'Lendário',
     S: 'Épico',
     A: 'Raro',

@@ -11,7 +11,7 @@ import { CycleAtlasPanel } from './CycleAtlasPanel';
 import { GraficoDeDiasDoCiclo } from './GraficoDeDiasDoCiclo';
 import { resolveItemDef } from '../constants/items';
 import { ChevronLeftIcon, ChevronRightIcon, XIcon, ShareIcon, CheckIcon, CrownIcon, ZapIcon, TrophyIcon, Trash2Icon, RefreshCwIcon } from './Icons';
-import { MetalReportCard } from './MetalReportCard';
+import { MetalReportCard, getPlateFinish } from './MetalReportCard';
 import { buildComparisonClosingLine, buildComparisonNarration, buildCycleComparison, isFavourable } from '../utils/cycleComparison';
 import { hasPlatinumAccess } from '../utils/premiumAccess';
 import { exportElementAsImage, shouldPreferNativeShare } from './Share';
@@ -324,23 +324,6 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                     nota: diasSemNada > 0 ? `${diasSemNada} ${diasSemNada === 1 ? 'dia zerado' : 'dias zerados'}` : 'nenhum dia zerado',
                     tom: diasSemNada === 0 ? 'bom' : 'normal',
                 },
-                /* A quarta vaga era do Ritmo, e o Ritmo quase sempre e zero.
-                   Aqui entra o MELHOR DIA: um fato que a pessoa nao tem de
-                   cabeca, que so este ciclo produziu, e que estava calculado e
-                   guardado sem nunca chegar a uma tela. Quando o ciclo nao tem
-                   um pico — nenhuma entrega — a vaga simplesmente nao existe, em
-                   vez de mostrar um zero. */
-                ...(melhorDia && (metrics.bestDayCount || 0) > 0
-                    ? [{
-                        rotulo: 'Melhor dia',
-                        valor: melhorDia,
-                        nota: `${metrics.bestDayCount} ${metrics.bestDayCount === 1 ? 'entrega' : 'entregas'}`,
-                        // Sem tom: e um FATO, nao um veredito. O verde ja esta na
-                        // Presenca deste mesmo rodape, e verde em tudo e verde em
-                        // nada — ainda mais disputando com o acabamento dourado,
-                        // que e a identidade do quadro.
-                    }]
-                    : []),
             ]}
         />
         );
@@ -438,6 +421,72 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 rotulo="a arena que puxou o ciclo"
                 legenda={legenda}
                 remate={`${metrics.arenasInvolved || 0} ${(metrics.arenasInvolved || 0) === 1 ? 'arena entrou' : 'arenas entraram'} neste ciclo.`}
+            />
+        );
+    };
+
+    /*
+     * MARCAS: TRES LEITURAS QUE NAO DISPUTAM COM OS OUTROS QUADROS.
+     *
+     * Execucao fala do quanto foi entregue, Ritmo da forma no tempo e
+     * Territorio de onde a energia foi investida. Aqui entram fatos que so
+     * existem quando o ciclo fecha: o pico, a cadencia contra o plano e o
+     * alcance entre arenas. Sao faixas, nao cartoes dentro de cartoes.
+     */
+    const renderMarksSlide = () => {
+        const acabamento = getPlateFinish(notaDoRelatorio);
+        const diaDePico = melhorDia && (metrics.bestDayCount || 0) > 0
+            ? `${melhorDia} · ${metrics.bestDayCount} ${(metrics.bestDayCount || 0) === 1 ? 'entrega' : 'entregas'}`
+            : null;
+        const cadencia = paceDelta >= 5
+            ? { titulo: 'Cadência acima do plano', texto: `Você terminou ${paceDelta} pontos à frente do relógio.`, valor: `+${paceDelta}%` }
+            : paceDelta <= -5
+                ? { titulo: 'Cadência pediu retomada', texto: `O plano terminou ${Math.abs(paceDelta)} pontos à frente da execução.`, valor: `${paceDelta}%` }
+                : { titulo: 'Cadência em compasso', texto: 'A execução acompanhou o tempo previsto para o ciclo.', valor: '≈' };
+        const marcas = [
+            ...(diaDePico ? [{ titulo: 'Dia de pico', texto: 'O maior volume do ciclo ficou concentrado aqui.', valor: diaDePico }] : []),
+            cadencia,
+            {
+                titulo: 'Alcance do ciclo',
+                texto: `${metrics.arenasInvolved || 0} ${(metrics.arenasInvolved || 0) === 1 ? 'arena entrou' : 'arenas entraram'} no seu território.`,
+                valor: `${metrics.arenasInvolved || 0}`,
+            },
+        ].slice(0, 3);
+
+        return (
+            <SlideCartaz
+                rank={notaDoRelatorio}
+                titulo="Marcas do ciclo"
+                figura={(
+                    <div className="flex w-full flex-col gap-2.5 px-1">
+                        {marcas.map((marca) => (
+                            <div
+                                key={marca.titulo}
+                                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-l-[3px] px-3.5 py-3 text-left"
+                                style={{
+                                    borderLeftColor: acabamento.mid,
+                                    borderTop: `1px solid ${acabamento.pale}24`,
+                                    borderBottom: `1px solid ${acabamento.mid}22`,
+                                    background: `linear-gradient(90deg, ${acabamento.mid}18, transparent 72%)`,
+                                }}
+                            >
+                                <div className="min-w-0">
+                                    <p className="m-0 text-[11px] font-black uppercase tracking-[0.14em]" style={{ color: acabamento.pale }}>
+                                        {marca.titulo}
+                                    </p>
+                                    <p className="m-0 mt-1 text-[11px] leading-snug text-white/58">{marca.texto}</p>
+                                </div>
+                                <span
+                                    className="max-w-[104px] text-right text-[15px] font-bold leading-tight"
+                                    style={{ color: acabamento.pale, fontFamily: 'Cinzel, Georgia, serif' }}
+                                >
+                                    {marca.valor}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+                rotulo="leituras que ficam para a próxima run"
             />
         );
     };
@@ -849,10 +898,13 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         renderExecutionSlide,
         ...(weeklyAtlas.length > 0 ? [renderAtlasSlide] : []),
         renderTerritorySlide,
+        renderMarksSlide,
         renderAchievementsSlide,
         ...(showComparisonSlide ? [renderComparisonSlide] : []),
         ...(habitos.length > 0 ? [renderHabitsSlide] : []),
-        renderVerdictSlide,
+        // A placa existente fecha o relatorio: ela ja e o veredito e concentra
+        // Rever, Compartilhar e Novo ciclo. Um segundo cartaz de nota antes dela
+        // fazia a mesma sentenca duas vezes, em linguagens visuais diferentes.
         renderRewardSlide
     ];
     const totalSlides = slides.length;
@@ -1095,6 +1147,3 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         </Portal>
     );
 };
-
-
-

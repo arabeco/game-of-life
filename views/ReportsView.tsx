@@ -621,6 +621,9 @@ const StartCycleModal: React.FC<{ onClose: () => void; onStart: (name: string, e
 const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () => void, seasonName?: string, isEditing?: boolean, eraLabel?: string, eraSkinId?: string, isSelectedForEraEdit?: boolean, showTimelineMarker?: boolean, onDelete?: () => void }> = ({ report, isLatest, onClick, seasonName, isEditing, eraLabel, eraSkinId, isSelectedForEraEdit, showTimelineMarker = true, onDelete }) => {
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
     const scoreInfo = getScoreGrade(report.performanceScore, report.metrics?.fairness);
+    // A nota selada pertence ao ciclo. O score fica de reserva apenas para os
+    // relatórios antigos, anteriores ao campo `grade`.
+    const notaDoCiclo = report.grade || scoreInfo.grade;
     const startDate = formatDate(report.startDate);
     const endDate = formatDate(report.endDate);
     const { sealedMetas, plannedMetas } = getReportMetaCounts(report);
@@ -666,7 +669,7 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
                     <div className="pointer-events-none absolute inset-y-5 left-0 z-10 w-[3px] rounded-r-full" style={{ background: `linear-gradient(180deg, ${eraSkin.edge} 0%, ${eraSkin.glow} 55%, ${eraSkin.metal} 100%)` }} />
                 )}
                 <MetalReportCard
-                    rank={scoreInfo.grade}
+                    rank={notaDoCiclo}
                     score={report.performanceScore}
                     title={report.cycleName || 'Ciclo'}
                     subtitle={`${startDate} - ${endDate}`}
@@ -740,6 +743,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [postCycleChestPrepared, setPostCycleChestPrepared] = useState(false);
     const [isOpeningPostCycleChest, setIsOpeningPostCycleChest] = useState(false);
     const [reportRewardPayload, setReportRewardPayload] = useState<RewardModalPayload | null>(null);
+    // O fecho tem quatro atos legiveis. A recompensa precisa existir antes do
+    // video, mas o relatorio so entra depois que o video terminou.
+    const [postCycleSequence, setPostCycleSequence] = useState<'idle' | 'preparing' | 'reward' | 'video' | 'report'>('idle');
     const [isExportingLegacy, setIsExportingLegacy] = useState(false);
     const [showLegacyProjectionModal, setShowLegacyProjectionModal] = useState(false);
     const [legacyShareUnlocked, setLegacyShareUnlocked] = useState(false);
@@ -1058,12 +1064,36 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
         (window as any).__glyphPendingCycleResults = null;
         primePostCycleResults(pending.report, pending.expGained || 0);
+        setPostCycleSequence('reward');
         setView('results');
     }, [primePostCycleResults]);
 
     useEffect(() => {
         if (view === 'scanning') {
             setScanError(null);
+
+            // Primeiro sela em silencio, para a placa poder mostrar a recompensa
+            // verdadeira. O video vem somente depois que a pessoa fecha a placa.
+            if (postCycleSequence === 'preparing') {
+                void finalizeReportGeneration()
+                    .then(() => setPostCycleSequence('reward'))
+                    .catch(() => undefined);
+                return;
+            }
+
+            // A placa e uma etapa propria. Nada por baixo dela deve iniciar ou
+            // avancar enquanto a pessoa ainda esta vendo a recompensa.
+            if (postCycleSequence === 'reward') return;
+
+            // Quem desligou animacoes manteve essa preferencia: depois da placa,
+            // vai direto ao relatorio sem um video artificial.
+            if (postCycleSequence === 'video' && !oraclePreferences?.animationsEnabled) {
+                setPostCycleSequence('report');
+                setView('results');
+                return;
+            }
+
+            if (postCycleSequence === 'video') return;
 
             // Check preferences for animation
             if (oraclePreferences?.animationsEnabled) {
@@ -1079,16 +1109,16 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             }, 3000);
             return () => window.clearTimeout(timer);
         }
-    }, [view, scanAttempt, oraclePreferences?.animationsEnabled]);
+    }, [view, scanAttempt, oraclePreferences?.animationsEnabled, postCycleSequence]);
 
     useEffect(() => {
-        if (view === 'results' && isPostCycleFlow) {
+        if (view === 'results' && isPostCycleFlow && postCycleSequence === 'report') {
             setCycleShimmer(true);
             const timer = window.setTimeout(() => setCycleShimmer(false), 1500);
             return () => window.clearTimeout(timer);
         }
         setCycleShimmer(false);
-    }, [view, isPostCycleFlow]);
+    }, [view, isPostCycleFlow, postCycleSequence]);
 
     const handleEndCycle = () => setShowConfirmEndCycle(true);
     const confirmEndCycle = () => {
@@ -1099,6 +1129,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             return;
         }
         setScanError(null);
+        setPostCycleSequence('preparing');
         setScanAttempt(prev => prev + 1);
         setView('scanning');
     };
@@ -1110,7 +1141,10 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             setReportForComparison(null);
         } else {
             setSelectedReport(report);
-            setSelectedReportStartsAtEnd(true);
+            // Rever um ciclo sempre comeca pelo primeiro quadro. Abrir na placa
+            // final escondia a historia do ciclo e ainda fazia parecer que a
+            // navegacao estava quebrada, porque o unico caminho era voltar.
+            setSelectedReportStartsAtEnd(false);
             setView('results');
         }
     };
@@ -1431,7 +1465,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
      */
     const entregaDoCicloRef = useRef<string | null>(null);
     useEffect(() => {
-        if (view !== 'results' || !isPostCycleFlow) return;
+        if (postCycleSequence !== 'reward' || !isPostCycleFlow) return;
         const chave = selectedReport?.id || null;
         if (!chave || entregaDoCicloRef.current === chave) return;
         const temAlgoAEntregar = Boolean(earnedChest)
@@ -1441,7 +1475,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         if (!temAlgoAEntregar) return;
         entregaDoCicloRef.current = chave;
         void handleOpenPostCycleChest();
-    }, [view, isPostCycleFlow, selectedReport?.id, earnedChest, expGained, fragmentsGained, grantedInsignias, handleOpenPostCycleChest]);
+    }, [postCycleSequence, isPostCycleFlow, selectedReport?.id, earnedChest, expGained, fragmentsGained, grantedInsignias, handleOpenPostCycleChest]);
 
     /**
      * O PREMIO VEM ANTES DO RELATORIO, E NAO POR CIMA DELE.
@@ -1466,6 +1500,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const premioAindaNaoEntregue = entregaDoCicloRef.current !== (selectedReport?.id || null)
         && (Boolean(earnedChest) || expGained > 0 || fragmentsGained > 0 || grantedInsignias.length > 0);
     const premioNaFrenteDoRelatorio = isPostCycleFlow
+        && postCycleSequence === 'reward'
         && (Boolean(reportRewardPayload) || premioAindaNaoEntregue);
 
     const handleStartNewCycleFromResults = async () => {
@@ -1483,6 +1518,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setFragmentsGained(0);
         setPostCycleChestPrepared(false);
         setReportRewardPayload(null);
+        setPostCycleSequence('idle');
     };
 
     const handleForceClose = useCallback((event?: { preventDefault?: () => void; stopPropagation?: () => void }) => {
@@ -1502,6 +1538,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setIsOpeningPostCycleChest(false);
         setFragmentsGained(0);
         setReportRewardPayload(null);
+        setPostCycleSequence('idle');
         if (typeof window !== 'undefined') {
             (window as any).__glyphPendingCycleResults = null;
         }
@@ -1540,6 +1577,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setFragmentsGained(0);
         setPostCycleChestPrepared(false);
         setReportRewardPayload(null);
+        setPostCycleSequence('idle');
         setView('hub');
     };
 
@@ -1706,7 +1744,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     endDate: report.endDate,
                     score: report.performanceScore,
                 deliveries: report.metrics?.actionsCompleted,
-                    grade: getScoreGrade(report.performanceScore, report.metrics?.fairness).grade,
+                    grade: report.grade || getScoreGrade(report.performanceScore, report.metrics?.fairness).grade,
                     focusArena: report.highlight?.mostFocusedArena?.trim() || dominantArena,
                     signatureAction: report.metrics.top3Actions?.[0]?.name || report.highlight?.mostRepeatedAction || 'Nenhuma',
                     plannedMetas: report.metrics.plannedMetas,
@@ -2792,27 +2830,28 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const renderContent = () => {
         switch (view) {
             case 'scanning':
+                if (postCycleSequence === 'preparing' && !scanError) {
+                    return (
+                        <div className="flex h-full flex-col items-center justify-center space-y-4 text-center">
+                            <p className="animate-pulse text-[10px] font-black uppercase tracking-[0.24em] text-gray-400">Preparando recompensa...</p>
+                        </div>
+                    );
+                }
+                if (postCycleSequence === 'reward' && !scanError) {
+                    return <div className="h-full" aria-hidden="true" />;
+                }
                 // Show ReportGenerationModal only if animations enabled AND no error
                 if (oraclePreferences?.animationsEnabled && !scanError) {
                     return (
                         <Suspense fallback={<div className="flex flex-col items-center justify-center h-full space-y-4 animate-fade-in text-center mt-20"><p className="text-gray-400 font-mono animate-pulse uppercase tracking-[0.2em] text-[10px]">Gerando Relatório...</p></div>}>
-                            {/*
-                              * A RECOMPENSA E CONSEQUENCIA DO ATO, E NAO DA NARRATIVA.
-                              *
-                              * Ela ja esteve atras de um botao no ultimo quadro, e depois
-                              * abrindo sozinha quando a apresentacao terminava. Nos dois
-                              * casos sobravam DOIS finais disputando: a tela de recompensa
-                              * e a placa do resumo, uma cobrindo a outra.
-                              *
-                              * Agora ela vem aqui: acabou o selo, a primeira coisa que
-                              * aparece e o que aquele ciclo pagou. So depois comeca a
-                              * apresentacao, que passa a ter um fim so — a placa, que e o
-                              * objeto que se compartilha e onde moram o compartilhar, o
-                              * rever e as saidas.
-                              */}
                             <ReportGenerationModal
-                                onFinish={finalizeReportGeneration}
-                                onComplete={() => setView('results')}
+                                onFinish={postCycleSequence === 'video' ? () => undefined : finalizeReportGeneration}
+                                onComplete={() => {
+                                    if (postCycleSequence === 'video') {
+                                        setPostCycleSequence('report');
+                                    }
+                                    setView('results');
+                                }}
                             />
                         </Suspense>
                     );
@@ -3209,7 +3248,11 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         expGained={isPostCycleFlow ?expGained : undefined}
                         fragmentsGained={isPostCycleFlow ?fragmentsGained : undefined}
                         insignias={isPostCycleFlow ?grantedInsignias : []}
-                        onOpenChest={isPostCycleFlow && earnedChest ?() => { void handleOpenPostCycleChest(); } : undefined}
+                        // A placa de recompensa ja entregou e mostrou o bau antes
+                        // do relatorio. No ultimo quadro, repetir um botao
+                        // desativado de recompensa deixa duas cerimonias para o
+                        // mesmo premio e parece que algo ficou pendente.
+                        onOpenChest={isPostCycleFlow && earnedChest && !postCycleChestOpened ? () => { void handleOpenPostCycleChest(); } : undefined}
                         chestOpened={postCycleChestOpened}
                         isOpeningChest={isOpeningPostCycleChest}
                         startAtEnd={selectedReportStartsAtEnd}
@@ -3217,7 +3260,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                            premioNaFrenteDoRelatorio. Isto fica como cinto: se um dia
                            outro modal abrir sobre o relatorio, os quadros nao podem
                            passar sozinhos atras dele. */
-                        autoPlay={!reportRewardPayload}
+                        // Slides so mudam por escolha da pessoa. Resultado e
+                        // leitura; o unico movimento automatico fica no video.
+                        autoPlay={false}
                     />
                 ) : <p>Erro ao carregar relat\u00F3rio.</p>;
             case 'comparing':
@@ -3450,7 +3495,13 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 payload={reportRewardPayload}
                 emblema={getRewardEmblemUrl('ciclo')}
                 tom={getRewardToneRgb('ciclo')}
-                onClose={() => setReportRewardPayload(null)}
+                onClose={() => {
+                    setReportRewardPayload(null);
+                    if (postCycleSequence === 'reward') {
+                        setPostCycleSequence('video');
+                        setView('scanning');
+                    }
+                }}
             />
         </>
     );

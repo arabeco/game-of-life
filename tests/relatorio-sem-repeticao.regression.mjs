@@ -89,7 +89,7 @@ for (const barra of ['honorPts', 'metaPts', 'cadencePts', 'realismPts', 'ascensi
 }
 
 // ---------------------------------------------------------------------------
-// 3. OS FATOS ENTERRADOS CHEGAM NA TELA.
+// 3. OS FATOS ENTERRADOS CHEGAM NA TELA CERTA.
 //
 // Calculados no fecho, gravados no relatorio, lidos por ninguem.
 // ---------------------------------------------------------------------------
@@ -99,11 +99,18 @@ assert.match(fonte, /metrics\.bestDayCount/, 'Quantas entregas no melhor dia: id
 assert.match(fonte, /metrics\.maxStreak/, 'A maior sequencia: idem.');
 
 const execucao = quadro('const renderExecutionSlide', 'const renderAtlasSlide');
-assert.match(execucao, /Melhor dia/, 'A quarta vaga da Execucao e do melhor dia.');
 assert.ok(
   !/rotulo: 'Ritmo'/.test(execucao),
   'O Ritmo era um delta que da zero quase sempre, e um "0" sozinho le como resultado nulo.',
 );
+
+/* O melhor dia deixou de disputar o rodape da Execucao. Ele agora e uma das
+   Marcas: uma leitura do ciclo, ao lado da cadencia e do alcance entre arenas. */
+const marcas = quadro('const renderMarksSlide', 'const renderAchievementsSlide');
+assert.match(marcas, /Dia de pico/, 'O pico do ciclo precisa aparecer nas Marcas.');
+assert.match(marcas, /metrics\.bestDay/, 'A data do melhor dia precisa chegar nas Marcas.');
+assert.match(marcas, /metrics\.bestDayCount/, 'O volume do melhor dia precisa chegar nas Marcas.');
+assert.ok(!/Melhor dia/.test(execucao), 'O melhor dia nao pode repetir o rodape da Execucao.');
 
 // ---------------------------------------------------------------------------
 // 4. A COMPARACAO E DO PLATINUM, INTEIRA.
@@ -125,7 +132,19 @@ assert.ok(
 );
 
 // ---------------------------------------------------------------------------
-// 5. ZERO NAO E CONQUISTA.
+// 5. A PLACA EXISTENTE E O VEREDITO FINAL.
+// ---------------------------------------------------------------------------
+
+const montagemDosSlides = fonte.slice(fonte.indexOf('const slides = ['));
+assert.match(montagemDosSlides, /renderMarksSlide/, 'As Marcas precisam entrar na sequencia real.');
+assert.match(montagemDosSlides, /renderRewardSlide/, 'A placa existente precisa continuar fechando o relatorio.');
+assert.ok(
+  !montagemDosSlides.includes('renderVerdictSlide,'),
+  'Um segundo veredito nao pode repetir a placa final do ciclo.',
+);
+
+// ---------------------------------------------------------------------------
+// 6. ZERO NAO E CONQUISTA.
 // ---------------------------------------------------------------------------
 
 const conquistas = quadro('const renderAchievementsSlide', 'const isPlatinum');

@@ -18,7 +18,7 @@ import { calculateArenaProgress } from '../utils/progressUtils';
 import { filterTasksAfterFreeProgressReset } from '../utils/freeProgressScope';
 import { formatDate, getCycleTimingSummary } from '../utils/dateUtils';
 import { buildCycleWidgetSnapshot } from '../utils/widgetSnapshots';
-import { getMetalRankPalette, getPlateFinish } from '../components/MetalReportCard';
+import { getMetalRankPalette, getPlateFinish, TEXTURA_POR_PATAMAR } from '../components/MetalReportCard';
 import { getProfileBackgroundPrimarySource, isCssProfileBackground } from '../utils/profileBackgrounds';
 import { getTaskExp } from '../utils/taskExp';
 import type { Action, Asset, Slot, SlotValue } from '../types';
@@ -285,7 +285,26 @@ export const AssetsView: React.FC = () => {
         ? getPlateFinish(patamarDoCiclo.rank)
         : getPlateFinish('A');
     const cycleWidgetFrameBackground = `linear-gradient(118deg, ${cycleWidgetFinish.dark} 0%, ${cycleWidgetFinish.pale} 12%, ${cycleWidgetFinish.mid} 40%, ${cycleWidgetFinish.pale} 52%, ${cycleWidgetFinish.dark} 84%, ${cycleWidgetFinish.pale} 100%)`;
+    /*
+     * A PEDRA TAMBEM AQUI — ESTE CARD E O ORIGINAL QUE O WIDGET IMITA.
+     *
+     * A ficha grande ganhou textura, o widget ganhou textura, e este ficou com
+     * a face de gradiente: o unico dos tres sem pedra, sendo justamente o que
+     * os outros dois copiam.
+     *
+     * A ordem das camadas importa: no CSS a primeira da lista fica POR CIMA.
+     * Entao vem o veu, depois a pedra, e so entao os gradientes de antes, que
+     * seguem dando a chapa escura sob os cantos que a foto nao alcanca.
+     *
+     * O veu e o mesmo 42% do widget, pela mesma razao: este card tambem e
+     * estreito, com barras finas e texto pequeno sobre a mesma foto.
+     */
+    const pedraDoCiclo = patamarDoCiclo ? TEXTURA_POR_PATAMAR[patamarDoCiclo.rank] : undefined;
     const cycleWidgetFaceBackground = [
+        ...(pedraDoCiclo ? [
+            'linear-gradient(rgba(6, 8, 12, 0.42), rgba(6, 8, 12, 0.42))',
+            `url("${pedraDoCiclo}") center / cover no-repeat`,
+        ] : []),
         `radial-gradient(circle at 45% 0%, ${cycleWidgetFinish.mid}2a 0%, transparent 44%)`,
         `linear-gradient(135deg, ${cycleWidgetFinish.mid}0e 0%, transparent 35%, ${cycleWidgetFinish.mid}07 72%, transparent 100%)`,
         `radial-gradient(circle at 45% 10%, ${cycleWidgetFinish.face} 0%, #090a0c 66%, #111315 100%)`,

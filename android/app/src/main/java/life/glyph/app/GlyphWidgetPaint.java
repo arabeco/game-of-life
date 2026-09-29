@@ -286,7 +286,11 @@ final class GlyphWidgetPaint {
                 tinta.setAlpha(0xF5);
                 tela.drawBitmap(foto, encaixe, tinta);
                 Paint veu = new Paint(Paint.ANTI_ALIAS_FLAG);
-                veu.setColor(comAlfa(0x000000, 0x42));
+                // 26% bastava na ficha grande do app e nao basta aqui: o widget
+                // e uma faixa estreita, com barras de 3dp e texto pequeno por
+                // cima da mesma foto. Em 42% a pedra continua se lendo como
+                // pedra e para de competir com o que esta escrito nela.
+                veu.setColor(comAlfa(0x000000, 0x6B));
                 tela.drawPaint(veu);
                 tela.restore();
                 foto.recycle();
@@ -437,7 +441,20 @@ final class GlyphWidgetPaint {
             // Piso na largura: abaixo de uma bolinha, o canto arredondado come o
             // desenho e 1% fica igual a 0%.
             float cheio = Math.max(altura, largura * (p / 100f));
-            Acabamento tinta = forte ? metal : acabamentoDe("B");
+            /*
+             * AS BARRAS NAO SEGUEM MAIS O PATAMAR: OURO E PRATA, SEMPRE.
+             *
+             * A de acoes usava o metal do degrau. Fazia sentido enquanto o fundo
+             * era um gradiente escuro — a barra era o unico lugar onde a cor do
+             * patamar aparecia. Agora o fundo E a pedra do patamar, e as duas
+             * disputam: numa pedra clara a barra da mesma familia some dentro
+             * dela, e era isso que ficava ilegivel.
+             *
+             * Quem diz o degrau passou a ser a pedra. A barra volta a ter um
+             * trabalho so — mostrar quanto andou — e para isso precisa CONTRASTAR
+             * com o fundo, nao combinar com ele.
+             */
+            Acabamento tinta = forte ? acabamentoDe("A") : acabamentoDe("B");
             Paint preenchimento = new Paint(Paint.ANTI_ALIAS_FLAG);
             // O gradiente cobre a LARGURA CHEIA da barra, e nao so o pedaço
             // preenchido: assim o brilho anda junto com o progresso em vez de

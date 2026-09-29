@@ -17,7 +17,7 @@ export const SSS_BLUE = '#DCEFF8';
  * Nomeadas pelo patamar e nao pela pedra: `sss-aquamarine-onyx` obrigava a
  * saber de que material era o SSS para achar o arquivo dele.
  */
-const TEXTURA_POR_PATAMAR: Partial<Record<MetalReportRank, string>> = {
+export const TEXTURA_POR_PATAMAR: Partial<Record<MetalReportRank, string>> = {
   SSS: '/assets/cycles/plate-sss.webp',
   SS: '/assets/cycles/plate-ss.webp',
   S: '/assets/cycles/plate-s.webp',

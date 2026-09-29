@@ -1,7 +1,32 @@
 ﻿import React, { useId } from 'react';
 import './metal-report-card.css';
 
-export type MetalReportRank = 'S' | 'A' | 'B' | 'C' | 'D' | 'E' | 'SS';
+export type MetalReportRank = 'SSS' | 'SS' | 'S' | 'A' | 'B' | 'C' | 'D' | 'E';
+
+/** Reflexo azul da pedra da lua no SSS. */
+export const SSS_BLUE = '#DCEFF8';
+
+/**
+ * A PEDRA DE CADA PATAMAR.
+ *
+ * O SSS foi o primeiro a ganhar textura e por isso o codigo inteiro perguntava
+ * `rank === 'SSS'` para decidir se desenhava imagem. Agora a escada toda tem a
+ * sua, e a pergunta passa a ser "existe textura para este patamar?" — quem nao
+ * tiver continua com a face de gradiente, sem nenhum ramo especial.
+ *
+ * Nomeadas pelo patamar e nao pela pedra: `sss-aquamarine-onyx` obrigava a
+ * saber de que material era o SSS para achar o arquivo dele.
+ */
+const TEXTURA_POR_PATAMAR: Partial<Record<MetalReportRank, string>> = {
+  SSS: '/assets/cycles/sss-aquamarine-onyx.png',
+  SS: '/assets/cycles/plate-ss.webp',
+  S: '/assets/cycles/plate-s.webp',
+  A: '/assets/cycles/plate-a.webp',
+  B: '/assets/cycles/plate-b.webp',
+  C: '/assets/cycles/plate-c.webp',
+  D: '/assets/cycles/plate-d.webp',
+  E: '/assets/cycles/plate-e.webp',
+};
 
 interface MetalMetric {
   label: string;
@@ -48,9 +73,21 @@ interface MetalReportCardProps {
   captureId?: string;
   entryFlash?: boolean;
   className?: string;
+  sssTextureSrc?: string;
 }
 
 const METAL_RANKS: Record<MetalReportRank, MetalRankPalette> = {
+  SSS: {
+    rank: 'SSS',
+    label: 'Pedra da lua',
+    base: '#e8ebea',
+    baseDeep: '#aebfc6',
+    highlight: '#f6f5f0',
+    edge: '#c4a369',
+    trim: '#e6c98e',
+    glow: 'rgba(197, 215, 223, 0.2)',
+    text: '#826535',
+  },
   SS: {
     rank: 'SS',
     label: 'Rubi imperial',
@@ -147,6 +184,7 @@ export interface PlateFinish { mid: string; pale: string; dark: string; face: st
  * coisas parecidas feitas por pessoas diferentes.
  */
 const PLATE_FINISHES: Record<MetalReportRank, PlateFinish> = {
+  SSS: { mid: '#c5a264', pale: '#f0d9a6', dark: '#6c512c', face: '#e8ebea', filter: 'sepia(.85) saturate(1.4) hue-rotate(355deg)' },
   E: { mid: '#81756b', pale: '#d0c7bd', dark: '#302c29', face: '#191613', filter: 'sepia(.3) saturate(.6) brightness(.8)' },
   D: { mid: '#68899e', pale: '#c1dce9', dark: '#283d4d', face: '#101f2c', filter: 'sepia(.3) saturate(1.2) hue-rotate(155deg)' },
   C: { mid: '#b07c54', pale: '#f2c39b', dark: '#4b3223', face: '#291a13', filter: 'sepia(.8) saturate(1.7) hue-rotate(340deg) brightness(.9)' },
@@ -234,6 +272,7 @@ export const MetalReportCard: React.FC<MetalReportCardProps> = ({
   captureId,
   entryFlash = false,
   className = '',
+  sssTextureSrc,
 }) => {
   const palette = getMetalRankPalette(rank);
   const finish = PLATE_FINISHES[palette.rank];
@@ -241,6 +280,36 @@ export const MetalReportCard: React.FC<MetalReportCardProps> = ({
   const frameId = `metal-frame-${uid}`;
   const faceId = `metal-face-${uid}`;
   const glintId = `metal-glint-${uid}`;
+  const gemId = `metal-gem-${uid}`;
+  const marbleClipId = `metal-marble-clip-${uid}`;
+  /* A textura do patamar, ou a que veio por fora. `sssTextureSrc` continua
+     valendo e agora serve para qualquer degrau — o nome ficou do tempo em que
+     so o SSS tinha pedra. */
+  const texturaDaPlaca = sssTextureSrc || TEXTURA_POR_PATAMAR[palette.rank];
+  const mineralEdgeId = `metal-mineral-edge-${uid}`;
+  const gem = palette.rank === 'S'
+    ? { dark: '#411352', mid: '#8f43ac', light: '#f2d5ff', glow: '#b681d3' }
+    : palette.rank === 'SS'
+      ? { dark: '#6d0e2c', mid: '#bc3156', light: '#ffd2dd', glow: '#dc6e89' }
+      : palette.rank === 'SSS'
+        ? { dark: '#88aec4', mid: '#c6e5ed', light: '#f7fafa', glow: '#d3edfa' }
+        : null;
+  const frameGem = (y: number) => gem && (
+    <g transform={`translate(160 ${y})`} style={{ filter: `drop-shadow(0 1px 2px ${palette.rank === 'SSS' ? '#59462788' : '#000'}) drop-shadow(0 0 2px ${gem.glow})` }}>
+      <path d="M-12-6-7-11H7l5 5v10l-5 7H-7l-5-7Z" fill={palette.rank === 'SSS' ? '#b99760' : '#211914'} stroke={finish.pale} strokeWidth="1.25" />
+      <path d="M-10-5-6-9H6l4 4v8L6 8H-6l-4-5Z" fill={gem.dark} stroke={gem.mid} strokeWidth=".55" />
+      <path d="M-6-9H6L5-4H-5Z" fill={gem.mid} />
+      <path d="M-10-5-6-9-5-4-7-1Z" fill={gem.light} opacity=".72" />
+      <path d="M6-9 10-5 7-1 5-4Z" fill={gem.dark} />
+      <path d="M-10-5-7-1-5 3-10 3Z" fill={gem.mid} opacity=".66" />
+      <path d="M10-5V3H5l2-4Z" fill={gem.light} opacity=".46" />
+      <path d="M-10 3h5L0 8h-6Z" fill={gem.dark} />
+      <path d="M5 3h5L6 8H0Z" fill={gem.mid} />
+      <path d="M-5-4H5l2 3-2 4H-5l-2-4Z" fill={`url(#${gemId})`} />
+      <path d="M-5-4H5 M-7-1-5 3M7-1 5 3" fill="none" stroke={gem.light} strokeOpacity=".38" strokeWidth=".55" />
+      <path d="M-4-3h4" stroke="#fff" strokeOpacity=".78" strokeWidth=".9" strokeLinecap="round" />
+    </g>
+  );
   const visibleMetrics = metrics.slice(0, 4);
   const visibleBadges = badges.slice(0, compact ? 2 : 4);
   // Older callers put the date in subtitle. Never manufacture a cycle number.
@@ -274,22 +343,62 @@ export const MetalReportCard: React.FC<MetalReportCardProps> = ({
             <stop offset=".51" stopColor={finish.pale}/><stop offset=".56" stopColor={finish.dark}/>
             <stop offset=".85" stopColor={finish.mid}/><stop offset="1" stopColor={finish.pale}/>
           </linearGradient>
-          <radialGradient id={faceId} cx=".45" cy=".22" r=".85">
+          {palette.rank === 'SSS' ? <radialGradient id={faceId} cx=".48" cy=".33" r=".94">
+            <stop stopColor="#f1f4f3"/><stop offset=".25" stopColor="#e3eff2"/>
+            <stop offset=".62" stopColor="#c0e0e9"/><stop offset="1" stopColor="#91bfd1"/>
+          </radialGradient> : <radialGradient id={faceId} cx=".45" cy=".22" r=".85">
             <stop stopColor={finish.face}/><stop offset=".7" stopColor={palette.baseDeep}/><stop offset="1" stopColor="#070a0e"/>
-          </radialGradient>
+          </radialGradient>}
           <radialGradient id={glintId}>
             <stop stopColor="#fff" stopOpacity=".95"/><stop offset=".15" stopColor={finish.pale} stopOpacity=".7"/>
             <stop offset="1" stopColor={finish.pale} stopOpacity="0"/>
           </radialGradient>
+          {texturaDaPlaca && <clipPath id={marbleClipId}><polygon points={plateOutline(17)}/></clipPath>}
+          {/* A BORDA ESCURECE COM O TOM DO PROPRIO PATAMAR.
+              Este gradiente e azul porque foi feito para a agua-marinha do SSS.
+              Aplicado tal e qual num fundo vermelho ou dourado, ele tingiria a
+              pedra de azul — entao so o SSS mantem as paradas originais, e os
+              outros escurecem com o `baseDeep` da propria paleta. */}
+          {texturaDaPlaca && (palette.rank === 'SSS'
+            ? <radialGradient id={mineralEdgeId} cx=".5" cy=".43" r=".72">
+                <stop offset=".34" stopColor="#1a5576" stopOpacity="0"/>
+                <stop offset=".68" stopColor="#397d9c" stopOpacity=".08"/>
+                <stop offset=".86" stopColor="#286483" stopOpacity=".27"/>
+                <stop offset="1" stopColor="#153f5f" stopOpacity=".57"/>
+              </radialGradient>
+            : <radialGradient id={mineralEdgeId} cx=".5" cy=".43" r=".72">
+                <stop offset=".34" stopColor={palette.baseDeep} stopOpacity="0"/>
+                <stop offset=".72" stopColor={palette.baseDeep} stopOpacity=".16"/>
+                <stop offset=".88" stopColor={palette.baseDeep} stopOpacity=".38"/>
+                <stop offset="1" stopColor={palette.baseDeep} stopOpacity=".66"/>
+              </radialGradient>)}
+          {gem && <linearGradient id={gemId} x1="0" y1="0" x2="1" y2="1">
+            <stop stopColor={gem.light}/><stop offset=".34" stopColor={gem.mid}/>
+            <stop offset=".68" stopColor={gem.dark}/><stop offset="1" stopColor={gem.mid}/>
+          </linearGradient>}
         </defs>
         <polygon points={plateOutline(1)} fill="#05080c" stroke={finish.dark} strokeWidth="2"/>
         <polygon points={plateOutline(4)} fill={`url(#${frameId})`}/>
-        <polygon points={plateOutline(9)} fill="#060a10" stroke={finish.dark} strokeWidth="2"/>
-        <polygon points={plateOutline(14)} fill={`url(#${faceId})`} stroke={`url(#${frameId})`} strokeWidth="2"/>
+        <polygon points={plateOutline(9)} fill={palette.rank === 'SSS' ? '#5c95ac' : '#060a10'} stroke={palette.rank === 'SSS' ? '#b88a45' : finish.dark} strokeWidth="2"/>
+        <polygon points={plateOutline(14)} fill={`url(#${faceId})`} stroke={palette.rank === 'SSS' ? '#d0a45b' : `url(#${frameId})`} strokeWidth="2"/>
+        {texturaDaPlaca && <g clipPath={`url(#${marbleClipId})`}>
+          <image href={texturaDaPlaca} x="16" y="16" width="288" height="498" preserveAspectRatio="xMidYMid slice" opacity=".96"/>
+          {/* O VEU, E POR QUE ELE E CHAPADO E NAO RADIAL.
+              O gradiente abaixo escurece as BORDAS, e o texto mora no miolo —
+              na Prata fria os rotulos pequenos sumiam sobre o marmore claro,
+              com a pedra intacta em volta deles. Uma camada uniforme resolve
+              onde o problema esta. Ela e discreta o bastante para nao lavar as
+              pedras escuras, e usa o `baseDeep` do proprio patamar para
+              escurecer sem mudar a cor da pedra. */}
+          <polygon points={plateOutline(17)} fill={palette.baseDeep} opacity=".26"/>
+          <polygon points={plateOutline(17)} fill={`url(#${mineralEdgeId})`}/>
+        </g>}
         <polygon points={plateOutline(19)} fill="none" stroke={finish.mid} strokeOpacity=".22"/>
         <ellipse cx="157" cy="6" rx="57" ry="9" fill={`url(#${glintId})`}/>
         <ellipse cx="175" cy="518" rx="72" ry="9" fill={`url(#${glintId})`} opacity=".5"/>
         <path d="M7 30V112 M313 360V500" stroke={finish.pale} opacity=".4"/>
+        {frameGem(13)}
+        {palette.rank === 'SSS' && frameGem(517)}
       </svg>
 
       <div className="metal-report-card__content">

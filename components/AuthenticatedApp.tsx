@@ -2280,7 +2280,11 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
             )}
             <Suspense fallback={null}>
                 <TermsOverlay open={showTerms} onAccept={handleAcceptTerms} />
-                <OfflineOverlay open={!isOnline} />
+                {/* Os termos e o primeiro uso ainda precisam permanecer legíveis
+                    quando a rede cai. Esta camada só faz sentido depois que a
+                    pessoa já entrou no app; por cima do aceite ela não oferece
+                    saída e acabava prendendo o fluxo. */}
+                <OfflineOverlay open={!isOnline && !showTerms && !isFirstUseOnboardingActive} />
                 <FirstUseOnboardingOverlay
                     active={isFirstUseOnboardingActive}
                     onDismiss={handleDismissOnboarding}

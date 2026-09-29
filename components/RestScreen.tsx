@@ -1097,7 +1097,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                     )}
 
                     {/* Quick Indicators Row */}
-                    <div className="flex items-center justify-center gap-4 animate-fade-in delay-500">
+                    <div className="flex w-full max-w-md items-center justify-center gap-2 sm:gap-3 animate-fade-in delay-500">
                         {PRODUCT_FEATURES.personalGarden && (
                         <button
                             onMouseDown={() => handleQuickActionStart('garden')}
@@ -1105,7 +1105,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                             onMouseLeave={handleQuickActionEnd}
                             onTouchStart={() => handleQuickActionStart('garden')}
                             onTouchEnd={handleQuickActionEnd}
-                            className="flex min-h-[4rem] min-w-[3.75rem] touch-manipulation flex-col items-center justify-center gap-1.5 group active:scale-95 transition-transform relative"
+                            className="restscreen-quick-button flex min-h-[4rem] min-w-[3.75rem] touch-manipulation flex-col items-center justify-center gap-1.5 group active:scale-95 transition-transform relative"
                             aria-label="Abrir jardim"
                         >
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center border border-white/10 bg-black/40 backdrop-blur-sm shadow-lg group-hover:border-[var(--skin-accent-color)]/50 transition-colors relative overflow-hidden ${actionProgress?.id === 'garden' ? 'scale-110 border-[var(--skin-accent-color)]' : ''}`}>
@@ -1135,7 +1135,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                             onMouseLeave={handleQuickActionEnd}
                             onTouchStart={() => handleQuickActionStart('checklist')}
                             onTouchEnd={handleQuickActionEnd}
-                            className="flex min-h-[4rem] min-w-[3.75rem] touch-manipulation flex-col items-center justify-center gap-1.5 group active:scale-95 transition-transform relative"
+                            className="restscreen-quick-button flex min-h-[4rem] min-w-[3.75rem] touch-manipulation flex-col items-center justify-center gap-1.5 group active:scale-95 transition-transform relative"
                         >
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center border border-white/10 bg-black/40 backdrop-blur-sm shadow-lg group-hover:border-[var(--skin-accent-color)]/50 transition-colors relative overflow-hidden ${actionProgress?.id === 'checklist' ? 'scale-110 border-[var(--skin-accent-color)]' : ''}`}>
                                 {actionProgress?.id === 'checklist' && (
@@ -1169,7 +1169,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                             onMouseLeave={handleQuickActionEnd}
                             onTouchStart={() => handleQuickActionStart('mood')}
                             onTouchEnd={handleQuickActionEnd}
-                            className="flex min-h-[4rem] min-w-[3.75rem] touch-manipulation flex-col items-center justify-center gap-1.5 group active:scale-95 transition-transform relative"
+                            className="restscreen-quick-button restscreen-quick-button--diary flex min-h-[4rem] min-w-[3.75rem] touch-manipulation flex-col items-center justify-center gap-1.5 group active:scale-95 transition-transform relative"
                         >
                             <div
                                 className={`w-10 h-10 rounded-full flex items-center justify-center border border-white/10 bg-black/40 backdrop-blur-sm shadow-lg group-hover:border-[var(--skin-accent-color)]/50 transition-colors relative overflow-hidden ${actionProgress?.id === 'mood' ? 'scale-110 border-[var(--skin-accent-color)]' : ''}`}
@@ -1206,7 +1206,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                             onMouseLeave={handleQuickActionEnd}
                             onTouchStart={() => handleQuickActionStart('real_oracle')}
                             onTouchEnd={handleQuickActionEnd}
-                            className="flex min-h-[4rem] min-w-[3.75rem] touch-manipulation flex-col items-center justify-center gap-1.5 group active:scale-95 transition-transform relative"
+                            className="restscreen-quick-button flex min-h-[4rem] min-w-[3.75rem] touch-manipulation flex-col items-center justify-center gap-1.5 group active:scale-95 transition-transform relative"
                             aria-label="Abrir Oráculo"
                         >
                             <div className={`relative flex h-10 w-10 items-center justify-center overflow-visible rounded-full border border-white/10 bg-black/40 backdrop-blur-sm shadow-lg transition-colors group-hover:border-[var(--skin-accent-color)]/50 ${actionProgress?.id === 'real_oracle' ? 'scale-110 border-[var(--skin-accent-color)]' : ''}`}>
@@ -1247,7 +1247,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                             onMouseLeave={handleQuickActionEnd}
                             onTouchStart={() => handleQuickActionStart('deepwork')}
                             onTouchEnd={handleQuickActionEnd}
-                            className="flex flex-col items-center gap-1.5 group active:scale-95 transition-transform relative"
+                            className="restscreen-quick-button flex flex-col items-center gap-1.5 group active:scale-95 transition-transform relative"
                         >
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center border border-white/10 bg-black/40 backdrop-blur-sm shadow-lg group-hover:border-cyan-400/50 transition-colors relative overflow-hidden ${deepWorkActive ? 'border-cyan-400/50 ring-1 ring-cyan-400/20' : ''} ${actionProgress?.id === 'deepwork' ? 'scale-110 border-cyan-400' : ''}`}>
                                 {actionProgress?.id === 'deepwork' && (
@@ -1288,19 +1288,19 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                             } as React.CSSProperties}
                             className="restscreen-unlock-trigger relative group active:scale-95 transition-transform duration-200"
                         >
-                            <div className="absolute inset-[-14px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.1)_0%,rgba(212,175,55,0.18)_28%,transparent_72%)] opacity-90 blur-md" />
+                            <div className="restscreen-unlock-aura absolute inset-[-14px] rounded-full opacity-90 blur-md" />
 
                             <div className="restscreen-unlock-ring absolute inset-0 rounded-full border-2 border-white/10" />
 
                             {/* Button Content */}
-                            <div className="restscreen-unlock-core w-[4.5rem] h-[4.5rem] rounded-full bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.18),rgba(0,0,0,0.78))] backdrop-blur-md border border-[var(--skin-accent-color)]/35 flex items-center justify-center relative z-10 overflow-hidden shadow-[0_0_25px_rgba(212,175,55,0.20)]">
+                            <div className="restscreen-unlock-core w-[4.5rem] h-[4.5rem] rounded-full flex items-center justify-center relative z-10 overflow-hidden">
                                 <div className="absolute inset-[4px] rounded-full overflow-hidden">
                                     <div
-                                        className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(212,175,55,0.24)_40%,rgba(212,175,55,0.52)_100%)] transition-[height] duration-75 ease-linear"
+                                        className="restscreen-unlock-fill absolute inset-x-0 bottom-0 transition-[height] duration-75 ease-linear"
                                         style={{ height: `${holdProgress}%` }}
                                     />
                                 </div>
-                                <div className="absolute inset-0 bg-gradient-to-tr from-[var(--skin-accent-color)]/20 via-white/5 to-transparent opacity-90" />
+                                <div className="restscreen-unlock-sheen absolute inset-0 opacity-90" />
                                 {isUnlocked ? (
                                     <UnlockIcon className="w-7 h-7 text-[var(--skin-accent-color)] animate-unlock drop-shadow-[0_0_10px_var(--skin-accent-color)]" />
                                 ) : (

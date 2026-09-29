@@ -10,7 +10,7 @@ import { shareElementWithFeedback } from './Share';
 import { ShareChoiceSheet } from './ShareChoiceSheet';
 import { getOperationalDateString, shiftLocalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 import { getCycleTimingSummary } from '../utils/dateUtils';
-import { filterCycleTasksByScope } from '../utils/coreLoopUtils.js';
+import { buildDailyExpSnapshot, filterCycleTasksByScope } from '../utils/coreLoopUtils.js';
 import './core-ui.css';
 import './daily-review.css';
 import { EmojiGlyph } from './EmojiGlyph';
@@ -162,7 +162,22 @@ export const DailyPanelContent: React.FC<{
     const scoredRows = rowsDoDia.filter((row) => row.isScored);
     const completedRows = rowsDoDia.filter((row) => row.task.completed);
     const completedScoredRows = scoredRows.filter((row) => row.task.completed);
-    const dayExp = completedScoredRows.reduce((sum, row) => sum + getTaskExp(row.task, row.action), 0);
+    /*
+     * O planeta do Planner e este cartao precisam prometer o MESMO total.
+     *
+     * Antes o cartao somava os minutos crus, enquanto o planeta usava a regra
+     * central de EXP: dificuldade da ação e, quando aplicável, o bônus Premium.
+     * Isso produzia casos como 345 aqui e 400 no planeta para as mesmas ações.
+     * A lista abaixo e exatamente o conjunto que este cartão chama de "do dia";
+     * só centralizamos o cálculo, sem incluir itens que ainda estão na baía.
+     */
+    const dayExp = buildDailyExpSnapshot({
+        tasks: rowsDoDia.map((row) => row.task),
+        actions,
+        operationalDate: selectedDate,
+        taskIds: rowsDoDia.map((row) => row.task.id),
+        includePremium: hasPremiumAccess(userProfile),
+    }).totalExp;
     /**
      * O TEMPO EXECUTADO, que nao e a EXP.
      *

@@ -1033,7 +1033,7 @@ const App: React.FC = () => {
                         <AppBootScreen theme={bootVisuals.theme} />
                     ) : (
                         <Suspense fallback={<AppBootScreen theme={bootVisuals.theme} />}>
-                            {session ? <AuthenticatedApp session={session} onReady={handleAuthenticatedAppReady} /> : <LoginView />}
+                            {session ? <AuthenticatedApp key={session.user.id} session={session} onReady={handleAuthenticatedAppReady} /> : <LoginView />}
                         </Suspense>
                     )}
                     {showResetPassword && (

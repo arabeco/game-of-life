@@ -46,7 +46,6 @@ import { resolveUiSkinId } from '../utils/uiSkinTokens';
 import { emitArenaAttention } from '../utils/arenaAttention';
 import { emitAppSensoryCue } from '../utils/sensoryCue';
 import { emitOracleSpeech } from '../utils/oracleSpeech';
-import { REST_SCREEN_ACTION_SESSION_CLEAR_EVENT, loadPersistedRestScreenActionSession } from '../utils/restScreenActionSession';
 import {
     pickOracleReaction,
     readOracleReactionMemory,
@@ -2300,74 +2299,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
         }
 
-        // Auto-grant Starter Pack (T1 Items) if inventory is empty
+        // O pacote inicial e concedido pelo trigger/RPC do banco. O cliente
+        // apenas pede uma verificacao idempotente da propria conta; nunca cria
+        // itens nem baus direto.
         if (!isStaffUser && inventoryRows.length === 0) {
-            console.log("Inventory empty. Granting Starter Pack (v1.006)...");
-
-            // IDs definidos no LOJA.MD e items.ts
-            const starterItemIds = [
-                'item_skin_1_001', // Náufrago
-                'item_skin_1_002', // Casual
-                'item_artifact_1_001', // Adaga Aprendiz
-                'item_plate_1_001', // Placa Madeira
-                'BASIC'            // Tema Básico
-            ];
-
-            const starterItems = starterItemIds
-                .map(itemId => resolveItemDef(itemId))
-                .filter((item): item is ItemDef => !!item && isItemCatalogVisible(item));
-
-            if (starterItems.length > 0) {
-                const toInsert = starterItems.map(i => ({
-                    user_id: userId,
-                    item_id: i.id
-                }));
-
-                const { error: insertError } = await supabase.from('user_inventory').insert(toInsert);
-
-                if (!insertError) {
-                    // Grant initial chests
-                    await addChest('Comum');
-                    await addChest('Skin Comum');
-
-                    // Welcome Notification
-                    void SupabaseService.createNotification(
-                        userId,
-                        'system',
-                        'Bem-vindo ao Oráculo! Seu Starter Pack foi entregue. Explore as Arenas e o Planner para começar sua jornada.'
-                    ).then(() => fetchNotifications());
-
-                    // Set initial rank and exp if needed (Vagante Level 1)
-                    // O level do usuário é a soma dos níveis dos assets.
-                    // Vamos garantir que o perfil comece com os dados corretos.
-                    updateUserProfile({
-                        nobility: { exp: 0, rankId: 'vagante' },
-                        // ZERO, e nao 1.
-                        //
-                        // O comentario duas linhas acima ja dizia a regra — "o level do
-                        // usuario e a soma dos niveis dos assets" — e a linha seguinte a
-                        // contrariava, cravando 1 em quem tem as cinco areas em 0. Como o
-                        // Indice e `50 + soma`, quem acabou de entrar aparecia acima do piso
-                        // sem ter respondido nada. O degrau 0 existe e e o do abandono:
-                        // comecar nele nao e bug, e o comeco honesto da escada.
-                        level: 0
-                    });
-
-                    const newItems = starterItems.map(i => ({
-                        id: i.id,
-                        instanceId: 'temp_' + i.id,
-                        acquiredAt: new Date().toISOString(),
-                        isEquipped: false
-                    }));
-                    setInventory(newItems);
-                    return;
-                } else if (insertError.code === '23505') {
-                    // Outra passada ja entregou o pacote. Nao e falha, e nao pode
-                    // conceder os baus de novo - por isso nao caimos no ramo de cima.
-                    console.info('Starter pack já havia sido entregue por outra passada.');
-                } else {
-                    console.error("Error granting starter pack:", insertError);
-                }
+            const { data: bootstrap, error: bootstrapError } = await supabase.rpc('ensure_my_starter_rewards');
+            if (bootstrapError) {
+                console.error('Error confirming server starter pack:', bootstrapError);
+            } else if ((bootstrap as { starter_granted_now?: boolean } | null)?.starter_granted_now) {
+                await fetchInventory(userId);
+                return;
             }
         }
 
@@ -8525,60 +8466,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const taskIds = resolveOperationalScoredTaskIds(closeDate, tasks, commitmentToClose.taskIds);
         const summary = summarizeOperationalDayCommitment(closeDate, tasks, taskIds, 0);
 
-        /**
-         * O QUE NAO FOI FEITO VOLTA PARA A BAY.
-         *
-         * Uma acao agendada e nao concluida ficava parada NAQUELE dia para
-         * sempre. Ela nao aparece no planner de hoje — o planner e do dia na
-         * tela — e continua gastando a repeticao, porque
-         * doesTaskConsumePoolCapacity conta tarefa com horario marcado mesmo sem
-         * conclusao. O efeito pratico: a repeticao foi gasta por uma tarefa que
-         * nunca vai ser concluida, e some do alcance sem ninguem avisar.
-         *
-         * Recuperar exigia adivinhar o caminho: voltar ao dia anterior, arrastar
-         * para a bay, voltar para hoje, arrastar para o planner. Quatro gestos
-         * para desfazer um dia que nao rolou.
-         *
-         * A ORDEM IMPORTA, e e por isso que isto vem logo DEPOIS do summary:
-         * returnTaskToPool tira o id de dailyCommitment.taskIds, e taskIds e o
-         * denominador do score do dia. Devolver antes de pontuar encolheria o
-         * denominador e inflaria a nota — o dia que voce nao cumpriu viraria
-         * 100%. Pontua-se o dia como ele foi; so entao o que sobrou volta.
-         *
-         * Vale para quem sumiu tambem: o reparo de compromissos abertos fecha
-         * ate 21 dias atrasados na proxima abertura do app, e cada um passa por
-         * aqui. Quem ficou uma semana fora reencontra as acoes na bay, nao
-         * espalhadas por sete dias que ja passaram.
-         *
-         * So as NAO concluidas. isTaskLockedByJudgment so barra tarefa
-         * concluida, entao nenhuma destas esbarra na trava do julgamento.
+        /*
+         * O julgamento fotografa o dia como ele foi. A devolucao da pendencia
+         * para a Bay acontece numa varredura propria, dois dias depois. Assim a
+         * pessoa ainda tem o dia seguinte para marcar algo atrasado e o
+         * denominador desta avaliacao nunca e encolhido depois de salvo.
          */
-        const devolvidasParaEstoque = tasks.filter((task) => (
-            getTaskOperationalDateString(task) === closeDate
-            && !task.completed
-            && Number(task.startTime) >= 0
-        ));
-        devolvidasParaEstoque.forEach((task) => returnTaskToPool(task.id, todayString));
-
-        /**
-         * E a sessao de foco solta junto, igual ao arraste.
-         *
-         * Arrastar uma tarefa para a bay no planner faz tres coisas:
-         * returnTaskToPool, removeExecutionTask e clearRestScreenSessionForTask.
-         * A segunda ja esta coberta — returnTaskToPool grava executionOrder null,
-         * que e exatamente o que removeExecutionTask faz. A terceira nao estava.
-         *
-         * Sem ela, quem fechasse o dia com o modo foco aberto numa pendente
-         * ficaria com a sessao apontando para uma tarefa que acabou de voltar
-         * para o estoque. E estreito, mas o combinado e que isto seja igual a ter
-         * arrastado de volta — e arrastar limpa.
-         */
-        const sessaoDeFoco = loadPersistedRestScreenActionSession(userProfile.id);
-        if (sessaoDeFoco && devolvidasParaEstoque.some((task) => (
-            task.id === sessaoDeFoco.taskId || task.actionId === sessaoDeFoco.actionId
-        ))) {
-            window.dispatchEvent(new CustomEvent(REST_SCREEN_ACTION_SESSION_CLEAR_EVENT));
-        }
 
         const sitrepBonus = summary.sitrepBonus;
         const relationshipBonusXp = 0;
@@ -8769,24 +8662,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             let skippedForTaskLoad = false;
 
             /*
-             * O QUE VOLTA PARA A BAY PRECISA SER DITO.
-             *
-             * O reparo fecha ate 21 dias atrasados de uma vez, e cada dia
-             * devolve para o estoque as acoes marcadas que nao foram feitas.
-             * Isso ja funcionava — e funcionava em SILENCIO. Quem passou uma
-             * semana fora abria o app e as coisas simplesmente tinham mudado de
-             * lugar: a acao nao estava mais no dia em que ela tinha marcado, e
-             * ninguem explicou que ela voltou a estar disponivel.
-             *
-             * Contado ANTES do laco, porque depois dele as tarefas ja perderam o
-             * horario e nao ha mais como distinguir o que voltou do que nunca
-             * chegou a ser marcado.
+             * O reparo fecha compromissos diarios que ficaram abertos. A
+             * devolucao para a Bay nao e parte dele: a varredura D+2 abaixo e a
+             * unica responsavel por isso, para nao devolver uma pendencia antes
+             * de a pessoa ter o dia seguinte para recupera-la.
              */
-            const voltaramParaOEstoque = tasks.filter((task) => {
-                const dia = getTaskOperationalDateString(task);
-                return Boolean(dia) && dia < todayString && !task.completed && Number(task.startTime) >= 0;
-            }).length;
-
             for (const row of rows) {
                 if (cancelled) return;
 
@@ -8829,15 +8709,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
              * sequencia, que e a forma mais rapida de a pessoa parar de ler
              * qualquer aviso do app.
              */
-            if (closedCount > 0 && voltaramParaOEstoque > 0) {
-                showToast(
-                    voltaramParaOEstoque === 1
-                        ? 'Uma ação marcada e não feita voltou para o estoque.'
-                        : `${voltaramParaOEstoque} ações marcadas e não feitas voltaram para o estoque.`,
-                    'info',
-                );
-            }
-
             if (!skippedForTaskLoad) {
                 dailyOpenCommitmentsRepairCompletedRef.current.add(repairKey);
             }
@@ -9079,6 +8950,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 //
                 // O estado local continua sendo atualizado normalmente: este
                 // filtro so decide o que sobe para o banco.
+                // `linkedArenaSlotsPurchased` tambem fica fora: a compra do
+                // espaco vinculado incrementa esse contador dentro da RPC
+                // `buy_relationship_capacity_slot`; o cliente so le o espelho.
                 'email',
                 'termsVersion',
                 'termsAcceptedAt',
@@ -9095,7 +8969,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'partnershipSlotsPurchased',
                 'competitionSlotsPurchased',
                 'mentorSlotsPurchased',
-                'linkedArenaSlotsPurchased',
                 'tutorialCompletedAt',
                 'sovereign',
                 'avatarUrl',
@@ -10287,7 +10160,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return completedScoredTasks.some((tarefa) => idsDeAcao.has(tarefa.actionId));
         }).length;
 
-        const horasHonradas = Math.round(completedScoredTasks.reduce((soma, t) => soma + (t.duration / 60), 0));
+        const horasHonradas = completedScoredTasks.reduce((soma, t) => soma + (t.duration / 60), 0);
 
         /*
          * A NOTA DO CICLO, DE UMA REGUA SO.
@@ -10303,6 +10176,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
          */
         const notaDoFecho = notaDoCiclo({
             conclusaoPct: executionRatePct,
+            acoesPlanejadas: scoredCycleTasks.length,
+            acoesConcluidas: completedScoredTasks.length,
             dias: durationDays,
             horas: horasHonradas,
             metasSeladas: fairScoreResult.fairness.sealedMetas,
@@ -10940,35 +10815,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const normalized = query.trim();
         if (normalized.length < 3) return [];
 
-        // Remove numbers from end of string (like #1234) if present, though we search by nickname mostly
-        const baseQuery = normalized.replace(/\d+$/g, '').trim();
-        const searchTerms = [normalized];
-        if (baseQuery.length >= 3 && baseQuery !== normalized) searchTerms.push(baseQuery);
-
-        // Keep public search focused on display names. Email lookup is exact only.
-        const shouldSearchExactEmail = normalized.includes('@');
-        const responses = await Promise.all(
-            searchTerms.flatMap(term => [
-                supabase.from('user_profiles').select('*').ilike('nickname', `${term}%`).limit(10),
-                ...(shouldSearchExactEmail
-                    ? [supabase.from('user_profiles').select('*').eq('email', term.toLowerCase()).limit(1)]
-                    : []),
-            ])
-        );
-
-        const errors = responses.map(r => r.error).filter(Boolean);
-        if (errors.length > 0) {
-            console.error('Error searching players:', errors[0]?.message);
+        const { data, error } = await supabase.rpc('search_public_profiles', { p_query: normalized });
+        if (error) {
+            console.error('Error searching players:', error.message);
             return [];
         }
 
-        const merged = responses.flatMap(r => r.data || []);
-        // Deduplicate by ID
-        const mapped = mapToCamelCase(merged) as UserProfile[];
-        const unique = Array.from(new Map(mapped.map(profile => [profile.id, profile])).values());
-
-        // Filter out self and return top 20
-        return unique
+        return (mapToCamelCase(data || []) as UserProfile[])
             .filter(profile => profile.id !== userProfile.id)
             .filter(profile => Boolean(String(profile.nickname || '').trim()))
             .slice(0, 10);
@@ -10977,29 +10830,26 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const getUserPublicData = useCallback(async (userId: string) => {
         if (!isUuid(userId)) return { profile: null, clan: null, clanRank: undefined, levels: {} as Record<string, number>, arenasByAsset: {} as Record<string, Arena[]> };
 
-        const [clanRes, levelsRes, profileRes] = await Promise.all([
+        const [clanRes, publicDataRes] = await Promise.all([
             supabase
                 .from('clan_members')
                 .select('clan_id, role, clans(*)')
                 .eq('user_id', userId)
                 .maybeSingle(),
-            supabase
-                .from('asset_levels')
-                .select('*')
-                .eq('user_id', userId),
-            supabase
-                .from('user_profiles')
-                .select('*')
-                .eq('id', userId)
-                .maybeSingle()
+            supabase.rpc('get_public_profile_data', { p_user_id: userId }),
         ]);
 
         const clanData = clanRes.data?.clans ?mapToCamelCase(clanRes.data.clans) as Clan : null;
         const clanRank = clanData ?CLAN_RANKS.find(r => r.id === (clanData as any).rankId) : undefined;
 
+        const publicPayload = publicDataRes.data as any;
+        if (publicDataRes.error) {
+            console.error('Error loading public profile:', publicDataRes.error.message);
+        }
+
         let publicProfile: UserProfile | null = null;
-        if (profileRes.data) {
-            publicProfile = mapToCamelCase(profileRes.data) as UserProfile;
+        if (publicPayload?.profile) {
+            publicProfile = mapToCamelCase(publicPayload.profile) as UserProfile;
             publicProfile.visibleWidgets = normalizeLifeAreaIdList(publicProfile.visibleWidgets);
             publicProfile.assetArtById = normalizeAssetKeyedRecord(publicProfile.assetArtById);
             publicProfile.assetWidgetValues = normalizeAssetKeyedRecord(publicProfile.assetWidgetValues);
@@ -11010,7 +10860,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         const isOwner = userProfile.id === userId;
-        const isFriend = friends.some((friend) => friend.id === userId);
+        const isFriend = Boolean(publicPayload?.is_friend) || friends.some((friend) => friend.id === userId);
         const assetsVisibility = normalizeAssetsVisibilityScope(publicProfile?.assetsVisibility);
         const masteryVisibility = normalizeMasteryVisibilityScope(publicProfile?.masteryVisibility);
         const arenaMiniaturesVisibility = normalizeFeatsVisibilityScope(publicProfile?.featsVisibility);
@@ -11021,8 +10871,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const canViewGarden = isOwner || gardenVisibility === 'all' || (gardenVisibility === 'friends' && isFriend);
 
         const userLevels: Record<string, number> = {};
-        if (levelsRes.data) {
-            levelsRes.data.forEach((l: any) => {
+        if (Array.isArray(publicPayload?.levels)) {
+            publicPayload.levels.forEach((l: any) => {
                 userLevels[l.asset_id] = l.level;
             });
         }
@@ -11037,20 +10887,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         let arenasByAsset: Record<string, Arena[]> = {};
-        if (canViewArenaMiniatures) {
-            const { data: arenasData } = await supabase
-                .from('arenas')
-                .select('id, asset_id, name, description, icon, action_ids, is_archived, order, priority')
-                .eq('user_id', userId);
-
-            if (arenasData) {
-                arenasByAsset = (arenasData as any[]).reduce((acc, row) => {
+        if (canViewArenaMiniatures && Array.isArray(publicPayload?.arenas)) {
+            arenasByAsset = publicPayload.arenas.reduce((acc: Record<string, Arena[]>, row: any) => {
                     const arena = mapToCamelCase(row) as Arena;
                     if (!acc[arena.assetId]) acc[arena.assetId] = [];
                     acc[arena.assetId].push(arena);
                     return acc;
                 }, {} as Record<string, Arena[]>);
-            }
         }
 
         return {
@@ -13353,6 +13196,51 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         completeTutorialMission,
     } = taskDomain;
 
+    /*
+     * PENDENCIA ESQUECIDA: D+2 VOLTA PARA A BAY.
+     *
+     * Fechar o compromisso diario nao deve mover uma tarefa imediatamente: no
+     * dia seguinte ainda e razoavel concluir algo atrasado. Quando tambem passa
+     * esse segundo dia sem conclusao, ela deixa de ocupar um horario morto e
+     * volta a ficar disponivel na Bay. O filtro por taskId do atlas impede tocar
+     * em qualquer registro que ja pertence a um ciclo selado.
+     */
+    useEffect(() => {
+        if (!isProfileLoaded || tasks.length === 0) return;
+
+        const todayString = getTodayString();
+        const oldestDateToReturn = shiftLocalDateString(todayString, -2);
+        const sealedTaskIds = new Set(
+            reports.flatMap((report) => (report.metrics?.weeklyAtlas || []).flatMap((week) =>
+                (week.days || []).flatMap((day) =>
+                    [...(day.scheduledItems || []), ...(day.unscheduledItems || [])]
+                        .map((item) => item.taskId)
+                        .filter((taskId): taskId is string => typeof taskId === 'string'),
+                ),
+            )),
+        );
+        const overdueTasks = tasks.filter((task) => {
+            const operationalDate = getTaskOperationalDateString(task);
+            return Boolean(
+                operationalDate
+                && operationalDate <= oldestDateToReturn
+                && !task.completed
+                && Number(task.startTime) >= 0
+                && !sealedTaskIds.has(task.id),
+            );
+        });
+
+        if (overdueTasks.length === 0) return;
+
+        overdueTasks.forEach((task) => returnTaskToPool(task.id, todayString));
+        showToast(
+            overdueTasks.length === 1
+                ? 'Uma ação esquecida voltou para a Bay.'
+                : `${overdueTasks.length} ações esquecidas voltaram para a Bay.`,
+            'info',
+        );
+    }, [isProfileLoaded, reports, returnTaskToPool, showToast, tasks]);
+
     const automaticChallengeClaimsRef = useRef<Set<string>>(new Set());
     /** Quantas vezes a entrega automatica falhou por missao. Ver o catch abaixo. */
     const automaticChallengeRetryRef = useRef<Map<string, number>>(new Map());
@@ -14962,7 +14850,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
 
             await updateUserProfile(toArenaPactState(null));
-        marcarFimDeMissao(userProfile.id, arenaPactToday);
             marcarFimDeMissao(userProfile.id, arenaPactToday);
 
             const feitas = Math.max(0, progress.current);
@@ -15114,7 +15001,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const { error: erroAoEncerrar } = await supabase.rpc('abandon_arena_pact');
             if (erroAoEncerrar) { showToast('Não foi possível trocar de missão agora.', 'error'); throw new Error('PACT_REPLACE_FAILED'); }
             await updateUserProfile(toArenaPactState(null));
-        marcarFimDeMissao(userProfile.id, arenaPactToday);
             marcarFimDeMissao(userProfile.id, arenaPactToday);
         }
 

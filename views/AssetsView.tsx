@@ -11,7 +11,6 @@ import { EditIcon, XIcon } from '../components/Icons';
 import { Portal } from '../components/Portal';
 import { ASSET_ACCENT_COLORS, getAssetArt } from '../constants/assetVisuals';
 import { LIFE_AREAS, PONTOS_POR_DEGRAU } from '../constants/lifeAreas';
-import { SKINS_DATA } from '../constants/GMboard';
 import { MasteryStep } from '../components/MasteryWheel';
 import './mastery-quiz.css';
 import { useAssetsOverviewLayoutConfig } from '../hooks/useAssetsOverviewLayoutConfig';
@@ -19,7 +18,7 @@ import { calculateArenaProgress } from '../utils/progressUtils';
 import { filterTasksAfterFreeProgressReset } from '../utils/freeProgressScope';
 import { formatDate, getCycleTimingSummary } from '../utils/dateUtils';
 import { buildCycleWidgetSnapshot } from '../utils/widgetSnapshots';
-import { getMetalRankPalette } from '../components/MetalReportCard';
+import { getMetalRankPalette, getPlateFinish } from '../components/MetalReportCard';
 import { getProfileBackgroundPrimarySource, isCssProfileBackground } from '../utils/profileBackgrounds';
 import { getTaskExp } from '../utils/taskExp';
 import type { Action, Asset, Slot, SlotValue } from '../types';
@@ -47,28 +46,8 @@ const hexToRgb = (hex: string): [number, number, number] | null => {
     return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
 };
 
-const mixRgb = (
-    rgbA: [number, number, number] | null,
-    rgbB: [number, number, number],
-    amount: number
-): [number, number, number] | null => {
-    if (!rgbA) return null;
-    const t = Math.max(0, Math.min(1, amount));
-    return [
-        Math.round(rgbA[0] * (1 - t) + rgbB[0] * t),
-        Math.round(rgbA[1] * (1 - t) + rgbB[1] * t),
-        Math.round(rgbA[2] * (1 - t) + rgbB[2] * t),
-    ];
-};
-
 const rgbaString = (rgb: [number, number, number] | null, alpha: number): string =>
     rgb ? `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})` : `rgba(212, 175, 55, ${alpha})`;
-
-const rgbString = (rgb: [number, number, number] | null): string =>
-    rgb ? `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})` : 'rgb(212, 175, 55)';
-
-const lightenToward = (rgb: [number, number, number] | null, target: [number, number, number], amount: number) =>
-    mixRgb(rgb, target, amount) || target;
 
 const escapeCssUrl = (value: string): string => value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 
@@ -122,6 +101,13 @@ const buildCycleActionTotal = (cycleActions: Action[], scheduledTaskCount: numbe
     return Math.max(plannedFromActions, scheduledTaskCount);
 };
 
+/*
+ * O widget nativo usa a mesma placa chanfrada do relatorio. O corte e
+ * proporcional a menor dimensao da faixa: em CSS, 20% da altura vira uma
+ * ponta de aproximadamente 5% da largura numa faixa de 300px.
+ */
+const CYCLE_WIDGET_CLIP_PATH = 'polygon(5% 0, 95% 0, 100% 20%, 100% 80%, 95% 100%, 5% 100%, 0 80%, 0 20%)';
+
 export const AssetsView: React.FC = () => {
     const { assets, userProfile, updateUserProfile, showToast, activeCycle, freeProgressResetAt, dailyCommitment, getArenas, actions, tasks } = useGame();
     const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
@@ -133,7 +119,7 @@ export const AssetsView: React.FC = () => {
     const cycleSummaryRef = useRef<HTMLButtonElement | null>(null);
     const lastSelectedAssetIdRef = useRef<string | null>(null);
     const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-    const [cycleSummaryHeight, setCycleSummaryHeight] = useState(48);
+    const [cycleSummaryHeight, setCycleSummaryHeight] = useState(activeCycle ? 68 : 42);
     const [hasSephirotRasterArt, setHasSephirotRasterArt] = useState(false);
     const overviewLayout = useAssetsOverviewLayoutConfig();
 
@@ -168,23 +154,6 @@ export const AssetsView: React.FC = () => {
     const selectedAssetMaxLevel = Math.max(1, Object.keys(selectedAsset?.levelDescriptions || {}).length - 1);
     const canShowSelectedAssetWidget = Boolean(selectedAssetPrimarySlot);
     const selectedAssetAccentRgb = hexToRgb(selectedAssetAccent);
-    /*
-     * A COR DO CICLO SEGUE A SKIN EQUIPADA.
-     *
-     * Aqui se lia `userProfile.skinColor`, que nao existe em UserProfile nenhum
-     * — o campo nunca foi declarado nem gravado. A leitura devolvia undefined, o
-     * `||` caia sempre no dourado, e o bloco do ciclo ficava dourado para todo
-     * mundo, inclusive para quem equipou Gelo, Vazio ou Cyberpunk. Nao quebrava:
-     * so ignorava a escolha da pessoa em silencio.
-     *
-     * A cor de verdade sai do SKINS_DATA pelo id da skin, que e como o
-     * ReportResultCarousel ja fazia.
-     */
-    const cycleAccentRgb = hexToRgb(SKINS_DATA.find((skin) => skin.id === userProfile.skin)?.color || '#d4af37');
-    const cycleLabelColor = lightenToward(cycleAccentRgb, [168, 182, 201], 0.52);
-    const cycleTitleColor = lightenToward(cycleAccentRgb, [247, 243, 233], 0.8);
-    const cycleMetaColor = lightenToward(cycleAccentRgb, [199, 209, 223], 0.58);
-
     const baseAspect = 9 / 16;
     const assetsShellStyle: React.CSSProperties = {
         height: '100%',
@@ -307,9 +276,30 @@ export const AssetsView: React.FC = () => {
         return snapshot ? getMetalRankPalette(snapshot.grade) : null;
     }, [activeCycle, actions, allArenas, cycleScopedTasks]);
 
+    /*
+     * O acabamento do mini ciclo e a mesma peca do widget Android:
+     * a face identifica o patamar, a borda e o fio claro dao o volume.
+     * Sem ciclo, cai no ouro padrao que o widget usa enquanto aguarda dados.
+     */
+    const cycleWidgetFinish = patamarDoCiclo
+        ? getPlateFinish(patamarDoCiclo.rank)
+        : getPlateFinish('A');
+    const cycleWidgetFrameBackground = `linear-gradient(118deg, ${cycleWidgetFinish.dark} 0%, ${cycleWidgetFinish.pale} 12%, ${cycleWidgetFinish.mid} 40%, ${cycleWidgetFinish.pale} 52%, ${cycleWidgetFinish.dark} 84%, ${cycleWidgetFinish.pale} 100%)`;
+    const cycleWidgetFaceBackground = [
+        `radial-gradient(circle at 45% 0%, ${cycleWidgetFinish.mid}2a 0%, transparent 44%)`,
+        `linear-gradient(135deg, ${cycleWidgetFinish.mid}0e 0%, transparent 35%, ${cycleWidgetFinish.mid}07 72%, transparent 100%)`,
+        `radial-gradient(circle at 45% 10%, ${cycleWidgetFinish.face} 0%, #090a0c 66%, #111315 100%)`,
+    ].join(', ');
+    const cycleWidgetProgressBackground = `linear-gradient(90deg, ${cycleWidgetFinish.dark} 0%, ${cycleWidgetFinish.mid} 55%, ${cycleWidgetFinish.pale} 100%)`;
+    const cycleWidgetTimeFinish = getPlateFinish('B');
+    const cycleWidgetTimeBackground = `linear-gradient(90deg, ${cycleWidgetTimeFinish.dark} 0%, ${cycleWidgetTimeFinish.mid} 55%, ${cycleWidgetTimeFinish.pale} 100%)`;
+    const cycleWidgetTitleColor = cycleWidgetFinish.pale;
+    const cycleWidgetMetaColor = '#a8b6c9';
+    const cycleWidgetSubtitleColor = '#c7d1df';
+
     useLayoutEffect(() => {
         const summaryCard = cycleSummaryRef.current;
-        const fallbackHeight = activeCycle ? 48 : 34;
+        const fallbackHeight = activeCycle ? 68 : 42;
 
         if (!summaryCard) {
             setCycleSummaryHeight(fallbackHeight);
@@ -730,61 +720,71 @@ export const AssetsView: React.FC = () => {
                                 ref={cycleSummaryRef}
                                 type="button"
                                 onClick={handleOpenReports}
-                                className={`group w-full overflow-hidden border border-white/10 px-3 text-left backdrop-blur-[10px] transition-all duration-300 hover:-translate-y-[1px] ${activeCycle ? 'max-w-[300px] rounded-[14px] pb-1.5 pt-0.5' : 'max-w-[214px] rounded-[12px] py-1.5'}`}
+                                aria-label={cycleSummary ? `Abrir ${cycleSummary.name}` : 'Abrir histórico de ciclos'}
+                                className={`group relative overflow-hidden px-3 text-left transition-all duration-300 hover:-translate-y-[1px] ${activeCycle ? 'pb-1 pt-1' : 'py-2'}`}
                                 style={{
-                                    /* A CHAPA MOSTRA O TOM, A BORDA MOSTRA O MATERIAL.
-                                       Mesma divisao do widget: o fundo segue a cor da
-                                       skin, e a moldura e o metal do patamar — `edge`
-                                       por fora, `trim` como o fio de luz por dentro.
-                                       Sem ciclo aberto nao ha patamar, e a faixa volta
-                                       a ser so a cor da skin. */
-                                    borderColor: patamarDoCiclo?.edge || rgbaString(cycleAccentRgb, 0.32),
-                                    backgroundImage: `radial-gradient(circle at 18% 10%, ${rgbaString(cycleAccentRgb, 0.24)} 0%, transparent 34%), linear-gradient(180deg, rgba(31,38,48,0.94) 0%, rgba(13,17,22,0.98) 100%)`,
-                                    boxShadow: patamarDoCiclo
-                                        ? `0 16px 32px rgba(0,0,0,0.26), inset 0 1px 0 ${patamarDoCiclo.trim}55, 0 0 0 1px ${patamarDoCiclo.edge}3d, 0 0 14px ${patamarDoCiclo.glow}`
-                                        : `0 16px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 1px ${rgbaString(cycleAccentRgb, 0.12)}`,
-                                    minHeight: activeCycle ? '58px' : '34px',
+                                    width: activeCycle ? '96%' : '82%',
+                                    maxWidth: activeCycle ? '460px' : '300px',
+                                    clipPath: CYCLE_WIDGET_CLIP_PATH,
+                                    background: cycleWidgetFrameBackground,
+                                    filter: 'drop-shadow(0 12px 18px rgba(0,0,0,0.32))',
+                                    minHeight: activeCycle ? '68px' : '42px',
                                 }}
                             >
+                                <span
+                                    aria-hidden="true"
+                                    className="pointer-events-none absolute inset-[3px]"
+                                    style={{ clipPath: CYCLE_WIDGET_CLIP_PATH, background: cycleWidgetFaceBackground }}
+                                />
+                                <span
+                                    aria-hidden="true"
+                                    className="pointer-events-none absolute inset-[5px]"
+                                    style={{
+                                        clipPath: CYCLE_WIDGET_CLIP_PATH,
+                                        border: `1px solid ${cycleWidgetFinish.pale}38`,
+                                    }}
+                                />
                                 {cycleSummary ? (
-                                    <div className="space-y-0.5">
-                                        <div className="relative min-h-[11px]">
-                                            <h3 className="mx-auto max-w-[176px] truncate text-center text-[10px] font-black uppercase tracking-[0.09em]" style={{ color: rgbString(cycleTitleColor) }}>
-                                                {cycleSummary.name}
-                                            </h3>
-                                            <span className="absolute left-0 top-1/2 max-w-[86px] -translate-y-1/2 truncate text-left text-[8px] font-black tracking-[0.02em]" style={{ color: rgbaString(cycleMetaColor, 0.86) }}>
+                                    <div className="relative z-10 space-y-0.5">
+                                        <div className="relative flex min-h-[14px] items-center gap-1.5 px-8">
+                                            <span className="absolute left-0 top-1/2 max-w-[86px] -translate-y-1/2 truncate text-left text-[8px] font-black tracking-[0.02em]" style={{ color: cycleWidgetMetaColor }}>
                                                 {`${formatDate(cycleSummary.startDate)}-${formatDate(cycleSummary.endDate)}`}
                                             </span>
+                                            <span className="h-px min-w-0 flex-1" style={{ background: `linear-gradient(90deg, transparent, ${cycleWidgetFinish.pale}b8)` }} />
+                                            <h3 className="max-w-[200px] truncate text-center text-[10px] font-black uppercase tracking-[0.09em]" style={{ color: cycleWidgetTitleColor }}>
+                                                {cycleSummary.name}
+                                            </h3>
+                                            <span className="h-px min-w-0 flex-1" style={{ background: `linear-gradient(90deg, ${cycleWidgetFinish.pale}b8, transparent)` }} />
                                         </div>
-                                        <div className="space-y-[1px]">
+                                        <div className="space-y-0.5 px-1">
                                             <div>
                                                 <div className="flex items-center justify-between gap-2 text-[7px] font-black uppercase tracking-[0.08em]">
-                                                    <span style={{ color: rgbaString(cycleMetaColor, 0.84) }}>Progresso</span>
-                                                    <span className="shrink-0" style={{ color: rgbString(cycleTitleColor) }}>{`${cycleSummary.totalCompleted}/${cycleSummary.totalPlanned} (${cycleSummary.progress}%)`}</span>
+                                                    <span style={{ color: cycleWidgetMetaColor }}>Progresso</span>
+                                                    <span className="shrink-0" style={{ color: '#f7f3e9' }}>{`${cycleSummary.totalCompleted}/${cycleSummary.totalPlanned} (${cycleSummary.progress}%)`}</span>
                                                 </div>
                                                 <div className="mt-0.5 h-[3px] w-full overflow-hidden rounded-full bg-black/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
                                                     <div
                                                         className="h-full rounded-full transition-all duration-500"
                                                         style={{
                                                             width: `${cycleSummary.progress}%`,
-                                                            background: 'linear-gradient(90deg, #b47a18 0%, #ffd462 48%, #fff1b8 100%)',
-                                                            boxShadow: '0 0 12px rgba(255,212,98,0.46), 0 0 2px rgba(255,255,255,0.72)',
+                                                            background: cycleWidgetProgressBackground,
+                                                            boxShadow: `0 0 10px ${cycleWidgetFinish.pale}55, 0 0 2px rgba(255,255,255,0.72)`,
                                                         }}
                                                     />
                                                 </div>
                                             </div>
                                             <div>
                                                 <div className="flex items-center justify-between gap-2 text-[7px] font-black uppercase tracking-[0.08em]">
-                                                    <span style={{ color: rgbaString(cycleMetaColor, 0.84) }}>Tempo</span>
-                                                    <span className="shrink-0" style={{ color: rgbaString(cycleMetaColor, 0.96) }}>{`${cycleSummary.elapsedDays}/${cycleSummary.totalDays} (${cycleSummary.timeProgress}%)`}</span>
+                                                    <span style={{ color: cycleWidgetMetaColor }}>Tempo</span>
+                                                    <span className="shrink-0" style={{ color: cycleWidgetSubtitleColor }}>{`${cycleSummary.elapsedDays}/${cycleSummary.totalDays} (${cycleSummary.timeProgress}%)`}</span>
                                                 </div>
                                                 <div className="mt-0.5 h-[3px] w-full overflow-hidden rounded-full bg-black/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
                                                     <div
                                                         className="h-full rounded-full transition-all duration-500"
                                                         style={{
                                                             width: `${cycleSummary.timeProgress}%`,
-                                                            background: 'linear-gradient(90deg, rgba(168,178,196,0.95) 0%, rgba(236,242,255,0.98) 54%, rgba(255,255,255,1) 100%)',
-                                                            boxShadow: '0 0 12px rgba(226,237,255,0.34), 0 0 2px rgba(255,255,255,0.68)',
+                                                            background: cycleWidgetTimeBackground,
+                                                            boxShadow: '0 0 10px rgba(226,237,255,0.34), 0 0 2px rgba(255,255,255,0.68)',
                                                         }}
                                                     />
                                                 </div>
@@ -792,16 +792,16 @@ export const AssetsView: React.FC = () => {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="relative min-h-[24px]">
+                                    <div className="relative z-10 min-h-[26px]">
                                         <div className="mx-auto min-w-0 max-w-[150px] text-center">
-                                            <h3 className="truncate text-[10px] font-black uppercase tracking-[0.09em]" style={{ color: rgbString(cycleTitleColor) }}>
+                                            <h3 className="truncate text-[10px] font-black uppercase tracking-[0.09em]" style={{ color: cycleWidgetTitleColor }}>
                                                 Sem ciclo ativo
                                             </h3>
-                                            <p className="text-[7px] font-semibold uppercase tracking-[0.08em]" style={{ color: rgbaString(cycleMetaColor, 0.82) }}>
+                                            <p className="text-[7px] font-semibold uppercase tracking-[0.08em]" style={{ color: cycleWidgetMetaColor }}>
                                                 Historico
                                             </p>
                                         </div>
-                                        <span className="absolute right-0 top-1/2 -translate-y-1/2 text-[8px] font-black uppercase tracking-[0.08em]" style={{ color: rgbaString(cycleMetaColor, 0.86) }}>
+                                        <span className="absolute right-0 top-1/2 -translate-y-1/2 text-[8px] font-black uppercase tracking-[0.08em]" style={{ color: cycleWidgetMetaColor }}>
                                             Abrir
                                         </span>
                                     </div>

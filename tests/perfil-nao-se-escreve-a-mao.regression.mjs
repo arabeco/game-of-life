@@ -12,6 +12,10 @@ const portaDeTras = readFileSync(
   new URL('../supabase/migrations/20260923180000_perfil_fecha_a_porta_de_tras.sql', import.meta.url),
   'utf8',
 );
+const economiaDeSlots = readFileSync(
+  new URL('../supabase/migrations/20260923220000_o_slot_passa_a_existir.sql', import.meta.url),
+  'utf8',
+);
 const contexto = readFileSync(new URL('../contexts/GameContext.tsx', import.meta.url), 'utf8');
 
 /* ==========================================================================
@@ -67,6 +71,15 @@ assert.match(
 assert.ok(
   trava.indexOf('revoke update on table') < trava.indexOf('grant update ('),
   'o revoke tem de vir antes do grant, senao ele apaga a concessao recem-feita',
+);
+
+// A capacidade de arenas vinculadas ganhou uma RPC propria depois da lista
+// geral acima. A migration de slots fecha a coluna em separado; o cliente deve
+// continuar lendo o espelho, mas nunca tentar gravar o contador.
+assert.match(
+  economiaDeSlots,
+  /revoke update \(linked_arena_slots_purchased\) on table public\.user_profiles from authenticated;/,
+  'o contador de slots vinculados voltou a ser gravavel diretamente',
 );
 
 // ---------------------------------------------------------------------------
@@ -148,6 +161,7 @@ const listaDoApp = semComentarios.slice(inicioDaLista, semComentarios.indexOf(']
 for (const chave of [
   'chests', 'expBoostMultiplier', 'expBoostExpiresAt', 'expBoostProductId',
   'campaignQuizFreeCredits', 'campaignQuizMediumCredits', 'legacyProjectionSceneCredits',
+  'linkedArenaSlotsPurchased',
 ]) {
   assert.ok(
     !new RegExp(`'${chave}'`).test(listaDoApp),

@@ -2279,7 +2279,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                             ? 'Abrir checklist: tudo feito hoje'
                             : 'Abrir checklist diario'
                 }
-                className={`planner-soft-control absolute bottom-[calc(0.15rem+var(--safe-area-bottom))] left-3 z-40 flex items-center gap-1.5 rounded-full border px-2.5 py-2 transition-colors ${
+                className={`planner-soft-control absolute bottom-[calc(0.15rem+var(--safe-area-bottom))] left-[4.5rem] z-40 flex items-center gap-1.5 rounded-full border px-2.5 py-2 transition-colors ${
                     estadoDoChecklist === 'pendente'
                         ? 'border-[var(--skin-accent-color)]/38 bg-[var(--skin-accent-color)]/14 text-[var(--skin-accent-color)] shadow-[0_0_12px_rgba(212,175,55,0.14)]'
                         : estadoDoChecklist === 'completo'
@@ -2333,4 +2333,3 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         </div>
     );
 };
-

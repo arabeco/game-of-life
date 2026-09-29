@@ -330,8 +330,8 @@ export const OfflineOverlay: React.FC<{ open: boolean }> = ({ open }) => {
             <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/90 backdrop-blur-sm safe-area-top safe-area-bottom">
                 <div className="mx-auto w-full max-w-sm space-y-3 p-6 text-center">
                     <div className="text-3xl">📡</div>
-                    <h2 className="text-lg font-black tracking-wider text-white">Conectando ao servidor da Liga...</h2>
-                    <p className="text-xs text-gray-400">Sem internet. Verifique sua conexão para continuar.</p>
+                    <h2 className="text-lg font-black tracking-wider text-white">Sem conexão</h2>
+                    <p className="text-xs text-gray-400">Reconecte para sincronizar seus dados com o GLYPH.</p>
                 </div>
             </div>
         </Portal>

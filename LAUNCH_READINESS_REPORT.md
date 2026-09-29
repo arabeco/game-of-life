@@ -1,6 +1,6 @@
 # Launch Readiness Report
 
-- Generated at: 2026-09-23T22:01:19.346Z
+- Generated at: 2026-09-29T12:43:53.217Z
 - Suite: `full`
 - Smoke URL: `http://127.0.0.1:3011/`
 - Build: SKIPPED
@@ -19,7 +19,7 @@
 - Simulates: impede a letra solta voltar no lugar do simbolo
 - Simulates: fixa a altura do card de item
 
-### PASS - Item art regression (0.2s)
+### PASS - Item art regression (0.4s)
 - Kind: `logic`
 - Simulates: confere que todo imageUrl existe no disco
 - Simulates: trava as categorias que ainda vivem de emoji
@@ -31,7 +31,7 @@
 - Simulates: confere progresso de arenas
 - Simulates: garante insignias acumulaveis
 
-### PASS - Oracle cycle coach regression (0.1s)
+### PASS - Oracle cycle coach regression (0.2s)
 - Kind: `logic`
 - Simulates: le ritmo do ciclo localmente
 - Simulates: prioriza arena em risco
@@ -53,31 +53,31 @@
 - Simulates: a assinatura muda a regua e nao o elogio
 - Simulates: dia abaixo da media nao soa como falha
 
-### PASS - Cycle comparison regression (0.1s)
+### PASS - Cycle comparison regression (0.2s)
 - Kind: `logic`
 - Simulates: o ciclo nao entra na propria referencia
 - Simulates: dias sem entrega conta invertido
 - Simulates: mediana aguenta ciclo extremo
 
-### PASS - Subscription XP bonus regression (0.1s)
+### PASS - Subscription XP bonus regression (0.2s)
 - Kind: `logic`
 - Simulates: platinum rende mais que premium
 - Simulates: assinatura vencida nao paga bonus
 - Simulates: vitrine sai do mesmo numero do calculo
 
-### PASS - Arena pacts regression (0.1s)
+### PASS - Arena pacts regression (0.2s)
 - Kind: `logic`
 - Simulates: nao propoe arena arquivada, travada, vazia ou concluida
 - Simulates: constancia conta dias e nao acoes
 - Simulates: entrega anterior ao aceite nao conta
 
-### PASS - Cycle scheduling regression (0.1s)
+### PASS - Cycle scheduling regression (0.2s)
 - Kind: `logic`
 - Simulates: renovar uma arena nao expulsa as outras do ciclo
 - Simulates: a virada reagenda as acoes recorrentes
 - Simulates: o agendamento para no fim do ciclo, nao em 365 dias
 
-### PASS - Continuar sem ciclo regression (0.1s)
+### PASS - Continuar sem ciclo regression (0.2s)
 - Kind: `logic`
 - Simulates: fechar o ciclo e continuar nao deixa as arenas cheias
 - Simulates: a experiencia do ciclo nao volta na rodada e nao e paga duas vezes
@@ -106,14 +106,14 @@
 - Simulates: cada um cai na sua aba
 - Simulates: um banco de textos so para o app e para o cron
 
-### PASS - Ciclo recem-nascido regression (0.1s)
+### PASS - Ciclo recem-nascido regression (0.2s)
 - Kind: `logic`
 - Simulates: o dia 1 nao recebe "salve o que puder"
 - Simulates: um dia cheio pela frente nao e ciclo perdido
 - Simulates: sem ciclo nao ha risco de ciclo
 - Simulates: mais tarde o aviso continua vindo
 
-### PASS - Manha nao tem veredito regression (0.1s)
+### PASS - Manha nao tem veredito regression (0.2s)
 - Kind: `logic`
 - Simulates: as sete da manha o plano nao e diagnostico
 - Simulates: a tarde o diagnostico volta inteiro
@@ -194,7 +194,7 @@
 - Simulates: anon nao escreve perfil
 - Simulates: ninguem trunca user_profiles
 
-### PASS - Tinta metalica regression (0.1s)
+### PASS - Tinta metalica regression (0.2s)
 - Kind: `logic`
 - Simulates: drop-shadow nao volta para cima do recorte por texto
 - Simulates: o numero nao vira um tijolo dourado
@@ -217,7 +217,7 @@
 - Simulates: abrir ciclo fecha a rodada
 - Simulates: o fecho do ciclo nao recalcula a base ja paga
 
-### PASS - Oracle reaction regression (0.2s)
+### PASS - Oracle reaction regression (0.1s)
 - Kind: `logic`
 - Simulates: a reacao nao repete a frase anterior
 - Simulates: a primeira acao depois de uma pausa tem fala propria
@@ -247,7 +247,7 @@
 - Simulates: a tela de descanso respeita as duas barras
 - Simulates: preferencia que ainda nao chegou nao vira botao morto
 
-### PASS - Relationship link as timed product regression (0.2s)
+### PASS - Relationship link as timed product regression (0.1s)
 - Kind: `logic`
 - Simulates: o preco exibido e o preco cobrado
 - Simulates: renovar custa menos que criar

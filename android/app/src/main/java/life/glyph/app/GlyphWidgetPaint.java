@@ -213,7 +213,7 @@ final class GlyphWidgetPaint {
     private static int desenhoDaPedra(String patamar) {
         if (patamar == null) return 0;
         switch (patamar.trim().toUpperCase()) {
-            case "SSS": return 0; // O SSS ainda nao tem arquivo proprio aqui.
+            case "SSS": return R.drawable.plate_sss;
             case "SS": return R.drawable.plate_ss;
             case "S": return R.drawable.plate_s;
             case "A": return R.drawable.plate_a;

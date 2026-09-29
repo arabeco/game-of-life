@@ -18,7 +18,7 @@ export const SSS_BLUE = '#DCEFF8';
  * saber de que material era o SSS para achar o arquivo dele.
  */
 const TEXTURA_POR_PATAMAR: Partial<Record<MetalReportRank, string>> = {
-  SSS: '/assets/cycles/sss-aquamarine-onyx.png',
+  SSS: '/assets/cycles/plate-sss.webp',
   SS: '/assets/cycles/plate-ss.webp',
   S: '/assets/cycles/plate-s.webp',
   A: '/assets/cycles/plate-a.webp',

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Arena, Action, RelationshipLinkType } from '../types';
-import { CheckIcon, CrownIcon, TrophyIcon, UsersIcon } from './Icons';
+import { CheckIcon, UsersIcon } from './Icons';
 import { PRODUCT_FEATURES } from '../constants/featureFlags';
 import { getLocalDateString, useGame } from '../contexts/GameContext';
 import { supabase } from '../supabaseClient';
@@ -11,6 +11,7 @@ import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import { getContentVisualPalette, resolveArenaVisualFamily } from '../utils/contentCardVisuals';
 import { getActionSurfaceBadgeClassName, resolveActionSurfaceBadge } from '../utils/actionSurfaceBadges';
 import { getArenaDomainFlags } from '../utils/taskDomain.js';
+import { ArenaStatusTags } from './ArenaStatusTags';
 import './arena-ui.css';
 
 const hexToRgb = (hex: string) => {
@@ -243,7 +244,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     disableAnimatedBackground = false,
     tasks: propTasks
 }) => {
-    const { tasks: contextTasks, activeCycle, freeProgressResetAt, getActionBackgroundStyle, getClanQuestProgress, getArenas, clanQuestParticipants, fetchClanQuestParticipants, getClanQuestsForArena, getSharedActionPoolProgress, oraclePreferences, reorderAction, userCodexes } = useGame();
+    const { tasks: contextTasks, activeCycle, activeArenaPact, freeProgressResetAt, getActionBackgroundStyle, getClanQuestProgress, getArenas, clanQuestParticipants, fetchClanQuestParticipants, getClanQuestsForArena, getSharedActionPoolProgress, oraclePreferences, reorderAction, userCodexes } = useGame();
     const tasks = (propTasks || contextTasks) as any[];
     const tasksForCounts = useMemo(() => {
         if (propTasks) return tasks;
@@ -412,49 +413,19 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
         [userCodexes]
     );
     const sourceCodex = arena.originCodexId ? codexById.get(arena.originCodexId) ?? null : null;
-    /**
-     * O selo e a UNICA marca de vinculo agora.
-     *
-     * Enquanto aceitar uma parceria repintava a arena inteira, dava para viver
-     * sem selo na miniatura: a cor gritava. Tirada a cor, a miniatura ficaria
-     * sem dizer NADA — e a grade de Arenas so usa miniatura. Por isso ele passa
-     * a desenhar nos dois tamanhos: `mini` para o cartao compacto, cheio para o
-     * dossie. Mentoria verde, parceria azul, competicao vermelha — as mesmas
-     * cores dos vinculos em Mundo, para a pessoa ler a mesma coisa nos dois
-     * lugares.
-     */
-    const renderRelationshipBadge = (mini = false) => {
-        const caixa = mini
-            ? 'inline-flex h-[13px] w-[13px] items-center justify-center rounded-full border backdrop-blur-[2px]'
-            : 'inline-flex h-4 w-4 items-center justify-center rounded-full border';
-        const glifo = mini ? 'h-[7px] w-[7px]' : 'h-[9px] w-[9px]';
-
-        if (effectiveLinkType === 'mentoria') {
-            return (
-                <span title="Mentoria" aria-label="Arena com mentoria" className={`${caixa} border-emerald-300/45 bg-emerald-500/28 text-emerald-200 shadow-[0_4px_10px_rgba(16,185,129,0.18)]`}>
-                    <CrownIcon className={glifo} />
-                </span>
-            );
-        }
-
-        if (effectiveLinkType === 'parceria') {
-            return (
-                <span title="Parceria" aria-label="Arena em parceria" className={`${caixa} border-sky-300/45 bg-sky-500/28 text-sky-200 shadow-[0_4px_10px_rgba(56,189,248,0.16)]`}>
-                    <UsersIcon className={glifo} />
-                </span>
-            );
-        }
-
-        if (PRODUCT_FEATURES.relationshipCompetition && effectiveLinkType === 'competicao') {
-            return (
-                <span title="Competição" aria-label="Arena em competição" className={`${caixa} border-rose-300/45 bg-rose-500/28 text-rose-200 shadow-[0_4px_10px_rgba(244,63,94,0.18)]`}>
-                    <TrophyIcon className={glifo} />
-                </span>
-            );
-        }
-
-        return null;
-    };
+    const hasPersonalPact = activeArenaPact?.arenaId === arena.id;
+    const visibleRelationshipType = PRODUCT_FEATURES.relationshipCompetition || effectiveLinkType !== 'competicao'
+        ? effectiveLinkType
+        : null;
+    const hasArenaStatusTags = Boolean(visibleRelationshipType || hasPersonalPact || isSeasonQuestArena);
+    const renderArenaStatusTags = (compact = false) => (
+        <ArenaStatusTags
+            relationshipType={visibleRelationshipType}
+            hasPersonalPact={hasPersonalPact}
+            hasSeasonMission={isSeasonQuestArena}
+            compact={compact}
+        />
+    );
 
     const isOverview = variant === 'overview';
     const isCompactThumbnail = variant === 'overview' || variant === 'compact';
@@ -554,7 +525,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                     <>
                     <div className="arena-thumb-header flex-1 justify-start gap-[0.02rem] pt-0">
                         <div className="arena-thumb-link-space left-auto right-[0.04rem] top-[0.02rem] z-[3]">
-                            {renderRelationshipBadge()}
+                            {renderArenaStatusTags(true)}
                         </div>
                         <div className="relative h-[1.58rem] w-full">
                             <span
@@ -604,9 +575,9 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                     </div>
                 )}
 
-                {effectiveLinkType && (
-                    <div className={isCompactThumbnail ? 'absolute left-[3px] top-[3px] z-20' : 'absolute top-1 left-1 z-20'}>
-                        {renderRelationshipBadge(isCompactThumbnail)}
+                {!isCompactThumbnail && hasArenaStatusTags && (
+                    <div className="absolute left-1 top-1 z-20">
+                        {renderArenaStatusTags()}
                     </div>
                 )}
             </div>

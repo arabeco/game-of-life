@@ -98,7 +98,9 @@ export const CONSTANCIA_DAYS: Record<ArenaPactDifficulty, number> = {
   alta: 7,
 };
 
-export const VOLUME_TARGETS = { leve: { actions: 3, days: 7 }, media: { actions: 6, days: 14 }, alta: { actions: 10, days: 21 } } as const;
+// A RPC também usa uma janela única de 14 dias. Se o cartão prometesse 7 ou
+// 21 enquanto o banco gravava 14, o pacto nascia com duas regras diferentes.
+export const VOLUME_TARGETS = { leve: { actions: 3, days: 14 }, media: { actions: 6, days: 14 }, alta: { actions: 10, days: 14 } } as const;
 
 /** Abaixo disso a arena e pequena demais para valer um pacto de conclusao. */
 export const MIN_ACTIONS_FOR_CONCLUSAO = 3;
@@ -306,6 +308,9 @@ export const isArenaEligible = (stats: ArenaStats): boolean => {
   if (arena.isCleared || arena.isHidden) return false;
   if (!Array.isArray(arena.actionIds) || arena.actionIds.length === 0) return false;
   if (stats.isCleared) return false;
+  // Alguns carregamentos antigos trazem o booleano `isCleared` atrasado. Os
+  // próprios totais são suficientes para impedir uma proposta em arena cheia.
+  if (stats.totalPlanned > 0 && stats.totalCompleted >= stats.totalPlanned) return false;
   return true;
 };
 
@@ -533,18 +538,6 @@ export const buildPactsForArena = (stats: ArenaStats, today: string, diasDoCiclo
      * Fica uma so, do tamanho exato do que resta: uma missao que acaba junto com
      * o ciclo e melhor que nenhuma, e melhor que uma que o atravessa.
      */
-    if (volumes.length === 0 && diasDoCiclo && diasDoCiclo > 0) {
-      const metaCurta = Math.max(1, Math.min(metaRecomendada, diasDoCiclo));
-      volumes.push(buildPact(
-        'volume',
-        faixaPorMeta(metaCurta),
-        stats,
-        metaCurta,
-        today,
-        shiftLocalDateString(today, diasDoCiclo - 1),
-      ));
-    }
-
     pacts.unshift(...volumes);
   }
 
@@ -622,6 +615,15 @@ export const buildAppScopePacts = (
   options: ArenaStatsOptions = {},
 ): ArenaPact[] => {
   const sintetica = buildArenaEscopoApp(arenas, actions);
+
+  // O mesmo contrato da RPC: volume sempre dura 14 dias. Quando o ciclo acaba
+  // antes disso, não oferecemos uma missão que o servidor teria de recusar ou
+  // que atravessaria o ciclo sem ser mostrada no lugar certo.
+  if (sintetica.actionIds.length > 0
+    && options.diasRestantesDoCiclo != null
+    && options.diasRestantesDoCiclo < VOLUME_WINDOW_DAYS) {
+    return [];
+  }
 
   /*
    * Sem acao nenhuma, a unica missao possivel e a de comecar a existir.
@@ -762,7 +764,7 @@ export interface ArenaPactState {
   arenaPactEndsOn?: string | null;
 }
 
-const KINDS: ArenaPactKind[] = ['constancia', 'conclusao', 'retomada', 'volume'];
+const KINDS: ArenaPactKind[] = ['primeira', 'constancia', 'conclusao', 'retomada', 'volume'];
 const DIFFICULTIES: ArenaPactDifficulty[] = ['leve', 'media', 'alta'];
 
 /**
@@ -827,13 +829,13 @@ export const rebuildActivePact = (
   if (!kind || !difficulty || goal <= 0 || !startedOn) return null;
 
   const escopoApp = !state.arenaPactArenaId;
-  if (escopoApp && kind !== 'volume') return null;
+  if (escopoApp && kind !== 'volume' && kind !== 'primeira') return null;
   const arena = escopoApp
     ? buildArenaEscopoApp(arenas, actions)
     : (arenas || []).find((entry) => entry.id === state.arenaPactArenaId);
   if (!arena) return null;
 
   const endsOn = state.arenaPactEndsOn || null;
-  if (kind === 'volume' && (!endsOn || endsOn < startedOn)) return null;
+  if ((kind === 'volume' || kind === 'primeira') && (!endsOn || endsOn < startedOn)) return null;
   return buildPact(kind, difficulty, buildArenaStats(arena, actions, tasks, today), goal, startedOn, endsOn);
 };

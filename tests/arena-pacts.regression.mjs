@@ -96,6 +96,13 @@ assert.ok(
 const viva = arena('viva');
 assert.equal(isArenaEligible(buildArenaStats(viva, actionsFor(viva), [], HOJE)), true);
 
+const cheia = arena('cheia', { actionIds: ['cheia-a'] });
+assert.equal(
+  isArenaEligible(buildArenaStats(cheia, actionsFor(cheia), [task('cheia-a', HOJE)], HOJE)),
+  false,
+  'arena com todas as entregas preenchidas nao recebe sugestao',
+);
+
 // e a lista geral tambem tem de filtrar
 const candidatosComLixo = buildPactCandidates(
   [arena('arq', { isArchived: true }), arena('cle', { isCleared: true }), viva],
@@ -505,3 +512,14 @@ const progressoApp = measurePactProgress(
 assert.equal(progressoApp.current, 2, 'conclusoes de arenas diferentes somam no escopo do app');
 
 console.log('Escopo do app: uma arena sintetica, arena nula no banco, e so volume.');
+
+// Com menos de 14 dias restantes, nenhuma proposta de volume deve fabricar uma
+// meta curta que o RPC rejeita como INVALID_PACT_GOAL.
+{
+  const curto = buildPactsForArena(
+    buildArenaStats(arena('curta'), actionsFor(arena('curta')), [], HOJE),
+    HOJE,
+    2,
+  );
+  assert.ok(!curto.some((p) => p.kind === 'volume'), 'ciclo curto nao oferece volume invalido');
+}

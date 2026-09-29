@@ -18,6 +18,7 @@ import './arena-ui.css';
 import { EmojiGlyph } from './EmojiGlyph';
 import { ConnectionsModal } from './ConnectionsModal';
 import { PRODUCT_FEATURES } from '../constants/featureFlags';
+import { ArenaStatusTags } from './ArenaStatusTags';
 
 const hexToRgb = (hex: string) => {
     const trimmed = hex.trim();
@@ -159,7 +160,7 @@ export const ArenaDetailModal: React.FC<{
     collaborativeOwnerUserId = null,
     onLinkedArenaRefresh,
 }) => {
-    const { getActionsForArena, assets, updateArena, deleteArena, removeRelationshipArenaShare, tasks, activeCycle, freeProgressResetAt, getActionBackgroundStyle, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants, joinClanMission, getClanQuestsForArena, seasonQuests, setArenaAsShared, clan, userProfile, enrichedClanMembers, getSharedActionPoolProgress, showToast, userCodexes } = useGame();
+    const { getActionsForArena, assets, updateArena, deleteArena, removeRelationshipArenaShare, tasks, activeCycle, activeArenaPact, freeProgressResetAt, getActionBackgroundStyle, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants, joinClanMission, getClanQuestsForArena, seasonQuests, setArenaAsShared, clan, userProfile, enrichedClanMembers, getSharedActionPoolProgress, showToast, userCodexes } = useGame();
     const [actionModalState, setActionModalState] = useState<{ action: Action | null, mode: 'view' | 'edit', key: string } | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editableArena, setEditableArena] = useState({ assetId: arena.assetId, name: arena.name, description: arena.description, icon: arena.icon });
@@ -260,6 +261,7 @@ export const ArenaDetailModal: React.FC<{
 
     const isSeasonQuestArena = useMemo(() => normalizedArena.includes('quests - season'), [normalizedArena]);
     const isSpecialArena = isClanQuestArena || isSeasonQuestArena;
+    const hasPersonalPact = activeArenaPact?.arenaId === arena.id;
     const sourceCodex = useMemo(
         () => (arena.originCodexId ? userCodexes.find(codex => codex.id === arena.originCodexId) ?? null : null),
         [arena.originCodexId, userCodexes]
@@ -648,21 +650,12 @@ export const ArenaDetailModal: React.FC<{
                                         </p>
                                     )}
                                 </div>
-                                {effectiveRelationshipType === 'competicao' && (
-                                    <div className="bg-red-500/20 border border-red-500/50 text-red-300 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1 mt-1">
-                                        <span>PVP</span>
-                                    </div>
-                                )}
-                                {effectiveRelationshipType === 'mentoria' && (
-                                    <div className="bg-blue-500/20 border border-blue-500/50 text-blue-300 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1 mt-1">
-                                        <span>MENTORIA</span>
-                                    </div>
-                                )}
-                                {effectiveRelationshipType === 'mentoria' && effectiveCollaborativeRole === 'pupil' && (
-                                    <div className="bg-emerald-500/16 border border-emerald-300/30 text-emerald-200 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider mt-1">
-                                        Plano guiado
-                                    </div>
-                                )}
+                                <ArenaStatusTags
+                                    relationshipType={effectiveRelationshipType as RelationshipLinkType | null}
+                                    hasPersonalPact={hasPersonalPact}
+                                    hasSeasonMission={isSeasonQuestArena}
+                                    className="mt-1.5"
+                                />
                                 {isReadOnlyArena && (
                                     <div className="bg-white/8 border border-white/14 text-white/72 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider mt-1">
                                         Somente leitura

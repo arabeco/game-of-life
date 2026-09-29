@@ -1,6 +1,10 @@
 package life.glyph.app;
 
+import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
+import android.graphics.Rect;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.LinearGradient;
@@ -93,6 +97,7 @@ final class GlyphWidgetPaint {
     static Moldura molduraDe(String patamar) {
         if (patamar == null) return moldura("#ffe29a", "#fff5d2");
         switch (patamar.trim().toUpperCase()) {
+            case "SSS": return moldura("#f1d795", "#fff9e9");
             case "SS": return moldura("#ffd86b", "#fff5d0");
             case "S":  return moldura("#f1c45b", "#fff0c2");
             case "A":  return moldura("#ffe29a", "#fff5d2");
@@ -115,6 +120,7 @@ final class GlyphWidgetPaint {
     static Acabamento acabamentoDe(String patamar) {
         if (patamar == null) return PADRAO;
         switch (patamar.trim().toUpperCase()) {
+            case "SSS": return de("#537cb8", "#5b4c32", "#cfad68", "#fff2c8");
             case "SS": return de("#3f0a18", "#64401f", "#c39a51", "#ffe4a2");
             case "S":  return de("#4a2169", "#604421", "#c6a05c", "#ffe5ab");
             case "A":  return PADRAO;
@@ -192,7 +198,34 @@ final class GlyphWidgetPaint {
      * O tamanho vem de fora porque o ImageView escala com `fitXY`: desenhar num
      * quadrado e esticar deformaria o chanfro.
      */
-    static Bitmap fundo(Acabamento metal, String patamar, int largura, int altura) {
+    /**
+     * A PEDRA DE CADA PATAMAR, COMO NA PLACA DO APP.
+     *
+     * A placa dentro do app desenha a textura com um `<image>` de SVG recortado
+     * pelo contorno. Aqui nao ha SVG: o fundo e pintado a mao num Canvas, entao
+     * a mesma ideia vira bitmap recortado pelo mesmo Path do octogono.
+     *
+     * Os arquivos sao OUTROS, e de proposito. O widget e uma faixa larga de no
+     * maximo 1400x600, e as pedras do app tem 1024x1536 — levar as grandes para
+     * ca custaria 2,3MB no APK para desenhar numa area tres vezes menor. As de
+     * `res/drawable` sao 512x768, 642KB no total.
+     */
+    private static int desenhoDaPedra(String patamar) {
+        if (patamar == null) return 0;
+        switch (patamar.trim().toUpperCase()) {
+            case "SSS": return 0; // O SSS ainda nao tem arquivo proprio aqui.
+            case "SS": return R.drawable.plate_ss;
+            case "S": return R.drawable.plate_s;
+            case "A": return R.drawable.plate_a;
+            case "B": return R.drawable.plate_b;
+            case "C": return R.drawable.plate_c;
+            case "D": return R.drawable.plate_d;
+            case "E": return R.drawable.plate_e;
+            default: return 0;
+        }
+    }
+
+    static Bitmap fundo(Resources recursos, Acabamento metal, String patamar, int largura, int altura) {
         Bitmap bitmap = Bitmap.createBitmap(largura, altura, Bitmap.Config.ARGB_8888);
         Canvas tela = new Canvas(bitmap);
 
@@ -221,6 +254,44 @@ final class GlyphWidgetPaint {
             Shader.TileMode.CLAMP
         ));
         tela.drawPath(placa, corpo);
+
+        /*
+         * A pedra entra ENTRE o corpo e o halo.
+         *
+         * Depois do corpo porque ela e a face, e nao o fundo: o corpo continua
+         * dando a chapa escura por baixo dos cantos que a foto nao cobre. Antes
+         * do halo porque o halo e luz do patamar, e luz vem por cima da pedra —
+         * inverter deixaria a foto lavando o brilho que identifica o degrau.
+         *
+         * O veu de 26% e o mesmo da placa do app, pela mesma razao: sem ele o
+         * texto claro some nas pedras claras.
+         */
+        int pedra = desenhoDaPedra(patamar);
+        if (pedra != 0 && recursos != null) {
+            Bitmap foto = BitmapFactory.decodeResource(recursos, pedra);
+            if (foto != null) {
+                tela.save();
+                tela.clipPath(placa);
+                // `cover`: a maior escala das duas, para nao sobrar borda vazia
+                // numa faixa larga desenhada a partir de uma foto em pe.
+                float escala = Math.max((float) largura / foto.getWidth(), (float) altura / foto.getHeight());
+                Matrix encaixe = new Matrix();
+                encaixe.setScale(escala, escala);
+                encaixe.postTranslate(
+                    (largura - foto.getWidth() * escala) / 2f,
+                    (altura - foto.getHeight() * escala) / 2f
+                );
+                Paint tinta = new Paint(Paint.ANTI_ALIAS_FLAG);
+                tinta.setFilterBitmap(true);
+                tinta.setAlpha(0xF5);
+                tela.drawBitmap(foto, encaixe, tinta);
+                Paint veu = new Paint(Paint.ANTI_ALIAS_FLAG);
+                veu.setColor(comAlfa(0x000000, 0x42));
+                tela.drawPaint(veu);
+                tela.restore();
+                foto.recycle();
+            }
+        }
 
         // 2. O tom do patamar, so como luz. Um halo no alto e uma diagonal fraca:
         //    sao os mesmos 16% e 5,5% do fundoComTom da placa do app.

@@ -65,7 +65,7 @@ public class GlyphWidgetProvider extends AppWidgetProvider {
         int larguraPx = medir(context, manager, appWidgetId, AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 300, 1400);
         int alturaPx = medir(context, manager, appWidgetId, AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 56, 600);
         GlyphWidgetPaint.Acabamento metal = GlyphWidgetPaint.acabamentoDe(copy.grade);
-        views.setImageViewBitmap(R.id.glyph_widget_background, GlyphWidgetPaint.fundo(metal, copy.grade, larguraPx, alturaPx));
+        views.setImageViewBitmap(R.id.glyph_widget_background, GlyphWidgetPaint.fundo(context.getResources(), metal, copy.grade, larguraPx, alturaPx));
         views.setImageViewBitmap(R.id.glyph_widget_actions_bar, GlyphWidgetPaint.barra(metal, copy.actionsProgressPercent, true, larguraPx));
         views.setImageViewBitmap(R.id.glyph_widget_time_bar, GlyphWidgetPaint.barra(metal, copy.timeProgressPercent, false, larguraPx));
         // O titulo recebe o tom claro do metal e o corpo cai quando o nome e longo.

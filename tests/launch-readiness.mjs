@@ -241,6 +241,13 @@ const suites = {
       interactions: ['as nove colunas de economia ficam fora da concessao', 'o revoke de tabela vem antes do grant por coluna', 'o saldo e o maior entre wallet e a coluna gold', 'anon nao escreve perfil', 'ninguem trunca user_profiles'],
     },
     {
+      id: 'a-mao-ganha-do-oraculo',
+      label: 'A mao ganha do oraculo regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'a-mao-ganha-do-oraculo.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['a fala espera enquanto ha gesto', 'guarda so a ultima', 'o respiro deixa o gesto seguinte adiar de novo', 'a contagem se solta no cleanup'],
+    },
+    {
       id: 'tinta-metalica',
       label: 'Tinta metalica regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'tinta-metalica.regression.mjs')]],

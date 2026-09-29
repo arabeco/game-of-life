@@ -2,6 +2,7 @@
 
 import React, { useCallback, useRef, useEffect } from 'react';
 import { lockTouchHoldSelection } from '../utils/touchHoldSelection';
+import { maoEntrouNaTela, maoSaiuDaTela } from '../utils/oracleSpeech';
 
 interface LongPressOptions {
     onLongPress?: (event: React.MouseEvent | React.TouchEvent) => void;
@@ -38,7 +39,13 @@ export const useLongPress = (options: LongPressOptions) => {
     let handleMove: (e: MouseEvent | TouchEvent) => void;
     let handleUp: (e: MouseEvent | TouchEvent | React.MouseEvent | React.TouchEvent) => void;
 
+    const maoNaTelaRef = useRef(false);
+
     const cleanup = useCallback(() => {
+        if (maoNaTelaRef.current) {
+            maoNaTelaRef.current = false;
+            maoSaiuDaTela();
+        }
         if (timeout.current) {
             clearTimeout(timeout.current);
             timeout.current = null;
@@ -114,7 +121,16 @@ export const useLongPress = (options: LongPressOptions) => {
     
     const handleDown = useCallback((e: React.MouseEvent | React.TouchEvent) => {
         cleanup();
-        
+
+        /* ENQUANTO A MAO ESTIVER AQUI, O ORACULO ESPERA.
+           Concluir arrastando dispara uma reacao, e ela entrava no ar no meio
+           do gesto seguinte. Quem arrasta esta fazendo; quem fala esta
+           comentando, e comentario espera. O par entra/sai fica no ciclo de
+           vida do gesto — `cleanup` roda em toda saida, inclusive cancelamento
+           e desmontagem, entao nao ha caminho que deixe a contagem presa. */
+        maoEntrouNaTela();
+        maoNaTelaRef.current = true;
+
         state.current = 'pending';
         startPos.current = getCoords(e);
         if (shouldPreventTouchDefault() && isTouchEvent(e) && e.cancelable) {

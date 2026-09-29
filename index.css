@@ -1097,6 +1097,130 @@ body {
   box-shadow: 0 0 25px color-mix(in srgb, var(--skin-accent-color) 18%, transparent) !important;
 }
 
+.restscreen-root {
+  --restscreen-gold-highlight: #fff3b0;
+  --restscreen-gold-light: #ffd968;
+  --restscreen-gold: #f2b83f;
+  --restscreen-gold-deep: #c77b19;
+}
+
+.restscreen-quick-button {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0.3rem 0.2rem 0.38rem;
+  border: 1px solid rgba(255, 218, 122, 0.12);
+  border-radius: 1.15rem;
+  background:
+    linear-gradient(145deg, rgba(255, 228, 145, 0.08), rgba(6, 10, 16, 0.34) 52%, rgba(0, 0, 0, 0.18));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 8px 18px rgba(0, 0, 0, 0.16);
+  transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.restscreen-quick-button--diary {
+  order: 5;
+  flex-grow: 1.12;
+}
+
+.restscreen-root .restscreen-quick-button--diary > div:first-child {
+  width: 3rem;
+  height: 3rem;
+}
+
+.restscreen-quick-button:hover {
+  border-color: rgba(255, 220, 126, 0.34);
+  background:
+    linear-gradient(145deg, rgba(255, 226, 130, 0.15), rgba(8, 12, 18, 0.42) 58%, rgba(0, 0, 0, 0.2));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 10px 24px rgba(0, 0, 0, 0.24),
+    0 0 18px rgba(242, 184, 63, 0.08);
+}
+
+.restscreen-quick-button:focus-visible {
+  outline: 2px solid rgba(255, 224, 133, 0.72);
+  outline-offset: 3px;
+}
+
+.restscreen-root .restscreen-quick-button > div:first-child {
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 0.95rem;
+  border-color: rgba(255, 218, 122, 0.28);
+  background:
+    radial-gradient(circle at 30% 18%, rgba(255, 250, 208, 0.2), transparent 34%),
+    linear-gradient(145deg, rgba(255, 218, 104, 0.16), rgba(9, 13, 19, 0.82) 68%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 5px 14px rgba(0, 0, 0, 0.24);
+}
+
+.restscreen-quick-button:hover > div:first-child {
+  border-color: rgba(255, 224, 135, 0.62);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 7px 18px rgba(0, 0, 0, 0.28),
+    0 0 16px rgba(242, 184, 63, 0.15);
+}
+
+.restscreen-quick-button > span {
+  color: rgba(255, 235, 180, 0.68) !important;
+  letter-spacing: 0.12em;
+}
+
+.restscreen-quick-button:hover > span {
+  color: rgba(255, 246, 214, 0.94) !important;
+}
+
+.restscreen-unlock-aura {
+  background: radial-gradient(
+    circle,
+    rgba(255, 250, 207, 0.16) 0%,
+    rgba(255, 211, 82, 0.28) 30%,
+    rgba(199, 123, 25, 0.12) 52%,
+    transparent 74%
+  );
+}
+
+.restscreen-unlock-core {
+  border: 1px solid rgba(255, 224, 129, 0.74);
+  background:
+    radial-gradient(circle at 28% 20%, rgba(255, 250, 208, 0.3), transparent 30%),
+    linear-gradient(145deg, rgba(255, 221, 112, 0.22), rgba(31, 27, 16, 0.94) 56%, rgba(7, 9, 12, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -10px 22px rgba(139, 84, 10, 0.22),
+    0 0 0 1px rgba(255, 199, 65, 0.12),
+    0 0 28px rgba(242, 184, 63, 0.24);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.restscreen-unlock-trigger:hover .restscreen-unlock-core {
+  border-color: rgba(255, 238, 168, 0.96);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -10px 22px rgba(139, 84, 10, 0.2),
+    0 0 0 1px rgba(255, 214, 91, 0.22),
+    0 0 34px rgba(242, 184, 63, 0.38);
+}
+
+.restscreen-unlock-fill {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 250, 207, 0.42) 0%,
+    rgba(255, 226, 116, 0.9) 28%,
+    rgba(242, 184, 63, 0.96) 64%,
+    rgba(199, 123, 25, 0.98) 100%
+  );
+  box-shadow: 0 -4px 16px rgba(255, 216, 91, 0.24);
+}
+
+.restscreen-unlock-sheen {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 222, 112, 0.08) 38%, transparent 70%);
+}
+
 .restscreen-neutral-shell {
   background: rgba(7, 10, 14, 0.78) !important;
   border: 1px solid color-mix(in srgb, var(--skin-accent-color) 24%, rgba(255, 255, 255, 0.12)) !important;

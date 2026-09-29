@@ -12,7 +12,7 @@ import { useVideoStageTransition } from '../hooks/useVideoStageTransition';
 import { RewardPackBody } from './RewardPackBody';
 import { buildAchievementRewardPayload } from '../utils/achievementRewardPayload';
 import { getRewardEmblemUrl, getRewardToneRgb } from '../constants/rewardEmblems';
-import { DIRECOES, REWARD_PLATE_VIEWPORT_STYLE } from '../constants/rewardPlateStyles';
+import { DIRECOES, REWARD_CONTENT_PLATE_VIEWPORT_STYLE } from '../constants/rewardPlateStyles';
 import { SEASONS } from '../constants/seasonContent';
 
 interface AchievementModalProps {
@@ -387,23 +387,36 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
     };
 
     const handleDisableCelebrations = async () => {
-        await updateOraclePreferences({ celebrationScreensEnabled: false });
+        // Fechar vem antes da persistência. Se a troca de conta derrubar a
+        // requisição no meio, a placa não pode continuar bloqueando a tela.
         handleClose();
+        try {
+            await updateOraclePreferences({ celebrationScreensEnabled: false });
+        } catch (error) {
+            console.error('Não foi possível salvar a preferência de celebrações:', error);
+        }
     };
 
     return (
         <Portal>
             <div
                 className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/90 p-4 backdrop-blur-md transition-all duration-500"
+                style={{
+                    paddingTop: 'calc(16px + var(--safe-area-top))',
+                    paddingRight: 'calc(16px + var(--safe-area-right))',
+                    paddingBottom: 'calc(16px + var(--safe-area-bottom))',
+                    paddingLeft: 'calc(16px + var(--safe-area-left))',
+                }}
                 onClick={showVideoStage ? triggerReveal : handleClose}
             >
                 <div
                     ref={cardRef}
                     id={ID_DA_PLACA}
-                    className={`relative flex flex-col overflow-hidden text-[#f5f3ed] transition-all duration-700 ${estiloDaPlaca.respiro}`}
+                    className="relative flex flex-col overflow-hidden text-[#f5f3ed] transition-all duration-700"
                     style={{
                         ...estiloDaPlaca.placa(tomDoFeito),
-                        ...REWARD_PLATE_VIEWPORT_STYLE,
+                        ...REWARD_CONTENT_PLATE_VIEWPORT_STYLE,
+                        ...estiloDaPlaca.respiro,
                     }}
                     onClick={(event) => event.stopPropagation()}
                 >
@@ -445,7 +458,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                                 />
                             </div>
 
-                            <div className="relative z-10 flex min-h-0 flex-1 flex-col">
+                            <div className={`relative z-10 flex min-h-0 flex-1 flex-col ${isCompetitionResult ? 'justify-around' : ''}`}>
                                 <RewardPackBody
                                     payload={payloadDoFeito}
                                     emblema={seloDaTemporada ? undefined : emblemaDoFeito}
@@ -457,7 +470,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                                 />
                             </div>
 
-                            <div className={`relative z-10 mt-auto ${isCompetitionResult ? 'p-5 pt-3' : 'p-6 pt-4'}`}>
+                            <div className={`relative z-10 mt-auto ${isCompetitionResult ? 'p-4 pt-2.5' : 'p-4 pt-3'}`}>
                                 <div className="space-y-3">
                                     {/* O OK fica no CENTRO DA PLACA, e nao no centro
                                         do que sobrou: o simbolo de compartilhar sai

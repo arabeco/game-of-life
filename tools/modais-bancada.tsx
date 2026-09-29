@@ -19,9 +19,11 @@ import { GameContext } from '../contexts/GameContext';
 import { AchievementModal } from '../components/AchievementModal';
 import { MasteryResultModal } from '../components/MasteryResultModal';
 import { RewardPackModal } from '../components/RewardPackModal';
+import { ItemDetailModal } from '../components/ItemDetailModal';
 import { MasteryWheel } from '../components/MasteryWheel';
 import { AssetPentagon } from '../components/AssetPentagon';
 import { LIFE_AREAS } from '../constants/lifeAreas';
+import { resolveItemDef } from '../constants/items';
 import '../views/mastery-quiz.css';
 
 type Cenario = { id: string; rotulo: string; nota: string; type: string; data: Record<string, unknown> };
@@ -68,6 +70,15 @@ const CENARIOS: Cenario[] = [
         data: { title: 'Cinco dias em movimento', icon: '🎯', reward: premio(['item_plate_3_001'], 150) },
     },
     {
+        id: 'missao-bau', rotulo: 'Missão com baú', nota: 'EXP + ouro + baú raro',
+        type: 'QUEST_COMPLETED',
+        data: {
+            title: 'Fechar academia e dieta',
+            icon: '🎯',
+            reward: { exp: 500, gold: 10, chest: 'Raro', items: ['insignia_quest_incomum'] },
+        },
+    },
+    {
         id: 'relatorio', rotulo: 'Relatório concluído', nota: 'com vídeo',
         type: 'REPORT_COMPLETED',
         data: { title: 'Relatório de Ciclo', reward: premio([], 3240) },
@@ -106,11 +117,14 @@ const CENARIOS: Cenario[] = [
     },
 ];
 
+const PREMIO_DE_BAU_DA_BANCADA = resolveItemDef('item_border_t3_mistico');
+
 function Bancada() {
     const [aberto, setAberto] = useState<Cenario | null>(null);
     const [animacoes, setAnimacoes] = useState(true);
     const [maestria, setMaestria] = useState<'primeira' | 'comparando' | null>(null);
     const [pacote, setPacote] = useState(false);
+    const [bauAberto, setBauAberto] = useState(false);
     const [nivelDaRoda, setNivelDaRoda] = useState(6);
     const [previaDaRoda, setPreviaDaRoda] = useState(6);
 
@@ -184,6 +198,9 @@ function Bancada() {
                 <button type="button" className="cartao" onClick={() => setPacote(true)}>
                     <strong>Pacote de itens</strong><small>a placa sem acontecimento por trás</small><code>RewardPackModal</code>
                 </button>
+                <button type="button" className="cartao" onClick={() => setBauAberto(true)}>
+                    <strong>Baú aberto</strong><small>prêmio principal e extras</small><code>ItemDetailModal</code>
+                </button>
             </div>
 
             {pacote && (
@@ -201,6 +218,20 @@ function Bancada() {
                         ],
                     } as never}
                     tom="234,179,8"
+                />
+            )}
+
+            {bauAberto && PREMIO_DE_BAU_DA_BANCADA && (
+                <ItemDetailModal
+                    item={PREMIO_DE_BAU_DA_BANCADA}
+                    instanceId="bau-bancada"
+                    type="border"
+                    onClose={() => setBauAberto(false)}
+                    focusMode
+                    extrasRecebidos={[
+                        { label: 'Fragmentos', value: '+30', simbolo: 'fragmento' },
+                        { label: 'Ouro', value: '+10', simbolo: 'ouro' },
+                    ]}
                 />
             )}
 

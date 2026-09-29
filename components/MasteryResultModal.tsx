@@ -127,8 +127,8 @@ export const MasteryResultModal: React.FC<{
                 onClick={onClose}
             >
                 <div
-                    className={`relative flex flex-col overflow-hidden text-[#f5f3ed] ${estiloDaPlaca.respiro}`}
-                    style={{ ...REWARD_PLATE_VIEWPORT_STYLE, ...estiloDaPlaca.placa(TOM_DA_MAESTRIA) }}
+                    className="relative flex flex-col overflow-hidden text-[#f5f3ed]"
+                    style={{ ...REWARD_PLATE_VIEWPORT_STYLE, ...estiloDaPlaca.placa(TOM_DA_MAESTRIA), ...estiloDaPlaca.respiro }}
                     onClick={(event) => event.stopPropagation()}
                 >
                     {/* A luz do tom, no topo, como nas outras placas. */}

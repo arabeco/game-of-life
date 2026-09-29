@@ -11,7 +11,7 @@ import { UnlockCategory } from '../types';
 import { ItemArt } from './ItemArt';
 import { ValorIcon } from './ValorIcon';
 import { getRarityVisual } from '../constants/rarityVisuals';
-import { REWARD_PLATE_VIEWPORT_STYLE } from '../constants/rewardPlateStyles';
+import { REWARD_CONTENT_PLATE_VIEWPORT_STYLE } from '../constants/rewardPlateStyles';
 
 interface ItemDetailModalProps {
     item: ItemDef;
@@ -48,6 +48,19 @@ const CATEGORY_MAP: Partial<Record<ItemCategory, UnlockCategory>> = {
     'artifact': 'artifacts',
     'plate': 'plates',
     // Adicionar outros mapeamentos conforme necessário se existirem no ItemCategory
+};
+
+const ITEM_CATEGORY_LABEL: Partial<Record<ItemCategory, string>> = {
+    skin: 'Visual',
+    hair: 'Cabelo',
+    border: 'Borda',
+    banner: 'Banner',
+    aura: 'Aura',
+    ui_skin: 'Tema',
+    artifact: 'Artefato',
+    plate: 'Placa',
+    insignia: 'Insígnia',
+    insignias: 'Insígnia',
 };
 
 export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialItem, instanceId: initialInstanceId, type, onClose, onOpen, aviso, focusMode = false, extrasRecebidos = [] }) => {
@@ -270,23 +283,55 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
     };
 
     const isInsignia = currentItem.category === 'insignia' || currentItem.category === 'insignias';
+    const nomeDeRevelacao = `${ITEM_CATEGORY_LABEL[currentItem.category] || 'Item'} · ${currentItem.name}`;
 
     return (
         <Portal>
-            <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[70] flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
+            <div
+                className="fixed inset-0 z-[70] flex items-center justify-center bg-black/90 p-4 backdrop-blur-md animate-fade-in"
+                style={{
+                    paddingTop: 'calc(16px + var(--safe-area-top))',
+                    paddingRight: 'calc(16px + var(--safe-area-right))',
+                    paddingBottom: 'calc(16px + var(--safe-area-bottom))',
+                    paddingLeft: 'calc(16px + var(--safe-area-left))',
+                }}
+                onClick={onClose}
+            >
                 <div 
-                    className={`custom-scrollbar relative flex flex-col items-center gap-4 overflow-y-auto rounded-[30px] p-5 plasma-card plasma-bg ${rarityClass} ${focusMode ? 'animate-[scaleIn_.38s_cubic-bezier(.2,.9,.2,1)]' : 'max-h-[86svh] w-full max-w-[22rem]'}`}
-                    style={focusMode ? REWARD_PLATE_VIEWPORT_STYLE : undefined}
+                    className={`relative flex flex-col items-center gap-4 p-5 ${focusMode ? 'animate-[scaleIn_.38s_cubic-bezier(.2,.9,.2,1)] justify-center overflow-hidden' : `custom-scrollbar max-h-[86svh] w-full max-w-[22rem] overflow-y-auto rounded-[30px] plasma-card plasma-bg ${rarityClass}`}`}
+                    style={focusMode ? {
+                        ...REWARD_CONTENT_PLATE_VIEWPORT_STYLE,
+                        border: '2px solid #56585a',
+                        background: 'linear-gradient(160deg, #1a1c1f, #090a0c 58%, #111315)',
+                        boxShadow: 'inset 0 0 0 4px #090b0d, inset 0 0 0 5px #33363a, inset 0 0 0 8px #0b0d0f, 8px 10px 0 #050607, 0 28px 70px #000',
+                        clipPath: 'polygon(0 24px, 24px 0, calc(100% - 24px) 0, 100% 24px, 100% calc(100% - 24px), calc(100% - 24px) 100%, 24px 100%, 0 calc(100% - 24px))',
+                    } : undefined}
                     onClick={e => e.stopPropagation()}
                 >
                 <button aria-label="Fechar" onClick={onClose} className="absolute top-3 right-3 p-2 rounded-full hover:bg-white/10 text-white/70 hover:text-white transition-colors z-20">
                     <XIcon className="w-6 h-6" />
                 </button>
 
-                {/* Item Image with Glow */}
-                <div className="relative z-10 group">
+                {focusMode && (
+                    <div className="z-10 w-full text-center">
+                        <h2 className="reward-title-metal text-[25px] font-black uppercase leading-none tracking-[0.17em] drop-shadow-lg">
+                            Item recebido!
+                        </h2>
+                    </div>
+                )}
+
+                {/* No baú, o item é a peça central da revelação: título acima,
+                    arte dentro de uma moldura quadrada e identificação abaixo. */}
+                <div className={`relative z-10 group ${focusMode ? 'mt-3' : ''}`}>
                     <div className={`absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent rounded-full blur-xl opacity-50 group-hover:opacity-80 transition-opacity duration-500`} />
-                    <div className="relative z-10 flex h-32 w-32 items-center justify-center rounded-2xl transition-transform duration-500 group-hover:scale-110">
+                    <div
+                        className={`relative z-10 flex h-32 w-32 items-center justify-center transition-transform duration-500 group-hover:scale-110 ${focusMode ? 'border' : 'rounded-2xl'}`}
+                        style={focusMode ? {
+                            borderColor: `rgba(${rarityVisual.rgb},.72)`,
+                            background: `radial-gradient(circle at 34% 27%, rgba(${rarityVisual.rgb},.30), rgba(${rarityVisual.rgb},.10) 48%, #090a0d 76%)`,
+                            boxShadow: `inset 0 0 22px rgba(${rarityVisual.rgb},.18), 0 0 20px rgba(${rarityVisual.rgb},.25), 0 10px 28px rgba(0,0,0,.42)`,
+                        } : undefined}
+                    >
                         <ItemArt
                             itemId={currentItem.id}
                             src={currentItem.imageUrl}
@@ -301,13 +346,15 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                 </div>
 
                 {/* Item Info */}
-                <div className="text-center space-y-2 z-10 w-full">
-                    <h2 className={`${focusMode ? 'reward-title-metal' : 'text-white'} text-xl font-black uppercase tracking-[0.14em] drop-shadow-lg`}>
-                        {focusMode ? 'Item recebido!' : currentItem.name}
-                    </h2>
-                    {focusMode && (
-                        <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/62">
+                <div className={`text-center z-10 w-full ${focusMode ? 'space-y-1.5' : 'space-y-2'}`}>
+                    {!focusMode && (
+                        <h2 className="text-xl font-black uppercase tracking-[0.14em] text-white drop-shadow-lg">
                             {currentItem.name}
+                        </h2>
+                    )}
+                    {focusMode && (
+                        <div className="text-[11px] font-black uppercase tracking-[0.16em] text-white/78">
+                            {nomeDeRevelacao}
                         </div>
                     )}
                     <div className="flex justify-center">
@@ -325,10 +372,14 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                             {aviso}
                         </div>
                     )}
-                    <div className="h-px w-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent mx-auto my-4" />
-                    <div className="mt-2 px-2 text-xs text-white/60">
-                        {currentItem.description || "Um item raro e misterioso."}
-                    </div>
+                    {!focusMode && (
+                        <>
+                            <div className="h-px w-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent mx-auto my-4" />
+                            <div className="mt-2 px-2 text-xs text-white/60">
+                                {currentItem.description || "Um item raro e misterioso."}
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 {focusMode && extrasRecebidos.length > 0 && (
@@ -337,17 +388,24 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                             <span>Itens recebidos</span>
                             <span className="h-px flex-1 bg-white/10" />
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
-                            {extrasRecebidos.map((extra) => (
-                                <div key={`${extra.label}-${extra.value}`} className="flex min-h-14 items-center gap-2 border border-white/10 bg-black/30 px-2.5 py-2">
+                        {/* Mesmo desenho de EXP e ouro nas placas de missão:
+                            quadrado só para o símbolo, valor ao lado, sem um
+                            segundo cartão engolindo cada recompensa. */}
+                        <div className={`grid ${extrasRecebidos.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                            {extrasRecebidos.map((extra, index) => (
+                                <div
+                                    key={`${extra.label}-${extra.value}`}
+                                    className="flex min-w-0 items-center justify-center gap-2 px-3 py-2 text-center"
+                                    style={{ borderLeft: index > 0 ? '1px solid rgba(214,177,92,.22)' : undefined }}
+                                >
                                     {extra.simbolo && (
-                                        <span className="grid h-8 w-8 shrink-0 place-items-center border border-white/10 bg-black/35">
-                                            <ValorIcon valor={extra.simbolo} tamanho={21} rotulo="" />
+                                        <span className="grid h-9 w-9 shrink-0 place-items-center border border-[#3a3e47] bg-[#07090c]">
+                                            <ValorIcon valor={extra.simbolo} tamanho={22} rotulo="" />
                                         </span>
                                     )}
-                                    <span className="min-w-0">
-                                        <strong className="block text-[12px] font-black text-white">{extra.value}</strong>
-                                        <small className="block truncate text-[8px] font-black uppercase tracking-[0.13em] text-white/45">{extra.label}</small>
+                                    <span className="min-w-0 text-left">
+                                        <strong className="block text-[17px] font-black leading-none tabular-nums text-[#f5f3ed]">{extra.value}</strong>
+                                        <small className="mt-1 block truncate text-[8px] font-black uppercase tracking-[0.14em] text-white/45">{extra.label}</small>
                                     </span>
                                 </div>
                             ))}
@@ -396,8 +454,18 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                 )}
 
                 {/* Actions */}
-                <div className="z-10 mt-auto grid w-full grid-cols-2 gap-2.5 pt-3">
-                    {duplicataDeBau ? (
+                <div className={`z-10 grid w-full grid-cols-2 gap-2.5 ${focusMode ? 'pt-4' : 'mt-auto pt-3'}`}>
+                    {focusMode ? (
+                        /* A abertura de baú é uma revelação, não uma tela de
+                           equipamento. O item já entrou no Arsenal; daqui a
+                           pessoa só confirma que o viu. */
+                        <button
+                            onClick={onClose}
+                            className="col-span-2 py-3 luxe-bico luxe-skin-button"
+                        >
+                            CONTINUAR
+                        </button>
+                    ) : duplicataDeBau ? (
                         /* DUPLICATA NAO GANHA "EQUIPAR".
                          *
                          * O item ja era dela antes de o bau abrir; o que chegou
@@ -483,7 +551,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                         esta em uso — apagar deixaria o perfil apontando para um item
                         que nao existe mais — e oferecer um botao que sempre falha e
                         pior do que nao oferecer botao. Para quebrar, desequipe. */}
-                    {isOwned && !isInsignia && !isEquipped && (
+                    {!focusMode && isOwned && !isInsignia && !isEquipped && (
                         <button
                             onClick={handleRecycle}
                             disabled={!!acaoEmCurso || !currentInstanceId}
@@ -499,7 +567,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                         Ver a colecao e descobrir o que falta e o momento em que a
                         pessoa quer o item; mandar ela procurar o mesmo item noutra
                         aba e perder esse momento. */}
-                    {!isOwned && !isInsignia && precoEmOuro > 0 && (
+                    {!focusMode && !isOwned && !isInsignia && precoEmOuro > 0 && (
                         <button
                             onClick={handleBuy}
                             disabled={!!acaoEmCurso || ouroNaCarteira < precoEmOuro}
@@ -510,7 +578,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                         </button>
                     )}
 
-                    {!isOwned && !isInsignia && podeForjar && (
+                    {!focusMode && !isOwned && !isInsignia && podeForjar && (
                         <button
                             onClick={handleForge}
                             disabled={!!acaoEmCurso || fragmentosNaCarteira < custoDeForja}
@@ -521,7 +589,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                         </button>
                     )}
                     
-                    <button 
+                    {!focusMode && <button
                         onClick={handleDonate}
                         disabled={!isOwned || isInsignia || currentItem.category === 'chest'}
                         className={`py-3 rounded-xl font-bold uppercase tracking-wider border transition-all flex items-center justify-center gap-2
@@ -535,7 +603,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                             oposta — mostrar sem perder. */}
                         <GiftIcon className="w-4 h-4" />
                         <span className="text-[10px]">Doar</span>
-                    </button>
+                    </button>}
                 </div>
             </div>
         </div>

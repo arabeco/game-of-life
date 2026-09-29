@@ -1,4 +1,5 @@
-import { getChestVisual } from '../constants/rarityVisuals';
+import { getChestDisplayName, getChestVisual } from '../constants/rarityVisuals';
+import { getChestArtUrl } from '../constants/catalogAssets';
 import type { RewardMetricCard, RewardModalPayload } from '../types';
 
 /**
@@ -35,6 +36,7 @@ export const buildAchievementRewardPayload = (
     const recompensa = premio || {};
 
     const metricCards: RewardMetricCard[] = [];
+    const rewardHighlights: NonNullable<RewardModalPayload['rewardHighlights']> = [];
     if (Number(recompensa.exp) > 0) {
         metricCards.push({ label: 'EXP', simbolo: 'exp', value: `+${Number(recompensa.exp).toLocaleString('pt-BR')}` });
     }
@@ -42,8 +44,19 @@ export const buildAchievementRewardPayload = (
         metricCards.push({ label: 'Ouro', simbolo: 'ouro', value: `+${Number(recompensa.gold)}` });
     }
     if (recompensa.chest) {
-        // O nome da raridade, nao a chave: "Season" virava titulo na tela.
-        metricCards.push({ label: 'Baú', value: getChestVisual(recompensa.chest).label, detail: 'no Arsenal' });
+        /*
+         * Baú não é um número. Quando ele dividia a fileira de EXP e ouro,
+         * ganhava um terceiro quadrado sem ícone e a placa passava a rolar.
+         * A linha de entrega mostra sua arte, nome e destino no Arsenal.
+         */
+        const visualDoBau = getChestVisual(recompensa.chest);
+        rewardHighlights.push({
+            label: 'Baú entregue',
+            value: getChestDisplayName(recompensa.chest),
+            detail: 'Guardado no Arsenal.',
+            rarityRgb: visualDoBau.rgb,
+            imageUrl: getChestArtUrl(recompensa.chest),
+        });
     }
 
     // Tres caminhos entregam item, e um feito pode usar mais de um ao mesmo
@@ -68,5 +81,6 @@ export const buildAchievementRewardPayload = (
         emptyMessage: '',
         itemIds: [...ids],
         metricCards,
+        rewardHighlights,
     };
 };

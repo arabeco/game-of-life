@@ -9,11 +9,9 @@ import type { RewardHighlightLine, RewardMetricCard, RewardModalPayload } from '
  * O miolo de TODA tela de recompensa: brasao, titulo, quadradinhos de valor,
  * faixa de destaque, itens recebidos e vantagens.
  *
- * As medidas vem de `docs/drafts/reward-modal-4-direcoes.html`, bloco
- * `.monolith` — a direcao B aprovada. Crest de 84px com PNG de 66, metrica de
- * 94x94 com o simbolo dentro do proprio nicho de fio, item de 68px em duas
- * colunas com arte de 46 e borda so embaixo. Nao sao numeros escolhidos aqui:
- * sao os da sheet, e trocar um deles quebra a familia.
+ * A placa tem uma caixa fixa no celular. Por isso o miolo trabalha com medidas
+ * compactas e constantes: ele nao cresce conforme o texto ou transforma a
+ * recompensa em uma lista com barra de rolagem.
  *
  * O miolo existia duas vezes. O RewardPackModal desenhava assim e o
  * AchievementModal desenhava a mesma coisa com outro codigo — a letra "G" no
@@ -75,7 +73,7 @@ const benefitToneRgb = {
 
 /** Rotulo de secao: texto a esquerda e um fio que corre ate a borda. */
 const TituloDeSecao: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="mb-[9px] mt-[18px] flex items-center gap-[10px] text-[9px] font-black uppercase tracking-[0.23em] text-[#aaadb4]">
+  <div className="mb-[6px] mt-[10px] flex items-center gap-[10px] text-[9px] font-black uppercase tracking-[0.23em] text-[#aaadb4]">
     {children}
     <span className="h-px flex-1 bg-[#303238]" />
   </div>
@@ -116,15 +114,12 @@ export const RewardPackBody: React.FC<RewardPackBodyProps> = ({
   tom,
   estiloDoCrest,
 }) => {
-  const showItems = (payload?.itemIds?.length || 0) > 0;
   const itemIds = payload?.itemIds || [];
   const metricCards = payload?.metricCards?.length ? payload.metricCards : fallbackMetricCards;
   const rewardHighlights = payload?.rewardHighlights || [];
   const activeBenefits = payload?.activeBenefits || [];
   const titulo = payload?.title || fallbackTitle;
   const eyebrow = payload?.eyebrow ?? fallbackEyebrow;
-  const tituloLongo = titulo.length > 25;
-  const quatroOuMaisMetricas = metricCards.length >= 4;
   const tomDaPlaca = tom || '234,179,8';
 
   const rewardItems = useMemo(
@@ -151,18 +146,23 @@ export const RewardPackBody: React.FC<RewardPackBodyProps> = ({
   const visibleRewardItems = payload?.repeatFeaturedItemInList
     ? rewardItems
     : rewardItems.filter(({ itemId }) => itemId !== featuredRewardItem?.itemId);
-  const itemUnico = visibleRewardItems.length === 1 && !featuredRewardItem;
+  /* Baú é item recebido. `rewardHighlights` também carrega créditos e outros
+     avisos, mas só as linhas com arte entram na mesma lista dos cosméticos. */
+  const itemHighlights = rewardHighlights.filter((highlight) => Boolean(highlight.imageUrl));
+  const informationalHighlights = rewardHighlights.filter((highlight) => !highlight.imageUrl);
+  const receivedItemCount = visibleRewardItems.length + itemHighlights.length;
+  const showReceivedItems = receivedItemCount > 0;
   const emptyMessage = payload?.emptyMessage ?? fallbackEmptyMessage;
 
   return (
     <>
-      <div className="shrink-0 text-center">
+      <div className="reward-pack-heading shrink-0 text-center">
         {emblema && (
           // O suporte octogonal: quadrado com os quatro cantos cortados,
           // moldura de fio, dois aneis por dentro e sombra solida deslocada.
           // O losango girado saiu com a direcao antiga.
           <div
-            className="mx-auto mb-[14px] grid h-[84px] w-[84px] place-items-center text-4xl"
+            className="reward-pack-crest mx-auto mb-[10px] grid h-[68px] w-[68px] place-items-center text-3xl"
             style={estiloDoCrest || {
               border: `1px solid ${tom ? `rgba(${tom},.55)` : '#5b5e62'}`,
               background: 'linear-gradient(135deg, #191c20, #07090b 68%)',
@@ -171,7 +171,7 @@ export const RewardPackBody: React.FC<RewardPackBodyProps> = ({
             }}
           >
             {typeof emblema === 'string' && emblema.startsWith('/') ? (
-              <img src={emblema} alt="" className="h-[66px] w-[66px] object-contain drop-shadow-[0_3px_8px_#000]" />
+              <img src={emblema} alt="" className="h-[52px] w-[52px] object-contain drop-shadow-[0_3px_8px_#000]" />
             ) : (
               emblema
             )}
@@ -184,7 +184,7 @@ export const RewardPackBody: React.FC<RewardPackBodyProps> = ({
         )}
         {/* Serifada, como na direcao B: a diferenca entre o titulo e o resto da
             placa deixa de ser so o tamanho da letra. */}
-        <h2 className={`reward-title-metal mb-[5px] ${eyebrow ? 'mt-[7px]' : 'mt-0'} text-balance font-serif font-black uppercase leading-[1.02] ${tituloLongo ? 'text-[25px] tracking-[0.045em]' : 'text-[34px] tracking-[0.07em]'}`}>
+        <h2 className={`reward-title-metal mb-[4px] ${eyebrow ? 'mt-[6px]' : 'mt-0'} text-balance font-serif text-[26px] font-black uppercase leading-[1.02] tracking-[0.055em]`}>
           {titulo}
         </h2>
         {/* O SUBTITULO E O NOME PROPRIO: qual arena, qual missao, qual patente.
@@ -202,70 +202,64 @@ export const RewardPackBody: React.FC<RewardPackBodyProps> = ({
             Treze pixels e quase branco ainda deixam o titulo mandando, e tiram
             o nome proprio do empate com a sobrancelha. */}
         {payload?.subtitle && (
-          <div className="mb-2 text-[13px] font-black uppercase tracking-[0.16em] text-[#e8e2d4]">
+          <div className="mb-1.5 text-[12px] font-black uppercase tracking-[0.14em] text-[#e8e2d4]">
             {payload.subtitle}
           </div>
         )}
         {(payload?.summary || fallbackSummary) && (
-          <p className="mx-auto mb-[18px] max-w-[300px] text-[11px] leading-[1.45] text-[#9ca0a8]">
+          <p className="mx-auto mb-[10px] max-w-[300px] text-[10px] leading-[1.4] text-[#9ca0a8]">
             {payload?.summary || fallbackSummary}
           </p>
         )}
       </div>
 
-      <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto">
+      <div className="reward-pack-body shrink-0 overflow-hidden">
         {featuredRewardItem && (() => {
           const raridade = getRarityVisual(featuredRewardItem.itemDef.rarity);
           return (
             <div className="mb-1 text-center">
               <TituloDeSecao>Destaque da temporada</TituloDeSecao>
               <div
-                className="relative mx-auto grid min-h-[154px] place-items-center overflow-hidden"
+                className="relative mx-auto grid min-h-[100px] place-items-center overflow-hidden"
                 style={{
                   background: `radial-gradient(circle at 50% 50%, rgba(${raridade.rgb},.22), transparent 66%)`,
                 }}
               >
-                <img src={featuredRewardItem.itemDef.imageUrl} alt={featuredRewardItem.itemDef.name} className="h-[128px] w-[128px] object-contain drop-shadow-[0_12px_22px_#000]" />
+                <img src={featuredRewardItem.itemDef.imageUrl} alt={featuredRewardItem.itemDef.name} className="h-[88px] w-[88px] object-contain drop-shadow-[0_9px_16px_#000]" />
               </div>
             </div>
           );
         })()}
 
         {metricCards.length > 0 && (
-          <div className={`flex flex-wrap justify-center ${quatroOuMaisMetricas ? 'gap-[5px]' : 'gap-[14px]'}`}>
+          /* Só o símbolo recebe quadrado. EXP e ouro são valores rápidos; uma
+             moldura grande ao redor deles fazia parecer que eram dois itens. */
+          <div className={`grid ${metricCards.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
             {metricCards.map((card, index) => (
-              // 94x94, e o simbolo mora num nicho de fio proprio, acima do
-              // numero. A legenda fica DENTRO do quadrado, embaixo.
               <div
                 key={`${card.label}-${index}`}
-                className={`flex flex-col items-center justify-center border text-center ${quatroOuMaisMetricas ? 'h-[72px] w-[72px] p-1.5' : 'h-[94px] w-[94px] p-2'}`}
-                style={{
-                  borderColor: `rgba(${tomDaPlaca},.28)`,
-                  background: `radial-gradient(circle at 50% 0%, rgba(${tomDaPlaca},.16), transparent 54%), linear-gradient(155deg, rgba(${tomDaPlaca},.065), #0d0e11 58%, #08090b)`,
-                  boxShadow: `inset 0 1px 0 rgba(255,255,255,.035), inset 0 0 18px rgba(${tomDaPlaca},.035)`,
-                }}
+                className="flex min-w-0 items-center justify-center gap-2 px-3 py-2 text-center"
+                style={{ borderLeft: index > 0 ? `1px solid rgba(${tomDaPlaca},.22)` : undefined }}
               >
-                <div className={`${quatroOuMaisMetricas ? 'mb-[3px] h-[25px] w-[25px]' : 'mb-[6px] h-[33px] w-[33px]'} grid place-items-center border border-[#3a3e47] bg-[#07090c]`}>
-                  {card.simbolo
-                    ? <ValorIcon valor={card.simbolo} tamanho={quatroOuMaisMetricas ? 18 : 23} rotulo="" />
-                    : <span className="h-px w-3 bg-[#565b64]" aria-hidden="true" />}
-                </div>
-                <span className={`block font-black leading-none tabular-nums text-[#f5f3ed] ${card.value.length > 8 ? 'text-[12px]' : 'text-[16px]'}`}>
-                  {card.value}
-                </span>
-                <span className="mt-[5px] block text-[7px] font-black uppercase leading-tight tracking-[0.13em] text-[#858a93]">
-                  {card.label}
+                {card.simbolo && (
+                  <span className="grid h-9 w-9 shrink-0 place-items-center border border-[#3a3e47] bg-[#07090c]">
+                    <ValorIcon valor={card.simbolo} tamanho={22} rotulo="" />
+                  </span>
+                )}
+                <span className="min-w-0 text-left">
+                  <span className={`block font-black leading-none tabular-nums text-[#f5f3ed] ${card.value.length > 8 ? 'text-[12px]' : 'text-[17px]'}`}>{card.value}</span>
+                  <span className="mt-1 block text-[8px] font-black uppercase leading-tight tracking-[0.14em] text-[#858a93]">{card.label}</span>
                 </span>
               </div>
             ))}
           </div>
         )}
 
-        {rewardHighlights.length > 0 && (
+        {informationalHighlights.length > 0 && (
           <div className={metricCards.length > 0 ? 'mt-4' : ''}>
             <TituloDeSecao>{payload?.rewardHighlightsTitle || 'Entregue agora'}</TituloDeSecao>
             <div className="space-y-2">
-              {rewardHighlights.map((highlight, index) => {
+              {informationalHighlights.map((highlight, index) => {
                 // A cor da raridade, quando vem, manda: e o mesmo RGB que
                 // pinta o item na grade e a etiqueta no modal dele.
                 const toneClass = highlight.rarityRgb ? 'border-white/10' : rewardHighlightToneStyles[highlight.tone || 'gold'];
@@ -284,9 +278,9 @@ export const RewardPackBody: React.FC<RewardPackBodyProps> = ({
                   ? { color: `rgba(${highlight.rarityRgb}, 0.95)`, opacity: 1 }
                   : undefined;
                 return (
-                  <div key={`${highlight.label}-${index}`} className={`border px-3 py-3 ${toneClass}`} style={rarityStyle}>
-                    <div className="flex items-start gap-3">
-                      <div className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center overflow-hidden border border-white/10 bg-black/30">
+                  <div key={`${highlight.label}-${index}`} className={`border px-2.5 py-2 ${toneClass}`} style={rarityStyle}>
+                    <div className="flex items-start gap-2.5">
+                      <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center overflow-hidden border border-white/10 bg-black/30">
                         {highlight.imageUrl
                           ? <img src={highlight.imageUrl} alt="" className="h-full w-full object-contain p-0.5" />
                           : <Gift className="h-4 w-4 text-current opacity-80" />}
@@ -304,10 +298,28 @@ export const RewardPackBody: React.FC<RewardPackBodyProps> = ({
           </div>
         )}
 
-        {showItems ? (
+        {showReceivedItems ? (
           <div>
             <TituloDeSecao>{featuredRewardItem ? 'Também recebido' : (payload?.itemSectionTitle || fallbackItemSectionTitle)}</TituloDeSecao>
-            <div className={`grid gap-[7px] ${itemUnico ? 'grid-cols-1' : 'grid-cols-2'}`}>
+            <div className={`grid gap-[7px] ${receivedItemCount === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+              {itemHighlights.map((highlight, index) => (
+                <div
+                  key={`highlight-${highlight.value}-${index}`}
+                  className="grid h-[54px] grid-cols-[36px_minmax(0,1fr)] items-center gap-2 overflow-hidden border bg-[rgba(18,18,19,.78)] p-2"
+                  style={{
+                    borderColor: highlight.rarityRgb ? `rgba(${highlight.rarityRgb},.42)` : 'rgba(255,255,255,.14)',
+                    borderLeft: highlight.rarityRgb ? `3px solid rgba(${highlight.rarityRgb},.9)` : undefined,
+                  }}
+                >
+                  <div className="grid h-[36px] w-[36px] place-items-center overflow-hidden border border-white/10 bg-black/30">
+                    <img src={highlight.imageUrl} alt="" className="h-full w-full object-contain p-0.5" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="line-clamp-2 text-[10px] font-bold leading-[1.15] text-[#f5f3ed]">{highlight.value}</div>
+                    <div className="mt-[5px] truncate text-[7px] font-black uppercase tracking-[0.13em]" style={{ color: highlight.rarityRgb ? `rgb(${highlight.rarityRgb})` : '#9ca3af' }}>{highlight.detail || highlight.label}</div>
+                  </div>
+                </div>
+              ))}
               {visibleRewardItems.map(({ itemId, itemDef }) => {
                 const raridade = getRarityVisual(itemDef.rarity);
                 const categoria = NOME_DA_CATEGORIA[itemDef.category] || itemDef.category;
@@ -318,10 +330,10 @@ export const RewardPackBody: React.FC<RewardPackBodyProps> = ({
                   // nome do item que caiu.
                   <div
                     key={itemId}
-                    className={`grid items-center overflow-hidden border border-[#302f2c] bg-[rgba(18,18,19,.78)] ${itemUnico ? 'h-[104px] grid-cols-[76px_minmax(0,1fr)] gap-[14px] p-3' : 'h-[68px] grid-cols-[46px_minmax(0,1fr)] gap-[9px] border-x-0 border-t-0 p-2'}`}
+                    className="grid h-[54px] grid-cols-[36px_minmax(0,1fr)] items-center gap-2 overflow-hidden border border-[#302f2c] bg-[rgba(18,18,19,.78)] p-2"
                   >
                     <div
-                      className={`grid place-items-center overflow-hidden ${itemUnico ? 'h-[76px] w-[76px]' : 'h-[46px] w-[46px]'}`}
+                      className="grid h-[36px] w-[36px] place-items-center overflow-hidden"
                       style={{
                         border: `1px solid rgba(${raridade.rgb},.48)`,
                         background: `radial-gradient(circle at 34% 27%, rgba(${raridade.rgb},.25), rgba(${raridade.rgb},.075) 48%, #07090b 82%)`,

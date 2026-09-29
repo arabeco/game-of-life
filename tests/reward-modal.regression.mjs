@@ -56,8 +56,9 @@ const ler = (relativo) => fs.readFileSync(path.join(root, relativo), 'utf8');
 // inteiro mudava de tamanho conforme o nome do item que caiu.
 {
     const miolo = ler('components/RewardPackBody.tsx');
-    // 68px e a medida da sheet (.monolith .item), nao um numero escolhido aqui.
-    assert.match(miolo, /h-\[68px\]/, 'o card de item perdeu a altura fixa da direcao B');
+    // Toda linha, inclusive item unico, mantem 54px: premio de uma peca nao
+    // pode fazer a placa ficar diferente da mesma peca ao lado de outra.
+    assert.match(miolo, /h-\[54px\]/, 'o card de item perdeu a altura fixa da direcao B');
     assert.match(miolo, /line-clamp-2/, 'o nome do item perdeu o limite de duas linhas');
 }
 
@@ -69,11 +70,14 @@ const ler = (relativo) => fs.readFileSync(path.join(root, relativo), 'utf8');
     const miolo = ler('components/RewardPackBody.tsx');
     const placa = ler('components/RewardPackModal.tsx');
 
-    assert.match(miolo, /h-\[84px\] w-\[84px\]/, 'o crest saiu dos 84px da sheet');
-    assert.match(miolo, /h-\[66px\] w-\[66px\]/, 'o PNG do emblema saiu dos 66px da sheet');
-    assert.match(miolo, /h-\[94px\] w-\[94px\]/, 'a metrica saiu dos 94px da sheet');
-    assert.match(miolo, /h-\[33px\] w-\[33px\]/, 'o nicho do simbolo sumiu da metrica');
-    assert.match(miolo, /h-\[46px\] w-\[46px\]/, 'a arte do item saiu dos 46px da sheet');
+    assert.match(miolo, /h-\[68px\] w-\[68px\]/, 'o crest saiu da medida compacta');
+    assert.match(miolo, /h-\[52px\] w-\[52px\]/, 'o PNG do emblema saiu da medida compacta');
+    assert.match(miolo, /grid-cols-2/, 'os valores deixaram de formar uma faixa compacta');
+    assert.doesNotMatch(miolo, /h-\[94px\] w-\[94px\]/, 'voltou o quadrado grande para um valor simples');
+    assert.doesNotMatch(miolo, /h-\[33px\] w-\[33px\]/, 'voltou o quadrado dentro do quadrado para o simbolo');
+    assert.match(miolo, /h-\[36px\] w-\[36px\]/, 'a arte do item saiu do tamanho compacto');
+    assert.match(miolo, /reward-pack-body shrink-0 overflow-hidden/, 'o miolo deixou de preservar a placa sem barra interna');
+    assert.doesNotMatch(miolo, /custom-scrollbar min-h-0 flex-1 overflow-y-auto/, 'a lista voltou a criar uma barra dentro da placa');
     assert.match(miolo, /font-serif/, 'o titulo perdeu a serifa');
 
     // As medidas da placa moram na tabela das quatro direcoes; o modal so
@@ -182,12 +186,33 @@ const ler = (relativo) => fs.readFileSync(path.join(root, relativo), 'utf8');
     const item = ler('components/ItemDetailModal.tsx');
     const inventario = ler('components/Store/Inventory.tsx');
     assert.match(item, /focusMode/, 'o modal do item perdeu o modo de revelação do baú');
-    assert.match(item, /focusMode \? 'Item recebido!' : currentItem\.name/, 'o item do baú perdeu o acontecimento grande');
+    assert.match(item, /focusMode && \(/, 'o item do baú perdeu o bloco de revelação');
+    assert.match(item, /Item recebido!/, 'o item do baú perdeu o acontecimento grande');
+    assert.match(item, /focusMode \? 'border' : 'rounded-2xl'/, 'a arte do baú perdeu a moldura quadrada');
     assert.match(item, /!focusMode && relatedItems\.length/, 'a Coleção voltou a aparecer sobre o prêmio do baú');
     assert.match(inventario, /focusMode=\{selectedItem\.instanceId\.startsWith\('bau-'\)\}/, 'o baú não ativa mais o foco do item');
 }
 
-// 10. Selo e jornada comum são acontecimentos diferentes e usam fundo vertical.
+// 10. As placas de conteúdo respeitam status bar e navegação do Android.
+{
+    const estilos = ler('constants/rewardPlateStyles.ts');
+    const feito = ler('components/AchievementModal.tsx');
+    const pacote = ler('components/RewardPackModal.tsx');
+    const item = ler('components/ItemDetailModal.tsx');
+    assert.match(estilos, /var\(--safe-area-top\)/, 'a altura da placa voltou a ignorar a área segura superior');
+    assert.match(estilos, /0\.7142857/, 'a largura não volta junto com a altura da placa 10:14');
+    assert.match(estilos, /respiro: \{ padding: '30px 28px 26px' \}/, 'a placa B perdeu o espaço interno real');
+    assert.doesNotMatch(estilos, /respiro: 'px-7/, 'o respiro voltou a depender de classe Tailwind dinâmica');
+    assert.match(feito, /\.\.\.estiloDaPlaca\.respiro/, 'o feito não aplica o respiro real da placa');
+    assert.match(feito, /isCompetitionResult \? 'justify-around'/, 'o desafio vazio voltou a concentrar tudo no topo');
+    assert.match(pacote, /\.\.\.estilo\.respiro/, 'a placa avulsa não aplica o respiro real');
+    for (const [nome, fonte] of [['feito', feito], ['pacote', pacote], ['item', item]]) {
+        assert.match(fonte, /paddingTop: 'calc\(\d+px \+ var\(--safe-area-top\)\)'/, `${nome} pode encostar na status bar`);
+        assert.match(fonte, /paddingBottom: 'calc\(\d+px \+ var\(--safe-area-bottom\)\)'/, `${nome} pode encostar na barra de navegação`);
+    }
+}
+
+// 11. Selo e jornada comum são acontecimentos diferentes e usam fundo vertical.
 {
     const contexto = ler('contexts/GameContext.tsx');
     const feito = ler('components/AchievementModal.tsx');
@@ -216,20 +241,23 @@ const ler = (relativo) => fs.readFileSync(path.join(root, relativo), 'utf8');
 // 12. O baú de código fica na lista; os quadrados continuam reservados a valores.
 {
     const resgate = ler('utils/redeemRewardPresentation.ts');
+    const feitoPayload = ler('utils/achievementRewardPayload.ts');
     const miolo = ler('components/RewardPackBody.tsx');
     assert.doesNotMatch(resgate, /metricCards\.push\(\{\s*label: 'Baú'/, 'o baú voltou para os quadrados de valor');
     assert.match(resgate, /imageUrl: getChestArtUrl/, 'o baú perdeu o PNG na lista recebida');
     assert.match(miolo, /highlight\.imageUrl/, 'a linha recebida não desenha mais a arte do baú');
     assert.match(resgate, /title: 'Recompensa entregue!'/, 'o resgate saiu da família geral de recompensa');
     assert.match(resgate, /subtitle: `Código: \$\{resultado\.code\}`/, 'o nome do código saiu de baixo do título');
+    assert.doesNotMatch(feitoPayload, /metricCards\.push\(\{ label: 'Baú'/, 'o baú de missão voltou para a faixa de valores');
+    assert.match(feitoPayload, /imageUrl: getChestArtUrl/, 'o baú de missão perdeu a imagem');
 }
 
-// 13. Um prêmio vira bloco; extras de baú não repetem o item em destaque.
+// 13. A lista de itens tem altura estável; extras de baú não repetem o item em destaque.
 {
     const miolo = ler('components/RewardPackBody.tsx');
     const detalhe = ler('components/ItemDetailModal.tsx');
     const inventario = ler('components/Store/Inventory.tsx');
-    assert.match(miolo, /itemUnico \? 'h-\[104px\]/, 'o item único voltou a parecer uma faixa estreita');
+    assert.match(miolo, /className="grid h-\[54px\]/, 'a linha de item perdeu a altura estável');
     assert.match(detalhe, /extrasRecebidos/, 'o destaque do baú perdeu os valores adicionais');
     assert.match(inventario, /setExtrasDoBau\(extras\)/, 'o resultado do baú não encaminha mais ouro e fragmentos extras');
 }
@@ -244,13 +272,13 @@ const ler = (relativo) => fs.readFileSync(path.join(root, relativo), 'utf8');
     assert.match(feito, /emblema=\{seloDaTemporada \? undefined/, 'o topo voltou a duplicar a insígnia destacada');
 }
 
-// 15. Todo quadrado de métrica e toda placa recebem o tom do acontecimento.
+// 15. A faixa de valores e toda placa recebem o tom do acontecimento.
 {
     const miolo = ler('components/RewardPackBody.tsx');
     const feito = ler('components/AchievementModal.tsx');
     const app = ler('components/AuthenticatedApp.tsx');
     assert.match(miolo, /const tomDaPlaca = tom \|\| '234,179,8'/, 'métrica sem tom voltou ao fundo chapado');
-    assert.match(miolo, /radial-gradient\(circle at 50% 0%, rgba\(\$\{tomDaPlaca\}/, 'quadrados perderam o gradiente do acontecimento');
+    assert.match(miolo, /rgba\(\$\{tomDaPlaca\},\.22\)/, 'a separação dos valores perdeu o tom do acontecimento');
     assert.match(feito, /rgba\(\$\{tomDoFeito\},\.82\)/, 'o miolo do feito voltou a usar a Skin UI no lugar do tom do acontecimento');
     assert.ok((app.match(/tom=\{getRewardToneRgb\('geral'\)\}/g) || []).length >= 3, 'presente, premium ou beta voltou sem tom explícito');
 }
@@ -274,15 +302,13 @@ const ler = (relativo) => fs.readFileSync(path.join(root, relativo), 'utf8');
     assert.match(medidas, /100vw - 32px/, 'a placa deixou de reservar margem lateral no celular');
     assert.match(medidas, /100svh - 40px/, 'a placa deixou de reservar margem vertical no celular');
 
-    for (const arquivo of [
-        'components/RewardPackModal.tsx',
-        'components/AchievementModal.tsx',
-        'components/ItemDetailModal.tsx',
-        'components/SeasonDetailModal.tsx',
-        'views/ProfileView.tsx',
-    ]) {
+    for (const arquivo of ['components/SeasonDetailModal.tsx', 'views/ProfileView.tsx']) {
         assert.match(ler(arquivo), /REWARD_PLATE_VIEWPORT_STYLE/, `${arquivo} saiu da proporção comum`);
     }
+
+    assert.match(ler('components/RewardPackModal.tsx'), /REWARD_CONTENT_PLATE_VIEWPORT_STYLE/, 'a recompensa voltou a reservar altura vazia');
+    assert.match(ler('components/AchievementModal.tsx'), /REWARD_CONTENT_PLATE_VIEWPORT_STYLE/, 'o feito voltou a reservar altura vazia');
+    assert.match(ler('components/ItemDetailModal.tsx'), /REWARD_CONTENT_PLATE_VIEWPORT_STYLE/, 'a revelação de baú deixou de ajustar a placa ao prêmio');
 
     const css = ler('index.css');
     assert.match(css, /\.reward-title-metal/, 'o teste de título metálico sumiu');

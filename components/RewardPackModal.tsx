@@ -2,7 +2,7 @@ import React from 'react';
 import { Portal } from './Portal';
 import { RewardPackBody } from './RewardPackBody';
 import type { RewardMetricCard, RewardModalPayload } from '../types';
-import { DIRECAO_PADRAO, DIRECOES, REWARD_PLATE_VIEWPORT_STYLE, type DirecaoDaPlaca } from '../constants/rewardPlateStyles';
+import { DIRECAO_PADRAO, DIRECOES, REWARD_CONTENT_PLATE_VIEWPORT_STYLE, type DirecaoDaPlaca } from '../constants/rewardPlateStyles';
 
 interface RewardPackModalProps {
   open: boolean;
@@ -64,11 +64,17 @@ export const RewardPackModal: React.FC<RewardPackModalProps> = ({
     <Portal>
       <div
         className="fixed inset-0 z-[10002] flex items-center justify-center bg-black/88 px-4 py-5 backdrop-blur-md"
+        style={{
+          paddingTop: 'calc(20px + var(--safe-area-top))',
+          paddingRight: 'calc(16px + var(--safe-area-right))',
+          paddingBottom: 'calc(20px + var(--safe-area-bottom))',
+          paddingLeft: 'calc(16px + var(--safe-area-left))',
+        }}
         onClick={onClose}
       >
         <div
-          className={`relative flex flex-col text-[#f5f3ed] ${estilo.respiro}`}
-          style={{ ...estilo.placa(rgb), ...REWARD_PLATE_VIEWPORT_STYLE }}
+          className="relative flex flex-col text-[#f5f3ed]"
+          style={{ ...estilo.placa(rgb), ...REWARD_CONTENT_PLATE_VIEWPORT_STYLE, ...estilo.respiro }}
           onClick={(event) => event.stopPropagation()}
         >
           <RewardPackBody

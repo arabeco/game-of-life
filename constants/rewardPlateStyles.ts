@@ -29,6 +29,21 @@ export const REWARD_PLATE_VIEWPORT_STYLE: React.CSSProperties = {
     maxHeight: 'calc(100svh - 40px)',
 };
 
+/**
+ * A celebração é vertical, porém mais curta que a placa 10:17 de relatório.
+ * A proporção 10:14 dá respiro entre título, prêmio e ação sem virar uma
+ * coluna gigante nem depender de uma barra interna.
+ */
+export const REWARD_CONTENT_PLATE_VIEWPORT_STYLE: React.CSSProperties = {
+    // A largura tambem depende da altura que sobrou entre as areas seguras.
+    // Os 80px deixam 40px de ar visual em cima e embaixo. `max-height`
+    // sozinho deixa o navegador escolher a largura pela tela e, em alguns
+    // Androids, a placa 10:14 nasce colada nas bordas.
+    width: 'min(368px, calc(100vw - var(--safe-area-left) - var(--safe-area-right) - 32px), calc((100svh - var(--safe-area-top) - var(--safe-area-bottom) - 80px) * 0.7142857))',
+    aspectRatio: '10 / 14',
+    maxHeight: 'calc(100svh - var(--safe-area-top) - var(--safe-area-bottom) - 80px)',
+};
+
 type EstiloDaPlaca = {
     nome: string;
     /** Estilo da placa. `rgb` e o tom do acontecimento. */
@@ -37,8 +52,8 @@ type EstiloDaPlaca = {
     crest: (rgb: string) => React.CSSProperties;
     /** Recorte do botao da skin. */
     botao: React.CSSProperties;
-    /** Padding da placa, em Tailwind. */
-    respiro: string;
+    /** Espaço interno real da placa. Não pode depender de classes dinâmicas. */
+    respiro: React.CSSProperties;
 };
 
 const fundoComTom = (rgb: string, base: string) => [
@@ -51,7 +66,7 @@ export const DIRECOES: Record<DirecaoDaPlaca, EstiloDaPlaca> = {
     // A — Fissura: chanfro assimetrico, sombra solida so de um lado.
     A: {
         nome: 'A · Fissura',
-        respiro: 'px-[22px] pb-5 pt-6',
+        respiro: { padding: '24px 22px 20px' },
         placa: (rgb) => ({
             border: '1px solid #424548',
             background: fundoComTom(rgb, 'linear-gradient(160deg, #181a1d, #08090b 58%, #0e1012)'),
@@ -70,7 +85,7 @@ export const DIRECOES: Record<DirecaoDaPlaca, EstiloDaPlaca> = {
     // tres aneis por dentro e duas sombras solidas deslocadas.
     B: {
         nome: 'B · Monolito Central',
-        respiro: 'px-7 pb-[26px] pt-[30px]',
+        respiro: { padding: '30px 28px 26px' },
         placa: (rgb) => ({
             border: '3px solid #56585a',
             background: fundoComTom(rgb, 'linear-gradient(160deg, #1a1c1f, #090a0c 58%, #111315)'),
@@ -98,7 +113,7 @@ export const DIRECOES: Record<DirecaoDaPlaca, EstiloDaPlaca> = {
     // C — Santuario estratificado: ombro no topo, dois fios internos.
     C: {
         nome: 'C · Santuário',
-        respiro: 'px-[22px] pb-5 pt-6',
+        respiro: { padding: '24px 22px 20px' },
         placa: (rgb) => ({
             border: '1px solid #414449',
             background: fundoComTom(rgb, 'linear-gradient(160deg, #181a1d, #08090b 58%, #0e1012)'),
@@ -117,7 +132,7 @@ export const DIRECOES: Record<DirecaoDaPlaca, EstiloDaPlaca> = {
     // D — Bipartido: costura metalica no eixo central.
     D: {
         nome: 'D · Bipartido',
-        respiro: 'px-[22px] pb-5 pt-6',
+        respiro: { padding: '24px 22px 20px' },
         placa: (rgb) => ({
             border: '1px solid #42464a',
             background: [

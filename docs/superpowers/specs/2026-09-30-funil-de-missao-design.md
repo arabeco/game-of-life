@@ -71,10 +71,27 @@ aceito**. Hoje a lista é abandonada porque escolher custa. Se o funil funcionar
 a taxa de aceite sobe sem a oferta ter mudado de conteúdo: são os mesmos pactos,
 perguntados em outra ordem.
 
-## Risco conhecido
+## Ciclo curto: nunca ficar sem opção
 
-Num ciclo curto (5 dias), depois do conserto de `4742c0a` as metas cabem, mas
-sobram poucas opções. O funil pode chegar ao passo 2 com **uma** arena só. Isso
-é aceitável — uma arena com motivo escrito ainda é melhor que uma lista de uma
-linha sem contexto —, mas se acontecer sempre, o passo 1 vira pergunta de
-enfeite e deve ser pulado quando só há um caminho possível.
+Num ciclo de 5 dias sobram poucas propostas, e o funil pode chegar ao passo 2
+com uma arena só — ou a nenhuma. **Ficar sem opção é o pior resultado
+possível:** a pessoa abriu procurando algo para fazer e o app respondeu que não
+tem nada.
+
+A rede é uma escada de pedidos pequenos, do mais concreto para o mais leve. A
+primeira que tiver arena atrás é a que aparece:
+
+1. **Fechar o que falta** (`conclusao`) — a meta é o trabalho restante, medida
+   em ações e não em dias, então cabe em ciclo de qualquer tamanho. É a melhor
+   rede porque é a mais concreta: você sabe exatamente o que falta.
+   *Exige `totalPlanned >= 3` e algo restando.*
+2. **Voltar ao que parou** (`retomada`) — pede **2 ações**. Cabe em qualquer
+   ciclo. *Exige a arena estar parada há 7 dias ou mais.*
+3. **Não falhar** (`constancia`) — com o piso de 2 dias do `4742c0a`, é o menor
+   pedido que ainda é constância.
+
+Se nenhuma das três tiver arena, o funil não abre — e a tela deve dizer isso
+com todas as letras em vez de mostrar uma lista vazia.
+
+**Quando só existe um caminho, o passo 1 é pulado.** Uma pergunta com uma
+resposta só não é pergunta, é um clique a mais.

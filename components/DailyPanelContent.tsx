@@ -308,6 +308,18 @@ export const DailyPanelContent: React.FC<{
 
         const perfectDays = days.filter((day) => day.total > 0 && day.completed === day.total).length;
         const activeDays = days.filter((day) => day.completed > 0 || day.total > 0).length;
+        /**
+         * DIAS EM QUE ALGO FOI FEITO — que nao e `activeDays`.
+         *
+         * `activeDays` conta tambem o dia que so teve tarefa marcada e nenhuma
+         * cumprida, o que faz dele uma medida de agenda. Este conta so o dia em
+         * que alguma coisa saiu, e nao precisa de plano nenhum pra existir.
+         *
+         * Para o futuro nao contar como ausencia, o corte e a data em foco: um
+         * ciclo de sete dias no terceiro dia fala de tres, nao de sete.
+         */
+        const diasComAlgoFeito = days.filter((day) => day.completed > 0 && day.date <= selectedDate).length;
+        const diasJaVividos = days.filter((day) => day.date <= selectedDate).length;
         const emptyDays = days.filter((day) => day.total === 0 && day.date <= selectedDate).length;
         const bestDay = [...days].sort((left, right) => {
             if (right.exp !== left.exp) return right.exp - left.exp;
@@ -323,6 +335,8 @@ export const DailyPanelContent: React.FC<{
             days,
             perfectDays,
             activeDays,
+            diasComAlgoFeito,
+            diasJaVividos,
             emptyDays,
             bestDay,
             currentPerfectStreak,
@@ -468,81 +482,55 @@ export const DailyPanelContent: React.FC<{
 
 
     /**
-     * A PORCENTAGEM SAI DO PAR QUE APARECE DO LADO DELA — e nao encabeca nada.
+     * OS QUADRADOS: UM POR UNIDADE, E NENHUM MEDINDO PLANO.
      *
-     * No painel ela e legenda de uma barra que so aparece quando sobrou algo
-     * marcado por fazer. Quem nao agenda nada nunca a ve, e esta certo: sem
-     * plano nao ha denominador, e o "100%" que sobrava pra essa pessoa nao
-     * media esforco nenhum.
+     * Os quatro anteriores erravam de tres jeitos. "Perfeitos" e "Sequencia"
+     * so existem onde ha plano — dia perfeito quer dizer concluidas == marcadas,
+     * entao quem nao marca nada colhe um numero sem sentido e quem marca muito
+     * colhe uma cobranca. "Na baia" nem fala do dia: fala do que ainda nao tem
+     * dia. E "Guardada" e uma promessa de fecho de ciclo, nao uma medida do dia.
      *
-     * Quando aparece, sai deste par e nao de `dayProgress`, logo acima.
-     * `dayProgress` divide so as acoes PONTUADAS — exclui as do tipo Livre —
-     * enquanto o par conta todas. Misturar os dois faria a tela dizer "80%" ao
-     * lado de "7 de 10", e a pessoa nao tem como saber que sao denominadores
-     * diferentes; ela conclui que o app errou uma conta. `dayProgress` continua
-     * servindo ao `score` do post em Feitos, que e outra pergunta.
-     */
-    const percentExibido = rowsDoDia.length > 0
-        ? Math.round((completedRows.length / rowsDoDia.length) * 100)
-        : 0;
-
-    /**
-     * OS QUADRADOS.
-     *
-     * Todos saem de contas que este arquivo ja fazia — e jogava fora desde que
-     * `ab414ff` apagou o corpo do painel e deixou a matematica orfa. Nada aqui e
-     * calculo novo.
-     *
-     * Sem ciclo aberto sobram dois, e esta certo: perfeitos e sequencia sao
-     * propriedades de um ciclo. Inventar um valor pra eles fora de ciclo seria
-     * mostrar zero como se fosse um resultado.
+     * Estes quatro medem quatro grandezas diferentes — horas, pontos, arenas,
+     * dias — e nenhum reconta as acoes que o numerao ja contou. Todos valem
+     * igual pra quem planeja e pra quem so registra o que fez.
      */
     const boardStats = useMemo<DailyBoardStat[]>(() => {
-        const lista: DailyBoardStat[] = [{
-            id: 'guardada',
-            label: 'Guardada',
-            value: String(expGuardada),
-            hint: bonusAssinaturaPercent > 0 ? `+${bonusAssinaturaPercent}% no fecho` : 'paga no fecho',
-        }];
+        const arenasTocadas = arenaStats.filter((arena) => arena.completed > 0).length;
 
+        const lista: DailyBoardStat[] = [
+            {
+                id: 'tempo',
+                label: 'Tempo',
+                value: dayMinutes > 0 ? formatarDuracao(dayMinutes) : '—',
+                hint: 'registrado',
+            },
+            {
+                id: 'exp',
+                label: 'EXP',
+                value: dayExp > 0 ? `+${dayExp}` : '0',
+                hint: 'no dia',
+            },
+            {
+                id: 'arenas',
+                label: arenasTocadas === 1 ? 'Arena' : 'Arenas',
+                value: String(arenasTocadas),
+                hint: 'tocadas',
+            },
+        ];
+
+        // O quarto so existe com ciclo aberto, porque ele mede dias DENTRO de um
+        // ciclo. Sem ciclo nao ha janela, e um numero sem janela nao diz nada.
         if (cyclePattern) {
             lista.push({
-                id: 'perfeitos',
-                label: 'Perfeitos',
-                value: String(cyclePattern.perfectDays),
-                hint: `de ${cyclePattern.days.length} dias`,
+                id: 'dias',
+                label: 'Dias ativos',
+                value: String(cyclePattern.diasComAlgoFeito),
+                hint: `de ${cyclePattern.diasJaVividos} ${cyclePattern.diasJaVividos === 1 ? 'dia' : 'dias'}`,
             });
-
-            // Sequencia e uma propriedade do AGORA: ela conta pra tras a partir de
-            // hoje. Mostrada sobre o painel de ontem, ela falaria do presente com
-            // a data de ontem no cabecalho. Num dia fechado o lugar dela e de
-            // quem responde "e como foi aquele dia no ciclo": o melhor dia.
-            if (ehHoje) {
-                lista.push({
-                    id: 'sequencia',
-                    label: 'Sequência',
-                    value: String(cyclePattern.currentPerfectStreak),
-                    hint: cyclePattern.currentPerfectStreak === 1 ? 'dia perfeito' : 'dias perfeitos',
-                });
-            } else if (cyclePattern.bestDay && cyclePattern.bestDay.exp > 0) {
-                lista.push({
-                    id: 'melhor',
-                    label: 'Melhor dia',
-                    value: `+${cyclePattern.bestDay.exp}`,
-                    hint: `${cyclePattern.bestDay.date.slice(8, 10)}/${cyclePattern.bestDay.date.slice(5, 7)}`,
-                });
-            }
         }
 
-        lista.push({
-            id: 'baia',
-            label: 'Na baía',
-            value: String(rowsNaBaia.length),
-            hint: 'esperando dia',
-        });
-
         return lista;
-    }, [bonusAssinaturaPercent, cyclePattern, ehHoje, expGuardada, rowsNaBaia.length]);
+    }, [arenaStats, cyclePattern, dayExp, dayMinutes]);
 
     return (
         <div className="daily-review daily-board-layout">
@@ -550,7 +538,6 @@ export const DailyPanelContent: React.FC<{
                 date={selectedDate}
                 dateLabel={dateLabel}
                 isToday={ehHoje}
-                percent={percentExibido}
                 completed={completedRows.length}
                 total={rowsDoDia.length}
                 durationLabel={dayMinutes > 0 ? formatarDuracao(dayMinutes) : ''}

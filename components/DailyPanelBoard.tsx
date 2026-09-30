@@ -71,14 +71,6 @@ export interface DailyPanelBoardProps {
     date: string;
     dateLabel: string;
     isToday: boolean;
-    /**
-     * A PORCENTAGEM VEM DE FORA, e de proposito.
-     *
-     * Calcular `completed / total` aqui dentro criaria uma segunda copia da mesma
-     * verdade: o painel diria 78% enquanto quem chamou diria outra coisa. Quem
-     * manda o par manda a conta.
-     */
-    percent: number;
     completed: number;
     total: number;
     durationLabel: string;
@@ -97,7 +89,6 @@ export const DailyPanelBoard: React.FC<DailyPanelBoardProps> = ({
     date,
     dateLabel,
     isToday,
-    percent,
     completed,
     total,
     durationLabel,
@@ -112,8 +103,6 @@ export const DailyPanelBoard: React.FC<DailyPanelBoardProps> = ({
     onShare,
 }) => {
     const pending = Math.max(0, total - completed);
-    const safePercent = Math.max(0, Math.min(100, percent));
-    const arenasFechadas = arenas.filter((arena) => arena.total > 0 && arena.completed >= arena.total).length;
 
     return (
         <div className="daily-board" aria-label={`Painel do dia ${dateLabel}`}>
@@ -158,48 +147,29 @@ export const DailyPanelBoard: React.FC<DailyPanelBoardProps> = ({
             )}
 
             {/*
-              * O NUMERAO E O QUE FOI FEITO, NAO UMA NOTA CONTRA O QUE FOI MARCADO.
+              * O NUMERAO E O QUE FOI FEITO, E SO ISSO.
               *
-              * Quem nao agenda nada e faz cinco coisas nao tem denominador: o
-              * "100%" que sobrava pra essa pessoa nao dizia nada, e pra quem
-              * agendou muito e fez pouco a porcentagem virava boletim na primeira
-              * linha do painel. As duas leituras sao ruins pelo mesmo motivo — o
-              * plano estava no lugar do feito.
-              *
-              * Entao o hero conta acoes concluidas, que e verdade pra todo mundo.
+              * Nao ha porcentagem nem barra de progresso em lugar nenhum deste
+              * painel. Toda barra precisa de um denominador, e o unico
+              * denominador disponivel aqui e o que a pessoa marcou — o que
+              * transforma quem nao marca nada em "100%" e quem marca muito em
+              * boletim. O painel conta acoes, tempo e EXP, que sao verdade sem
+              * plano nenhum por tras.
               */}
             <section className="daily-board-hero" aria-label="O que foi feito">
                 <div className="daily-board-done">{completed}</div>
                 <p className="daily-board-done-label">{completed === 1 ? 'ação concluída' : 'ações concluídas'}</p>
-                {(durationLabel || xp > 0) && (
-                    <p className="daily-board-pair">
-                        {durationLabel}
-                        {durationLabel && xp > 0 ? ' · ' : ''}
-                        {xp > 0 ? `+${xp} EXP` : ''}
-                    </p>
-                )}
             </section>
 
             {/*
-              * A BARRA SO EXISTE QUANDO HA PLANO PRA MEDIR.
+              * UM QUADRADO, UMA UNIDADE.
               *
-              * Sem nada pendente nao ha o que comparar, e uma barra cheia nesse
-              * caso seria um elogio a um esforco que ninguem pediu. Com pendente,
-              * ela responde uma pergunta real — "sobrou o que?" — e ai a
-              * porcentagem cabe, pequena, do lado.
+              * Quem monta e responsavel por isso: dois quadrados contando acoes
+              * em escopos diferentes, ao lado de um contando EXP, fazem a fileira
+              * parecer tres respostas pra mesma pergunta. Cada um aqui mede uma
+              * grandeza que nenhum outro mede — e nenhum repete a contagem que ja
+              * esta no numerao logo acima.
               */}
-            {pending > 0 && (
-                <section className="daily-board-plano" aria-label="Do que estava marcado">
-                    <div className="daily-board-bar" role="presentation">
-                        <span style={{ width: `${safePercent}%` }} />
-                    </div>
-                    <p className="daily-board-plano-linha">
-                        <span><strong>{completed}</strong> de <strong>{total}</strong> do que estava marcado</span>
-                        <span className="daily-board-plano-pct">{safePercent}%</span>
-                    </p>
-                </section>
-            )}
-
             {stats.length > 0 && (
                 <div className="daily-board-stats">
                     {stats.map((stat) => (
@@ -214,11 +184,12 @@ export const DailyPanelBoard: React.FC<DailyPanelBoardProps> = ({
 
             {arenas.length > 0 && (
                 <section className="daily-board-section" aria-label="Arenas do dia">
-                    {/* O que SOBROU, e nao quantas arenas existem: o numero de
-                        arenas se conta olhando, o que ficou pendente nao. */}
+                    {/* So o que SOBROU, e so quando sobrou.
+                        O numero de arenas se conta olhando a lista, e "tudo
+                        fechado" e elogio a um plano — que nem todo mundo fez. */}
                     <div className="daily-board-label">
                         <span>{isToday ? 'O dia por arena' : 'O que foi feito'}</span>
-                        <span>{pending > 0 ? `${pending} ${pending === 1 ? 'pendente' : 'pendentes'}` : `${arenasFechadas} ${arenasFechadas === 1 ? 'arena fechada' : 'arenas fechadas'}`}</span>
+                        {pending > 0 && <span>{pending} {pending === 1 ? 'pendente' : 'pendentes'}</span>}
                     </div>
                     <ul className="daily-board-arenas">
                         {arenas.map((arena) => {

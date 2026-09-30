@@ -88,23 +88,19 @@ function Bancada() {
     // A lista plana sobrou so pra placa, que continua sendo uma grade unica.
     const acoes = useMemo(() => arenas.flatMap((arena) => arena.actions), [arenas]);
 
-    const percent = totalSeguro > 0 ? Math.round((feitasSeguras / totalSeguro) * 100) : 0;
     const xp = feitasSeguras * 15;
     const minutos = feitasSeguras * 18;
 
     const stats = useMemo<DailyBoardStat[]>(() => {
+        const tocadas = arenas.filter((a) => a.completed > 0).length;
         const lista: DailyBoardStat[] = [
-            { id: 'guardada', label: 'Guardada', value: '340', hint: '+15% no fecho' },
+            { id: 'tempo', label: 'Tempo', value: minutos > 0 ? duracao(minutos) : '—', hint: 'registrado' },
+            { id: 'exp', label: 'EXP', value: xp > 0 ? `+${xp}` : '0', hint: 'no dia' },
+            { id: 'arenas', label: tocadas === 1 ? 'Arena' : 'Arenas', value: String(tocadas), hint: 'tocadas' },
         ];
-        if (comCiclo) {
-            lista.push({ id: 'perfeitos', label: 'Perfeitos', value: '2', hint: 'de 7 dias' });
-            lista.push(ehHoje
-                ? { id: 'sequencia', label: 'Sequência', value: '1', hint: 'dia perfeito' }
-                : { id: 'melhor', label: 'Melhor dia', value: '+180', hint: '27/09' });
-        }
-        lista.push({ id: 'baia', label: 'Na baía', value: '3', hint: 'esperando dia' });
+        if (comCiclo) lista.push({ id: 'dias', label: 'Dias ativos', value: '2', hint: 'de 3 dias' });
         return lista;
-    }, [comCiclo, ehHoje]);
+    }, [arenas, comCiclo, minutos, xp]);
 
     const leitura = ehHoje
         ? buildTodayDailyReading({
@@ -192,7 +188,6 @@ function Bancada() {
                                 date={snapshot.date}
                                 dateLabel={snapshot.dateLabel}
                                 isToday={ehHoje}
-                                percent={percent}
                                 completed={feitasSeguras}
                                 total={totalSeguro}
                                 durationLabel={minutos > 0 ? duracao(minutos) : ''}

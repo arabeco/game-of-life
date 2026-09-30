@@ -465,8 +465,30 @@ export const buildPactsForArena = (stats: ArenaStats, today: string, diasDoCiclo
   // Constancia e volume agora saem do RITMO da pessoa, nao do progresso da
   // arena. O progresso da arena diz o tamanho dela; o ritmo diz o tamanho da
   // pessoa — e o pacto e um compromisso da pessoa.
-  const metaConstancia = metaPorCadencia(stats.deliveryDaysLast30, VOLUME_WINDOW_DAYS, 2, CONSTANCIA_DAYS.alta);
-  pacts.push(buildPact('constancia', faixaPorMeta(metaConstancia), stats, metaConstancia, today));
+  /*
+   * A META DA CONSTANCIA E EM DIAS, E O CICLO TEM UM NUMERO DELES.
+   *
+   * "Uma acao em 6 dias diferentes" num ciclo com 5 dias restantes nao e
+   * impossivel — este pacto nao tem prazo e pode atravessar o fim do ciclo.
+   * Mas quem le, le pelo CICLO: a proposta chega como algo que nao cabe, e a
+   * pessoa fecha a tela sem pegar nenhuma.
+   *
+   * Entao a meta passa a caber no que resta. Dois dias e o piso: "entregue em
+   * 1 dia" nao e constancia, e uma entrega.
+   *
+   * O PRAZO NAO ENTRA JUNTO, e nao por esquecimento. `buildPact` so anexa
+   * `endsOn` em `volume` e `primeira`; os outros tres sao abertos por desenho,
+   * e `measurePactProgress` conta com isso. Dar prazo a eles e mudanca de
+   * mecanica, nao de calibragem.
+   */
+  const diasUteis = diasDoCiclo && diasDoCiclo > 0 ? Math.min(VOLUME_WINDOW_DAYS, diasDoCiclo) : VOLUME_WINDOW_DAYS;
+  const metaConstancia = Math.min(
+    metaPorCadencia(stats.deliveryDaysLast30, VOLUME_WINDOW_DAYS, 2, CONSTANCIA_DAYS.alta),
+    diasUteis,
+  );
+  if (metaConstancia >= 2) {
+    pacts.push(buildPact('constancia', faixaPorMeta(metaConstancia), stats, metaConstancia, today));
+  }
 
   if (stats.hasMeasurableProgress) {
     /*

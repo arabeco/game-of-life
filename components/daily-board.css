@@ -55,12 +55,17 @@
    concluidas e verdade pra qualquer pessoa, inclusive a que nunca agendou nada
    e so registra o que ja fez. */
 .daily-board-hero { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+/* O DEGRADE DE METAL NAO SERVE A UM NUMERO QUE SE LE TODO DIA.
+   A rampa da placa desce ate #aa8748 em 72% da altura, e sobre fundo escuro o
+   terco de baixo de cada algarismo praticamente some — bonito num PNG que se
+   olha uma vez, ruim num painel que se consulta. A rampa daqui nao tem parada
+   escura: o mais fundo e #e3cb95, que ainda separa do #0d0e11 do fundo. */
 .daily-board-done {
-  font-family: Georgia, serif; font-size: 54px; line-height: 1; font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  background: linear-gradient(180deg, #fffdf6 0%, #e7dcc5 38%, #aa8748 72%, #f1eadb 100%);
+  font-family: Georgia, serif; font-size: 56px; line-height: 1; font-weight: 800;
+  font-variant-numeric: tabular-nums; letter-spacing: -.01em;
+  background: linear-gradient(180deg, #fffefb 0%, #fbf3e0 42%, #e3cb95 82%, #fffdf5 100%);
   background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 2px 1px rgba(0,0,0,.85));
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,.92));
 }
 .daily-board-done-label { margin: 0; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #cdc5b4 !important; }
 .daily-board-pair { margin: 4px 0 0; font-size: 12px; color: #d6cfbf !important; text-align: center; font-variant-numeric: tabular-nums; }
@@ -89,12 +94,17 @@
 .daily-board-label { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 7px; font-size: 9px; letter-spacing: .16em; text-transform: uppercase; font-weight: 700; color: #b8a87f !important; }
 .daily-board-label span:last-child { letter-spacing: .04em; text-transform: none; font-weight: 500; color: #a8a192 !important; }
 
-.daily-board-arenas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
-.daily-board-arenas li {
-  display: grid; grid-template-columns: 24px minmax(0, 1fr) 3.1rem 2rem 2.3rem; align-items: center; gap: 7px;
-  padding: 6px 9px; border: 1px solid #383630; border-radius: 10px; background: rgba(255,255,255,.022);
+/* UMA LISTA SO: a arena e, dentro dela, as acoes dela.
+   Antes eram duas — o resumo por arena em cima e uma grade unica de pastilhas
+   embaixo — e pra saber quais acoes eram da Academia era preciso casar cor com
+   cor entre as duas listas. */
+.daily-board-arenas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.daily-board-grupo {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 8px 9px 10px; border: 1px solid #383630; border-radius: 12px; background: rgba(255,255,255,.022);
 }
-.daily-board-arenas li.is-full { border-color: rgba(184,146,82,.42); background: rgba(184,146,82,.07); }
+.daily-board-grupo.is-full { border-color: rgba(184,146,82,.42); background: rgba(184,146,82,.06); }
+.daily-board-grupo-head { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto auto; align-items: center; gap: 8px; }
 /* A TARJA CARREGA A COR DA ARENA, e e a MESMA das pastilhas dela.
    Quem chama passa o fundo que `getActionBackgroundStyle` devolve, entao a cor
    nao e recalculada aqui — se ela mudar no app, muda junto, e a fileira de
@@ -105,17 +115,21 @@
   box-shadow: inset 0 1px 0 rgba(255,255,255,.16);
 }
 .daily-board-arena-mark .emoji-glyph { font-size: 14px; line-height: 1; }
-.daily-board-arena-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: #ece5d6 !important; }
-.daily-board-arena-bar { height: 4px; border-radius: 4px; background: #3a3a35; overflow: hidden; }
-.daily-board-arena-bar > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #8d6f34, #efd79c); }
-.daily-board-arena-count { font-size: 11px; text-align: right; color: #d3ccbc !important; font-variant-numeric: tabular-nums; }
-.daily-board-arena-exp { font-size: 11px; text-align: right; color: #efcf88 !important; font-variant-numeric: tabular-nums; }
+.daily-board-arena-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 600; color: #f0e9da !important; }
+/* O feito e o denominador nao pesam igual: 1 de 3 e uma informacao com um
+   numero que importa e outro que so situa. */
+.daily-board-arena-count { font-size: 13px; text-align: right; color: #f3e2b8 !important; font-weight: 700; font-variant-numeric: tabular-nums; }
+.daily-board-arena-count i { font-style: normal; font-size: 11px; font-weight: 400; color: #a8a192 !important; }
+.daily-board-arena-exp { min-width: 2.4rem; font-size: 11px; text-align: right; color: #efcf88 !important; font-variant-numeric: tabular-nums; }
 
 /* AS PASTILHAS SEM CONTA DE CAPACIDADE.
    auto-fill com minmax deixa o navegador decidir quantas cabem por linha, e as
    linhas seguintes descem — o painel rola. E por isso que aqui nao existe
    ResizeObserver nenhum: nao ha numero pra descobrir. */
-.daily-board-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(3.15rem, 1fr)); gap: 8px 6px; }
+/* Coluna de largura FIXA e alinhada a esquerda, nao `1fr`.
+   Dentro de um grupo com duas acoes, colunas elasticas espalhavam as duas
+   pastilhas nas pontas da linha como se houvesse algo entre elas. */
+.daily-board-tiles { display: grid; grid-template-columns: repeat(auto-fill, 3.15rem); justify-content: start; gap: 8px 4px; }
 .daily-board-tile { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .daily-board-tile-art {
   position: relative; width: 2.7rem; height: 2.7rem; flex-shrink: 0; display: grid; place-items: center;
@@ -133,7 +147,15 @@
   display: grid; place-items: center; background: #ead49f; color: #17201a; font-size: 10px; font-weight: 900;
   border: 1px solid rgba(0,0,0,.4);
 }
-.daily-board-tile-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; line-height: 12px; color: #cfc8b9 !important; }
+/* Duas linhas, e nao uma com reticencias.
+   Numa coluna de 3.15rem quase todo nome virava "Treino de ...", e o nome e o
+   unico jeito de saber qual acao e aquela. Duas linhas cabem porque a arena ja
+   esta escrita em cima do grupo — o nome nao precisa mais se explicar sozinho. */
+.daily-board-tile-name {
+  max-width: 100%; font-size: 9px; line-height: 11px; color: #cfc8b9 !important;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  overflow: hidden; overflow-wrap: anywhere; text-align: center;
+}
 .daily-board-tile.is-complete .daily-board-tile-name { color: #ece3cf !important; }
 
 .daily-board-empty { margin: 0; padding: 18px 10px; text-align: center; font-size: 12px; line-height: 1.5; color: #c3bcac !important; border: 1px dashed #4a463d; border-radius: 12px; }

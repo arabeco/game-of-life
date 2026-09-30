@@ -37,6 +37,15 @@ export interface DailyBoardArena {
     completed: number;
     total: number;
     exp: number;
+    /**
+     * AS ACOES DELA, dentro dela.
+     *
+     * Antes havia duas listas: as arenas resumidas em cima e todas as pastilhas
+     * numa grade unica embaixo. Pra saber quais acoes eram da Academia era
+     * preciso casar cor com cor entre as duas. Uma lista so, com as pastilhas
+     * dentro da arena a que pertencem, responde isso sem trabalho nenhum.
+     */
+    actions: DailyBoardAction[];
     /** O emoji da propria arena, o mesmo que ela mostra em qualquer outra tela. */
     icon?: string;
     /**
@@ -76,7 +85,6 @@ export interface DailyPanelBoardProps {
     xp: number;
     stats: DailyBoardStat[];
     arenas: DailyBoardArena[];
-    actions: DailyBoardAction[];
     cycleName?: string;
     cycleDayLabel?: string;
     greeting?: string | null;
@@ -96,7 +104,6 @@ export const DailyPanelBoard: React.FC<DailyPanelBoardProps> = ({
     xp,
     stats,
     arenas,
-    actions,
     cycleName,
     cycleDayLabel,
     greeting,
@@ -207,55 +214,44 @@ export const DailyPanelBoard: React.FC<DailyPanelBoardProps> = ({
 
             {arenas.length > 0 && (
                 <section className="daily-board-section" aria-label="Arenas do dia">
-                    {/* Quantas FECHARAM, e nao quantas existem. O total ja esta na
-                        lista logo abaixo, uma linha por arena — repeti-lo aqui era
-                        gastar o canto direito do rotulo com um numero que a pessoa
-                        podia contar sozinha. */}
+                    {/* O que SOBROU, e nao quantas arenas existem: o numero de
+                        arenas se conta olhando, o que ficou pendente nao. */}
                     <div className="daily-board-label">
-                        <span>Arenas do dia</span>
-                        <span>{arenasFechadas > 0 ? `${arenasFechadas} de ${arenas.length} fechadas` : `${arenas.length} ${arenas.length === 1 ? 'arena' : 'arenas'}`}</span>
+                        <span>{isToday ? 'O dia por arena' : 'O que foi feito'}</span>
+                        <span>{pending > 0 ? `${pending} ${pending === 1 ? 'pendente' : 'pendentes'}` : `${arenasFechadas} ${arenasFechadas === 1 ? 'arena fechada' : 'arenas fechadas'}`}</span>
                     </div>
                     <ul className="daily-board-arenas">
                         {arenas.map((arena) => {
-                            const pct = arena.total > 0 ? Math.round((arena.completed / arena.total) * 100) : 0;
                             const full = arena.total > 0 && arena.completed >= arena.total;
                             return (
-                                <li key={arena.id} className={full ? 'is-full' : ''}>
-                                    <span className="daily-board-arena-mark" style={{ background: safeDailyActionBackground(arena.background) }}>
-                                        <EmojiGlyph symbol={arena.icon || '🎯'} size="badge" />
-                                    </span>
-                                    <span className="daily-board-arena-name">{arena.name}</span>
-                                    <span className="daily-board-arena-bar"><span style={{ width: `${pct}%` }} /></span>
-                                    <span className="daily-board-arena-count">{arena.completed}/{arena.total}</span>
-                                    <span className="daily-board-arena-exp">{arena.exp > 0 ? `+${arena.exp}` : '—'}</span>
+                                <li key={arena.id} className={`daily-board-grupo ${full ? 'is-full' : ''}`}>
+                                    <div className="daily-board-grupo-head">
+                                        <span className="daily-board-arena-mark" style={{ background: safeDailyActionBackground(arena.background) }}>
+                                            <EmojiGlyph symbol={arena.icon || '🎯'} size="badge" />
+                                        </span>
+                                        <span className="daily-board-arena-name">{arena.name}</span>
+                                        <span className="daily-board-arena-count">{arena.completed}<i>/{arena.total}</i></span>
+                                        <span className="daily-board-arena-exp">{arena.exp > 0 ? `+${arena.exp}` : '—'}</span>
+                                    </div>
+                                    <div className="daily-board-tiles">
+                                        {arena.actions.map((action) => (
+                                            <div
+                                                key={action.id}
+                                                className={`daily-board-tile ${action.completed ? 'is-complete' : ''}`}
+                                                title={`${action.name} — ${action.completed ? 'Concluída' : 'Pendente'}`}
+                                            >
+                                                <div className="daily-board-tile-art" style={{ background: safeDailyActionBackground(action.background) }}>
+                                                    <EmojiGlyph symbol={action.icon || '📝'} size="action" />
+                                                    {action.completed && <span className="daily-board-check" aria-label="Concluída">✓</span>}
+                                                </div>
+                                                <span className="daily-board-tile-name">{action.name}</span>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </li>
                             );
                         })}
                     </ul>
-                </section>
-            )}
-
-            {actions.length > 0 && (
-                <section className="daily-board-section" aria-label="Acoes do dia">
-                    <div className="daily-board-label">
-                        <span>{isToday ? 'Ações de hoje' : 'O que foi feito'}</span>
-                        <span>{pending > 0 ? `${pending} ${pending === 1 ? 'pendente' : 'pendentes'}` : 'tudo fechado'}</span>
-                    </div>
-                    <div className="daily-board-tiles">
-                        {actions.map((action) => (
-                            <div
-                                key={action.id}
-                                className={`daily-board-tile ${action.completed ? 'is-complete' : ''}`}
-                                title={`${action.name} — ${action.completed ? 'Concluída' : 'Pendente'}`}
-                            >
-                                <div className="daily-board-tile-art" style={{ background: safeDailyActionBackground(action.background) }}>
-                                    <EmojiGlyph symbol={action.icon || '📝'} size="action" />
-                                    {action.completed && <span className="daily-board-check" aria-label="Concluída">✓</span>}
-                                </div>
-                                <span className="daily-board-tile-name">{action.name}</span>
-                            </div>
-                        ))}
-                    </div>
                 </section>
             )}
 

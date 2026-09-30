@@ -59,41 +59,34 @@ function Bancada() {
     const totalSeguro = Math.max(0, Math.min(ACOES.length, total));
     const feitasSeguras = Math.max(0, Math.min(totalSeguro, feitas));
 
-    const arenas = useMemo(() => {
-        const mapa = new Map<string, { id: string; name: string; icon: string; background: string; completed: number; total: number; exp: number }>();
+    type ArenaDaBancada = {
+        id: string; name: string; icon: string; background: string;
+        completed: number; total: number; exp: number;
+        actions: { id: string; name: string; icon: string; completed: boolean; background: string }[];
+    };
+
+    const arenas = useMemo<ArenaDaBancada[]>(() => {
+        const mapa = new Map<string, ArenaDaBancada>();
         ACOES.slice(0, totalSeguro).forEach((acao, i) => {
             const arena = ARENAS[acao.arena];
+            const fundo = fundoDaFamilia(arena.family);
             const atual = mapa.get(arena.id) || {
                 id: arena.id, name: arena.name, icon: arena.icon,
-                background: fundoDaFamilia(arena.family), completed: 0, total: 0, exp: 0,
+                background: fundo, completed: 0, total: 0, exp: 0, actions: [],
             };
             atual.total += 1;
+            atual.actions.push({ id: String(i), name: acao.name, icon: acao.icon, completed: i < feitasSeguras, background: fundo });
             if (i < feitasSeguras) { atual.completed += 1; atual.exp += 15; }
             mapa.set(arena.id, atual);
         });
+        for (const entrada of mapa.values()) {
+            entrada.actions.sort((a, b) => (a.completed === b.completed ? a.name.localeCompare(b.name) : (a.completed ? -1 : 1)));
+        }
         return [...mapa.values()].sort((a, b) => (b.completed - a.completed) || (b.exp - a.exp));
     }, [feitasSeguras, totalSeguro]);
 
-    // Na mesma ordem das arenas acima, como DailyPanelContent faz.
-    const acoes = useMemo(() => {
-        const posicao = new Map(arenas.map((arena, index) => [arena.id, index]));
-        return ACOES.slice(0, totalSeguro)
-            .map((acao, i) => ({
-                id: String(i),
-                name: acao.name,
-                icon: acao.icon,
-                completed: i < feitasSeguras,
-                background: fundoDaFamilia(ARENAS[acao.arena].family),
-                arenaId: ARENAS[acao.arena].id,
-            }))
-            .sort((a, b) => {
-                const esquerda = posicao.get(a.arenaId) ?? 99;
-                const direita = posicao.get(b.arenaId) ?? 99;
-                if (esquerda !== direita) return esquerda - direita;
-                if (a.completed !== b.completed) return a.completed ? -1 : 1;
-                return a.name.localeCompare(b.name);
-            });
-    }, [arenas, feitasSeguras, totalSeguro]);
+    // A lista plana sobrou so pra placa, que continua sendo uma grade unica.
+    const acoes = useMemo(() => arenas.flatMap((arena) => arena.actions), [arenas]);
 
     const percent = totalSeguro > 0 ? Math.round((feitasSeguras / totalSeguro) * 100) : 0;
     const xp = feitasSeguras * 15;
@@ -206,7 +199,6 @@ function Bancada() {
                                 xp={xp}
                                 stats={stats}
                                 arenas={arenas}
-                                actions={acoes}
                                 cycleName={comCiclo ? 'Ciclo da retomada' : undefined}
                                 cycleDayLabel={comCiclo ? 'Dia 3/7' : undefined}
                                 greeting={fala}

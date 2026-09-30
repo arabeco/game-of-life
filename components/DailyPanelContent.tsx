@@ -213,8 +213,17 @@ export const DailyPanelContent: React.FC<{
         // de uma tabela de cor por area da vida. Assim a tarja da linha e as
         // pastilhas ali embaixo sao a mesma cor por construcao, inclusive nas
         // arenas de missao — que nao tiram cor de area nenhuma.
-        const stats = new Map<string, { id: string; name: string; icon?: string; background?: string; completed: number; total: number; exp: number }>();
-        for (const row of dailyRows) {
+        //
+        // E percorre `rowsDoDia`, NAO `dailyRows`.
+        //
+        // `dailyRows` inclui o que esta na baia — tarefa sem horario, que carrega
+        // a data por construcao mas que ninguem pos neste dia. O painel ja tinha
+        // corrigido isso no denominador de cima (o comentario de `rowsNaBaia`
+        // explica o caso inteiro), so que esta conta ficou na lista antiga. O
+        // efeito: o topo dizia "7 de 9" e uma arena dizia "1/3" com a terceira
+        // nunca tendo sido posta no dia. Duas verdades sobre o mesmo dia.
+        const stats = new Map<string, { id: string; name: string; icon?: string; background?: string; completed: number; total: number; exp: number; actions: { id: string; name: string; icon: string; completed: boolean; background?: string }[] }>();
+        for (const row of rowsDoDia) {
             const arena = arenasById.get(row.action.arenaId);
             const name = arena?.name || 'Sem arena';
             const entry = stats.get(row.action.arenaId) || {
@@ -225,13 +234,28 @@ export const DailyPanelContent: React.FC<{
                 completed: 0,
                 total: 0,
                 exp: 0,
+                actions: [],
             };
             entry.total += 1;
+            entry.actions.push({
+                id: row.task.id,
+                name: row.action.name,
+                icon: row.action.icon || '📝',
+                completed: Boolean(row.task.completed),
+                background: getActionBackgroundStyle(row.action.id).background as string | undefined,
+            });
             if (row.task.completed) {
                 entry.completed += 1;
                 entry.exp += getTaskExp(row.task, row.action);
             }
             stats.set(row.action.arenaId, entry);
+        }
+
+        for (const entry of stats.values()) {
+            entry.actions.sort((left, right) => {
+                if (left.completed !== right.completed) return left.completed ? -1 : 1;
+                return left.name.localeCompare(right.name);
+            });
         }
 
         return Array.from(stats.values()).sort((left, right) => {
@@ -533,7 +557,6 @@ export const DailyPanelContent: React.FC<{
                 xp={dayExp}
                 stats={boardStats}
                 arenas={arenaStats}
-                actions={dailySnapshot.actions}
                 cycleName={activeCycle?.name}
                 cycleDayLabel={cyclePattern?.timing.statusLabel}
                 greeting={greeting?.text}

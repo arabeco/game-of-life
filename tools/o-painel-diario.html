@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel diário · Bancada do Glyph</title>
+<!--
+  O PAINEL E A PLACA, LADO A LADO.
+
+  Eles foram a mesma peca por duas semanas, e foi dessa confusao que saiu a tela
+  vazia: o painel herdou a caixa de altura fechada que a placa precisa pra virar
+  PNG, e a conta de "quantas pastilhas cabem" travou em zero.
+
+  Ver os dois na mesma pagina e o ponto. A placa tem borda; o painel rola. Se um
+  dia alguem quiser juntar os dois nova mente, esta pagina mostra por que nao.
+
+  Nao entra no build: `npm run build` empacota so o index.html da raiz do
+  projeto. Suba com `npm run bancada` e abra /o-painel-diario.html
+-->
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 18px 20px 60px;
+    background: #15171b; color: #e8eaee;
+    font: 14px/1.5 system-ui, sans-serif;
+  }
+  h1 { font-size: 17px; margin: 0 0 4px; }
+  header p { color: #969ca6; font-size: 12.5px; margin: 0 0 14px; max-width: 74ch; }
+  code { font-family: ui-monospace, monospace; font-size: 12px; color: #d8b44c; }
+  .controles { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 16px; }
+  .controles label { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: #969ca6; }
+  .controles label.linha { flex-direction: row; align-items: center; gap: 7px; }
+  select, input[type="number"] {
+    background: #14161a; color: #e8eaee; border: 1px solid #3a3f49;
+    border-radius: 6px; padding: 6px 9px; font: inherit; font-size: 12.5px; min-width: 170px;
+  }
+  input[type="number"] { min-width: 88px; }
+  main { display: flex; gap: 26px; flex-wrap: wrap; align-items: flex-start; }
+  .palco { display: flex; flex-direction: column; gap: 8px; }
+  .palco > h2 {
+    font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: #969ca6; margin: 0; font-weight: 700;
+  }
+  .palco > p { margin: 0; font-size: 11.5px; color: #7f868f; max-width: 42ch; }
+  /* A moldura imita o que envolve o painel no app: o GlassCard da RestScreen,
+     com altura limitada pela tela do aparelho. Sem ela a pagina daria espaco
+     infinito e o painel nunca precisaria rolar — justo o caso que interessa. */
+  .moldura {
+    width: 390px; border: 1px solid #777064; border-radius: 26px; padding: 16px;
+    background: linear-gradient(145deg, #23221f, #121416 65%);
+    display: flex; flex-direction: column; min-height: 0;
+  }
+  .moldura.curta { height: 420px; }
+  .moldura.alta { height: 660px; }
+  .placa-palco { width: 390px; height: 520px; }
+</style>
+</head>
+<body>
+<div id="raiz"></div>
+<script type="module" src="/o-painel-diario.tsx"></script>
+<script src="/bancada-nav.js"></script>
+</body>
+</html>

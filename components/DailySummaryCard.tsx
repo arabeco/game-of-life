@@ -15,12 +15,31 @@ export const DailySummaryCard: React.FC<{snapshot: DailyFeedSnapshot; captureId?
         if (!grid) return;
         const measure = () => {
             const style = getComputedStyle(grid);
-            const tileWidth = parseFloat(getComputedStyle(document.documentElement).fontSize) * 2.35;
+            const rootFont = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+            const tileWidth = rootFont * 2.35;
             const gap = parseFloat(style.columnGap) || 0;
-            const rowHeight = parseFloat(style.gridAutoRows);
-            const columns = Math.floor((grid.clientWidth + gap) / (tileWidth + gap));
-            const rows = Math.floor((grid.clientHeight + gap) / (rowHeight + gap));
-            setTileCapacity(Math.max(0, columns * rows));
+            const rowGap = parseFloat(style.rowGap) || gap;
+            const rowHeight = parseFloat(style.gridAutoRows) || (tileWidth + 15);
+            /*
+             * A ALTURA DISPONIVEL VEM DO TETO DECLARADO, NUNCA DE clientHeight.
+             *
+             * Ler a altura do proprio elemento era um impasse fechado. A grade
+             * e `flex: 0 1 auto`, ou seja nao cresce: a altura dela vem so dos
+             * filhos. No primeiro render a capacidade e 0, entao nao ha filho,
+             * entao clientHeight e 0, entao rows da 0, entao a capacidade
+             * continua 0 — e o ResizeObserver nunca socorre porque nada nunca
+             * muda de tamanho. O painel ficava vazio pra sempre, e o card do
+             * feed junto com ele.
+             *
+             * O `max-height` do CSS ja diz quantas fileiras cabem. Perguntar a
+             * ele em vez de ao layout tira a resposta do circulo, e mantem o
+             * limite de duas fileiras morando num lugar so: a folha de estilo.
+             */
+            const declaredCap = parseFloat(style.maxHeight);
+            const available = Number.isFinite(declaredCap) ? declaredCap : grid.clientHeight;
+            const columns = Math.max(1, Math.floor((grid.clientWidth + gap) / (tileWidth + gap)));
+            const rows = Math.max(1, Math.floor((available + rowGap) / (rowHeight + rowGap)));
+            setTileCapacity(columns * rows);
         };
         const observer = new ResizeObserver(measure);
         observer.observe(grid);

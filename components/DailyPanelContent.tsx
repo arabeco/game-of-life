@@ -1,10 +1,10 @@
 import { DailySummaryCard } from './DailySummaryCard';
+import { DailyPanelBoard, type DailyBoardStat } from './DailyPanelBoard';
 import { useDailyComparison } from '../hooks/useDailyComparison';
 import { dailyComparisonLabel } from '../utils/dailyComparison';
 import type { DailyFeedSnapshot } from '../types';
 import React, { useMemo, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
-import { CheckCircleIcon, ClockIcon, ShareIcon, SquareCheckIcon, TrophyIcon, ZapIcon } from './Icons';
 import { Action, ScheduledTask } from '../types';
 import { shareElementWithFeedback } from './Share';
 import { ShareChoiceSheet } from './ShareChoiceSheet';
@@ -13,10 +13,7 @@ import { getCycleTimingSummary } from '../utils/dateUtils';
 import { buildDailyExpSnapshot, filterCycleTasksByScope } from '../utils/coreLoopUtils.js';
 import './core-ui.css';
 import './daily-review.css';
-import { EmojiGlyph } from './EmojiGlyph';
-import { OracleSpeakerMark } from './OracleSpeakerMark';
 import { buildHistoricalDailyInsight, buildTodayDailyReading, type DailyReadingDepth } from '../utils/dailyInsights';
-import { ArenaPactBalloon } from './ArenaPactBalloon';
 import { getTaskExp, getTaskMinutes } from '../utils/taskExp';
 import { getCycleXpBonusRate } from '../utils/premiumAccess';
 import { pickOracleOpeningLine, ORACLE_FREE_TONE } from '../constants/oracleSpeechLibrary';
@@ -208,11 +205,14 @@ export const DailyPanelContent: React.FC<{
     const checklistTotal = checklistItems.length;
 
     const arenaStats = useMemo(() => {
-        const stats = new Map<string, { name: string; completed: number; total: number; exp: number }>();
+        // O id entra na entrada, e nao so na chave do Map: a lista do painel
+        // precisa de uma `key` estavel, e nome de arena nao serve — duas arenas
+        // podem se chamar igual, e "Sem arena" junta todas as orfas numa so.
+        const stats = new Map<string, { id: string; name: string; completed: number; total: number; exp: number }>();
         for (const row of dailyRows) {
             const arena = arenasById.get(row.action.arenaId);
             const name = arena?.name || 'Sem arena';
-            const entry = stats.get(row.action.arenaId) || { name, completed: 0, total: 0, exp: 0 };
+            const entry = stats.get(row.action.arenaId) || { id: row.action.arenaId, name, completed: 0, total: 0, exp: 0 };
             entry.total += 1;
             if (row.task.completed) {
                 entry.completed += 1;
@@ -403,9 +403,121 @@ export const DailyPanelContent: React.FC<{
     };
 
 
+    /**
+     * A PORCENTAGEM SAI DO PAR QUE APARECE DO LADO DELA.
+     *
+     * `dayProgress`, logo acima, divide so as acoes PONTUADAS — exclui as do tipo
+     * Livre. O cartao, por outro lado, sempre mostrou `completed` e `total`
+     * contando todas. Usar um no numerao e o outro na legenda faria a tela dizer
+     * "80%" ao lado de "7 de 10", e a pessoa nao tem como saber que sao dois
+     * denominadores diferentes; ela conclui que o app errou uma conta.
+     *
+     * Entao a porcentagem grande vem do par que esta escrito embaixo dela. O
+     * `dayProgress` continua existindo para o `score` do post em Feitos, que e
+     * outra pergunta ("quanto do que pontua foi feito") e mora em outro lugar.
+     */
+    const percentExibido = rowsDoDia.length > 0
+        ? Math.round((completedRows.length / rowsDoDia.length) * 100)
+        : 0;
+
+    /**
+     * OS QUADRADOS.
+     *
+     * Todos saem de contas que este arquivo ja fazia — e jogava fora desde que
+     * `ab414ff` apagou o corpo do painel e deixou a matematica orfa. Nada aqui e
+     * calculo novo.
+     *
+     * Sem ciclo aberto sobram dois, e esta certo: perfeitos e sequencia sao
+     * propriedades de um ciclo. Inventar um valor pra eles fora de ciclo seria
+     * mostrar zero como se fosse um resultado.
+     */
+    const boardStats = useMemo<DailyBoardStat[]>(() => {
+        const lista: DailyBoardStat[] = [{
+            id: 'guardada',
+            label: 'Guardada',
+            value: String(expGuardada),
+            hint: bonusAssinaturaPercent > 0 ? `+${bonusAssinaturaPercent}% no fecho` : 'paga no fecho',
+        }];
+
+        if (cyclePattern) {
+            lista.push({
+                id: 'perfeitos',
+                label: 'Perfeitos',
+                value: String(cyclePattern.perfectDays),
+                hint: `de ${cyclePattern.days.length} dias`,
+            });
+
+            // Sequencia e uma propriedade do AGORA: ela conta pra tras a partir de
+            // hoje. Mostrada sobre o painel de ontem, ela falaria do presente com
+            // a data de ontem no cabecalho. Num dia fechado o lugar dela e de
+            // quem responde "e como foi aquele dia no ciclo": o melhor dia.
+            if (ehHoje) {
+                lista.push({
+                    id: 'sequencia',
+                    label: 'Sequência',
+                    value: String(cyclePattern.currentPerfectStreak),
+                    hint: cyclePattern.currentPerfectStreak === 1 ? 'dia perfeito' : 'dias perfeitos',
+                });
+            } else if (cyclePattern.bestDay && cyclePattern.bestDay.exp > 0) {
+                lista.push({
+                    id: 'melhor',
+                    label: 'Melhor dia',
+                    value: `+${cyclePattern.bestDay.exp}`,
+                    hint: `${cyclePattern.bestDay.date.slice(8, 10)}/${cyclePattern.bestDay.date.slice(5, 7)}`,
+                });
+            }
+        }
+
+        lista.push({
+            id: 'baia',
+            label: 'Na baía',
+            value: String(rowsNaBaia.length),
+            hint: 'esperando dia',
+        });
+
+        return lista;
+    }, [bonusAssinaturaPercent, cyclePattern, ehHoje, expGuardada, rowsNaBaia.length]);
+
     return (
-        <div className="daily-review daily-postcard-layout">
-            <DailySummaryCard snapshot={dailySnapshot} captureId="daily-summary-capture-area" isToday={ehHoje} onShare={() => setIsShareChoiceOpen(true)} />
+        <div className="daily-review daily-board-layout">
+            <DailyPanelBoard
+                date={selectedDate}
+                dateLabel={dateLabel}
+                isToday={ehHoje}
+                percent={percentExibido}
+                completed={completedRows.length}
+                total={rowsDoDia.length}
+                durationLabel={dayMinutes > 0 ? formatarDuracao(dayMinutes) : ''}
+                xp={dayExp}
+                stats={boardStats}
+                arenas={arenaStats}
+                actions={dailySnapshot.actions}
+                cycleName={activeCycle?.name}
+                cycleDayLabel={cyclePattern?.timing.statusLabel}
+                greeting={greeting?.text}
+                reading={dailySnapshot.reading}
+                comparisonLabel={dailySnapshot.comparisonLabel}
+                onShare={ehHoje ? undefined : () => setIsShareChoiceOpen(true)}
+            />
+
+            {/*
+              * A PLACA DE COMPARTILHAR, FORA DA TELA.
+              *
+              * Ela nao e mais o painel — e continua sendo o PNG. `html-to-image`
+              * le tamanho e estilo computado do no de verdade, entao a placa tem
+              * que estar montada e com medida propria pra virar imagem; o que ela
+              * nao precisa e ser vista. Montada so em dia fechado porque
+              * `handleShareImage` recusa hoje, e uma gaiola que nunca vai ser
+              * fotografada e so DOM a mais.
+              */}
+            {!ehHoje && (
+                <div className="daily-capture-cage" aria-hidden="true">
+                    <div className="daily-review daily-postcard-layout" style={{ width: '100%', height: '100%' }}>
+                        <DailySummaryCard snapshot={dailySnapshot} captureId="daily-summary-capture-area" isToday={false} />
+                    </div>
+                </div>
+            )}
+
             <ShareChoiceSheet
                 isOpen={isShareChoiceOpen}
                 title="Resumo diário"

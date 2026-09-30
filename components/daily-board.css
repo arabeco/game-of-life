@@ -1,0 +1,150 @@
+/* =====================================================================
+   O PAINEL (.daily-board)
+   ---------------------------------------------------------------------
+   Folha propria, e nao mais um bloco no fim de daily-review.css. Aquele
+   arquivo redefine .daily-postcard-header, .daily-postcard-number e
+   .daily-postcard-footer duas e tres vezes cada, em camadas que foram
+   sendo empilhadas por cima das anteriores — e ninguem consegue mais
+   dizer, lendo, qual regra ganha. O painel comeca limpo.
+
+   A diferenca que importa esta na primeira regra: aqui o conteudo ROLA.
+   O cartao precisa de altura fechada pra virar PNG; o painel nao, e foi
+   a confusao entre os dois que produziu a medicao de capacidade travada
+   em zero que deixava a tela vazia.
+   ===================================================================== */
+.daily-board-layout { height: 100%; min-height: 0; display: flex; flex-direction: column; }
+.daily-board {
+  flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  display: flex; flex-direction: column; gap: 13px;
+  padding: 2px 2px 6px; color: #f4efe4;
+}
+.daily-board::-webkit-scrollbar { width: 4px; }
+.daily-board::-webkit-scrollbar-thumb { background: #5b5648; border-radius: 4px; }
+
+.daily-board-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.daily-board-when { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.daily-board-eyebrow { font-size: 9px; letter-spacing: .2em; text-transform: uppercase; color: #b8a87f !important; font-weight: 700; }
+.daily-board-date { font-size: 16px; font-weight: 700; color: #f6f1e5 !important; text-transform: capitalize; }
+.daily-board-head-side { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+.daily-board-cycle {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 1px; min-width: 0;
+  padding: 5px 9px; border: 1px solid rgba(184,146,82,.3); border-radius: 10px;
+  background: linear-gradient(155deg, rgba(184,146,82,.1), rgba(0,0,0,.28));
+}
+.daily-board-cycle b { max-width: 8.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; font-weight: 700; color: #e9dcc0 !important; }
+.daily-board-cycle span { font-size: 10px; color: #f0d595 !important; font-variant-numeric: tabular-nums; }
+.daily-board-share {
+  width: 34px; height: 34px; min-height: 34px; flex-shrink: 0; display: grid; place-items: center;
+  border: 1px solid rgba(184,146,82,.38); border-radius: 10px; background: rgba(255,255,255,.04); color: #eee5d4 !important;
+}
+.daily-board-share:hover { background: rgba(255,255,255,.1); }
+.daily-board-share:focus-visible { outline: 2px solid #e5c27a; outline-offset: 2px; }
+
+.daily-board-greeting {
+  display: flex; align-items: center; gap: 10px; margin: 0;
+  padding: 8px 10px; border: 1px solid #3f3a2e; border-radius: 12px;
+  background: linear-gradient(120deg, rgba(243,212,138,.07), rgba(15,16,19,.82) 52%);
+  font-size: 12px; line-height: 1.45; color: #e8e0cd !important;
+}
+.daily-board-mark { width: 30px; height: 30px; flex-shrink: 0; display: grid; place-items: center; }
+.daily-board-mark > * { transform: scale(.68); }
+
+/* O HERO E A PORCENTAGEM, nao a EXP.
+   Antes o numero grande era "+135", que responde "quanto rendeu" — e a pergunta
+   que a pessoa faz ao abrir o painel e "cumpri o dia?". A EXP desceu pra linha
+   de apoio, onde continua legivel sem ocupar o lugar da resposta. */
+.daily-board-hero { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.daily-board-pct {
+  font-family: Georgia, serif; font-size: 52px; line-height: 1; font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(180deg, #fffdf6 0%, #e7dcc5 38%, #aa8748 72%, #f1eadb 100%);
+  background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 1px rgba(0,0,0,.85));
+}
+.daily-board-pct span { font-size: .42em; font-weight: 500; }
+.daily-board-pair { margin: 0; font-size: 12px; color: #d6cfbf !important; text-align: center; }
+.daily-board-pair strong { color: #f3e2b8 !important; font-weight: 700; font-variant-numeric: tabular-nums; }
+.daily-board-bar { width: 100%; height: 6px; border-radius: 9px; background: #3a3a35; overflow: hidden; border: 1px solid rgba(0,0,0,.35); }
+.daily-board-bar > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #b88d40, #f5dda1); }
+
+/* OS QUADRADOS. auto-fit e nao 4 colunas fixas: com tres estatisticas eles
+   ocupam a largura inteira em vez de deixar um buraco na quarta coluna. */
+.daily-board-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 7px; }
+.daily-board-stat {
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  padding: 9px 5px; border: 1px solid rgba(184,146,82,.26); border-radius: 12px;
+  background: radial-gradient(circle at 50% 0, rgba(184,146,82,.15), transparent 56%), linear-gradient(155deg, rgba(184,146,82,.05), #0d0e11 60%, #08090b);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+}
+.daily-board-stat strong { font-size: 19px; font-weight: 750; color: #f0d599 !important; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.daily-board-stat span { font-size: 9px; letter-spacing: .07em; text-transform: uppercase; color: #cdc5b4 !important; text-align: center; }
+.daily-board-stat small { font-size: 9px; color: #a29a89 !important; text-align: center; }
+
+.daily-board-section { display: flex; flex-direction: column; }
+.daily-board-label { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 7px; font-size: 9px; letter-spacing: .16em; text-transform: uppercase; font-weight: 700; color: #b8a87f !important; }
+.daily-board-label span:last-child { letter-spacing: .04em; text-transform: none; font-weight: 500; color: #a8a192 !important; }
+
+.daily-board-arenas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.daily-board-arenas li {
+  display: grid; grid-template-columns: minmax(0, 1fr) 3.6rem 2.1rem 2.4rem; align-items: center; gap: 8px;
+  padding: 7px 9px; border: 1px solid #383630; border-radius: 10px; background: rgba(255,255,255,.022);
+}
+.daily-board-arenas li.is-full { border-color: rgba(184,146,82,.42); background: rgba(184,146,82,.07); }
+.daily-board-arena-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: #ece5d6 !important; }
+.daily-board-arena-bar { height: 4px; border-radius: 4px; background: #3a3a35; overflow: hidden; }
+.daily-board-arena-bar > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #8d6f34, #efd79c); }
+.daily-board-arena-count { font-size: 11px; text-align: right; color: #d3ccbc !important; font-variant-numeric: tabular-nums; }
+.daily-board-arena-exp { font-size: 11px; text-align: right; color: #efcf88 !important; font-variant-numeric: tabular-nums; }
+
+/* AS PASTILHAS SEM CONTA DE CAPACIDADE.
+   auto-fill com minmax deixa o navegador decidir quantas cabem por linha, e as
+   linhas seguintes descem — o painel rola. E por isso que aqui nao existe
+   ResizeObserver nenhum: nao ha numero pra descobrir. */
+.daily-board-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(3.15rem, 1fr)); gap: 8px 6px; }
+.daily-board-tile { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.daily-board-tile-art {
+  position: relative; width: 2.7rem; height: 2.7rem; flex-shrink: 0; display: grid; place-items: center;
+  border: 1px solid #7d7d72; border-radius: 10px; box-shadow: inset 0 1px 0 rgba(255,255,255,.14);
+  background: linear-gradient(145deg, #3e4646, #182125);
+  opacity: .5; filter: saturate(.55);
+}
+.daily-board-tile-art > :not(.daily-board-check) { max-width: 78%; max-height: 78%; }
+/* Feito e nao-feito se distinguem por BRILHO, nao so por um visto de 15px.
+   Pendente fica apagada e dessaturada; concluida acende. Da pra ler a linha
+   inteira de longe sem procurar o visto em cada pastilha. */
+.daily-board-tile.is-complete .daily-board-tile-art { opacity: 1; filter: none; border-color: #e5c27a; }
+.daily-board-check {
+  position: absolute; right: -3px; bottom: -3px; width: 15px; height: 15px; border-radius: 50%;
+  display: grid; place-items: center; background: #ead49f; color: #17201a; font-size: 10px; font-weight: 900;
+  border: 1px solid rgba(0,0,0,.4);
+}
+.daily-board-tile-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; line-height: 12px; color: #cfc8b9 !important; }
+.daily-board-tile.is-complete .daily-board-tile-name { color: #ece3cf !important; }
+
+.daily-board-empty { margin: 0; padding: 18px 10px; text-align: center; font-size: 12px; line-height: 1.5; color: #c3bcac !important; border: 1px dashed #4a463d; border-radius: 12px; }
+.daily-board-badge { margin: 0; padding: 6px 9px; border: 1px solid #7d6b43; border-radius: 9px; background: #353020; font-size: 11px; color: #f4dda7 !important; text-align: center; }
+.daily-board-reading {
+  margin: 0; padding: 9px 11px; font-size: 12px; line-height: 1.5; color: #e6dfcd !important;
+  border: 1px solid rgba(184,146,82,.26); border-left: 3px solid #b89252; border-radius: 0;
+  background: linear-gradient(90deg, rgba(184,146,82,.1), rgba(15,16,19,.88) 46%);
+}
+
+/* Aparelho curto: o hero encolhe primeiro, porque e o unico bloco cuja
+   informacao continua inteira num corpo menor. O cumprimento sai, porque ele
+   e o unico que nao carrega numero. */
+@media (max-height: 700px) {
+  .daily-board { gap: 10px; }
+  .daily-board-pct { font-size: 40px; }
+  .daily-board-greeting { display: none; }
+}
+
+/* A GAIOLA DA CAPTURA.
+   O cartao de compartilhar precisa existir no DOM pra virar PNG — html-to-image
+   le tamanho e estilo computado, e nao desenha o que esta com display:none. Ele
+   fica fora da tela, com largura e altura declaradas, e nao participa do
+   layout do painel. `aria-hidden` porque quem usa leitor de tela ja tem o
+   painel: o cartao diria a mesma coisa duas vezes. */
+.daily-capture-cage {
+  position: absolute; left: -12000px; top: 0; width: 390px; height: 520px;
+  pointer-events: none; opacity: 1;
+}

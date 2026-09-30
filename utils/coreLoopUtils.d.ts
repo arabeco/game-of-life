@@ -133,4 +133,6 @@ export function buildCyclePaceMetrics(
     startDate: string,
     endDate: string,
     plannedEndDate?: string,
+    /** Feito mas nao prometido ao ciclo: conta como dia ativo, fora da razao. */
+    tarefasSoDePresenca?: ScheduledTask[],
 ): CyclePaceMetrics;

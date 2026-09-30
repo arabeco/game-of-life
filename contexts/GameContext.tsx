@@ -3106,6 +3106,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 sealedMetas: Number(rawMetrics.sealedMetas || rawMetrics.goalsMet || 0),
                 totalHours: Number(rawMetrics.totalHours || 0),
                 questsCompleted: Number(rawMetrics.questsCompleted || 0),
+                questsClosedTitles: Array.isArray(rawMetrics.questsClosedTitles) ? rawMetrics.questsClosedTitles : [],
                 consistencyDays: Number(rawMetrics.consistencyDays || 0),
                 expGained: Number(rawMetrics.expGained || rawReport.expGained || 0),
                 plannedEndDate: rawMetrics.plannedEndDate,
@@ -9922,9 +9923,63 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const questTasks = cycleTasks.filter(t => isQuestActionId(t.actionId));
         const completedQuests = questTasks.filter(t => t.completed);
 
+        /*
+         * A JORNADA DE TEMPORADA E BONUS, E NAO COMPROMISSO DO CICLO.
+         *
+         * Ela tem 28 dias; o ciclo tem sete. Vinte caminhadas planejadas com
+         * seis feitas davam 6/20 no denominador de quem teve a coragem de
+         * pegar a jornada — e o comentario logo acima ja dizia que elas eram
+         * "kept for bonus calculation", como se o denominador nao existisse.
+         * Contavam duas vezes: contra na razao, a favor no questBonus.
+         *
+         * Saem da razao e ficam em tudo o mais. O dia da caminhada segue sendo
+         * dia ativo (vai como presenca para o buildCyclePaceMetrics), as horas
+         * dela seguem no volume, e concluir uma continua pagando os 10 pontos.
+         * Pegar jornada passa a ser so ganho.
+         */
+        /*
+         * QUAIS JORNADAS CRUZARAM A LINHA DENTRO DESTE CICLO.
+         *
+         * Nao basta a jornada estar completa: assim que ela fechasse, TODO
+         * ciclo seguinte repetiria a mesma frase, e um relatorio que se repete
+         * deixa de ser lido. O que importa e o instante — a jornada estava
+         * abaixo do alvo quando o ciclo abriu e chegou nele antes de fechar.
+         *
+         * O total sai de `tasks`, que traz tres meses e nao e recortado pelo
+         * ciclo: e assim que da para saber quanto ja existia ANTES. O alvo vem
+         * de `requirements.totalReps`, ou 1 quando a jornada e de marco, que e
+         * o caso do Erudito.
+         */
+        const jornadasFechadasNoCiclo: string[] = [];
+        const idsDasJornadasTocadas = new Set(
+            completedQuests
+                .map(t => currentActions.find(a => a.id === t.actionId)?.sourceQuestId)
+                .filter((id): id is string => Boolean(id))
+        );
+        for (const questId of idsDasJornadasTocadas) {
+            const jornada = findSeasonQuestById(questId);
+            if (!jornada) continue;
+            const alvo = Number(jornada.requirements?.totalReps || 0)
+                || (jornada.requirements?.milestone ? 1 : 0);
+            if (alvo <= 0) continue;
+
+            const acoesDaJornada = new Set(
+                currentActions.filter(a => a.sourceQuestId === questId).map(a => a.id)
+            );
+            const totalFeito = tasks.filter(t => acoesDaJornada.has(t.actionId) && t.completed).length;
+            const feitoNoCiclo = completedQuests.filter(t => acoesDaJornada.has(t.actionId)).length;
+            const antesDoCiclo = totalFeito - feitoNoCiclo;
+
+            if (antesDoCiclo < alvo && totalFeito >= alvo) jornadasFechadasNoCiclo.push(jornada.title);
+        }
+
+        const idsDeJornada = new Set(questTasks.map(t => t.id));
+        const tarefasDaProporcao = scoredCycleTasks.filter(t => !idsDeJornada.has(t.id));
+        const concluidasDaProporcao = tarefasDaProporcao.filter(t => t.completed);
+
         // 2. Calculate Progress (Base Score)
         // progresso = (acoes realizadas / acoes planejadas) * 100
-        const progress = scoredCycleTasks.length > 0 ?(completedScoredTasks.length / scoredCycleTasks.length) * 100 : 100;
+        const progress = tarefasDaProporcao.length > 0 ?(concluidasDaProporcao.length / tarefasDaProporcao.length) * 100 : 100;
 
         // 3. Calculate Bonuses
         // +10 per milestone (Marco)
@@ -9950,7 +10005,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             daysWithoutCompletion,
             consistencyDays: uniqueDays,
             durationDays,
-        } = buildCyclePaceMetrics(scoredCycleTasks, startDate, endDate, plannedEndDate);
+        } = buildCyclePaceMetrics(tarefasDaProporcao, startDate, endDate, plannedEndDate, questTasks);
 
         // Consistency Bonus: 20 points if consistent (>80% of days active), scaled down
         const consistencyRatio = uniqueDays / durationDays;
@@ -10205,6 +10260,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 sealedMetas: fairScoreResult.fairness.sealedMetas,
                 totalHours: Math.round(completedScoredTasks.reduce((sum, t) => sum + (t.duration / 60), 0)),
                 questsCompleted: questsCompletedCount,
+                questsClosedTitles: jornadasFechadasNoCiclo,
                 consistencyDays: uniqueDays,
                 expGained,
                 goldGained: 0,

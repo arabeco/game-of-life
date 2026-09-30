@@ -300,9 +300,30 @@ export const filterCycleTasksByScope = (tasks, actions, cycle, startDate, endDat
  *   plannedDurationDays: number
  * }}
  */
-export const buildCyclePaceMetrics = (cycleTasks, startDate, endDate, plannedEndDate) => {
+/**
+ * @param cycleTasks         O que foi PROMETIDO no ciclo. Decide a razao.
+ * @param tarefasSoDePresenca O que foi FEITO mas nao foi prometido aqui — hoje,
+ *                            as jornadas de temporada. Conta como dia ativo e
+ *                            nao entra no denominador.
+ *
+ * AS DUAS CONTAS SAIAM DA MESMA LISTA, E ELAS QUEREM COISAS OPOSTAS.
+ *
+ * `executionRatePct` pergunta "do que voce prometeu, quanto entregou?" — e uma
+ * jornada de temporada nao foi prometida ao ciclo: ela tem 28 dias e o ciclo
+ * tem sete. Vinte caminhadas planejadas com seis feitas derrubavam a nota de
+ * quem teve a coragem de pegar a jornada.
+ *
+ * `consistencyDays` pergunta outra coisa: "em quantos dias voce apareceu?" —
+ * e nesse o dia da caminhada conta igual a qualquer outro. Tirar a jornada das
+ * duas de uma vez consertaria a nota e criaria um defeito novo: o dia em que a
+ * pessoa so caminhou viraria dia vazio.
+ */
+export const buildCyclePaceMetrics = (cycleTasks, startDate, endDate, plannedEndDate, tarefasSoDePresenca = []) => {
     const completedTasks = cycleTasks.filter(task => task.completed);
-    const uniqueDays = new Set(completedTasks.map(task => task.date)).size;
+    const presencaExtra = (tarefasSoDePresenca || []).filter(task => task.completed);
+    const uniqueDays = new Set(
+        [...completedTasks, ...presencaExtra].map(task => task.date)
+    ).size;
     const start = parseIsoDate(startDate);
     const end = parseIsoDate(endDate);
     const plannedEnd = plannedEndDate ? parseIsoDate(plannedEndDate) : end;

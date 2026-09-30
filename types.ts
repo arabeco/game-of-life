@@ -869,6 +869,14 @@ export interface Report {
     sealedMetas?: number;
     totalHours: number;
     questsCompleted?: number;
+    /**
+     * As jornadas de temporada que CRUZARAM o alvo dentro deste ciclo.
+     *
+     * Nao e "as que estao completas": essa lista se repetiria em todo ciclo
+     * seguinte. Sao as que estavam abaixo do alvo quando o ciclo abriu e
+     * chegaram nele antes de fechar — o instante, e nao o estado.
+     */
+    questsClosedTitles?: string[];
     consistencyDays?: number;
     expGained?: number;
     goldGained?: number;

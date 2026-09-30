@@ -506,6 +506,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
      */
     const renderAchievementsSlide = () => {
         const expDoCiclo = report.expGained || expGained || metrics.expGained || 0;
+        const jornadasFechadas = metrics.questsClosedTitles || [];
         const semNada = sealedMetas === 0 && (metrics.questsCompleted || 0) === 0 && expDoCiclo === 0;
 
         const legenda: { rotulo: string; valor: string; nota?: string; tom?: 'normal' | 'bom' | 'alerta' }[] = [
@@ -541,7 +542,22 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 sufixo="EXP"
                 rotulo={semNada ? 'este ciclo não depositou nada' : 'depositados na sua nobreza'}
                 legenda={legenda}
-                remate={semNada ? 'Nenhuma meta selada. O ciclo ainda pede forma.' : undefined}
+                /* A JORNADA FECHADA E A MELHOR FRASE QUE ESTE QUADRO PODE TER.
+                   Ela nomeia — "O Andarilho" —, e uma jornada de temporada leva
+                   semanas: dizer que ela caiu NESTE ciclo e algo que so vale
+                   para este. O remate so falava quando o ciclo era vazio; nos
+                   outros ficava em branco, e era a vaga certa esperando texto.
+
+                   `questsClosedTitles` guarda quem CRUZOU o alvo aqui dentro, e
+                   nao quem esta completa — senao a frase voltaria toda semana
+                   depois que a jornada fechasse. */
+                remate={
+                    jornadasFechadas.length > 0
+                        ? (jornadasFechadas.length === 1
+                            ? `Foi neste ciclo que você concluiu ${jornadasFechadas[0]}.`
+                            : `Foi neste ciclo que você concluiu ${jornadasFechadas.slice(0, -1).join(', ')} e ${jornadasFechadas[jornadasFechadas.length - 1]}.`)
+                        : (semNada ? 'Nenhuma meta selada. O ciclo ainda pede forma.' : undefined)
+                }
             />
         );
     };

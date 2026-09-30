@@ -1,6 +1,6 @@
 # Launch Readiness Report
 
-- Generated at: 2026-09-29T18:50:47.097Z
+- Generated at: 2026-09-30T01:28:33.025Z
 - Suite: `full`
 - Smoke URL: `http://127.0.0.1:3011/`
 - Build: SKIPPED
@@ -65,7 +65,7 @@
 - Simulates: assinatura vencida nao paga bonus
 - Simulates: vitrine sai do mesmo numero do calculo
 
-### PASS - Arena pacts regression (0.2s)
+### PASS - Arena pacts regression (0.1s)
 - Kind: `logic`
 - Simulates: nao propoe arena arquivada, travada, vazia ou concluida
 - Simulates: constancia conta dias e nao acoes
@@ -201,13 +201,13 @@
 - Simulates: o respiro deixa o gesto seguinte adiar de novo
 - Simulates: a contagem se solta no cleanup
 
-### PASS - Tinta metalica regression (0.2s)
+### PASS - Tinta metalica regression (0.3s)
 - Kind: `logic`
 - Simulates: drop-shadow nao volta para cima do recorte por texto
 - Simulates: o numero nao vira um tijolo dourado
 - Simulates: a tinta metalica tem um dono so
 
-### PASS - XP scale regression (0.2s)
+### PASS - XP scale regression (0.1s)
 - Kind: `logic`
 - Simulates: missoes, jornadas e pactos usam a mesma escala
 - Simulates: nenhuma recompensa passa de 500 XP
@@ -224,7 +224,7 @@
 - Simulates: abrir ciclo fecha a rodada
 - Simulates: o fecho do ciclo nao recalcula a base ja paga
 
-### PASS - Oracle reaction regression (0.2s)
+### PASS - Oracle reaction regression (0.1s)
 - Kind: `logic`
 - Simulates: a reacao nao repete a frase anterior
 - Simulates: a primeira acao depois de uma pausa tem fala propria
@@ -242,7 +242,7 @@
 - Simulates: a presenca e o corte de relevancia
 - Simulates: sem candidato ele fica quieto
 
-### PASS - Oracle presence policy regression (0.7s)
+### PASS - Oracle presence policy regression (0.5s)
 - Kind: `logic`
 - Simulates: presenca decide o que ele fala
 - Simulates: aviso decide onde chega
@@ -266,7 +266,7 @@
 - Simulates: salva a ordem no banco
 - Simulates: mantem conclusoes fora da baia
 
-### PASS - Displayed level scale regression (0.1s)
+### PASS - Displayed level scale regression (0.2s)
 - Kind: `logic`
 - Simulates: confere que area e Indice usam o mesmo fator
 - Simulates: proibe nivel cru na tela

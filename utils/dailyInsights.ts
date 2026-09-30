@@ -99,6 +99,14 @@ export const buildLiveDailyPraise = (
   return null;
 };
 
+/**
+ * Mesma regra de `describeToday`: a frase conta o que FOI FEITO.
+ *
+ * O unico lugar onde o plano ainda aparece e o dia que teve acao marcada e
+ * nenhuma conclusao — ali o plano E o assunto, e omiti-lo deixaria a frase sem
+ * explicar o que aconteceu. Nos outros ramos ele sumiu, junto com "areas", que
+ * era o unico ponto do app que nao chamava arena de arena.
+ */
 export const buildHistoricalDailyInsight = (input: HistoricalDailyInsightInput): string => {
   const completed = Math.max(0, Math.round(input.completedCount));
   const planned = Math.max(0, Math.round(input.plannedCount));
@@ -121,11 +129,11 @@ export const buildHistoricalDailyInsight = (input: HistoricalDailyInsightInput):
     if (arenas >= 2 && namedAreas) {
       return `Você concluiu tudo o que estava registrado e movimentou ${namedAreas}. Foi um dia completo e bem distribuído.`;
     }
-    return `Você concluiu as ${planned} ${planned === 1 ? 'ação registrada' : 'ações registradas'}. Foi um dia completo dentro da meta que havia sido definida.`;
+    return 'Você concluiu tudo o que estava registrado. Foi um dia completo dentro do que havia sido definido.';
   }
 
   if (arenas >= 3 && namedAreas) {
-    return `Você movimentou ${namedAreas}. Mesmo sem concluir tudo, o dia teve avanço distribuído por ${arenas} áreas.`;
+    return `Você movimentou ${namedAreas}. O dia teve avanço distribuído por ${arenas} arenas.`;
   }
 
   if (previousAverage !== null && completed >= Math.ceil(previousAverage + 1)) {
@@ -138,10 +146,10 @@ export const buildHistoricalDailyInsight = (input: HistoricalDailyInsightInput):
   }
 
   if (arenas >= 2 && namedAreas) {
-    return `Você concluiu ${completed} de ${planned} ações e movimentou ${namedAreas}. Houve avanço em mais de uma frente, sem exigir um dia perfeito.`;
+    return `Você concluiu ${completed} ${completed === 1 ? 'ação' : 'ações'} e movimentou ${namedAreas}. Houve avanço em mais de uma frente, sem exigir um dia perfeito.`;
   }
 
-  return `Você concluiu ${completed} de ${planned} ${planned === 1 ? 'ação registrada' : 'ações registradas'}. O registro mostra avanço real e também o que pode ser ajustado no restante do ciclo.`;
+  return `Você concluiu ${completed} ${completed === 1 ? 'ação' : 'ações'} neste dia. O registro mostra avanço real e também o que pode ser ajustado no restante do ciclo.`;
 };
 
 /**
@@ -187,23 +195,35 @@ export interface TodayDailyReading {
 
 const formatDecimal = (value: number): string => value.toFixed(1).replace('.', ',');
 
+/**
+ * A FRASE CONTA O QUE FOI FEITO, e nao o quanto do plano foi cumprido.
+ *
+ * Ela dizia "7 de 9 concluidas, distribuidas por 3 areas" — o denominador do
+ * plano outra vez, agora em prosa. Quem nao agenda nada lia "5 de 5", que soa
+ * como elogio vazio, e quem agenda muito lia a propria nota numa frase que
+ * deveria so descrever o dia. O resto do painel ja tinha parado de fazer isso.
+ *
+ * E o vocabulario alinhou: o app inteiro chama de ARENA. "Areas" aparecia so
+ * aqui, sem acento, e obrigava a pessoa a adivinhar que era a mesma coisa.
+ */
 const describeToday = (completed: number, planned: number, arenas: number, topArenaName: string | null): string => {
   if (planned === 0) {
     return 'Nenhuma ação registrada para hoje ainda. O dia continua aberto.';
   }
   if (completed === 0) {
-    return `Hoje tem ${planned} ${planned === 1 ? 'ação registrada' : 'ações registradas'} e nenhuma conclusão até agora. O dia ainda está em aberto.`;
+    return 'Nada concluído até agora. O dia ainda está em aberto.';
   }
-  if (completed >= planned) {
-    return `Você já concluiu as ${planned} ${planned === 1 ? 'ação registrada' : 'ações registradas'} de hoje.`;
-  }
+  const feitas = `${completed} ${completed === 1 ? 'ação concluída' : 'ações concluídas'}`;
   if (arenas >= 3) {
-    return `${completed} de ${planned} concluidas, distribuidas por ${arenas} areas.`;
+    return `${feitas}, distribuídas por ${arenas} arenas.`;
   }
   if (topArenaName && arenas === 1) {
-    return `${completed} de ${planned} concluidas, todas em ${topArenaName}.`;
+    return `${feitas}, ${completed === 1 ? 'em' : 'todas em'} ${topArenaName}.`;
   }
-  return `${completed} de ${planned} ações concluídas até agora.`;
+  if (arenas === 2) {
+    return `${feitas}, em duas arenas.`;
+  }
+  return `${feitas} até agora.`;
 };
 
 export const buildTodayDailyReading = (
@@ -228,7 +248,7 @@ export const buildTodayDailyReading = (
 
     if (typeof current === 'number' && typeof median === 'number' && cycles >= 2) {
       const delta = Math.round(current - median);
-      const comparison = `Ciclo em ${Math.round(current)}% · sua mediana em ${cycles} ciclos e ${Math.round(median)}%`;
+      const comparison = `Ciclo em ${Math.round(current)}% · sua mediana em ${cycles} ciclos é ${Math.round(median)}%`;
 
       if (delta >= 5) {
         return { text: `${base} Este ciclo está rodando acima do seu padrão histórico.`, comparison, depth };
@@ -239,13 +259,24 @@ export const buildTodayDailyReading = (
       return { text: `${base} Este ciclo está no seu padrão histórico.`, comparison, depth };
     }
 
-    if (cycles < 2) {
-      return {
-        text: `${base} Ainda não há ciclos fechados suficientes para comparar com o seu histórico.`,
-        comparison: null,
-        depth,
-      };
-    }
+    /*
+     * SEM HISTORICO DE CICLO, PLATINUM CAI PRA REGUA DO DIA — nao pra nada.
+     *
+     * Aqui havia um `return` que entregava so a descricao do dia mais um aviso
+     * sobre a falta de dados. Duas coisas erradas no mesmo lugar.
+     *
+     * A primeira era o aviso: o app falando do app. A pessoa abriu pra saber do
+     * dia dela e recebia um boletim do estado do banco. Quando nao ha o que
+     * comparar, o certo e nao comparar, calado.
+     *
+     * A segunda era o `return`, e essa e pior: ele fazia platinum valer MENOS
+     * que premium. Com um ciclo fechado so, premium mostrava a regua do dia
+     * medio e platinum, que paga mais, ficava sem regua nenhuma. O comentario
+     * logo abaixo ja dizia "premium, e platinum sem historico de ciclo
+     * suficiente" — a queda estava escrita, mas o `return` acontecia antes.
+     *
+     * Sem `return`, a execucao continua e platinum recebe o que premium recebe.
+     */
   }
 
   // premium, e platinum sem historico de ciclo suficiente
@@ -253,15 +284,13 @@ export const buildTodayDailyReading = (
     ? input.cycleActiveDayAverage
     : null;
 
+  // Mesma regra do bloco acima: sem dia anterior no ciclo, nao ha regua, e a
+  // frase termina onde a descricao do dia termina.
   if (average === null) {
-    return {
-      text: `${base} Ainda não há dias ativos anteriores neste ciclo para servir de referência.`,
-      comparison: null,
-      depth,
-    };
+    return { text: base, comparison: null, depth };
   }
 
-  const comparison = `Hoje ${completed} · seu dia ativo medio e ${formatDecimal(average)}`;
+  const comparison = `Hoje ${completed} · seu dia ativo médio é ${formatDecimal(average)}`;
 
   if (completed >= average + 1) {
     return { text: `${base} Está acima do seu dia médio neste ciclo.`, comparison, depth };
@@ -272,5 +301,5 @@ export const buildTodayDailyReading = (
   if (completed === 0) {
     return { text: `${base} Seu dia ativo médio neste ciclo é ${formatDecimal(average)}.`, comparison, depth };
   }
-  return { text: `${base} Esta na média dos seus dias ativos neste ciclo.`, comparison, depth };
+  return { text: `${base} Está na média dos seus dias ativos neste ciclo.`, comparison, depth };
 };

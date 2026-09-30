@@ -62,6 +62,33 @@ assert.match(buildHistoricalDailyInsight({
   arenaNames: [],
 }), /carga daquele dia realmente cabia/);
 
+// --- a leitura do dia fechado tambem nao mede plano -------------------------
+//
+// "7 de 9 concluidas, distribuidas por 3 areas" dizia duas coisas erradas na
+// mesma frase: o denominador do plano, que quem nao agenda nada nunca teve, e
+// "areas" — o unico canto do app que nao chamava arena de arena.
+//
+// O dia com acao marcada e nenhuma conclusao e a excecao combinada: ali o plano
+// E o assunto, e sem ele a frase nao explicaria o que aconteceu.
+for (const caso of [
+  { completedCount: 7, plannedCount: 9, distinctArenaCount: 3, arenaNames: ['Academia', 'Leitura', 'Casa'] },
+  { completedCount: 3, plannedCount: 3, distinctArenaCount: 2, arenaNames: ['Saúde', 'Relações'] },
+  { completedCount: 2, plannedCount: 5, distinctArenaCount: 2, arenaNames: ['Academia', 'Leitura'] },
+  { completedCount: 1, plannedCount: 4, distinctArenaCount: 1, arenaNames: ['Academia'] },
+  { completedCount: 5, plannedCount: 5, distinctArenaCount: 1, arenaNames: ['Academia'] },
+  { completedCount: 4, plannedCount: 9, distinctArenaCount: 1, arenaNames: ['Academia'], topArenaName: 'Academia', topArenaCompleted: 3 },
+]) {
+  const texto = buildHistoricalDailyInsight(caso);
+  // "3 de 7 conclusoes" continua valendo: os dois numeros aconteceram. O que nao
+  // pode e o denominador ser o que foi MARCADO.
+  assert.doesNotMatch(
+    texto,
+    new RegExp(`\\b${caso.completedCount} de ${caso.plannedCount}\\b`),
+    `"${texto}" mede plano`,
+  );
+  assert.doesNotMatch(texto, /\barea\b|\bareas\b/i, `"${texto}" diz "area"; o app chama de arena`);
+}
+
 const gameContext = readFileSync(new URL('../contexts/GameContext.tsx', import.meta.url), 'utf8');
 const seasonView = readFileSync(new URL('../views/SeasonView.tsx', import.meta.url), 'utf8');
 const achievementModal = readFileSync(new URL('../components/AchievementModal.tsx', import.meta.url), 'utf8');

@@ -20,7 +20,7 @@ const base = {
 const livre = buildTodayDailyReading(base, 'livre');
 assert.equal(livre.depth, 'livre');
 assert.equal(livre.comparison, null, 'o nivel livre nao pode expor regua');
-assert.match(livre.text, /4 de 6/);
+assert.match(livre.text, /4 a[cç][oõ]es conclu[ií]das/);
 assert.doesNotMatch(livre.text, /m[eé]di[ao]|padr[aã]o hist[oó]rico/i, 'o nivel livre nao compara');
 
 // --- premium: compara com o proprio dia medio no ciclo ---------------------
@@ -40,13 +40,18 @@ assert.match(platinum.comparison, /mediana em 5 ciclos/);
 assert.match(platinum.comparison, /70%/);
 assert.match(platinum.text, /acima do seu padr[aã]o hist[oó]rico/);
 
-// Platinum sem historico suficiente nao inventa comparacao nem quebra.
+// Platinum sem historico de ciclo CAI PRA REGUA DO DIA — nao pra nada.
+//
+// Antes ele retornava cedo com um aviso sobre a falta de dados, o que fazia
+// platinum valer menos que premium: com um ciclo fechado so, premium mostrava a
+// regua do dia medio e platinum, que paga mais, ficava sem regua nenhuma.
 const platinumSemHistorico = buildTodayDailyReading(
   { ...base, pastCyclesCount: 1, pastCyclesExecutionMedianPct: 50 },
   'platinum',
 );
-assert.equal(platinumSemHistorico.comparison, null);
-assert.match(platinumSemHistorico.text, /ciclos fechados suficientes/);
+assert.equal(platinumSemHistorico.text, premium.text, 'platinum nunca entrega menos que premium');
+assert.equal(platinumSemHistorico.comparison, premium.comparison);
+assert.doesNotMatch(platinumSemHistorico.text, /suficientes?|ainda n[aã]o h[aá]/i, 'o app nao fala do app');
 
 // --- o texto informa, nao cobra -------------------------------------------
 const diaFraco = buildTodayDailyReading(
@@ -77,7 +82,7 @@ const semDiaAnterior = buildTodayDailyReading(
   'premium',
 );
 assert.equal(semDiaAnterior.comparison, null);
-assert.match(semDiaAnterior.text, /dias ativos anteriores/);
+assert.equal(semDiaAnterior.text, livre.text, 'sem dia anterior no ciclo, a frase nao ganha cauda');
 
 // Platinum cai para a regua do dia quando o historico de ciclos nao serve, mas
 // ainda ha media no ciclo atual.
@@ -86,6 +91,27 @@ const platinumSemCiclos = buildTodayDailyReading(
   'platinum',
 );
 assert.equal(platinumSemCiclos.depth, 'platinum');
-assert.match(platinumSemCiclos.text, /ciclos fechados suficientes/);
+// Cai para a regua do dia, que aqui existe: compara com o dia medio do ciclo.
+assert.match(platinumSemCiclos.text, /dia m[eé]dio/);
+assert.ok(platinumSemCiclos.comparison, 'ha media no ciclo atual, entao ha regua');
 
-console.log('Daily reading regression: a assinatura muda a regua, e nenhum nivel cobra do jogador.');
+// --- a frase nao mede plano -----------------------------------------------
+//
+// Nenhum nivel pode escrever "7 de 9". O denominador de um dia e o que a pessoa
+// marcou, e quem nao marca nada colheria um elogio vazio enquanto quem marca
+// muito colheria a propria nota numa frase que so deveria descrever o dia.
+for (const depth of ['livre', 'premium', 'platinum']) {
+  for (const caso of [
+    base,
+    { ...base, completedCount: 1, distinctArenaCount: 1 },
+    { ...base, completedCount: 6, plannedCount: 6 },
+    { ...base, completedCount: 5, distinctArenaCount: 4 },
+    { ...base, completedCount: 0 },
+  ]) {
+    const { text } = buildTodayDailyReading(caso, depth);
+    assert.doesNotMatch(text, /\d+\s+de\s+\d+/, `"${text}" mede plano em ${depth}`);
+    assert.doesNotMatch(text, /\barea\b|\bareas\b/i, `"${text}" diz "area"; o app chama de arena`);
+  }
+}
+
+console.log('Daily reading regression: a assinatura muda a regua, nenhum nivel cobra do jogador, e nenhuma frase mede plano.');

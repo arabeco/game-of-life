@@ -208,11 +208,24 @@ export const DailyPanelContent: React.FC<{
         // O id entra na entrada, e nao so na chave do Map: a lista do painel
         // precisa de uma `key` estavel, e nome de arena nao serve — duas arenas
         // podem se chamar igual, e "Sem arena" junta todas as orfas numa so.
-        const stats = new Map<string, { id: string; name: string; completed: number; total: number; exp: number }>();
+        //
+        // O fundo sai de `getActionBackgroundStyle` numa acao DESTA arena, e nao
+        // de uma tabela de cor por area da vida. Assim a tarja da linha e as
+        // pastilhas ali embaixo sao a mesma cor por construcao, inclusive nas
+        // arenas de missao — que nao tiram cor de area nenhuma.
+        const stats = new Map<string, { id: string; name: string; icon?: string; background?: string; completed: number; total: number; exp: number }>();
         for (const row of dailyRows) {
             const arena = arenasById.get(row.action.arenaId);
             const name = arena?.name || 'Sem arena';
-            const entry = stats.get(row.action.arenaId) || { id: row.action.arenaId, name, completed: 0, total: 0, exp: 0 };
+            const entry = stats.get(row.action.arenaId) || {
+                id: row.action.arenaId,
+                name,
+                icon: arena?.icon,
+                background: getActionBackgroundStyle(row.action.id).background as string | undefined,
+                completed: 0,
+                total: 0,
+                exp: 0,
+            };
             entry.total += 1;
             if (row.task.completed) {
                 entry.completed += 1;
@@ -225,7 +238,32 @@ export const DailyPanelContent: React.FC<{
             if (right.completed !== left.completed) return right.completed - left.completed;
             return right.exp - left.exp;
         });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [arenasById, dailyRows]);
+
+    /**
+     * AS ACOES EM ORDEM DE ARENA.
+     *
+     * Ordenadas por "concluida primeiro, depois nome", as pastilhas saiam com as
+     * cores embaralhadas: academia, leitura, academia, casa, leitura. Cada uma
+     * ja carrega a cor da arena dela desde sempre — a informacao estava na tela
+     * e a ordem desfazia.
+     *
+     * O criterio e a mesma ordem da lista de arenas logo acima, entao a fileira
+     * de pastilhas le como continuacao dela, e nao como uma segunda lista com
+     * regra propria. Dentro da arena, concluida na frente.
+     */
+    const rowsOrdenadasPorArena = useMemo(() => {
+        const posicao = new Map(arenaStats.map((arena, index) => [arena.id, index]));
+        const ordenavel = dailyRows.filter((row) => row.task.completed || row.task.startTime >= 0);
+        return [...ordenavel].sort((left, right) => {
+            const esquerda = posicao.get(left.action.arenaId) ?? Number.MAX_SAFE_INTEGER;
+            const direita = posicao.get(right.action.arenaId) ?? Number.MAX_SAFE_INTEGER;
+            if (esquerda !== direita) return esquerda - direita;
+            if (left.task.completed !== right.task.completed) return left.task.completed ? -1 : 1;
+            return left.action.name.localeCompare(right.action.name);
+        });
+    }, [arenaStats, dailyRows]);
 
     const cyclePattern = useMemo(() => {
         if (!activeCycle) return null;
@@ -384,7 +422,9 @@ export const DailyPanelContent: React.FC<{
         total: rowsDoDia.length, minutes: dayMinutes, xp: dayExp, bayCount: rowsNaBaia.length,
         reading: (ehHoje ? todayReading?.text : historicalInsight) || undefined,
         comparisonLabel: dailyComparisonLabel(comparison, completedRows.length, dayExp) || undefined,
-        actions: rowsDoDia.map(row => ({id: row.task.id, name: row.action.name, icon: row.action.icon || '📝', completed: Boolean(row.task.completed), background: getActionBackgroundStyle(row.action.id).background as string | undefined})),
+        // Agrupadas por arena, e nao so "concluidas primeiro": a placa e o feed
+        // leem a mesma lista que o painel, entao a ordem tem que ser uma so.
+        actions: rowsOrdenadasPorArena.map(row => ({id: row.task.id, name: row.action.name, icon: row.action.icon || '📝', completed: Boolean(row.task.completed), background: getActionBackgroundStyle(row.action.id).background as string | undefined})),
     };
 
     const handlePostToFeed = async () => {
@@ -404,17 +444,19 @@ export const DailyPanelContent: React.FC<{
 
 
     /**
-     * A PORCENTAGEM SAI DO PAR QUE APARECE DO LADO DELA.
+     * A PORCENTAGEM SAI DO PAR QUE APARECE DO LADO DELA — e nao encabeca nada.
      *
-     * `dayProgress`, logo acima, divide so as acoes PONTUADAS — exclui as do tipo
-     * Livre. O cartao, por outro lado, sempre mostrou `completed` e `total`
-     * contando todas. Usar um no numerao e o outro na legenda faria a tela dizer
-     * "80%" ao lado de "7 de 10", e a pessoa nao tem como saber que sao dois
-     * denominadores diferentes; ela conclui que o app errou uma conta.
+     * No painel ela e legenda de uma barra que so aparece quando sobrou algo
+     * marcado por fazer. Quem nao agenda nada nunca a ve, e esta certo: sem
+     * plano nao ha denominador, e o "100%" que sobrava pra essa pessoa nao
+     * media esforco nenhum.
      *
-     * Entao a porcentagem grande vem do par que esta escrito embaixo dela. O
-     * `dayProgress` continua existindo para o `score` do post em Feitos, que e
-     * outra pergunta ("quanto do que pontua foi feito") e mora em outro lugar.
+     * Quando aparece, sai deste par e nao de `dayProgress`, logo acima.
+     * `dayProgress` divide so as acoes PONTUADAS — exclui as do tipo Livre —
+     * enquanto o par conta todas. Misturar os dois faria a tela dizer "80%" ao
+     * lado de "7 de 10", e a pessoa nao tem como saber que sao denominadores
+     * diferentes; ela conclui que o app errou uma conta. `dayProgress` continua
+     * servindo ao `score` do post em Feitos, que e outra pergunta.
      */
     const percentExibido = rowsDoDia.length > 0
         ? Math.round((completedRows.length / rowsDoDia.length) * 100)

@@ -15,10 +15,10 @@ import '../index.css';
  */
 
 const ARENAS = [
-    { id: 'a1', name: 'Academia', family: 'saude' },
-    { id: 'a2', name: 'Leitura', family: 'proposito' },
-    { id: 'a3', name: 'Projeto Glyph', family: 'trabalho' },
-    { id: 'a4', name: 'Casa', family: 'lazer' },
+    { id: 'a1', name: 'Academia', family: 'saude', icon: '🏋️' },
+    { id: 'a2', name: 'Leitura', family: 'proposito', icon: '📖' },
+    { id: 'a3', name: 'Projeto Glyph', family: 'trabalho', icon: '💻' },
+    { id: 'a4', name: 'Casa', family: 'lazer', icon: '🏡' },
 ] as const;
 
 const ACOES = [
@@ -59,25 +59,41 @@ function Bancada() {
     const totalSeguro = Math.max(0, Math.min(ACOES.length, total));
     const feitasSeguras = Math.max(0, Math.min(totalSeguro, feitas));
 
-    const acoes = useMemo(() => ACOES.slice(0, totalSeguro).map((acao, i) => ({
-        id: String(i),
-        name: acao.name,
-        icon: acao.icon,
-        completed: i < feitasSeguras,
-        background: fundoDaFamilia(ARENAS[acao.arena].family),
-    })), [feitasSeguras, totalSeguro]);
-
     const arenas = useMemo(() => {
-        const mapa = new Map<string, { id: string; name: string; completed: number; total: number; exp: number }>();
+        const mapa = new Map<string, { id: string; name: string; icon: string; background: string; completed: number; total: number; exp: number }>();
         ACOES.slice(0, totalSeguro).forEach((acao, i) => {
             const arena = ARENAS[acao.arena];
-            const atual = mapa.get(arena.id) || { id: arena.id, name: arena.name, completed: 0, total: 0, exp: 0 };
+            const atual = mapa.get(arena.id) || {
+                id: arena.id, name: arena.name, icon: arena.icon,
+                background: fundoDaFamilia(arena.family), completed: 0, total: 0, exp: 0,
+            };
             atual.total += 1;
             if (i < feitasSeguras) { atual.completed += 1; atual.exp += 15; }
             mapa.set(arena.id, atual);
         });
         return [...mapa.values()].sort((a, b) => (b.completed - a.completed) || (b.exp - a.exp));
     }, [feitasSeguras, totalSeguro]);
+
+    // Na mesma ordem das arenas acima, como DailyPanelContent faz.
+    const acoes = useMemo(() => {
+        const posicao = new Map(arenas.map((arena, index) => [arena.id, index]));
+        return ACOES.slice(0, totalSeguro)
+            .map((acao, i) => ({
+                id: String(i),
+                name: acao.name,
+                icon: acao.icon,
+                completed: i < feitasSeguras,
+                background: fundoDaFamilia(ARENAS[acao.arena].family),
+                arenaId: ARENAS[acao.arena].id,
+            }))
+            .sort((a, b) => {
+                const esquerda = posicao.get(a.arenaId) ?? 99;
+                const direita = posicao.get(b.arenaId) ?? 99;
+                if (esquerda !== direita) return esquerda - direita;
+                if (a.completed !== b.completed) return a.completed ? -1 : 1;
+                return a.name.localeCompare(b.name);
+            });
+    }, [arenas, feitasSeguras, totalSeguro]);
 
     const percent = totalSeguro > 0 ? Math.round((feitasSeguras / totalSeguro) * 100) : 0;
     const xp = feitasSeguras * 15;
@@ -144,6 +160,17 @@ function Bancada() {
             </header>
 
             <div className="controles">
+                <label>Caso
+                    <span className="presets">
+                        {([
+                            ['Marcou e cumpriu parte', 9, 7],
+                            ['Não marcou nada, só registrou', 5, 5],
+                            ['Marcou e não fez', 9, 0],
+                        ] as const).map(([nome, t, f]) => (
+                            <button key={nome} type="button" onClick={() => { setTotal(t); setFeitas(f); }}>{nome}</button>
+                        ))}
+                    </span>
+                </label>
                 <label>Ações no dia
                     <input type="number" min={0} max={ACOES.length} value={total} onChange={(e) => setTotal(Number(e.target.value))} />
                 </label>

@@ -37,6 +37,17 @@ export interface DailyBoardArena {
     completed: number;
     total: number;
     exp: number;
+    /** O emoji da propria arena, o mesmo que ela mostra em qualquer outra tela. */
+    icon?: string;
+    /**
+     * O MESMO fundo das pastilhas dela, e nao uma cor derivada por fora.
+     *
+     * Quem monta passa o gradiente que `getActionBackgroundStyle` devolve para
+     * uma acao desta arena. Assim a tarja da linha e as pastilhas logo abaixo
+     * sao a mesma cor por construcao — inclusive nas arenas de missao, que nao
+     * tiram cor de area da vida e sim de `--quest-grad-*`.
+     */
+    background?: string;
 }
 
 export interface DailyBoardAction {
@@ -139,17 +150,48 @@ export const DailyPanelBoard: React.FC<DailyPanelBoardProps> = ({
                 </div>
             )}
 
-            <section className="daily-board-hero" aria-label="Execucao do dia">
-                <div className="daily-board-pct">{safePercent}<span>%</span></div>
-                <p className="daily-board-pair">
-                    <strong>{completed}</strong> de <strong>{total}</strong> {total === 1 ? 'ação' : 'ações'}
-                    {durationLabel ? ` · ${durationLabel}` : ''}
-                    {xp > 0 ? ` · +${xp} EXP` : ''}
-                </p>
-                <div className="daily-board-bar" role="presentation">
-                    <span style={{ width: `${safePercent}%` }} />
-                </div>
+            {/*
+              * O NUMERAO E O QUE FOI FEITO, NAO UMA NOTA CONTRA O QUE FOI MARCADO.
+              *
+              * Quem nao agenda nada e faz cinco coisas nao tem denominador: o
+              * "100%" que sobrava pra essa pessoa nao dizia nada, e pra quem
+              * agendou muito e fez pouco a porcentagem virava boletim na primeira
+              * linha do painel. As duas leituras sao ruins pelo mesmo motivo — o
+              * plano estava no lugar do feito.
+              *
+              * Entao o hero conta acoes concluidas, que e verdade pra todo mundo.
+              */}
+            <section className="daily-board-hero" aria-label="O que foi feito">
+                <div className="daily-board-done">{completed}</div>
+                <p className="daily-board-done-label">{completed === 1 ? 'ação concluída' : 'ações concluídas'}</p>
+                {(durationLabel || xp > 0) && (
+                    <p className="daily-board-pair">
+                        {durationLabel}
+                        {durationLabel && xp > 0 ? ' · ' : ''}
+                        {xp > 0 ? `+${xp} EXP` : ''}
+                    </p>
+                )}
             </section>
+
+            {/*
+              * A BARRA SO EXISTE QUANDO HA PLANO PRA MEDIR.
+              *
+              * Sem nada pendente nao ha o que comparar, e uma barra cheia nesse
+              * caso seria um elogio a um esforco que ninguem pediu. Com pendente,
+              * ela responde uma pergunta real — "sobrou o que?" — e ai a
+              * porcentagem cabe, pequena, do lado.
+              */}
+            {pending > 0 && (
+                <section className="daily-board-plano" aria-label="Do que estava marcado">
+                    <div className="daily-board-bar" role="presentation">
+                        <span style={{ width: `${safePercent}%` }} />
+                    </div>
+                    <p className="daily-board-plano-linha">
+                        <span><strong>{completed}</strong> de <strong>{total}</strong> do que estava marcado</span>
+                        <span className="daily-board-plano-pct">{safePercent}%</span>
+                    </p>
+                </section>
+            )}
 
             {stats.length > 0 && (
                 <div className="daily-board-stats">
@@ -179,6 +221,9 @@ export const DailyPanelBoard: React.FC<DailyPanelBoardProps> = ({
                             const full = arena.total > 0 && arena.completed >= arena.total;
                             return (
                                 <li key={arena.id} className={full ? 'is-full' : ''}>
+                                    <span className="daily-board-arena-mark" style={{ background: safeDailyActionBackground(arena.background) }}>
+                                        <EmojiGlyph symbol={arena.icon || '🎯'} size="badge" />
+                                    </span>
                                     <span className="daily-board-arena-name">{arena.name}</span>
                                     <span className="daily-board-arena-bar"><span style={{ width: `${pct}%` }} /></span>
                                     <span className="daily-board-arena-count">{arena.completed}/{arena.total}</span>

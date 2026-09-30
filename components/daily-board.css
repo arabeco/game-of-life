@@ -49,23 +49,28 @@
 .daily-board-mark { width: 30px; height: 30px; flex-shrink: 0; display: grid; place-items: center; }
 .daily-board-mark > * { transform: scale(.68); }
 
-/* O HERO E A PORCENTAGEM, nao a EXP.
-   Antes o numero grande era "+135", que responde "quanto rendeu" — e a pergunta
-   que a pessoa faz ao abrir o painel e "cumpri o dia?". A EXP desceu pra linha
-   de apoio, onde continua legivel sem ocupar o lugar da resposta. */
-.daily-board-hero { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.daily-board-pct {
-  font-family: Georgia, serif; font-size: 52px; line-height: 1; font-weight: 800;
+/* O HERO E O QUE FOI FEITO.
+   Nem a EXP ("quanto rendeu", que e outra pergunta) nem a porcentagem ("quanto
+   do plano", que so existe pra quem fez plano). Uma contagem de acoes
+   concluidas e verdade pra qualquer pessoa, inclusive a que nunca agendou nada
+   e so registra o que ja fez. */
+.daily-board-hero { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.daily-board-done {
+  font-family: Georgia, serif; font-size: 54px; line-height: 1; font-weight: 800;
   font-variant-numeric: tabular-nums;
   background: linear-gradient(180deg, #fffdf6 0%, #e7dcc5 38%, #aa8748 72%, #f1eadb 100%);
   background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 2px 1px rgba(0,0,0,.85));
 }
-.daily-board-pct span { font-size: .42em; font-weight: 500; }
-.daily-board-pair { margin: 0; font-size: 12px; color: #d6cfbf !important; text-align: center; }
-.daily-board-pair strong { color: #f3e2b8 !important; font-weight: 700; font-variant-numeric: tabular-nums; }
+.daily-board-done-label { margin: 0; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #cdc5b4 !important; }
+.daily-board-pair { margin: 4px 0 0; font-size: 12px; color: #d6cfbf !important; text-align: center; font-variant-numeric: tabular-nums; }
+
+.daily-board-plano { display: flex; flex-direction: column; gap: 6px; }
 .daily-board-bar { width: 100%; height: 6px; border-radius: 9px; background: #3a3a35; overflow: hidden; border: 1px solid rgba(0,0,0,.35); }
 .daily-board-bar > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #b88d40, #f5dda1); }
+.daily-board-plano-linha { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin: 0; font-size: 11px; color: #b6afa0 !important; }
+.daily-board-plano-linha strong { color: #e4d9c0 !important; font-weight: 700; font-variant-numeric: tabular-nums; }
+.daily-board-plano-pct { flex-shrink: 0; color: #cdbe97 !important; font-variant-numeric: tabular-nums; }
 
 /* OS QUADRADOS. auto-fit e nao 4 colunas fixas: com tres estatisticas eles
    ocupam a largura inteira em vez de deixar um buraco na quarta coluna. */
@@ -86,10 +91,20 @@
 
 .daily-board-arenas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
 .daily-board-arenas li {
-  display: grid; grid-template-columns: minmax(0, 1fr) 3.6rem 2.1rem 2.4rem; align-items: center; gap: 8px;
-  padding: 7px 9px; border: 1px solid #383630; border-radius: 10px; background: rgba(255,255,255,.022);
+  display: grid; grid-template-columns: 24px minmax(0, 1fr) 3.1rem 2rem 2.3rem; align-items: center; gap: 7px;
+  padding: 6px 9px; border: 1px solid #383630; border-radius: 10px; background: rgba(255,255,255,.022);
 }
 .daily-board-arenas li.is-full { border-color: rgba(184,146,82,.42); background: rgba(184,146,82,.07); }
+/* A TARJA CARREGA A COR DA ARENA, e e a MESMA das pastilhas dela.
+   Quem chama passa o fundo que `getActionBackgroundStyle` devolve, entao a cor
+   nao e recalculada aqui — se ela mudar no app, muda junto, e a fileira de
+   pastilhas logo abaixo continua batendo com a linha de cima. */
+.daily-board-arena-mark {
+  width: 24px; height: 24px; display: grid; place-items: center; flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,.14); border-radius: 7px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.16);
+}
+.daily-board-arena-mark .emoji-glyph { font-size: 14px; line-height: 1; }
 .daily-board-arena-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: #ece5d6 !important; }
 .daily-board-arena-bar { height: 4px; border-radius: 4px; background: #3a3a35; overflow: hidden; }
 .daily-board-arena-bar > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #8d6f34, #efd79c); }
@@ -134,7 +149,7 @@
    e o unico que nao carrega numero. */
 @media (max-height: 700px) {
   .daily-board { gap: 10px; }
-  .daily-board-pct { font-size: 40px; }
+  .daily-board-done { font-size: 42px; }
   .daily-board-greeting { display: none; }
 }
 

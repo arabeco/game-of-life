@@ -188,7 +188,11 @@ export const DailyPanelBoard: React.FC<DailyPanelBoardProps> = ({
                         fechado" e elogio a um plano — que nem todo mundo fez. */}
                     <div className="daily-board-label">
                         <span>{isToday ? 'O dia por arena' : 'O que foi feito'}</span>
-                        {pending > 0 && <span>{pending} {pending === 1 ? 'pendente' : 'pendentes'}</span>}
+                        {/* "Pendente" e tempo presente: promete que ainda da pra
+                            fazer. Num dia que ja fechou isso nao e verdade, e a
+                            palavra certa so diz que ficaram — sem cobrar por algo
+                            que nao tem mais como acontecer. */}
+                        {pending > 0 && <span>{pending} {isToday ? (pending === 1 ? 'pendente' : 'pendentes') : (pending === 1 ? 'ficou' : 'ficaram')}</span>}
                     </div>
                     <ul className="daily-board-arenas">
                         {arenas.map((arena) => {

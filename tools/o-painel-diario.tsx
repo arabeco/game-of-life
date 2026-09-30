@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { DailyPanelBoard, type DailyBoardStat } from '../components/DailyPanelBoard';
+import { DailyPanelBoard } from '../components/DailyPanelBoard';
+import { buildDailyStats } from '../utils/dailyStats';
 import { DailySummaryCard } from '../components/DailySummaryCard';
 import { buildHistoricalDailyInsight, buildTodayDailyReading } from '../utils/dailyInsights';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
@@ -38,14 +39,6 @@ const ACOES = [
 
 const fundoDaFamilia = (familia: string) =>
     `linear-gradient(135deg, ${ASSET_ACCENT_COLORS[familia as keyof typeof ASSET_ACCENT_COLORS]} 0%, #141820 130%)`;
-
-const duracao = (minutos: number) => {
-    const total = Math.max(0, Math.round(minutos));
-    const horas = Math.floor(total / 60);
-    const resto = total % 60;
-    if (horas <= 0) return `${resto}min`;
-    return resto > 0 ? `${horas}h${String(resto).padStart(2, '0')}` : `${horas}h`;
-};
 
 function Bancada() {
     const [total, setTotal] = useState(9);
@@ -91,17 +84,6 @@ function Bancada() {
     const xp = feitasSeguras * 15;
     const minutos = feitasSeguras * 18;
 
-    const stats = useMemo<DailyBoardStat[]>(() => {
-        const tocadas = arenas.filter((a) => a.completed > 0).length;
-        const lista: DailyBoardStat[] = [
-            { id: 'tempo', label: 'Tempo', value: minutos > 0 ? duracao(minutos) : '—', hint: 'registrado' },
-            { id: 'exp', label: 'EXP', value: xp > 0 ? `+${xp}` : '0', hint: 'no dia' },
-            { id: 'arenas', label: tocadas === 1 ? 'Arena' : 'Arenas', value: String(tocadas), hint: 'tocadas' },
-        ];
-        if (comCiclo) lista.push({ id: 'dias', label: 'Dias ativos', value: '2', hint: 'de 3 dias' });
-        return lista;
-    }, [arenas, comCiclo, minutos, xp]);
-
     const leitura = ehHoje
         ? buildTodayDailyReading({
             completedCount: feitasSeguras,
@@ -132,6 +114,8 @@ function Bancada() {
         minutes: minutos,
         xp,
         bayCount: 3,
+        arenasTouched: arenas.filter((a) => a.completed > 0).length,
+        ...(comCiclo ? { activeDays: 2, cycleDaysSoFar: 3 } : {}),
         reading: leitura || undefined,
         comparisonLabel: selo,
         actions: acoes,
@@ -190,9 +174,8 @@ function Bancada() {
                                 isToday={ehHoje}
                                 completed={feitasSeguras}
                                 total={totalSeguro}
-                                durationLabel={minutos > 0 ? duracao(minutos) : ''}
                                 xp={xp}
-                                stats={stats}
+                                stats={buildDailyStats(snapshot)}
                                 arenas={arenas}
                                 cycleName={comCiclo ? 'Ciclo da retomada' : undefined}
                                 cycleDayLabel={comCiclo ? 'Dia 3/7' : undefined}

@@ -16,6 +16,11 @@ export function readDailyFeedSnapshot(value: unknown): DailyFeedSnapshot | null 
         || typeof s.dateLabel !== 'string' || !Array.isArray(s.actions)) return null;
     if (![s.completed, s.total, s.minutes, s.xp, s.bayCount].every(n => Number.isFinite(n) && n >= 0)) return null;
     if (s.completed > s.total || s.actions.length > 2000) return null;
+    // Opcionais, e vindos de conteudo remoto: se existirem, tem que ser numero
+    // de verdade. Um NaN aqui viraria "NaN arenas tocadas" no cartao de outra
+    // pessoa, que e o tipo de coisa que so aparece em producao.
+    if (![s.arenasTouched, s.activeDays, s.cycleDaysSoFar]
+        .every(n => n === undefined || (Number.isFinite(n) && (n as number) >= 0))) return null;
     if (s.reading !== undefined && typeof s.reading !== 'string') return null;
     if (s.comparisonLabel !== undefined && typeof s.comparisonLabel !== 'string') return null;
     if (!s.actions.every(a => a && typeof a.id === 'string' && typeof a.name === 'string'

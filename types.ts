@@ -1203,6 +1203,21 @@ export interface DailyFeedSnapshot {
   minutes: number;
   xp: number;
   bayCount: number;
+  /**
+   * Os tres campos abaixo existem pra que a PLACA e o PAINEL possam dizer a
+   * mesma coisa.
+   *
+   * Eles eram calculados so no painel, entao a placa — que so recebe este
+   * instantaneo — nao tinha como mostrar arenas nem dias, e acabava inventando
+   * um conjunto proprio de numeros. Duas pecas sobre o mesmo dia, com enfases
+   * diferentes. Agora as duas leem `buildDailyStats` deste mesmo objeto.
+   *
+   * Opcionais porque post antigo no feed nao os tem: quem nao tiver, mostra os
+   * que tem, e nao quebra.
+   */
+  arenasTouched?: number;
+  activeDays?: number;
+  cycleDaysSoFar?: number;
   reading?: string;
   comparisonLabel?: string;
   actions: { id: string; name: string; icon: string; completed: boolean; background?: string }[];

@@ -1,5 +1,5 @@
 import { DailySummaryCard } from './DailySummaryCard';
-import { DailyPanelBoard, type DailyBoardStat } from './DailyPanelBoard';
+import { DailyPanelBoard } from './DailyPanelBoard';
 import { useDailyComparison } from '../hooks/useDailyComparison';
 import { dailyComparisonLabel } from '../utils/dailyComparison';
 import type { DailyFeedSnapshot } from '../types';
@@ -15,6 +15,7 @@ import './core-ui.css';
 import './daily-review.css';
 import { buildHistoricalDailyInsight, buildTodayDailyReading, type DailyReadingDepth } from '../utils/dailyInsights';
 import { getTaskExp, getTaskMinutes } from '../utils/taskExp';
+import { buildDailyStats } from '../utils/dailyStats';
 import { getCycleXpBonusRate } from '../utils/premiumAccess';
 import { pickOracleOpeningLine, ORACLE_FREE_TONE } from '../constants/oracleSpeechLibrary';
 import { DEFAULT_ORACLE_PRESENCE_LEVEL, hasSpokenOpeningLineToday, markOpeningLineSpoken } from '../utils/oracleFeedUtils';
@@ -32,15 +33,6 @@ type DailyPatternDay = {
     total: number;
     completed: number;
     exp: number;
-};
-
-/** Minutos em "9h15". Recebe MINUTOS, nunca EXP — os dois nao sao a mesma coisa. */
-const formatarDuracao = (minutos: number): string => {
-    const total = Math.max(0, Math.round(minutos));
-    const horas = Math.floor(total / 60);
-    const restante = total % 60;
-    if (horas <= 0) return restante + 'min';
-    return restante > 0 ? horas + 'h' + String(restante).padStart(2, '0') : horas + 'h';
 };
 
 const formatPanelDate = (date: string) => {
@@ -458,6 +450,10 @@ export const DailyPanelContent: React.FC<{
     const dailySnapshot: DailyFeedSnapshot = {
         version: 1, date: selectedDate, dateLabel, completed: completedRows.length,
         total: rowsDoDia.length, minutes: dayMinutes, xp: dayExp, bayCount: rowsNaBaia.length,
+        // Vao no instantaneo, e nao so pro painel, porque a placa tambem os
+        // mostra — e ela so recebe isto aqui.
+        arenasTouched: arenaStats.filter((arena) => arena.completed > 0).length,
+        ...(cyclePattern ? { activeDays: cyclePattern.diasComAlgoFeito, cycleDaysSoFar: cyclePattern.diasJaVividos } : {}),
         reading: (ehHoje ? todayReading?.text : historicalInsight) || undefined,
         comparisonLabel: dailyComparisonLabel(comparison, completedRows.length, dayExp) || undefined,
         // Agrupadas por arena, e nao so "concluidas primeiro": a placa e o feed
@@ -481,56 +477,7 @@ export const DailyPanelContent: React.FC<{
     };
 
 
-    /**
-     * OS QUADRADOS: UM POR UNIDADE, E NENHUM MEDINDO PLANO.
-     *
-     * Os quatro anteriores erravam de tres jeitos. "Perfeitos" e "Sequencia"
-     * so existem onde ha plano — dia perfeito quer dizer concluidas == marcadas,
-     * entao quem nao marca nada colhe um numero sem sentido e quem marca muito
-     * colhe uma cobranca. "Na baia" nem fala do dia: fala do que ainda nao tem
-     * dia. E "Guardada" e uma promessa de fecho de ciclo, nao uma medida do dia.
-     *
-     * Estes quatro medem quatro grandezas diferentes — horas, pontos, arenas,
-     * dias — e nenhum reconta as acoes que o numerao ja contou. Todos valem
-     * igual pra quem planeja e pra quem so registra o que fez.
-     */
-    const boardStats = useMemo<DailyBoardStat[]>(() => {
-        const arenasTocadas = arenaStats.filter((arena) => arena.completed > 0).length;
 
-        const lista: DailyBoardStat[] = [
-            {
-                id: 'tempo',
-                label: 'Tempo',
-                value: dayMinutes > 0 ? formatarDuracao(dayMinutes) : '—',
-                hint: 'registrado',
-            },
-            {
-                id: 'exp',
-                label: 'EXP',
-                value: dayExp > 0 ? `+${dayExp}` : '0',
-                hint: 'no dia',
-            },
-            {
-                id: 'arenas',
-                label: arenasTocadas === 1 ? 'Arena' : 'Arenas',
-                value: String(arenasTocadas),
-                hint: 'tocadas',
-            },
-        ];
-
-        // O quarto so existe com ciclo aberto, porque ele mede dias DENTRO de um
-        // ciclo. Sem ciclo nao ha janela, e um numero sem janela nao diz nada.
-        if (cyclePattern) {
-            lista.push({
-                id: 'dias',
-                label: 'Dias ativos',
-                value: String(cyclePattern.diasComAlgoFeito),
-                hint: `de ${cyclePattern.diasJaVividos} ${cyclePattern.diasJaVividos === 1 ? 'dia' : 'dias'}`,
-            });
-        }
-
-        return lista;
-    }, [arenaStats, cyclePattern, dayExp, dayMinutes]);
 
     return (
         <div className="daily-review daily-board-layout">
@@ -540,9 +487,8 @@ export const DailyPanelContent: React.FC<{
                 isToday={ehHoje}
                 completed={completedRows.length}
                 total={rowsDoDia.length}
-                durationLabel={dayMinutes > 0 ? formatarDuracao(dayMinutes) : ''}
                 xp={dayExp}
-                stats={boardStats}
+                stats={buildDailyStats(dailySnapshot)}
                 arenas={arenaStats}
                 cycleName={activeCycle?.name}
                 cycleDayLabel={cyclePattern?.timing.statusLabel}

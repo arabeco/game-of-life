@@ -3,6 +3,7 @@ import { EmojiGlyph } from './EmojiGlyph';
 import { OracleSpeakerMark } from './OracleSpeakerMark';
 import { ShareIcon } from './Icons';
 import { safeDailyActionBackground } from '../utils/dailyFeedSnapshot';
+import { dailyHeroLabel, type DailyStat } from '../utils/dailyStats';
 import './daily-board.css';
 
 /**
@@ -22,14 +23,12 @@ import './daily-board.css';
  * por `DailyPanelContent` desde 08/09 e vinha sendo jogado fora a cada render.
  */
 
-export interface DailyBoardStat {
-    /** Chave estavel: o rotulo muda entre hoje e um dia fechado. */
-    id: string;
-    label: string;
-    value: string;
-    /** Linha de apoio, quando o numero sozinho nao se explica. */
-    hint?: string;
-}
+/**
+ * Os quadrados vem prontos de `buildDailyStats`, e nao sao montados aqui: a
+ * placa precisa da MESMA lista, e ela so tem o instantaneo do dia. Um unico
+ * dono da decisao, duas telas lendo dele.
+ */
+export type DailyBoardStat = DailyStat;
 
 export interface DailyBoardArena {
     id: string;
@@ -73,7 +72,6 @@ export interface DailyPanelBoardProps {
     isToday: boolean;
     completed: number;
     total: number;
-    durationLabel: string;
     xp: number;
     stats: DailyBoardStat[];
     arenas: DailyBoardArena[];
@@ -91,7 +89,6 @@ export const DailyPanelBoard: React.FC<DailyPanelBoardProps> = ({
     isToday,
     completed,
     total,
-    durationLabel,
     xp,
     stats,
     arenas,
@@ -147,18 +144,20 @@ export const DailyPanelBoard: React.FC<DailyPanelBoardProps> = ({
             )}
 
             {/*
-              * O NUMERAO E O QUE FOI FEITO, E SO ISSO.
+              * O NUMERAO E A EXP, e a placa faz igual.
               *
-              * Nao ha porcentagem nem barra de progresso em lugar nenhum deste
-              * painel. Toda barra precisa de um denominador, e o unico
-              * denominador disponivel aqui e o que a pessoa marcou — o que
-              * transforma quem nao marca nada em "100%" e quem marca muito em
-              * boletim. O painel conta acoes, tempo e EXP, que sao verdade sem
-              * plano nenhum por tras.
+              * Nao e porcentagem e nunca vai ser: toda porcentagem aqui teria
+              * como denominador o que a pessoa marcou, e quem nao marca nada
+              * colheria 100% sem ter medido esforco nenhum. EXP e o que o dia
+              * RENDEU — render nao precisa de plano, quem so registra o que fez
+              * ganha igual.
+              *
+              * A contagem de acoes desceu pros quadrados, onde ela e uma
+              * grandeza entre quatro em vez de ser a moldura do dia.
               */}
-            <section className="daily-board-hero" aria-label="O que foi feito">
-                <div className="daily-board-done">{completed}</div>
-                <p className="daily-board-done-label">{completed === 1 ? 'ação concluída' : 'ações concluídas'}</p>
+            <section className="daily-board-hero" aria-label="O que o dia rendeu">
+                <div className="daily-board-done">+{xp}</div>
+                <p className="daily-board-done-label">{dailyHeroLabel(isToday)}</p>
             </section>
 
             {/*

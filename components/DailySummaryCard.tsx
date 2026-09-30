@@ -6,7 +6,7 @@ import { getOperationalDateString } from '../utils/operationalDay.js';
 import './daily-review.css';
 import { DIRECOES, DIRECAO_PADRAO } from '../constants/rewardPlateStyles';
 import { safeDailyActionBackground } from '../utils/dailyFeedSnapshot';
-const formatDuration = (minutes: number) => { const n = Math.max(0, Math.round(minutes)); return n >= 60 ? `${Math.floor(n/60)}h${n%60 ? String(n%60).padStart(2,'0') : ''}` : `${n}min`; };
+import { buildDailyStats, dailyHeroLabel } from '../utils/dailyStats';
 export const DailySummaryCard: React.FC<{snapshot: DailyFeedSnapshot; captureId?: string; isToday?: boolean; onShare?: () => void}> = ({snapshot, captureId, isToday = snapshot.date === getOperationalDateString(), onShare}) => {
     const gridRef = useRef<HTMLDivElement>(null);
     const [tileCapacity, setTileCapacity] = useState(0);
@@ -57,11 +57,16 @@ export const DailySummaryCard: React.FC<{snapshot: DailyFeedSnapshot; captureId?
                 </header>
                 <section className="daily-postcard-hero">
                     <div className="daily-postcard-number">+{snapshot.xp}</div>
-                    <p>{isToday ? 'XP acumulado' : 'XP registrado'}</p>
+                    <p>{dailyHeroLabel(isToday)}</p>
                 </section>
+                {/* A MESMA lista do painel, da MESMA funcao.
+                    Antes a placa montava duas estatisticas proprias — tempo e
+                    acoes — e o painel montava outras quatro. Ninguem tinha
+                    escrito nada errado; havia dois donos da mesma decisao. */}
                 <div className="daily-postcard-stats">
-                    <div><strong>{formatDuration(snapshot.minutes)}</strong><span>tempo registrado</span></div>
-                    <div><strong>{snapshot.completed}</strong><span>ações concluídas</span></div>
+                    {buildDailyStats(snapshot).map(stat => (
+                        <div key={stat.id}><strong>{stat.value}</strong><span>{stat.label}</span></div>
+                    ))}
                 </div>
                 <section className="daily-postcard-actions" aria-label="Ações do dia">
                     <div className="daily-postcard-section-label"><span>Ações do dia</span><span>{hiddenCount > 0 ? `${visibleRows.length} de ${snapshot.total} · +${hiddenCount}` : `${snapshot.total} ações`}</span></div>

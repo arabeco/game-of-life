@@ -61,6 +61,17 @@
   filter: drop-shadow(0 0 2px rgba(0, 0, 0, .62)) drop-shadow(0 1px 1px rgba(0, 0, 0, .85));
 }
 
+/* On the light gold stone, small pale labels merge into the mineral texture. */
+.metal-report-card[data-rank="A"] .metal-report-card__rail,
+.metal-report-card[data-rank="A"] .metal-report-card__metric-label,
+.metal-report-card[data-rank="A"] .metal-report-card__badge-label,
+.metal-report-card[data-rank="A"] .metal-report-card__summary,
+.metal-report-card[data-rank="A"] .metal-report-card__dual-progress-meta {
+  color: #3b2a12;
+  font-weight: 600;
+  text-shadow: 0 1px 1px rgba(255, 242, 208, .9), 0 0 3px rgba(255, 242, 208, .7);
+}
+
 .metal-report-card[data-rank="SSS"] { color: #755a31; filter: drop-shadow(0 14px 22px #0006); }
 .metal-report-card[data-rank="SSS"] .metal-report-card__laurel { opacity: .93; filter: sepia(1) saturate(1.7) hue-rotate(350deg) brightness(.75) drop-shadow(0 1px 1px #fff9) drop-shadow(0 1px 1px #5d3f1b66); }
 .metal-report-card[data-rank="SSS"] .metal-report-card__rail,

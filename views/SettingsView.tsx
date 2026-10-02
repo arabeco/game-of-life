@@ -1564,7 +1564,7 @@ const ChallengeSelectionModal: React.FC<{ title?: string; onClose: () => void; o
                             filteredFriends.map(friend => (
                                 <div id={`challenge-friend-${friend.id}`} key={friend.id} onClick={() => onSelectFriend(friend)} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl cursor-pointer border border-transparent hover:border-[var(--skin-accent-color)]/30 transition-all">
                                     <div className="w-10 h-10 rounded-full bg-black/30 overflow-hidden">
-                                        {friend.avatarUrl ? <img src={friend.avatarUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-500 font-bold">?</div>}
+                                        {friend.avatarUrl ? <img src={friend.avatarUrl} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-500 font-bold">?</div>}
                                     </div>
                                     <div className="flex-1">
                                         <div className="text-sm font-bold text-white">{friend.nickname}</div>
@@ -2659,7 +2659,7 @@ const CodexActionModal: React.FC<CodexActionModalProps> = ({ codex, onClose, onA
                                             className={`w-full flex items-center p-2 rounded-xl border transition-all ${selectedFriend === friend.id ? 'bg-white/10 border-[var(--skin-accent-color)]' : 'bg-black/30 border-white/5 hover:bg-white/5'}`}
                                         >
                                             <div className="w-8 h-8 rounded-full bg-black/50 overflow-hidden mr-3">
-                                                {friend.avatarUrl ? <img src={friend.avatarUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-xs">?</div>}
+                                                {friend.avatarUrl ? <img src={friend.avatarUrl} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-xs">?</div>}
                                             </div>
                                             <span className="text-sm font-bold text-gray-200">{friend.nickname}</span>
                                         </button>

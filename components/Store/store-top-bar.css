@@ -1,0 +1,47 @@
+/* O "+N" QUE SOBE, e o brilho curto no saldo.
+   Os dois existem porque o credito acontecia atras do modal de pagamento: o
+   numero ja tinha subido quando a pessoa voltava a ve-lo, entao a chegada do
+   ouro nunca era assistida. */
+
+.gold-gain-float {
+  position: absolute;
+  left: 50%;
+  top: 2px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 2;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  color: #ffe9a8;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .85), 0 0 10px rgba(255, 213, 128, .5);
+  animation: gold-gain-rise 1100ms cubic-bezier(.22, 1, .36, 1) forwards;
+}
+
+@keyframes gold-gain-rise {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(6px) scale(.8); }
+  18%  { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.08); }
+  32%  { transform: translateX(-50%) translateY(-2px) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-26px) scale(.95); }
+}
+
+.gold-gain-pulse {
+  animation: gold-gain-pulse 520ms ease-out 2;
+}
+
+@keyframes gold-gain-pulse {
+  0%, 100% { transform: scale(1); filter: none; }
+  40%      { transform: scale(1.14); filter: drop-shadow(0 0 7px rgba(255, 213, 128, .75)); }
+}
+
+/* Quem pediu menos movimento no sistema recebe o numero novo, sem o trajeto.
+   O saldo continua correto porque a contagem roda no estado, nao no CSS. */
+@media (prefers-reduced-motion: reduce) {
+  .gold-gain-float { animation: gold-gain-rise-sem-movimento 900ms linear forwards; }
+  .gold-gain-pulse { animation: none; }
+  @keyframes gold-gain-rise-sem-movimento {
+    0%, 70% { opacity: 1; transform: translateX(-50%); }
+    100%    { opacity: 0; transform: translateX(-50%); }
+  }
+}

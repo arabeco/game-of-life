@@ -3,6 +3,7 @@ import { Portal } from '../Portal';
 import { GlassCard } from '../GlassCard';
 import { XIcon } from '../Icons';
 import { MercadoPagoBrick } from './MercadoPagoBrick';
+import { anunciarGanhoDeOuro } from '../../utils/goldGain';
 import { BillingInternalProductId, getBillingCatalogEntry } from '../../constants/billingCatalog';
 import { getBillingRuntimePlatform, shouldUseStoreBilling } from '../../utils/billingRuntime';
 import {
@@ -134,7 +135,25 @@ export const BillingCheckoutGate: React.FC<BillingCheckoutGateProps> = (props) =
                     products: result.products,
                 };
                 const credited = await buyGoldPack(props.internalProductId, purchaseContext);
-                if (credited) props.onClose();
+                if (credited) {
+                    props.onClose();
+                    /*
+                     * Mesma regra do checkout web: o aviso sai DEPOIS de fechar.
+                     *
+                     * `buyGoldPack` ja creditou, entao a barra de moedas atras
+                     * deste modal ja esta com o numero novo. O `setTimeout(0)`
+                     * da ao React o quadro de que ele precisa pra desmontar a
+                     * tela de compra, e so entao o "+N" comeca a subir — com a
+                     * barra a vista.
+                     *
+                     * Aqui o quanto entrou vem do catalogo e nao de uma leitura
+                     * do saldo: no Android o pacote e conhecido antes da compra.
+                     */
+                    const entrou = props.kind === 'gold' ? Number(props.goldAmount || 0) : 0;
+                    if (entrou > 0) {
+                        window.setTimeout(() => anunciarGanhoDeOuro(entrou), 0);
+                    }
+                }
                 return;
             }
 

@@ -1,6 +1,7 @@
 ﻿import { loadCatalogRows } from '../utils/networkEfficiency.js';
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
 import { UserCodex, CodexCatalogItem, Asset, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, SequenceItem, DailyProofStreak, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RelationshipCompetitionChallenge, RelationshipCompetitionProposal, RelationshipMentorshipOffer, RewardModalPayload, UserBlock, ModerationReportInput, PlannerMatrixQuadrant } from '../types';
+import type { StoreTab } from '../components/Store/StoreTopBar';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, ItemCategory, ItemDef, RANK_UP_INSIGNIA_ID, resolveItemDef, getCatalogItemsByCategory, isChestEligibleItem, isItemCatalogVisible } from '../constants/items';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
@@ -1105,7 +1106,7 @@ export interface GameContextType {
     renewRelationshipLink: (relationshipLinkId: string) => Promise<boolean>;
     offerMentorshipArena: (relationshipLinkId: string, sourceArenaId: string) => Promise<boolean>;
     respondMentorshipOffer: (offerId: string, action: 'install' | 'decline' | 'cancel') => Promise<boolean>;
-    buyRelationshipCapacitySlot: (slotType: RelationshipCapacitySlotType) => Promise<boolean>;
+    buyRelationshipCapacitySlot: (slotType: RelationshipCapacitySlotType, custoEmOuro?: number) => Promise<boolean>;
     createLinkedRelationshipArena: (relationshipLinkId: string, arenaInput: { assetId: string; name: string; description?: string; icon?: string }) => Promise<Arena | null>;
     selectMentorshipArena: (relationshipLinkId: string, arenaId: string) => Promise<Arena | null>;
     shareRelationshipArena: (relationshipLinkId: string, arenaId: string) => Promise<Arena | null>;
@@ -2352,7 +2353,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         label?: string;
         // 'forge' saiu junto com a aba: um link profundo para uma aba que nao
         // existe mais cairia no fallback e a pessoa acharia que o botao quebrou.
-        storeTab?: 'store' | 'codexes' | 'items';
+        //
+        // E o tipo vem de StoreTopBar em vez de ser escrito a mao aqui: a uniao
+        // ja estava copiada nos dois lugares, e quando a aba 'membership' nasceu
+        // so um deles soube. Copia de uniao envelhece em silencio — o TypeScript
+        // nao reclama de um valor que o outro arquivo passou a aceitar.
+        storeTab?: StoreTab;
         section?: string | null;
     }) => {
         if (typeof window === 'undefined') return;
@@ -2502,19 +2508,23 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
 
-        if ((userProfile.wallet?.gold || 0) < cost) {
-            showToast("Saldo insuficiente para esta operação.", "error");
-            setTimeout(() => {
-                const mundoContainer = document.getElementById('social-container');
-                if (mundoContainer) {
-                    const storeBtn = Array.from(document.querySelectorAll('button')).find(b => b.innerText.includes('LOJA'));
-                    if (storeBtn) storeBtn.click();
-                } else {
-                    window.dispatchEvent(new CustomEvent('navigate-to-store'));
-                }
-            }, 1500);
-            return;
-        }
+        /*
+         * AQUI HAVIA UM SEGUNDO `if` COM A MESMA CONDICAO, e ele era inalcancavel.
+         *
+         * O bloco logo acima testa `gold < cost` e da `return` nos dois ramos, o
+         * do premium e o do resto. Entao quando a execucao chega nesta linha, ou
+         * `gold >= cost` — e a condicao repetida e falsa — ou ja se voltou. O
+         * codigo dentro dele nunca rodou uma vez.
+         *
+         * O que ele fazia merece registro, porque se um dia virasse alcancavel
+         * quebraria no primeiro rename: varria TODOS os <button> da pagina
+         * procurando um cujo innerText contivesse "LOJA", e clicava nele.
+         * Navegacao por texto de botao nao sobrevive a traducao, a troca de
+         * rotulo nem a um botao novo que por acaso diga a mesma palavra.
+         *
+         * O caminho certo ja existe e e o de cima: `promptGoldShortage`, que abre
+         * o aviso com "Adquira N moedas aqui" e leva pra aba certa da loja.
+         */
 
         const { data, error } = await withLatencyToast<{ data: any, error: any }>(
             supabase.rpc('buy_store_item', {
@@ -6497,7 +6507,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const currentFragments = Math.max(0, Number(userProfile.wallet?.fragments || 0));
         if (currentFragments < safeFragmentCost) {
             const missingFragments = Math.max(0, safeFragmentCost - currentFragments);
-            showToast(`\u{1F48E} Fragmentos insuficientes. Faltam ${missingFragments} para adquirir ${catalogItem.title}.`, 'warning');
+            /*
+             * FRAGMENTO NAO SE COMPRA, entao aqui nao ha loja pra oferecer.
+             *
+             * Mandar pra loja seria pior que o beco: a pessoa chegaria numa tela
+             * de pacotes de OURO procurando fragmento e nao acharia. O que falta
+             * nao e caminho de compra, e a informacao de onde o fragmento vem —
+             * que o app so diz hoje em um lugar, tocando o diamante na barra da
+             * loja.
+             */
+            showToast(
+                `\u{1F48E} Faltam ${missingFragments} fragmentos para ${catalogItem.title}. Fragmento vem de quebrar item que você não usa, no Arsenal.`,
+                'warning',
+            );
             return null;
         }
 
@@ -7244,16 +7266,48 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
      * concede o espaco. O resumo volta junto para a tela nao precisar recarregar
      * a capacidade logo depois de mexer nela.
      */
-    const buyRelationshipCapacitySlot = async (slotType: RelationshipCapacitySlotType): Promise<boolean> => {
+    const buyRelationshipCapacitySlot = async (
+        slotType: RelationshipCapacitySlotType,
+        /**
+         * O custo vem de quem chamou, e nao e adivinhado aqui.
+         *
+         * Quem abre o espaco ja tem o preco na tela — o botao em ConnectionsModal
+         * escreve "Abrir espaco · 100" lendo `capacidade.linked_arena.costGold`.
+         * Repetir essa busca aqui dentro criaria uma segunda copia do preco, que
+         * e exatamente como o botao e o aviso passam a discordar.
+         *
+         * Opcional porque sem ele nada quebra: so nao da pra oferecer a compra.
+         */
+        custoEmOuro?: number,
+    ): Promise<boolean> => {
         const { data, error } = await supabase.rpc('buy_relationship_capacity_slot', { p_slot_type: slotType });
         if (error) {
             const recusa = String(error.message || '');
+            /*
+             * SEM OURO, O CAMINHO CONTINUA — nao termina num toast.
+             *
+             * Isto aqui era so um aviso e um `return false`. A pessoa clicou em
+             * "abrir espaco", ou seja disse exatamente o que queria, e o app
+             * respondia que nao dava e parava. Quatro outros pontos do app ja
+             * abriam a loja nessa hora; este nao, e era um dos de maior intencao.
+             */
+            if (recusa.includes('Insufficient gold')) {
+                showToast('Ouro insuficiente para abrir outro espaço.', 'warning');
+                if (custoEmOuro && custoEmOuro > 0) {
+                    promptGoldShortage({
+                        requiredGold: custoEmOuro,
+                        label: 'abrir outro espaço',
+                        storeTab: 'store',
+                        section: 'packs',
+                    });
+                }
+                return false;
+            }
+
             showToast(
-                recusa.includes('Insufficient gold')
-                    ? 'Ouro insuficiente para abrir outro espaço.'
-                    : recusa.includes('nao se compra')
-                        ? 'Esse espaço não tem limite — não há o que comprar.'
-                        : 'Não consegui abrir o espaço. Tente de novo.',
+                recusa.includes('nao se compra')
+                    ? 'Esse espaço não tem limite — não há o que comprar.'
+                    : 'Não consegui abrir o espaço. Tente de novo.',
                 'error',
             );
             return false;

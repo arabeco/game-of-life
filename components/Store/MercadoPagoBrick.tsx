@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useGame } from '../../contexts/GameContext';
+import { anunciarGanhoDeOuro } from '../../utils/goldGain';
 import { supabase } from '../../supabaseClient';
 import { GlassCard } from '../GlassCard';
 import { XIcon } from '../Icons';
@@ -150,6 +151,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = (props) => {
     const [checkoutCpf, setCheckoutCpf] = useState('');
     const [checkoutMode, setCheckoutMode] = useState<CheckoutMode>(hasValidProfileEmail ? 'account' : 'custom');
     const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>('mode');
+    const ouroQueEntrouRef = useRef(0);
     const latestRefs = useRef({ onClose, showToast });
     const baselineGoldRef = useRef<number>(Number(userProfile.wallet?.gold || 0));
     const baselineMembershipRef = useRef({
@@ -311,6 +313,9 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = (props) => {
                         },
                     });
                     setDeliveryDetected(true);
+                    // Guardado, nao anunciado agora: a barra de moedas esta atras
+                    // deste modal, e animar aqui seria animar no escuro.
+                    ouroQueEntrouRef.current = gainedGold;
                     if (!deliveryToastShownRef.current) {
                         deliveryToastShownRef.current = true;
                         showToast(`${gainedGold} de Ouro foram adicionados à sua conta.`, 'success');
@@ -390,7 +395,24 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = (props) => {
 
         const closeTimer = window.setTimeout(() => {
             onClose();
-        }, 1600);
+            /*
+             * O AVISO SAI DEPOIS DO FECHAMENTO, e de proposito.
+             *
+             * O ouro ja entrou ha mais de um segundo — a sondagem creditou, o
+             * perfil mudou e a barra de moedas, atras deste modal, ja esta com o
+             * numero novo. Anunciar no credito seria animar atras de uma tela
+             * cheia; anunciar aqui faz a contagem comecar quando ha olho pra ver.
+             *
+             * O `setTimeout(0)` deixa o React desmontar o modal antes: sem ele, o
+             * "+N" nasce no mesmo quadro em que a tela de compra ainda cobre a
+             * barra, e os primeiros quadros da subida se perdem.
+             */
+            const entrou = ouroQueEntrouRef.current;
+            if (entrou > 0) {
+                ouroQueEntrouRef.current = 0;
+                window.setTimeout(() => anunciarGanhoDeOuro(entrou), 0);
+            }
+        }, 900);
 
         return () => window.clearTimeout(closeTimer);
     }, [deliveryDetected, onClose]);

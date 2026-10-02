@@ -3,9 +3,10 @@ import { StoreTopBar, type StoreTab } from '../components/Store/StoreTopBar';
 import { GoldStore } from '../components/Store/GoldStore';
 import { CodexStore } from '../components/Store/CodexStore';
 import { ItemsStore } from '../components/Store/ItemsStore';
+import { MembershipStore } from '../components/Store/MembershipStore';
 import { SCREEN_INTRO_TIP_CONTEXT_EVENT, type ScreenIntroTipId } from '../utils/screenIntroTips';
 
-const ALLOWED_TABS: readonly StoreTab[] = ['codexes', 'items', 'store'];
+const ALLOWED_TABS: readonly StoreTab[] = ['codexes', 'items', 'store', 'membership'];
 
 export const StoreView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<StoreTab>('codexes');
@@ -59,6 +60,7 @@ export const StoreView: React.FC = () => {
 
       <div className="min-h-[500px]">
           {activeTab === 'store' && <GoldStore scrollRequest={scrollRequest} />}
+          {activeTab === 'membership' && <MembershipStore scrollRequest={scrollRequest} />}
           {activeTab === 'codexes' && <CodexStore />}
           {activeTab === 'items' && <ItemsStore />}
       </div>

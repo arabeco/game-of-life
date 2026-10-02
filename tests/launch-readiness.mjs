@@ -38,6 +38,17 @@ const manualQaNotes = [
 const suites = {
   core: [
     {
+      id: 'loja-separada-e-ganho-visivel',
+      label: 'Loja separada e ganho visivel regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'loja-separada-e-ganho-visivel.regression.mjs')]],
+      kind: 'logic',
+      interactions: [
+        'ouro e plano vivem em abas diferentes',
+        'faltar moeda leva a loja em vez de terminar num toast',
+        'o ganho de ouro e anunciado depois do modal fechar, nao atras dele',
+      ],
+    },
+    {
       id: 'avatar-offsets',
       label: 'Avatar offsets regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'avatar-offsets.regression.mjs')]],

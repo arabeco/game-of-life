@@ -635,7 +635,11 @@ export const ConnectionsModal: React.FC<{
                       disabled={comprandoEspaco}
                       onClick={async () => {
                         setComprandoEspaco(true);
-                        const ok = await buyRelationshipCapacitySlot('linked_arena');
+                        // O preco vai junto, e e o MESMO que o botao escreve logo
+                        // abaixo. Sem ouro, e ele que o aviso usa pra oferecer a
+                        // compra — e por vir daqui, o numero da loja nunca
+                        // discorda do numero do botao.
+                        const ok = await buyRelationshipCapacitySlot('linked_arena', capacidade.linked_arena.costGold);
                         // O resumo so muda no servidor, entao a faixa tem de
                         // reler. Sem isto ela continuaria dizendo o limite
                         // velho logo depois de o ouro sair.

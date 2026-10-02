@@ -740,7 +740,22 @@ export const AssetsView: React.FC = () => {
                                 type="button"
                                 onClick={handleOpenReports}
                                 aria-label={cycleSummary ? `Abrir ${cycleSummary.name}` : 'Abrir histórico de ciclos'}
-                                className={`group relative overflow-hidden px-3 text-left transition-all duration-300 hover:-translate-y-[1px] ${activeCycle ? 'pb-1 pt-1' : 'py-2'}`}
+                                /*
+                                 * `flex-col justify-center` pelo mesmo motivo do
+                                 * android:gravity="center_vertical" no widget.
+                                 *
+                                 * A placa tem 68px de altura minima e o conteudo
+                                 * soma ~42: titulo, as duas linhas de rotulo e as
+                                 * duas barras de 3px. Como bloco, tudo isso
+                                 * encostava no topo e os ~18px que sobravam viravam
+                                 * uma faixa vazia embaixo da barra de tempo — o
+                                 * cartao parecia cortado pela metade.
+                                 *
+                                 * Este card e o ORIGINAL que o widget imita, entao
+                                 * os dois tinham o mesmo defeito pela mesma razao, e
+                                 * agora repartem a folga da mesma forma.
+                                 */
+                                className={`group relative flex flex-col justify-center overflow-hidden px-3 text-left transition-all duration-300 hover:-translate-y-[1px] ${activeCycle ? 'pb-1 pt-1' : 'py-2'}`}
                                 style={{
                                     width: activeCycle ? '96%' : '82%',
                                     maxWidth: activeCycle ? '460px' : '300px',

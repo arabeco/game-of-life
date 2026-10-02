@@ -23,7 +23,14 @@
   .linha { margin-bottom: 22px; }
   .rotulo { font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
             color: #7d8ea3; margin-bottom: 7px; font-weight: 700; }
-  .ficha { position: relative; width: min(620px, 100%); aspect-ratio: 300 / 56; }
+  /* 300x86 e nao 300x56.
+     56dp e o `minHeight` do glyph_widget_info.xml — o MINIMO que o widget
+     aceita, nao o que ele recebe. Numa celula de uma linha o launcher entrega
+     perto de 100dp, e era essa diferenca que produzia a faixa vazia embaixo da
+     barra de tempo no aparelho enquanto aqui o preview mostrava o conteudo
+     transbordando. Preview que modela o minimo nao ajuda a julgar a folga, que
+     e exatamente o que se vem olhar aqui. */
+  .ficha { position: relative; width: min(620px, 100%); aspect-ratio: 300 / 86; }
   .ficha canvas.fundo { position: absolute; inset: 0; width: 100%; height: 100%; }
   /* O miolo e desenhado em 1dp = 1px e depois AMPLIADO duas vezes.
      Sem isso a ficha saia com 620px de largura e fontes de tamanho real: sobrava
@@ -33,14 +40,30 @@
      Android, que e o que o layout usa. Sem isso o CSS soma meia linha por campo
      e o preview transborda uma ficha que no aparelho cabe. */
   .miolo * { line-height: 1; }
-  .miolo { position: absolute; top: 0; left: 0; width: 310px; height: 56px;
+  /* `justify-content: center` e o espelho do android:gravity="center_vertical".
+     Grudado no topo, a folga toda ia pro rodape e o cartao parecia cortado. */
+  /* `box-sizing: border-box` porque o Android ja mede assim.
+     Sem ele, `height: 86px` era a caixa de CONTEUDO e os 5px de padding somavam
+     por fora: a ficha tinha 86 e o miolo ocupava 91, entao a barra de tempo
+     passava alguns pixels alem da borda da placa. No aparelho isso nao acontece
+     porque o padding de uma View vive DENTRO da altura dela — o preview e que
+     media por outra regra. */
+  .miolo { box-sizing: border-box;
+           position: absolute; top: 0; left: 0; width: 310px; height: 86px;
            transform: scale(2); transform-origin: top left;
-           padding: 3px 12px 2px; display: flex; flex-direction: column; gap: 1px; }
+           padding: 3px 12px 2px; display: flex; flex-direction: column;
+           justify-content: center; gap: 1px; }
   .faixa-titulo { display: flex; align-items: center; gap: 7px; padding: 0 34px; }
   .faixa-titulo .linha { flex: 1; height: 1px; }
-  .titulo { font-weight: 700; text-transform: uppercase; white-space: nowrap;
-            line-height: 1.05; }
+  /* 13px porque o layout diz android:textSize="13sp".
+     Sem declarar, o titulo herdava os 16px padrao do navegador e a faixa dele
+     media 23dp em vez de 14 — nove a mais, so no primeiro campo. O preview
+     entao mostrava o conteudo transbordando uma ficha que no aparelho sobra. */
+  .titulo { font-size: 13px; font-weight: 700; text-transform: uppercase;
+            white-space: nowrap; line-height: 1.05; }
   .sub { font-size: 9px; color: #C7D1DF; }
+  .meta { font-size: 8px; font-weight: 700; text-transform: uppercase;
+          letter-spacing: .02em; color: #A8B6C9; margin-top: 1px; }
   .par { display: flex; align-items: center; gap: 8px; font-size: 7px;
          font-weight: 700; text-transform: uppercase; }
   .par .esq { flex: 1; color: #A8B6C9; }
@@ -192,6 +215,7 @@ for (const [patamar, metal] of Object.entries(METAIS)) {
           <span class="linha direita"></span>
         </div>
         <div class="sub">Dia 12/30</div>
+        <div class="meta">Ciclo ativo</div>
         <div class="par"><span class="esq">Progresso</span><span class="dir">18/24 (75%)</span></div>
         <div class="barra"><canvas class="acoes"></canvas></div>
         <div class="par"><span class="esq">Tempo</span><span class="dir">12/30 (40%)</span></div>

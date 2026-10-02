@@ -27,10 +27,26 @@
         android:scaleType="fitXY"
         android:src="@drawable/glyph_cycle_widget_background" />
 
+    <!--
+        O MIOLO FICA CENTRADO, e nao grudado no topo.
+
+        O conteudo soma ~69dp: titulo, subtitulo, meta e as duas faixas de barra.
+        O `minHeight` declarado e 56dp, mas minimo nao e tamanho: numa celula de
+        uma linha o launcher entrega bem mais que isso — perto de 100dp no Pixel.
+
+        Com `gravity="top"` toda essa folga caia de uma vez EMBAIXO da barra de
+        tempo, e o cartao parecia cortado pela metade, com um vazio cinza
+        ocupando o terco de baixo da placa. A placa de fundo e `match_parent`,
+        entao ela preenchia o espaco inteiro e so o texto ficava amontoado em
+        cima — o que faz o vazio parecer defeito e nao respiro.
+
+        Centrado, a folga se divide entre cima e baixo e vira margem em qualquer
+        altura que o launcher der, sem o layout precisar saber qual e.
+    -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:gravity="top"
+        android:gravity="center_vertical"
         android:orientation="vertical"
         android:paddingLeft="12dp"
         android:paddingTop="3dp"

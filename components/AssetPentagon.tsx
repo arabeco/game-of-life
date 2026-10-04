@@ -163,15 +163,21 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
              risco. O nivel de cada area e a informacao que a pessoa vem buscar
              no pentagono — precisa dar pra ler sem aproximar o rosto. */
           valueLabelSize: destacarPontas ? 4.2 : 3.6,
-          /* 15 unidades de viewBox, medidas e nao estimadas.
-             O losango tem 20cqw de largura — 10 de meia-largura na mesma
-             unidade — e o aro dos 50 soma 2,2, dando 12,2. Com 13 a bancada
-             ainda mostrava sete numeros encostando a caixa do losango nas
-             faixas baixas; 17 abre folga para o corpo da fonte tambem.
+          /* 11 unidades de viewBox, e cada ponto a mais custa caro.
+             Este recuo AFASTA o numero da propria bolinha dele: o ponto fica
+             onde o valor manda, e so o rotulo e empurrado. Medido no SVG, o
+             afastamento e `minimo - 3,4 x nivel da area`, entao com 17 um
+             degrau 1 jogava o numero a 13,6 unidades do ponto — numero
+             solto, longe da bolinha a que pertence, que foi o que apareceu na
+             tela.
 
-             So vale para area BAIXA: a partir do degrau 5 o vertice ja esta
-             alem disso por conta propria, e o numero fica onde o valor manda. */
-          valueLabelMinMagnitude: 17,
+             Sem peca nenhuma no centro, o que ocupa o meio e so o numero: 13cqw
+             de corpo, e "100" com cerca de 10 de meia-largura. Onze cobre o pior
+             caso, que e um vertice na horizontal, e nao mais que isso.
+
+             So vale para area BAIXA: do degrau 4 pra cima o vertice ja passa
+             disso por conta propria, e o numero fica colado no ponto. */
+          valueLabelMinMagnitude: 11,
           valueLabelWeight: 900,
           valueLabelOffset: destacarPontas ? 6 : 0,
         }]}

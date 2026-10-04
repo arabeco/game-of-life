@@ -88,30 +88,40 @@ export const MASTERY_RAW_TOTAL_MAX_LEVEL = 50;
 export const MASTERY_TOTAL_MAX_LEVEL = 100;
 
 /**
- * O INDICE GLYPH COMECA EM 50.
+ * O NIVEL E O DOBRO DA MAESTRIA, E AS DUAS APARECEM JUNTAS.
  *
- * Antes ele era a soma dos degraus DOBRADA, e isso deixava o pentagono com duas
- * escalas: as cinco pontas somavam 50 e o numero do meio dizia 100. A conta
- * fechava por multiplicacao, nao por significado.
+ * Esta versao ja existiu e foi trocada por `50 + soma`, porque o pentagono
+ * somava 50 enquanto o numero do meio dizia 100 — duas escalas no mesmo
+ * desenho, sem nada na tela dizendo que eram duas. Dali saiu o cabecalho
+ * mostrando 72 e a placa do legado mostrando 36 para a mesma pessoa.
  *
- * Agora os 50 pontos que a pessoa conquista sao literalmente os cinco degraus
- * somados — dez por area, cinco areas — em cima de uma base de 50 que todo mundo
- * tem por estar de pe. O pentagono passa a mostrar exatamente a metade de cima
- * do Indice, ponta por ponta.
+ * O dobro volta com o conserto junto: o pentagono passa a escrever os DOIS, o
+ * nivel em cima e a maestria `x/50` embaixo. O que quebrou da primeira vez nao
+ * foi a multiplicacao — foi ela ser invisivel. Declarada, 46 e 23 deixam de
+ * parecer contradicao e viram o que sao: duas medidas do mesmo esforco.
  *
- * O piso so e 50 redondo porque existe o degrau 0. Com minimo de 1 por area o
- * menor Indice possivel seria 55, e a base viraria uma promessa que a escala
- * nunca cumpre.
+ * E nao ha mais piso. O nivel comeca em 0 e vai a 100, e os 100 sao inteiros
+ * conquistados.
  */
-export const MASTERY_INDEX_BASE = 50;
+export const MASTERY_INDEX_MULTIPLIER = 2;
+
+/**
+ * Zero, e mantido por nome.
+ *
+ * O anel interno do pentagono nasceu quando o Indice comecava em 50: ele
+ * desenhava o piso que ninguem precisava conquistar. Sem piso o anel e zero, e
+ * a constante fica para que o desenho continue dizendo de onde tira esse valor
+ * em vez de carregar um zero solto no meio da conta.
+ */
+export const MASTERY_INDEX_BASE = 0;
 
 export const toMasteryIndex = (rawTotal: number): number =>
   Math.min(
     MASTERY_TOTAL_MAX_LEVEL,
-    Math.max(MASTERY_INDEX_BASE, Math.round(MASTERY_INDEX_BASE + rawTotal)),
+    Math.max(0, Math.round(rawTotal * MASTERY_INDEX_MULTIPLIER)),
   );
 
-// Cada degrau de area vale um ponto no Indice, que vai de 50 a 100.
+// Cada degrau de area vale DOIS pontos no Indice, que vai de 0 a 100.
 // Area sem nivel conta como 0 - o abandono e um degrau de verdade, nao ausencia
 // de dado. Toda tela que mostra o indice usa uma destas: ninguem recalcula.
 const sumAreaLevels = (levels: readonly (number | null | undefined)[]): number =>
@@ -214,7 +224,7 @@ export const LIFE_AREAS: readonly LifeAreaDefinition[] = [
       'Sinto-me isolado ou preso em relações que me fazem mal.',
       'Tenho contatos, mas pouca intimidade, apoio ou segurança emocional.',
       'Começo a perceber padrões e a buscar relações mais honestas.',
-      'Prático escuta, presença e limites, ainda com bastante oscilação.',
+      'Pratico escuta, presença e limites, ainda com bastante oscilação.',
       'Cultivo algumas relações verdadeiras e consigo pedir ou oferecer apoio.',
       'Minhas relações importantes recebem atenção e comunicação frequentes.',
       'Tenho vínculos saudáveis, limites claros e espaço para vulnerabilidade.',
@@ -264,7 +274,7 @@ export const LIFE_AREAS: readonly LifeAreaDefinition[] = [
     levelDescriptions: [
       'Não tenho lazer nenhum, e já nem sinto falta. Descansar virou só cair no sono.',
       'Minha rotina deixa pouco espaço para descanso, prazer ou recuperação mental.',
-      'Descanso de modo passivo, mas raramente término realmente renovado.',
+      'Descanso de modo passivo, mas raramente termino realmente renovado.',
       'Experimento formas de lazer e bem-estar, ainda sem regularidade.',
       'Já protejo alguns momentos de descanso, hobby ou silêncio durante a semana.',
       'Tenho atividades que me dão prazer e ajudam a recuperar minha energia.',
@@ -288,17 +298,17 @@ export const LIFE_AREAS: readonly LifeAreaDefinition[] = [
     color: '#a6424f',
     description: 'Movimento, alimentação, sono, energia e cuidado físico.',
     levelDescriptions: [
-      'Abandonei meu corpo. Não cuido, não olho e evito saber como ele está.',
-      'Minha saúde está muito negligenciada e meu corpo cobra atenção imediata.',
-      'Tenho hábitos que drenam energia e quase nenhuma rotina de cuidado.',
-      'Tento melhorar movimento, sono ou alimentação, mas ainda sou bastante inconsistente.',
-      'Começo a criar uma base de cuidados físicos que consigo repetir.',
-      'Tenho energia razoável e uma rotina funcional de movimento, sono e alimentação.',
-      'Minha saúde sustenta bem minha vida e recebe atenção na maior parte das semanas.',
-      'Conheço os sinais do meu corpo e ajusto meus hábitos com maturidade.',
-      'Tenho força, disposição e recuperação para enfrentar desafios físicos relevantes.',
-      'Minha saúde é sólida, equilibrada e inspira confiança no longo prazo.',
-      'Corpo, energia e cuidado formam uma base excepcional, sustentável e integrada.',
+      'Meu corpo limita severamente minha vida e exige intervenção imediata.',
+      'Minha saúde está ruim; sinto dores, letargia e cansaço constante no dia a dia.',
+      'Tenho pouca energia e meu condicionamento físico está muito abaixo do limite aceitável.',
+      'Saí do zero, eliminei os piores hábitos, mas meu corpo ainda é vulnerável.',
+      'Meu corpo dá conta da rotina, mas não tenho margem para suportar grandes esforços físicos.',
+      'Tenho saúde estável, energia regular e capacidade física razoável sem grandes dores.',
+      'Meu corpo funciona muito bem, treino com consistência e tenho disposição de sobra.',
+      'Tenho um corpo resistente, força real e resultados estéticos e físicos claramente visíveis.',
+      'Minha força, condicionamento e mobilidade operam em alto nível de performance.',
+      'Minha capacidade física e resiliência me colocam no topo, muito acima da média.',
+      'Opero no limite do potencial humano: força, energia e saúde inabaláveis.',
     ],
     widget: {
       id: 'widget_saude',

@@ -4,6 +4,7 @@ import {
   LIFE_AREAS,
   MASTERY_AREA_MAX_LEVEL,
   MASTERY_INDEX_BASE,
+  MASTERY_RAW_TOTAL_MAX_LEVEL,
   MASTERY_TOTAL_MAX_LEVEL,
   PONTOS_POR_DEGRAU,
   getMasteryIndexFromLevels,
@@ -41,6 +42,16 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
     .filter((entry): entry is { area: typeof LIFE_AREAS[number]; asset: Asset } => Boolean(entry.asset));
   const levels = chartAreas.map(({ asset }) => tempLevels?.[asset.id] ?? Math.max(0, asset.level || 0));
   const masteryIndex = getMasteryIndexFromLevels(levels);
+  /**
+   * A MAESTRIA CRUA, que e a soma das cinco pontas.
+   *
+   * Ela aparece ESCRITA embaixo do nivel porque o nivel e o dobro dela. Esse
+   * dobro ja existiu sozinho e produziu o cabecalho dizendo 72 com a placa do
+   * legado dizendo 36 — nao porque a conta estivesse errada, mas porque nada na
+   * tela dizia que eram duas grandezas. Com `23/50` logo abaixo do 46, a relacao
+   * fica dita em vez de deduzida.
+   */
+  const maestriaCrua = levels.reduce((soma, nivel) => soma + Math.max(0, nivel), 0);
   const labels = chartAreas.map(({ area }) => area.shortName);
 
   const goldMetallic = '#8d7951';
@@ -62,11 +73,11 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
       <SvgRadarChart
         labels={labels}
         maxValue={MASTERY_AREA_MAX_LEVEL * PONTOS_POR_DEGRAU}
-        /* O RAIO MAPEIA O INDICE, e nao o degrau. O Indice parte de 50, entao a
-           metade de dentro e a base que todo mundo tem por estar de pe, e os dez
-           degraus da area preenchem a metade de fora. Sem isto, uma area em zero
-           puxava a ponta ate o centro e a figura ficava mordida — dizendo que
-           ali nao ha nada, quando o que ha e o piso. */
+        /* SEM BASE INTERNA: o Indice nao parte mais de 50.
+           O anel de dentro desenhava o piso que ninguem conquistava. Agora o
+           nivel comeca em 0, entao uma area em zero puxa a ponta ate o centro —
+           e esta certo: ali nao ha nada mesmo. A figura mordida passou a ser
+           informacao em vez de defeito. */
         baseInterna={MASTERY_INDEX_BASE / MASTERY_TOTAL_MAX_LEVEL}
         levels={3}
         height="100%"
@@ -106,8 +117,18 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
             className={centralStyle === 'plain' ? 'flex items-center justify-center' : 'flex h-[52px] w-[52px] items-center justify-center rounded-full border bg-[#0b0c0d]/38 shadow-[inset_0_1px_0_rgba(255,255,255,.08),0_7px_18px_rgba(0,0,0,.45)] backdrop-blur-[3px]'}
             style={{ borderColor: goldMetallic }}
           >
-            <span className="text-2xl font-black leading-none [text-shadow:0_1px_6px_rgba(0,0,0,0.9)]" style={{ color: goldBright }}>
-              {masteryIndex}
+            {/* Os DOIS numeros, um debaixo do outro: o nivel e o dobro da
+                maestria, e dizer isso custa uma linha de 8px. */}
+            <span className="flex flex-col items-center leading-none">
+              <span className="text-2xl font-black [text-shadow:0_1px_6px_rgba(0,0,0,0.9)]" style={{ color: goldBright }}>
+                {masteryIndex}
+              </span>
+              <span
+                className="mt-[3px] text-[8px] font-bold tabular-nums [text-shadow:0_1px_4px_rgba(0,0,0,0.9)]"
+                style={{ color: 'rgba(235,229,213,0.62)' }}
+              >
+                {maestriaCrua}/{MASTERY_RAW_TOTAL_MAX_LEVEL}
+              </span>
             </span>
           </div>
         </div>

@@ -4,23 +4,23 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
- * A ESCADA VAI DE 0 A 10 POR AREA, E O INDICE COMECA EM 50.
+ * A ESCADA VAI DE 0 A 10 POR AREA, E O NIVEL E O DOBRO DA SOMA.
  *
  * Cada area tem onze degraus: o 0 e o abandono — quem parou de encarar — e o 10
- * e a obra. O Indice Glyph e a base de 50 mais a soma dos cinco degraus, entao
- * ele vai de 50 (tudo abandonado) a 100 (tudo no topo), e as cinco pontas do
- * pentagono somam exatamente a metade de cima do numero do meio.
+ * e a obra. A soma das cinco e a MAESTRIA, de 0 a 50. O nivel que a pessoa ve e
+ * essa soma vezes dois, de 0 a 100.
  *
  * Tres coisas precisam andar juntas, e nenhuma avisa quando se separa:
  *
  *   1. o numero de frases por area (11) e o de nomes de degrau (11);
- *   2. a conta do Indice: base 50 + 5 areas x 10 degraus = 100 exatos;
- *   3. o degrau da area aparece cru na tela, sem multiplicador.
+ *   2. a conta: 2 x 5 areas x 10 degraus = 100 exatos;
+ *   3. o degrau da area aparece CRU nas pontas, sem multiplicador.
  *
- * O terceiro ponto tem historia. Houve uma versao em que o degrau valia dois na
- * exibicao, para as pontas somarem 100 sem ninguem multiplicar. A conta fechava
- * e o numero soava falso — "estou no nivel 20 em Saude" e um numero que o modelo
- * nao tem. A base de 50 resolve a mesma coisa sem inventar escala.
+ * O terceiro ponto tem historia, e ela e a razao de este teste existir. O dobro
+ * ja esteve na EXIBICAO DO DEGRAU — cada ponta do pentagono valia dois — e
+ * "estou no nivel 20 em Saude" e um numero que o modelo nao tem. Isso continua
+ * proibido. O dobro de hoje mora so na conta do nivel, e o pentagono escreve as
+ * duas grandezas lado a lado para que ninguem precise adivinhar a relacao.
  *
  * E o perigo maior nunca foi esquecer a conta: e faze-la em metade dos lugares.
  * O cracha do UserAvatar imprimia a soma crua enquanto o texto ao lado ja
@@ -61,13 +61,19 @@ const TETO = numero('MASTERY_AREA_MAX_LEVEL');
 const BASE = numero('MASTERY_INDEX_BASE');
 const TOTAL = numero('MASTERY_TOTAL_MAX_LEVEL');
 const CRU = numero('MASTERY_RAW_TOTAL_MAX_LEVEL');
+const MULT = numero('MASTERY_INDEX_MULTIPLIER');
 
 assert.equal(
-    BASE + TETO * 5,
+    MULT * TETO * 5,
     TOTAL,
-    `a conta do Índice parou de fechar: ${BASE} + 5x${TETO} deveria dar ${TOTAL}`,
+    `a conta do nível parou de fechar: ${MULT} x 5x${TETO} deveria dar ${TOTAL}`,
 );
-console.log(`ok - ${BASE} de base + 5 áreas x ${TETO} degraus = ${TOTAL}`);
+console.log(`ok - ${MULT} x (5 áreas x ${TETO} degraus) = ${TOTAL}`);
+
+// Sem piso: o nível começa em 0 e os 100 são inteiros conquistados. Houve uma
+// versão com base 50, em que metade do número vinha de graça.
+assert.equal(BASE, 0, 'voltou a existir piso no nível — metade do número viraria brinde');
+console.log('ok - o nível começa em 0');
 
 assert.equal(CRU, TETO * 5, 'MASTERY_RAW_TOTAL_MAX_LEVEL saiu de sincronia com o teto da área');
 console.log(`ok - a soma crua máxima continua ${CRU}`);

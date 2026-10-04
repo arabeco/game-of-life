@@ -10,6 +10,9 @@ import {
   getMasteryIndexFromLevels,
 } from '../constants/lifeAreas';
 import { SvgRadarChart } from './SvgRadarChart';
+import { getMasteryBadgeTier } from '../constants/masteryBadgeTiers';
+import { getPlateFinish } from './MetalReportCard';
+import './mastery-badge.css';
 
 interface AssetPentagonProps {
   assets: Asset[];
@@ -52,9 +55,28 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
    * fica dita em vez de deduzida.
    */
   const maestriaCrua = levels.reduce((soma, nivel) => soma + Math.max(0, nivel), 0);
+
+  /**
+   * O ACABAMENTO DA BOLINHA, pela faixa do indice.
+   *
+   * O metal vem de `getPlateFinish`, a mesma tabela da placa de ciclo — nao ha
+   * paleta propria aqui. A faixa escolhe QUAL metal; nenhuma cor e inventada.
+   *
+   * Vai por variavel CSS em vez de classe por faixa porque sao seis estados
+   * vezes quatro cores: como classes seriam vinte e quatro regras dizendo a
+   * mesma coisa com valores diferentes.
+   */
+  const tier = getMasteryBadgeTier(masteryIndex);
+  const metal = getPlateFinish(tier.finish);
+  const estiloDoMetal = {
+    '--badge-mid': metal.mid,
+    '--badge-pale': metal.pale,
+    '--badge-dark': metal.dark,
+    '--badge-borda': `${tier.borda}px`,
+    '--badge-brilho': String(tier.brilho),
+  } as React.CSSProperties;
   const labels = chartAreas.map(({ area }) => area.shortName);
 
-  const goldMetallic = '#8d7951';
   const goldBright = '#d6c38e';
   const goldFill = '#6f5d2f';
 
@@ -113,20 +135,22 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
                as cinco linhas do pentagono se encontram — ou seja, escondia a
                parte que da forma a figura. Agora e um anel: menor, quase
                transparente e desfocado, entao o grafico atravessa por baixo e o
-               numero continua legivel. */
-            className={centralStyle === 'plain' ? 'flex items-center justify-center' : 'flex h-[52px] w-[52px] items-center justify-center rounded-full border bg-[#0b0c0d]/38 shadow-[inset_0_1px_0_rgba(255,255,255,.08),0_7px_18px_rgba(0,0,0,.45)] backdrop-blur-[3px]'}
-            style={{ borderColor: goldMetallic }}
+               numero continua legivel.
+
+               E o acabamento dele sobe com a faixa: em 25, 50, 75, 90 e 100 o
+               metal troca e a borda ganha anel. O numero sozinho nao marcava
+               passagem — 46 e 54 tinham a mesma cara, e subir acontecia sem
+               nada acontecer na tela. */
+            className={centralStyle === 'plain'
+              ? 'flex items-center justify-center'
+              : `mastery-badge${tier.anelDuplo ? ' mastery-badge--anel' : ''}${tier.coroado ? ' mastery-badge--coroado' : ''}`}
+            style={estiloDoMetal}
           >
             {/* Os DOIS numeros, um debaixo do outro: o nivel e o dobro da
                 maestria, e dizer isso custa uma linha de 8px. */}
             <span className="flex flex-col items-center leading-none">
-              <span className="text-2xl font-black [text-shadow:0_1px_6px_rgba(0,0,0,0.9)]" style={{ color: goldBright }}>
-                {masteryIndex}
-              </span>
-              <span
-                className="mt-[3px] text-[8px] font-bold tabular-nums [text-shadow:0_1px_4px_rgba(0,0,0,0.9)]"
-                style={{ color: 'rgba(235,229,213,0.62)' }}
-              >
+              <span className="mastery-badge-numero">{masteryIndex}</span>
+              <span className="mastery-badge-maestria">
                 {maestriaCrua}/{MASTERY_RAW_TOTAL_MAX_LEVEL}
               </span>
             </span>

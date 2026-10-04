@@ -34,6 +34,7 @@
         { arquivo: 'season-editor.html', nome: 'Editor de temporada' },
         { arquivo: 'widget-ciclo.html', nome: 'Widget de ciclo' },
         { arquivo: 'o-painel-diario.html', nome: 'Painel diário' },
+        { arquivo: 'o-numero-do-meio.html', nome: 'Número do meio' },
         { arquivo: 'avatar-align.html', nome: 'Alinhar avatar' },
         { arquivo: 'avatar-preview.html', nome: 'CanvasAvatar' },
         { arquivo: 'garden-experiment-check.html', nome: 'Jardim' },

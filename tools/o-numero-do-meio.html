@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>O número do meio — Bancada do Glyph</title>
+<!--
+  AS SEIS FAIXAS DA BOLINHA, LADO A LADO.
+
+  O numero sozinho nao marcava passagem: 46 e 54 tinham a mesma cara, entao
+  subir de nivel acontecia sem nada acontecer na tela. Aqui da pra ver os cinco
+  cortes — 25, 50, 75, 90 — e os 100, que tem tratamento proprio.
+
+  Monta o AssetPentagon DE VERDADE, com o `tempLevels` que a tela de maestria
+  usa, entao o que aparece aqui e o que o app desenha.
+
+  Suba com `npm run bancada` e abra /o-numero-do-meio.html
+-->
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 18px 20px 60px; background: #0b0d10; color: #e8eaee;
+         font: 14px/1.5 system-ui, sans-serif; }
+  h1 { font-size: 17px; margin: 0 0 4px; }
+  header p { color: #969ca6; font-size: 12.5px; margin: 0 0 18px; max-width: 74ch; }
+  code { font-family: ui-monospace, monospace; font-size: 12px; color: #d8b44c; }
+  .escada { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 18px; max-width: 1180px; }
+  .degrau { border: 1px solid #272b32; border-radius: 14px; padding: 10px 10px 14px;
+            background: #111419; }
+  .degrau h2 { margin: 0 0 2px; font-size: 11px; letter-spacing: .14em;
+               text-transform: uppercase; color: #8d95a1; font-weight: 700; }
+  .degrau p { margin: 0 0 8px; font-size: 11px; color: #6f7883; }
+  .palco { height: 190px; }
+  .controles { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap;
+               margin-bottom: 18px; }
+  .controles label { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: #969ca6; }
+  input[type="range"] { width: 240px; }
+  .vivo { border: 1px solid #3a3f49; border-radius: 14px; padding: 10px;
+          background: #111419; width: 260px; }
+  .vivo .palco { height: 230px; }
+</style>
+</head>
+<body>
+<div id="raiz"></div>
+<script type="module" src="/o-numero-do-meio.tsx"></script>
+<script src="/bancada-nav.js"></script>
+</body>
+</html>

@@ -1,0 +1,94 @@
+/* A BOLINHA DO NUMERO DO MEIO, QUE FICA MAIS CHIQUE COM A FAIXA.
+   Os valores de cor e largura vem por variavel inline, de masteryBadgeTiers.ts.
+   Aqui mora so a FORMA — o que e anel, o que e brilho, o que e coroa. */
+
+.mastery-badge {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: var(--badge-borda, 1px) solid var(--badge-mid, #8d7951);
+  background: radial-gradient(circle at 50% 18%, rgba(255, 255, 255, .06), transparent 60%), rgba(11, 12, 13, .38);
+  backdrop-filter: blur(3px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .08),
+    0 7px 18px rgba(0, 0, 0, .45),
+    0 0 calc(18px * var(--badge-brilho, 0)) rgba(var(--badge-brilho-rgb, 240, 217, 166), calc(.55 * var(--badge-brilho, 0)));
+  transition: border-color 420ms ease, box-shadow 420ms ease, border-width 420ms ease;
+}
+
+/* O SEGUNDO ANEL começa nos 50.
+   Ele é um ::after e não uma borda a mais no elemento: borda dupla de verdade
+   mudaria o tamanho da bolinha a cada faixa, e o número saltaria de lugar no
+   meio do pentágono. Como anel externo, a bolinha não muda de caixa. */
+.mastery-badge--anel::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1px solid var(--badge-pale, #f0d9a6);
+  opacity: .34;
+  pointer-events: none;
+}
+
+/* OS 100. É o único lugar da escada onde a moldura pode dizer "isto é raro",
+   então ela diz: anel de metal cheio em vez de fio, e brilho que respira. */
+.mastery-badge--coroado {
+  border-color: var(--badge-pale, #f0d9a6);
+}
+.mastery-badge--coroado::before {
+  content: '';
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--badge-dark, #6c512c),
+    var(--badge-pale, #f0d9a6) 18%,
+    var(--badge-mid, #c5a264) 34%,
+    var(--badge-pale, #f0d9a6) 52%,
+    var(--badge-dark, #6c512c) 72%,
+    var(--badge-pale, #f0d9a6) 100%
+  );
+  opacity: .5;
+  z-index: -1;
+  animation: mastery-badge-gira 9s linear infinite;
+}
+.mastery-badge--coroado::after {
+  inset: -4px;
+  opacity: .72;
+  border-width: 1.5px;
+}
+
+@keyframes mastery-badge-gira {
+  to { transform: rotate(360deg); }
+}
+
+/* O número, que NUNCA apaga: `pale` é o stop mais claro de cada metal, então
+   ele é tão legível no ferro quanto no ouro. */
+.mastery-badge-numero {
+  font-size: 1.5rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--badge-pale, #d6c38e);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, .9);
+  transition: color 420ms ease;
+  font-variant-numeric: tabular-nums;
+}
+
+.mastery-badge-maestria {
+  margin-top: 3px;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(235, 229, 213, .62);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, .9);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mastery-badge--coroado::before { animation: none; }
+  .mastery-badge { transition: none; }
+}

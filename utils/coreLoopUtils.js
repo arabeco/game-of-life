@@ -273,24 +273,6 @@ export const buildTaskPoolEntries = (actions, activeArenaIds, isClanQuestActionI
  * @param {string} endDate
  * @returns {ScheduledTask[]}
  */
-/**
- * A TAREFA ESTA NO DIA, OU ESPERA NA BAIA?
- *
- * `start_time = -1` quer dizer sem horario: a tarefa esta na baia, esperando ser
- * puxada para algum dia. Ela carrega uma data no banco por construcao, mas
- * ninguem se comprometeu com ela naquela data — e contar isso como compromisso
- * e cobrar por uma escolha que nao foi feita.
- *
- * Concluida entra sempre, com horario ou sem: fazer sem ter marcado hora
- * continua sendo fazer.
- *
- * O painel diario ja aplicava esta regra; o card do ciclo e o fechamento nao.
- * Um ciclo real de 04/10 fechou 70 de 70 tarefas postas no dia e a tela dizia
- * 70/86 — uma na baia e o resto inflado por repeticao declarada.
- */
-export const tarefaEstaNoDia = (task) =>
-    Boolean(task?.completed) || Number(task?.startTime ?? task?.start_time ?? -1) >= 0;
-
 export const filterCycleTasksByScope = (tasks, actions, cycle, startDate, endDate) => {
     const cycleArenaIdSet = cycle?.arenaIds?.length ? new Set(cycle.arenaIds) : null;
     const actionArenaById = new Map(actions.map(action => [action.id, action.arenaId]));

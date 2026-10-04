@@ -28,14 +28,14 @@ import { useCodexBuilder } from './CodexBuilderContext';
 import { calculateArenaProgress, getCampaignArenaStates } from '../utils/progressUtils';
 import { createTaskDomain } from './gameDomains/taskDomain';
 import { useQuestSharedDomain } from './gameDomains/questSharedDomain';
-import { buildCyclePaceMetrics, buildDailyExpSnapshot, buildTaskPoolEntries, filterCycleTasksByScope, getInitialDailyCommitmentTaskIds, getTaskBaseExp, mergeTasksIntoCommitment, tarefaEstaNoDia } from '../utils/coreLoopUtils.js';
+import { buildCyclePaceMetrics, buildDailyExpSnapshot, buildTaskPoolEntries, filterCycleTasksByScope, getInitialDailyCommitmentTaskIds, getTaskBaseExp, mergeTasksIntoCommitment } from '../utils/coreLoopUtils.js';
 import { buildFairScoreFromTasks, recalculateReportsWithFairScore } from '../utils/fairScoreUtils.js';
 import { notaDoCiclo } from '../utils/cycleGrade.js';
 import { buildCycleWeeklyAtlas } from '../utils/reportAtlasUtils.js';
 import { DEFAULT_ORACLE_PRESENCE_LEVEL, getOracleFeedQuotaStatus } from '../utils/oracleFeedUtils';
 import { allowsOracleReaction } from '../constants/oraclePresencePolicy';
 import { pickOracleCard } from '../constants/oracleCardLibrary';
-import { getArenaDomainFlags, isClanQuestAction, isOfficeArena, isQuestAction, isQuestArena, looksLikeClanQuestArena, normalizeDomainLabel } from '../utils/taskDomain.js';
+import { getArenaDomainFlags, isClanQuestAction, isOfficeArena, isQuestAction, isQuestArena, isTaskInPool, looksLikeClanQuestArena, normalizeDomainLabel } from '../utils/taskDomain.js';
 import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscribeInstallPrompt } from '../utils/installPrompt';
 import { buildCodexTemplateFromDraft, getCodexLevelDisplayTitle } from '../utils/codexPreview';
 import { getNextExpBoostExpiryAt, hasActiveExpBoost } from '../utils/expBoostAccess';
@@ -9976,9 +9976,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
          *
          * Num ciclo real de 04/10 isso fazia 70 tarefas postas e cumpridas
          * virarem 70 de 71.
+         *
+         * `isTaskInPool` ja existia em utils/taskDomain e e usada pelo Planner,
+         * pela RestScreen e pelo chat do Oraculo para dizer o que esta na baia.
+         * E ela aqui tambem — a regra tem um dono so.
          */
         const cycleTasks = filterCycleTasksByScope(tasks, currentActions, cycle, startDate, endDate)
-            .filter(tarefaEstaNoDia);
+            .filter((t) => !isTaskInPool(t));
         const freeActionIds = new Set(currentActions.filter(action => action.actionType === 'Livre').map(action => action.id));
         const scoredCycleTasks = cycleTasks.filter(t => !freeActionIds.has(t.actionId));
         const completedTasks = cycleTasks.filter(t => t.completed);

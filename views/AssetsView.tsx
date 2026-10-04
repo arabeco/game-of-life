@@ -18,7 +18,7 @@ import { calculateArenaProgress } from '../utils/progressUtils';
 import { filterTasksAfterFreeProgressReset } from '../utils/freeProgressScope';
 import { formatDate, getCycleTimingSummary } from '../utils/dateUtils';
 import { buildCycleWidgetSnapshot } from '../utils/widgetSnapshots';
-import { tarefaEstaNoDia } from '../utils/coreLoopUtils.js';
+import { isQuestAction, isTaskInPool } from '../utils/taskDomain.js';
 import { getMetalRankPalette, getPlateFinish, TEXTURA_POR_PATAMAR } from '../components/MetalReportCard';
 import { getProfileBackgroundPrimarySource, isCssProfileBackground } from '../utils/profileBackgrounds';
 import { getTaskExp } from '../utils/taskExp';
@@ -105,7 +105,7 @@ const isSlotValueEmpty = (value: SlotValue | undefined): boolean => {
  *
  * E eram TRES reguas para a mesma pergunta: este card inflava por repeticao, o
  * fechamento contava tarefas com a baia junto, e o painel diario ja excluia a
- * baia. Agora as tres usam `tarefaEstaNoDia`.
+ * baia. Agora as tres usam `isTaskInPool`, que ja existia.
  */
 
 /*
@@ -236,7 +236,7 @@ export const AssetsView: React.FC = () => {
         const scopedArenaIds = new Set(scopedArenas.map((arena) => arena.id));
         const scopedActions = actions.filter((action) => scopedArenaIds.has(action.arenaId) && action.actionType !== 'Marco');
         const scopedActionIds = new Set(scopedActions.map((action) => action.id));
-        const scopedTasks = cycleScopedTasks.filter((task) => scopedActionIds.has(task.actionId) && tarefaEstaNoDia(task));
+        const scopedTasks = cycleScopedTasks.filter((task) => scopedActionIds.has(task.actionId) && !isTaskInPool(task));
         const totalCompleted = scopedTasks.filter((task) => task.completed).length;
         const totalPlanned = scopedTasks.length;
         const safeCompleted = Math.min(totalCompleted, totalPlanned);

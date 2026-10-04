@@ -13,7 +13,7 @@ import { getCycleTimingSummary } from './dateUtils';
 import { falaDaNota, notaDoCiclo } from './cycleGrade.js';
 import { buildActionPoolByDate, buildDailyArenaFocus, filterCycleTasksByScope } from './coreLoopUtils.js';
 import { getOperationalDateString, taskMatchesOperationalDate } from './operationalDay.js';
-import { hasScheduledTime } from './taskDomain.js';
+import { hasScheduledTime, isTaskInPool } from './taskDomain.js';
 import type { RestScreenActionSessionDetail } from './restScreenActionSession';
 
 type CommitmentTaskStatus = {
@@ -156,16 +156,16 @@ const trimPreview = (content?: string | null, maxLength = 140) => {
   return `${normalized.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
 };
 
-const buildCycleActionTotal = (cycleActions: Action[], scheduledTaskCount: number): number => {
-  const plannedFromActions = cycleActions.reduce((sum, action) => {
-    if (action.actionType === 'Marco') return sum;
-    if (action.actionType === 'Livre') return sum + 1;
-    const repetitions = Number.isFinite(action.repetitions) ? Math.max(1, Math.floor(action.repetitions)) : 1;
-    return sum + repetitions;
-  }, 0);
-
-  return Math.max(plannedFromActions, scheduledTaskCount);
-};
+/*
+ * `buildCycleActionTotal` saiu daqui tambem.
+ *
+ * Ele somava as REPETICOES declaradas em cada acao e devolvia
+ * `max(essa soma, numero de tarefas)`. Uma acao marcada "3 repeticoes" contava
+ * 3 no denominador mesmo sem ninguem ter posto nenhuma num dia.
+ *
+ * Era a segunda copia da mesma inflacao — a outra estava em AssetsView. O
+ * denominador do ciclo e o que foi POSTO NO DIA, e so.
+ */
 
 export const buildCommitmentStatsSnapshot = (
   tasks: ScheduledTask[],
@@ -217,17 +217,32 @@ export const buildCycleWidgetSnapshot = ({
   const actionTypeById = new Map(actions.map((action) => [action.id, action.actionType]));
   const isQuestActionId = (actionId: string) => normalizeArenaName(actionArenaNameById.get(actionId)).includes('quests');
 
-  const cycleTasks = filterCycleTasksByScope(tasks, actions, cycle, cycle.startDate, cycle.endDate);
+  /*
+   * O QUE O CICLO CONTA: posto no dia, e sem a quest.
+   *
+   * `isTaskInPool` tira a baia — o que espera ali carrega a data do ciclo por
+   * construcao, mas ninguem a pos num dia, e cobrar por isso e cobrar por uma
+   * escolha que nao foi feita.
+   *
+   * A quest sai do DENOMINADOR e nao do ciclo: ela continua em `questTasks`
+   * dando bonus logo abaixo. Uma missao de temporada combina 28 dias e nao cabe
+   * num ciclo de 7 — contar o que falta dela como pendencia do ciclo faz quem
+   * aceitou a missao fechar a semana devendo.
+   */
+  const cycleTasks = filterCycleTasksByScope(tasks, actions, cycle, cycle.startDate, cycle.endDate)
+    .filter((task) => !isTaskInPool(task));
   const cycleArenaIds = new Set(cycle.arenaIds || []);
   const scopedActions = actions.filter((action) => (
     (cycleArenaIds.size === 0 || cycleArenaIds.has(action.arenaId)) && action.actionType !== 'Marco'
   ));
   const scopedActionIds = new Set(scopedActions.map((action) => action.id));
-  const cycleActionTasks = cycleTasks.filter((task) => scopedActionIds.has(task.actionId));
-  const completedTasks = cycleActionTasks.filter((task) => task.completed);
   const questTasks = cycleTasks.filter((task) => isQuestActionId(task.actionId));
   const completedQuests = questTasks.filter((task) => task.completed);
-  const totalTaskCount = buildCycleActionTotal(scopedActions, cycleActionTasks.length);
+  const cycleActionTasks = cycleTasks.filter(
+    (task) => scopedActionIds.has(task.actionId) && !isQuestActionId(task.actionId),
+  );
+  const completedTasks = cycleActionTasks.filter((task) => task.completed);
+  const totalTaskCount = cycleActionTasks.length;
   const safeCompletedTaskCount = Math.min(completedTasks.length, totalTaskCount);
   const taskProgressPercent = totalTaskCount > 0 ? (safeCompletedTaskCount / totalTaskCount) * 100 : 0;
 
@@ -245,7 +260,9 @@ export const buildCycleWidgetSnapshot = ({
   // A nota de previsão do widget usa a mesma régua do fechamento. Antes ela
   // somava bônus e convertia 95 pontos em S; ao fechar, o relatório aplicava
   // corretamente o teto de porte do ciclo e uma semana aparecia como A.
-  const scoredCycleTasks = cycleTasks.filter((task) => actionTypeById.get(task.actionId) !== 'Livre');
+  const scoredCycleTasks = cycleTasks.filter(
+    (task) => actionTypeById.get(task.actionId) !== 'Livre' && !isQuestActionId(task.actionId),
+  );
   const completedScoredCycleTasks = scoredCycleTasks.filter((task) => task.completed);
   const completionRateForGrade = scoredCycleTasks.length > 0
     ? (completedScoredCycleTasks.length / scoredCycleTasks.length) * 100

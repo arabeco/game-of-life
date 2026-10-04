@@ -19,7 +19,7 @@ import { PlacaEmEscala, LARGURA_OFICIAL_DA_PLACA, ALTURA_OFICIAL_DA_PLACA } from
 import { EraRibbon, ERA_RIBBON_SKINS, getEraRibbonSkin } from '../components/EraRibbon';
 import { MetalReportCard } from '../components/MetalReportCard';
 import { marcaDeRodadaDepoisDoCiclo } from '../utils/freeProgressScope';
-import { bauDaNota } from '../utils/cycleGrade.js';
+import { bauDaNota, falaDaNota } from '../utils/cycleGrade.js';
 import { Portal } from '../components/Portal';
 import { RewardPackModal } from '../components/RewardPackModal';
 
@@ -221,7 +221,22 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle; onEdit: (cycle: Cycle) => voi
         durationDays: totalDays,
     });
     const currentScore = fairScoreResult.fairScore;
-    const scoreInfo = getScoreGrade(currentScore, fairScoreResult.fairness as Report['metrics']['fairness']);
+    /*
+     * A LETRA VEM DO SNAPSHOT, QUE TEM TETO. O numero continua sendo o score.
+     *
+     * `getScoreGrade` e so faixa de pontuacao: 99 pontos dao S, nao importa se
+     * o ciclo tem sete dias ou vinte e oito. O teto por porte mora em
+     * `notaDoCiclo`, e ate agora so o FECHAMENTO passava por ele — entao a
+     * trilha prometia S e o relatorio entregava A. Um ciclo real de 21/09
+     * fechou exatamente assim: 7 dias, score 99, nota A.
+     *
+     * `buildCycleWidgetSnapshot`, que esta duas linhas acima, ja devolve a nota
+     * com teto desde que o widget foi corrigido. Ela estava ali e nao era lida.
+     */
+    const notaComTeto = cycleSnapshot?.grade;
+    const scoreInfo = notaComTeto
+        ? { grade: notaComTeto, ...falaDaNota(notaComTeto) }
+        : getScoreGrade(currentScore, fairScoreResult.fairness as Report['metrics']['fairness']);
 
     return (
         <div className={`relative ${showTimelineMarker ? 'pl-4' : ''} group`}>

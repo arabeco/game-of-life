@@ -38,6 +38,17 @@ const manualQaNotes = [
 const suites = {
   core: [
     {
+      id: 'denominador-do-ciclo',
+      label: 'Denominador do ciclo regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'denominador-do-ciclo.regression.mjs')]],
+      kind: 'logic',
+      interactions: [
+        'o que espera na baia nao conta como compromisso',
+        'o card do ciclo nao infla o denominador por repeticao declarada',
+        'card, fechamento e painel diario usam a mesma regua',
+      ],
+    },
+    {
       id: 'loja-separada-e-ganho-visivel',
       label: 'Loja separada e ganho visivel regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'loja-separada-e-ganho-visivel.regression.mjs')]],

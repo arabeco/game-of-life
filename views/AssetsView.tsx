@@ -18,6 +18,7 @@ import { calculateArenaProgress } from '../utils/progressUtils';
 import { filterTasksAfterFreeProgressReset } from '../utils/freeProgressScope';
 import { formatDate, getCycleTimingSummary } from '../utils/dateUtils';
 import { buildCycleWidgetSnapshot } from '../utils/widgetSnapshots';
+import { tarefaEstaNoDia } from '../utils/coreLoopUtils.js';
 import { getMetalRankPalette, getPlateFinish, TEXTURA_POR_PATAMAR } from '../components/MetalReportCard';
 import { getProfileBackgroundPrimarySource, isCssProfileBackground } from '../utils/profileBackgrounds';
 import { getTaskExp } from '../utils/taskExp';
@@ -90,16 +91,22 @@ const isSlotValueEmpty = (value: SlotValue | undefined): boolean => {
     return !value.imageUrl?.trim();
 };
 
-const buildCycleActionTotal = (cycleActions: Action[], scheduledTaskCount: number): number => {
-    const plannedFromActions = cycleActions.reduce((sum, action) => {
-        if (action.actionType === 'Marco') return sum;
-        if (action.actionType === 'Livre') return sum + 1;
-        const repetitions = Number.isFinite(action.repetitions) ? Math.max(1, Math.floor(action.repetitions)) : 1;
-        return sum + repetitions;
-    }, 0);
-
-    return Math.max(plannedFromActions, scheduledTaskCount);
-};
+/*
+ * O DENOMINADOR DO CICLO E O QUE FOI POSTO NO DIA — nem mais, nem menos.
+ *
+ * Aqui havia `buildCycleActionTotal`, que somava as REPETICOES declaradas em
+ * cada acao e devolvia `max(essa soma, numero de tarefas)`. Uma acao marcada
+ * "3 repeticoes" contava 3 mesmo que ninguem tivesse posto nenhuma num dia.
+ *
+ * Num ciclo real de 04/10 o efeito foi este: 70 tarefas postas, 70 cumpridas, e
+ * a tela dizia 70/86 com 81%. Os 16 a mais eram repeticao declarada que nao
+ * existia como linha em lugar nenhum — nem agendada, nem na baia. Impossivel
+ * fechar o ciclo em 100% sem agendar o que nao se pretendia agendar.
+ *
+ * E eram TRES reguas para a mesma pergunta: este card inflava por repeticao, o
+ * fechamento contava tarefas com a baia junto, e o painel diario ja excluia a
+ * baia. Agora as tres usam `tarefaEstaNoDia`.
+ */
 
 /*
  * O widget nativo usa a mesma placa chanfrada do relatorio. O corte e
@@ -229,9 +236,9 @@ export const AssetsView: React.FC = () => {
         const scopedArenaIds = new Set(scopedArenas.map((arena) => arena.id));
         const scopedActions = actions.filter((action) => scopedArenaIds.has(action.arenaId) && action.actionType !== 'Marco');
         const scopedActionIds = new Set(scopedActions.map((action) => action.id));
-        const scopedTasks = cycleScopedTasks.filter((task) => scopedActionIds.has(task.actionId));
+        const scopedTasks = cycleScopedTasks.filter((task) => scopedActionIds.has(task.actionId) && tarefaEstaNoDia(task));
         const totalCompleted = scopedTasks.filter((task) => task.completed).length;
-        const totalPlanned = buildCycleActionTotal(scopedActions, scopedTasks.length);
+        const totalPlanned = scopedTasks.length;
         const safeCompleted = Math.min(totalCompleted, totalPlanned);
         const computedProgress = totalPlanned > 0 ? Math.round((safeCompleted / totalPlanned) * 100) : 0;
 

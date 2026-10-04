@@ -120,6 +120,12 @@ export function buildTaskPoolEntries(
     isClanQuestActionId: (actionId: string) => boolean,
 ): TaskPoolItemLike[];
 
+/**
+ * A tarefa esta NO DIA (concluida, ou com horario), e nao na baia esperando.
+ * Contar a baia como compromisso e cobrar por uma escolha que nao foi feita.
+ */
+export function tarefaEstaNoDia(task: Pick<ScheduledTask, 'completed' | 'startTime'> | null | undefined): boolean;
+
 export function filterCycleTasksByScope(
     tasks: ScheduledTask[],
     actions: Action[],

@@ -28,7 +28,7 @@ import { useCodexBuilder } from './CodexBuilderContext';
 import { calculateArenaProgress, getCampaignArenaStates } from '../utils/progressUtils';
 import { createTaskDomain } from './gameDomains/taskDomain';
 import { useQuestSharedDomain } from './gameDomains/questSharedDomain';
-import { buildCyclePaceMetrics, buildDailyExpSnapshot, buildTaskPoolEntries, filterCycleTasksByScope, getInitialDailyCommitmentTaskIds, getTaskBaseExp, mergeTasksIntoCommitment } from '../utils/coreLoopUtils.js';
+import { buildCyclePaceMetrics, buildDailyExpSnapshot, buildTaskPoolEntries, filterCycleTasksByScope, getInitialDailyCommitmentTaskIds, getTaskBaseExp, mergeTasksIntoCommitment, tarefaEstaNoDia } from '../utils/coreLoopUtils.js';
 import { buildFairScoreFromTasks, recalculateReportsWithFairScore } from '../utils/fairScoreUtils.js';
 import { notaDoCiclo } from '../utils/cycleGrade.js';
 import { buildCycleWeeklyAtlas } from '../utils/reportAtlasUtils.js';
@@ -9967,7 +9967,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const cycleSeasonId = cycle?.seasonId || activeRuntimeSeasonId; // Use stored season or default to current
 
         // 1. Filter Tasks
-        const cycleTasks = filterCycleTasksByScope(tasks, currentActions, cycle, startDate, endDate);
+        /*
+         * A BAIA SAI DO FECHAMENTO, como ja saia do painel diario.
+         *
+         * `filterCycleTasksByScope` filtra data e arena, e so. O que espera na
+         * baia carrega a data do ciclo por construcao, mas ninguem a pos num
+         * dia — e entrava no denominador como se tivesse.
+         *
+         * Num ciclo real de 04/10 isso fazia 70 tarefas postas e cumpridas
+         * virarem 70 de 71.
+         */
+        const cycleTasks = filterCycleTasksByScope(tasks, currentActions, cycle, startDate, endDate)
+            .filter(tarefaEstaNoDia);
         const freeActionIds = new Set(currentActions.filter(action => action.actionType === 'Livre').map(action => action.id));
         const scoredCycleTasks = cycleTasks.filter(t => !freeActionIds.has(t.actionId));
         const completedTasks = cycleTasks.filter(t => t.completed);

@@ -196,7 +196,7 @@ create table if not exists public.relationship_link_arenas (
   completed_at timestamptz,
   metadata jsonb
 );
-create table if not exists public.arenas (id uuid primary key, user_id uuid, name text);
+create table if not exists public.arenas (id text primary key, user_id uuid, name text);
 
 -- As duas que faltavam para checar qualquer consulta que olhe o CICLO de
 -- verdade: o que foi agendado e a qual arena aquilo pertence. Sem elas, tanto
@@ -205,12 +205,25 @@ create table if not exists public.arenas (id uuid primary key, user_id uuid, nam
 --
 -- Colunas pelo tipo ScheduledTask/Action de types.ts, em snake_case, que e
 -- como o app grava.
+-- OS TIPOS AQUI SAO OS DO BANCO, descobertos um a um e do jeito caro.
+--
+-- Tres consultas seguidas compilaram neste andaime e quebraram em producao,
+-- cada uma num par diferente:
+--
+--   actions.id (uuid)   vs scheduled_tasks.action_id (text)
+--   arenas.id  (text)   vs actions.arena_id        (uuid)
+--   cycles.start_date (date) vs scheduled_tasks.date (text)
+--
+-- O andaime concordava com a suposicao de quem escrevia a consulta em vez de
+-- discordar dela, que e a unica coisa util que um andaime faz. Quem mexer aqui:
+-- confira contra information_schema antes de mudar um tipo por conveniencia.
 create table if not exists public.actions (
   id uuid primary key,
   user_id uuid,
   arena_id uuid,
   name text,
   action_type text,
+  repetitions integer,
   duration integer,
   difficulty integer,
   source_quest_id text
@@ -219,8 +232,8 @@ create table if not exists public.actions (
 create table if not exists public.scheduled_tasks (
   id uuid primary key,
   user_id uuid,
-  action_id uuid,
-  date date,
+  action_id text,
+  date text,
   start_time integer,
   duration integer,
   completed boolean default false,

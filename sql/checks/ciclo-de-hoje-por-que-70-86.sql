@@ -8,6 +8,11 @@
 --      arena de temporada
 --   3. como ficaria a conta sem a temporada, que e o que ficou combinado
 --
+-- TUDO COMPARA COMO TEXT, e isso nao e enfeite: `actions.id` e uuid enquanto
+-- `scheduled_tasks.action_id` e text, e o mesmo vale entre `arenas.id` e
+-- `actions.arena_id`. Sem o cast o Postgres recusa com
+-- "operator does not exist: uuid = text".
+--
 -- A arena de temporada se identifica pelo NOME: o app marca com
 -- `normalizedName.includes('quests - season')`, depois de baixar a caixa e
 -- tirar acento. Aqui o `ilike '%quests - season%'` faz o equivalente.
@@ -64,9 +69,9 @@ tarefas as (
   from public.scheduled_tasks t
   join eu on eu.id = t.user_id
   join ciclo on true
-  join public.actions a on a.id = t.action_id
-  left join public.arenas ar on ar.id = a.arena_id
-  where t.date between ciclo.start_date and ciclo.end_date
+  join public.actions a on a.id::text = t.action_id::text
+  left join public.arenas ar on ar.id::text = a.arena_id::text
+  where t.date between ciclo.start_date::text and ciclo.end_date::text
     and (t.completed or t.start_time >= 0)
 )
 select
@@ -102,9 +107,9 @@ tarefas as (
   from public.scheduled_tasks t
   join eu on eu.id = t.user_id
   join ciclo on true
-  join public.actions a on a.id = t.action_id
-  left join public.arenas ar on ar.id = a.arena_id
-  where t.date between ciclo.start_date and ciclo.end_date
+  join public.actions a on a.id::text = t.action_id::text
+  left join public.arenas ar on ar.id::text = a.arena_id::text
+  where t.date between ciclo.start_date::text and ciclo.end_date::text
     and (t.completed or t.start_time >= 0)
     and coalesce(ar.name, '') not ilike '%quests - season%'
 )
@@ -129,9 +134,9 @@ select
 from public.scheduled_tasks t
 join eu on eu.id = t.user_id
 join ciclo on true
-join public.actions a on a.id = t.action_id
-join public.arenas ar on ar.id = a.arena_id
-where t.date between ciclo.start_date and ciclo.end_date
+join public.actions a on a.id::text = t.action_id::text
+join public.arenas ar on ar.id::text = a.arena_id::text
+where t.date between ciclo.start_date::text and ciclo.end_date::text
   and (t.completed or t.start_time >= 0)
   and ar.name ilike '%quests - season%'
 group by ar.name

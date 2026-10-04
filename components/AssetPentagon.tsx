@@ -11,7 +11,7 @@ import {
 } from '../constants/lifeAreas';
 import { SvgRadarChart } from './SvgRadarChart';
 import { getMasteryBadgeTier } from '../constants/masteryBadgeTiers';
-import { getPlateFinish } from './MetalReportCard';
+import { getPlateFinish, tintaMetalicaDo } from './MetalReportCard';
 import './mastery-badge.css';
 
 interface AssetPentagonProps {
@@ -68,13 +68,15 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
    */
   const tier = getMasteryBadgeTier(masteryIndex);
   const metal = getPlateFinish(tier.finish);
-  const estiloDoMetal = {
-    '--badge-mid': metal.mid,
-    '--badge-pale': metal.pale,
-    '--badge-dark': metal.dark,
-    '--badge-borda': `${tier.borda}px`,
-    '--badge-brilho': String(tier.brilho),
-  } as React.CSSProperties;
+  const estiloDoMetal = { '--badge-brilho': String(tier.brilho) } as React.CSSProperties;
+  /**
+   * A tinta do numero e a MESMA de `.metal-report-card__score`.
+   *
+   * Nao e "parecida com a da placa": e a declaracao da placa, pelo helper que
+   * existe para isso. Inventar um dourado proprio aqui seria o terceiro jeito
+   * de fazer metal no app.
+   */
+  const tintaDoNumero = tintaMetalicaDo(metal);
   const labels = chartAreas.map(({ area }) => area.shortName);
   const coresDasAreas = chartAreas.map(({ area }) => area.color);
 
@@ -191,13 +193,16 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
                nada acontecer na tela. */
             className={centralStyle === 'plain'
               ? 'flex items-center justify-center'
-              : `mastery-badge${tier.anelDuplo ? ' mastery-badge--anel' : ''}${tier.coroado ? ' mastery-badge--coroado' : ''}`}
+              /* `--anel` saiu junto com a peca: nao ha mais aro para ligar.
+                 `anelDuplo` continua vivo e util, mas agora so nas PONTAS, onde
+                 ele decide o halo de cada area. */
+              : `mastery-badge${tier.coroado ? ' mastery-badge--coroado' : ''}`}
             style={estiloDoMetal}
           >
             {/* Os DOIS numeros, um debaixo do outro: o nivel e o dobro da
                 maestria, e dizer isso custa uma linha de 8px. */}
             <span className="flex flex-col items-center leading-none">
-              <span className="mastery-badge-numero">{masteryIndex}</span>
+              <span className="mastery-badge-numero" style={tintaDoNumero}>{masteryIndex}</span>
               <span className="mastery-badge-maestria">
                 {maestriaCrua}/{MASTERY_RAW_TOTAL_MAX_LEVEL}
               </span>

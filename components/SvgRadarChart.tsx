@@ -78,6 +78,15 @@ interface SvgRadarChartProps {
   labelColor?: string;
   /** A cor do nome de cada area, por indice. Sem isto, todas usam `labelColor`. */
   labelColorDe?: (index: number) => string | undefined;
+  /**
+   * Contorno escuro atras do nome da area.
+   *
+   * Texto claro e pequeno sobre o grafico perde a borda quando passa por cima
+   * de uma linha da grade. `paint-order: stroke` desenha o traco ANTES do
+   * preenchimento, entao ele vira contorno em vez de engrossar a letra — e o
+   * dourado continua dourado, so que assentado.
+   */
+  labelHalo?: string;
   labelSize?: number;
   showLegend?: boolean;
   legendAccentColor?: string;
@@ -136,6 +145,7 @@ export const SvgRadarChart: React.FC<SvgRadarChartProps> = ({
   height = '100%',
   labelColor = 'rgba(255,255,255,0.55)',
   labelColorDe,
+  labelHalo,
   labelSize = 4,
   showLegend = false,
   legendAccentColor = 'rgba(255,255,255,0.7)',
@@ -287,6 +297,12 @@ export const SvgRadarChart: React.FC<SvgRadarChartProps> = ({
               fontSize={labelSize}
               fontWeight={800}
               letterSpacing="0.08em"
+              {...(labelHalo ? {
+                stroke: labelHalo,
+                strokeWidth: labelSize * 0.22,
+                paintOrder: 'stroke' as const,
+                strokeLinejoin: 'round' as const,
+              } : {})}
             >
               {label}
             </text>

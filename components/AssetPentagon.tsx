@@ -78,47 +78,42 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
    */
   const tintaDoNumero = tintaMetalicaDo(metal);
   const labels = chartAreas.map(({ area }) => area.shortName);
-  const coresDasAreas = chartAreas.map(({ area }) => area.color);
-
-  /**
-   * A PONTA DE CADA AREA SOBE SOZINHA.
-   *
-   * Antes as cinco pontas tinham exatamente a mesma cara: quem estava em 2 e
-   * quem estava em 9 eram dois pontos dourados do mesmo tamanho, e a unica
-   * diferenca era a distancia ate o centro. Num pentagono isso e pouco — a
-   * figura ja e irregular por natureza, e o olho nao mede raio.
-   *
-   * Agora cada vertice usa a MESMA escada da bolinha do meio, so que lida sobre
-   * a area: nivel 0 a 10 vira 0 a 100 multiplicando por dez, e os cortes caem
-   * em 2,5 / 5 / 7,5 / 9 / 10. Ferro no comeco, coroa no dez.
-   */
-  const pontaDaArea = (_valor: number, index: number) => {
-    const nivelDaArea = Math.max(0, Math.min(MASTERY_AREA_MAX_LEVEL, levels[index] ?? 0));
-    const faixa = getMasteryBadgeTier(nivelDaArea * 10);
-    const metalDaArea = getPlateFinish(faixa.finish);
-    return {
-      // O raio cresce de leve com a faixa. Pouco de proposito: a ponta precisa
-      // caber o numero sem virar bola maior que o desenho.
-      r: 3.1 + faixa.borda * 0.22,
-      fill: '#0c0d0f',
-      stroke: metalDaArea.pale,
-      strokeWidth: 0.4 + faixa.borda * 0.16,
-      // O halo entra junto com o anel da bolinha do meio: a partir dos 50.
-      halo: faixa.anelDuplo ? metalDaArea.mid : undefined,
-      haloR: faixa.coroado ? 1.8 : 1.2,
-    };
-  };
 
   const goldBright = '#d6c38e';
   const goldFill = '#6f5d2f';
 
   /**
-   * O PENTAGONO MOSTRA O DEGRAU: de 1 a 10, como a avaliacao pergunta.
+   * A PONTA DE CADA AREA SOBE SOZINHA — E TODA ELA E OURO.
+   *
+   * Cada vertice chegou a usar o metal da propria faixa: ferro, bronze, prata.
+   * Cinco cores diferentes no mesmo desenho faziam o pentagono parecer um
+   * grafico categorico, e nao uma insignia. A identidade da peca e o ouro.
+   *
+   * Entao o que sobe com a faixa e a FORMA: a ponta engorda de leve, o fio
+   * fica mais firme, e a partir da metade ganha um halo. A escada continua
+   * sendo a mesma do numero do meio, lida sobre a area — nivel 0 a 10 vira 0 a
+   * 100 multiplicando por dez, com os cortes caindo em 2,5 / 5 / 7,5 / 9 / 10.
+   */
+  const pontaDaArea = (_valor: number, index: number) => {
+    const nivelDaArea = Math.max(0, Math.min(MASTERY_AREA_MAX_LEVEL, levels[index] ?? 0));
+    const faixa = getMasteryBadgeTier(nivelDaArea * 10);
+    return {
+      r: 3.1 + faixa.borda * 0.22,
+      fill: '#0c0d0f',
+      stroke: goldBright,
+      strokeWidth: 0.4 + faixa.borda * 0.16,
+      halo: faixa.anelDuplo ? goldBright : undefined,
+      haloR: faixa.coroado ? 1.8 : 1.2,
+    };
+  };
+
+  /**
+   * O PENTAGONO MOSTRA O DEGRAU: de 0 a 10, como a avaliacao pergunta.
    *
    * Houve uma versao com 0 a 20, para as cinco pontas somarem o numero do meio.
    * A conta fechava, mas "estou no vinte em Saude" e um numero que o modelo nao
    * tem. As pontas somam 50 e o centro diz 100 — sao o nivel de uma area e o
-   * indice do conjunto, duas coisas.
+   * indice do conjunto, duas coisas, e o `23/50` sob o numero diz isso.
    */
   const pontos = levels.map((nivel) => nivel * PONTOS_POR_DEGRAU);
 
@@ -136,13 +131,20 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
         levels={3}
         height="100%"
         className="drop-shadow-[0_10px_22px_rgba(0,0,0,.46)]"
-        labelColor="rgba(235,229,213,0.58)"
-        /* O nome da area ganha a COR dela. Cinco titulos no mesmo cinza pediam
-           que a pessoa lesse para saber qual ponta era qual; com a cor, ela
-           reconhece antes de ler — e e a mesma cor que a area tem no resto do
-           app, nao uma paleta do grafico. */
-        labelColorDe={(index) => coresDasAreas[index]}
-        labelSize={3.5}
+        /* OS NOMES SAO DOURADOS, e num tom so.
+           Chegaram a ter a cor de cada area, e cinco cores diferentes brigavam
+           com o ouro do resto da peca: o pentagono virava um grafico categorico
+           em vez de uma insignia. A identidade do desenho e o ouro — o que
+           distingue as areas e a posicao, que nao muda nunca.
+
+           Um pouco abaixo do `goldBright` das pontas de proposito: o nome e
+           moldura, e competir em brilho com o numero do meio tiraria dele a
+           hierarquia que ele tem por ser o maior. */
+        labelColor="rgba(206,184,131,0.9)"
+        /* O contorno assenta a letra. Sem ele o dourado pequeno se perde
+           justamente onde cruza uma linha da grade. */
+        labelHalo="rgba(6,7,9,0.82)"
+        labelSize={3.6}
         labelOffset={destacarPontas ? 13 : 8}
         series={[{
           id: 'area-levels',

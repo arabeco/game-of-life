@@ -38,6 +38,17 @@ const manualQaNotes = [
 const suites = {
   core: [
     {
+      id: 'pendencia-esquecida',
+      label: 'Pendencia esquecida regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'pendencia-esquecida.regression.mjs')]],
+      kind: 'logic',
+      interactions: [
+        'a varredura roda na abertura, nao a cada toque',
+        'mover uma acao para um dia antigo nao a devolve na hora para a Bay',
+        'tarefa de ciclo selado continua intocada',
+      ],
+    },
+    {
       id: 'denominador-do-ciclo',
       label: 'Denominador do ciclo regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'denominador-do-ciclo.regression.mjs')]],

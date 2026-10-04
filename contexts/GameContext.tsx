@@ -13330,8 +13330,29 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
      * volta a ficar disponivel na Bay. O filtro por taskId do atlas impede tocar
      * em qualquer registro que ja pertence a um ciclo selado.
      */
+    /*
+     * A VARREDURA RODA UMA VEZ POR SESSAO, e nao a cada mudanca em `tasks`.
+     *
+     * Ela estava num efeito com `tasks` nas dependencias, entao disparava a cada
+     * tarefa criada, movida ou concluida. O efeito pratico era este: quem abria
+     * um dia de dois dias atras e arrastava uma acao para um horario via a
+     * tarefa ser arrancada de volta para a Bay NO MESMO INSTANTE — porque
+     * mover a tarefa mudava `tasks`, o efeito reavaliava, e aquela data ja
+     * estava dentro da janela de esquecimento.
+     *
+     * Nao era "ela volta depois"; era o app desfazendo a acao enquanto a pessoa
+     * a fazia, sem nada na tela explicando por que.
+     *
+     * Limpar pendencia esquecida e trabalho de ABERTURA: olha-se o estado de
+     * quem chegou, arruma-se uma vez, e dali em diante o dia e de quem esta
+     * usando. Se a tarefa continuar pendente, a proxima abertura a recolhe.
+     */
+    const varreuPendenciasRef = useRef(false);
+
     useEffect(() => {
         if (!isProfileLoaded || tasks.length === 0) return;
+        if (varreuPendenciasRef.current) return;
+        varreuPendenciasRef.current = true;
 
         const todayString = getTodayString();
         const oldestDateToReturn = shiftLocalDateString(todayString, -2);

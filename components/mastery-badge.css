@@ -1,94 +1,141 @@
-/* A BOLINHA DO NUMERO DO MEIO, QUE FICA MAIS CHIQUE COM A FAIXA.
-   Os valores de cor e largura vem por variavel inline, de masteryBadgeTiers.ts.
-   Aqui mora so a FORMA — o que e anel, o que e brilho, o que e coroa. */
+/* O LOSANGO DO NUMERO DO MEIO.
+   As cores e a largura vem por variavel inline, de masteryBadgeTiers.ts.
+   Aqui mora so a FORMA — o que e placa, o que e aro, o que e coroa. */
 
+/* A camada que segura o losango vira container de consulta, para que ele possa
+   medir em `cqw` — porcentagem da largura do pentagono.
+
+   Em px a peca ocupava uma fatia diferente do desenho a cada tamanho de tela:
+   num pentagono de 170px ela tapava quase um terco do raio e engolia os numeros
+   das pontas, enquanto em 280px sobrava folga. Proporcional, a relacao entre a
+   peca e o grafico e sempre a mesma — e por isso o recuo minimo do numero da
+   ponta pode ser um valor fixo em unidade de viewBox. */
+.mastery-badge-camada { container-type: size; }
+
+/*
+ * LOSANGO, E NAO CIRCULO — E ISSO TROCA A TECNICA INTEIRA.
+ *
+ * `clip-path` corta tudo que passa da forma, inclusive `border` e `box-shadow`.
+ * Entao a borda nao pode ser borda e o brilho nao pode ser box-shadow:
+ *
+ *   - a BORDA vira duas placas empilhadas. A de baixo e o metal; a de cima e a
+ *     face escura, recuada. O que sobra da de baixo nas beiradas E a borda, e
+ *     ela acompanha a diagonal sem nenhum calculo de canto.
+ *   - o BRILHO vira `drop-shadow`, que segue o contorno recortado. `box-shadow`
+ *     desenharia um halo retangular por tras de um losango, e seria cortado.
+ *
+ * O losango e maior que o circulo era (20cqw contra 15,5) porque a area util de
+ * um losango e metade da do quadrado que o contem: o numero mora na faixa do
+ * meio, que e a unica larga o bastante para ele.
+ */
 .mastery-badge {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  border: var(--badge-borda, 1px) solid var(--badge-mid, #8d7951);
-  background: radial-gradient(circle at 50% 18%, rgba(255, 255, 255, .06), transparent 60%), rgba(11, 12, 13, .38);
-  backdrop-filter: blur(3px);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .08),
-    0 7px 18px rgba(0, 0, 0, .45),
-    0 0 calc(18px * var(--badge-brilho, 0)) rgba(var(--badge-brilho-rgb, 240, 217, 166), calc(.55 * var(--badge-brilho, 0)));
-  transition: border-color 420ms ease, box-shadow 420ms ease, border-width 420ms ease;
+  width: 20cqw;
+  height: 20cqw;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+
+  /* A placa de metal. Mesmo angulo e mesmas paradas da moldura do card de
+     ciclo — aquela e a peca que atravessou o app sendo lida como metal, e nao
+     mais um jeito proprio de fazer ouro. */
+  background: linear-gradient(
+    118deg,
+    var(--badge-dark, #302c29) 0%,
+    var(--badge-pale, #d0c7bd) 12%,
+    var(--badge-mid, #81756b) 40%,
+    var(--badge-pale, #d0c7bd) 52%,
+    var(--badge-dark, #302c29) 84%,
+    var(--badge-pale, #d0c7bd) 100%
+  );
+
+  /* O brilho da faixa, que so existe a partir do bronze. Em drop-shadow porque
+     ele precisa seguir a diagonal do losango. */
+  filter: drop-shadow(0 3px 7px rgba(0, 0, 0, .5))
+          drop-shadow(0 0 calc(5cqw * var(--badge-brilho, 0)) rgba(240, 217, 166, calc(.6 * var(--badge-brilho, 0))));
+
+  transition: filter 420ms ease;
 }
 
-/* O SEGUNDO ANEL começa nos 50.
-   Ele é um ::after e não uma borda a mais no elemento: borda dupla de verdade
-   mudaria o tamanho da bolinha a cada faixa, e o número saltaria de lugar no
-   meio do pentágono. Como anel externo, a bolinha não muda de caixa. */
+/* A FACE: o segundo losango, recuado. O que sobra do de baixo e a borda, e a
+   largura dela e exatamente este recuo. */
+.mastery-badge::before {
+  content: '';
+  position: absolute;
+  inset: var(--badge-borda, 1px);
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  background:
+    radial-gradient(circle at 50% 22%, rgba(255, 255, 255, .09), transparent 64%),
+    linear-gradient(160deg, rgba(16, 17, 20, .94), rgba(8, 9, 11, .97));
+  transition: inset 420ms ease;
+}
+
+/* O ARO EXTERNO entra nos 50.
+   Um losango maior por tras: como a placa de cima e opaca, so a beirada dele
+   aparece. Isso evita desenhar um "contorno de losango", que em clip-path nao
+   existe sem recortar duas vezes. */
 .mastery-badge--anel::after {
   content: '';
   position: absolute;
-  inset: -4px;
-  border-radius: 50%;
-  border: 1px solid var(--badge-pale, #f0d9a6);
-  opacity: .34;
-  pointer-events: none;
+  inset: -2.2cqw;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  background: var(--badge-pale, #d0c7bd);
+  opacity: .26;
+  z-index: -1;
 }
 
-/* OS 100. É o único lugar da escada onde a moldura pode dizer "isto é raro",
-   então ela diz: anel de metal cheio em vez de fio, e brilho que respira. */
-.mastery-badge--coroado {
-  border-color: var(--badge-pale, #f0d9a6);
-}
-.mastery-badge--coroado::before {
-  content: '';
-  position: absolute;
-  inset: -7px;
-  border-radius: 50%;
+/* OS 100. Unico lugar da escada onde a moldura pode dizer "isto e raro".
+   Um terceiro losango, com o conico do mesmo metal — e ele NAO gira: girar um
+   recorte faria o losango virar quadrado no meio da volta. O que respira e o
+   brilho, nao a forma. */
+.mastery-badge--coroado::after {
+  inset: -2.6cqw;
+  opacity: .62;
   background: conic-gradient(
+    from 45deg,
     var(--badge-dark, #6c512c),
-    var(--badge-pale, #f0d9a6) 18%,
-    var(--badge-mid, #c5a264) 34%,
-    var(--badge-pale, #f0d9a6) 52%,
-    var(--badge-dark, #6c512c) 72%,
+    var(--badge-pale, #f0d9a6) 16%,
+    var(--badge-mid, #c5a264) 32%,
+    var(--badge-pale, #f0d9a6) 50%,
+    var(--badge-dark, #6c512c) 68%,
+    var(--badge-mid, #c5a264) 84%,
     var(--badge-pale, #f0d9a6) 100%
   );
-  opacity: .5;
-  z-index: -1;
-  animation: mastery-badge-gira 9s linear infinite;
-}
-.mastery-badge--coroado::after {
-  inset: -4px;
-  opacity: .72;
-  border-width: 1.5px;
+  animation: mastery-badge-respira 3.4s ease-in-out infinite;
 }
 
-@keyframes mastery-badge-gira {
-  to { transform: rotate(360deg); }
+@keyframes mastery-badge-respira {
+  0%, 100% { opacity: .5; }
+  50%      { opacity: .82; }
 }
 
-/* O número, que NUNCA apaga: `pale` é o stop mais claro de cada metal, então
-   ele é tão legível no ferro quanto no ouro. */
+/* O numero, que NUNCA apaga: `pale` e o stop mais claro de cada metal, entao
+   ele e tao legivel no ferro quanto no ouro. */
 .mastery-badge-numero {
-  font-size: 1.5rem;
+  position: relative;
+  font-size: 6.6cqw;
   font-weight: 900;
   line-height: 1;
+  letter-spacing: -.02em;
   color: var(--badge-pale, #d6c38e);
-  text-shadow: 0 1px 6px rgba(0, 0, 0, .9);
+  text-shadow: 0 1px 5px rgba(0, 0, 0, .92);
   transition: color 420ms ease;
   font-variant-numeric: tabular-nums;
 }
 
 .mastery-badge-maestria {
-  margin-top: 3px;
-  font-size: 8px;
+  position: relative;
+  margin-top: 0.5cqw;
+  font-size: 2.9cqw;
   font-weight: 700;
   line-height: 1;
-  color: rgba(235, 229, 213, .62);
+  color: rgba(235, 229, 213, .58);
   text-shadow: 0 1px 4px rgba(0, 0, 0, .9);
   font-variant-numeric: tabular-nums;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mastery-badge--coroado::before { animation: none; }
-  .mastery-badge { transition: none; }
+  .mastery-badge--coroado::after { animation: none; opacity: .66; }
+  .mastery-badge, .mastery-badge::before { transition: none; }
 }

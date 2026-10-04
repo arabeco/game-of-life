@@ -76,6 +76,36 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
     '--badge-brilho': String(tier.brilho),
   } as React.CSSProperties;
   const labels = chartAreas.map(({ area }) => area.shortName);
+  const coresDasAreas = chartAreas.map(({ area }) => area.color);
+
+  /**
+   * A PONTA DE CADA AREA SOBE SOZINHA.
+   *
+   * Antes as cinco pontas tinham exatamente a mesma cara: quem estava em 2 e
+   * quem estava em 9 eram dois pontos dourados do mesmo tamanho, e a unica
+   * diferenca era a distancia ate o centro. Num pentagono isso e pouco — a
+   * figura ja e irregular por natureza, e o olho nao mede raio.
+   *
+   * Agora cada vertice usa a MESMA escada da bolinha do meio, so que lida sobre
+   * a area: nivel 0 a 10 vira 0 a 100 multiplicando por dez, e os cortes caem
+   * em 2,5 / 5 / 7,5 / 9 / 10. Ferro no comeco, coroa no dez.
+   */
+  const pontaDaArea = (_valor: number, index: number) => {
+    const nivelDaArea = Math.max(0, Math.min(MASTERY_AREA_MAX_LEVEL, levels[index] ?? 0));
+    const faixa = getMasteryBadgeTier(nivelDaArea * 10);
+    const metalDaArea = getPlateFinish(faixa.finish);
+    return {
+      // O raio cresce de leve com a faixa. Pouco de proposito: a ponta precisa
+      // caber o numero sem virar bola maior que o desenho.
+      r: 3.1 + faixa.borda * 0.22,
+      fill: '#0c0d0f',
+      stroke: metalDaArea.pale,
+      strokeWidth: 0.4 + faixa.borda * 0.16,
+      // O halo entra junto com o anel da bolinha do meio: a partir dos 50.
+      halo: faixa.anelDuplo ? metalDaArea.mid : undefined,
+      haloR: faixa.coroado ? 1.8 : 1.2,
+    };
+  };
 
   const goldBright = '#d6c38e';
   const goldFill = '#6f5d2f';
@@ -105,7 +135,12 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
         height="100%"
         className="drop-shadow-[0_10px_22px_rgba(0,0,0,.46)]"
         labelColor="rgba(235,229,213,0.58)"
-        labelSize={3.35}
+        /* O nome da area ganha a COR dela. Cinco titulos no mesmo cinza pediam
+           que a pessoa lesse para saber qual ponta era qual; com a cor, ela
+           reconhece antes de ler — e e a mesma cor que a area tem no resto do
+           app, nao uma paleta do grafico. */
+        labelColorDe={(index) => coresDasAreas[index]}
+        labelSize={3.5}
         labelOffset={destacarPontas ? 13 : 8}
         series={[{
           id: 'area-levels',
@@ -119,16 +154,29 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
           dotRadius: destacarPontas ? 1.5 : 1.8,
           dotFill: '#11110f',
           dotStroke: goldBright,
+          pontaDe: pontaDaArea,
           valueLabel: (value) => String(Math.round(value)),
           valueLabelColor: destacarPontas ? '#fff6dd' : '#eee4c8',
-          valueLabelSize: destacarPontas ? 4.2 : 2.75,
+          /* 3,6 e nao 2,75: o numero mora DENTRO da ponta, e a 2,75 ele era um
+             risco. O nivel de cada area e a informacao que a pessoa vem buscar
+             no pentagono — precisa dar pra ler sem aproximar o rosto. */
+          valueLabelSize: destacarPontas ? 4.2 : 3.6,
+          /* 15 unidades de viewBox, medidas e nao estimadas.
+             O losango tem 20cqw de largura — 10 de meia-largura na mesma
+             unidade — e o aro dos 50 soma 2,2, dando 12,2. Com 13 a bancada
+             ainda mostrava sete numeros encostando a caixa do losango nas
+             faixas baixas; 17 abre folga para o corpo da fonte tambem.
+
+             So vale para area BAIXA: a partir do degrau 5 o vertice ja esta
+             alem disso por conta propria, e o numero fica onde o valor manda. */
+          valueLabelMinMagnitude: 17,
           valueLabelWeight: 900,
           valueLabelOffset: destacarPontas ? 6 : 0,
         }]}
       />
 
       {showCentralLevel ? (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+        <div className="mastery-badge-camada pointer-events-none absolute inset-0 flex items-center justify-center">
           <div
             /* O NUMERO DEIXA DE TAPAR O DESENHO.
                Era um disco de 62px com fundo 88% opaco, plantado exatamente onde

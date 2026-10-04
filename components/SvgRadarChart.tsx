@@ -18,6 +18,23 @@ interface RadarSeries {
   valueLabelSize?: number;
   valueLabelWeight?: number | string;
   /**
+   * O ACABAMENTO DE CADA PONTA, por indice.
+   *
+   * `dotFill` e `dotStroke` valem para a serie inteira — cinco pontas com a
+   * mesma cara. Aqui cada vertice pode ter o seu, que e o que permite a ponta
+   * ficar mais rica conforme AQUELA area sobe, e nao conforme a media.
+   *
+   * Devolve so o que muda; o resto cai nos valores da serie.
+   */
+  pontaDe?: (value: number, index: number) => {
+    r?: number;
+    fill?: string;
+    stroke?: string;
+    strokeWidth?: number;
+    halo?: string;
+    haloR?: number;
+  };
+  /**
    * Empurra a pastilha do numero para FORA do vertice, ao longo do eixo.
    *
    * Com o numero em cima do vertice, duas coisas quebram: a linha do poligono
@@ -26,6 +43,19 @@ interface RadarSeries {
    * qualquer que seja o valor — e o ponto exato continua marcado pelo disco.
    */
   valueLabelOffset?: number;
+  /**
+   * O quao perto do centro o NUMERO da ponta pode chegar.
+   *
+   * O ponto fica onde o valor manda — a figura continua dizendo a verdade. Mas
+   * com valor baixo o vertice encosta no centro, que e justamente onde mora a
+   * bolinha do indice, e o numero sumia debaixo dela. Medido: com area em 1, os
+   * cinco numeros ficavam a menos de 6px do centro contra uma bolinha de 22px
+   * de raio — os cinco tapados.
+   *
+   * Entao o DESENHO nao muda e o ROTULO sai de baixo: abaixo deste raio ele e
+   * empurrado para fora, no mesmo angulo.
+   */
+  valueLabelMinMagnitude?: number;
   activeIndex?: number;
 }
 
@@ -46,6 +76,8 @@ interface SvgRadarChartProps {
   className?: string;
   height?: number | string;
   labelColor?: string;
+  /** A cor do nome de cada area, por indice. Sem isto, todas usam `labelColor`. */
+  labelColorDe?: (index: number) => string | undefined;
   labelSize?: number;
   showLegend?: boolean;
   legendAccentColor?: string;
@@ -103,6 +135,7 @@ export const SvgRadarChart: React.FC<SvgRadarChartProps> = ({
   className,
   height = '100%',
   labelColor = 'rgba(255,255,255,0.55)',
+  labelColorDe,
   labelSize = 4,
   showLegend = false,
   legendAccentColor = 'rgba(255,255,255,0.7)',
@@ -168,23 +201,42 @@ export const SvgRadarChart: React.FC<SvgRadarChartProps> = ({
                 const magnitude = magnitudeDe(value, maxValue, baseInterna);
                 const point = getPoint(index, total, magnitude);
                 const label = item.valueLabel?.(value, index) ?? null;
+                const ponta = item.pontaDe?.(value, index) || {};
+                const raio = ponta.r ?? item.dotRadius ?? 2.2;
                 return (
                   <g key={`${item.id}-dot-${index}`}>
                     {item.activeIndex === index && (
-                      <circle cx={point.x} cy={point.y} r={4} fill={item.stroke} fillOpacity={0.2} stroke={item.stroke} strokeWidth={0.65} />
+                      <circle cx={point.x} cy={point.y} r={raio + 2.2} fill={item.stroke} fillOpacity={0.2} stroke={item.stroke} strokeWidth={0.65} />
                     )}
+                    {/* O HALO DA PONTA so existe nas faixas altas.
+                        E um aro por fora, afastado: colado viraria borda grossa
+                        e engordaria a ponta, afastado vira orbita e diz que
+                        aquela area subiu sem mudar o tamanho do vertice. */}
+                    {ponta.halo ? (
+                      <circle
+                        cx={point.x}
+                        cy={point.y}
+                        r={raio + (ponta.haloR ?? 1.1)}
+                        fill="none"
+                        stroke={ponta.halo}
+                        strokeWidth="0.4"
+                        opacity="0.5"
+                      />
+                    ) : null}
                     <circle
                       cx={point.x}
                       cy={point.y}
-                      r={item.dotRadius ?? 2.2}
-                      fill={item.dotFill || '#000'}
-                      stroke={item.dotStroke || item.stroke}
-                      strokeWidth="0.55"
+                      r={raio}
+                      fill={ponta.fill || item.dotFill || '#000'}
+                      stroke={ponta.stroke || item.dotStroke || item.stroke}
+                      strokeWidth={ponta.strokeWidth ?? 0.55}
                     />
                     {label ? (() => {
                       const recuo = item.valueLabelOffset ?? 0;
-                      const alvo = recuo > 0
-                        ? getPoint(index, total, magnitude + recuo)
+                      const minimo = item.valueLabelMinMagnitude ?? 0;
+                      const magnitudeDoRotulo = Math.max(magnitude + recuo, minimo);
+                      const alvo = magnitudeDoRotulo !== magnitude
+                        ? getPoint(index, total, magnitudeDoRotulo)
                         : point;
                       const corpo = item.valueLabelSize ?? 3;
                       return (
@@ -231,7 +283,7 @@ export const SvgRadarChart: React.FC<SvgRadarChartProps> = ({
               y={point.y}
               dy={getLabelDy(point.angle)}
               textAnchor={getAnchor(point.angle)}
-              fill={labelColor}
+              fill={labelColorDe?.(index) || labelColor}
               fontSize={labelSize}
               fontWeight={800}
               letterSpacing="0.08em"

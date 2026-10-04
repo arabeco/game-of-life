@@ -197,3 +197,34 @@ create table if not exists public.relationship_link_arenas (
   metadata jsonb
 );
 create table if not exists public.arenas (id uuid primary key, user_id uuid, name text);
+
+-- As duas que faltavam para checar qualquer consulta que olhe o CICLO de
+-- verdade: o que foi agendado e a qual arena aquilo pertence. Sem elas, tanto
+-- a migracao de estatisticas da landing quanto os checks de ciclo ficavam
+-- marcados como "incompleto" por falta de vizinho, nao por erro proprio.
+--
+-- Colunas pelo tipo ScheduledTask/Action de types.ts, em snake_case, que e
+-- como o app grava.
+create table if not exists public.actions (
+  id uuid primary key,
+  user_id uuid,
+  arena_id uuid,
+  name text,
+  action_type text,
+  duration integer,
+  difficulty integer,
+  source_quest_id text
+);
+
+create table if not exists public.scheduled_tasks (
+  id uuid primary key,
+  user_id uuid,
+  action_id uuid,
+  date date,
+  start_time integer,
+  duration integer,
+  completed boolean default false,
+  completed_at timestamptz,
+  execution_order integer,
+  created_at timestamptz default now()
+);

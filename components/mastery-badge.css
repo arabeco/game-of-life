@@ -33,7 +33,71 @@
   line-height: 1;
 }
 
-.mastery-badge-numero {
+
+/*
+ * O ANEL VOLTA — COMO CONTORNO, NAO COMO TAMPA.
+ *
+ * Sem peca nenhuma o numero ficou ilegivel nos niveis baixos: metal fosco sobre
+ * a propria teia do pentagono, disputando contraste com as linhas que cruzam
+ * exatamente atras dele. Relatado em 05/10/2026.
+ *
+ * A peca antiga tinha saido por um motivo que continua valendo: era um disco
+ * OPACO, e tapava o cruzamento das cinco linhas — a parte que da forma a
+ * figura. Entao isto nao e ela de volta. E um aro:
+ *
+ *   - a borda tem a espessura de `tier.borda` (1, 2 ou 3) e o metal da faixa;
+ *   - o miolo nao e preenchido. Recebe um VEU radial que escurece so atras do
+ *     glifo e chega a transparente antes da borda — o numero ganha fundo, e a
+ *     teia continua atravessando perto do aro;
+ *   - a partir do 50, `anelDuplo` acrescenta um segundo aro por fora.
+ *
+ * Proporcional em `cqw`, como o numero: a relacao entre aro e pentagono e a
+ * mesma em qualquer tela.
+ */
+.mastery-badge--anel {
+  padding: 4.6cqw 6.2cqw 4cqw;
+  border-radius: 999px;
+  border: calc(var(--badge-borda, 1) * 1px) solid var(--badge-metal-pale, #d6c38e);
+  background: radial-gradient(closest-side,
+    rgba(7, 8, 11, .78) 0%,
+    rgba(7, 8, 11, .6) 55%,
+    rgba(7, 8, 11, 0) 100%);
+  /* Um fio escuro por dentro separa o metal do veu: sem ele, nas faixas
+     claras, aro e numero se fundem num borrao so. */
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .55);
+}
+
+.mastery-badge--anel-duplo {
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, .55),
+    0 0 0 1.1cqw rgba(7, 8, 11, .62),
+    0 0 0 calc(1.1cqw + 1px) var(--badge-metal-mid, #8d7a45);
+}
+
+/* Os 100 respiram no aro tambem, nao so na letra. */
+.mastery-badge--anel.mastery-badge--coroado {
+  animation: mastery-badge-anel-respira 3.4s ease-in-out infinite;
+}
+
+@keyframes mastery-badge-anel-respira {
+  0%, 100% {
+    box-shadow:
+      inset 0 0 0 1px rgba(0, 0, 0, .55),
+      0 0 0 1.1cqw rgba(7, 8, 11, .62),
+      0 0 0 calc(1.1cqw + 1px) var(--badge-metal-mid, #8d7a45),
+      0 0 3cqw rgba(240, 217, 166, .35);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 0 1px rgba(0, 0, 0, .55),
+      0 0 0 1.1cqw rgba(7, 8, 11, .62),
+      0 0 0 calc(1.1cqw + 1px) var(--badge-metal-mid, #8d7a45),
+      0 0 6cqw rgba(255, 238, 190, .7);
+  }
+}
+
+.mastery-badge-numero,
+.mastery-badge-numero-sombra {
   /*
    * NAO E GEORGIA, E POR UM MOTIVO MEDIDO.
    *
@@ -57,40 +121,66 @@
   line-height: 1;
   letter-spacing: -.035em;
   font-variant-numeric: tabular-nums;
-  /*
-   * CONTORNO E BRILHO, NUMA LISTA SO, EM `text-shadow`.
-   *
-   * Eram duas propriedades brigando. O contorno chegava em `filter`, inline,
-   * por `tintaMetalicaDo`; o brilho da faixa estava aqui, tambem em `filter`.
-   * Inline vence, entao o brilho nunca pintou — medido na bancada: com
-   * `--badge-brilho: 0.2` o filtro aplicado era so o par de sombras pretas.
-   *
-   * `text-shadow` resolve a disputa porque aceita lista, e resolve um segundo
-   * problema de quebra: esta letra e pintada por `background-clip: text`, e
-   * `filter` a joga numa superficie de composicao propria — onde o WebView do
-   * Android perde o recorte ao repintar e mostra o gradiente como um bloco
-   * quase branco. Sombra de texto nasce da forma da letra e nao cria superficie
-   * nenhuma.
-   *
-   * `box-shadow` continua fora de questao: desenharia um halo retangular.
-   */
+}
+
+
+/*
+ * O NUMERO SAO DUAS CAMADAS: A SOMBRA ATRAS, O METAL NA FRENTE.
+ *
+ * Tres tentativas, e o que cada uma ensinou:
+ *
+ *   `filter: drop-shadow` NA LETRA — o original. A sombra nasce do alfa ja
+ *   composto e fica ATRAS, entao o metal continua claro. Mas era a mesma
+ *   propriedade que o brilho da faixa usava, e o inline de `tintaMetalicaDo`
+ *   vencia: o brilho nunca pintou. E `filter` numa letra de `background-clip:
+ *   text` poe o elemento numa superficie propria, onde o WebView do Android
+ *   perde o recorte ao repintar e mostra o gradiente como bloco branco.
+ *
+ *   `text-shadow` NA LETRA — tentado em 05/10/2026 e desfeito no mesmo dia.
+ *   Com `-webkit-text-fill-color: transparent`, a camada do texto fica ACIMA do
+ *   fundo recortado — e a sombra mora nessa camada. O preto foi pintado POR
+ *   CIMA do metal: medido lado a lado, o bronze virou quase preto. Era o
+ *   "agora o numero ta ilegivel".
+ *
+ *   DUAS CAMADAS — esta. Uma copia do numero, transparente, carrega so as
+ *   sombras; o numero de metal vem por cima, sem sombra e sem filtro. A sombra
+ *   fica atras como no `filter`, o brilho e o contorno cabem na mesma lista, e
+ *   a letra recortada nao ganha superficie nenhuma.
+ *
+ * As duas ocupam a MESMA celula de grid. Ordem do DOM e ordem de pintura: a
+ * sombra vem primeiro no markup, entao fica embaixo.
+ */
+.mastery-badge-numero-pilha {
+  display: inline-grid;
+}
+
+.mastery-badge-numero-pilha > * {
+  grid-area: 1 / 1;
+}
+
+.mastery-badge-numero-sombra {
+  color: transparent;
+  /* So a sombra aparece: com o texto transparente, o que se ve e o contorno
+     escuro e o halo da faixa — e a parte deles que cairia sob a letra fica
+     escondida pelo metal que vem por cima. */
   text-shadow:
     0 0 2px rgba(0, 0, 0, .62),
     0 1px 1px rgba(0, 0, 0, .85),
     0 0 calc(2.6cqw * var(--badge-brilho, 0)) rgba(240, 217, 166, calc(.75 * var(--badge-brilho, 0)));
   transition: text-shadow 420ms ease;
+  user-select: none;
 }
 
 /* OS 100. Unico lugar da escada onde o numero pode dizer "isto e raro".
    O que respira e o brilho — a letra fica parada, porque numero que pulsa de
    tamanho e dificil de ler e cansa quem olha todo dia. */
-.mastery-badge--coroado .mastery-badge-numero {
+.mastery-badge--coroado .mastery-badge-numero-sombra {
   animation: mastery-badge-respira 3.4s ease-in-out infinite;
 }
 
-/* O respiro dos 100 anda na mesma propriedade do resto, e carrega o contorno
-   junto: uma animacao de `text-shadow` substitui a lista inteira enquanto roda,
-   entao deixar o contorno de fora o apagaria a cada quadro. */
+/* O respiro dos 100 mora na camada de sombra e carrega o contorno junto: uma
+   animacao de `text-shadow` substitui a lista inteira enquanto roda, entao
+   deixar o contorno de fora o apagaria a cada quadro. */
 @keyframes mastery-badge-respira {
   0%, 100% {
     text-shadow:
@@ -118,6 +208,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mastery-badge--coroado .mastery-badge-numero { animation: none; }
-  .mastery-badge-numero { transition: none; }
+  .mastery-badge--coroado .mastery-badge-numero-sombra { animation: none; }
+  .mastery-badge--anel.mastery-badge--coroado { animation: none; }
+  .mastery-badge-numero-sombra { transition: none; }
 }

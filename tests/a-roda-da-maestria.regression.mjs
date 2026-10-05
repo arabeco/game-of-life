@@ -8,10 +8,10 @@ import { readFileSync } from 'node:fs';
  * declaracoes disputando a mesma propriedade, em lugares diferentes.
  */
 
-const css = readFileSync(new URL('../views/mastery-quiz.css', import.meta.url), 'utf8');
-const roda = readFileSync(new URL('../components/MasteryWheel.tsx', import.meta.url), 'utf8');
-const badge = readFileSync(new URL('../components/mastery-badge.css', import.meta.url), 'utf8');
-const pentagono = readFileSync(new URL('../components/AssetPentagon.tsx', import.meta.url), 'utf8');
+const css = readFileSync(new URL('../views/mastery-quiz.css', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+const roda = readFileSync(new URL('../components/MasteryWheel.tsx', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+const badge = readFileSync(new URL('../components/mastery-badge.css', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+const pentagono = readFileSync(new URL('../components/AssetPentagon.tsx', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 
 // ============================================= 1. a frase do degrau cabe
 //
@@ -56,41 +56,87 @@ assert.match(css, /scroll-snap-type: y mandatory;/,
     'o snap nativo saiu do trilho e sobrou so a rede em JS');
 console.log('ok - o encaixe so age quando a rolagem terminou de verdade');
 
-// ====================== 3. o numero do meio tem UM dono para o brilho
+// =========================== 3. o numero do meio: sombra atras, metal na frente
 //
-// O contorno chegava em `filter`, inline, por `tintaMetalicaDo`. O brilho da
-// faixa estava em `filter` no CSS. Inline vence: medido na bancada, com
-// `--badge-brilho: 0.2` o filtro aplicado era so o par de sombras pretas — a
-// escada de brilho que justificou os cortes em 25/50/75/90/100 nunca pintou.
+// Tres tentativas, todas medidas na bancada (tools/o-numero-do-meio.html):
 //
-// E `filter` nesta letra custa caro: ela e pintada por `background-clip: text`,
-// e o filtro a joga numa superficie de composicao propria, onde o WebView do
-// Android perde o recorte ao repintar e mostra o gradiente como um bloco quase
-// branco. Era o retangulo branco por cima do numero.
+//   filter na letra   — a sombra fica atras e o metal claro, MAS era a mesma
+//                       propriedade do brilho da faixa, e o inline de
+//                       tintaMetalicaDo vencia: o brilho nunca pintou. E
+//                       filter + background-clip:text e o par que o WebView
+//                       perde ao repintar, mostrando um bloco branco.
+//   text-shadow na    — desfeito no mesmo dia. Com o texto transparente, a
+//   letra               camada do texto fica ACIMA do fundo recortado, e a
+//                       sombra mora nela: o preto foi pintado POR CIMA do
+//                       metal. O bronze virou quase preto — "agora o numero ta
+//                       ilegivel".
+//   duas camadas      — uma copia transparente atras carrega so as sombras; o
+//                       metal vem por cima, sem sombra e sem filtro.
 assert.match(pentagono, /const \{ filter: _contornoDoHelper, \.\.\.tintaDoNumero \} = tintaMetalicaDo\(metal\);/,
     'o filtro inline voltou a acompanhar a tinta e a matar o brilho da faixa');
 
-const numero = badge.slice(badge.indexOf('.mastery-badge-numero {'), badge.indexOf('/* OS 100'));
-assert.ok(numero.length > 200, 'a regra do numero mudou de forma');
-assert.doesNotMatch(numero, /^\s*filter:/m,
-    'voltou um filter no numero — com background-clip:text ele perde o recorte no repaint');
-assert.match(numero, /text-shadow:/, 'o contorno e o brilho sairam do numero');
-assert.match(numero, /var\(--badge-brilho, 0\)/,
-    'o brilho da faixa sumiu da sombra do numero');
-// O contorno precisa estar na MESMA lista: text-shadow nao acumula entre regras.
-assert.match(numero, /0 0 2px rgba\(0, 0, 0, \.62\)[\s\S]{0,80}--badge-brilho/,
-    'contorno e brilho se separaram; a ultima declaracao apagaria a outra');
-console.log('ok - contorno e brilho do numero vivem numa lista so');
+// A ordem do DOM e a ordem de pintura: a sombra precisa vir ANTES do metal,
+// senao ela e pintada por cima e o numero escurece de novo.
+assert.match(
+    pentagono,
+    /<span className="mastery-badge-numero-pilha">\s*(?:\{\/\*[\s\S]*?\*\/\}\s*)?<span className="mastery-badge-numero-sombra" aria-hidden="true">\{masteryIndex\}<\/span>\s*<span className="mastery-badge-numero" style=\{tintaDoNumero\}>\{masteryIndex\}<\/span>/,
+    'a sombra deixou de vir antes do metal na pilha — ela seria pintada por cima e o numero escureceria',
+);
 
-// O respiro dos 100 substitui a lista inteira enquanto roda, entao tem de
-// carregar o contorno junto — senao a letra perde a borda a cada quadro.
+// O metal nao carrega sombra nem filtro: so a tinta.
+const regraDoMetal = badge.slice(
+    badge.indexOf('.mastery-badge-numero,\n.mastery-badge-numero-sombra {'),
+    // O comentario quebra linha logo depois do `/*`, entao a ancora e o
+    // titulo dele sozinho — com a barra junto ela nao existe, e o recorte
+    // engoliria a camada de sombra.
+    badge.indexOf('O NUMERO SAO DUAS CAMADAS'),
+);
+assert.ok(regraDoMetal.length > 200 && !regraDoMetal.includes('.mastery-badge-numero-sombra {' + '\n  color'),
+    'a regra compartilhada do numero mudou de forma');
+assert.doesNotMatch(regraDoMetal, /^\s*(filter|text-shadow):/m,
+    'voltou sombra ou filtro na letra de metal — text-shadow a escurece, filter perde o recorte');
+console.log('ok - a letra de metal so tem a tinta');
+
+// A camada de tras: transparente, com contorno e brilho na mesma lista.
+const sombra = badge.slice(
+    badge.indexOf('.mastery-badge-numero-sombra {\n  color: transparent;'),
+    badge.indexOf('/* OS 100'),
+);
+assert.ok(sombra.length > 100, 'a camada de sombra sumiu');
+assert.match(sombra, /color: transparent;/, 'a camada de sombra deixou de ser transparente');
+assert.match(sombra, /0 0 2px rgba\(0, 0, 0, \.62\)[\s\S]{0,80}--badge-brilho/,
+    'contorno e brilho se separaram na camada de sombra');
+assert.match(badge, /\.mastery-badge-numero-pilha > \* \{\s*grid-area: 1 \/ 1;/,
+    'as duas camadas deixaram de dividir a mesma celula — o contorno desalinha do metal');
+console.log('ok - contorno e brilho moram numa copia atras do metal');
+
+// O respiro dos 100 anima a camada de tras e carrega o contorno nos dois quadros.
+assert.match(badge, /\.mastery-badge--coroado \.mastery-badge-numero-sombra \{\s*animation: mastery-badge-respira/,
+    'o respiro dos 100 saiu da camada de sombra');
 const respiro = badge.slice(badge.indexOf('@keyframes mastery-badge-respira'));
-assert.doesNotMatch(respiro.slice(0, 400), /filter: drop-shadow/,
-    'o respiro dos 100 voltou para filter');
 assert.ok(
     (respiro.slice(0, 500).match(/0 0 2px rgba\(0, 0, 0, \.62\)/g) || []).length === 2,
     'o respiro dos 100 perdeu o contorno num dos quadros',
 );
 console.log('ok - o respiro dos 100 nao apaga o contorno');
+
+// =================================================== 4. o anel no pentagono
+//
+// Sem peca nenhuma o numero disputava contraste com a propria teia. O anel
+// volta como CONTORNO: aro com o metal e a espessura da faixa, veu so atras do
+// glifo, e segundo aro a partir do 50. Os valores ja estavam nos tiers — borda
+// e anelDuplo seguiam vivos nas pontas.
+assert.match(pentagono, /centralStyle = 'anel',/, 'o anel deixou de ser o padrao do pentagono');
+assert.match(pentagono, /'--badge-borda': String\(tier\.borda\)/,
+    'o anel parou de ler a espessura da faixa');
+const mastery = readFileSync(new URL('../views/MasteryView.tsx', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+assert.doesNotMatch(mastery, /centralStyle="plain"/,
+    'a tela de avaliacao voltou ao numero sem anel');
+const anel = badge.slice(badge.indexOf('.mastery-badge--anel {'), badge.indexOf('.mastery-badge--anel-duplo {'));
+assert.match(anel, /border: calc\(var\(--badge-borda, 1\) \* 1px\) solid/, 'o aro perdeu a espessura da faixa');
+assert.match(anel, /radial-gradient\(closest-side/, 'o veu atras do glifo sumiu');
+assert.doesNotMatch(anel, /background: (rgba|#)[^;]*;/,
+    'o miolo do anel virou cor solida — ele voltaria a tapar o cruzamento das linhas');
+console.log('ok - o anel contorna o numero sem tapar a teia');
 
 console.log('A roda da maestria: a frase cabe, o encaixe espera, e o numero tem um dono so.');

@@ -19,7 +19,7 @@ interface AssetPentagonProps {
   tempLevels?: Record<string, number>;
   size?: number | string;
   showCentralLevel?: boolean;
-  centralStyle?: 'badge' | 'plain';
+  centralStyle?: 'badge' | 'plain' | 'anel';
   /**
    * Destaca o numero de cada ponta.
    *
@@ -36,7 +36,8 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
   tempLevels,
   size = 280,
   showCentralLevel = true,
-  centralStyle = 'badge',
+  // O anel e o padrao: e o que as duas telas que mostram o numero usam.
+  centralStyle = 'anel',
   destacarPontas = false,
   activeAreaId,
 }) => {
@@ -68,7 +69,16 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
    */
   const tier = getMasteryBadgeTier(masteryIndex);
   const metal = getPlateFinish(tier.finish);
-  const estiloDoMetal = { '--badge-brilho': String(tier.brilho) } as React.CSSProperties;
+  const estiloDoMetal = {
+    '--badge-brilho': String(tier.brilho),
+    // O anel desenha com o metal da faixa e com a espessura que a tabela ja
+    // declarava. `borda` e `anelDuplo` nunca tinham sumido dos tiers — eles
+    // seguiram vivos nas PONTAS quando a peca central saiu. Aqui voltam a
+    // valer tambem no centro, sem uma segunda tabela para manter.
+    '--badge-borda': String(tier.borda),
+    '--badge-metal-mid': metal.mid,
+    '--badge-metal-pale': metal.pale,
+  } as React.CSSProperties;
   /**
    * A tinta do numero e a MESMA de `.metal-report-card__score`.
    *
@@ -77,26 +87,17 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
    * de fazer metal no app.
    */
   /*
-   * A TINTA VEM DO HELPER; O `filter` FICA COM O CSS.
+   * A TINTA VEM DO HELPER; A SOMBRA, NAO.
    *
-   * `tintaMetalicaDo` traz junto um `filter` com duas sombras pretas — o
-   * contorno que faz a letra de gradiente se separar de qualquer pedra. Inline,
-   * ele VENCIA a regra de `.mastery-badge-numero`, que usava a mesma
-   * propriedade para o brilho da faixa. Resultado medido na bancada em
-   * 05/10/2026: com `--badge-brilho: 0.2` o filtro aplicado era so o do inline.
-   * A escada de brilho que justificou os cortes em 25, 50, 75, 90 e 100 nunca
-   * chegou a aparecer no numero.
+   * `tintaMetalicaDo` traz junto um `filter` com o contorno. Inline, ele vencia
+   * a regra que dava o brilho da faixa — medido na bancada, o brilho nunca
+   * pintou. E `filter` numa letra de `background-clip: text` e o par que o
+   * WebView do Android perde ao repintar, mostrando o gradiente como bloco
+   * branco.
    *
-   * E ter `filter` nesta letra e caro por outro motivo: ela e pintada por
-   * `background-clip: text`, e o filtro poe o elemento numa superficie de
-   * composicao propria. E nessa combinacao que o WebView do Android perde o
-   * recorte ao repintar — e, perdido o recorte, o que aparece e o gradiente
-   * inteiro como um bloco, quase branco no meio. Era o retangulo branco por
-   * cima do numero durante a avaliacao.
-   *
-   * Entao o contorno e o brilho passam os dois para `text-shadow`, numa
-   * declaracao so, em mastery-badge.css. Sombra de texto nasce da forma da
-   * letra, nao cria superfice nova, e aceita lista — cabem os dois sem disputa.
+   * Entao a letra de metal fica so com a tinta, e contorno e brilho vao para
+   * uma copia transparente atras dela. A historia das tres tentativas esta em
+   * `.mastery-badge-numero-pilha`.
    */
   const { filter: _contornoDoHelper, ...tintaDoNumero } = tintaMetalicaDo(metal);
   const labels = chartAreas.map(({ area }) => area.shortName);
@@ -221,18 +222,33 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
                metal troca e a borda ganha anel. O numero sozinho nao marcava
                passagem — 46 e 54 tinham a mesma cara, e subir acontecia sem
                nada acontecer na tela. */
-            className={centralStyle === 'plain'
-              ? 'flex items-center justify-center'
-              /* `--anel` saiu junto com a peca: nao ha mais aro para ligar.
-                 `anelDuplo` continua vivo e util, mas agora so nas PONTAS, onde
-                 ele decide o halo de cada area. */
-              : `mastery-badge${tier.coroado ? ' mastery-badge--coroado' : ''}`}
+            className={
+              centralStyle === 'plain'
+                ? 'flex items-center justify-center'
+                : [
+                    'mastery-badge',
+                    /* O ANEL: contorno, nao tampa.
+                       A peca antiga era um disco opaco plantado onde as cinco
+                       linhas se cruzam, e escondia o que da forma a figura.
+                       Este e um aro: o miolo so recebe um veu que escurece
+                       atras do glifo e se dissolve antes da borda, entao o
+                       grafico atravessa e o numero para de disputar contraste
+                       com a propria teia. */
+                    centralStyle === 'anel' ? 'mastery-badge--anel' : '',
+                    centralStyle === 'anel' && tier.anelDuplo ? 'mastery-badge--anel-duplo' : '',
+                    tier.coroado ? 'mastery-badge--coroado' : '',
+                  ].filter(Boolean).join(' ')
+            }
             style={estiloDoMetal}
           >
             {/* Os DOIS numeros, um debaixo do outro: o nivel e o dobro da
                 maestria, e dizer isso custa uma linha de 8px. */}
             <span className="flex flex-col items-center leading-none">
-              <span className="mastery-badge-numero" style={tintaDoNumero}>{masteryIndex}</span>
+              {/* Sombra atras, metal na frente — ver `.mastery-badge-numero-pilha`. */}
+              <span className="mastery-badge-numero-pilha">
+                <span className="mastery-badge-numero-sombra" aria-hidden="true">{masteryIndex}</span>
+                <span className="mastery-badge-numero" style={tintaDoNumero}>{masteryIndex}</span>
+              </span>
               <span className="mastery-badge-maestria">
                 {maestriaCrua}/{MASTERY_RAW_TOTAL_MAX_LEVEL}
               </span>

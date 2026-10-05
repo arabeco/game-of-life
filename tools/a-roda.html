@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A roda dos níveis — Bancada do Glyph</title>
+<!--
+  A RODA, NAS LARGURAS DE TELEFONE QUE EXISTEM.
+
+  Relatado em 05/10/2026: a frase do degrau escolhido nao aparece inteira, e
+  isso e critico — e a frase que a pessoa esta escolhendo.
+
+  Esta pagina monta a MasteryWheel DE VERDADE, com as frases de verdade, dentro
+  de molduras das larguras reais de telefone. E ela MEDE: para cada frase
+  compara a altura do texto com a altura disponivel e diz quantas estao
+  cortadas. Olhar foto nao resolve isso — 360px e 393px caem em lados
+  diferentes do @media (max-width: 360px), que troca o clamp de 3 para 4.
+
+  Suba com `npm run bancada` e abra /a-roda.html
+-->
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 18px 20px 60px; background: #0b0d10; color: #e8eaee;
+         font: 14px/1.5 system-ui, sans-serif; }
+  h1 { font-size: 17px; margin: 0 0 4px; }
+  header p { color: #969ca6; font-size: 12.5px; margin: 0 0 18px; max-width: 76ch; }
+  code { font-family: ui-monospace, monospace; font-size: 12px; color: #d8b44c; }
+
+  .molduras { display: flex; gap: 22px; flex-wrap: wrap; align-items: flex-start; }
+  .moldura { border: 1px solid #272b32; border-radius: 14px; background: #111419;
+             padding: 10px; }
+  .moldura h2 { margin: 0 0 2px; font-size: 11px; letter-spacing: .14em;
+                text-transform: uppercase; color: #8d95a1; font-weight: 700; }
+  .moldura .nota { margin: 0 0 10px; font-size: 11px; color: #6f7883; }
+  /* A largura da moldura E a largura de teste: a @media do app le o viewport,
+     entao a pagina precisa ser aberta em cada largura para valer. A moldura
+     serve para ver a composicao; o veredito vem do painel de medida. */
+  .palco { overflow: hidden; border-radius: 10px; background: #0a0c0f; }
+
+  .medida { margin-top: 26px; border: 1px solid #272b32; border-radius: 14px;
+            background: #111419; padding: 14px 16px; max-width: 900px; }
+  .medida h2 { margin: 0 0 8px; font-size: 12px; letter-spacing: .12em;
+               text-transform: uppercase; color: #8d95a1; }
+  .veredito { font-size: 13px; font-weight: 700; margin: 0 0 10px; }
+  .veredito.ok { color: #7fd18b; }
+  .veredito.ruim { color: #e8795a; }
+  table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  th, td { text-align: left; padding: 4px 8px; border-bottom: 1px solid #1d2127; }
+  th { color: #8d95a1; font-weight: 600; }
+  td.corta { color: #e8795a; font-weight: 700; }
+  td.cabe { color: #6f7883; }
+</style>
+</head>
+<body>
+<div id="raiz"></div>
+<script type="module" src="/a-roda.tsx"></script>
+<script src="/bancada-nav.js"></script>
+</body>
+</html>

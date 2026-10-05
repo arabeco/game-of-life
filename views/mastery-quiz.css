@@ -837,10 +837,19 @@
 
 .mastery-wheel-item {
   display: grid;
-  /* A terceira coluna e vazia de proposito: ela espelha a largura do selo, e e
-     o que deixa a frase CENTRADA no visor em vez de centrada no que sobrou. Sem
-     ela o texto puxa para a direita e a composicao inteira fica torta. */
-  grid-template-columns: 46px minmax(0, 1fr) 46px;
+  /* A TERCEIRA COLUNA SAIU, E O MOTIVO E MEDIDO.
+     Ela era um espelho vazio do selo, de 46px, e existia para deixar a frase
+     centrada no visor em vez de centrada no que sobrava. O custo disso nunca
+     tinha sido medido: num palco de 332px — o que a roda recebe num telefone de
+     393px — ela deixava a frase com 180px, e em 180px o clamp de 3 linhas
+     cortava 24 das 55 frases do app. Quase metade. A pessoa escolhia um degrau
+     sem conseguir ler o que ele diz.
+     Sem o espelho a coluna vai a 238px e NENHUMA frase corta, com 22px de folga
+     na altura do item — que continua 84px, porque e ele que ancora o snap.
+     Conferido em tools/a-roda.html, que mede as 55 contra as saidas possiveis.
+     Subir o clamp para 4 tambem resolveria, e foi descartado: 4 x 20,52 = 82px
+     num item de 84 deixa 2px, e a letra encosta na moldura do item em foco. */
+  grid-template-columns: 46px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
   width: 100%;

@@ -38,6 +38,17 @@ const manualQaNotes = [
 const suites = {
   core: [
     {
+      id: 'a-roda-da-maestria',
+      label: 'Roda da maestria regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'a-roda-da-maestria.regression.mjs')]],
+      kind: 'logic',
+      interactions: [
+        'a frase do degrau aparece inteira, sem reticencias',
+        'o encaixe da roda espera a rolagem terminar e nao puxa de volta',
+        'contorno e brilho do numero do meio vivem numa declaracao so',
+      ],
+    },
+    {
       id: 'prazo-fecha-o-ciclo',
       label: 'Prazo fecha o ciclo regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'prazo-fecha-o-ciclo.regression.mjs')]],

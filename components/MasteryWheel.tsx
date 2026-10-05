@@ -209,16 +209,53 @@ export const MasteryWheel: React.FC<MasteryWheelProps> = ({
         trilho.scrollTo({ top: alvo, behavior: suave ? 'smooth' : 'auto' });
     }, []);
 
+    /*
+     * O ASSENTAR ESPERA A ROLAGEM ACABAR DE VERDADE.
+     *
+     * Ele vivia num timer de 140ms rearmado a cada evento de scroll, e isso o
+     * punha para CORRER CONTRA o snap nativo em vez de cobri-lo.
+     *
+     * `scroll-snap-type: y mandatory` ja esta no trilho, e o navegador projeta o
+     * impulso do dedo: quem lanca a roda para cima avanca mesmo soltando antes
+     * do meio do item. O `assentar` nao sabe nada disso — ele arredonda a
+     * posicao do INSTANTE em que dispara. Numa rolagem que ainda desacelera,
+     * 140ms de silencio entre dois eventos bastam para ele acordar no meio do
+     * caminho e puxar de volta para o item mais proximo, desfazendo o que o
+     * navegador ia completar.
+     *
+     * Relatado em 05/10/2026: "a rolagem nao ta tao smooth, ele meio que volta
+     * pro anterior se voce nao colocar certinho no centro do card".
+     *
+     * `scrollend` dispara uma vez, quando o movimento e o encaixe terminaram.
+     * Chamado ali, o assentar vira o que ele sempre se propos a ser: a rede para
+     * o WebView que erra o fim do gesto, e um no-op quando o navegador acertou
+     * — ele ja desiste sozinho com menos de 1,5px de diferenca.
+     *
+     * Sem `scrollend`, o timer continua, mas com folga para a desaceleracao
+     * caber nele.
+     */
+    const temScrollEnd = typeof window !== 'undefined' && 'onscrollend' in window;
+
     const aoRolar = useCallback(() => {
-        if (repousoRef.current !== null) window.clearTimeout(repousoRef.current);
-        repousoRef.current = window.setTimeout(assentar, 140);
+        if (!temScrollEnd) {
+            if (repousoRef.current !== null) window.clearTimeout(repousoRef.current);
+            repousoRef.current = window.setTimeout(assentar, 320);
+        }
 
         if (quadroRef.current !== null) return;
         quadroRef.current = window.requestAnimationFrame(() => {
             quadroRef.current = null;
             pintar();
         });
-    }, [pintar, assentar]);
+    }, [pintar, assentar, temScrollEnd]);
+
+    useEffect(() => {
+        const trilho = trilhoRef.current;
+        if (!trilho || !temScrollEnd) return;
+        const aoTerminar = () => assentar();
+        trilho.addEventListener('scrollend', aoTerminar);
+        return () => trilho.removeEventListener('scrollend', aoTerminar);
+    }, [assentar, temScrollEnd]);
 
     /** Leva a roda ate o nivel escolhido de fora (teclado, ou troca de area). */
     useEffect(() => {

@@ -57,12 +57,28 @@
   line-height: 1;
   letter-spacing: -.035em;
   font-variant-numeric: tabular-nums;
-  /* O brilho da faixa, que so existe a partir do bronze. Em drop-shadow porque
-     a letra e pintada por gradiente recortado: box-shadow desenharia um halo
-     retangular atras do texto, e text-shadow ja esta ocupado com o contorno
-     que `tintaMetalicaDo` aplica. */
-  filter: drop-shadow(0 0 calc(2.6cqw * var(--badge-brilho, 0)) rgba(240, 217, 166, calc(.75 * var(--badge-brilho, 0))));
-  transition: filter 420ms ease;
+  /*
+   * CONTORNO E BRILHO, NUMA LISTA SO, EM `text-shadow`.
+   *
+   * Eram duas propriedades brigando. O contorno chegava em `filter`, inline,
+   * por `tintaMetalicaDo`; o brilho da faixa estava aqui, tambem em `filter`.
+   * Inline vence, entao o brilho nunca pintou — medido na bancada: com
+   * `--badge-brilho: 0.2` o filtro aplicado era so o par de sombras pretas.
+   *
+   * `text-shadow` resolve a disputa porque aceita lista, e resolve um segundo
+   * problema de quebra: esta letra e pintada por `background-clip: text`, e
+   * `filter` a joga numa superficie de composicao propria — onde o WebView do
+   * Android perde o recorte ao repintar e mostra o gradiente como um bloco
+   * quase branco. Sombra de texto nasce da forma da letra e nao cria superficie
+   * nenhuma.
+   *
+   * `box-shadow` continua fora de questao: desenharia um halo retangular.
+   */
+  text-shadow:
+    0 0 2px rgba(0, 0, 0, .62),
+    0 1px 1px rgba(0, 0, 0, .85),
+    0 0 calc(2.6cqw * var(--badge-brilho, 0)) rgba(240, 217, 166, calc(.75 * var(--badge-brilho, 0)));
+  transition: text-shadow 420ms ease;
 }
 
 /* OS 100. Unico lugar da escada onde o numero pode dizer "isto e raro".
@@ -72,9 +88,20 @@
   animation: mastery-badge-respira 3.4s ease-in-out infinite;
 }
 
+/* O respiro dos 100 anda na mesma propriedade do resto, e carrega o contorno
+   junto: uma animacao de `text-shadow` substitui a lista inteira enquanto roda,
+   entao deixar o contorno de fora o apagaria a cada quadro. */
 @keyframes mastery-badge-respira {
-  0%, 100% { filter: drop-shadow(0 0 2.2cqw rgba(240, 217, 166, .55)); }
-  50%      { filter: drop-shadow(0 0 4.4cqw rgba(255, 238, 190, .9)); }
+  0%, 100% {
+    text-shadow:
+      0 0 2px rgba(0, 0, 0, .62), 0 1px 1px rgba(0, 0, 0, .85),
+      0 0 2.2cqw rgba(240, 217, 166, .55);
+  }
+  50% {
+    text-shadow:
+      0 0 2px rgba(0, 0, 0, .62), 0 1px 1px rgba(0, 0, 0, .85),
+      0 0 4.4cqw rgba(255, 238, 190, .9);
+  }
 }
 
 /* A maestria crua, embaixo. Ela nao e metal: e a medida de apoio, e dar a ela o

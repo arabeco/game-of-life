@@ -155,3 +155,38 @@ assert.match(
 );
 
 console.log('[relatorio-sem-repeticao] ok');
+
+/* ==========================================================================
+ * O TAMANHO DO CICLO PRECISA DO POR DIA.
+ *
+ * "20/24 acoes" e "49h" dizem o tamanho da entrega, e tamanho so significa
+ * alguma coisa dividido pelos dias: 49h em sete dias e 49h em vinte e oito sao
+ * rotinas sem nada em comum. A carga ja trazia a divisao desde sempre; as acoes
+ * nao, e sem ela o numero so se comparava com ciclos do mesmo comprimento.
+ *
+ * Pedido em 05/10/2026: "talvez adicionar media de acoes e tempo util por dia".
+ * O tempo util ja estava la — faltava a metade das acoes.
+ * ========================================================================== */
+
+// As duas medidas dividem pelo MESMO denominador. Se uma passar a usar dias com
+// presenca e a outra o periodo, o mesmo ciclo mostra duas medias por dia.
+const quadroDaExecucao = fonte.slice(
+  fonte.indexOf('titulo="Execução"'),
+  fonte.indexOf("rotulo: 'Presença'"),
+);
+assert.ok(quadroDaExecucao.length > 200, 'o quadro de Execucao mudou de forma');
+assert.match(quadroDaExecucao, /nota: `\$\{umaCasa\(metrics\.actionsCompleted \/ Math\.max\(1, totalDays\)\)\} por dia`/,
+  'a media de acoes por dia sumiu do quadro de Execucao');
+assert.match(quadroDaExecucao, /umaCasa\(metrics\.avgHoursPerDay \?\? \(metrics\.totalHours \/ Math\.max\(1, totalDays\)\)\)/,
+  'a carga por dia mudou de denominador e deixou de bater com a das acoes');
+console.log('ok - acoes e carga mostram o por dia, pela mesma regua');
+
+// E o separador decimal e o do app, nao o do toFixed. O relatorio mostrava
+// "8.1h por dia" com ponto num app que escreve numero em pt-BR em todo o resto.
+assert.match(fonte, /const umaCasa = \(valor: number\): string =>/,
+  'o formatador de uma casa sumiu');
+assert.match(fonte, /toLocaleString\('pt-BR', \{/,
+  'a uma casa voltou a ser formatada com ponto');
+assert.doesNotMatch(quadroDaExecucao, /toFixed\(1\)/,
+  'voltou um toFixed no quadro de Execucao — ele devolve ponto, nao virgula');
+console.log('ok - uma casa decimal, com virgula, num lugar so');

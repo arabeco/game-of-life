@@ -97,6 +97,19 @@ const ChestVisual: React.FC<{ type: ChestType }> = ({ type }) => {
     );
 };
 
+/*
+ * Uma casa decimal, com virgula.
+ *
+ * `toFixed(1)` devolve ponto, e o relatorio mostrava "8.1h por dia" num app que
+ * escreve numero em pt-BR em todo o resto. Fica aqui, e nao solto em cada
+ * medida, porque "quantas casas e qual separador" e uma decisao so.
+ */
+const umaCasa = (valor: number): string =>
+    (Number.isFinite(valor) ? valor : 0).toLocaleString('pt-BR', {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+    });
+
 export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     report,
     onOk,
@@ -311,8 +324,25 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
             rotulo="das ações planejadas viraram feito"
             progresso={executionPercentage}
             legenda={[
-                { rotulo: 'Ações', valor: `${metrics.actionsCompleted}/${metrics.totalPlannedActions}` },
-                { rotulo: 'Carga', valor: `${metrics.totalHours}h`, nota: `${metrics.avgHoursPerDay ?? (metrics.totalHours / totalDays).toFixed(1)}h por dia` },
+                /* AS DUAS MEDIDAS GANHAM A MESMA NOTA: O POR DIA.
+                   "20/24 acoes" e "49h" dizem o TAMANHO do ciclo, e o tamanho
+                   depende de quantos dias ele teve: 49h em sete dias e 49h em
+                   vinte e oito sao rotinas sem nada em comum. A carga ja trazia
+                   a divisao; as acoes nao, e sem ela o numero so se compara com
+                   ciclos do mesmo comprimento.
+                   O denominador e `totalDays`, nao os dias com presenca — e a
+                   mesma regua de `avgHoursPerDay`, e misturar as duas faria o
+                   mesmo ciclo ter duas medias por dia. */
+                {
+                    rotulo: 'Ações',
+                    valor: `${metrics.actionsCompleted}/${metrics.totalPlannedActions}`,
+                    nota: `${umaCasa(metrics.actionsCompleted / Math.max(1, totalDays))} por dia`,
+                },
+                {
+                    rotulo: 'Carga',
+                    valor: `${metrics.totalHours}h`,
+                    nota: `${umaCasa(metrics.avgHoursPerDay ?? (metrics.totalHours / Math.max(1, totalDays)))}h por dia`,
+                },
                 {
                     rotulo: 'Presença',
                     valor: `${metrics.consistencyDays || 0}/${totalDays}`,

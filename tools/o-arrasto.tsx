@@ -13,20 +13,38 @@
 import '../index.css';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { usePlannerDragHold, PLANNER_PEGAR_MS, PLANNER_SEGURAR_MS } from '../hooks/usePlannerDragHold';
+import {
+    usePlannerDragHold, PLANNER_PEGAR_MS, PLANNER_SEGURAR_MS, PLANNER_ENCHER_MS, BAIA_ENCHER_MS,
+} from '../hooks/usePlannerDragHold';
 
 type Linha = { t: number; cartao: string; evento: string };
 
 const relogio = { t0: 0 };
 const agora = () => Math.round(performance.now() - relogio.t0);
 
-const Cartao: React.FC<{ nome: string; anotar: (cartao: string, evento: string) => void }> = ({ nome, anotar }) => {
+/**
+ * Um cartao que conclui de verdade: o timer e a barra leem o mesmo tempo de
+ * enchimento que as pecas do app — `PLANNER_ENCHER_MS` ou `BAIA_ENCHER_MS`.
+ */
+const Cartao: React.FC<{
+    nome: string;
+    encherMs: number;
+    anotar: (cartao: string, evento: string) => void;
+}> = ({ nome, encherMs, anotar }) => {
     const [enchendo, setEnchendo] = useState(false);
+    const conclusao = useRef<ReturnType<typeof setTimeout> | null>(null);
     const { events, erguido } = usePlannerDragHold({
         onTap: () => anotar(nome, 'toque'),
         onDrag: () => anotar(nome, 'ARRASTOU'),
-        onHoldStart: () => { anotar(nome, 'comecou a concluir'); setEnchendo(true); },
-        onHoldCancel: () => { anotar(nome, 'parou de concluir'); setEnchendo(false); },
+        onHoldStart: () => {
+            anotar(nome, 'comecou a concluir');
+            setEnchendo(true);
+            conclusao.current = setTimeout(() => { anotar(nome, 'CONCLUIU'); setEnchendo(false); }, encherMs);
+        },
+        onHoldCancel: () => {
+            if (conclusao.current) { clearTimeout(conclusao.current); conclusao.current = null; }
+            setEnchendo(false);
+        },
     });
     const anterior = useRef(false);
     useEffect(() => {
@@ -41,7 +59,7 @@ const Cartao: React.FC<{ nome: string; anotar: (cartao: string, evento: string) 
             className={`cartao${erguido ? ' planner-erguido' : ''}`}
         >
             {nome}
-            {enchendo && <div className="enche" />}
+            {enchendo && <div className="enche" style={{ animationDuration: `${encherMs}ms` }} />}
         </div>
     );
 };
@@ -82,7 +100,7 @@ function Bancada() {
             toque(alvo, 'touchmove', 50, 82); await esperar(30); toque(alvo, 'touchend', 50, 82);
         },
         'segura parado': async (alvo) => {
-            toque(alvo, 'touchstart', 50, 50); await esperar(900); toque(alvo, 'touchend', 50, 50);
+            toque(alvo, 'touchstart', 50, 50); await esperar(2300); toque(alvo, 'touchend', 50, 50);
         },
         'varre cedo (rolar)': async (alvo) => {
             toque(alvo, 'touchstart', 50, 50); await esperar(100);
@@ -100,8 +118,8 @@ function Bancada() {
         },
     };
 
-    const rodar = async (nome: string) => {
-        const alvo = document.querySelector('[data-cartao="A"]');
+    const rodar = async (nome: string, cartao = 'A') => {
+        const alvo = document.querySelector(`[data-cartao="${cartao}"]`);
         if (!alvo) return [];
         zerar();
         relogio.t0 = performance.now();
@@ -134,9 +152,9 @@ function Bancada() {
                 onTouchStartCapture={() => { relogio.t0 = performance.now(); }}
                 onMouseDownCapture={() => { relogio.t0 = performance.now(); }}
             >
-                <Cartao nome="A" anotar={anotar} />
-                <Cartao nome="B" anotar={anotar} />
-                <Cartao nome="C" anotar={anotar} />
+                <Cartao nome="A" encherMs={PLANNER_ENCHER_MS} anotar={anotar} />
+                <Cartao nome="B" encherMs={PLANNER_ENCHER_MS} anotar={anotar} />
+                <Cartao nome="Baia" encherMs={BAIA_ENCHER_MS} anotar={anotar} />
             </div>
             <div className="registro">
                 {linhas.length === 0

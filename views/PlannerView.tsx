@@ -17,7 +17,7 @@ import { useTutorial } from '../contexts/TutorialContext';
 import { buildActionPoolByDate, buildDailyExpSnapshot, filterCycleTasksByScope, getInitialDailyCommitmentTaskIds, getVisiblePoolTaskIdsForAction } from '../utils/coreLoopUtils.js';
 import { OPERATIONAL_DAY_START_MINUTE, OPERATIONAL_DAY_TOTAL_MINUTES, buildLocalDateFromString, formatLocalDateString, formatOperationalHourLabel, getActualDateStringForOperationalMinutes, getActualStartTimeForOperationalMinutes, getOperationalDateString, getOperationalDisplayMinutes, getOperationalHourTicks, getTaskDisplayStartTime, getTaskOperationalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 import { hasScheduledTime, isClanQuestAction, isTaskInPool } from '../utils/taskDomain.js';
-import { usePlannerDragHold } from '../hooks/usePlannerDragHold';
+import { usePlannerDragHold, PLANNER_ENCHER_MS, DESMARCAR_ENCHER_MS } from '../hooks/usePlannerDragHold';
 import { hasPremiumAccess } from '../utils/premiumAccess';
 import { APP_SENSORY_CUE_EVENT, type AppSensoryCuePayload } from '../utils/sensoryCue';
 import {
@@ -285,7 +285,7 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
             toggleTaskCompletion(task.id);
             setIsHolding(false);
             setIsTransitioning(false);
-        }, task.completed ? 3000 : 1800);
+        }, task.completed ? DESMARCAR_ENCHER_MS : PLANNER_ENCHER_MS);
     };
 
     const cancelLongPress = () => {
@@ -354,7 +354,7 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
                         <EmojiGlyph symbol={action?.icon || "🏁"} size="milestone" className="drop-shadow-[0_1px_1px_rgba(253,241,196,0.6)]" />
                         <div className="text-xs font-black truncate max-w-full px-1 drop-shadow-[0_1px_1px_rgba(253,241,196,0.5)]">{action?.name}</div>
                     </div>
-                    {isHolding && (<div className="absolute inset-0 bg-black/50 animate-pulse" style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}><div className={`h-full w-full ${task.completed ?'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`}></div></div>)}
+                    {isHolding && (<div className="absolute inset-0 bg-black/50 animate-pulse" style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}><div className={`h-full w-full ${task.completed ?'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`} style={{ animationDuration: `${task.completed ? DESMARCAR_ENCHER_MS : PLANNER_ENCHER_MS}ms` }}></div></div>)}
                     {showSparkles && <Sparkles />}
                 </div>
                 <style>{`@keyframes fill { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0% 0 0 0); } } @keyframes unfill { from { clip-path: inset(0% 0 0 0); } to { clip-path: inset(100% 0 0 0); } }`}</style>
@@ -390,7 +390,7 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
                     <div className="text-sm font-semibold truncate min-w-0 flex-1 text-white">{action?.name}</div>
                     {task.completed && <div className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-black/28 text-white shadow-[0_0_8px_rgba(255,255,255,0.12)]"><SquareCheckIcon className="h-3.5 w-3.5 text-emerald-300 drop-shadow-[0_0_4px_rgba(52,211,153,0.55)]" /></div>}
                 </div>
-                {isHolding && (<div className="absolute inset-0 animate-pulse bg-black/50 rounded-2xl"><div className={`h-full w-full ${task.completed ?'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`}></div></div>)}
+                {isHolding && (<div className="absolute inset-0 animate-pulse bg-black/50 rounded-2xl"><div className={`h-full w-full ${task.completed ?'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`} style={{ animationDuration: `${task.completed ? DESMARCAR_ENCHER_MS : PLANNER_ENCHER_MS}ms` }}></div></div>)}
                 {showSparkles && <Sparkles />}
             </div>
             <style>{`@keyframes fill { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0% 0 0 0); } } @keyframes unfill { from { clip-path: inset(0% 0 0 0); } to { clip-path: inset(100% 0 0 0); } }`}</style>
@@ -525,7 +525,7 @@ const UnscheduledTaskCard: React.FC<{
             completeLikePlanner();
             setIsHolding(false);
             setIsTransitioning(false);
-        }, task.completed ? 3000 : 1800);
+        }, task.completed ? DESMARCAR_ENCHER_MS : PLANNER_ENCHER_MS);
     };
 
     const cancelLongPress = () => {
@@ -619,7 +619,7 @@ const UnscheduledTaskCard: React.FC<{
             </div>
             {executionCard && isHolding && (
                 <div className={`absolute inset-0 animate-pulse bg-black/50 ${compact ?'rounded-[18px]' : 'rounded-[22px]'}`}>
-                    <div className={`h-full w-full ${task.completed ?'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`}></div>
+                    <div className={`h-full w-full ${task.completed ?'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`} style={{ animationDuration: `${task.completed ? DESMARCAR_ENCHER_MS : PLANNER_ENCHER_MS}ms` }}></div>
                 </div>
             )}
             {executionCard && showSparkles && <Sparkles />}

@@ -32,6 +32,25 @@ import { useLongPress } from './useLongPress';
 export const PLANNER_PEGAR_MS = 240;
 export const PLANNER_SEGURAR_MS = 640;
 
+/*
+ * QUANTO O ENCHIMENTO LEVA, DEPOIS DE COMECAR.
+ *
+ * O total de concluir segurando e SEGURAR + ENCHER. Pedido em 05/10/2026:
+ * 2,0s no planner e 1,3s na baia.
+ *
+ * E a BARRA le o mesmo numero que o timer. Ate aqui a animacao de enchimento
+ * durava 3s em todas as pecas, enquanto a tarefa concluia em 1,8s e a acao da
+ * baia em 1s — a barra mostrava 60% e 33% e pulava para concluido. Quem segura
+ * olha a barra para saber quando soltar; ela tem de chegar ao fim quando a
+ * coisa conclui, nem antes nem depois.
+ *
+ * Desmarcar continua longo de proposito: desfazer o que ja foi feito nao pode
+ * acontecer por um dedo distraido.
+ */
+export const PLANNER_ENCHER_MS = 1360;
+export const BAIA_ENCHER_MS = 660;
+export const DESMARCAR_ENCHER_MS = 3000;
+
 interface PlannerDragHoldOptions {
     /** Toque curto: abrir a peca. */
     onTap: () => void;

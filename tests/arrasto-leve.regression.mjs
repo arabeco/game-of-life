@@ -35,6 +35,33 @@ assert.match(planner, /onLongPress: onHoldStart\s*\?\s*\(\) => \{[\s\S]{0,260}se
     'a peca deixou de descer antes de comecar a encher — os dois gestos voltam a se confundir');
 console.log('ok - pegar aos 240ms; concluir so com o dedo parado ate 640ms');
 
+// Concluir segurando: 2,0s no planner e 1,3s na baia, no total. Pedido em
+// 05/10/2026, medido na bancada: 2016ms e 1322ms.
+assert.match(planner, /export const PLANNER_ENCHER_MS = 1360;/, 'o enchimento do planner mudou — o total deixa de ser 2,0s');
+assert.match(planner, /export const BAIA_ENCHER_MS = 660;/, 'o enchimento da baia mudou — o total deixa de ser 1,3s');
+assert.match(planner, /export const DESMARCAR_ENCHER_MS = 3000;/, 'desmarcar ficou curto — desfazer nao pode ser por dedo distraido');
+
+// O timer e a barra leem o MESMO numero. A barra durava 3s enquanto a tarefa
+// concluia em 1,8s e a acao da baia em 1s: mostrava 60% e 33% e pulava.
+const pecasDoPlanner = ['views/PlannerView.tsx', 'components/WeeklyPlannerGrid.tsx'];
+for (const arquivo of pecasDoPlanner) {
+    const fonte = ler(arquivo);
+    assert.doesNotMatch(fonte, /task\.completed \? ?3000 : 1800/, `${arquivo}: o tempo de concluir voltou a ser numero solto`);
+    assert.match(fonte, /\}, task\.completed \? DESMARCAR_ENCHER_MS : PLANNER_ENCHER_MS\);/,
+        `${arquivo}: o timer de concluir saiu das constantes do gesto`);
+    const barras = (fonte.match(/animate-\[fill_3s_linear_forwards\]/g) || []).length;
+    const sincronizadas = (fonte.match(/animationDuration: `\$\{task\.completed \? DESMARCAR_ENCHER_MS : PLANNER_ENCHER_MS\}ms`/g) || []).length;
+    assert.equal(sincronizadas, barras,
+        `${arquivo}: ha barra de enchimento sem a duracao do timer — ela volta a pular antes do fim`);
+}
+for (const arquivo of ['components/PoolAction.tsx', 'components/MilestonePoolAction.tsx']) {
+    const fonte = ler(arquivo);
+    assert.match(fonte, /\}, BAIA_ENCHER_MS\);/, `${arquivo}: o timer de concluir da baia virou numero solto`);
+    assert.match(fonte, /animationDuration: `\$\{BAIA_ENCHER_MS\}ms`/,
+        `${arquivo}: a barra da baia saiu do tempo do timer`);
+}
+console.log('ok - concluir segurando: 2,0s no planner, 1,3s na baia, e a barra chega ao fim junto');
+
 // No hook, o segurar so vale para quem ja foi pego e continuou parado.
 assert.match(gesto, /const podeSegurar = armDelay !== undefined\s*\?\s*state\.current === 'armed'\s*:\s*state\.current === 'pending';/,
     'com o pegar ligado, o segurar voltou a valer sem a peca ter sido pega');

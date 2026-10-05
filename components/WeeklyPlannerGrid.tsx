@@ -5,7 +5,7 @@ import { Action, ScheduledTask } from '../types';
 import { EmojiGlyph } from './EmojiGlyph';
 import { useGame } from '../contexts/GameContext';
 import { DropIndicator } from './DropIndicator';
-import { usePlannerDragHold } from '../hooks/usePlannerDragHold';
+import { usePlannerDragHold, PLANNER_ENCHER_MS, DESMARCAR_ENCHER_MS } from '../hooks/usePlannerDragHold';
 import { CheckCircleIcon } from './Icons';
 import { OPERATIONAL_DAY_START_MINUTE, formatLocalDateString, formatOperationalHourLabel, getOperationalDateString, getOperationalDisplayMinutes, getOperationalHourTicks, getTaskDisplayStartTime, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 
@@ -90,7 +90,7 @@ const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: 
             toggleTaskCompletion(task.id);
             setIsHolding(false);
             setIsTransitioning(false);
-        }, task.completed ? 3000 : 1800);
+        }, task.completed ? DESMARCAR_ENCHER_MS : PLANNER_ENCHER_MS);
     };
 
     const cancelLongPress = () => {
@@ -156,7 +156,7 @@ const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: 
 
                 {isHolding && (
                     <div className="absolute inset-0 animate-pulse bg-black/50 rounded-r-lg">
-                        <div className={`h-full w-full ${task.completed ? 'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`}></div>
+                        <div className={`h-full w-full ${task.completed ? 'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`} style={{ animationDuration: `${task.completed ? DESMARCAR_ENCHER_MS : PLANNER_ENCHER_MS}ms` }}></div>
                     </div>
                 )}
                 {showSparkles && <Sparkles />}

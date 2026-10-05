@@ -3,7 +3,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Action } from '../types';
 import { useGame } from '../contexts/GameContext';
-import { usePlannerDragHold } from '../hooks/usePlannerDragHold';
+import { usePlannerDragHold, BAIA_ENCHER_MS } from '../hooks/usePlannerDragHold';
 import { EmojiGlyph } from './EmojiGlyph';
 
 interface MilestonePoolActionProps {
@@ -46,7 +46,7 @@ export const MilestonePoolAction: React.FC<MilestonePoolActionProps> = ({ action
             onComplete(action.id);
             setIsHolding(false);
             setIsTransitioning(false);
-        }, 1000);
+        }, BAIA_ENCHER_MS);
     };
     
     const cancelLongPress = () => {
@@ -100,7 +100,7 @@ export const MilestonePoolAction: React.FC<MilestonePoolActionProps> = ({ action
 
             {isHolding && (
                 <div className="absolute inset-0 bg-black/50 rounded-lg animate-pulse">
-                    <div className="h-full w-full bg-[var(--accent-bronze)] opacity-50 animate-[fill_3s_linear_forwards]" style={{clipPath: 'inset(100% 0 0 0)'}}></div>
+                    <div className="h-full w-full bg-[var(--accent-bronze)] opacity-50 animate-[fill_3s_linear_forwards]" style={{ clipPath: 'inset(100% 0 0 0)', animationDuration: `${BAIA_ENCHER_MS}ms` }}></div>
                 </div>
             )}
             <style>{`

@@ -4,7 +4,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { Action } from '../types';
 import { useGame } from '../contexts/GameContext';
 import { useTutorial } from '../contexts/TutorialContext';
-import { usePlannerDragHold } from '../hooks/usePlannerDragHold';
+import { usePlannerDragHold, BAIA_ENCHER_MS } from '../hooks/usePlannerDragHold';
 import { EmojiGlyph } from './EmojiGlyph';
 
 interface PoolActionProps {
@@ -70,7 +70,7 @@ export const PoolAction: React.FC<PoolActionProps> = ({ action, count, isUnlimit
             onComplete(action.id, taskId); // Pass taskId if available
             setIsHolding(false);
             setIsTransitioning(false);
-        }, 1000);
+        }, BAIA_ENCHER_MS);
     };
 
     const cancelLongPress = () => {
@@ -152,7 +152,7 @@ export const PoolAction: React.FC<PoolActionProps> = ({ action, count, isUnlimit
 
             {isHolding && (
                 <div className={`absolute inset-0 bg-black/50 animate-pulse pointer-events-none ${isMilestone ?'marco-losango' : isFreeAction ?'rounded-2xl' : 'rounded-xl'}`} style={isMilestone ? { background: 'rgba(0,0,0,0.5)' } : undefined}>
-                    <div className={`h-full w-full opacity-50 animate-[fill_3s_linear_forwards] ${isFreeAction ?'bg-slate-200/40' : 'bg-[var(--bronze)]'}`} style={{ clipPath: 'inset(100% 0 0 0)' }}></div>
+                    <div className={`h-full w-full opacity-50 animate-[fill_3s_linear_forwards] ${isFreeAction ?'bg-slate-200/40' : 'bg-[var(--bronze)]'}`} style={{ clipPath: 'inset(100% 0 0 0)', animationDuration: `${BAIA_ENCHER_MS}ms` }}></div>
                 </div>
             )}
             <style>{`

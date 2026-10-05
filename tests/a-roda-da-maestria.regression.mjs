@@ -62,9 +62,7 @@ console.log('ok - o encaixe so age quando a rolagem terminou de verdade');
 //
 //   filter na letra   — a sombra fica atras e o metal claro, MAS era a mesma
 //                       propriedade do brilho da faixa, e o inline de
-//                       tintaMetalicaDo vencia: o brilho nunca pintou. E
-//                       filter + background-clip:text e o par que o WebView
-//                       perde ao repintar, mostrando um bloco branco.
+//                       tintaMetalicaDo vencia: o brilho nunca pintou.
 //   text-shadow na    — desfeito no mesmo dia. Com o texto transparente, a
 //   letra               camada do texto fica ACIMA do fundo recortado, e a
 //                       sombra mora nela: o preto foi pintado POR CIMA do
@@ -120,23 +118,39 @@ assert.ok(
 );
 console.log('ok - o respiro dos 100 nao apaga o contorno');
 
-// =================================================== 4. o anel no pentagono
+// ============================ 4. o branco ao arrastar: o atalho `background`
 //
-// Sem peca nenhuma o numero disputava contraste com a propria teia. O anel
-// volta como CONTORNO: aro com o metal e a espessura da faixa, veu so atras do
-// glifo, e segundo aro a partir do 50. Os valores ja estavam nos tiers — borda
-// e anelDuplo seguiam vivos nas pontas.
-assert.match(pentagono, /centralStyle = 'anel',/, 'o anel deixou de ser o padrao do pentagono');
-assert.match(pentagono, /'--badge-borda': String\(tier\.borda\)/,
-    'o anel parou de ler a espessura da faixa');
-const mastery = readFileSync(new URL('../views/MasteryView.tsx', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
-assert.doesNotMatch(mastery, /centralStyle="plain"/,
-    'a tela de avaliacao voltou ao numero sem anel');
-const anel = badge.slice(badge.indexOf('.mastery-badge--anel {'), badge.indexOf('.mastery-badge--anel-duplo {'));
-assert.match(anel, /border: calc\(var\(--badge-borda, 1\) \* 1px\) solid/, 'o aro perdeu a espessura da faixa');
-assert.match(anel, /radial-gradient\(closest-side/, 'o veu atras do glifo sumiu');
-assert.doesNotMatch(anel, /background: (rgba|#)[^;]*;/,
-    'o miolo do anel virou cor solida — ele voltaria a tapar o cruzamento das linhas');
-console.log('ok - o anel contorna o numero sem tapar a teia');
+// O retangulo branco por cima do numero aparecia ao ARRASTAR o nivel, e foi
+// atribuido primeiro ao `filter` e ao WebView do Android. Errado: reproduzia no
+// navegador de mesa, nas duas variantes, e a bancada pegou pelo estilo inline
+// depois da troca de faixa — sem `background-clip` nenhum —, com 194 avisos do
+// proprio React no console: "Updating background when a conflicting property
+// is set (backgroundClip)".
+//
+// O atalho `background` redefine todas as subpropriedades de fundo, inclusive
+// o clip. Num re-render o React so reescreve o que MUDOU: trocou a faixa, ele
+// reaplica `background` e nao reaplica o `backgroundClip`, que continuou
+// 'text'. O gradiente passa a pintar a caixa inteira; na prata, quase branco.
+//
+// O helper e compartilhado por cinco telas, e todas tinham o mesmo bug latente.
+const metalReport = readFileSync(new URL('../components/MetalReportCard.tsx', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+const helper = metalReport.slice(
+    metalReport.indexOf('export const tintaMetalicaCom'),
+    metalReport.indexOf('export const gradienteMetalico'),
+);
+assert.ok(helper.length > 100, 'o helper da tinta de metal mudou de forma');
+assert.match(helper, /backgroundImage: gradiente,/,
+    'a tinta de metal deixou de usar backgroundImage');
+assert.doesNotMatch(helper, /^\s*background: /m,
+    'o atalho `background` voltou ao helper — ele zera o background-clip a cada troca de faixa, e o numero vira um bloco branco');
+console.log('ok - a tinta usa backgroundImage, e trocar de faixa nao apaga o recorte');
+
+// E o anel NAO voltou: a peca de luxo pedida era a dos degraus da roda, nao um
+// aro no centro do pentagono.
+const mastery = readFileSync(new URL('../views/MasteryView.tsx', import.meta.url), 'utf8');
+assert.doesNotMatch(pentagono, /'anel'/, 'o modo anel voltou ao pentagono');
+assert.doesNotMatch(badge, /mastery-badge--anel/, 'o CSS do anel voltou');
+assert.match(mastery, /centralStyle="plain"/, 'a tela de avaliacao deixou de pedir o numero sem peca');
+console.log('ok - o centro do pentagono e so o numero');
 
 console.log('A roda da maestria: a frase cabe, o encaixe espera, e o numero tem um dono so.');

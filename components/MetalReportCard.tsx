@@ -239,7 +239,27 @@ export const getPlateFinish = (rank: string): PlateFinish => PLATE_FINISHES[getM
  */
 export const tintaMetalicaCom = (gradiente: string, corDeReserva: string): React.CSSProperties => ({
   color: corDeReserva,
-  background: gradiente,
+  /*
+   * `backgroundImage`, NUNCA o atalho `background`.
+   *
+   * O atalho redefine TODAS as subpropriedades de fundo — inclusive o
+   * `background-clip`, que volta para `border-box`. No primeiro render isso nao
+   * aparece, porque o React escreve as chaves na ordem do objeto e o clip vem
+   * depois. Mas num re-render o React so reescreve o que MUDOU: trocou a faixa,
+   * trocou o gradiente, ele reaplica `background` sozinho — e o clip, que
+   * continuou 'text', nao e reescrito. O gradiente passa a pintar a caixa
+   * inteira, e com o fill transparente o que se ve e um bloco: na prata, quase
+   * branco.
+   *
+   * Era o retangulo branco por cima do numero do meio, relatado em 05/10/2026:
+   * aparecia exatamente ao arrastar o nivel, porque e quando a faixa muda com o
+   * elemento montado. Pego na bancada pelo estilo inline depois da troca — sem
+   * `background-clip` nenhum — e por 194 avisos do proprio React no console:
+   * "Updating background when a conflicting property is set (backgroundClip)".
+   *
+   * Vale para as cinco telas que usam esta tinta, nao so para o pentagono.
+   */
+  backgroundImage: gradiente,
   backgroundClip: 'text',
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',

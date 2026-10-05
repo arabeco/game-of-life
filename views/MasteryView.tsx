@@ -204,7 +204,7 @@ export const MasteryView: React.FC<{ onClose?: () => void; embedded?: boolean }>
                                 <button type="button" className="mastery-quiz-pentagon-frame mastery-quiz-pentagon-trigger" onClick={() => { if (!isAssessmentActive) startAssessment(); }} aria-label="Abrir perguntas da avaliação" aria-expanded={isAssessmentActive}>
                                     <div className="mastery-quiz-pentagon-square">
                                         <Suspense fallback={<div className="h-full w-full rounded-[1.4rem] bg-white/5" />}>
-                                            <AssetPentagon assets={assets} tempLevels={isAssessmentActive && preview?.assetId === currentAsset.id ? { ...tempLevels, [currentAsset.id]: preview.level } : tempLevels} destacarPontas={isAssessmentActive} activeAreaId={isAssessmentActive ? currentAsset.id : undefined} size="100%" />
+                                            <AssetPentagon assets={assets} tempLevels={isAssessmentActive && preview?.assetId === currentAsset.id ? { ...tempLevels, [currentAsset.id]: preview.level } : tempLevels} centralStyle="plain" destacarPontas={isAssessmentActive} activeAreaId={isAssessmentActive ? currentAsset.id : undefined} size="100%" />
                                         </Suspense>
                                     </div>
                                 </button>

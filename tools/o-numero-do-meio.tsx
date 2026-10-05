@@ -23,31 +23,12 @@ const espalhar = (maestria: number): Record<string, number> => {
 
 const ATIVOS = LIFE_AREAS.map((area) => ({ ...area, level: 0 })) as any[];
 
-/*
- * HOJE x COM ANEL, LADO A LADO, NA MESMA FAIXA.
- *
- * "Hoje" e o `centralStyle="plain"` que a tela de maestria usa de verdade — a
- * bancada mostrava o padrao `badge`, que nao e o que o app desenha. "Com anel"
- * e a proposta: aro com o metal e a espessura da faixa, veu atras do glifo, e
- * segundo aro a partir do 50.
- */
 const Degrau: React.FC<{ nivel: number; nota: string }> = ({ nivel, nota }) => (
     <div className="degrau">
         <h2>Nível {nivel}</h2>
         <p>{nota}</p>
-        <div className="par">
-            <figure>
-                <div className="palco">
-                    <AssetPentagon assets={ATIVOS} tempLevels={espalhar(nivel / 2)} centralStyle="plain" size="100%" />
-                </div>
-                <figcaption>hoje</figcaption>
-            </figure>
-            <figure>
-                <div className="palco">
-                    <AssetPentagon assets={ATIVOS} tempLevels={espalhar(nivel / 2)} centralStyle="anel" size="100%" />
-                </div>
-                <figcaption className="proposta">com anel</figcaption>
-            </figure>
+        <div className="palco">
+            <AssetPentagon assets={ATIVOS} tempLevels={espalhar(nivel / 2)} centralStyle="plain" size="100%" />
         </div>
     </div>
 );
@@ -84,19 +65,8 @@ function Bancada() {
                            onChange={(e) => setVivo(Number(e.target.value))} />
                 </label>
                 <div className="vivo">
-                    <div className="par">
-                        <figure>
-                            <div className="palco">
-                                <AssetPentagon assets={ATIVOS} tempLevels={espalhar(vivo / 2)} centralStyle="plain" size="100%" />
-                            </div>
-                            <figcaption>hoje</figcaption>
-                        </figure>
-                        <figure>
-                            <div className="palco">
-                                <AssetPentagon assets={ATIVOS} tempLevels={espalhar(vivo / 2)} centralStyle="anel" size="100%" />
-                            </div>
-                            <figcaption className="proposta">com anel</figcaption>
-                        </figure>
+                    <div className="palco">
+                        <AssetPentagon assets={ATIVOS} tempLevels={espalhar(vivo / 2)} centralStyle="plain" size="100%" />
                     </div>
                 </div>
             </div>

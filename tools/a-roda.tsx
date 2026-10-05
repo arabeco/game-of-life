@@ -2,6 +2,7 @@ import React, { useLayoutEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MasteryWheel } from '../components/MasteryWheel';
 import { LIFE_AREAS } from '../constants/lifeAreas';
+import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import '../index.css';
 // A roda nao traz o proprio estilo: quem importa mastery-quiz.css e a tela
 // (MasteryView, AssetsView). Sem esta linha a bancada mede um componente sem
@@ -137,7 +138,18 @@ const Bancada: React.FC = () => {
                 <div className="moldura" style={{ width: PALCO + 20 }}>
                     <h2>A roda</h2>
                     <p className="nota">{LIFE_AREAS[area].name} · degrau {nivel}</p>
-                    <div className="palco">
+                    {/* A cor da area chega pela tela, nao pela roda: MasteryView
+                        publica `--mastery-accent` no container. Sem isto a liga
+                        dos selos e o metal do fundo ficam invalidos e a escada
+                        de nobreza some — a bancada mostraria uma roda apagada
+                        que o app nunca desenha. */}
+                    <div
+                        className="palco"
+                        style={{
+                            ['--mastery-accent' as string]:
+                                (ASSET_ACCENT_COLORS as Record<string, string>)[LIFE_AREAS[area].id] || '#C9A84C',
+                        }}
+                    >
                         <MasteryWheel
                             key={LIFE_AREAS[area].id}
                             compacto

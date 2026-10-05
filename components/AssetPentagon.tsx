@@ -19,7 +19,7 @@ interface AssetPentagonProps {
   tempLevels?: Record<string, number>;
   size?: number | string;
   showCentralLevel?: boolean;
-  centralStyle?: 'badge' | 'plain' | 'anel';
+  centralStyle?: 'badge' | 'plain';
   /**
    * Destaca o numero de cada ponta.
    *
@@ -36,8 +36,7 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
   tempLevels,
   size = 280,
   showCentralLevel = true,
-  // O anel e o padrao: e o que as duas telas que mostram o numero usam.
-  centralStyle = 'anel',
+  centralStyle = 'badge',
   destacarPontas = false,
   activeAreaId,
 }) => {
@@ -69,16 +68,7 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
    */
   const tier = getMasteryBadgeTier(masteryIndex);
   const metal = getPlateFinish(tier.finish);
-  const estiloDoMetal = {
-    '--badge-brilho': String(tier.brilho),
-    // O anel desenha com o metal da faixa e com a espessura que a tabela ja
-    // declarava. `borda` e `anelDuplo` nunca tinham sumido dos tiers — eles
-    // seguiram vivos nas PONTAS quando a peca central saiu. Aqui voltam a
-    // valer tambem no centro, sem uma segunda tabela para manter.
-    '--badge-borda': String(tier.borda),
-    '--badge-metal-mid': metal.mid,
-    '--badge-metal-pale': metal.pale,
-  } as React.CSSProperties;
+  const estiloDoMetal = { '--badge-brilho': String(tier.brilho) } as React.CSSProperties;
   /**
    * A tinta do numero e a MESMA de `.metal-report-card__score`.
    *
@@ -91,13 +81,12 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
    *
    * `tintaMetalicaDo` traz junto um `filter` com o contorno. Inline, ele vencia
    * a regra que dava o brilho da faixa — medido na bancada, o brilho nunca
-   * pintou. E `filter` numa letra de `background-clip: text` e o par que o
-   * WebView do Android perde ao repintar, mostrando o gradiente como bloco
-   * branco.
+   * pintou. Entao a letra de metal fica so com a tinta, e contorno e brilho vao
+   * para uma copia transparente atras dela; ver `.mastery-badge-numero-pilha`.
    *
-   * Entao a letra de metal fica so com a tinta, e contorno e brilho vao para
-   * uma copia transparente atras dela. A historia das tres tentativas esta em
-   * `.mastery-badge-numero-pilha`.
+   * (O retangulo branco que aparecia ao arrastar o nivel NAO era deste filtro,
+   * como chegou a ser escrito aqui. Era o atalho `background` no helper: ver o
+   * comentario em `tintaMetalicaCom`.)
    */
   const { filter: _contornoDoHelper, ...tintaDoNumero } = tintaMetalicaDo(metal);
   const labels = chartAreas.map(({ area }) => area.shortName);
@@ -227,15 +216,6 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
                 ? 'flex items-center justify-center'
                 : [
                     'mastery-badge',
-                    /* O ANEL: contorno, nao tampa.
-                       A peca antiga era um disco opaco plantado onde as cinco
-                       linhas se cruzam, e escondia o que da forma a figura.
-                       Este e um aro: o miolo so recebe um veu que escurece
-                       atras do glifo e se dissolve antes da borda, entao o
-                       grafico atravessa e o numero para de disputar contraste
-                       com a propria teia. */
-                    centralStyle === 'anel' ? 'mastery-badge--anel' : '',
-                    centralStyle === 'anel' && tier.anelDuplo ? 'mastery-badge--anel-duplo' : '',
                     tier.coroado ? 'mastery-badge--coroado' : '',
                   ].filter(Boolean).join(' ')
             }

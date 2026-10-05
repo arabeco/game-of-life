@@ -1648,28 +1648,57 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         }
     }, []);
 
-    const scrollPlannerToIndicator = useCallback((indicatorEl: HTMLDivElement | null) => {
+    const scrollPlannerToIndicator = useCallback((indicatorEl: HTMLDivElement | null, suave = true) => {
         const scroller = scrollContainerRef.current;
         if (!scroller || !indicatorEl) return;
 
         const indicatorTop = indicatorEl.offsetTop;
         const targetTop = Math.max(0, indicatorTop - (scroller.clientHeight * 0.42));
-        scroller.scrollTo({ top: targetTop, behavior: 'smooth' });
+        const semMovimento = !suave
+            || Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+        scroller.scrollTo({ top: targetTop, behavior: semMovimento ? 'auto' : 'smooth' });
     }, []);
 
-    // Auto-scroll useEffects
-    useEffect(() => {
-        if (!isSimpleList && viewMode === 'day' && scrollContainerRef.current) {
-            const isOperationalToday = formatLocalDateString(currentDate) === getOperationalDateString();
-            if (isOperationalToday) {
-                setTimeout(() => {
-                    scrollPlannerToIndicator(dailyTimeIndicatorRef.current);
-                }, 200);
-            }
-        }
-    }, [currentDate, currentTime, isSimpleList, scrollPlannerToIndicator, viewMode, zoomLevel]);
-    useEffect(() => {
-        if (!isSimpleList && viewMode === 'week' && scrollContainerRef.current) {
+    /*
+     * O PLANNER CHEGA NA HORA CERTA — ELE NAO ROLA ATE ELA.
+     *
+     * Relatado em 05/10/2026: "quando abro ele parece que fica tremendo pros
+     * lados, como se quisesse se acomodar". Abrir a aba eram dois movimentos ao
+     * mesmo tempo: o palco deslizando 22px de lado por 260ms (a transicao das
+     * abas, em auth-shell.css) e, 200ms depois de montar, o planner descendo do
+     * topo do dia ate a hora atual em rolagem suave. Um de lado, um para baixo,
+     * sobrepostos — o desenho chegava e ainda se ajeitava.
+     *
+     * A regra certa ja estava escrita no app, na roda da maestria: "A PRIMEIRA
+     * POSICAO E INSTANTANEA. Animar a abertura faria a roda entrar girando
+     * sozinha, como se algo tivesse acontecido — e nada aconteceu, a pessoa so
+     * chegou na tela." Aqui vale igual. Na abertura o planner ja aparece na hora
+     * de agora, posicionado antes da primeira pintura (por isso layout effect, e
+     * nao effect). Rolagem suave so quando a PESSOA muda algo: a data, o modo ou
+     * o zoom.
+     *
+     * E o relogio saiu das dependencias. `currentTime` atualiza de minuto em
+     * minuto, e com ele aqui o planner rolava sozinho de volta para "agora" a
+     * cada minuto — quem subia para ver a manha era puxado de volta sem pedir. A
+     * linha da hora continua andando; quem decide para onde a tela olha e a
+     * pessoa.
+     *
+     * O timeout agora e cancelado: trocar data e zoom em sequencia empilhava
+     * rolagens, uma por troca, cada uma corrigindo a anterior.
+     */
+    const jaChegouNaHoraRef = useRef(false);
+
+    useLayoutEffect(() => {
+        const primeiraVez = !jaChegouNaHoraRef.current;
+        jaChegouNaHoraRef.current = true;
+        if (isSimpleList || !scrollContainerRef.current) return;
+
+        const hoje = buildLocalDateFromString(getOperationalDateString());
+        let indicador: HTMLDivElement | null = null;
+        if (viewMode === 'day') {
+            if (formatLocalDateString(currentDate) !== formatLocalDateString(hoje)) return;
+            indicador = dailyTimeIndicatorRef.current;
+        } else {
             const startOfWeek = new Date(currentDate);
             const day = startOfWeek.getDay();
             const diff = startOfWeek.getDate() - day + (day === 0 ?-6 : 1);
@@ -1678,14 +1707,17 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             const endOfWeek = new Date(startOfWeek);
             endOfWeek.setDate(startOfWeek.getDate() + 6);
             endOfWeek.setHours(23, 59, 59, 999);
-            const operationalToday = buildLocalDateFromString(getOperationalDateString());
-            if (operationalToday >= startOfWeek && operationalToday <= endOfWeek) {
-                setTimeout(() => {
-                    scrollPlannerToIndicator(weeklyTimeIndicatorRef.current);
-                }, 200);
-            }
+            if (hoje < startOfWeek || hoje > endOfWeek) return;
+            indicador = weeklyTimeIndicatorRef.current;
         }
-    }, [currentDate, currentTime, isSimpleList, scrollPlannerToIndicator, viewMode, zoomLevel]);
+
+        if (primeiraVez) {
+            scrollPlannerToIndicator(indicador, false);
+            return;
+        }
+        const timer = window.setTimeout(() => scrollPlannerToIndicator(indicador, true), 200);
+        return () => window.clearTimeout(timer);
+    }, [currentDate, isSimpleList, scrollPlannerToIndicator, viewMode, zoomLevel]);
 
     const plannerScopedTasks = useMemo(() => {
         if (activeCycle) {

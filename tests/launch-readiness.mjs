@@ -38,6 +38,17 @@ const manualQaNotes = [
 const suites = {
   core: [
     {
+      id: 'planner-chega-na-hora',
+      label: 'Planner chega na hora regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'planner-chega-na-hora.regression.mjs')]],
+      kind: 'logic',
+      interactions: [
+        'ao abrir, o planner ja aparece na hora atual, sem rolar sozinho',
+        'a tela nao e puxada de volta para agora a cada minuto',
+        'trocas seguidas de data ou zoom nao empilham rolagens',
+      ],
+    },
+    {
       id: 'a-roda-da-maestria',
       label: 'Roda da maestria regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'a-roda-da-maestria.regression.mjs')]],

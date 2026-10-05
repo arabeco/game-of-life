@@ -30,6 +30,7 @@
     "test:nota-sem-esteira": "node tests/nota-sem-esteira.regression.mjs",
     "test:prazo-fecha-o-ciclo": "node tests/prazo-fecha-o-ciclo.regression.mjs",
     "test:a-roda-da-maestria": "node tests/a-roda-da-maestria.regression.mjs",
+    "test:planner-chega-na-hora": "node tests/planner-chega-na-hora.regression.mjs",
     "test:pact-speech": "node tests/pact-speech.regression.mjs",
     "test:device-only": "node tests/safe-area-insets.regression.mjs",
     "test:relationship-links": "node tests/relationship-links.regression.mjs",

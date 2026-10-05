@@ -125,8 +125,33 @@ const getRealismPoints = (planLoadRatio) => {
     return 0;
 };
 
+/*
+ * SUSTENTAR JA E O TOPO. CRESCER NAO PODE SER OBRIGATORIO.
+ *
+ * A faixa de cima pedia 1,15 — entregar 15% a mais que a PROPRIA mediana dos
+ * ciclos anteriores. E a mediana sobe junto: cumprido o 1,15, ela incorpora o
+ * novo volume e a proxima cobranca ja e 15% em cima disso. Esteira composta.
+ * Dez ciclos pediriam 4x o volume inicial; vinte, 16x. Nao existe ciclo bom o
+ * bastante duas vezes seguidas.
+ *
+ * Pior: o realismo paga 10 so ATE 1,15 e a ascensao pagava 5 so A PARTIR de
+ * 1,15. Quem honra o plano inteiro tem as duas razoes iguais, entao 100 existia
+ * num ponto unico — exatamente 1,15 — e em qualquer outro lugar perdia-se pelo
+ * menos um ponto. Era fio de navalha, nao escada.
+ *
+ * Com o topo em 1,0 vira plato: de 1,0 a 1,15 as duas parcelas estao no maximo
+ * ao mesmo tempo. Cem passa a significar o que deveria — "fiz o que combinei, no
+ * meu tamanho de sempre" — e nao "cresci de novo".
+ *
+ * As faixas de baixo ficam: entregar bem menos que o seu normal continua
+ * custando. O que saiu foi a obrigacao de subir, nao a medida de queda.
+ *
+ * O teto por PORTE nao foi tocado. Um ciclo de 7 dias perfeito agora faz 100 e
+ * continua recebendo A — a nota diz "voce foi impecavel", o porte diz "mas isto
+ * foi uma semana". Sao duas perguntas, e cada uma volta a responder a sua.
+ */
 const getAscensionPoints = (selfGrowthRate) => {
-    if (selfGrowthRate >= 1.15) return 5;
+    if (selfGrowthRate >= 1) return 5;
     if (selfGrowthRate >= 0.9) return 4;
     if (selfGrowthRate >= 0.75) return 3;
     if (selfGrowthRate >= 0.5) return 1;

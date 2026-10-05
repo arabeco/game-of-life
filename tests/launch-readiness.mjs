@@ -38,6 +38,17 @@ const manualQaNotes = [
 const suites = {
   core: [
     {
+      id: 'nota-sem-esteira',
+      label: 'Nota sem esteira regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'nota-sem-esteira.regression.mjs')]],
+      kind: 'logic',
+      interactions: [
+        'ciclo impecavel no tamanho de sempre alcanca 100',
+        'de 1,0 a 1,15 a nota e a mesma: plato, nao fio de navalha',
+        'inflar o plano e entregar bem menos continuam custando',
+      ],
+    },
+    {
       id: 'um-evento-uma-voz',
       label: 'Um evento uma voz regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'um-evento-uma-voz.regression.mjs')]],

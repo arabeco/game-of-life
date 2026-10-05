@@ -693,7 +693,12 @@ const tests = [
             });
 
             assert.equal(result.grade, 'C');
-            assert.equal(result.fairScore, 64);
+            // 65, e nao 64, desde que sustentar virou o topo da ascensao: este
+            // ciclo entregou 1,03x a propria mediana, entao o ponto de
+            // sustentacao e dele. O excesso de plano continua cobrado onde
+            // sempre foi — realismo 3 de 10, e honra em 16/24. A nota nao se
+            // move: overplanner continua C.
+            assert.equal(result.fairScore, 65);
         },
     },
     {

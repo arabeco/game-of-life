@@ -29,6 +29,7 @@ import {
 } from '../utils/firstUseOnboarding';
 import { getAppPushPermission, requestAppPushPermission } from '../utils/pushRuntime';
 import { APP_NAVIGATE_EVENT, AppNavigatePayload } from '../utils/arenaAttention';
+import { cicloVenceu } from '../utils/operationalDay.js';
 import {
     getSeasonLaunchToastStorageKey,
     getSeasonTransitionSeenFlag,
@@ -417,7 +418,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     onBlockingOverlayChange,
 }) => {
     const { isBuilderMode, draftName, setDraftName, exitBuilderMode, packDraftToJson } = useCodexBuilder();
-    const { userProfile, activeTheme, notifications, showToast, assets, actions, tasks, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, achievementUnlocked, updateUserProfile, reports, activeArenaPact, arenaPactProgress, missaoIndividualDisponivel } = useGame();
+    const { userProfile, activeTheme, notifications, showToast, assets, actions, tasks, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, achievementUnlocked, updateUserProfile, reports, activeArenaPact, arenaPactProgress, missaoIndividualDisponivel, isProfileLoaded } = useGame();
     const historyReady = useRef(false);
 
     const effectiveUiSkin = resolveUiSkinId(userProfile.skin || 'BASIC');
@@ -939,6 +940,48 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         document.addEventListener('visibilitychange', onVisible);
         return () => document.removeEventListener('visibilitychange', onVisible);
     }, []);
+
+
+    /*
+     * O PRAZO FECHA O CICLO. NAO O BOTAO.
+     *
+     * Ate 05/10/2026 nada no app olhava a data de fim. Fechar era so o botao
+     * ENCERRAR CICLO ATUAL, dentro da trilha — e enquanto ninguem o apertasse o
+     * ciclo seguia aberto, recebendo tarefas novas por tempo indeterminado.
+     *
+     * Isso nao e so um incomodo: dissolve o prazo. Quem nao fecha continua
+     * somando acoes no mesmo ciclo e melhora a propria nota depois do fim, o que
+     * torna o fim opcional — e um prazo opcional nao e prazo.
+     *
+     * O corte e o dia OPERACIONAL, nao a data de parede: quem vira a noite de
+     * domingo trabalhando ainda esta no domingo, e so as 04:00 de segunda o
+     * ciclo vence. `cicloVenceu` e quem sabe disso, e e a unica que sabe.
+     *
+     * Sem confirmacao, de proposito. A data ja foi escolhida quando o ciclo
+     * nasceu; perguntar de novo no vencimento seria oferecer um adiamento que
+     * nao existe.
+     *
+     * A fala de abertura do Oraculo cala sozinha: o gate dela ja recusa falar
+     * com `isReportsVisible` ligado, e e isto que este efeito liga.
+     */
+    const fechouCicloVencidoRef = useRef(false);
+    const [fecharCicloVencido, setFecharCicloVencido] = useState(false);
+
+    useEffect(() => {
+        if (fechouCicloVencidoRef.current) return;
+        // Fechar com os dados pela metade geraria um relatorio que nao conta o
+        // que a pessoa fez — pior do que nao fechar.
+        if (!isProfileLoaded || !activeCycle?.endDate || tasks.length === 0) return;
+        if (!cicloVenceu(activeCycle.endDate)) return;
+        // Quem ainda nao e uma conta nao tem ciclo vencido. Termo e onboarding
+        // nao precisam de guarda propria: ambos implicam nenhum ciclo e
+        // nenhuma tarefa, e as duas condicoes acima ja barram.
+        if (userProfile.id === 'placeholder_user') return;
+
+        fechouCicloVencidoRef.current = true;
+        setFecharCicloVencido(true);
+        setReportsVisible(true);
+    }, [isProfileLoaded, activeCycle?.endDate, tasks.length, userProfile.id]);
 
     useEffect(() => {
         // A fala de abertura segue a POLITICA de presenca, nao um sorteio.
@@ -1501,7 +1544,10 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
                 <div className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-col overflow-hidden">
                     {isReportsVisible ? (
                         <Suspense fallback={<LazyViewFallback />}>
-                            <ReportsView onClose={() => setReportsVisible(false)} />
+                            <ReportsView
+                                onClose={() => { setReportsVisible(false); setFecharCicloVencido(false); }}
+                                fecharCicloVencido={fecharCicloVencido}
+                            />
                         </Suspense>
                     ) : renderView()}
                 </div>
@@ -1830,6 +1876,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         onboardingShownInSession,
         updateUserProfile,
     ]);
+
     const clearClaimToken = useCallback(() => {
         setClaimToken(null);
         const params = new URLSearchParams(window.location.search);

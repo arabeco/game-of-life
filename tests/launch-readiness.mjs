@@ -38,6 +38,17 @@ const manualQaNotes = [
 const suites = {
   core: [
     {
+      id: 'prazo-fecha-o-ciclo',
+      label: 'Prazo fecha o ciclo regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'prazo-fecha-o-ciclo.regression.mjs')]],
+      kind: 'logic',
+      interactions: [
+        'o ciclo vence as 04:00 do dia seguinte, nao a meia-noite',
+        'o fecho automatico espera perfil e tarefas, e roda uma vez so',
+        'automatico e manual selam pelo mesmo confirmEndCycle',
+      ],
+    },
+    {
       id: 'nota-sem-esteira',
       label: 'Nota sem esteira regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'nota-sem-esteira.regression.mjs')]],

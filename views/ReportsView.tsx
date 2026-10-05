@@ -719,7 +719,12 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
 };
 
 // --- Main View ---
-export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+export const ReportsView: React.FC<{
+    onClose: () => void;
+    /** O ciclo passou da data e o fecho roda sozinho. Ver o efeito em
+     *  AuthenticatedApp: quem decide e o prazo, nao o botao. */
+    fecharCicloVencido?: boolean;
+}> = ({ onClose, fecharCicloVencido = false }) => {
     const {
         reports, activeCycle, upcomingCycle, startCycle, updateCycle, endCycle, assets, actions,
         applyExp, addChest, addFeedEvent, seasons, userProfile,
@@ -1148,6 +1153,28 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setScanAttempt(prev => prev + 1);
         setView('scanning');
     };
+
+    /*
+     * O ciclo vencido entra direto no fecho, sem passar pelo hub.
+     *
+     * `fecharCicloVencido` so chega ligado quando AuthenticatedApp ja conferiu o
+     * prazo contra o dia operacional e ja esperou os dados carregarem. Aqui a
+     * unica decisao que resta e nao disparar duas vezes: `confirmEndCycle` troca
+     * a view, e sem a trava a propria troca remontaria o pedido.
+     *
+     * Entrar pelo mesmo `confirmEndCycle` do botao e de proposito — fecho
+     * automatico e fecho manual precisam produzir o MESMO relatorio, e dois
+     * caminhos para selar um ciclo seria o comeco de dois resultados.
+     */
+    const jaFechouPorPrazoRef = useRef(false);
+    useEffect(() => {
+        if (!fecharCicloVencido || jaFechouPorPrazoRef.current) return;
+        if (!activeCycle || view !== 'hub') return;
+        jaFechouPorPrazoRef.current = true;
+        confirmEndCycle();
+        // confirmEndCycle e recriado a cada render; entrar na lista redispararia.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [fecharCicloVencido, activeCycle, view]);
 
     const handleViewReport = (report: Report) => {
         if (reportForComparison) {

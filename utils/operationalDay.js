@@ -70,3 +70,19 @@ export const getActualStartTimeForOperationalMinutes = (displayMinutes) =>
     displayMinutes >= (24 * 60)
         ? displayMinutes - (24 * 60)
         : displayMinutes;
+
+/*
+ * O CICLO VENCEU? UMA PERGUNTA, UM DONO.
+ *
+ * O prazo do ciclo e a ULTIMA hora do dia operacional de `endDate` — ou seja,
+ * ate as 04:00 da manha seguinte, porque e assim que o dia funciona no app
+ * inteiro. Quem vira o domingo trabalhando ainda esta no domingo.
+ *
+ * Isto mora aqui e nao em quem fecha porque a data de corte ja e desta casa:
+ * comparar `endDate` com a data de parede daria um dia a menos para quem
+ * trabalha de madrugada, e seria a terceira definicao de "hoje" no app.
+ */
+export const cicloVenceu = (endDate, agora = new Date()) => {
+    if (!endDate) return false;
+    return getOperationalDateString(agora) > String(endDate).slice(0, 10);
+};

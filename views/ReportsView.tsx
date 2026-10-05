@@ -1,3 +1,4 @@
+import { buildCycleCommitment, CYCLE_SEASON_MISSION_RULE } from '../utils/cycleCommitment';
 ﻿import './readability-fixes.css';
 
 
@@ -192,7 +193,8 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle; onEdit: (cycle: Cycle) => voi
     };
     const totalDays = Math.max(1, daysBetween(parseDate(startDate), parseDate(endDate)) + 1);
     const cycleArenas = assets.flatMap(asset => asset.arenas);
-    const cycleTasks = filterCycleTasksByScope(tasks, actions, cycle, startDate, endDate);
+    const commitment = buildCycleCommitment({ actions, arenas: cycleArenas, tasks, startDate, endDate });
+    const cycleTasks = commitment.cycleTasks;
     const completedTasks = cycleTasks.filter(t => t.completed);
     const cycleSnapshot = buildCycleWidgetSnapshot({
         cycle,
@@ -200,13 +202,14 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle; onEdit: (cycle: Cycle) => voi
         actions,
         arenas: cycleArenas,
     });
-    const completedActionCount = cycleSnapshot?.completedTaskCount ?? completedTasks.length;
-    const totalActionCount = cycleSnapshot?.totalTaskCount ?? cycleTasks.length;
-    const cycleProgress = Math.round(cycleSnapshot?.taskProgressPercent ?? (cycleTasks.length > 0 ? (completedTasks.length / cycleTasks.length) * 100 : 0));
+    const completedActionCount = cycleSnapshot?.completedTaskCount ?? commitment.completedCount;
+    const totalActionCount = cycleSnapshot?.totalTaskCount ?? commitment.plannedCount;
+    const cycleProgress = Math.round(cycleSnapshot?.taskProgressPercent ?? commitment.progressPercent);
     const totalMinutes = completedTasks.reduce((sum, t) => sum + (t.duration || 0), 0);
     const totalHours = Math.floor(totalMinutes / 60);
     const reportsChronological = [...reports].sort((left, right) => new Date(left.endDate).getTime() - new Date(right.endDate).getTime());
     const fairScoreResult = buildFairScoreFromTasks({
+        plannedEntries: commitment.entries,
         tasks: cycleTasks.map((task) => {
             const action = actions.find(a => a.id === task.actionId);
             return {
@@ -294,6 +297,10 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle; onEdit: (cycle: Cycle) => voi
                     compact
                     className={OFFICIAL_COMPACT_HISTORY_CARD_CLASS}
                 />
+
+                <p className={`${OFFICIAL_COMPACT_HISTORY_CARD_CLASS} mt-2 text-[11px] leading-relaxed text-white/55`}>
+                    {CYCLE_SEASON_MISSION_RULE}
+                </p>
 
                 {showControls === false && (
                     <div className={`${OFFICIAL_COMPACT_HISTORY_CARD_CLASS} mt-2 space-y-1.5`}>

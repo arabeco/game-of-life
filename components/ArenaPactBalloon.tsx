@@ -3,16 +3,16 @@ import { useGame } from '../contexts/GameContext';
 import { OracleSpeakerMark } from './OracleSpeakerMark';
 import { EmojiGlyph } from './EmojiGlyph';
 import type { Arena } from '../types';
-import { missionObjective, missionTime } from '../utils/missionPresentation';
-import { getOperationalDateString } from '../utils/operationalDay.js';
-import { ESCOPO_APP } from '../utils/arenaPacts';
+import { missionCountingRule, missionObjective, missionTime } from '../utils/missionPresentation';
+import { getOperationalDateString, getTaskOperationalDateString } from '../utils/operationalDay.js';
+import { ESCOPO_APP, getPactCountedTasks, resolvePactArena } from '../utils/arenaPacts';
 import type { ArenaPact, ArenaPactDifficulty } from '../utils/arenaPacts';
 
 // Pacto voluntário sobre uma arena existente. Um ativo por vez.
 
 const DIFFICULTY_LABEL: Record<ArenaPactDifficulty, string> = {
     leve: 'Leve',
-    media: 'Media',
+    media: 'Média',
     alta: 'Alta',
 };
 
@@ -51,6 +51,7 @@ const PactOption: React.FC<{ pact: ArenaPact; onAccept: (pact: ArenaPact) => voi
                         <p className="mt-1 text-[10.5px] leading-relaxed text-[var(--skin-accent-color)]/75">{pact.motivo}</p>
                     )}
                     <RewardLine pact={pact} />
+                    <p className="mt-2 text-xs font-semibold text-white/65">Ver detalhes →</p>
                 </div>
             </div>
             <span
@@ -64,13 +65,15 @@ const PactOption: React.FC<{ pact: ArenaPact; onAccept: (pact: ArenaPact) => voi
 
 /** O pacto em curso. Sem pacto aberto nao renderiza nada — nunca propoe. */
 export const ArenaPactBalloon: React.FC = () => {
-    const { activeArenaPact, arenaPactProgress, abandonArenaPact, claimArenaPact } = useGame();
+    const { activeArenaPact, arenaPactProgress, abandonArenaPact, claimArenaPact, actions, tasks, getArenas } = useGame();
     const [busy, setBusy] = useState(false);
 
     if (!activeArenaPact || !arenaPactProgress) return null;
 
     const { current, goal, percent, completed } = arenaPactProgress;
     const time = missionTime(activeArenaPact, getOperationalDateString());
+    const counted = getPactCountedTasks(activeArenaPact, resolvePactArena(activeArenaPact, getArenas(), actions), actions, tasks)
+        .sort((a, b) => getTaskOperationalDateString(b).localeCompare(getTaskOperationalDateString(a)));
 
     const run = async (fn: () => Promise<void>) => {
         setBusy(true);
@@ -90,6 +93,18 @@ export const ArenaPactBalloon: React.FC = () => {
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--skin-accent-color)]">{completed ? 'Missão cumprida' : 'Sua missão'}</span>
             </div>
             <h3 className="mt-3 text-base font-bold leading-snug text-white">{missionObjective(activeArenaPact)}</h3>
+            <details className="mt-3 text-xs leading-relaxed text-white/60">
+                <summary className="min-h-8 cursor-pointer text-white/75">O que conta nesta missão</summary>
+                <p>{missionCountingRule(activeArenaPact)}</p>
+                <p className="mt-3 font-semibold text-white/80">Registros considerados</p>
+                {counted.length === 0 ? <p className="mt-1">Nenhuma ação concluída contando nesta missão.</p> : <ul className="mt-2 max-h-48 space-y-2 overflow-y-auto">
+                    {counted.map(task => <li key={task.id} className="flex justify-between gap-3 border-b border-white/5 pb-2">
+                        <span>{actions.find(action => action.id === task.actionId)?.name || 'Ação'}</span>
+                        <span className="shrink-0 tabular-nums">{getTaskOperationalDateString(task).split('-').reverse().join('/')}</span>
+                    </li>)}
+                </ul>}
+                {activeArenaPact.kind === 'conclusao' && <p className="mt-2">Cada ação contribui até sua meta de repetições.</p>}
+            </details>
             <div className="mt-4 space-y-3">
                 <div>
                     <div className="mb-1.5 flex justify-between text-[11px] text-white/65"><span>Progresso</span><strong className="text-[var(--skin-accent-color)] tabular-nums">{activeArenaPact.kind === 'conclusao' ? `${Math.round(percent)}%` : `${current}/${goal} ${activeArenaPact.kind === 'constancia' ? 'dias' : 'ações'}`}</strong></div>
@@ -124,6 +139,8 @@ export const ArenaPactProposal: React.FC<{ onClose?: () => void; substituindo?: 
     } = useGame();
 
     const [busy, setBusy] = useState(false);
+    const [reviewing, setReviewing] = useState<ArenaPact | null>(null);
+    const [errorMessage, setErrorMessage] = useState('');
     /**
      * A primeira pergunta e "qual arena", nao "qual destas tres".
      *
@@ -155,7 +172,7 @@ export const ArenaPactProposal: React.FC<{ onClose?: () => void; substituindo?: 
     }, [activeArenaPact, substituindo, getArenas, getArenaPactOptionsForArena]);
 
     const opcoesDaArena = useMemo(
-        () => (arenaEscolhida ? getArenaPactOptionsForArena(arenaEscolhida) : []),
+        () => (arenaEscolhida !== null ? getArenaPactOptionsForArena(arenaEscolhida) : []),
         [arenaEscolhida, getArenaPactOptionsForArena],
     );
 
@@ -179,6 +196,7 @@ export const ArenaPactProposal: React.FC<{ onClose?: () => void; substituindo?: 
 
     const handleAccept = (pact: ArenaPact) => {
         setBusy(true);
+        setErrorMessage('');
         void (async () => {
             try {
                 await acceptArenaPact(pact, Boolean(substituindo));
@@ -187,6 +205,7 @@ export const ArenaPactProposal: React.FC<{ onClose?: () => void; substituindo?: 
                 onClose?.();
             } catch (error) {
                 console.error('Pact acceptance failed', error);
+                setErrorMessage('Não foi possível aceitar a missão. Tente novamente.');
             } finally {
                 setBusy(false);
             }
@@ -196,6 +215,18 @@ export const ArenaPactProposal: React.FC<{ onClose?: () => void; substituindo?: 
     // Sem arena elegivel a escolha nao tem o que mostrar: cai na sugestao, que e
     // o outro caminho, em vez de abrir uma tela vazia.
     const mostrandoEscolha = escolhendoArena && arenasComPacto.length > 0;
+
+    if (reviewing) return <div className="daily-panel-neutral rounded-2xl border border-[var(--skin-accent-color)]/20 p-4">
+        <button type="button" disabled={busy} onClick={() => { setReviewing(null); setErrorMessage(''); }} className="min-h-11 text-xs text-white/70">← Voltar às opções</button>
+        <h3 className="mt-2 text-base font-bold text-white">{missionObjective(reviewing)}</h3>
+        {reviewing.motivo && <p className="mt-3 text-sm leading-relaxed text-white/75">{reviewing.motivo}</p>}
+        <p className="mt-4 text-xs leading-relaxed text-white/60">{missionCountingRule(reviewing)}</p>
+        {!reviewing.endsOn && <p className="mt-2 text-xs text-white/60">Sem prazo fixo.</p>}
+        <div className="mt-4 border-t border-white/10 pt-3"><RewardLine pact={reviewing} /></div>
+        {substituindo && <p className="mt-3 text-xs text-white/65">Ao aceitar, a missão atual será encerrada e substituída por esta.</p>}
+        {errorMessage && <p role="alert" className="mt-3 text-sm text-rose-200">{errorMessage}</p>}
+        <button type="button" disabled={busy} onClick={() => handleAccept(reviewing)} className="luxe-skin-button mt-4 min-h-11 w-full px-4 text-sm font-bold disabled:opacity-50">{busy ? 'Aceitando…' : 'Aceitar esta missão'}</button>
+    </div>;
 
     return (
         <div className="daily-panel-neutral flex items-start gap-3 rounded-2xl border border-[var(--skin-accent-color)]/16 p-3 text-left">
@@ -222,17 +253,17 @@ export const ArenaPactProposal: React.FC<{ onClose?: () => void; substituindo?: 
                 {!mostrandoEscolha && (
                     <>
                         <p className="mt-1 text-[11px] leading-relaxed text-white/78">
-                            Sugestões do Oráculo, das arenas que mais precisam. Uma missão individual de cada vez.
+                            Sugestões baseadas nas conclusões registradas e no que falta em cada arena. Você escolhe qual faz sentido agora.
                         </p>
                         <div className="mt-2 space-y-2">
                             {arenaPactCandidates.map((pact) => (
-                                <PactOption key={pact.id} pact={pact} onAccept={handleAccept} busy={busy} />
+                                <PactOption key={pact.id} pact={pact} onAccept={setReviewing} busy={busy} />
                             ))}
                         </div>
                     </>
                 )}
 
-                {mostrandoEscolha && !arenaEscolhida && (
+                {mostrandoEscolha && arenaEscolhida === null && (
                     <>
                         <p className="mt-1 text-[11px] leading-relaxed text-white/78">O que você quer mover?</p>
                         {/* Cada arena vem com o ESTADO dela embaixo — o mesmo motivo
@@ -250,7 +281,7 @@ export const ArenaPactProposal: React.FC<{ onClose?: () => void; substituindo?: 
                                     <span className="min-w-0 flex-1">
                                         <span className="block truncate text-[11px] font-black text-white">{arena.name}</span>
                                         {options[0]?.motivo && (
-                                            <span className="mt-0.5 block truncate text-[10px] text-white/50">{options[0].motivo}</span>
+                                            <span className="mt-1 block text-xs leading-relaxed text-white/60">{options[0].motivo}</span>
                                         )}
                                     </span>
                                 </button>
@@ -259,12 +290,12 @@ export const ArenaPactProposal: React.FC<{ onClose?: () => void; substituindo?: 
                     </>
                 )}
 
-                {mostrandoEscolha && arenaEscolhida && (
+                {mostrandoEscolha && arenaEscolhida !== null && (
                     <>
                         <p className="mt-1 text-[11px] leading-relaxed text-white/78">O que você quer combinar em {arenasComPacto.find((entry) => entry.arena.id === arenaEscolhida)?.arena.name || 'nesta arena'}?</p>
                         <div className="mt-2 space-y-2">
                             {opcoesDaArena.map((pact) => (
-                                <PactOption key={pact.id} pact={pact} onAccept={handleAccept} busy={busy} />
+                                <PactOption key={pact.id} pact={pact} onAccept={setReviewing} busy={busy} />
                             ))}
                         </div>
                     </>
@@ -280,7 +311,7 @@ export const ArenaPactProposal: React.FC<{ onClose?: () => void; substituindo?: 
                             Escolher a arena
                         </button>
                     )}
-                    {mostrandoEscolha && arenaEscolhida && (
+                    {mostrandoEscolha && arenaEscolhida !== null && (
                         <button
                             type="button"
                             onClick={() => setArenaEscolhida(null)}
@@ -292,7 +323,7 @@ export const ArenaPactProposal: React.FC<{ onClose?: () => void; substituindo?: 
                     {/* A sugestao automatica continua a um toque, para quem nao quer
                         decidir qual frente mover. Ela deixou de ser a porta de
                         entrada, nao deixou de existir. */}
-                    {mostrandoEscolha && !arenaEscolhida && arenaPactCandidates.length > 0 && (
+                    {mostrandoEscolha && arenaEscolhida === null && arenaPactCandidates.length > 0 && (
                         <button
                             type="button"
                             onClick={() => setEscolhendoArena(false)}

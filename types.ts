@@ -893,7 +893,7 @@ export interface Report {
     weeklyAtlas?: ReportAtlasWeek[];
     atlasSnapshotVersion?: 1 | 2;
     sealedAt?: string;
-    scoreModelVersion?: 'fair_v2_1';
+    scoreModelVersion?: 'fair_v2_1' | 'fair_v2_2_repetitions';
     fairness?: FairScoreMetrics;
     scoreBreakdown?: {
       progressPts: number;

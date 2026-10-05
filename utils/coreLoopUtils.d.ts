@@ -135,4 +135,5 @@ export function buildCyclePaceMetrics(
     plannedEndDate?: string,
     /** Feito mas nao prometido ao ciclo: conta como dia ativo, fora da razao. */
     tarefasSoDePresenca?: ScheduledTask[],
+    commitment?: { plannedCount: number; completedCount: number },
 ): CyclePaceMetrics;

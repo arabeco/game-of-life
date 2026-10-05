@@ -318,7 +318,7 @@ export const filterCycleTasksByScope = (tasks, actions, cycle, startDate, endDat
  * duas de uma vez consertaria a nota e criaria um defeito novo: o dia em que a
  * pessoa so caminhou viraria dia vazio.
  */
-export const buildCyclePaceMetrics = (cycleTasks, startDate, endDate, plannedEndDate, tarefasSoDePresenca = []) => {
+export const buildCyclePaceMetrics = (cycleTasks, startDate, endDate, plannedEndDate, tarefasSoDePresenca = [], commitment) => {
     const completedTasks = cycleTasks.filter(task => task.completed);
     const presencaExtra = (tarefasSoDePresenca || []).filter(task => task.completed);
     const uniqueDays = new Set(
@@ -329,8 +329,10 @@ export const buildCyclePaceMetrics = (cycleTasks, startDate, endDate, plannedEnd
     const plannedEnd = plannedEndDate ? parseIsoDate(plannedEndDate) : end;
     const durationDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000) + 1);
     const plannedDurationDays = Math.max(1, Math.round((plannedEnd.getTime() - start.getTime()) / 86400000) + 1);
-    const progress = cycleTasks.length > 0 ? (completedTasks.length / cycleTasks.length) * 100 : 100;
-    const executionRatePct = cycleTasks.length > 0 ? Math.min(100, Math.round(progress)) : 100;
+    const plannedCount = commitment?.plannedCount ?? cycleTasks.length;
+    const completedCount = commitment?.completedCount ?? completedTasks.length;
+    const progress = plannedCount > 0 ? (completedCount / plannedCount) * 100 : 0;
+    const executionRatePct = Math.min(100, Math.round(progress));
     const timeElapsedPct = Math.min(100, Math.round((durationDays / plannedDurationDays) * 100));
     const paceDeltaPct = executionRatePct - timeElapsedPct;
     const daysWithoutCompletion = Math.max(0, durationDays - uniqueDays);
@@ -345,4 +347,3 @@ export const buildCyclePaceMetrics = (cycleTasks, startDate, endDate, plannedEnd
         plannedDurationDays,
     };
 };
-

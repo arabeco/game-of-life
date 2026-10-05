@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { buildToggledTaskSnapshot } from '../utils/taskMutationUtils.js';
 import {
   ARENA_PACT_REWARDS,
   buildArenaStats,
@@ -58,6 +59,36 @@ const task = (actionId, date, completed = true) => ({
 });
 
 const actionsFor = (...arenas) => arenas.flatMap((a) => (a.actionIds || []).map((id) => action(id, a.id)));
+
+// The actual task toggle must remove progress again, across every mission kind.
+{
+  const target = arena('undo', { actionIds: ['undo-a', 'undo-b'] });
+  const unrelated = arena('unrelated');
+  const allActions = actionsFor(target, unrelated);
+  const scheduled = task('undo-a', HOJE, false);
+  const done = buildToggledTaskSnapshot(scheduled, 30, 600);
+  const undone = buildToggledTaskSnapshot(done, 30, 600);
+  for (const kind of ['primeira', 'volume', 'retomada', 'constancia', 'conclusao']) {
+    const pact = { kind, arenaId: target.id, goal: 2, startedOn: HOJE, endsOn: '2026-09-05' };
+    for (const [row, expected] of [[scheduled, 0], [done, 1], [undone, 0]]) {
+      const progress = measurePactProgress(pact, target, allActions, [row], HOJE);
+      assert.equal(progress.current, expected, `${kind}: scheduled -> done -> undone`);
+      assert.equal(progress.completed, false);
+    }
+  }
+  const foreign = actionsFor(unrelated).map(a => task(a.id, HOJE));
+  const stats = buildArenaStats(target, allActions, foreign, HOJE);
+  assert.equal(stats.totalPlanned, 2, 'other arenas cannot inflate the target');
+  assert.equal(stats.totalCompleted, 0, 'other arenas cannot supply completions');
+  const closing = { kind: 'conclusao', arenaId: target.id, goal: 2, startedOn: HOJE };
+  assert.equal(measurePactProgress(closing, target, allActions, foreign, HOJE).current, 0);
+  assert.equal(measurePactProgress(closing, target, allActions, [done, {...done, id: 'repeat'}], HOJE).completed, false,
+    'extra repetitions of one action cannot finish the other action');
+  const general = { kind: 'volume', arenaId: '', goal: 3, startedOn: HOJE, endsOn: '2026-09-05' };
+  assert.equal(measurePactProgress(general, resolvePactArena(general, [target, unrelated], allActions), allActions, [done], HOJE).current, 1);
+  assert.equal(measurePactProgress(general, resolvePactArena(general, [target, unrelated], allActions), allActions, [undone], HOJE).current, 0);
+  console.log('PASS scheduled -> completed -> undone: 0 -> 1 -> 0 for all five mission kinds; isolated scope.');
+}
 
 // --- elegibilidade: o Oraculo nao pode propor besteira --------------------
 const casosInvalidos = [
@@ -469,7 +500,7 @@ const doApp = buildAppScopePacts(arenasApp, acoesApp, entregasApp, '2026-08-31')
 assert.equal(doApp.length, 1, 'o escopo do app oferece uma missao');
 assert.equal(doApp[0].kind, 'volume', 'so volume faz sentido sem uma frente especifica');
 assert.equal(doApp[0].arenaId, ESCOPO_APP, 'o escopo e marcado pela ausencia de arena');
-assert.match(doApp[0].motivo, /Você registrou algo em \d+ dos últimos 30 dias/, 'o motivo fala do ritmo geral');
+assert.match(doApp[0].motivo, /ações concluídas em \d+ dos últimos 30 dias/, 'o motivo informa o histórico observado');
 assert.doesNotMatch(doApp[0].description, /ações de todas as arenas/, 'o texto nao repete o nome sintetico');
 assert.match(doApp[0].description, /em qualquer arena/, 'a descricao diz que vale em qualquer arena');
 

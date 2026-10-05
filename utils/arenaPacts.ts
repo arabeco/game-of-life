@@ -139,6 +139,7 @@ export interface ArenaStats {
    * ciclo, o ritmo da pessoa nao.
    */
   deliveryDaysLast30: number;
+  completedActionsLast30: number;
 }
 
 const toDate = (value: string): Date => new Date(`${value.slice(0, 10)}T00:00:00`);
@@ -186,12 +187,18 @@ export const buildArenaStats = (
   options: ArenaStatsOptions = {},
 ): ArenaStats => {
   const { lockedArenaIds, allTimeTasks } = options;
-  const progress = calculateArenaProgress({ arena, actions, tasks });
-  const completed = arenaCompletedTasks(arena, allTimeTasks || tasks);
+  const scopedActions = actions.filter(action => (arena.actionIds || []).includes(action.id));
+  const uniqueCompleted = [...new Map(tasks.filter(task => task.completed === true
+    && getTaskOperationalDateString(task) <= today).map(task => [task.id, task])).values()];
+  const cappedTasks = scopedActions.flatMap(action => uniqueCompleted.filter(task => task.actionId === action.id)
+    .slice(0, Math.max(1, Number(action.repetitions) || 1)));
+  const progress = calculateArenaProgress({ arena, actions: scopedActions, tasks: cappedTasks });
+  const measurableIds = new Set(scopedActions.filter(action => action.actionType !== 'Livre').map(action => action.id));
+  const completed = arenaCompletedTasks(arena, allTimeTasks || tasks).filter(task => measurableIds.has(task.actionId));
 
   const datas = completed
-    .map((task) => String(task.date || '').slice(0, 10))
-    .filter(Boolean)
+    .map(getTaskOperationalDateString)
+    .filter(date => Boolean(date) && date <= today)
     .sort();
   const lastDate = datas.at(-1) || null;
 
@@ -199,6 +206,10 @@ export const buildArenaStats = (
   const deliveryDaysLast30 = new Set(
     datas.filter((data) => data >= inicioDaJanela && data <= today),
   ).size;
+  const completedActionsLast30 = new Set(completed.filter(task => {
+    const date = getTaskOperationalDateString(task);
+    return date >= inicioDaJanela && date <= today;
+  }).map(task => task.id)).size;
 
   return {
     arena,
@@ -210,6 +221,7 @@ export const buildArenaStats = (
     hasMeasurableProgress: progress.hasMeasurableProgress,
     daysSinceLastDelivery: lastDate ? Math.max(0, daysBetween(lastDate, today)) : null,
     deliveryDaysLast30,
+    completedActionsLast30,
   };
 };
 
@@ -346,15 +358,15 @@ const buildPact = (
     retomada: stats.daysSinceLastDelivery
       ? `${nome} está parada há ${stats.daysSinceLastDelivery} dias.`
       : `${nome} está parada.`,
-    conclusao: `É o que resta para ${nome} fechar.`,
+    conclusao: `${stats.totalCompleted} de ${stats.totalPlanned} ações concluídas nesta arena no ciclo atual.`,
     constancia: stats.deliveryDaysLast30 > 0
       ? `Você registrou ${nome} em ${stats.deliveryDaysLast30} dos últimos 30 dias.`
       : `${nome} ainda não tem ritmo registrado — esta começa pequena.`,
-    volume: stats.deliveryDaysLast30 > 0
+    volume: stats.completedActionsLast30 > 0
       ? (escopoApp
-        ? `Você registrou algo em ${stats.deliveryDaysLast30} dos últimos 30 dias — ${goal} em ${diasDaJanela} cabe nesse ritmo.`
-        : `Você registrou ${nome} em ${stats.deliveryDaysLast30} dos últimos 30 dias — ${goal} em ${diasDaJanela} cabe nesse ritmo.`)
-      : `${nome} ainda não tem ritmo registrado — esta começa pequena.`,
+        ? `${stats.completedActionsLast30} ações concluídas em ${stats.deliveryDaysLast30} dos últimos 30 dias. A quantidade orienta o tamanho sugerido; você decide se cabe agora.`
+        : `${nome}: ${stats.completedActionsLast30} ações concluídas em ${stats.deliveryDaysLast30} dos últimos 30 dias. A quantidade orienta o tamanho sugerido; você decide se cabe agora.`)
+      : `Sem ações concluídas nos últimos 30 dias. Esta é uma opção inicial, não uma estimativa do seu ritmo.`,
   };
 
   /**
@@ -409,8 +421,8 @@ const buildPact = (
     retomada: {
       title: `Retomar ${nome}`,
       description: stats.daysSinceLastDelivery
-        ? `${nome} esta parada ha ${stats.daysSinceLastDelivery} dias. Uma ação concluida reabre o caminho.`
-        : `Uma ação concluida em ${nome} reabre o caminho.`,
+        ? `${nome} está sem conclusão há ${stats.daysSinceLastDelivery} dias. Conclua ${goal} ações para retomar.`
+        : `Conclua ${goal} ações em ${nome} para retomar.`,
     },
   };
 
@@ -510,7 +522,7 @@ export const buildPactsForArena = (stats: ArenaStats, today: string, diasDoCiclo
      * problema de a lista ficar comprida, porque e justamente no ciclo curto que
      * tres opcoes de volume apertariam a tela.
      */
-    const metaRecomendada = metaPorCadencia(stats.deliveryDaysLast30, VOLUME_WINDOW_DAYS, VOLUME_TARGETS.leve.actions, VOLUME_TARGETS.alta.actions);
+    const metaRecomendada = metaPorCadencia(stats.completedActionsLast30, VOLUME_WINDOW_DAYS, VOLUME_TARGETS.leve.actions, VOLUME_TARGETS.alta.actions);
     const faixaRecomendada = faixaPorMeta(metaRecomendada);
 
     /*
@@ -661,7 +673,7 @@ export const buildAppScopePacts = (
     return [buildPact('primeira', 'leve', stats, 1, today, shiftLocalDateString(today, dias - 1))];
   }
   const stats = buildArenaStats(sintetica, actions, tasks, today, options);
-  const meta = metaPorCadencia(stats.deliveryDaysLast30, VOLUME_WINDOW_DAYS, VOLUME_TARGETS.leve.actions, VOLUME_TARGETS.alta.actions);
+  const meta = metaPorCadencia(stats.completedActionsLast30, VOLUME_WINDOW_DAYS, VOLUME_TARGETS.leve.actions, VOLUME_TARGETS.alta.actions);
   return [buildPact(
     'volume',
     faixaPorMeta(meta),
@@ -689,6 +701,25 @@ export const buildPactCandidatesForArena = (
  * Progresso do pacto ativo. So conta o que aconteceu a partir do aceite — aceitar
  * um pacto ja cumprido pelo passado nao seria compromisso nenhum.
  */
+export const getPactCountedTasks = (
+  pact: ArenaPact,
+  arena: Arena | null | undefined,
+  actions: Action[],
+  tasks: ScheduledTask[],
+  today = getOperationalDateString(),
+): ScheduledTask[] => {
+  const ids = new Set(actions.filter(action => action.actionType !== 'Livre'
+    && (pact.kind === 'primeira' || (arena?.actionIds || []).includes(action.id))).map(action => action.id));
+  return [...new Map(tasks.filter(task => {
+    if (task.completed !== true || !ids.has(task.actionId)) return false;
+    const date = getTaskOperationalDateString(task);
+    if (!date || date > today) return false;
+    if (pact.kind === 'conclusao') return true;
+    if ((pact.kind === 'volume' || pact.kind === 'primeira') && !pact.endsOn) return false;
+    return date >= pact.startedOn && (!pact.endsOn || date <= pact.endsOn);
+  }).map(task => [task.id, task])).values()];
+};
+
 export const measurePactProgress = (
   pact: ArenaPact,
   arena: Arena | null | undefined,
@@ -697,6 +728,7 @@ export const measurePactProgress = (
   today = getOperationalDateString(),
 ): ArenaPactProgress => {
   const vazio: ArenaPactProgress = { current: 0, goal: pact.goal, percent: 0, completed: false };
+  const countedTasks = getPactCountedTasks(pact, arena, actions, tasks, today);
 
   /*
    * A primeira conta QUALQUER acao concluida, e vem antes da checagem de arena.
@@ -707,12 +739,7 @@ export const measurePactProgress = (
    */
   if (pact.kind === 'primeira') {
     if (!pact.endsOn) return vazio;
-    const medivel = new Set(actions.filter((acao) => acao.actionType !== 'Livre').map((acao) => acao.id));
-    const current = tasks.filter((t) => {
-      const date = getTaskOperationalDateString(t);
-      return t.completed && medivel.has(t.actionId)
-        && date >= pact.startedOn && date <= pact.endsOn! && date <= today;
-    }).length;
+    const current = countedTasks.length;
     return {
       current: Math.min(current, pact.goal),
       goal: pact.goal,
@@ -729,18 +756,17 @@ export const measurePactProgress = (
     // Pelos actionIds da arena, e nao por `a.arenaId === arena.id`: a arena do
     // escopo do app e SINTETICA e nao tem id proprio, mas carrega a lista de
     // acoes. Arena real tem os dois, entao a regra unica serve as duas.
-    const doEscopo = new Set(arena.actionIds || []);
-    const ids = new Set(actions.filter(a => doEscopo.has(a.id) && a.actionType !== 'Livre').map(a => a.id));
-    const current = new Set(tasks.filter(t => {
-      const date = getTaskOperationalDateString(t);
-      return t.completed && ids.has(t.actionId) && date >= pact.startedOn && date <= pact.endsOn! && date <= today;
-    }).map(t => t.id)).size;
+    const current = countedTasks.length;
     return { current, goal: pact.goal, percent: Math.min(100, Math.round(current / pact.goal * 100)),
       completed: current >= pact.goal, windowEnded: today > pact.endsOn };
   }
 
   if (pact.kind === 'conclusao') {
-    const progress = calculateArenaProgress({ arena, actions, tasks });
+    const scopedActions = actions.filter(action => (arena.actionIds || []).includes(action.id));
+    // Cap each action separately: repeating one action cannot finish another.
+    const cappedTasks = scopedActions.flatMap(action => countedTasks.filter(task => task.actionId === action.id)
+      .slice(0, Math.max(1, Number(action.repetitions) || 1)));
+    const progress = calculateArenaProgress({ arena, actions: scopedActions, tasks: cappedTasks });
     const completed = progress.isCleared || progress.progressPercent >= 100;
     return {
       current: completed ? pact.goal : Math.max(0, pact.goal - Math.max(0, progress.totalPlanned - progress.totalCompleted)),
@@ -750,13 +776,7 @@ export const measurePactProgress = (
     };
   }
 
-  const measurable = new Set(actions.filter(action => (arena.actionIds || []).includes(action.id)
-    && action.actionType !== 'Livre').map(action => action.id));
-  const desdeOAceite = [...new Map(arenaCompletedTasks(arena, tasks)
-    .filter(task => measurable.has(task.actionId)
-      && getTaskOperationalDateString(task) >= pact.startedOn
-      && getTaskOperationalDateString(task) <= today)
-    .map(task => [task.id, task])).values()];
+  const desdeOAceite = countedTasks;
 
   if (pact.kind === 'retomada') {
     const current = desdeOAceite.length;

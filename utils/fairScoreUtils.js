@@ -212,20 +212,44 @@ export const buildFairScoreFromTasks = ({
     previousReports = [],
     durationDays = 0,
     legacyPerformanceScore = 0,
+    plannedEntries = null,
 } = {}) => {
     const actionById = new Map((actions || []).map((action) => [action.id, action]));
     const arenaById = new Map((arenas || []).map((arena) => [arena.id, arena]));
+    const plannedIds = plannedEntries ? new Set(plannedEntries.map(entry => entry.action.id)) : null;
     const relevantTasks = (tasks || [])
         .filter((task) => !!task)
+        .filter((task) => !plannedIds || plannedIds.has(task.actionId))
         .filter((task) => !shouldIgnoreTaskForFairScore(task, actionById))
         .map((task) => toTaskRecord(task, actionById, arenaById));
 
-    const plannedTaskCount = relevantTasks.length;
+    const plannedTaskCount = plannedEntries
+        ? plannedEntries.reduce((sum, entry) => sum + entry.planned, 0) : relevantTasks.length;
     const completedTasks = relevantTasks.filter((task) => task.completed);
     const activeDays = new Set(completedTasks.map((task) => task.date).filter(Boolean)).size;
-    const planLoadUnits = round2(relevantTasks.reduce((sum, task) => sum + task.effortUnits, 0));
+    const planLoadUnits = round2(plannedEntries
+        ? plannedEntries.reduce((sum, entry) => sum + entry.planned * toTaskRecord({ actionId: entry.action.id, duration: entry.action.duration }, actionById, arenaById).effortUnits, 0)
+        : relevantTasks.reduce((sum, task) => sum + task.effortUnits, 0));
     const honoredLoadUnits = round2(completedTasks.reduce((sum, task) => sum + task.effortUnits, 0));
-    const { arenas: metaArenas, plannedMetas, sealedMetas } = buildMetaSealStats(relevantTasks, actionById, arenaById);
+    const metaStats = buildMetaSealStats(relevantTasks, actionById, arenaById);
+    if (plannedEntries) {
+        const buckets = new Map();
+        for (const entry of plannedEntries) {
+            const record = toTaskRecord({ actionId: entry.action.id, duration: entry.action.duration }, actionById, arenaById);
+            const bucket = buckets.get(record.arenaId) || { arenaId: record.arenaId, arenaName: record.arenaName,
+                plannedCount: 0, completedCount: 0, plannedUnits: 0, completedUnits: 0 };
+            bucket.plannedCount += entry.planned;
+            bucket.completedCount += entry.completed;
+            bucket.plannedUnits += entry.planned * record.effortUnits;
+            bucket.completedUnits += relevantTasks.filter(task => task.actionId === entry.action.id && task.completed)
+                .reduce((sum, task) => sum + task.effortUnits, 0);
+            buckets.set(record.arenaId, bucket);
+        }
+        metaStats.arenas = [...buckets.values()].sort((a, b) => b.completedUnits - a.completedUnits || b.plannedUnits - a.plannedUnits);
+        metaStats.plannedMetas = metaStats.arenas.length;
+        metaStats.sealedMetas = metaStats.arenas.filter(arena => arena.completedCount >= arena.plannedCount).length;
+    }
+    const { arenas: metaArenas, plannedMetas, sealedMetas } = metaStats;
     const dominantArena = metaArenas[0] || null;
     const focusRatio = honoredLoadUnits > 0 && dominantArena
         ? round2(clamp(dominantArena.completedUnits / honoredLoadUnits, 0, 1))
@@ -302,6 +326,11 @@ export const buildFairScoreFromTasks = ({
 };
 
 export const applyFairScoreToReport = (report, previousReports = []) => {
+    // The atlas contains executions, not all promised repetitions. Rebuilding a
+    // sealed repetition-based score from it would silently shrink the plan again.
+    if (report?.metrics?.scoreModelVersion === 'fair_v2_2_repetitions' && report.metrics.fairness) {
+        return { report, changed: false };
+    }
     const legacyPerformanceScore = report?.metrics?.fairness?.legacyPerformanceScore ?? report?.performanceScore ?? 0;
     const weeklyAtlas = report?.metrics?.weeklyAtlas || [];
     const atlasTasks = buildAtlasTaskRecords(weeklyAtlas);

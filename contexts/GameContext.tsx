@@ -1,3 +1,4 @@
+import { buildCycleCommitment } from '../utils/cycleCommitment';
 ﻿import { loadCatalogRows } from '../utils/networkEfficiency.js';
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
 import { UserCodex, CodexCatalogItem, Asset, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, SequenceItem, DailyProofStreak, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RelationshipCompetitionChallenge, RelationshipCompetitionProposal, RelationshipMentorshipOffer, RewardModalPayload, UserBlock, ModerationReportInput, PlannerMatrixQuadrant } from '../types';
@@ -78,6 +79,7 @@ import {
     ESCOPO_APP,
     measurePactProgress,
     rebuildActivePact,
+    resolvePactArena,
     toArenaPactState,
     type ArenaPact,
     type ArenaPactProgress,
@@ -9966,30 +9968,17 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const plannedEndDate = cycle?.endDate;
         const cycleSeasonId = cycle?.seasonId || activeRuntimeSeasonId; // Use stored season or default to current
 
-        // 1. Filter Tasks
-        /*
-         * A BAIA SAI DO FECHAMENTO, como ja saia do painel diario.
-         *
-         * `filterCycleTasksByScope` filtra data e arena, e so. O que espera na
-         * baia carrega a data do ciclo por construcao, mas ninguem a pos num
-         * dia — e entrava no denominador como se tivesse.
-         *
-         * Num ciclo real de 04/10 isso fazia 70 tarefas postas e cumpridas
-         * virarem 70 de 71.
-         *
-         * `isTaskInPool` ja existia em utils/taskDomain e e usada pelo Planner,
-         * pela RestScreen e pelo chat do Oraculo para dizer o que esta na baia.
-         * E ela aqui tambem — a regra tem um dono so.
-         */
-        const cycleTasks = filterCycleTasksByScope(tasks, currentActions, cycle, startDate, endDate)
-            .filter((t) => !isTaskInPool(t));
+        // The commitment is every repetition in non-archived personal arenas.
+        // Scheduling changes the day of execution, never the size of the cycle.
+        const cycleArenas = currentAssets.flatMap(asset => asset.arenas);
+        const commitment = buildCycleCommitment({ actions: currentActions, arenas: cycleArenas,
+            tasks, startDate, endDate });
+        const cycleTasks = commitment.cycleTasks;
         const freeActionIds = new Set(currentActions.filter(action => action.actionType === 'Livre').map(action => action.id));
         const scoredCycleTasks = cycleTasks.filter(t => !freeActionIds.has(t.actionId));
         const completedTasks = cycleTasks.filter(t => t.completed);
         const completedScoredTasks = scoredCycleTasks.filter(t => t.completed);
-
-        // Quest Tasks (kept for bonus calculation)
-        const questTasks = cycleTasks.filter(t => isQuestActionId(t.actionId));
+        const questTasks = commitment.questTasks;
         const completedQuests = questTasks.filter(t => t.completed);
 
         /*
@@ -10042,13 +10031,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (antesDoCiclo < alvo && totalFeito >= alvo) jornadasFechadasNoCiclo.push(jornada.title);
         }
 
-        const idsDeJornada = new Set(questTasks.map(t => t.id));
-        const tarefasDaProporcao = scoredCycleTasks.filter(t => !idsDeJornada.has(t.id));
-        const concluidasDaProporcao = tarefasDaProporcao.filter(t => t.completed);
-
-        // 2. Calculate Progress (Base Score)
-        // progresso = (acoes realizadas / acoes planejadas) * 100
-        const progress = tarefasDaProporcao.length > 0 ?(concluidasDaProporcao.length / tarefasDaProporcao.length) * 100 : 100;
+        const tarefasDaProporcao = commitment.scoredTasks;
+        const progress = commitment.progressPercent;
 
         // 3. Calculate Bonuses
         // +10 per milestone (Marco)
@@ -10074,7 +10058,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             daysWithoutCompletion,
             consistencyDays: uniqueDays,
             durationDays,
-        } = buildCyclePaceMetrics(tarefasDaProporcao, startDate, endDate, plannedEndDate, questTasks);
+        } = buildCyclePaceMetrics(tarefasDaProporcao, startDate, endDate, plannedEndDate, questTasks, commitment);
 
         // Consistency Bonus: 20 points if consistent (>80% of days active), scaled down
         const consistencyRatio = uniqueDays / durationDays;
@@ -10094,13 +10078,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             volumeBonus
         );
 
-        const cycleArenas = currentAssets.flatMap(asset => asset.arenas);
         const reportsChronological = [...reports].sort((left, right) => {
             const endDiff = new Date(left.endDate).getTime() - new Date(right.endDate).getTime();
             if (endDiff !== 0) return endDiff;
             return new Date(left.startDate).getTime() - new Date(right.startDate).getTime();
         });
         const fairScoreResult = buildFairScoreFromTasks({
+            plannedEntries: commitment.entries,
             tasks: cycleTasks.map((task) => {
                 const action = currentActions.find(a => a.id === task.actionId);
                 return {
@@ -10299,9 +10283,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
          * de 20/09: 99 pontos, nota A, nenhum bau, nenhuma explicacao.
          */
         const notaDoFecho = notaDoCiclo({
-            conclusaoPct: executionRatePct,
-            acoesPlanejadas: scoredCycleTasks.length,
-            acoesConcluidas: completedScoredTasks.length,
+            conclusaoPct: commitment.progressPercent,
+            acoesPlanejadas: commitment.plannedCount,
+            acoesConcluidas: commitment.completedCount,
             dias: durationDays,
             horas: horasHonradas,
             metasSeladas: fairScoreResult.fairness.sealedMetas,
@@ -10321,8 +10305,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             cycleName: cycle?.name,
             seasonId: cycleSeasonId,
             metrics: {
-                actionsCompleted: completedScoredTasks.length,
-                totalPlannedActions: scoredCycleTasks.length,
+                actionsCompleted: commitment.completedCount,
+                totalPlannedActions: commitment.plannedCount,
                 arenasInvolved: involvedArenas.length,
                 goalsMet: fairScoreResult.fairness.sealedMetas,
                 plannedMetas: fairScoreResult.fairness.plannedMetas,
@@ -10346,7 +10330,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 weeklyAtlas,
                 atlasSnapshotVersion: 2,
                 sealedAt: new Date().toISOString(),
-                scoreModelVersion: 'fair_v2_1',
+                scoreModelVersion: 'fair_v2_2_repetitions',
                 fairness: fairScoreResult.fairness as Report['metrics']['fairness'],
                 scoreBreakdown,
             },
@@ -14942,7 +14926,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const arenaPactProgress = useMemo(() => {
         if (!activeArenaPact) return null;
-        const arena = allArenas.find((entry) => entry.id === activeArenaPact.arenaId) || null;
+        const arena = resolvePactArena(activeArenaPact, allArenas, actions);
         return measurePactProgress(activeArenaPact, arena, actions, tasks, arenaPactToday);
     }, [actions, activeArenaPact, allArenas, tasks, arenaPactToday]);
 
@@ -15040,7 +15024,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             // proposta tem de enxergar o mesmo que a tela); tasks inteiro so
             // para medir abandono, que atravessa ciclos.
             : buildPactCandidates(allArenas, actions, cycleScopedTasks, arenaPactToday, 3, { lockedArenaIds, allTimeTasks: tasks, diasRestantesDoCiclo })),
-        [actions, activeArenaPact, allArenas, arenaPactToday, cycleScopedTasks, lockedArenaIds, tasks],
+        [actions, activeArenaPact, allArenas, arenaPactToday, cycleScopedTasks, lockedArenaIds, tasks, diasRestantesDoCiclo],
     );
 
     const getArenaPactOptionsForArena = useCallback(
@@ -15058,7 +15042,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (!arena) return [];
             return buildPactCandidatesForArena(arena, actions, cycleScopedTasks, arenaPactToday, { lockedArenaIds, allTimeTasks: tasks, diasRestantesDoCiclo });
         },
-        [actions, allArenas, arenaPactToday, cycleScopedTasks, lockedArenaIds, tasks],
+        [actions, allArenas, arenaPactToday, cycleScopedTasks, lockedArenaIds, tasks, diasRestantesDoCiclo],
     );
 
     /**

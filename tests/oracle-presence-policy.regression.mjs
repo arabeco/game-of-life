@@ -147,11 +147,27 @@ assert.match(sitrep, /hasSpokenOpeningLineToday/, 'o nivel diario precisa lembra
 const taskDomain = readFileSync(new URL('../contexts/gameDomains/taskDomain.ts', import.meta.url), 'utf8');
 assert.match(taskDomain, /oracleReactions/, 'a reacao precisa ser controlavel');
 assert.match(taskDomain, /allowsOracleReaction/, 'o portao da reacao fica num lugar so');
-// Fechar arena/campanha e marco sao os dois pontos que valem no Equilibrado.
+// Marco e o unico ponto de reacao que vale no Equilibrado — e passou a ser o
+// unico em 04/10/2026.
+//
+// Fechar arena ou campanha tambem era marco, e por isso falava duas vezes: o
+// balao dizia 'Arena "X" concluida. N entregas em M dias', e a placa de tela
+// cheia logo atras dizia o mesmo com mais dados. Havia ainda um toast com a
+// mesma frase. Tres anuncios do mesmo fato, dois deles escondidos atras do
+// modal.
+//
+// A placa ficou com o feito porque mede mais. Quando o Oraculo voltar a falar
+// nesse momento, sera sobre o CICLO — onde fechar aquela arena deixou o resto —,
+// o que e assunto novo e nao uma terceira leitura. Ai este numero volta a 2.
 assert.equal(
   (taskDomain.match(/\}, 'marco'\);/g) || []).length,
-  2,
-  'exatamente dois pontos de reacao contam como marco',
+  1,
+  'o numero de reacoes-marco mudou sem combinar',
+);
+assert.doesNotMatch(
+  taskDomain,
+  /falarReacao\('(arena|campaign)_completed'/,
+  'o Oraculo voltou a narrar o fecho de arena que a placa ja anuncia',
 );
 
 

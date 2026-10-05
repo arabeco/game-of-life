@@ -38,6 +38,17 @@ const manualQaNotes = [
 const suites = {
   core: [
     {
+      id: 'um-evento-uma-voz',
+      label: 'Um evento uma voz regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'um-evento-uma-voz.regression.mjs')]],
+      kind: 'logic',
+      interactions: [
+        'fechar arena anuncia uma vez, pela placa, e nao tres',
+        'o Oraculo nao repete a medida que o toast acabou de dar',
+        'fechar a placa da arena devolve para o Planner',
+      ],
+    },
+    {
       id: 'pendencia-esquecida',
       label: 'Pendencia esquecida regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'pendencia-esquecida.regression.mjs')]],

@@ -26,6 +26,7 @@
     "test:sensory-grammar": "node tests/sensory-grammar.regression.mjs",
     "test:oracle-arbiter": "node tests/oracle-arbiter.regression.mjs",
     "test:oracle-presence-policy": "node tests/oracle-presence-policy.regression.mjs",
+    "test:um-evento-uma-voz": "node tests/um-evento-uma-voz.regression.mjs",
     "test:pact-speech": "node tests/pact-speech.regression.mjs",
     "test:device-only": "node tests/safe-area-insets.regression.mjs",
     "test:relationship-links": "node tests/relationship-links.regression.mjs",

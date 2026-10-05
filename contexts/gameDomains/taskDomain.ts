@@ -401,16 +401,32 @@ export const createTaskDomain = ({
         );
         emitAppSensoryCue(campaignJustCleared ? 'campaign_complete' : 'arena_complete');
 
-        // O toast CONFIRMA, o Oraculo COMENTA. Sao papeis diferentes e por isso os
-        // dois podem existir no mesmo evento — mas o toast dizia "Muito bem" e o
-        // balao dizia a mesma coisa logo abaixo, dois elogios pelo mesmo fato.
-        //
-        // Pior: o toast ignora a presenca. Quem pos o Oraculo no Silencioso pediu
-        // para nao ser comentado, e recebia o elogio assim mesmo pela outra porta.
-        // Sem a voz, o toast vira o que ele deveria ser: o registro de que a acao
-        // pegou. Quem quiser comentario sobe a presenca.
-        // Os numeros do feito, medidos ANTES de anunciar: a fala do Oraculo
-        // passou a usa-los, e ate hoje eles nasciam depois dela.
+        /*
+         * UM FEITO, UMA VOZ: A PLACA.
+         *
+         * Este evento anunciava tres vezes seguidas. Toast: 'Arena "X"
+         * concluida.' Balao do Oraculo: 'Arena "X" concluida. N entregas em M
+         * dias.' Placa de tela cheia: 'Arena concluida! / X / Fechada em M dias',
+         * com os cartoes de entregas, minutos e dias.
+         *
+         * A fala comecava com a MESMA FRASE do toast, e a placa dizia tudo pela
+         * terceira vez. Relatado em 04/10/2026: "Modal de arena concluida com
+         * toast e com fala do oraculo.... Mta coisa repetida".
+         *
+         * E os dois primeiros disparavam ATRAS de um modal de tela cheia, onde
+         * ninguem os le. O toast nem fazia falta: quem desliga a tela cheia
+         * recebe um toast da propria placa, com titulo e mensagem juntos — o
+         * caminho de `celebrationScreensEnabled` em AchievementModal.
+         *
+         * Entao a placa fica sozinha, porque ela e a que mede mais: nome, icone,
+         * entregas, minutos e dias. O toast e o balao nao tinham nada a somar.
+         *
+         * O Oraculo NAO perde o momento por acaso — ele perde por ora. O que ele
+         * tem a dizer aqui nao e "voce fechou a arena", que a placa ja grita: e
+         * onde isso deixou o CICLO. Essa fala e a proxima a ser escrita, e este
+         * e o lugar dela.
+         */
+        // Os numeros do feito, medidos antes de registrar.
         const arenaActionIdSet = new Set(arenaActions.map((action) => action.id));
         const entregasDaArena = nextCycleTasks.filter(
             (task) => task.completed && arenaActionIdSet.has(task.actionId),
@@ -419,33 +435,14 @@ export const createTaskDomain = ({
             entregasDaArena.map((task) => getTaskOperationalDateString(task)).filter(Boolean),
         );
 
-        showToast(
-            campaignJustCleared && parentCampaign
-                ? `Campanha "${parentCampaign.title}" concluída.`
-                : `Arena "${arena.name}" concluída.`,
-            'success',
-        );
-        emitOracleSpeech({
-            title: campaignJustCleared ? 'Campanha' : 'Arena',
-            message: campaignJustCleared && parentCampaign
-                ? falarReacao('campaign_completed', { campaign: parentCampaign.title })
-                : falarReacao('arena_completed', {
-                    arena: arena.name,
-                    entregas: String(entregasDaArena.length),
-                    dias: String(diasDaArena.size),
-                }),
-            tone: 'success',
-            durationMs: campaignJustCleared ? 5600 : 5000,
-        }, 'marco');
-
-        // Os numeros do feito viram parte do registro, medidos agora.
-        //
-        // "Concluiu Academia" nao deixa a pessoa se achar no proprio feito: cinco
-        // acoes em tres dias e trinta e quatro entregas em vinte e um dias sao
-        // historias diferentes com o mesmo titulo. E gravar em vez de consultar e
-        // o que torna isso honesto — desmarcar uma acao amanha muda o estado da
-        // arena, nao muda o que aconteceu.
-
+        /*
+         * "Concluiu Academia" nao deixa a pessoa se achar no proprio feito: cinco
+         * acoes em tres dias e trinta e quatro entregas em vinte e um dias sao
+         * historias diferentes com o mesmo titulo.
+         *
+         * E gravar em vez de consultar e o que torna isso honesto — desmarcar uma
+         * acao amanha muda o estado da arena, nao muda o que aconteceu.
+         */
         setAchievementUnlocked({
             type: 'ARENA_COMPLETED',
             data: {
@@ -542,11 +539,34 @@ export const createTaskDomain = ({
         const cappedCount = Math.min(nextCount, target);
         const remaining = Math.max(0, target - cappedCount);
         const actionName = action.name || 'essa ação';
+
+        /*
+         * O ORACULO NAO REPETE A MEDIDA DO TOAST.
+         *
+         * Toda conclusao ja mostra um toast com o progresso da ARENA — "Academia:
+         * 5 de 7 concluidas · faltam 2". A medida daqui e outra: as repeticoes
+         * DAQUELA ACAO dentro do ciclo — "Flexoes: 3/5. Faltam 2". Nenhuma das
+         * duas esta errada, e nenhuma delas diz qual regua esta usando.
+         *
+         * Empilhadas no mesmo clique, leem como uma coisa so dita duas vezes com
+         * numeros que nao batem. Foi assim que isto chegou, em 04/10/2026:
+         * "Oraculo inutil repetindo toast e com numero errado".
+         *
+         * O meio do caminho e o unico caso que nao acrescenta nada: so a
+         * contagem, que o toast ja deu. Ele sai. Ficam a PRIMEIRA (saiu do zero),
+         * a PENULTIMA (falta uma) e o FECHO (meta batida) — tres momentos que o
+         * toast da arena nao marca, e que por isso sao comentario, e nao segunda
+         * leitura do mesmo numero.
+         *
+         * Devolver `false` e de proposito: sem este comentario, a conclusao ainda
+         * passa pela atencao de ritmo do dia (3, 5, 8 acoes), que e um fato novo
+         * de verdade e nao uma releitura deste.
+         */
+        if (remaining > 1 && cappedCount > 1) return false;
+
         const goalEvent = remaining === 0
             ? 'cycle_goal_met'
-            : remaining === 1
-                ? 'cycle_goal_last_one'
-                : cappedCount === 1 ? 'cycle_goal_first' : 'cycle_goal_progress';
+            : remaining === 1 ? 'cycle_goal_last_one' : 'cycle_goal_first';
         const message = falarReacao(goalEvent, {
             action: actionName,
             count: cappedCount,

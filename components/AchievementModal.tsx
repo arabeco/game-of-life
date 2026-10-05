@@ -14,6 +14,7 @@ import { buildAchievementRewardPayload } from '../utils/achievementRewardPayload
 import { getRewardEmblemUrl, getRewardToneRgb } from '../constants/rewardEmblems';
 import { DIRECOES, REWARD_CONTENT_PLATE_VIEWPORT_STYLE } from '../constants/rewardPlateStyles';
 import { SEASONS } from '../constants/seasonContent';
+import { APP_NAVIGATE_EVENT, type AppNavigatePayload } from '../utils/arenaAttention';
 
 interface AchievementModalProps {
     achievement: { type: FeedEventType; data: any };
@@ -381,6 +382,25 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
             if (messages.length > 0) {
                 showToast(messages.join('\n'));
             }
+        }
+
+        /*
+         * FECHAR A PLACA DA ARENA DEVOLVE PARA O PLANNER.
+         *
+         * A ultima acao de uma arena e marcada DENTRO da arena. Fechada a placa,
+         * a pessoa voltava para uma ArenaView que acabou: nada para marcar, nada
+         * para fazer, e um toque a mais para chegar onde o dia continua. Relatado
+         * em 04/10/2026: "ele ta custando um clique ao ir pra arenaview".
+         *
+         * Vale para a arena e nao para os outros feitos, porque so aqui a tela de
+         * tras deixou de ter assunto: subir de patente ou fechar um relatorio nao
+         * esvazia o lugar onde a pessoa estava.
+         */
+        if (isArenaComplete && typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent<AppNavigatePayload>(
+                APP_NAVIGATE_EVENT,
+                { detail: { view: 'planner' } },
+            ));
         }
 
         onClose();

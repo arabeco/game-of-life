@@ -15,6 +15,23 @@ interface LongPressOptions {
     preventDefaultOnTouch?: boolean;
     touchDragRequiresLongPress?: boolean;
     dragIntent?: 'any' | 'vertical' | 'horizontal';
+    /**
+     * O PEGAR, separado do segurar.
+     *
+     * Sem esta opcao o hook tem um tempo so: `delay` dispara `onLongPress`, e
+     * e esse mesmo instante que libera o arrasto no toque. No planner isso
+     * colava dois gestos num: o hold que libera o arrasto era o MESMO que
+     * comecava a encher a conclusao — para arrastar, a pessoa via a tarefa
+     * comecar a se concluir.
+     *
+     * Com `armDelay`, o gesto tem dois tempos. Em `armDelay` a peca e PEGA
+     * (`onArm`) e o arrasto fica liberado; so se o dedo continuar parado ate
+     * `delay` e que `onLongPress` dispara. Soltar depois de pegar, sem mexer,
+     * devolve a peca (`onArmCancel`) — nao e toque, e nao abre nada.
+     */
+    armDelay?: number;
+    onArm?: () => void;
+    onArmCancel?: () => void;
 }
 
 const isTouchEvent = (e: MouseEvent | TouchEvent | React.MouseEvent | React.TouchEvent): e is TouchEvent | React.TouchEvent => 'touches' in e;
@@ -26,7 +43,9 @@ export const useLongPress = (options: LongPressOptions) => {
     }, [options]);
 
     const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const state = useRef<'idle' | 'pending' | 'longpress' | 'drag'>('idle');
+    const armTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const state = useRef<'idle' | 'pending' | 'armed' | 'longpress' | 'drag'>('idle');
+    const downAt = useRef(0);
     const startPos = useRef({ x: 0, y: 0 });
     const releaseSelectionLockRef = useRef<(() => void) | null>(null);
 
@@ -50,6 +69,10 @@ export const useLongPress = (options: LongPressOptions) => {
             clearTimeout(timeout.current);
             timeout.current = null;
         }
+        if (armTimeout.current) {
+            clearTimeout(armTimeout.current);
+            armTimeout.current = null;
+        }
         if (releaseSelectionLockRef.current) {
             releaseSelectionLockRef.current();
             releaseSelectionLockRef.current = null;
@@ -62,9 +85,12 @@ export const useLongPress = (options: LongPressOptions) => {
 
     handleMove = useCallback((e: MouseEvent | TouchEvent) => {
         // Allow move handler to run in 'longpress' state to detect a drag-after-longpress-trigger.
-        if (state.current !== 'pending' && state.current !== 'longpress') return;
+        if (state.current !== 'pending' && state.current !== 'armed' && state.current !== 'longpress') return;
 
-        const { dragThreshold = 10, onDragStart, onLongPressCancel, touchDragRequiresLongPress, dragIntent = 'any' } = optionsRef.current;
+        const {
+            dragThreshold = 10, onDragStart, onLongPressCancel, touchDragRequiresLongPress,
+            dragIntent = 'any', armDelay, onArm, onArmCancel,
+        } = optionsRef.current;
         if (shouldPreventTouchDefault() && isTouchEvent(e) && e.cancelable) {
             e.preventDefault();
         }
@@ -80,10 +106,33 @@ export const useLongPress = (options: LongPressOptions) => {
                 || (dragIntent === 'vertical' && !isHorizontalIntent);
 
             if (!matchesDragIntent) {
+                if (state.current === 'armed') onArmCancel?.();
                 state.current = 'idle';
                 cleanup();
                 onLongPressCancel?.();
                 return;
+            }
+
+            /*
+             * O PEGAR VALE PELO TEMPO QUE PASSOU, NAO PELO TIMER.
+             *
+             * `setTimeout` e promessa de "no minimo", nunca de "na hora". Com a
+             * thread ocupada — o balao do Oraculo digitando uma letra a cada
+             * 22ms e o mais comum — o timer do pegar dispara atrasado. A pessoa
+             * mexe o dedo no tempo certo, o hook ainda acha que esta esperando,
+             * e o arrasto e cancelado em silencio. Era o "enquanto o Oraculo ta
+             * falando nao da pra arrastar".
+             *
+             * Se o tempo de pegar JA PASSOU quando o dedo se move, a peca esta
+             * pega, tenha o timer chegado ou nao.
+             */
+            if (
+                state.current === 'pending'
+                && armDelay !== undefined
+                && performance.now() - downAt.current >= armDelay
+            ) {
+                state.current = 'armed';
+                onArm?.();
             }
 
             if (touchDragRequiresLongPress && isTouchEvent(e) && state.current === 'pending') {
@@ -96,6 +145,9 @@ export const useLongPress = (options: LongPressOptions) => {
             if (state.current === 'longpress') {
                 onLongPressCancel?.();
             }
+            if (state.current === 'armed') {
+                onArmCancel?.();
+            }
             state.current = 'drag';
             cleanup();
             if (onDragStart) {
@@ -105,11 +157,14 @@ export const useLongPress = (options: LongPressOptions) => {
     }, [cleanup]);
 
     handleUp = useCallback((e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
-        const { onClick, onLongPressRelease } = optionsRef.current;
+        const { onClick, onLongPressRelease, onArmCancel } = optionsRef.current;
         if (state.current === 'pending') {
             if (onClick) {
                 onClick(e as any);
             }
+        } else if (state.current === 'armed') {
+            // Pegou e devolveu sem mexer: a peca desce, e nada abre.
+            onArmCancel?.();
         } else if (state.current === 'longpress') {
             if (onLongPressRelease) {
                 onLongPressRelease();
@@ -132,6 +187,7 @@ export const useLongPress = (options: LongPressOptions) => {
         maoNaTelaRef.current = true;
 
         state.current = 'pending';
+        downAt.current = performance.now();
         startPos.current = getCoords(e);
         if (shouldPreventTouchDefault() && isTouchEvent(e) && e.cancelable) {
             e.preventDefault();
@@ -145,15 +201,29 @@ export const useLongPress = (options: LongPressOptions) => {
         }
         e.persist();
 
-        const { delay = 300, onLongPress } = optionsRef.current;
+        const { delay = 300, onLongPress, armDelay, onArm } = optionsRef.current;
 
         window.addEventListener('mousemove', handleMove);
         window.addEventListener('touchmove', handleMove, { passive: false });
         window.addEventListener('mouseup', handleUp);
         window.addEventListener('touchend', handleUp);
 
+        if (armDelay !== undefined) {
+            armTimeout.current = setTimeout(() => {
+                if (state.current === 'pending') {
+                    state.current = 'armed';
+                    onArm?.();
+                }
+            }, armDelay);
+        }
+
         timeout.current = setTimeout(() => {
-            if (state.current === 'pending') {
+            // Com o pegar ligado, o segurar so vale para quem ja foi pego e
+            // continuou parado. Sem ele, o comportamento e o de sempre.
+            const podeSegurar = armDelay !== undefined
+                ? state.current === 'armed'
+                : state.current === 'pending';
+            if (podeSegurar) {
                 state.current = 'longpress';
                 onLongPress?.(e);
                 // DO NOT remove move listeners. This allows `handleMove` to still

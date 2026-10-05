@@ -38,6 +38,17 @@ const manualQaNotes = [
 const suites = {
   core: [
     {
+      id: 'arrasto-leve',
+      label: 'Arrasto leve regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'arrasto-leve.regression.mjs')]],
+      kind: 'logic',
+      interactions: [
+        'pegar aos 240ms, concluir so com o dedo parado ate 640ms',
+        'o pegar vale pelo tempo real, mesmo com o Oraculo ocupando a thread',
+        'o fantasma anda pelo compositor, sem redesenhar o planner a cada pixel',
+      ],
+    },
+    {
       id: 'planner-chega-na-hora',
       label: 'Planner chega na hora regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'planner-chega-na-hora.regression.mjs')]],

@@ -4,7 +4,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { Action } from '../types';
 import { useGame } from '../contexts/GameContext';
 import { useTutorial } from '../contexts/TutorialContext';
-import { useLongPress } from '../hooks/useLongPress';
+import { usePlannerDragHold } from '../hooks/usePlannerDragHold';
 import { EmojiGlyph } from './EmojiGlyph';
 
 interface PoolActionProps {
@@ -107,16 +107,13 @@ export const PoolAction: React.FC<PoolActionProps> = ({ action, count, isUnlimit
         onCustomDragStart(e, item, ghost, poolActionRef);
     };
 
-    const longPressEvents = useLongPress({
-        onLongPress: handleLongPress, // Habilitado sempre
-        onLongPressCancel: cancelLongPress,
-        onLongPressRelease: cancelLongPress,
-        onDragStart: handleDragStart,
-        onClick: handleClick,
-        delay: 300,
+    // Pegar aos 240ms, concluir so com o dedo parado: ver usePlannerDragHold.
+    const { events: longPressEvents, erguido } = usePlannerDragHold({
+        onTap: handleClick,
+        onDrag: handleDragStart,
+        onHoldStart: handleLongPress,
+        onHoldCancel: cancelLongPress,
         dragThreshold: 20,
-        preventDefaultOnTouch: false,
-        touchDragRequiresLongPress: true,
     });
 
     return (
@@ -126,7 +123,7 @@ export const PoolAction: React.FC<PoolActionProps> = ({ action, count, isUnlimit
             {...longPressEvents}
             style={isMilestone ? undefined : isFreeAction ?getFreeActionColorStyle(backgroundStyle) : backgroundStyle}
             className={`
-                h-full aspect-square flex items-center justify-center p-1 flex-shrink-0 relative transition-all duration-300 select-none
+                h-full aspect-square flex items-center justify-center p-1 flex-shrink-0 relative transition-all duration-300 select-none${erguido ? ' planner-erguido' : ''}
                 ${isMilestone ?'marco-losango marco-halo-wrap marco-borda-interna' : isFreeAction ?'free-action-shell free-action-outline rounded-2xl' : 'border border-[var(--accent-bronze)]/50 rounded-xl'}
                 ${isDisabled ?'border-gray-700' : isMilestone ?'cursor-grab active:cursor-grabbing hover:scale-110 active:scale-95' : isFreeAction ?'cursor-grab active:cursor-grabbing hover:border-white/35 hover:scale-[1.03] active:scale-95' : 'cursor-grab active:cursor-grabbing hover:border-[var(--skin-accent-color)]/50 hover:scale-105 active:scale-95'}
             `}

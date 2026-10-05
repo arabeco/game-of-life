@@ -3,7 +3,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Action } from '../types';
 import { useGame } from '../contexts/GameContext';
-import { useLongPress } from '../hooks/useLongPress';
+import { usePlannerDragHold } from '../hooks/usePlannerDragHold';
 import { EmojiGlyph } from './EmojiGlyph';
 
 interface MilestonePoolActionProps {
@@ -74,13 +74,13 @@ export const MilestonePoolAction: React.FC<MilestonePoolActionProps> = ({ action
         onCustomDragStart(e, item, ghost, milestoneRef);
     };
 
-    const longPressEvents = useLongPress({
-        onLongPress: handleLongPress,
-        onLongPressCancel: cancelLongPress,
-        onLongPressRelease: cancelLongPress,
-        onDragStart: handleDragStart,
-        onClick: handleClick,
-        delay: 300,
+    // O marco da baia arrastava ao primeiro movimento: varrer a baia para o
+    // lado arrastava o marco em vez de rolar. Agora pega como as outras pecas.
+    const { events: longPressEvents, erguido } = usePlannerDragHold({
+        onTap: handleClick,
+        onDrag: handleDragStart,
+        onHoldStart: handleLongPress,
+        onHoldCancel: cancelLongPress,
         dragThreshold: 20,
     });
 
@@ -88,7 +88,7 @@ export const MilestonePoolAction: React.FC<MilestonePoolActionProps> = ({ action
         <div
             ref={milestoneRef}
             {...longPressEvents}
-            className="flex items-center space-x-2 p-1 rounded-lg hover:bg-white/10 cursor-grab relative select-none"
+            className={`flex items-center space-x-2 p-1 rounded-lg hover:bg-white/10 cursor-grab relative select-none${erguido ? ' planner-erguido' : ''}`}
         >
             <div
                 style={backgroundStyle}

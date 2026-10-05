@@ -17,7 +17,7 @@ import { useTutorial } from '../contexts/TutorialContext';
 import { buildActionPoolByDate, buildDailyExpSnapshot, filterCycleTasksByScope, getInitialDailyCommitmentTaskIds, getVisiblePoolTaskIdsForAction } from '../utils/coreLoopUtils.js';
 import { OPERATIONAL_DAY_START_MINUTE, OPERATIONAL_DAY_TOTAL_MINUTES, buildLocalDateFromString, formatLocalDateString, formatOperationalHourLabel, getActualDateStringForOperationalMinutes, getActualStartTimeForOperationalMinutes, getOperationalDateString, getOperationalDisplayMinutes, getOperationalHourTicks, getTaskDisplayStartTime, getTaskOperationalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 import { hasScheduledTime, isClanQuestAction, isTaskInPool } from '../utils/taskDomain.js';
-import { useLongPress } from '../hooks/useLongPress';
+import { usePlannerDragHold } from '../hooks/usePlannerDragHold';
 import { hasPremiumAccess } from '../utils/premiumAccess';
 import { APP_SENSORY_CUE_EVENT, type AppSensoryCuePayload } from '../utils/sensoryCue';
 import {
@@ -318,16 +318,13 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
         onCustomDragStart(e, item, ghost, taskRef);
     };
 
-    const longPressEvents = useLongPress({
-        onLongPress: handleLongPress,
-        onLongPressCancel: cancelLongPress,
-        onLongPressRelease: cancelLongPress,
-        onClick: handleClick,
-        onDragStart: handleDragStart,
-        delay: 420,
+    // Pegar aos 240ms, concluir so com o dedo parado: ver usePlannerDragHold.
+    const { events: longPressEvents, erguido } = usePlannerDragHold({
+        onTap: handleClick,
+        onDrag: handleDragStart,
+        onHoldStart: handleLongPress,
+        onHoldCancel: cancelLongPress,
         dragThreshold: 14,
-        preventDefaultOnTouch: false,
-        touchDragRequiresLongPress: true,
     });
 
     if (isMilestone) {
@@ -337,7 +334,7 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
             <div
                 ref={taskRef}
                 {...longPressEvents}
-                className="absolute left-0 right-1 cursor-pointer select-none flex items-center justify-center"
+                className={`absolute left-0 right-1 cursor-pointer select-none flex items-center justify-center${erguido ? ' planner-erguido' : ''}`}
                 style={{ top: `${top}px`, height: `${height}px`, touchAction: 'none' }}
             >
                 {/*
@@ -371,7 +368,7 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
         <div
             ref={taskRef}
             {...longPressEvents}
-            className="absolute left-0 right-1 cursor-pointer select-none overflow-hidden rounded-2xl"
+            className={`absolute left-0 right-1 cursor-pointer select-none overflow-hidden rounded-2xl${erguido ? ' planner-erguido' : ''}`}
             style={{ top: `${top}px`, height: `${height}px`, minHeight: `${30 * scaleFactor}px`, touchAction: 'none' }}
         >
             <div
@@ -558,19 +555,17 @@ const UnscheduledTaskCard: React.FC<{
         onCustomDragStart(event, { type: 'reschedule_task', payload: task.id, duration, source: executionCard ?'execution' : 'planner' }, ghost, cardRef);
     };
 
-    const longPressEvents = useLongPress({
-        onLongPress: executionCard ?handleLongPress : undefined,
-        onLongPressCancel: executionCard ?cancelLongPress : undefined,
-        onLongPressRelease: executionCard ?cancelLongPress : undefined,
-        onDragStart: draggable ?handleDragStart : undefined,
-        onClick: () => {
+    // O cartao fora da execucao arrastava ao primeiro movimento, sem segurar —
+    // varrer a lista para rolar arrastava o cartao. Agora pega como os outros.
+    const { events: longPressEvents, erguido } = usePlannerDragHold({
+        onTap: () => {
             if (isTransitioning) return;
             onTaskClick(task);
         },
-        delay: executionCard ?420 : 260,
+        onDrag: draggable ?handleDragStart : undefined,
+        onHoldStart: executionCard ?handleLongPress : undefined,
+        onHoldCancel: executionCard ?cancelLongPress : undefined,
         dragThreshold: executionCard ?14 : 18,
-        preventDefaultOnTouch: executionCard ?false : undefined,
-        touchDragRequiresLongPress: executionCard,
     });
 
     return (
@@ -578,7 +573,7 @@ const UnscheduledTaskCard: React.FC<{
             ref={cardRef}
             {...longPressEvents}
             data-execution-task-id={executionCard ?task.id : undefined}
-            className={`group relative select-none overflow-hidden border shadow-[0_16px_35px_rgba(0,0,0,0.24)] backdrop-blur-md transition-all duration-200 hover:border-white/18 active:scale-[0.99] ${shouldUseActionSkin ?'border-white/15 text-white' : 'bg-[linear-gradient(135deg,rgba(255,255,255,0.055),rgba(255,255,255,0.018)_54%,rgba(0,0,0,0.28))] hover:bg-white/[0.055]'} ${isDragTarget ?'ring-1 ring-[var(--skin-accent-color)]/70 shadow-[0_0_28px_rgba(250,204,21,0.12)]' : ''} ${task.completed ?'opacity-82' : ''} ${compact ?'rounded-[18px] px-2.5 py-1.5' : 'rounded-[22px] px-4 py-3'}`}
+            className={`group relative select-none overflow-hidden border shadow-[0_16px_35px_rgba(0,0,0,0.24)] backdrop-blur-md transition-all duration-200${erguido ? ' planner-erguido' : ''} hover:border-white/18 active:scale-[0.99] ${shouldUseActionSkin ?'border-white/15 text-white' : 'bg-[linear-gradient(135deg,rgba(255,255,255,0.055),rgba(255,255,255,0.018)_54%,rgba(0,0,0,0.28))] hover:bg-white/[0.055]'} ${isDragTarget ?'ring-1 ring-[var(--skin-accent-color)]/70 shadow-[0_0_28px_rgba(250,204,21,0.12)]' : ''} ${task.completed ?'opacity-82' : ''} ${compact ?'rounded-[18px] px-2.5 py-1.5' : 'rounded-[22px] px-4 py-3'}`}
             style={cardStyle}
         >
             {!shouldUseActionSkin && <div className="absolute inset-y-0 left-0 w-1 opacity-60" style={backgroundStyle} />}
@@ -1176,6 +1171,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const lastPointerPosRef = useRef<{ x: number; y: number } | null>(null);
     const lastScrollTopRef = useRef<number>(0);
     const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+    /** O fantasma que segue o dedo. Ver o comentario em handleDragMove. */
+    const ghostRef = useRef<HTMLDivElement>(null);
     const dropAnchorOffsetRef = useRef(20);
     const bayAreaElRef = useRef<HTMLElement | null>(null);
     const dailyGridElRef = useRef<HTMLElement | null>(null);
@@ -1402,8 +1399,27 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             e.stopPropagation();
             const isTouchEvent = 'touches' in e;
             const pos = isTouchEvent ?{ x: e.touches[0].clientX, y: e.touches[0].clientY } : { x: e.clientX, y: e.clientY };
-            setDragState(prev => ({ ...prev, currentPosition: pos }));
+            /*
+             * O FANTASMA ANDA PELO DOM, NAO PELO ESTADO.
+             *
+             * Isto era `setDragState(...currentPosition)` a cada touchmove: cada
+             * pixel que o dedo andava redesenhava o planner INTEIRO — a grade, as
+             * tarefas, a baia — para mover um cartao de 40px. E como `dragState`
+             * esta nas dependencias deste efeito, cada pixel tambem desmontava e
+             * remontava todos os ouvintes de toque e mouse da janela. Era o peso
+             * do arrasto: o dedo ia na frente e o cartao vinha atras, aos trancos,
+             * pior ainda com qualquer outra coisa ocupando a thread.
+             *
+             * Agora a posicao vive em `lastPointerPosRef` e o fantasma e movido
+             * por transform direto no elemento — so o compositor trabalha. O
+             * estado do arrasto muda duas vezes por gesto: quando pega e quando
+             * solta.
+             */
             lastPointerPosRef.current = pos;
+            if (ghostRef.current) {
+                ghostRef.current.style.transform =
+                    `translate3d(${pos.x - dragOffsetRef.current.x}px, ${pos.y - dragOffsetRef.current.y}px, 0)`;
+            }
 
             if (!bayAreaElRef.current || !dailyGridElRef.current || !weeklyGridElRef.current) {
                 refreshDragTargets();
@@ -1424,7 +1440,13 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 } else {
                     setIsOverBayArea(false);
                     setHoveredBayQuadrant(null);
-                    setExecutionDropTarget(resolveExecutionDropTarget(pos));
+                    // Mesmo alvo, mesmo objeto: devolver `prev` deixa o React
+                    // pular o redesenho. Sem isso, cada pixel criava um alvo
+                    // novo igual ao anterior e redesenhava a lista.
+                    const alvo = resolveExecutionDropTarget(pos);
+                    setExecutionDropTarget(prev => (
+                        prev && alvo && prev.date === alvo.date && prev.index === alvo.index ? prev : alvo
+                    ));
                 }
                 return;
             }
@@ -1460,7 +1482,12 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
 
                     let dropY = (pos.y - gridRect.top) - dropAnchorOffsetRef.current;
                     dropY = Math.max(0, dropY);
-                    setDailyDropIndicator(buildClampedDropIndicator(dropY, dragState.item.duration));
+                    // O indicador anda de 15 em 15 minutos: so redesenha quando
+                    // muda de slot, e nao a cada pixel dentro do mesmo slot.
+                    const marcaDoDia = buildClampedDropIndicator(dropY, dragState.item.duration);
+                    setDailyDropIndicator(prev => (
+                        prev && prev.top === marcaDoDia.top && prev.height === marcaDoDia.height ? prev : marcaDoDia
+                    ));
                 } else if (viewMode === 'week' && scrollContainerRef.current && dragState.item) {
                     setDailyDropIndicator(null);
                     const daysContainer = weeklyDaysContainerRef.current;
@@ -1476,7 +1503,11 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                         let dropY = (pos.y - containerRect.top - headerHeight) - dropAnchorOffsetRef.current;
                         if (dropY < 0) dropY = 0;
                         const indicator = buildClampedDropIndicator(dropY, dragState.item.duration);
-                        setWeeklyDropIndicator({ dayIndex, top: indicator.top, height: indicator.height });
+                        setWeeklyDropIndicator(prev => (
+                            prev && prev.dayIndex === dayIndex && prev.top === indicator.top && prev.height === indicator.height
+                                ? prev
+                                : { dayIndex, top: indicator.top, height: indicator.height }
+                        ));
                     } else { setWeeklyDropIndicator(null); }
                 } else {
                     setDailyDropIndicator(null);
@@ -1495,8 +1526,9 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             } else if ('clientX' in e) {
                 pos = { x: (e as MouseEvent).clientX, y: (e as MouseEvent).clientY };
             } else {
-                // Fallback to the last known position from state
-                pos = dragState.currentPosition;
+                // A ultima posicao conhecida mora na ref: o estado so guarda onde
+                // o arrasto COMECOU.
+                pos = lastPointerPosRef.current ?? dragState.currentPosition;
             }
 
             if (!bayAreaElRef.current || !dailyGridElRef.current || !weeklyGridElRef.current) {
@@ -2093,8 +2125,25 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     return (
         <div id="planner-container" className="planner-root relative flex flex-col h-full min-h-0 overflow-hidden bg-[#0d0d0e]">
             {dragState.isDragging && (
-                <div style={{ position: 'fixed', top: dragState.currentPosition.y, left: dragState.currentPosition.x, transform: `translate(-${dragState.pointerOffset.x}px, -${dragState.pointerOffset.y}px)`, pointerEvents: 'none', zIndex: 1000 }}>
-                    {dragState.ghostElement}
+                <div
+                    ref={ghostRef}
+                    // A posicao inicial vem da ref, e nao de dragState: se o
+                    // planner redesenhar por outro motivo no meio do arrasto (o
+                    // indicador trocando de slot), o fantasma tem de continuar
+                    // onde o dedo esta, nao voltar para onde o gesto comecou.
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        transform: `translate3d(${(lastPointerPosRef.current ?? dragState.currentPosition).x - dragState.pointerOffset.x}px, ${(lastPointerPosRef.current ?? dragState.currentPosition).y - dragState.pointerOffset.y}px, 0)`,
+                        pointerEvents: 'none',
+                        zIndex: 1000,
+                        willChange: 'transform',
+                    }}
+                >
+                    <div className="planner-fantasma">
+                        {dragState.ghostElement}
+                    </div>
                 </div>
             )}
 

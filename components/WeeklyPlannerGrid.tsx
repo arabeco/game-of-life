@@ -5,7 +5,7 @@ import { Action, ScheduledTask } from '../types';
 import { EmojiGlyph } from './EmojiGlyph';
 import { useGame } from '../contexts/GameContext';
 import { DropIndicator } from './DropIndicator';
-import { useLongPress } from '../hooks/useLongPress';
+import { usePlannerDragHold } from '../hooks/usePlannerDragHold';
 import { CheckCircleIcon } from './Icons';
 import { OPERATIONAL_DAY_START_MINUTE, formatLocalDateString, formatOperationalHourLabel, getOperationalDateString, getOperationalDisplayMinutes, getOperationalHourTicks, getTaskDisplayStartTime, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 
@@ -118,16 +118,13 @@ const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: 
         onCustomDragStart(e, item, ghost, taskRef);
     };
 
-    const longPressEvents = useLongPress({
-        onLongPress: handleLongPress,
-        onLongPressCancel: cancelLongPress,
-        onLongPressRelease: cancelLongPress,
-        onClick: handleClick,
-        onDragStart: handleDragStart,
-        delay: 420,
+    // Pegar aos 240ms, concluir so com o dedo parado: ver usePlannerDragHold.
+    const { events: longPressEvents, erguido } = usePlannerDragHold({
+        onTap: handleClick,
+        onDrag: handleDragStart,
+        onHoldStart: handleLongPress,
+        onHoldCancel: cancelLongPress,
         dragThreshold: 14,
-        preventDefaultOnTouch: false,
-        touchDragRequiresLongPress: true,
     });
 
     const top = (getTaskDisplayStartTime(task, operationalDate) - OPERATIONAL_DAY_START_MINUTE) * scaleFactor; 
@@ -137,7 +134,7 @@ const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: 
         <div 
             key={task.id} 
             ref={taskRef}
-            className="absolute w-full px-1 cursor-pointer select-none" 
+            className={`absolute w-full px-1 cursor-pointer select-none${erguido ? ' planner-erguido' : ''}`}
             style={{ top: `${top}px`, height: `${height}px`, minHeight: `${30 * scaleFactor}px`, touchAction: 'none' }}
             {...longPressEvents}
         >

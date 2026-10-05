@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>O arrasto — Bancada do Glyph</title>
+<!--
+  O GESTO DE PEGAR E ARRASTAR DO PLANNER, MEDIDO.
+
+  Monta o usePlannerDragHold DE VERDADE em cartoes de prova e registra cada
+  coisa que o gesto decide — tocar, pegar, devolver, arrastar, comecar a
+  concluir — com o tempo em que aconteceu.
+
+  Da para tocar com o dedo (ou o mouse) e da para rodar os roteiros, que
+  disparam toques sinteticos com tempo controlado. Um dos roteiros ocupa a
+  thread de proposito, para imitar o Oraculo digitando: e o caso em que o
+  arrasto morria em silencio.
+
+  Suba com `npm run bancada` e abra /o-arrasto.html
+-->
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 18px 20px 60px; background: #0b0d10; color: #e8eaee;
+         font: 14px/1.5 system-ui, sans-serif; }
+  h1 { font-size: 17px; margin: 0 0 4px; }
+  header p { color: #969ca6; font-size: 12.5px; margin: 0 0 18px; max-width: 76ch; }
+  code { font-family: ui-monospace, monospace; font-size: 12px; color: #d8b44c; }
+  .palco { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+  .cartao { position: relative; width: 150px; height: 64px; border-radius: 16px;
+            background: linear-gradient(135deg, #3b4f6b, #1d2838); border: 1px solid #ffffff22;
+            display: flex; align-items: center; justify-content: center; font-weight: 700;
+            font-size: 13px; color: #f1f5f9; touch-action: none; user-select: none; cursor: pointer; }
+  .cartao .enche { position: absolute; inset: 0; border-radius: 16px; background: #ffffff33;
+                   transform-origin: bottom; animation: enche 1.8s linear forwards; }
+  @keyframes enche { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+  .registro { border: 1px solid #272b32; border-radius: 14px; background: #111419;
+              padding: 12px 14px; max-width: 760px; font: 12px/1.6 ui-monospace, monospace; }
+  .registro b { color: #d8b44c; font-weight: 600; }
+  .roteiros { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .roteiros button { padding: 6px 11px; border-radius: 9px; border: 1px solid #2b3038;
+                     background: #14181d; color: #c9cfd8; font-size: 12px; cursor: pointer; }
+</style>
+</head>
+<body>
+<div id="raiz"></div>
+<script type="module" src="/o-arrasto.tsx"></script>
+<script src="/bancada-nav.js"></script>
+</body>
+</html>

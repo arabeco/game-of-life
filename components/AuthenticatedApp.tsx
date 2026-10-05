@@ -213,8 +213,14 @@ const OracleSpeechOverlay: React.FC = () => {
 
     return (
         <div className="pointer-events-none fixed inset-x-0 top-[calc(10px+var(--safe-area-top))] z-[10004] flex justify-center px-4">
+            {/* SEM `backdrop-blur`. O fundo do balao ja e 96% a 98% opaco, entao o
+                desfoque do que esta atras quase nao aparece — e custava caro: o
+                balao redesenha a cada letra digitada, uma a cada 22ms, e no
+                Android cada redesenho com backdrop-filter refaz o desfoque da
+                regiao inteira. Isso disputava a thread com o arrasto no
+                planner: falando o Oraculo, o dedo pesava. */}
             <div
-                className="pointer-events-none relative flex w-full max-w-[22rem] items-center gap-3 overflow-hidden rounded-[16px] border bg-[linear-gradient(180deg,rgba(20,17,13,0.96),rgba(7,7,8,0.98))] p-2.5 shadow-[0_12px_38px_rgba(0,0,0,0.38)] backdrop-blur-xl animate-in fade-in slide-in-from-top-3 duration-300"
+                className="pointer-events-none relative flex w-full max-w-[22rem] items-center gap-3 overflow-hidden rounded-[16px] border bg-[linear-gradient(180deg,rgba(20,17,13,0.96),rgba(7,7,8,0.98))] p-2.5 shadow-[0_12px_38px_rgba(0,0,0,0.38)] animate-in fade-in slide-in-from-top-3 duration-300"
                 style={{
                     borderColor: toneTokens.border,
                     boxShadow: `0 12px 38px rgba(0,0,0,0.38), 0 0 20px ${toneTokens.glow}`,

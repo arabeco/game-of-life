@@ -175,9 +175,39 @@ export const MasteryView: React.FC<{ onClose?: () => void; embedded?: boolean }>
                         <ChevronLeftIcon className="w-5 h-5" />
                     </button>
 
-                    <div className="mastery-quiz-mode-switch">
-                        <span className="mastery-quiz-mode-pill is-active">Avaliação</span>
-                    </div>
+                    {/*
+                      * O BOTAO QUE PARECIA BOTAO E NAO ERA.
+                      *
+                      * Aqui morava uma pilula "AVALIACAO" preenchida com a cor da
+                      * area, dentro de um seletor — sobra de quando a tela tinha
+                      * dois modos. Ficou um so, e a pilula ficou com cara de aba
+                      * ativa: a pessoa tocava nela para comecar e nada acontecia,
+                      * porque era um <span>. Quem comecava era tocar no pentagono,
+                      * e isso so estava escrito numa linha cinza la embaixo.
+                      * Relatado em 05/10/2026 como "o botao de comecar".
+                      *
+                      * Agora e botao de verdade, com verbo e nao substantivo, e no
+                      * bico — a forma reservada aos momentos que mudam o jogo.
+                      * Durante a avaliacao o centro volta a ser so o titulo: o
+                      * botao ja fez o trabalho dele, e um segundo "Avaliar" ali
+                      * pareceria recomecar.
+                      *
+                      * A trava de tres dias NAO desabilita o botao. Botao
+                      * desabilitado nao explica nada; tocado, ele chama
+                      * `startAssessment`, que ja avisa em quantas horas libera.
+                      */}
+                    {isAssessmentActive ? (
+                        <span className="mastery-quiz-titulo">Avaliação</span>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={startAssessment}
+                            aria-disabled={isMasteryLocked || undefined}
+                            className={`luxe-skin-button luxe-bico mastery-quiz-avaliar${isMasteryLocked ? ' is-travado' : ''}`}
+                        >
+                            Avaliar
+                        </button>
+                    )}
 
                     <button
                         onClick={() => {
@@ -212,7 +242,9 @@ export const MasteryView: React.FC<{ onClose?: () => void; embedded?: boolean }>
                         </div>
                         <div className="mastery-quiz-lower">
                             {!isAssessmentActive ? <>
-                                <p className="mastery-quiz-start-hint">{isMasteryLocked ? `Nova avaliação em ${remainingHours}h` : 'Toque no pentágono para avaliar suas cinco áreas.'}</p>
+                                {isMasteryLocked && (
+                                    <p className="mastery-quiz-start-hint">Nova avaliação em {remainingHours}h</p>
+                                )}
                             </> : <>
                                 <div className="mastery-quiz-meta">
                                     <div>

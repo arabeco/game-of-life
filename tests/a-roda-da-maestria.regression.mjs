@@ -188,4 +188,32 @@ assert.match(selo, /color-mix\(in srgb, var\(--liga\) calc\(6% \+ var\(--nobreza
     'o miolo do selo deixou de ser escuro — o numero perde contraste no meio da escada');
 console.log('ok - o miolo continua escuro, e o numero legivel em toda a escada');
 
+// ======================================= 6. o botao de comecar e um botao
+//
+// No topo morava uma pilula "AVALIACAO" preenchida com a cor da area — sobra de
+// um seletor de dois modos que ficou com um. Tinha cara de aba ativa, a pessoa
+// tocava para comecar, e nada acontecia: era um <span>. Relatado em 05/10/2026
+// como "o botao de comecar", pedido como "Calibrar ou Avaliar, no nosso estilo".
+const telaMaestria = readFileSync(new URL('../views/MasteryView.tsx', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+assert.doesNotMatch(telaMaestria, /<span className="mastery-quiz-mode-pill is-active">/,
+    'a pilula que parece botao e nao e voltou ao topo');
+assert.match(
+    telaMaestria,
+    /<button\s+type="button"\s+onClick=\{startAssessment\}[\s\S]{0,200}luxe-bico mastery-quiz-avaliar[\s\S]{0,120}>\s*Avaliar\s*<\/button>/,
+    'o botao Avaliar sumiu, perdeu o bico ou deixou de chamar startAssessment',
+);
+// A trava nao desabilita: botao desabilitado nao explica nada, e startAssessment
+// ja avisa em quantas horas libera.
+const botaoAvaliar = telaMaestria.slice(telaMaestria.indexOf('onClick={startAssessment}'), telaMaestria.indexOf('Avaliar\n'));
+assert.doesNotMatch(botaoAvaliar, /\sdisabled=/,
+    'a trava voltou a desabilitar o botao — tocado, ele e quem diz quando libera');
+// Durante a avaliacao o centro e titulo; um segundo "Avaliar" pareceria recomecar.
+assert.match(telaMaestria, /isAssessmentActive \? \(\s*<span className="mastery-quiz-titulo">Avaliação<\/span>/,
+    'durante a avaliacao o topo deixou de ser so o titulo');
+// A dica de "toque no pentagono" saiu; a da trava fica, porque o botao nao a da.
+assert.doesNotMatch(telaMaestria, /Toque no pentágono para avaliar/,
+    'a dica de tocar no pentagono voltou, com o botao logo acima');
+assert.match(telaMaestria, /Nova avaliação em \{remainingHours\}h/, 'a dica da trava sumiu');
+console.log('ok - comecar a avaliacao e um botao de verdade, no bico');
+
 console.log('A roda da maestria: a frase cabe, o encaixe espera, o numero tem um dono so, e a escada se ve.');

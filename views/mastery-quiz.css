@@ -82,6 +82,37 @@
   color: #111;
 }
 
+/* O BOTAO DE COMECAR. O bico vem de `.luxe-bico` e a pele de
+   `.luxe-skin-button`; aqui so a medida, para caber entre as duas setas do topo
+   sem empurrar nenhuma delas. */
+.mastery-quiz-avaliar {
+  justify-self: center;
+  min-width: 152px;
+  max-width: 100%;
+  padding: 11px 34px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+/* Travado ele continua tocavel — e o toque que diz quando libera —, mas nao
+   pode parecer um convite. */
+.mastery-quiz-avaliar.is-travado {
+  opacity: 0.45;
+  filter: saturate(0.4);
+}
+
+/* Durante a avaliacao o centro do topo e titulo, nao controle. */
+.mastery-quiz-titulo {
+  justify-self: center;
+  color: color-mix(in srgb, var(--mastery-accent) 70%, #fff3df);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
 .mastery-quiz-panel {
   position: relative;
   flex: 1;

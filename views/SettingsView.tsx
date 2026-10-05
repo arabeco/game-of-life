@@ -1846,9 +1846,6 @@ const GeralTab: React.FC = () => {
                                 <span className="rounded-full border border-[var(--skin-accent-color)]/25 bg-[var(--skin-accent-color)]/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.2em] text-[var(--ui-text-accent)]">
                                     Maestria
                                 </span>
-                                <span className="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/55">
-                                    Editar nível
-                                </span>
                             </div>
                             <div>
                                 <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">Índice Glyph</div>
@@ -1857,9 +1854,23 @@ const GeralTab: React.FC = () => {
                                     <span className="pb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ui-text-accent)]">/{MASTERY_TOTAL_MAX_LEVEL}</span>
                                 </div>
                             </div>
-                            <p className="max-w-[18rem] text-[11px] leading-relaxed text-gray-400">
-                                Toque aqui para ajustar seu nível por area e atualizar o mapa de maestria.
-                            </p>
+                            {/*
+                              * O BOTAO DE COMECAR A AVALIACAO.
+                              *
+                              * Aqui havia uma pilula "EDITAR NIVEL" com cara de
+                              * botao e uma frase pedindo "toque aqui para ajustar
+                              * seu nivel por area" — duas coisas dizendo o que um
+                              * botao diria sozinho. Pedido em 05/10/2026: "algo
+                              * como Calibrar ou Avaliar, no nosso estilo".
+                              *
+                              * E um <span> com a pele de botao, e nao um <button>:
+                              * o card INTEIRO ja e o botao, e botao dentro de botao
+                              * e HTML invalido. Tocar em qualquer parte do card
+                              * abre a maestria, como antes; o bico so diz onde.
+                              */}
+                            <span className="luxe-skin-button luxe-bico inline-flex items-center justify-center px-8 py-2.5 text-[10px] font-black uppercase tracking-[0.26em]">
+                                Avaliar
+                            </span>
                         </div>
                         <div className="flex justify-end">
                             <div className="flex h-[8.75rem] w-[8.75rem] items-center justify-center rounded-[1.6rem] border border-[var(--skin-accent-color)]/16 bg-[#101720] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">

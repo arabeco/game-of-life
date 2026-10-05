@@ -51,8 +51,9 @@ function Bancada() {
                 <p>
                     A <code>MasteryView</code> de verdade, <code>embedded</code> como os Ajustes a
                     chamam. À esquerda, quem pode avaliar agora; à direita, quem avaliou ontem e
-                    está na trava de três dias. Tocar em <strong>Avaliar</strong> à esquerda abre a
-                    roda; à direita, o toque só avisa quando libera (no console).
+                    está na trava de três dias. Tocar no pentágono à esquerda abre a roda; à
+                    direita, o toque só avisa quando libera (no console). O botão
+                    <strong> Avaliar</strong> mora ANTES desta tela, no card de Maestria do Perfil.
                 </p>
             </header>
             <div className="telefones">

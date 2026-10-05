@@ -188,32 +188,38 @@ assert.match(selo, /color-mix\(in srgb, var\(--liga\) calc\(6% \+ var\(--nobreza
     'o miolo do selo deixou de ser escuro — o numero perde contraste no meio da escada');
 console.log('ok - o miolo continua escuro, e o numero legivel em toda a escada');
 
-// ======================================= 6. o botao de comecar e um botao
+// ================== 6. o botao de comecar mora ANTES da avaliacao, no Perfil
 //
-// No topo morava uma pilula "AVALIACAO" preenchida com a cor da area — sobra de
-// um seletor de dois modos que ficou com um. Tinha cara de aba ativa, a pessoa
-// tocava para comecar, e nada acontecia: era um <span>. Relatado em 05/10/2026
-// como "o botao de comecar", pedido como "Calibrar ou Avaliar, no nosso estilo".
-const telaMaestria = readFileSync(new URL('../views/MasteryView.tsx', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
-assert.doesNotMatch(telaMaestria, /<span className="mastery-quiz-mode-pill is-active">/,
-    'a pilula que parece botao e nao e voltou ao topo');
-assert.match(
-    telaMaestria,
-    /<button\s+type="button"\s+onClick=\{startAssessment\}[\s\S]{0,200}luxe-bico mastery-quiz-avaliar[\s\S]{0,120}>\s*Avaliar\s*<\/button>/,
-    'o botao Avaliar sumiu, perdeu o bico ou deixou de chamar startAssessment',
+// O card de Maestria no Perfil tinha uma pilula "EDITAR NIVEL" com cara de
+// botao e a frase "toque aqui para ajustar seu nivel por area". Pedido em
+// 05/10/2026: "algo como Calibrar ou Avaliar, no nosso estilo" — e logo
+// corrigido: "o botao era ANTES de entrar, nao depois que ja entra na
+// avaliacao". Uma primeira tentativa poe o botao dentro da tela de avaliacao, e
+// teria deixado dois "Avaliar" seguidos.
+const perfil = readFileSync(new URL('../views/SettingsView.tsx', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+const cardDaMaestria = perfil.slice(
+    perfil.indexOf('id="mastery-sliders-button"'),
+    perfil.indexOf('</button>', perfil.indexOf('id="mastery-sliders-button"')),
 );
-// A trava nao desabilita: botao desabilitado nao explica nada, e startAssessment
-// ja avisa em quantas horas libera.
-const botaoAvaliar = telaMaestria.slice(telaMaestria.indexOf('onClick={startAssessment}'), telaMaestria.indexOf('Avaliar\n'));
-assert.doesNotMatch(botaoAvaliar, /\sdisabled=/,
-    'a trava voltou a desabilitar o botao — tocado, ele e quem diz quando libera');
-// Durante a avaliacao o centro e titulo; um segundo "Avaliar" pareceria recomecar.
-assert.match(telaMaestria, /isAssessmentActive \? \(\s*<span className="mastery-quiz-titulo">Avaliação<\/span>/,
-    'durante a avaliacao o topo deixou de ser so o titulo');
-// A dica de "toque no pentagono" saiu; a da trava fica, porque o botao nao a da.
-assert.doesNotMatch(telaMaestria, /Toque no pentágono para avaliar/,
-    'a dica de tocar no pentagono voltou, com o botao logo acima');
-assert.match(telaMaestria, /Nova avaliação em \{remainingHours\}h/, 'a dica da trava sumiu');
-console.log('ok - comecar a avaliacao e um botao de verdade, no bico');
+assert.ok(cardDaMaestria.length > 400, 'o card de maestria do Perfil mudou de forma');
+assert.match(cardDaMaestria, /className="luxe-skin-button luxe-bico[^"]*">\s*Avaliar\s*<\/span>/,
+    'o botao Avaliar sumiu do card de maestria, ou perdeu o bico');
+assert.doesNotMatch(cardDaMaestria, /Editar nível/, 'a pilula "Editar nivel" voltou ao card');
+assert.doesNotMatch(cardDaMaestria, /Toque aqui para ajustar/,
+    'a frase "toque aqui" voltou, dizendo o que o botao ja diz');
+// O card inteiro ja e um <button>: um segundo <button> dentro dele e HTML
+// invalido. O Avaliar tem a pele de botao, mas e <span>.
+// Comentarios saem antes da busca: o proprio comentario do card explica que ele
+// "nao e um <button>", e esse texto nao e marcacao.
+const cardSemComentarios = cardDaMaestria.replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
+assert.doesNotMatch(cardSemComentarios.slice(cardSemComentarios.indexOf('className=')), /<button[\s>]/,
+    'nasceu um botao dentro do botao do card');
+console.log('ok - o Avaliar mora no card do Perfil, antes de entrar');
+
+// E a tela de avaliacao NAO ganhou um segundo Avaliar.
+const telaMaestria = readFileSync(new URL('../views/MasteryView.tsx', import.meta.url), 'utf8');
+assert.doesNotMatch(telaMaestria, /mastery-quiz-avaliar/,
+    'a tela de avaliacao ganhou um segundo botao Avaliar — o primeiro ja esta no Perfil');
+console.log('ok - dentro da avaliacao nao ha um segundo Avaliar');
 
 console.log('A roda da maestria: a frase cabe, o encaixe espera, o numero tem um dono so, e a escada se ve.');

@@ -153,4 +153,39 @@ assert.doesNotMatch(badge, /mastery-badge--anel/, 'o CSS do anel voltou');
 assert.match(mastery, /centralStyle="plain"/, 'a tela de avaliacao deixou de pedir o numero sem peca');
 console.log('ok - o centro do pentagono e so o numero');
 
-console.log('A roda da maestria: a frase cabe, o encaixe espera, e o numero tem um dono so.');
+// ================================ 5. a escada dos selos se ve rolando
+//
+// O selo de cada degrau tinha o mesmo aro do 0 ao 10 — 1,5px a 46% —, e so o
+// tom mudava, pouco. O 7 e o 5 eram o mesmo hexagono escuro. Pedido em
+// 05/10/2026: "vai dando mais cor e ficando mais chique".
+const selo = css.slice(css.indexOf('.mastery-wheel-selo {'), css.indexOf('.mastery-wheel-frase {'));
+assert.ok(selo.length > 300, 'o selo da roda mudou de forma');
+
+// A nobreza sobe o aro: espessura e presenca.
+assert.match(selo, /--aro: calc\(1px \+ var\(--nobreza, 1\) \* 2px\);/,
+    'o aro do selo parou de engrossar com o degrau');
+assert.match(selo, /opacity: calc\(0\.38 \+ var\(--nobreza, 1\) \* 0\.62\);/,
+    'o aro parou de ganhar presenca com o degrau');
+// E o numero puxa para a liga conforme sobe.
+assert.match(selo, /color: color-mix\(in srgb, var\(--liga\) calc\(14% \+ var\(--nobreza, 1\) \* 30%\)/,
+    'o numero do selo parou de ganhar cor com o degrau');
+console.log('ok - aro, cor e numero sobem juntos com a nobreza');
+
+// O hexagono mora nos pseudo-elementos. Com o clip-path no proprio selo, o
+// brilho do degrau em foco era cortado no contorno e nunca pintava.
+const seloBase = selo.slice(0, selo.indexOf('.mastery-wheel-selo::before'));
+assert.doesNotMatch(seloBase, /clip-path/,
+    'o recorte voltou ao selo — ele corta o brilho do degrau em foco');
+assert.match(selo, /\.mastery-wheel-selo::before,\s*\.mastery-wheel-selo::after \{[\s\S]{0,140}clip-path: polygon/,
+    'o hexagono saiu dos pseudo-elementos');
+assert.match(css, /\.mastery-wheel-item\.is-focado \.mastery-wheel-selo \{[\s\S]{0,200}filter: drop-shadow/,
+    'o degrau em foco perdeu o brilho');
+console.log('ok - o brilho do degrau em foco existe, porque o selo nao e mais recortado');
+
+// O miolo continua escuro: com a liga preenchendo o selo o numero nao passava
+// de 3,45 de contraste. A cor do miolo nunca passa de 22% da liga.
+assert.match(selo, /color-mix\(in srgb, var\(--liga\) calc\(6% \+ var\(--nobreza, 1\) \* 16%\), #0b0b0d\)/,
+    'o miolo do selo deixou de ser escuro — o numero perde contraste no meio da escada');
+console.log('ok - o miolo continua escuro, e o numero legivel em toda a escada');
+
+console.log('A roda da maestria: a frase cabe, o encaixe espera, o numero tem um dono so, e a escada se ve.');

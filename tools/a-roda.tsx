@@ -134,6 +134,45 @@ const Bancada: React.FC = () => {
                 </p>
             </header>
 
+            {/*
+              * A ESCADA INTEIRA, DE UMA VEZ.
+              *
+              * A roda mostra tres degraus por vez, e a subida de nobreza so se le
+              * comparando — que e justamente o que rolar nao deixa fazer. Aqui os
+              * onze selos de cada area ficam lado a lado, com as classes de
+              * verdade, e o ultimo de cada fileira aceso como o degrau em foco.
+              */}
+            <div className="medida" style={{ marginTop: 0, marginBottom: 22 }}>
+                <h2>A escada dos selos</h2>
+                {LIFE_AREAS.map((a) => (
+                    <div
+                        key={a.id}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: 6, margin: '8px 0',
+                            ['--mastery-accent' as string]:
+                                (ASSET_ACCENT_COLORS as Record<string, string>)[a.id] || '#C9A84C',
+                        }}
+                    >
+                        <span style={{ width: 82, fontSize: 10, letterSpacing: '.1em', color: '#8d95a1' }}>
+                            {a.shortName || a.name}
+                        </span>
+                        {Array.from({ length: a.levelDescriptions.length }, (_, n) => (
+                            <span
+                                key={n}
+                                className={`mastery-wheel-item${n === a.levelDescriptions.length - 1 ? ' is-focado' : ''}`}
+                                style={{
+                                    ['--nobreza' as string]: n / (a.levelDescriptions.length - 1),
+                                    display: 'inline-grid', width: 'auto', height: 'auto',
+                                    padding: 0, gridTemplateColumns: 'auto', cursor: 'default',
+                                }}
+                            >
+                                <span className="mastery-wheel-selo">{n}</span>
+                            </span>
+                        ))}
+                    </div>
+                ))}
+            </div>
+
             <div className="molduras">
                 <div className="moldura" style={{ width: PALCO + 20 }}>
                     <h2>A roda</h2>

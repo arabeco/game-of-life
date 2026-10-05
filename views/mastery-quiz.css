@@ -868,39 +868,83 @@
 }
 
 /* O SELO. O numero deixa de ser um rotulo em cima da frase e vira a peca que a
-   pessoa cata na roda — e o que continua visivel quando a frase ja se foi. */
+   pessoa cata na roda — e o que continua visivel quando a frase ja se foi.
+
+   A ESCADA TEM DE SE VER ROLANDO. Ate 05/10/2026 ela existia so no papel: o aro
+   era 1,5px a 46% de opacidade do degrau 0 ao 10, e so o tom mudava — pouco. O
+   selo 7 e o selo 5 eram o mesmo hexagono escuro. Pedido: "vai dando mais cor e
+   ficando mais chique".
+
+   Agora `--nobreza` (0 no degrau mais baixo, 1 no topo) sobe QUATRO coisas ao
+   mesmo tempo, para a subida se ler sem comparar dois selos lado a lado:
+
+     o aro      engrossa de 1px a 3px, e vira metal — gradiente com luz e sombra
+                da propria liga, em vez de um fio liso;
+     a cor      a liga sai do chumbo e chega ao acento puro da area;
+     o miolo    ganha um toque da cor e um reflexo que cresce com o degrau;
+     o numero   puxa para a liga conforme sobe, sem sair do claro.
+
+   O MIOLO CONTINUA ESCURO, e isso nao e gosto: com a liga preenchendo o selo o
+   numero caia no vale de luminancia onde nem creme nem preto passam de 3,45 de
+   contraste. A nobreza mora no aro, no reflexo e no brilho.
+
+   O HEXAGONO MORA NOS PSEUDO-ELEMENTOS, nao no selo. Com o `clip-path` no
+   proprio selo, qualquer sombra externa era cortada no contorno — o brilho do
+   degrau em foco existia no CSS e nunca pintou. Agora o selo fica sem recorte:
+   `::before` e o aro de metal, `::after` e o miolo, ambos hexagonais, e o
+   `isolation` deixa os dois atras do numero sem tirar o selo do lugar. */
 .mastery-wheel-selo {
+  position: relative;
+  isolation: isolate;
   display: grid;
   place-items: center;
   width: 46px;
   height: 46px;
-  clip-path: polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
-  /* A LIGA. `--nobreza` vem do componente, de 0 no degrau mais baixo a 1 no
-     topo: embaixo o acento da area quase desaparece no chumbo, em cima ele
-     aparece puro. Nunca troca de cor — so de nobreza. */
+  /* A LIGA: o acento da area misturado no chumbo, de 8% no degrau 0 a 82% no
+     topo. Nunca troca de cor — Saude continua Saude, so mais fosca embaixo. */
   --liga: color-mix(
     in srgb,
     var(--mastery-accent) calc(var(--nobreza, 1) * 74% + 8%),
     #5b6068
   );
-  /* O MIOLO E SEMPRE ESCURO, e a liga mora no ANEL.
-     Com a liga preenchendo o selo, o numero ficava em cima dela — e as ligas do
-     meio da rampa caem no vale de luminancia onde nem tinta preta nem tinta
-     branca chegam a 4.5. Varrendo a rampa inteira, o melhor caso possivel dava
-     3.45: nao era o tom que estava errado, era a composicao. Assim o numero fica
-     em creme sobre quase preto nos dez degraus, e a nobreza se le no aro e no
-     brilho, que e onde metal brilha de verdade. */
-  background:
-    linear-gradient(155deg, rgba(255, 255, 255, 0.05), transparent 60%),
-    color-mix(in srgb, var(--liga) 12%, #0b0b0d);
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--liga) 46%, transparent);
-  color: color-mix(in srgb, var(--liga) 30%, rgba(255, 245, 227, 0.72));
+  --aro: calc(1px + var(--nobreza, 1) * 2px);
+  color: color-mix(in srgb, var(--liga) calc(14% + var(--nobreza, 1) * 30%), #fff3df);
   /* A fonte de titulo do app. O numero e a insignia do degrau, e insignia com a
      fonte do corpo le como campo de formulario. */
   font-family: var(--font-heading);
   font-size: 16px;
   font-weight: 900;
   font-variant-numeric: tabular-nums;
+}
+
+.mastery-wheel-selo::before,
+.mastery-wheel-selo::after {
+  content: '';
+  position: absolute;
+  clip-path: polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+  pointer-events: none;
+}
+
+/* O aro: metal da propria liga — luz no alto, sombra no meio, reflexo embaixo.
+   Na base da escada ele afunda no escuro; no topo aparece inteiro. */
+.mastery-wheel-selo::before {
+  inset: 0;
+  z-index: -2;
+  background: linear-gradient(150deg,
+    color-mix(in srgb, var(--liga), #fff 38%) 0%,
+    var(--liga) 34%,
+    color-mix(in srgb, var(--liga), #000 42%) 62%,
+    color-mix(in srgb, var(--liga), #fff 18%) 100%);
+  opacity: calc(0.38 + var(--nobreza, 1) * 0.62);
+}
+
+/* O miolo: escuro sempre, com um fio da cor e um reflexo que crescem juntos. */
+.mastery-wheel-selo::after {
+  inset: var(--aro);
+  z-index: -1;
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, calc(0.03 + var(--nobreza, 1) * 0.13)), transparent 58%),
+    color-mix(in srgb, var(--liga) calc(6% + var(--nobreza, 1) * 16%), #0b0b0d);
 }
 
 /* A frase e do VISOR: o componente apaga a dela em menos de um passo do centro,
@@ -930,16 +974,20 @@
 }
 
 /* Aceso, o que acende e o ANEL, na liga daquele degrau — o topo da escada como
-   ouro, a base como pedra polida. E a mesma peca, no seu melhor. */
+   ouro, a base como pedra polida. E a mesma peca, no seu melhor.
+
+   O brilho e `drop-shadow` no selo, que agora nao tem recorte: ele segue o
+   hexagono desenhado pelos pseudo-elementos. So o degrau em foco tem filtro —
+   sao onze selos rolando a cada quadro, e o resto da escada se le sem ele. */
 .mastery-wheel-item.is-focado .mastery-wheel-selo {
-  background:
-    linear-gradient(155deg, rgba(255, 255, 255, 0.1), transparent 58%),
-    color-mix(in srgb, var(--liga) 20%, #0c0b09);
-  box-shadow:
-    inset 0 0 0 2px color-mix(in srgb, var(--liga) 88%, #fff),
-    inset 0 0 14px color-mix(in srgb, var(--liga) 30%, transparent),
-    0 0 24px color-mix(in srgb, var(--liga) 50%, transparent);
+  --aro: calc(1.5px + var(--nobreza, 1) * 2px);
   color: #fff6e2;
+  filter: drop-shadow(0 0 calc(3px + var(--nobreza, 1) * 9px)
+    color-mix(in srgb, var(--liga) 70%, transparent));
+}
+
+.mastery-wheel-item.is-focado .mastery-wheel-selo::before {
+  opacity: 1;
 }
 
 /* Assessment keeps the live shape above the gesture, including short phones. */

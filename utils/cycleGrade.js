@@ -58,96 +58,118 @@ export const getScoreGrade = (score, fairness) => {
 };
 
 /* ==========================================================================
- * A NOTA DO CICLO — uma regua so.
+ * A NOTA DO CICLO — uma tabela so, tres colunas.
  *
- * Havia TRES medindo a mesma coisa. O score de 100 pontos somava cinco
- * criterios; a nota era uma faixa desse score; e o bau era outra faixa, com
- * limites proprios de EXP e de dias. Cada uma com trava sua, nenhuma na tela.
+ * Havia TRES reguas medindo a mesma coisa: o score de 100 pontos, a nota como
+ * faixa desse score, e o bau como outra faixa com limites proprios. Um ciclo
+ * real de 20/09/2026 fez 99 pontos, nota A e nenhum bau, sem nenhuma das tres
+ * se explicar. Isso virou uma regua so: a nota sai daqui, e o bau sai da nota.
  *
- * Um ciclo real de 20/09/2026: 99 pontos, nota A, nenhum bau. Tres regras
- * diferentes pegaram a pessoa de uma vez, e nenhuma se explicou.
+ * O `getScoreGrade` acima continua vivo para quem so tem um score — a media
+ * historica da placa de legado, por exemplo. Nota de CICLO vem daqui.
  *
- * Agora a nota sai da PORCENTAGEM DE CONCLUSAO, e o PORTE do ciclo diz ate onde
- * ela sobe. O bau sai da nota, direto.
+ * A TABELA, desenhada com o Afonso em 06/10/2026. Cada placa pede tres coisas,
+ * e a nota e a MAIS ALTA em que o ciclo cumpre a linha inteira — faltou uma
+ * coluna, cai para a placa de baixo:
  *
- * O `getScoreGrade` acima continua vivo: ele atende quem tem um score e mais
- * nada — a media historica da placa de legado, por exemplo. Nota de CICLO vem
- * daqui.
+ *   placa  conclusao  dias  horas
+ *   SSS      100%      28+   200h  + impecavel
+ *   SS        98%      28+   180h
+ *   S         95%      14+    90h
+ *   A         90%       7+    35h
+ *   B         70%        -    20h
+ *   C         50%        -    10h
+ *   D         30%        -     5h
+ *   E        o resto
+ *
+ * Cada coluna segura uma coisa diferente:
+ *
+ *   CONCLUSAO  sobre tudo o que foi prometido, sem a missao de temporada.
+ *              Segura quem faz muito e deixa tudo pela metade: 45 horas com 50%
+ *              e bronze.
+ *   HORAS      o tamanho do ciclo. O metal cresce com o que foi FEITO — um ciclo
+ *              perfeito de duas horas e um ciclo pequeno, e a cor diz isso.
+ *   DIAS       o teto que ja existia, e continua proposital: uma semana para no
+ *              A, o S pede duas, o SS pede o mes inteiro.
+ *
+ * A leitura que a tabela quer passar: B e bom, A e excelente, S e excepcional,
+ * SS e quase perfeito, SSS e perfeito. O 98% do SS existe para ele ter degrau
+ * proprio sem roubar o papel do SSS.
+ *
+ * Horas contam o que foi feito em qualquer acao que nao seja Livre, missao de
+ * temporada inclusive: a missao fica fora da PORCENTAGEM, para o que faltar nela
+ * nao virar divida, mas a hora trabalhada nela e real e conta como tamanho.
  * ========================================================================== */
 
-/** Da melhor para a pior. A ordem importa: o teto e um corte nesta lista. */
+const DEGRAUS = [
+    {
+        nota: 'SSS', conclusao: 100, dias: 28, horas: 200, impecavel: true,
+        motivo: 'O SSS pede 28 dias, 200 horas, execução perfeita, todas as metas, todos os dias e as cinco áreas vivas.',
+    },
+    { nota: 'SS', conclusao: 98, dias: 28, horas: 180, motivo: 'O SS pede 28 dias e 180 horas honradas.' },
+    { nota: 'S', conclusao: 95, dias: 14, horas: 90, motivo: 'O S pede 14 dias e 90 horas honradas.' },
+    { nota: 'A', conclusao: 90, dias: 7, horas: 35, motivo: 'O A pede 7 dias de ciclo e 35 horas honradas.' },
+    { nota: 'B', conclusao: 70, dias: 0, horas: 20, motivo: 'O B pede 20 horas honradas.' },
+    { nota: 'C', conclusao: 50, dias: 0, horas: 10, motivo: 'O C pede 10 horas honradas.' },
+    { nota: 'D', conclusao: 30, dias: 0, horas: 5, motivo: 'O D pede 5 horas honradas.' },
+];
+
+/** Da melhor para a pior. */
 const ESCADA = ['SSS', 'SS', 'S', 'A', 'B', 'C', 'D', 'E'];
 
-/** O que a execucao conquistou, antes de qualquer teto. */
-const notaPelaConclusao = (pct) => {
-    if (pct >= 100) return 'SSS';
-    if (pct >= 95) return 'SS';
-    if (pct >= 85) return 'A';
-    if (pct >= 70) return 'B';
-    if (pct >= 50) return 'C';
-    if (pct >= 30) return 'D';
-    return 'E';
-};
-
 /**
- * O teto que o PORTE do ciclo autoriza.
+ * As frescuras do SSS — o que so a placa do topo cobra, alem da tabela.
  *
- * Sem ele, uma semana perfeita e um mes perfeito valeriam o mesmo, e o bau
- * viraria torneira: bastaria encadear ciclos de tres dias.
- *
- * O SSS exige execucao real perfeita, metas seladas, presenca diaria e as
- * cinco areas vivas. S e SS aceitam pequenas falhas a partir de 95%.
+ * Acoes contadas uma a uma, e nao so a porcentagem: 119 de 120 arredonda para
+ * 100% em mais de uma tela, e o SSS nao pode nascer de um arredondamento.
  */
-const tetoDoPorte = (e) => {
-    const dias = Number(e?.dias) || 0;
-    const horas = Number(e?.horas) || 0;
+const ehImpecavel = (e) => {
+    const acoesPlanejadas = Number(e?.acoesPlanejadas) || 0;
+    const acoesConcluidas = Number(e?.acoesConcluidas) || 0;
     const metasPlanejadas = Number(e?.metasPlanejadas) || 0;
     const metasSeladas = Number(e?.metasSeladas) || 0;
     const diasZerados = Number(e?.diasZerados) || 0;
     const areasAtivas = Number(e?.areasAtivas) || 0;
-    const acoesPlanejadas = Number(e?.acoesPlanejadas) || 0;
-    const acoesConcluidas = Number(e?.acoesConcluidas) || 0;
-
-    const impecavel = acoesPlanejadas > 0
+    return acoesPlanejadas > 0
         && acoesConcluidas === acoesPlanejadas
         && metasPlanejadas > 0
         && metasSeladas >= metasPlanejadas
         && diasZerados === 0
         && areasAtivas >= 5;
-
-    if (dias >= 28 && horas >= 200 && impecavel) return { teto: 'SSS', motivo: null };
-    if (dias >= 28 && horas >= 180) {
-        return { teto: 'SS', motivo: 'O SSS pede 200 horas, execução perfeita, todas as metas, todos os dias e as cinco áreas vivas.' };
-    }
-    if (dias >= 14 && horas >= 60) return { teto: 'S', motivo: 'O SS pede 28 dias e 180 horas honradas.' };
-    if (dias >= 7) return { teto: 'A', motivo: 'O S pede 14 dias e 60 horas honradas.' };
-    return { teto: 'B', motivo: 'O A pede 7 dias de ciclo.' };
 };
 
+/** A placa que a conclusao SOZINHA alcancaria, ignorando dias, horas e extras. */
+const notaPelaConclusao = (pct) => DEGRAUS.find((degrau) => pct >= degrau.conclusao)?.nota || 'E';
+
 /**
- * A nota de um ciclo, com o motivo do teto quando ele segurou alguma coisa.
+ * A nota de um ciclo, com o motivo quando o PORTE segurou alguma coisa.
  *
- * O motivo NAO vai para a tela — ficou decidido em 21/09 que a pessoa nao
- * precisa saber por que nao tirou S. Ele existe para quem depura e para o teste:
- * uma nota limitada tem de conseguir dizer o que a limitou, mesmo que ninguem
- * pergunte.
+ * "Porte" e tudo o que nao e execucao: dias, horas e as frescuras do SSS. Quando
+ * a conclusao sozinha levaria mais alto do que a nota que ficou, quem segurou foi
+ * o porte — e o motivo e o que a placa logo acima pedia. Quando foi a propria
+ * conclusao que parou a nota, nao ha motivo: explicar um limite que nao encostou
+ * em nada manda a pessoa perseguir horas quando o que faltou foi fazer.
  */
 export const notaDoCiclo = (evidencia) => {
     const pct = Math.max(0, Math.min(100, Number(evidencia?.conclusaoPct) || 0));
-    const conquistada = notaPelaConclusao(pct);
-    const { teto, motivo } = tetoDoPorte(evidencia);
+    const dias = Number(evidencia?.dias) || 0;
+    const horas = Number(evidencia?.horas) || 0;
+    const impecavel = ehImpecavel(evidencia);
 
-    const limitada = ESCADA.indexOf(conquistada) < ESCADA.indexOf(teto);
-    const nota = limitada ? teto : conquistada;
+    const cumpre = (degrau) => pct >= degrau.conclusao
+        && dias >= degrau.dias
+        && horas >= degrau.horas
+        && (!degrau.impecavel || impecavel);
+
+    const nota = DEGRAUS.find(cumpre)?.nota || 'E';
+    const conquistada = notaPelaConclusao(pct);
+    const limitada = ESCADA.indexOf(conquistada) < ESCADA.indexOf(nota);
+    const placaDeCima = limitada ? DEGRAUS.find((degrau) => degrau.nota === ESCADA[ESCADA.indexOf(nota) - 1]) : null;
 
     return {
         nota,
         notaPelaConclusao: conquistada,
-        teto,
-        // So fala do teto quando ele REALMENTE cortou. Explicar um limite que
-        // nao encostou em nada e ruido: manda a pessoa perseguir dias quando o
-        // que faltou foi execucao.
-        motivoDoTeto: limitada ? motivo : null,
+        motivoDoTeto: placaDeCima ? placaDeCima.motivo : null,
     };
 };
 

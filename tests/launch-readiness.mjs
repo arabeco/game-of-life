@@ -38,6 +38,17 @@ const manualQaNotes = [
 const suites = {
   core: [
     {
+      id: 'medidor-de-segredos',
+      label: 'Medidor de segredos regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'medidor-de-segredos.regression.mjs')]],
+      kind: 'logic',
+      interactions: [
+        'as vinte regras, cada limiar na beira',
+        'regra sem arte espera, e destrava quando a arte chega',
+        'varias de uma vez viram um modal so, depois do relatorio',
+      ],
+    },
+    {
       id: 'luz-e-placa-do-soberano',
       label: 'Luz e placa do soberano regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'luz-e-placa-do-soberano.regression.mjs')]],

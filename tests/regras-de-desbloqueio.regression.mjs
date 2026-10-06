@@ -159,4 +159,17 @@ const daVanguarda = new Set(ITENS_DA_VANGUARDA);
     }
 }
 
+// --- 7. as vinte, cada uma com id proprio ----------------------------------
+//
+// O id e o que fica gravado em `segredo:<id>` no perfil. Trocar o id de uma
+// regra ja descoberta faria ela voltar a ser descoberta.
+{
+    assert.equal(REGRAS_DE_DESBLOQUEIO.length, 20, 'sao vinte regras');
+    const ids = REGRAS_DE_DESBLOQUEIO.map((r) => r.id);
+    assert.equal(new Set(ids).size, ids.length, 'duas regras com o mesmo id');
+    for (const id of ids) assert.match(String(id), /^[a-z]+(-[a-z]+)*$/, `id fora do formato: ${id}`);
+    const skins = REGRAS_DE_DESBLOQUEIO.filter((r) => r.itens.length === 1).map((r) => r.nome).sort();
+    assert.deepEqual(skins, ['Ancião', 'Campeão', 'Escriba', 'Imperador', 'Maratona'], 'mudou quem da skin');
+}
+
 console.log(`regras-de-desbloqueio: ok — ${REGRAS_DE_DESBLOQUEIO.length} regras, ${ITENS_LIBERADOS_POR_REGRA.size} peças`);

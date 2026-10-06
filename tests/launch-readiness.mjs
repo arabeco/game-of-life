@@ -38,6 +38,17 @@ const manualQaNotes = [
 const suites = {
   core: [
     {
+      id: 'luz-e-placa-do-soberano',
+      label: 'Luz e placa do soberano regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'luz-e-placa-do-soberano.regression.mjs')]],
+      kind: 'logic',
+      interactions: [
+        'todo card do inventario acende na cor do seu tier, e a luz cresce com ele',
+        'o item equipado nao perde a luz da raridade',
+        'o slot do artefato no editor e quadrado e a placa cobre o fundo inteiro',
+      ],
+    },
+    {
       id: 'previa-do-sss',
       label: 'Previa do SSS regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'previa-do-sss.regression.mjs')]],

@@ -37,6 +37,28 @@ const TABS: { id: InventoryTab; label: string; categories: string[] }[] = [
     { id: 'chests', label: 'Baus', categories: ['chest'] },
 ];
 
+/*
+ * A LUZ POR TRAS DO CARD E A RARIDADE, E TODO ITEM TEM A SUA.
+ *
+ * So o tier 4 em diante brilhava, e o item equipado trocava a propria luz
+ * por um verde quase apagado. Na aba Soberano, que mistura tiers, metade
+ * da grade tinha luz e metade nao — e isso se lia como defeito, nao como
+ * raridade: o Rei vestido aparecia apagado ao lado do Principe aceso, os
+ * dois do mesmo tier.
+ *
+ * Agora a cor diz o tier e a forca cresce com ele, do comum discreto ao
+ * mitico aceso — mas o comum tambem acende: luz que quase some volta a
+ * parecer que falta. Equipado continua dito pelo selo verde no canto.
+ */
+const LUZ_DO_TIER: Record<number, { raio: number; alfa: number }> = {
+    1: { raio: 10, alfa: 0.24 },
+    2: { raio: 11, alfa: 0.27 },
+    3: { raio: 12, alfa: 0.3 },
+    4: { raio: 13, alfa: 0.34 },
+    5: { raio: 15, alfa: 0.38 },
+    6: { raio: 17, alfa: 0.44 },
+};
+
 export const Inventory: React.FC = () => {
     const { inventory, userProfile, updateUserProfile, openChest, showToast } = useGame();
     const [activeTab, setActiveTab] = useState<InventoryTab>('all');
@@ -116,10 +138,11 @@ export const Inventory: React.FC = () => {
 
     const getRarityStyles = (tier: number) => {
         const visual = getTierVisual(tier);
+        const luz = LUZ_DO_TIER[tier] || LUZ_DO_TIER[1];
         return {
             textColor: visual.hex,
             dotColor: visual.hex,
-            shadow: tier >= 4 ? `0 0 15px ${withAlpha(visual.rgb, 0.28)}` : undefined,
+            shadow: `0 0 ${luz.raio}px ${withAlpha(visual.rgb, luz.alfa)}`,
         };
     };
 
@@ -319,7 +342,7 @@ export const Inventory: React.FC = () => {
                                 <GlassCard 
                                     key={item.instanceId} 
                                     className="relative group aspect-square p-2 flex flex-col items-center justify-center transition-all border cursor-pointer hover:border-white/50"
-                                    style={{ borderColor: 'var(--skin-accent-color)', boxShadow: equipped ? '0 0 15px rgba(34,197,94,0.1)' : styles.shadow }}
+                                    style={{ borderColor: 'var(--skin-accent-color)', boxShadow: styles.shadow }}
                                     onClick={() => item.def && setSelectedItem({ def: item.def, instanceId: item.instanceId })}
                                 >
                                     {equipped && (
@@ -359,7 +382,9 @@ export const Inventory: React.FC = () => {
                                     </div>
                                     
                                     {/* Rarity Indicator - Discrete Dot */}
-                                    <div className={`absolute bottom-1 right-1 h-1.5 w-1.5 rounded-full ${item.def?.tier === 5 ? 'animate-pulse' : ''}`} style={{ backgroundColor: styles.dotColor, boxShadow: styles.shadow || undefined }} title={`Tier ${item.def?.tier}`} />
+                                    {/* Sem luz propria: ela ja esta no card inteiro, e um
+                                        halo de 15px num ponto de 6px virava mancha. */}
+                                    <div className={`absolute bottom-1 right-1 h-1.5 w-1.5 rounded-full ${(item.def?.tier || 0) >= 5 ? 'animate-pulse' : ''}`} style={{ backgroundColor: styles.dotColor }} title={`Tier ${item.def?.tier}`} />
                                 </GlassCard>
                             );
                         })

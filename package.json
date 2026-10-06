@@ -33,6 +33,7 @@
     "test:planner-chega-na-hora": "node tests/planner-chega-na-hora.regression.mjs",
     "test:arrasto-leve": "node tests/arrasto-leve.regression.mjs",
     "test:previa-do-sss": "node tests/previa-do-sss.regression.mjs",
+    "test:luz-e-placa-do-soberano": "node tests/luz-e-placa-do-soberano.regression.mjs",
     "test:pact-speech": "node tests/pact-speech.regression.mjs",
     "test:device-only": "node tests/safe-area-insets.regression.mjs",
     "test:relationship-links": "node tests/relationship-links.regression.mjs",

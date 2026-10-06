@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>O soberano — Bancada do Glyph</title>
+<!--
+  O INVENTARIO E O EDITOR DO SOBERANO, COM O CATALOGO INTEIRO.
+
+  Monta o <Inventory> DE VERDADE com um GameContext de mentira que so entrega o
+  que a tela le. Nada toca banco.
+
+  Suba com `npm run bancada` e abra /o-soberano.html
+-->
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 18px 20px 60px; background: #0b0d10; color: #e8eaee;
+         font: 14px/1.5 system-ui, sans-serif; }
+  h1 { font-size: 17px; margin: 0 0 4px; }
+  header p { color: #969ca6; font-size: 12.5px; margin: 0 0 18px; max-width: 76ch; }
+  code { font-family: ui-monospace, monospace; font-size: 12px; color: #d8b44c; }
+  /* Largura de telefone, e nao mais: a grade troca de 4 para 5 e 6 colunas
+     pela largura da JANELA (sm:/md:), entao so emulando um telefone a grade
+     sai como a pessoa ve. */
+  .telefone { width: 100%; max-width: 390px; }
+  @media (max-width: 480px) { body { padding: 10px 8px 40px; } }
+  .tela { height: 760px; border: 1px solid #272b32; border-radius: 22px; padding: 14px;
+          overflow: hidden; background: #000; display: flex; flex-direction: column; }
+  .tela > * { flex: 1; min-height: 0; }
+  /* O botao primario vive no index.html da RAIZ, que esta bancada nao carrega.
+     Copia literal do bloco de la — o mesmo que a-maestria.html carrega. */
+  :root {
+    --metal-gold: linear-gradient(145deg, #f0d999, #b8892f 52%, #f4e3af);
+    --sephirot-glow-color: rgba(212,175,55,.32);
+    --luxe-button-text-color: #1b1408;
+  }
+  .luxe-skin-button {
+    background-image: linear-gradient(180deg, rgba(255,255,255,.35) 0%, rgba(255,255,255,0) 38%), var(--ui-button-primary-bg, var(--metal-gold));
+    color: var(--ui-text-on-accent, var(--luxe-button-text-color, #1b1408));
+    font-weight: 800;
+    border: 1px solid var(--ui-button-primary-border, var(--skin-accent-color));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 10px 24px var(--ui-button-primary-glow, var(--sephirot-glow-color)), 0 2px 6px rgba(0,0,0,.4);
+    text-shadow: var(--ui-text-on-accent-shadow, var(--luxe-button-text-shadow, 0 1px 0 rgba(255,255,255,.35)));
+  }
+</style>
+</head>
+<body>
+<div id="raiz"></div>
+<script type="module" src="/o-soberano.tsx"></script>
+<script src="/bancada-nav.js"></script>
+</body>
+</html>

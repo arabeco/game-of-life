@@ -406,58 +406,63 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                         </div>
                     </div>
 
-                    {/* 2. O artefato, a direita. Era uma coluna de dois: o glifo saiu. */}
-                    <div className="flex flex-col justify-between w-24 h-48 gap-2">
-                        <div 
-                            onClick={() => {
-                                setActiveMode('artifact');
-                                setPrimary('item');
-                            }}
-                            className={`relative flex-1 bg-black/40 border-2 rounded-xl flex items-center justify-center cursor-pointer transition-all group hover:border-white/30`}
-                            style={{
-                                borderColor: activeMode === 'artifact' ? 'var(--skin-accent-color)' : 'rgba(255,255,255,0.1)',
-                                boxShadow: activeMode === 'artifact' ? '0 0 15px var(--skin-accent-color)' : undefined
-                            }}
-                        >
-                            {equippedSharedPlate?.url && (
-                                <img
-                                    src={equippedSharedPlate.url}
-                                    alt="Placa"
-                                    className="absolute inset-0 w-full h-full object-contain opacity-90 z-0"
-                                    onError={(event) => {
-                                        event.currentTarget.style.display = 'none';
-                                    }}
-                                />
-                            )}
-                            {config.aura !== 'none' && (
-                                <ItemArt
-                                    src={equippedAura?.url}
-                                    alt={equippedAura?.name || config.aura}
-                                    category="aura"
-                                    className="absolute inset-0 z-[1] rounded-xl"
-                                    fallback={<span />}
-                                />
-                            )}
-                            <ItemArt
-                                src={equippedArtifact?.url}
-                                alt={equippedArtifact?.name || 'Artefato'}
-                                className="relative z-10 w-12 h-12 flex items-center justify-center"
-                                imgClassName="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]"
-                                textClassName="text-[9px] text-gray-600 font-bold uppercase"
-                                fallbackText="Vazio"
-                            />
-                            
-                            <div 
-                                className={`absolute top-1.5 right-1.5 w-4 h-4 rounded-full border border-black/50 flex items-center justify-center transition-colors shadow-md`}
-                                style={{ backgroundColor: primary === 'item' ? 'var(--skin-accent-color)' : 'rgba(0,0,0,0.6)' }}
-                            >
-                                {primary === 'item' && <CheckIcon className="w-2.5 h-2.5 text-black" />}
-                            </div>
-                            <div className="absolute bottom-0 inset-x-0 bg-black/60 p-0.5 text-[8px] text-center font-bold text-gray-300 uppercase tracking-wider">
-                                Artefato
-                            </div>
-                        </div>
+                    {/* 2. O artefato, a direita. Era uma coluna de dois: o glifo saiu.
 
+                        QUADRADO, como a placa. Sobrou da coluna antiga um slot
+                        de 96x184 — e a placa, que e um PNG quadrado, cabia nele
+                        em `contain` como um selo boiando no meio, com duas
+                        faixas vazias em cima e embaixo e o artefato de 48px
+                        por cima. Parecia que a placa nao tinha carregado. */}
+                    <div
+                        onClick={() => {
+                            setActiveMode('artifact');
+                            setPrimary('item');
+                        }}
+                        className={`relative self-center w-32 h-32 flex-shrink-0 overflow-hidden bg-black/40 border-2 rounded-xl flex items-center justify-center cursor-pointer transition-all group hover:border-white/30`}
+                        style={{
+                            borderColor: activeMode === 'artifact' ? 'var(--skin-accent-color)' : 'rgba(255,255,255,0.1)',
+                            boxShadow: activeMode === 'artifact' ? '0 0 15px var(--skin-accent-color)' : undefined
+                        }}
+                    >
+                        {/* `cover`, como o perfil desenha o artefato: a placa e o
+                            fundo do slot inteiro, nao uma figura dentro dele. */}
+                        {equippedSharedPlate?.url && (
+                            <img
+                                src={equippedSharedPlate.url}
+                                alt="Placa"
+                                className="absolute inset-0 w-full h-full object-cover opacity-90 z-0"
+                                onError={(event) => {
+                                    event.currentTarget.style.display = 'none';
+                                }}
+                            />
+                        )}
+                        {config.aura !== 'none' && (
+                            <ItemArt
+                                src={equippedAura?.url}
+                                alt={equippedAura?.name || config.aura}
+                                category="aura"
+                                className="absolute inset-0 z-[1] rounded-xl"
+                                fallback={<span />}
+                            />
+                        )}
+                        <ItemArt
+                            src={equippedArtifact?.url}
+                            alt={equippedArtifact?.name || 'Artefato'}
+                            className="relative z-10 w-[78%] h-[78%] flex items-center justify-center"
+                            imgClassName="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]"
+                            textClassName="text-[9px] text-gray-600 font-bold uppercase"
+                            fallbackText="Vazio"
+                        />
+
+                        <div
+                            className={`absolute top-1.5 right-1.5 z-10 w-4 h-4 rounded-full border border-black/50 flex items-center justify-center transition-colors shadow-md`}
+                            style={{ backgroundColor: primary === 'item' ? 'var(--skin-accent-color)' : 'rgba(0,0,0,0.6)' }}
+                        >
+                            {primary === 'item' && <CheckIcon className="w-2.5 h-2.5 text-black" />}
+                        </div>
+                        <div className="absolute bottom-0 inset-x-0 z-10 bg-black/60 p-0.5 text-[8px] text-center font-bold text-gray-300 uppercase tracking-wider">
+                            Artefato
+                        </div>
                     </div>
                 </div>
 
@@ -539,7 +544,7 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                             {sovereignSubTab === 'Corpo' && (
                                 <div className="space-y-3">
                                     <Selector 
-                                        label="G?nero" 
+                                        label="Gênero"
                                         value={getGenderLabel(config.body)} 
                                         onPrev={() => cycleGender(-1)} 
                                         onNext={() => cycleGender(1)} 

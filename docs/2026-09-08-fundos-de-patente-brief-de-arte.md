@@ -1,5 +1,11 @@
 # Fundos de patente — brief de arte
 
+> **Atualizado em 06/10/2026.** O pedido de arte agora mora em
+> [2026-10-06-handoff-fundos-de-patente-e-borda-soberano.md](2026-10-06-handoff-fundos-de-patente-e-borda-soberano.md),
+> com o formato novo (2:3, porque o perfil virou placa 10:17) e os prompts prontos.
+> Aqui envelheceram o tamanho (1200×1600), as horas e a coluna de temas da tabela
+> dos dez; o resto continua valendo.
+
 **Estado: os dez existem no código e estão vazios.** Cada patente já tem um fundo
 declarado, já aparece na escalada e no seletor, e já destranca sozinho quando a
 pessoa sobe de degrau. O que falta é a imagem. Enquanto ela não existe, cada um

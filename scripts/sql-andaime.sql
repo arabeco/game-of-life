@@ -241,3 +241,24 @@ create table if not exists public.scheduled_tasks (
   execution_order integer,
   created_at timestamptz default now()
 );
+
+-- Amizade e marcadores de compra: o que as regras secretas de borda e banner
+-- leem (supabase/CHECK-regras-secretas.sql). `friends` guarda as duas pontas
+-- de cada amizade, uma linha por pessoa; `user_purchases` guarda tambem os
+-- marcadores que as funcoes de recompensa usam como "ja pago" — o pacto de
+-- arena reclamado vira um `product_type = 'arena_pact'`.
+create table if not exists public.friends (
+  user_id uuid,
+  friend_id uuid,
+  created_at timestamptz default now()
+);
+
+create table if not exists public.user_purchases (
+  user_id uuid,
+  product_type text,
+  product_id text,
+  gold_spent integer,
+  expires_at timestamptz,
+  is_active boolean,
+  purchased_at timestamptz default now()
+);

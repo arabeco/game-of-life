@@ -148,4 +148,14 @@ console.log('ok - as vinte regras, cada limiar na beira');
     console.log('ok - o SQL entrega cada numero que o medidor le, e so da propria conta');
 }
 
+// --------------- 7. o modal e o de recompensa normal, so com o titulo
+{
+    const { readFileSync } = await import('node:fs');
+    const modal = readFileSync(join(raiz, 'components/AchievementModal.tsx'), 'utf8');
+    const missao = modal.slice(modal.indexOf("case 'QUEST_COMPLETED': {"), modal.indexOf("case 'REPORT_COMPLETED':"));
+    assert.match(missao, /data\.secreta/, 'o modal de missao nao reconhece a conquista secreta');
+    assert.match(missao, /'Conquista secreta'/, 'o titulo da conquista secreta sumiu');
+    console.log('ok - conquista secreta e o modal de recompensa de sempre, com outro titulo');
+}
+
 console.log('Medidor de segredos: as regras decidem aqui, o banco so conta.');

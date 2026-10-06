@@ -86,6 +86,17 @@ const getAchievementDetails = (type: FeedEventType, data: any) => {
         case 'PLAYER_RANK_UP':
             return { title: 'Nova patente!', subtitle: data.name, icon: '\u{1F451}', message: 'Sua nova patente e as recompensas correspondentes foram liberadas.' };
         case 'QUEST_COMPLETED': {
+            // A conquista secreta usa este mesmo modal de recompensa: so o
+            // titulo e a frase mudam. Decidido assim em 06/10/2026 — nada de
+            // enfeite proprio.
+            if (data.secreta) {
+                return {
+                    title: 'Conquista secreta',
+                    subtitle: data.title,
+                    icon: data.icon || '\u{1F513}',
+                    message: data.frase,
+                };
+            }
             return {
                 title: 'Missão concluída!',
                 subtitle: data.title,

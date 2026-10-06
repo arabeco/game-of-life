@@ -44,6 +44,7 @@ export interface ItemDef {
     isGmExclusive?: boolean; // Hidden from public acquisition flows; reserved for GM/admin use
     isQuestExclusive?: boolean; // Items granted ONLY via quests/season missions
     isReportExclusive?: boolean; // Items granted ONLY via cycle reports
+    isRuleExclusive?: boolean; // Items granted ONLY by a secret rule (constants/desbloqueiosPorRegra) - blocked from chests and store
     seasonKey?: string; // Seasonal collection bucket, ex: aurora_1_2026
     seasonSlot?: ItemSeasonSlot; // Slot inside the seasonal collection
 }
@@ -280,30 +281,29 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'tranca_lateral', name: 'Trança Lateral', category: 'hair', tier: 4, rarity: 'epic', icon: '🧵', imageUrl: hairPngAsset('tranca_lateral') },
 
     // --- BORDAS ---
+    // Peca com isRuleExclusive sai SO pela regra secreta de
+    // constants/desbloqueiosPorRegra.ts: fora do bau e da loja. A raridade e a
+    // dificuldade da regra, e o par borda + banner tem sempre a mesma.
     // T1
-    { id: 'item_border_1_002', name: 'Disciplinado', category: 'border', tier: 1, rarity: 'common', icon: '📘', imageUrl: `${INTERFACE_BASE_URL}/borda_disciplinado.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_border_1_002 },
-    // Novos T1
     { id: 'item_border_t1_aprendiz', name: 'Aprendiz', category: 'border', tier: 1, rarity: 'common', icon: '🎓', imageUrl: `${INTERFACE_BASE_URL}/borda_t1_aprendiz.png`, isRankExclusive: true },
 
     // T2
-    { id: 'item_border_2_001', name: 'Popular', category: 'border', tier: 2, rarity: 'uncommon', icon: '🌟', imageUrl: `${INTERFACE_BASE_URL}/borda_popular.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_border_2_001 },
-    // Novos T2
-    { id: 'item_border_t2_veterano', name: 'Veterano', category: 'border', tier: 2, rarity: 'uncommon', icon: '🎖️', imageUrl: `${INTERFACE_BASE_URL}/borda_t2_veterano.png`, isRankExclusive: true },
+    { id: 'item_border_1_002', name: 'Disciplinado', category: 'border', tier: 2, rarity: 'uncommon', icon: '📘', imageUrl: `${INTERFACE_BASE_URL}/borda_disciplinado.png`, isRuleExclusive: true },
+    { id: 'item_border_2_001', name: 'Popular', category: 'border', tier: 2, rarity: 'uncommon', icon: '🌟', imageUrl: `${INTERFACE_BASE_URL}/borda_popular.png`, isRuleExclusive: true },
+    { id: 'item_border_t2_veterano', name: 'Veterano', category: 'border', tier: 2, rarity: 'uncommon', icon: '🎖️', imageUrl: `${INTERFACE_BASE_URL}/borda_t2_veterano.png`, isRuleExclusive: true },
 
     // T3
-    { id: 'item_border_3_001', name: 'Imparável', category: 'border', tier: 3, rarity: 'rare', icon: '🚀', imageUrl: `${INTERFACE_BASE_URL}/borda_imparavel.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_border_3_001 },
-    // Novos T3
-    { id: 'item_border_t3_mistico', name: 'Místico', category: 'border', tier: 3, rarity: 'rare', icon: '🔮', imageUrl: `${INTERFACE_BASE_URL}/borda_t3_mistico.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_border_t3_mistico },
-    { id: 'item_border_t3_transcendente', name: 'Transcendente', category: 'border', tier: 3, rarity: 'rare', icon: '✨', imageUrl: `${INTERFACE_BASE_URL}/borda_t3_transcendente.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_border_t3_transcendente },
+    { id: 'item_border_3_001', name: 'Imparável', category: 'border', tier: 3, rarity: 'rare', icon: '🚀', imageUrl: `${INTERFACE_BASE_URL}/borda_imparavel.png`, isRuleExclusive: true },
+    { id: 'item_border_t3_mistico', name: 'Místico', category: 'border', tier: 3, rarity: 'rare', icon: '🔮', imageUrl: `${INTERFACE_BASE_URL}/borda_t3_mistico.png`, isRuleExclusive: true },
+    { id: 'item_border_t4_oraculo', name: 'Oráculo', category: 'border', tier: 3, rarity: 'rare', icon: '👁️', imageUrl: `${INTERFACE_BASE_URL}/borda_t4_oraculo.png`, isRuleExclusive: true },
     { id: 'item_border_vanguarda_01', name: 'Borda Vanguarda', category: 'border', tier: 3, rarity: 'rare', icon: '🛡️', imageUrl: `${INTERFACE_BASE_URL}/borda_vanguarda.png`, isRankExclusive: true },
 
     // T4
-    { id: 'item_border_4_001', name: 'Lenda Viva', category: 'border', tier: 4, rarity: 'epic', icon: '🏛️', imageUrl: `${INTERFACE_BASE_URL}/borda_lendaviva.png`, isRankExclusive: true },
+    { id: 'item_border_t3_transcendente', name: 'Transcendente', category: 'border', tier: 4, rarity: 'epic', icon: '✨', imageUrl: `${INTERFACE_BASE_URL}/borda_t3_transcendente.png`, isRuleExclusive: true },
+    { id: 'item_border_4_001', name: 'Lenda Viva', category: 'border', tier: 4, rarity: 'epic', icon: '🏛️', imageUrl: `${INTERFACE_BASE_URL}/borda_lendaviva.png`, isRuleExclusive: true },
     { id: 'item_border_4_002', name: 'Soberano', category: 'border', tier: 4, rarity: 'epic', icon: '👑', isRankExclusive: true },
-    // Novos T4
-    { id: 'item_border_t4_celestial', name: 'Celestial', category: 'border', tier: 4, rarity: 'epic', icon: '🌙', imageUrl: `${INTERFACE_BASE_URL}/borda_t4_celestial.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_border_t4_celestial },
-    { id: 'item_border_t4_guardia', name: 'Guardiã', category: 'border', tier: 4, rarity: 'epic', icon: '🛡️', imageUrl: `${INTERFACE_BASE_URL}/borda_t4_guardia.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_border_t4_guardia },
-    { id: 'item_border_t4_oraculo', name: 'Oráculo', category: 'border', tier: 4, rarity: 'epic', icon: '👁️', imageUrl: `${INTERFACE_BASE_URL}/borda_t4_oraculo.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_border_t4_oraculo },
+    { id: 'item_border_t4_celestial', name: 'Celestial', category: 'border', tier: 4, rarity: 'epic', icon: '🌙', imageUrl: `${INTERFACE_BASE_URL}/borda_t4_celestial.png`, isRuleExclusive: true },
+    { id: 'item_border_t4_guardia', name: 'Guardiã', category: 'border', tier: 4, rarity: 'epic', icon: '🛡️', imageUrl: `${INTERFACE_BASE_URL}/borda_t4_guardia.png`, isRuleExclusive: true },
 
     // T5
     { id: 'item_border_5_001', name: 'GM - Grande Mestre', category: 'border', tier: 5, rarity: 'legendary', icon: '🏛️', imageUrl: `${INTERFACE_BASE_URL}/borda_gm.png`, isGmExclusive: true },
@@ -313,24 +313,24 @@ export const ITEMS_DB: ItemDef[] = [
 
     // --- BANNERS ---
     // T1
-    { id: 'item_banner_disciplinado', name: 'Disciplinado', category: 'banner', tier: 1, rarity: 'common', icon: '📘', imageUrl: `${INTERFACE_BASE_URL}/banner_disciplinado.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_banner_disciplinado },
     { id: 'item_banner_t1_aprendiz', name: 'Aprendiz', category: 'banner', tier: 1, rarity: 'common', icon: '🎓', imageUrl: `${INTERFACE_BASE_URL}/banner_t1_aprendiz.png`, isRankExclusive: true },
 
     // T2
-    { id: 'item_banner_popular', name: 'Popular', category: 'banner', tier: 2, rarity: 'uncommon', icon: '🌟', imageUrl: `${INTERFACE_BASE_URL}/banner_popular.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_banner_popular },
-    { id: 'item_banner_t2_veterano', name: 'Veterano', category: 'banner', tier: 2, rarity: 'uncommon', icon: '🎖️', imageUrl: `${INTERFACE_BASE_URL}/banner_t2_veterano.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_banner_t2_veterano },
+    { id: 'item_banner_disciplinado', name: 'Disciplinado', category: 'banner', tier: 2, rarity: 'uncommon', icon: '📘', imageUrl: `${INTERFACE_BASE_URL}/banner_disciplinado.png`, isRuleExclusive: true },
+    { id: 'item_banner_popular', name: 'Popular', category: 'banner', tier: 2, rarity: 'uncommon', icon: '🌟', imageUrl: `${INTERFACE_BASE_URL}/banner_popular.png`, isRuleExclusive: true },
+    { id: 'item_banner_t2_veterano', name: 'Veterano', category: 'banner', tier: 2, rarity: 'uncommon', icon: '🎖️', imageUrl: `${INTERFACE_BASE_URL}/banner_t2_veterano.png`, isRuleExclusive: true },
 
     // T3
-    { id: 'item_banner_imparavel', name: 'Imparável', category: 'banner', tier: 3, rarity: 'rare', icon: '🚀', imageUrl: `${INTERFACE_BASE_URL}/banner_imparavel.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_banner_imparavel },
-    { id: 'item_banner_t3_mistico', name: 'Místico', category: 'banner', tier: 3, rarity: 'rare', icon: '🔮', imageUrl: `${INTERFACE_BASE_URL}/banner_t3_mistico.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_banner_t3_mistico },
+    { id: 'item_banner_imparavel', name: 'Imparável', category: 'banner', tier: 3, rarity: 'rare', icon: '🚀', imageUrl: `${INTERFACE_BASE_URL}/banner_imparavel.png`, isRuleExclusive: true },
+    { id: 'item_banner_t3_mistico', name: 'Místico', category: 'banner', tier: 3, rarity: 'rare', icon: '🔮', imageUrl: `${INTERFACE_BASE_URL}/banner_t3_mistico.png`, isRuleExclusive: true },
+    { id: 'item_banner_t4_oraculo', name: 'Oráculo', category: 'banner', tier: 3, rarity: 'rare', icon: '👁️', imageUrl: `${INTERFACE_BASE_URL}/banner_t4_oraculo.png`, isRuleExclusive: true },
     { id: 'item_banner_vanguarda_01', name: 'Banner Vanguarda', category: 'banner', tier: 3, rarity: 'rare', icon: '🚀', imageUrl: `${INTERFACE_BASE_URL}/banner_vanguarda.png`, isRankExclusive: true },
 
     // T4
-    { id: 'item_banner_lendaviva', name: 'Lenda Viva', category: 'banner', tier: 4, rarity: 'epic', icon: '🏛️', imageUrl: `${INTERFACE_BASE_URL}/banner_lendaviva.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_banner_lendaviva },
-    { id: 'item_banner_t4_celestial', name: 'Celestial', category: 'banner', tier: 4, rarity: 'epic', icon: '🌙', imageUrl: `${INTERFACE_BASE_URL}/banner_t4_celestial.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_banner_t4_celestial },
-    { id: 'item_banner_t4_guardia', name: 'Guardiã', category: 'banner', tier: 4, rarity: 'epic', icon: '🛡️', imageUrl: `${INTERFACE_BASE_URL}/banner_t4_guardia.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_banner_t4_guardia },
-    { id: 'item_banner_t4_oraculo', name: 'Oráculo', category: 'banner', tier: 4, rarity: 'epic', icon: '👁️', imageUrl: `${INTERFACE_BASE_URL}/banner_t4_oraculo.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_banner_t4_oraculo },
-    { id: 'item_banner_t4_transcendente', name: 'Transcendente', category: 'banner', tier: 4, rarity: 'epic', icon: '✨', imageUrl: `${INTERFACE_BASE_URL}/banner_t4_transcendente.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_banner_t4_transcendente },
+    { id: 'item_banner_lendaviva', name: 'Lenda Viva', category: 'banner', tier: 4, rarity: 'epic', icon: '🏛️', imageUrl: `${INTERFACE_BASE_URL}/banner_lendaviva.png`, isRuleExclusive: true },
+    { id: 'item_banner_t4_celestial', name: 'Celestial', category: 'banner', tier: 4, rarity: 'epic', icon: '🌙', imageUrl: `${INTERFACE_BASE_URL}/banner_t4_celestial.png`, isRuleExclusive: true },
+    { id: 'item_banner_t4_guardia', name: 'Guardiã', category: 'banner', tier: 4, rarity: 'epic', icon: '🛡️', imageUrl: `${INTERFACE_BASE_URL}/banner_t4_guardia.png`, isRuleExclusive: true },
+    { id: 'item_banner_t4_transcendente', name: 'Transcendente', category: 'banner', tier: 4, rarity: 'epic', icon: '✨', imageUrl: `${INTERFACE_BASE_URL}/banner_t4_transcendente.png`, isRuleExclusive: true },
 
     // T5
     { id: 'item_banner_gm', name: 'Grão Mestre', category: 'banner', tier: 5, rarity: 'legendary', icon: '🏛️', imageUrl: `${INTERFACE_BASE_URL}/banner_gm.png`, isGmExclusive: true },
@@ -478,6 +478,7 @@ export const isGoldStorePurchasableItem = (itemOrId?: ItemDef | string): boolean
         && !item.isChestExclusive
         && !item.isQuestExclusive
         && !item.isReportExclusive
+        && !item.isRuleExclusive
     );
 };
 export const isForgeEligibleItem = (itemOrId?: ItemDef | string): boolean => {
@@ -493,6 +494,7 @@ export const isForgeEligibleItem = (itemOrId?: ItemDef | string): boolean => {
         && !item.isReportExclusive
         && !item.isLegacyRetired
         && !item.isGmExclusive
+        && !item.isRuleExclusive
     );
 };
 export const isChestEligibleItem = (itemOrId?: ItemDef | string): boolean => {
@@ -508,6 +510,7 @@ export const isChestEligibleItem = (itemOrId?: ItemDef | string): boolean => {
         && !item.isReportExclusive
         && !item.isLegacyRetired
         && !item.isGmExclusive
+        && !item.isRuleExclusive
     );
 };
 

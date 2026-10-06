@@ -136,4 +136,27 @@ const daVanguarda = new Set(ITENS_DA_VANGUARDA);
     assert.deepEqual(deArea, ['Celestial', 'Místico'], 'mudou quem depende da leitura de arena por area no ciclo');
 }
 
+// --- 6. peca de regra so sai pela regra ------------------------------------
+//
+// Se custa 10 de ouro, a regra secreta nao vale nada. Toda peca de regra e
+// marcada como exclusiva, fica fora do bau e fora da lista da loja, e o par
+// borda + banner tem a mesma raridade.
+{
+    const { ACTIVE_GOLD_STORE_ITEM_IDS } = await empacota('constants/goldCatalog.ts', 'regras-loja.mjs');
+    const naLoja = new Set(ACTIVE_GOLD_STORE_ITEM_IDS);
+    for (const regra of REGRAS_DE_DESBLOQUEIO) {
+        const defs = regra.itens.map((id) => ITEMS_DB.find((i) => i.id === id));
+        for (const [indice, def] of defs.entries()) {
+            const id = regra.itens[indice];
+            assert.ok(def, `${regra.nome}: ${id} nao existe no catalogo`);
+            assert.equal(def.isRuleExclusive, true, `${id} nao esta marcado como exclusivo de regra`);
+            assert.ok(!def.costGold, `${id} ainda tem preco em ouro`);
+            assert.ok(!naLoja.has(id), `${id} continua na lista da loja`);
+            assert.equal(isChestEligibleItem(def), false, `${id} ainda cai de bau`);
+        }
+        const raridades = new Set(defs.map((d) => d.rarity));
+        assert.equal(raridades.size, 1, `${regra.nome}: o par tem raridades diferentes (${[...raridades].join(', ')})`);
+    }
+}
+
 console.log(`regras-de-desbloqueio: ok — ${REGRAS_DE_DESBLOQUEIO.length} regras, ${ITENS_LIBERADOS_POR_REGRA.size} peças`);

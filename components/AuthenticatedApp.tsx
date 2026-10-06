@@ -7,6 +7,7 @@ import { GameProvider, PROFILE_FLAG_TERMS_ACCEPTED, PROFILE_FLAG_TERMS_PENDING, 
 import { CodexBuilderProvider, useCodexBuilder } from '../contexts/CodexBuilderContext';
 import { TutorialProvider, useTutorial } from '../contexts/TutorialContext';
 import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
+import { useConquistasSecretas } from '../hooks/useConquistasSecretas';
 import { ArenaConfetti } from './ArenaConfetti';
 import { updateInstalledAppBadge } from '../utils/appBadge';
 import { DEFAULT_ORACLE_PRESENCE_LEVEL } from '../utils/oracleFeedUtils';
@@ -439,6 +440,9 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     const [viewTransitionVersion, setViewTransitionVersion] = useState(0);
     const [isProfileVisible, setProfileVisible] = useState(false);
     const [isReportsVisible, setReportsVisible] = useState(false);
+    // As regras secretas: confere ao carregar e a cada ciclo fechado, e segura
+    // o modal enquanto o relatorio esta aberto.
+    useConquistasSecretas({ pausado: isReportsVisible });
     /*
      * "TEM COISA NA FRENTE" — para o Oraculo nao falar por cima.
      *

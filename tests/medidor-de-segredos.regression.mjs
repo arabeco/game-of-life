@@ -158,4 +158,21 @@ console.log('ok - as vinte regras, cada limiar na beira');
     console.log('ok - conquista secreta e o modal de recompensa de sempre, com outro titulo');
 }
 
+// ------------------------------- 8. a entrega, pelo caminho de sempre
+{
+    const { readFileSync, existsSync } = await import('node:fs');
+    const caminhoDoHook = join(raiz, 'hooks/useConquistasSecretas.ts');
+    assert.ok(existsSync(caminhoDoHook), 'a conferencia das regras secretas nao existe');
+    const hook = readFileSync(caminhoDoHook, 'utf8');
+    assert.match(hook, /rpc\('minhas_marcas_secretas'\)/, 'a conferencia nao pergunta os numeros ao banco');
+    assert.match(hook, /novasConquistas\(/, 'a conferencia decide fora do medidor');
+    assert.match(hook, /grantInventoryItem\(/, 'o premio deixou de sair pelo caminho de sempre');
+    assert.match(hook, /completedSeasonMissions:/, 'a descoberta nao fica gravada no perfil');
+    assert.match(hook, /setAchievementUnlocked\(\{ type: 'QUEST_COMPLETED'/, 'o modal nao entra na fila que ja existe');
+    const app = readFileSync(join(raiz, 'components/AuthenticatedApp.tsx'), 'utf8');
+    assert.match(app, /useConquistasSecretas\(\{ pausado: isReportsVisible \}\)/,
+        'a conquista secreta nao espera o relatorio do ciclo fechar');
+    console.log('ok - a conferencia pergunta, decide no medidor, entrega e espera o relatorio');
+}
+
 console.log('Medidor de segredos: as regras decidem aqui, o banco so conta.');

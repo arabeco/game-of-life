@@ -12,8 +12,9 @@ import {
 } from '../types';
 import { getCycleTimingSummary } from './dateUtils';
 import { falaDaNota, notaDoCiclo } from './cycleGrade.js';
-import { buildActionPoolByDate, buildDailyArenaFocus, filterCycleTasksByScope } from './coreLoopUtils.js';
-import { getOperationalDateString, taskMatchesOperationalDate } from './operationalDay.js';
+import { buildActionPoolByDate, buildCyclePaceMetrics, buildDailyArenaFocus, filterCycleTasksByScope } from './coreLoopUtils.js';
+import { buildFairScoreFromTasks } from './fairScoreUtils.js';
+import { formatLocalDateString, getOperationalDateString, taskMatchesOperationalDate } from './operationalDay.js';
 import { hasScheduledTime } from './taskDomain.js';
 import type { RestScreenActionSessionDetail } from './restScreenActionSession';
 
@@ -225,12 +226,65 @@ export const buildCycleWidgetSnapshot = ({
     const duration = Number.isFinite(task.duration) ? task.duration : action?.duration || 0;
     return sum + duration / 60;
   }, 0);
+  /*
+   * AS FRESCURAS DO SSS NA PREVIA TAMBEM.
+   *
+   * A previa mandava so conclusao, dias e horas. Sem as metas, os dias zerados
+   * e as areas, o `ehImpecavel` do notaDoCiclo voltava falso, e a pedra da lua
+   * nunca aparecia durante o ciclo — nem num ciclo a caminho dela. A placa do
+   * ciclo em andamento (este widget, o card dos Ativos, o MiniCycleHUD e a
+   * trilha dos Relatorios, que passam todos por aqui) parava no SS.
+   *
+   * As tres saem das MESMAS funcoes que o fechamento usa, para a previa nao
+   * virar uma segunda regua: metas de `buildFairScoreFromTasks` com o plano
+   * prometido, dias zerados de `buildCyclePaceMetrics` com a missao contando
+   * como presenca, e areas pela mesma regra do fecho — as do ciclo, sem 'geral'.
+   *
+   * O dia final e HOJE, como no fechamento, mas nunca alem do fim do ciclo:
+   * um ciclo vencido e ainda nao fechado nao pode ganhar dias vazios depois do
+   * prazo so por estar esperando.
+   */
+  const hoje = todayDate || formatLocalDateString(new Date());
+  const ultimoDiaContado = hoje < cycle.endDate ? hoje : cycle.endDate;
+  const metasDoCiclo = buildFairScoreFromTasks({
+    plannedEntries: commitment.entries,
+    tasks: commitment.cycleTasks.map((task) => {
+      const action = actions.find((candidate) => candidate.id === task.actionId);
+      return { ...task, actionType: action?.actionType, arenaId: action?.arenaId };
+    }),
+    actions,
+    arenas,
+    durationDays: timing.totalDays,
+  }).fairness;
+  const { daysWithoutCompletion } = buildCyclePaceMetrics(
+    commitment.scoredTasks,
+    cycle.startDate,
+    ultimoDiaContado,
+    cycle.endDate,
+    commitment.questTasks,
+    commitment,
+  );
+  const arenasDoCiclo = cycle.arenaIds?.length
+    ? arenas.filter((arena) => cycle.arenaIds?.includes(arena.id))
+    : arenas;
+  const areaDaArena = new Map(arenasDoCiclo.map((arena) => [arena.id, arena.assetId]));
+  const areasAtivas = new Set(
+    completedScoredCycleTasks
+      .map((task) => actions.find((candidate) => candidate.id === task.actionId)?.arenaId)
+      .map((arenaId) => (arenaId ? areaDaArena.get(arenaId) : undefined))
+      .filter((assetId): assetId is string => Boolean(assetId) && assetId !== 'geral'),
+  ).size;
+
   const notaDoWidget = notaDoCiclo({
     conclusaoPct: completionRateForGrade,
     acoesPlanejadas: commitment.plannedCount,
     acoesConcluidas: commitment.completedCount,
     dias: timing.totalDays,
     horas: honoredHoursForGrade,
+    metasSeladas: metasDoCiclo.sealedMetas,
+    metasPlanejadas: metasDoCiclo.plannedMetas,
+    diasZerados: daysWithoutCompletion,
+    areasAtivas,
   }).nota;
 
   return {

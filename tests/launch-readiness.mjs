@@ -38,6 +38,17 @@ const manualQaNotes = [
 const suites = {
   core: [
     {
+      id: 'previa-do-sss',
+      label: 'Previa do SSS regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'previa-do-sss.regression.mjs')]],
+      kind: 'logic',
+      interactions: [
+        'o ciclo impecavel mostra a pedra da lua ainda em andamento',
+        'um dia vazio ou uma area a menos seguram o SSS mesmo com 100%',
+        'dias depois do fim do ciclo nao viram dia zerado',
+      ],
+    },
+    {
       id: 'arrasto-leve',
       label: 'Arrasto leve regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'arrasto-leve.regression.mjs')]],

@@ -891,6 +891,9 @@ export interface Report {
     paceDeltaPct?: number;
     top3Actions?: { name: string; count: number }[];
     weeklyAtlas?: ReportAtlasWeek[];
+    /** Arenas com todas as acoes cumpridas no ciclo, por area. Le-se nas
+     *  regras secretas Mistico e Celestial. Ciclos antigos nao tem. */
+    arenasFechadasPorArea?: Record<string, number>;
     atlasSnapshotVersion?: 1 | 2;
     sealedAt?: string;
     scoreModelVersion?: 'fair_v2_1' | 'fair_v2_2_repetitions';

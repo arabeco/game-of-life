@@ -10324,6 +10324,34 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             areasAtivas: areasComEntrega,
         });
 
+        /*
+         * ARENAS FECHADAS, POR AREA.
+         *
+         * O Mistico e o Celestial perguntam quantas arenas de cada area a pessoa
+         * FECHOU no ciclo — todas as acoes cumpridas, e nao so criadas. O banco
+         * nao guardava isso; agora o relatorio guarda, no fecho, com a mesma
+         * conta de progresso que a propria arena mostra.
+         */
+        const arenasFechadasPorArea: Record<string, number> = {};
+        for (const asset of currentAssets) {
+            if (asset.id === 'geral') continue;
+            const arenasDoCiclo = cycle?.arenaIds?.length
+                ? asset.arenas.filter(arena => cycle.arenaIds.includes(arena.id))
+                : asset.arenas;
+            for (const arena of arenasDoCiclo) {
+                const acoesDaArena = currentActions.filter(action => action.arenaId === arena.id);
+                const idsDasAcoes = new Set(acoesDaArena.map(action => action.id));
+                const progresso = calculateArenaProgress({
+                    arena,
+                    actions: acoesDaArena,
+                    tasks: cycleTasks.filter(task => idsDasAcoes.has(task.actionId)),
+                });
+                if (progresso.totalPlanned > 0 && progresso.totalCompleted >= progresso.totalPlanned) {
+                    arenasFechadasPorArea[asset.id] = (arenasFechadasPorArea[asset.id] || 0) + 1;
+                }
+            }
+        }
+
         const newReport: Report = {
             id: crypto.randomUUID(),
             cycleId: cycle?.id,
@@ -10358,6 +10386,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 paceDeltaPct,
                 top3Actions,
                 weeklyAtlas,
+                arenasFechadasPorArea,
                 atlasSnapshotVersion: 2,
                 sealedAt: new Date().toISOString(),
                 scoreModelVersion: 'fair_v2_2_repetitions',

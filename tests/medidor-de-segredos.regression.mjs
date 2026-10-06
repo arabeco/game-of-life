@@ -119,4 +119,17 @@ console.log('ok - as vinte regras, cada limiar na beira');
     console.log('ok - um modal so, com todos os premios');
 }
 
+// ---------------- 5. o fecho do ciclo anota as arenas fechadas por area
+{
+    const { readFileSync } = await import('node:fs');
+    const contexto = readFileSync(join(raiz, 'contexts/GameContext.tsx'), 'utf8').replace(/\r\n/g, '\n');
+    const fecho = contexto.slice(contexto.indexOf('const endCycle = async'));
+    const inicioDoRelatorio = fecho.indexOf('const newReport: Report');
+    const relatorio = fecho.slice(inicioDoRelatorio, inicioDoRelatorio + 2600);
+    assert.match(relatorio, /arenasFechadasPorArea,/, 'o relatorio do ciclo nao leva as arenas fechadas por area');
+    assert.match(fecho.slice(0, inicioDoRelatorio), /progresso\.totalCompleted >= progresso\.totalPlanned/,
+        'arena fechada e todas as acoes cumpridas, pela mesma conta que a arena mostra');
+    console.log('ok - o Mistico e o Celestial passam a ter o que ler');
+}
+
 console.log('Medidor de segredos: as regras decidem aqui, o banco so conta.');

@@ -159,8 +159,11 @@ const normalizeItem = (raw) => {
     gold_price: raw.gold_price ?? null,
     image_url: raw.image_url ?? null,
     description: raw.description ? normalizeText(raw.description) : null,
-    is_live_in_game: !raw.isLegacyRetired && !String(raw.id).startsWith('item_garden_'),
-    is_rank_exclusive: Boolean(raw.isRankExclusive),
+    // Peca sem arte nasce fora do jogo; peca de regra nao entra em bau nem loja,
+    // e no servidor quem diz isso e is_rank_exclusive (open_chest e
+    // buy_store_item ja a recusam).
+    is_live_in_game: !raw.isLegacyRetired && !String(raw.id).startsWith('item_garden_') && !(raw.isRuleExclusive && !raw.image_url),
+    is_rank_exclusive: Boolean(raw.isRankExclusive || raw.isRuleExclusive),
     is_premium_only: Boolean(raw.isPremiumOnly),
     is_chest_exclusive: Boolean(raw.isChestExclusive),
     is_legacy_retired: Boolean(raw.isLegacyRetired),

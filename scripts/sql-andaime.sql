@@ -196,7 +196,7 @@ create table if not exists public.relationship_link_arenas (
   completed_at timestamptz,
   metadata jsonb
 );
-create table if not exists public.arenas (id text primary key, user_id uuid, name text);
+create table if not exists public.arenas (id uuid primary key, user_id uuid, asset_id text, name text, is_archived boolean);
 
 -- As duas que faltavam para checar qualquer consulta que olhe o CICLO de
 -- verdade: o que foi agendado e a qual arena aquilo pertence. Sem elas, tanto
@@ -212,6 +212,10 @@ create table if not exists public.arenas (id text primary key, user_id uuid, nam
 --
 --   actions.id (uuid)   vs scheduled_tasks.action_id (text)
 --   arenas.id  (text)   vs actions.arena_id        (uuid)
+--
+-- Em 06/10/2026 o information_schema de producao disse outra coisa para dois
+-- destes (supabase/CHECK-regras-secretas.sql): arenas.id e UUID, igual a
+-- actions.arena_id, e scheduled_tasks.id e TEXT. O andaime segue o banco.
 --   cycles.start_date (date) vs scheduled_tasks.date (text)
 --
 -- O andaime concordava com a suposicao de quem escrevia a consulta em vez de
@@ -230,7 +234,7 @@ create table if not exists public.actions (
 );
 
 create table if not exists public.scheduled_tasks (
-  id uuid primary key,
+  id text primary key,
   user_id uuid,
   action_id text,
   date text,
@@ -261,4 +265,25 @@ create table if not exists public.user_purchases (
   expires_at timestamptz,
   is_active boolean,
   purchased_at timestamptz default now()
+);
+
+-- O que minhas_marcas_secretas() le alem do que ja estava aqui
+-- (supabase/migrations/20261006180000_regras_secretas.sql).
+create table if not exists public.journal_pages (
+  user_id uuid,
+  page_number smallint,
+  content text not null default '',
+  updated_at timestamptz default now()
+);
+
+create table if not exists public.mood_entries (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid,
+  value integer,
+  recorded_at timestamptz default now()
+);
+
+create table if not exists public.relationship_competition_challenges (
+  id uuid primary key default gen_random_uuid(),
+  winner_user_id uuid
 );

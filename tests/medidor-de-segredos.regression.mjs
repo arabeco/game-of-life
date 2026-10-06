@@ -132,4 +132,20 @@ console.log('ok - as vinte regras, cada limiar na beira');
     console.log('ok - o Mistico e o Celestial passam a ter o que ler');
 }
 
+// ------------------------- 6. o SQL so conta; quem decide e o medidor
+{
+    const { readFileSync } = await import('node:fs');
+    const sql = readFileSync(join(raiz, 'supabase/migrations/20261006180000_regras_secretas.sql'), 'utf8');
+    assert.match(sql, /product_id not like '%:primeira:%'/, 'a missao inicial do onboarding nao conta');
+    assert.match(sql, /function public\.minhas_marcas_secretas\(\)[\s\S]*security definer[\s\S]*auth\.uid\(\)/,
+        'a funcao publica le so a conta de quem chama');
+    assert.match(sql, /revoke all on function public\._marcas_secretas\(uuid\) from public, anon, authenticated/,
+        'a funcao por id nao pode ficar aberta: leria a conta de outra pessoa');
+    for (const chave of ['acoesConcluidas', 'maiorSequencia', 'maiorDia', 'diasSeguidosComCincoAreas', 'maiorSemanaAntesDasSete',
+        'paginasDoDiario', 'diasDeHumor', 'amizades', 'competicoesVencidas', 'missoesDoOraculo', 'mentoriasAteOFim', 'ciclos']) {
+        assert.match(sql, new RegExp(`'${chave}'`), `o SQL nao entrega ${chave}, que o medidor le`);
+    }
+    console.log('ok - o SQL entrega cada numero que o medidor le, e so da propria conta');
+}
+
 console.log('Medidor de segredos: as regras decidem aqui, o banco so conta.');

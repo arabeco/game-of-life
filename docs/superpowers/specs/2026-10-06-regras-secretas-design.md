@@ -13,8 +13,8 @@ entregava. Este desenho liga as 10 e acrescenta 10 novas.
 - O modal entra na **fila que já existe** (`setAchievementUnlocked`): não
   aparece por cima de patente, missão ou baú. E espera o relatório de ciclo
   fechar — o fecho do ciclo já empilha relatório, baú e às vezes patente.
-- **Missões → Segredos · N de 20**: as descobertas com nome, frase e prêmio; as
-  que faltam como **???**, sem dica.
+- **Missões → Segredos · N de 20**: a contagem e só as descobertas, com nome,
+  frase e prêmio. As que faltam não aparecem, nem como ??? (decidido em 06/10).
 - **Conta o passado.** Quem já cumpriu ganha na primeira conferência.
 - As peças de regra **saem da loja e do baú**. Quem já tem continua tendo.
 

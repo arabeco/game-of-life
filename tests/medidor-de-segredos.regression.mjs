@@ -175,20 +175,28 @@ console.log('ok - as vinte regras, cada limiar na beira');
     console.log('ok - a conferencia pergunta, decide no medidor, entrega e espera o relatorio');
 }
 
-// ------------------------------------------- 9. Segredos, com os ???
+// ------------------------- 9. Segredos: a contagem e so as descobertas
 {
     const { readFileSync, existsSync } = await import('node:fs');
     const caminhoDaSecao = join(raiz, 'components/SegredosSection.tsx');
     assert.ok(existsSync(caminhoDaSecao), 'a secao Segredos nao existe');
-    const secao = readFileSync(caminhoDaSecao, 'utf8');
+    // Sem comentarios: um trecho citado num comentario nao e codigo vivo.
+    const secao = readFileSync(caminhoDaSecao, 'utf8')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/(^|[^:])\/\/.*$/gm, '$1');
     assert.match(secao, /lerDescobertas\(/, 'Segredos le as descobertas de outro lugar');
-    assert.match(secao, /'\?\?\?'/, 'a regra nao descoberta precisa aparecer como ???');
+    // Decidido em 06/10/2026: as que faltam nao aparecem, nem como ???. A secao
+    // mostra a contagem ("3 de 20") e so as descobertas.
+    assert.doesNotMatch(secao, /\?\?\?/, 'regra nao descoberta nao aparece em Segredos, nem como ???');
+    assert.match(secao, /REGRAS_DE_DESBLOQUEIO\.filter\(\(regra\) => descobertas\.has\(regra\.id\)\)/,
+        'a lista de Segredos tem de ser so das descobertas');
+    assert.match(secao, /de \{REGRAS_DE_DESBLOQUEIO\.length\}/, 'a contagem diz de quantas');
     assert.doesNotMatch(secao, /regra\.condicao/, 'Segredos nao pode dar dica da condicao');
     const temporada = readFileSync(join(raiz, 'views/SeasonView.tsx'), 'utf8');
     const semTemporada = temporada.indexOf('{!activeSeason && (');
     assert.ok(semTemporada > 0 && temporada.indexOf('<SegredosSection />') > semTemporada,
         'Segredos tem de aparecer com ou sem temporada ativa');
-    console.log('ok - Segredos mostra o que achou e esconde o resto como ???');
+    console.log('ok - Segredos mostra a contagem e so o que ja foi achado');
 }
 
 console.log('Medidor de segredos: as regras decidem aqui, o banco so conta.');

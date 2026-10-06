@@ -29,33 +29,39 @@ where id in (
   'item_border_4_001', 'item_banner_lendaviva'
 );
 
--- A raridade e a dificuldade da regra, e o par tem a mesma.
-update public.items set tier = 2, rarity = 'uncommon' where id in ('item_border_1_002', 'item_banner_disciplinado');
-update public.items set tier = 3, rarity = 'rare' where id in ('item_border_t4_oraculo', 'item_banner_t4_oraculo');
-update public.items set tier = 4, rarity = 'epic' where id = 'item_border_t3_transcendente';
+-- A raridade e a dificuldade da regra, e o par tem a mesma. O valor de reciclar
+-- e o de forjar acompanham o tier, pela mesma tabela do app
+-- (tools/generate-items-sql.mjs): o botao de quebrar le o tier.
+update public.items set tier = 2, rarity = 'uncommon', recycle_value = 30, craft_cost = 120
+where id in ('item_border_1_002', 'item_banner_disciplinado');
+update public.items set tier = 3, rarity = 'rare', recycle_value = 100, craft_cost = 400
+where id in ('item_border_t4_oraculo', 'item_banner_t4_oraculo');
+update public.items set tier = 4, rarity = 'epic', recycle_value = 300, craft_cost = 1200
+where id = 'item_border_t3_transcendente';
 
 -- ---------------------------------------------------------------------------
 -- 2. Os quinze premios novos, sem arte ainda: fora do jogo ate o PNG chegar.
 --    Quando a arte entrar, a linha de cada um ganha image_url e
 --    is_live_in_game = true.
 -- ---------------------------------------------------------------------------
-insert into public.items (id, name, category, tier, rarity, gold_price, is_rank_exclusive, is_live_in_game)
+-- recycle_value e craft_cost sao NOT NULL no banco: tabela por tier do app.
+insert into public.items (id, name, category, tier, rarity, recycle_value, craft_cost, gold_price, is_rank_exclusive, is_live_in_game)
 values
-  ('item_skin_1_012', 'Escriba', 'skin', 1, 'common', null, true, false),
-  ('item_skin_2_010', 'Maratona', 'skin', 2, 'uncommon', null, true, false),
-  ('item_skin_3_009', 'Ancião', 'skin', 3, 'rare', null, true, false),
-  ('item_skin_4_005', 'Campeão', 'skin', 4, 'epic', null, true, false),
-  ('item_skin_5_003', 'Imperador', 'skin', 5, 'legendary', null, true, false),
-  ('item_border_t2_sereno', 'Sereno', 'border', 2, 'uncommon', null, true, false),
-  ('item_banner_t2_sereno', 'Sereno', 'banner', 2, 'uncommon', null, true, false),
-  ('item_border_t3_alvorada', 'Alvorada', 'border', 3, 'rare', null, true, false),
-  ('item_banner_t3_alvorada', 'Alvorada', 'banner', 3, 'rare', null, true, false),
-  ('item_border_t3_prisma', 'Prisma', 'border', 3, 'rare', null, true, false),
-  ('item_banner_t3_prisma', 'Prisma', 'banner', 3, 'rare', null, true, false),
-  ('item_border_t4_profeta', 'Profeta', 'border', 4, 'epic', null, true, false),
-  ('item_banner_t4_profeta', 'Profeta', 'banner', 4, 'epic', null, true, false),
-  ('item_border_t5_pedra_da_lua', 'Pedra da Lua', 'border', 5, 'legendary', null, true, false),
-  ('item_banner_t5_pedra_da_lua', 'Pedra da Lua', 'banner', 5, 'legendary', null, true, false)
+  ('item_skin_1_012', 'Escriba', 'skin', 1, 'common', 10, 40, null, true, false),
+  ('item_skin_2_010', 'Maratona', 'skin', 2, 'uncommon', 30, 120, null, true, false),
+  ('item_skin_3_009', 'Ancião', 'skin', 3, 'rare', 100, 400, null, true, false),
+  ('item_skin_4_005', 'Campeão', 'skin', 4, 'epic', 300, 1200, null, true, false),
+  ('item_skin_5_003', 'Imperador', 'skin', 5, 'legendary', 1000, 4000, null, true, false),
+  ('item_border_t2_sereno', 'Sereno', 'border', 2, 'uncommon', 30, 120, null, true, false),
+  ('item_banner_t2_sereno', 'Sereno', 'banner', 2, 'uncommon', 30, 120, null, true, false),
+  ('item_border_t3_alvorada', 'Alvorada', 'border', 3, 'rare', 100, 400, null, true, false),
+  ('item_banner_t3_alvorada', 'Alvorada', 'banner', 3, 'rare', 100, 400, null, true, false),
+  ('item_border_t3_prisma', 'Prisma', 'border', 3, 'rare', 100, 400, null, true, false),
+  ('item_banner_t3_prisma', 'Prisma', 'banner', 3, 'rare', 100, 400, null, true, false),
+  ('item_border_t4_profeta', 'Profeta', 'border', 4, 'epic', 300, 1200, null, true, false),
+  ('item_banner_t4_profeta', 'Profeta', 'banner', 4, 'epic', 300, 1200, null, true, false),
+  ('item_border_t5_pedra_da_lua', 'Pedra da Lua', 'border', 5, 'legendary', 1000, 4000, null, true, false),
+  ('item_banner_t5_pedra_da_lua', 'Pedra da Lua', 'banner', 5, 'legendary', 1000, 4000, null, true, false)
 on conflict (id) do nothing;
 
 -- ---------------------------------------------------------------------------

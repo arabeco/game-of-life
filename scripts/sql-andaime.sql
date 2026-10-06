@@ -136,7 +136,9 @@ create table if not exists public.items (
   is_legacy_retired boolean,
   season_key text,
   season_slot integer,
-  recycle_value integer,
+  -- NOT NULL em producao: uma insercao sem ele quebrou na mao do Afonso em
+  -- 06/10/2026 (23502). O andaime cobra o mesmo, para quebrar aqui antes.
+  recycle_value integer not null,
   craft_cost integer,
   is_live_in_game boolean,
   description text

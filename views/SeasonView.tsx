@@ -11,6 +11,7 @@ import { SYSTEM_CHALLENGES, AVAILABLE_SYSTEM_CHALLENGES, SystemChallenge } from 
 import { GM_SEASON_MISSIONS } from '../constants/seasonContent';
 import { PRODUCT_FEATURES } from '../constants/featureFlags';
 import { ArenaPactBalloon, ArenaPactProposal } from '../components/ArenaPactBalloon';
+import { SegredosSection } from '../components/SegredosSection';
 
 type SelectableQuest = SeasonQuest | SystemChallenge;
 
@@ -939,6 +940,9 @@ export const SeasonView: React.FC = () => {
                     <p className="mt-1.5 text-[10px] text-white/38">As missões aparecem aqui assim que a próxima temporada começar.</p>
                 </div>
             )}
+
+            {/* Segredos vale para a vida toda: aparece com ou sem temporada. */}
+            <SegredosSection />
 
             {selectedAutomaticMission && (
                 <MissionDetailModal

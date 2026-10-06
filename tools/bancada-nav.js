@@ -22,6 +22,7 @@
         { arquivo: 'index.html', nome: 'Avatar no canvas' },
         // Depois, o que esta em obra.
         { arquivo: 'o-soberano.html', nome: 'Soberano' },
+        { arquivo: 'os-segredos.html', nome: 'Segredos' },
         { arquivo: 'o-relatorio.html', nome: 'Relatório' },
         { arquivo: 'relatorio-7-telas.html', nome: 'Relatório · 7 telas' },
         { arquivo: 'o-catalogo.html', nome: 'Catálogo' },

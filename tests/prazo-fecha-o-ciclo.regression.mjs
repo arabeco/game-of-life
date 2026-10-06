@@ -97,4 +97,20 @@ assert.match(
 );
 console.log('ok - o Oraculo nao da bom dia por cima do fecho do ciclo');
 
+// ================ 6. fechar depois do prazo nao estica o ciclo ate o fecho
+//
+// O fechamento usava HOJE como ultimo dia. Com o prazo fechando o ciclo sozinho
+// na manha seguinte, hoje ja e depois do fim: o ciclo de domingo ganhava a
+// segunda, e cada dia extra virava dia zerado (SSS impossivel em ciclo fechado
+// pelo prazo), duracao a mais (27 dias contavam 28 e ganhavam o teto do SS),
+// atlas a mais, e um `end_date` gravado no dia do fecho.
+const contexto = readFileSync(new URL('../contexts/GameContext.tsx', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+const fecho = contexto.slice(contexto.indexOf('const endCycle = async'), contexto.indexOf('const endCycle = async') + 2600);
+assert.ok(fecho.length > 1000, 'o fechamento do ciclo mudou de lugar');
+assert.doesNotMatch(fecho, /const endDate = getLocalDateString\(\);/,
+    'o fechamento voltou a usar hoje como fim — fechar pelo prazo estica o ciclo ate o dia do fecho');
+assert.match(fecho, /const endDate = fimDoPrazo && hojeNoFecho > fimDoPrazo \? fimDoPrazo : hojeNoFecho;/,
+    'o fim do ciclo deixou de ser o prazo quando o fecho acontece depois dele');
+console.log('ok - fechado depois do prazo, o ciclo acaba no prazo; antes dele, acaba hoje');
+
 console.log('Prazo fecha o ciclo: as 04:00 do dia seguinte, sozinho, uma vez.');

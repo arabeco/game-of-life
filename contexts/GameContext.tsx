@@ -9964,8 +9964,27 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const cycle = activeCycle;
         const supabaseUserId = getSupabaseUserId();
         const startDate = cycle?.startDate || '2000-01-01'; // Fallback para o primeiro ciclo sem data
-        const endDate = getLocalDateString();
         const plannedEndDate = cycle?.endDate;
+        /*
+         * O CICLO ACABA NO PRAZO, NAO NO DIA EM QUE FECHA.
+         *
+         * O ultimo dia era sempre HOJE. Isso servia para quem encerra antes do
+         * prazo — o ciclo acabou mesmo ali —, mas desde que o prazo fecha o ciclo
+         * sozinho (na primeira abertura depois das 04:00 do dia seguinte), hoje
+         * ja e DEPOIS do fim. O ciclo de domingo fechado na segunda ganhava a
+         * segunda; aberto o app tres dias depois, ganhava tres.
+         *
+         * Cada dia extra entrava como dia do ciclo sem entrega: um dia zerado,
+         * que torna o SSS impossivel em todo ciclo fechado pelo prazo. Entrava
+         * tambem na duracao — um ciclo de 27 dias fechado um dia depois contava
+         * 28 e ganhava o teto do SS —, no atlas semanal, e no `end_date`
+         * gravado no ciclo, que passava a dizer que ele acabou no dia do fecho.
+         *
+         * Antes do prazo, o fim e hoje. Depois do prazo, o fim e o prazo.
+         */
+        const hojeNoFecho = getLocalDateString();
+        const fimDoPrazo = plannedEndDate ? String(plannedEndDate).slice(0, 10) : null;
+        const endDate = fimDoPrazo && hojeNoFecho > fimDoPrazo ? fimDoPrazo : hojeNoFecho;
         const cycleSeasonId = cycle?.seasonId || activeRuntimeSeasonId; // Use stored season or default to current
 
         // The commitment is every repetition in non-archived personal arenas.

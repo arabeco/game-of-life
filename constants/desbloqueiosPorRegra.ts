@@ -46,8 +46,9 @@ import type { LifeAreaId } from './lifeAreas';
  * nao pode valer premio.
  */
 export type CondicaoDeDesbloqueio =
-    /** Fechar um ciclo sem falhar nenhuma acao. */
-    | { tipo: 'ciclo_sem_falha' }
+    /** Fechar um ciclo sem falhar nenhuma acao, com a nota que o ciclo selou
+     *  (o `grade` do relatorio) igual ou acima de `notaMinima`. */
+    | { tipo: 'ciclo_sem_falha'; notaMinima: 'A' | 'S' | 'SS' | 'SSS' }
     /** Ter N amizades ao mesmo tempo. Amizade, nao vinculo de arena. */
     | { tipo: 'amizades'; quantas: number }
     /** Fechar ciclos que toquem N meses diferentes. Tempo de conta nao serve:
@@ -81,10 +82,14 @@ export interface RegraDeDesbloqueio {
 
 export const REGRAS_DE_DESBLOQUEIO: RegraDeDesbloqueio[] = [
     {
+        // 100% sozinho nao bastava: um ciclo de uma acao so tambem fecha em 100%.
+        // A nota A traz o porte junto — sete dias e 35 horas, pela tabela de
+        // utils/cycleGrade.js —, entao a regra pede as duas coisas. Decidido em
+        // 06/10/2026.
         nome: 'Disciplinado',
         itens: ['item_border_1_002', 'item_banner_disciplinado'],
-        condicao: { tipo: 'ciclo_sem_falha' },
-        frase: 'Você fechou um ciclo sem deixar nenhuma ação para trás.',
+        condicao: { tipo: 'ciclo_sem_falha', notaMinima: 'A' },
+        frase: 'Um ciclo nota A, sem deixar nenhuma ação para trás.',
     },
     {
         nome: 'Popular',

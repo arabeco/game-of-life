@@ -1272,6 +1272,9 @@ export type RelationshipLinkType = 'mentoria' | 'parceria' | 'competicao';
 export type RelationshipInviteStatus = 'pending' | 'accepted' | 'declined' | 'revoked';
 
 export interface RelationshipLinkInvite {
+  renewalLinkId?: string | null;
+  pupilUserId?: string | null;
+  actionsSnapshot?: Array<{ name: string; repetitions?: number; duration?: number }>;
   id: string;
   senderId: string;
   recipientId: string;
@@ -1285,6 +1288,7 @@ export interface RelationshipLinkInvite {
     durationDays?: number;
     rewardChestType?: ChestType;
     rewardXp?: number;
+    selection?: Array<{ arenaId: string; name: string; ownerId: string }>;
   } | null;
   status: RelationshipInviteStatus;
   createdAt: string;

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useGame } from '../contexts/GameContext';
+import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { useConfirmation } from '../hooks/useConfirmation';
 import type {
   Action,
@@ -21,6 +21,9 @@ import { CheckIcon, MessageIcon, PlusIcon, RefreshCwIcon, TrashIcon, TrophyIcon,
 import { getDisplayLevel } from '../constants/lifeAreas';
 import { ArenaCard } from './ArenaCard';
 import { ArenaDetailModal } from './ArenaDetailModal';
+import { NewArenaModal } from './NewArenaModal';
+import { getRelationshipLifecycle, getRelationshipLinkPrice, getRelationshipRenewalPrice } from '../constants/relationshipLinks';
+import { getArenaPresentationTasks } from '../utils/arenaProgressPresentation';
 
 type VisibleConnectionType = Extract<RelationshipLinkType, 'mentoria' | 'parceria' | 'competicao'>;
 type ProfileLite = Pick<UserProfile, 'id' | 'nickname' | 'avatarUrl' | 'level'>;
@@ -67,56 +70,23 @@ const Avatar: React.FC<{ profile?: ProfileLite | null }> = ({ profile }) => (
   </div>
 );
 
-/**
- * O progresso da arena compartilhada, com TETO POR ACAO.
- *
- * Antes o numerador somava TODAS as tarefas concluidas da arena e comparava com
- * a soma das repeticoes. As duas pontas nao se falavam:
- *
- * - uma acao feita dez vezes onde a meta era tres contava as dez, entao ela
- *   sozinha enchia a barra da arena inteira enquanto as outras estavam em zero;
- * - as tarefas chegam sem recorte de ciclo — o servidor as filtra por dono e
- *   mais nada —, enquanto `repetitions` e meta POR CICLO. Depois de alguns
- *   ciclos qualquer arena ficava cravada em 100%;
- * - e acao sem repeticao declarada somava 0 ao alvo, mas as tarefas dela
- *   continuavam somando ao total.
- *
- * A regra certa ja existia no app: `Math.min(nextCount, target)`, em
- * taskDomain.ts. Cada acao entrega no maximo a propria meta, e a arena so chega
- * a 100% quando TODAS chegaram — que e o que a barra deveria ter dito desde o
- * comeco.
- */
-const getArenaProgress = (entry: LinkedRelationshipArena) => {
-  const actions = entry.actions || [];
-
-  const concluidasPorAcao = new Map<string, number>();
-  (entry.tasks || []).forEach((task) => {
-    if (!task.completed) return;
-    concluidasPorAcao.set(task.actionId, (concluidasPorAcao.get(task.actionId) || 0) + 1);
-  });
-
-  let target = 0;
-  let completed = 0;
-  actions.forEach((action) => {
-    // `Math.max(1, ...)` e o mesmo piso do resto do app: acao sem repeticao
-    // declarada vale uma entrega, e nao zero.
-    const alvo = Math.max(1, Math.floor(Number(action.repetitions || 1)));
-    target += alvo;
-    completed += Math.min(concluidasPorAcao.get(action.id) || 0, alvo);
-  });
-
-  return {
-    completed,
-    target,
-    percent: target > 0 ? Math.min(100, Math.round((completed / target) * 100)) : null,
-  };
+const tasksForEntry = (entry: LinkedRelationshipArena) => {
+  if (entry.linkType === 'competicao') return entry.tasks || [];
+  const scope = entry.metadata?.presentationScope;
+  return scope ? getArenaPresentationTasks(entry.tasks || [], scope.cycle, scope.reset_at, getLocalDateString()) : [];
 };
-
+const getArenaProgress = (entry: LinkedRelationshipArena) => {
+  const counts = new Map<string, number>();
+  tasksForEntry(entry).forEach(t => { if(t.completed) counts.set(t.actionId,(counts.get(t.actionId)||0)+1); });
+  let target=0, done=0;
+  (entry.actions||[]).filter(a=>a.actionType!=='Livre').forEach(a=>{const n=Math.max(1,Number(a.repetitions||1));target+=n;done+=Math.min(n,counts.get(a.id)||0);});
+  return target ? Math.round(done/target*100) : 0;
+};
 const formatChallengeTime = (deadlineAt?: string | null, completedAt?: string | null) => {
   if (completedAt) return 'Encerrado';
   if (!deadlineAt) return 'Sem prazo registrado';
   const remainingMs = new Date(deadlineAt).getTime() - Date.now();
-  if (remainingMs <= 0) return 'Encerrando';
+  if (remainingMs <= 0) return 'Prazo encerrado · apurando resultado';
   const hours = Math.ceil(remainingMs / 3_600_000);
   if (hours < 24) return `${hours}h restantes`;
   return `${Math.ceil(hours / 24)} dia(s) restantes`;
@@ -135,94 +105,9 @@ const previewArenaFromEntry = (entry: LinkedRelationshipArena): Arena => (
   }
 );
 
-/**
- * A arena do vinculo e uma ARENA, nao um resumo dela.
- *
- * Aqui existia um cartao proprio: nome, uma porcentagem e uma barrinha. Era a
- * unica arena do app desenhada de outro jeito, e nao abria — dava para ver que
- * o par tinha 40% e nao dava para ver 40% DE QUE. Passa a usar o mesmo ArenaCard
- * das campanhas e da aba Arenas, e abre no mesmo ArenaDetailModal, que ja sabe
- * receber acoes e tarefas de fora e travar a edicao quando a arena e do outro.
- */
-const ArenaProgress: React.FC<{
-  entry: LinkedRelationshipArena;
-  owner: string;
-  onOpen: () => void;
-  /** A arena do contexto, quando ela e sua. Presente = usa a fonte viva. */
-  arenaViva?: Arena | null;
-  acoesVivas?: Action[];
-}> = ({ entry, owner, onOpen, arenaViva = null, acoesVivas }) => {
-  const progress = getArenaProgress(entry);
-
-  // A SUA arena aqui e A SUA arena la. Literalmente o mesmo objeto.
-  //
-  // Antes este cartao era montado da FOTO que o servidor manda junto do vinculo:
-  // arena do payload, acoes do payload, e uma porcentagem propria que somava
-  // todas as tarefas ja concluidas, sem recorte nenhum. Dava 43% aqui enquanto a
-  // aba Arenas mostrava 15% pela mesma arena — porque la o app corta as tarefas
-  // no ciclo aberto (getArenaPresentationTasks) e aqui ninguem cortava. Duas
-  // fontes, duas contas, dois numeros.
-  //
-  // Agora, sendo sua, entram a arena e as acoes VIVAS do contexto e nao se passa
-  // `tasks` nem `progressPercent`: o ArenaCard faz exatamente o que faz na aba
-  // Arenas. Uma fonte so, sem como divergir. Sendo do par, o payload continua
-  // sendo a unica fonte que existe — o ciclo da outra pessoa nao chega aqui.
-  const usarContexto = Boolean(arenaViva);
-
-  /*
-   * CONCLUIDA NAO VOLTA A ZERO QUANDO O CICLO VIRA.
-   *
-   * O selo dizia "Concluiu" e a barra embaixo dizia 0%, ao mesmo tempo, sobre a
-   * mesma arena. Nao era desacordo entre duas contas: a conta estava certa e a
-   * pergunta e que estava errada. O progresso e recortado pelo ciclo aberto, e
-   * fechar o ciclo move a marca d'agua — a janela esvazia e a porcentagem cai,
-   * mesmo tendo sido 100% no dia em que foi entregue.
-   *
-   * Quem terminou terminou. Havendo carimbo, a barra para de perguntar as
-   * tarefas e passa a mostrar o fato: cheia, com a data. O carimbo e o unico
-   * dado que atravessa o vinculo de qualquer jeito — as tarefas do outro nao
-   * chegam aqui.
-   *
-   * SO NA VISAO DO PAR. Sendo sua, a fonte viva existe e manda: a arena tem de
-   * continuar contando as tarefas como conta na aba Arenas. Congelar os dois
-   * lados trocaria um numero errado por outro — o seu passaria a mentir para
-   * cima, dizendo 100% de uma arena que voce reabriu.
-   */
-  const concluida = Boolean(entry.completedAt);
-  const diaDaConclusao = entry.completedAt
-    ? new Date(entry.completedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-    : '';
-
-  return (
-    <div className="flex flex-col gap-1">
-      {/*
-          O SELO DE CONCLUIDO E A UNICA NOTICIA QUE ATRAVESSA.
-
-          As tarefas do outro nao chegam aqui — o servidor filtra por dono —,
-          entao a barra dele fica presa no que o payload trouxe e nao ha como
-          calcular se ele terminou. O carimbo do banco e o unico fato que cruza
-          o vinculo, e e ele que responde "e ai, voce fechou?" sem ninguem
-          precisar perguntar.
-      */}
-      <div className="flex items-center gap-1.5 px-0.5">
-        <span className="min-w-0 flex-1 truncate text-[9px] font-black uppercase tracking-[0.16em] text-white/45">{owner}</span>
-        {concluida && (
-          <span className="shrink-0 rounded-full border border-emerald-300/25 bg-emerald-400/10 px-1.5 py-[1px] text-[8px] font-black uppercase tracking-[0.1em] text-emerald-200">
-            Concluiu {diaDaConclusao}
-          </span>
-        )}
-      </div>
-      <ArenaCard
-        arena={arenaViva || previewArenaFromEntry(entry)}
-        actions={(usarContexto ? acoesVivas : entry.actions) || entry.actions || []}
-        tasks={usarContexto ? undefined : (entry.tasks || [])}
-        relationshipBadgeType={entry.linkType ?? null}
-        progressPercent={usarContexto ? undefined : (concluida ? 100 : (progress.percent ?? undefined))}
-        onClick={onOpen}
-        variant="compact"
-      />
-    </div>
-  );
+const ArenaProgress: React.FC<{entry: LinkedRelationshipArena; owner: string; onOpen:()=>void; arenaViva?:Arena|null; acoesVivas?:Action[]}> = ({entry,owner,onOpen,arenaViva,acoesVivas}) => {
+  const own = Boolean(arenaViva) && entry.linkType !== 'competicao';
+  return <div className="flex flex-col gap-1"><span className="text-[9px] font-bold text-white/45">{owner}</span><ArenaCard arena={arenaViva||previewArenaFromEntry(entry)} actions={(own?acoesVivas:entry.actions)||[]} tasks={own?undefined:tasksForEntry(entry)} relationshipBadgeType={entry.linkType??null} progressPercent={own?undefined:getArenaProgress(entry)} onClick={onOpen} variant="compact" /></div>;
 };
 
 export const ConnectionsModal: React.FC<{
@@ -233,6 +118,7 @@ export const ConnectionsModal: React.FC<{
   const {
     actions,
     assets,
+    renewRelationshipLink,
     createCompetitionInvite,
     cancelCompetitionChallenge,
     createRelationshipInvite,
@@ -248,6 +134,12 @@ export const ConnectionsModal: React.FC<{
     userProfile,
   } = useGame();
   const { confirm, confirmationElement } = useConfirmation();
+  const [selectedMentorshipIds,setSelectedMentorshipIds]=useState<string[]>([]);
+  const [mentorshipRole,setMentorshipRole]=useState<'mentor'|'pupil'>('mentor');
+  const [creatingArena,setCreatingArena]=useState(false);
+  const [editingCreatedArena,setEditingCreatedArena]=useState<Arena|null>(null);
+  const [reviewInvite,setReviewInvite]=useState<RelationshipLinkInvite|null>(null);
+  const [,tick]=useState(0);
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -388,6 +280,8 @@ export const ConnectionsModal: React.FC<{
   useEffect(() => {
     void refreshRef.current(true);
     const handleUpdate = () => void refreshRef.current();
+    const timer=window.setInterval(()=>{tick(v=>v+1);if(!document.hidden)handleUpdate();},30000);
+    window.addEventListener('focus',handleUpdate);
     window.addEventListener('glyph:relationships-updated', handleUpdate);
     return () => window.removeEventListener('glyph:relationships-updated', handleUpdate);
   }, []);
@@ -428,7 +322,8 @@ export const ConnectionsModal: React.FC<{
     }
     setBusyKey(`invite:${friendId}`);
     try {
-      if (await createRelationshipInvite(friendId, inviteType)) {
+      const sent=inviteType==='mentoria' ? await runRelationshipRpc('propose_relationship_v3',{p_recipient_id:friendId,p_link_type:'mentoria',p_pupil_id:mentorshipRole==='pupil'?userProfile.id:friendId}) : await createRelationshipInvite(friendId,inviteType);
+      if(sent){
         setInviteType(null);
         await refresh();
       }
@@ -442,7 +337,7 @@ export const ConnectionsModal: React.FC<{
   const desistChallenge = async (challengeId: string) => {
     if (!(await confirm({
       title: 'Desistir do duelo?',
-      message: 'O duelo encerra sem vencedor, e os 50 de ouro não voltam.',
+      message: 'Seu rival vence. O valor pago não é devolvido.',
       confirmLabel: 'DESISTIR',
       variant: 'danger',
     }))) return;
@@ -471,10 +366,20 @@ export const ConnectionsModal: React.FC<{
     }
   };
 
+  const runRelationshipRpc=async(name:string,args:Record<string,unknown>)=>{
+    const {error}=await supabase.rpc(name,args);
+    if(error){showToast('Não foi possível concluir: '+error.message,'error');return false;}
+    await refresh();window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));return true;
+  };
+  const runBusy=async(key:string,action:()=>Promise<unknown>)=>{if(busyKey)return;setBusyKey(key);try{await action();}finally{setBusyKey(null);}};
+  const renewLink=async(link:RelationshipLink)=>{
+    if(!await confirm({title:'Propor renovação?',message:getRelationshipRenewalPrice(link.linkType)+' ouros serão reservados. Os 30 dias começam no aceite da outra pessoa.',confirmLabel:'PROPOR'}))return;
+    await runBusy('renew:'+link.id,async()=>{if(await renewRelationshipLink(link.id))await refresh();});
+  };
   const endLink = async (link: RelationshipLink) => {
     if (!(await confirm({
       title: 'Encerrar esta conexão?',
-      message: 'O histórico de progresso não será apagado.',
+      message: 'O acesso compartilhado será encerrado. As arenas pessoais e a conversa continuam.',
       confirmLabel: 'ENCERRAR',
       variant: 'danger',
     }))) return;
@@ -501,15 +406,10 @@ export const ConnectionsModal: React.FC<{
   };
 
   const saveMentorshipArena = async () => {
-    if (!mentorshipPickerLink || !selectedArenaId) return;
-    const alreadyHasSharedArena = arenasForLink(mentorshipPickerLink.id).length > 0;
-    if (!alreadyHasSharedArena && Number(userProfile.wallet?.gold || 0) < 50) {
-      showToast(`Faltam ${50 - Number(userProfile.wallet?.gold || 0)} de ouro para compartilhar a primeira arena.`, 'warning');
-      return;
-    }
+    if (!mentorshipPickerLink) return;
     setBusyKey(`mentorship-arena:${mentorshipPickerLink.id}`);
     try {
-      const selected = await selectMentorshipArena(mentorshipPickerLink.id, selectedArenaId);
+      const selected=await runRelationshipRpc('select_relationship_arenas',{p_link_id:mentorshipPickerLink.id,p_arena_ids:selectedMentorshipIds});
       if (!selected) return;
       setMentorshipPickerLink(null);
       setSelectedArenaId('');
@@ -521,7 +421,7 @@ export const ConnectionsModal: React.FC<{
 
   return (
     <Portal>
-      <div className="fixed inset-0 z-[10020] flex items-center justify-center bg-black/75 p-3 backdrop-blur-sm" onClick={onClose}>
+      <div style={{display:creatingArena||editingCreatedArena?'none':undefined}} className="fixed inset-0 z-[10020] flex items-center justify-center bg-black/75 p-3 backdrop-blur-sm" onClick={onClose}>
         <GlassCard className="flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden !rounded-lg !p-0" onClick={(event) => event.stopPropagation()}>
           <header className="flex items-center justify-between border-b border-white/10 px-4 py-3">
             <div>
@@ -559,7 +459,7 @@ export const ConnectionsModal: React.FC<{
             </section>
 
             <section className="flex items-center justify-between gap-3">
-              <p className="text-[11px] leading-relaxed text-white/45">{typeCopy[activeType].description}</p>
+              <p className="text-[11px] leading-relaxed text-white/45">{typeCopy[activeType].description} · {getRelationshipLinkPrice(activeType)} ouro{activeType!=='competicao'?' / 30 dias':' por duelo'}</p>
               <button id="connections-invite-open" type="button" onClick={() => setInviteType(activeType)} className="shrink-0 rounded-md bg-[var(--skin-accent-color)] px-3 py-2 text-[10px] font-black uppercase tracking-[0.1em] text-black">
                 {typeCopy[activeType].invite}
               </button>
@@ -578,20 +478,20 @@ export const ConnectionsModal: React.FC<{
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-sm font-bold text-white">{other?.nickname || 'Aliado'}</div>
                           <div className="mt-0.5 text-[10px] text-white/45">
-                            {incoming ? 'Convidou você para' : 'Aguardando resposta'} · {typeCopy[invite.linkType as VisibleConnectionType].label}
+                            {invite.renewalLinkId?'Renovação':incoming?'Convidou você para':'Aguardando resposta'} · {typeCopy[invite.linkType as VisibleConnectionType].label}
                             {invite.linkType === 'competicao' && invite.arenaSnapshot?.name ? `: ${invite.arenaSnapshot.name}` : ''}
                           </div>
                           {invite.linkType === 'competicao' && (
                             <div className="mt-1 text-[9px] font-semibold text-rose-100/65">
                               {invite.arenaSnapshot?.durationDays || 7} dia(s) · {invite.arenaSnapshot?.plannedTotal || 0} execuções
                               {invite.arenaSnapshot?.rewardChestType ? ` · Baú ${invite.arenaSnapshot.rewardChestType} + ${invite.arenaSnapshot.rewardXp || 0} EXP` : ''}
-                              {incoming ? ' · 50 de ouro cobrados de quem enviou ao aceitar' : ' · sem cobrança até a aceitação'}
+                              {incoming?' · quem convidou paga':' · 50 ouros reservados'}
                             </div>
                           )}
                         </div>
                         {incoming ? (
                           <div className="flex gap-1">
-                            <button id={`connections-invite-accept-${invite.id}`} data-invite-accept={invite.linkType} type="button" disabled={Boolean(busyKey)} onClick={() => void respond(invite, 'accept')} className="min-h-11 min-w-11 flex items-center justify-center rounded-md bg-emerald-400/15 p-2 text-emerald-200" aria-label="Aceitar convite"><CheckIcon className="h-4 w-4" /></button>
+                            <button id={`connections-invite-accept-${invite.id}`} data-invite-accept={invite.linkType} type="button" disabled={Boolean(busyKey)} onClick={()=>setReviewInvite(invite)} className="min-h-11 min-w-11 flex items-center justify-center rounded-md bg-emerald-400/15 p-2 text-emerald-200" aria-label="Aceitar convite"><CheckIcon className="h-4 w-4" /></button>
                             <button id={`connections-invite-decline-${invite.id}`} type="button" disabled={Boolean(busyKey)} onClick={() => void respond(invite, 'decline')} className="min-h-11 min-w-11 flex items-center justify-center rounded-md bg-white/5 p-2 text-white/55" aria-label="Recusar convite"><XIcon className="h-4 w-4" /></button>
                           </div>
                         ) : (
@@ -605,7 +505,7 @@ export const ConnectionsModal: React.FC<{
             )}
 
             <section>
-              <h3 className="text-[10px] font-black uppercase tracking-[0.18em] text-white/45">Ativas</h3>
+              <h3 className="text-[10px] font-black uppercase tracking-[0.18em] text-white/45">Conexões</h3>
 
               {/*
                 * A REGRA DO ESPACO, ESCRITA ONDE ELA ACONTECE.
@@ -616,53 +516,18 @@ export const ConnectionsModal: React.FC<{
                 * curta de proposito: uma arena viva por conexao, concluida
                 * libera, e o resto se compra.
                 */}
-              {capacidade?.linked_arena && !capacidade.linked_arena.unlimited && (
-                <div className="mt-2 flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2">
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[10px] font-black uppercase tracking-[0.14em] text-white/70">
-                      Arenas compartilhadas
-                      <span className="ml-1.5 tabular-nums text-[var(--skin-accent-color)]">
-                        {capacidade.linked_arena.used} de {capacidade.linked_arena.limit}
-                      </span>
-                    </div>
-                    <div className="mt-0.5 text-[9px] leading-[1.35] text-white/42">
-                      Uma por conexão. Concluída libera o espaço.
-                    </div>
-                  </div>
-                  {capacidade.linked_arena.used >= capacidade.linked_arena.limit && (
-                    <button
-                      type="button"
-                      disabled={comprandoEspaco}
-                      onClick={async () => {
-                        setComprandoEspaco(true);
-                        // O preco vai junto, e e o MESMO que o botao escreve logo
-                        // abaixo. Sem ouro, e ele que o aviso usa pra oferecer a
-                        // compra — e por vir daqui, o numero da loja nunca
-                        // discorda do numero do botao.
-                        const ok = await buyRelationshipCapacitySlot('linked_arena', capacidade.linked_arena.costGold);
-                        // O resumo so muda no servidor, entao a faixa tem de
-                        // reler. Sem isto ela continuaria dizendo o limite
-                        // velho logo depois de o ouro sair.
-                        if (ok) await refresh();
-                        setComprandoEspaco(false);
-                      }}
-                      className="shrink-0 rounded-lg border border-[var(--skin-accent-color)]/35 bg-[var(--skin-accent-color)]/12 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.12em] text-[var(--skin-accent-color)] transition-colors hover:bg-[var(--skin-accent-color)]/20 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {comprandoEspaco ? '...' : <>Abrir espaço · {capacidade.linked_arena.costGold} {'\u{1FA99}'}</>}
-                    </button>
-                  )}
-                </div>
-              )}
               {loading ? (
                 <div className="mt-3 h-24 animate-pulse rounded-lg bg-white/5" />
               ) : visibleLinks.length === 0 ? (
-                <div id="connections-active-empty" className="mt-2 rounded-lg border border-dashed border-white/12 p-4 text-center text-xs text-white/45">Nenhuma conexão ativa.</div>
+                <div id="connections-active-empty" className="mt-2 rounded-lg border border-dashed border-white/12 p-4 text-center text-xs text-white/45">Nenhuma conexão nesta categoria.</div>
               ) : (
                 <div id="connections-active-list" data-active-count={visibleLinks.length} className="mt-2 space-y-3">
                   {visibleLinks.map((link) => {
                     const otherId = otherIdFor(link);
                     const other = profileFor(otherId);
                     const relationshipArenas = arenasForLink(link.id);
+                    const lifecycle=getRelationshipLifecycle(link);
+                    const live=lifecycle==='ativo';
                     const isMentor = link.linkType === 'mentoria' && link.mentorId === userProfile.id;
                     return (
                       <article key={link.id} data-connection-link={link.id} data-link-type={link.linkType} className="rounded-lg border border-white/10 bg-white/[0.035] p-3">
@@ -671,17 +536,17 @@ export const ConnectionsModal: React.FC<{
                           <div className="min-w-0 flex-1">
                             <div className="truncate text-sm font-black text-white">{other?.nickname || 'Aliado'}</div>
                             <div className="mt-0.5 text-[10px] text-white/45">
-                              {link.linkType === 'mentoria' ? (isMentor ? 'Você orienta' : 'Orienta você') : typeCopy[link.linkType as VisibleConnectionType].label}
+                              {link.linkType==='mentoria'?(isMentor?'Você acompanha':'Acompanha você'):typeCopy[link.linkType as VisibleConnectionType].label}{link.linkType!=='competicao'&&<> · {live?'Até ':lifecycle==='expirado'?'Expirada em ':'Encerrada em '}{new Date(link.endedAt||link.expiresAt||link.createdAt).toLocaleDateString('pt-BR')}</>}
                             </div>
                           </div>
                           <button type="button" onClick={() => openMessages(otherId)} className="rounded-md border border-white/10 p-2 text-white/65 hover:text-white" aria-label={`Conversar com ${other?.nickname || 'aliado'}`}><MessageIcon className="h-4 w-4" /></button>
                           <button type="button" disabled={Boolean(busyKey)} onClick={() => void endLink(link)} className="p-2 text-white/45 hover:text-rose-200" aria-label="Encerrar conexão"><TrashIcon className="h-4 w-4" /></button>
                         </div>
 
-                        {link.linkType === 'competicao' ? (
+                        {!live && link.linkType!=='competicao' ? (<div className="mt-3 flex gap-2"><button disabled={Boolean(busyKey)} onClick={()=>void renewLink(link)} className="rounded border border-white/20 px-3 py-2 text-xs text-white">Renovar · {getRelationshipRenewalPrice(link.linkType)} ouro</button><button disabled={Boolean(busyKey)} onClick={()=>void runBusy('hide:'+link.id,()=>runRelationshipRpc('hide_relationship_link',{p_link_id:link.id}))} className="text-xs text-white/50">Remover da minha lista</button></div>) : link.linkType === 'competicao' ? (
                           <div className="mt-3 space-y-2">
                             {challengesForLink(link.id).length === 0 ? (
-                              <p className="text-[11px] leading-relaxed text-white/45">Nenhum desafio ativo. Use “Desafiar alguém” acima para escolher arena e prazo.</p>
+                              <p className="text-[11px] leading-relaxed text-white/45">Nenhum desafio registrado.</p>
                             ) : challengesForLink(link.id).map((challenge) => {
                               const ownDone = challenge.challengerUserId === userProfile.id ? challenge.challengerCompletedAt : challenge.opponentCompletedAt;
                               const rivalDone = challenge.challengerUserId === userProfile.id ? challenge.opponentCompletedAt : challenge.challengerCompletedAt;
@@ -690,17 +555,20 @@ export const ConnectionsModal: React.FC<{
                               const ownArena = relationshipArenas.find((entry) => entry.arenaId === ownArenaId);
                               const rivalArena = relationshipArenas.find((entry) => entry.arenaId === rivalArenaId);
                               const name = String(challenge.metadata?.source_name || 'Duelo');
+                              const deadlinePassed=Boolean(challenge.deadlineAt && Date.parse(challenge.deadlineAt)<=Date.now());
+                              const closed=Boolean(challenge.sealedAt);
+                              const result=challenge.completedAt ? challenge.resultKind==='draw'?'Empate':challenge.winnerUserId===userProfile.id?'Você venceu':'Você perdeu' : deadlinePassed?'Apurando':'Em disputa';
                               return (
                                 <div key={challenge.id} className="rounded-lg border border-rose-300/12 bg-rose-500/[0.05] p-3">
                                   <div className="flex items-center justify-between gap-3">
                                     <div className="min-w-0">
                                       <div className="truncate text-sm font-bold text-white">{name}</div>
-                                      <div className="mt-1 text-[10px] text-white/45">Você: {ownDone ? 'concluiu' : 'em andamento'} · Rival: {rivalDone ? 'concluiu' : 'em andamento'}</div>
-                                      <div className="mt-1 text-[9px] font-semibold text-rose-100/58">{formatChallengeTime(challenge.deadlineAt, challenge.completedAt)}</div>
+                                      <div className="mt-1 text-[10px] text-white/45">Você: {ownDone?'concluiu':closed?'não concluiu':'em andamento'} · Rival: {rivalDone?'concluiu':closed?'não concluiu':'em andamento'}</div>
+                                      <div className="mt-1 text-[9px] font-semibold text-rose-100/58">{formatChallengeTime(challenge.deadlineAt, challenge.sealedAt)}{challenge.deadlineAt&&' · '+new Date(challenge.deadlineAt).toLocaleString('pt-BR')}</div>
                                     </div>
                                     <div className="flex flex-shrink-0 items-center gap-2">
-                                      <span className="text-[9px] font-black uppercase tracking-[0.12em] text-rose-200">{challenge.completedAt ? (challenge.resultKind === 'draw' ? 'Empate' : 'Concluído') : 'Ativo'}</span>
-                                      {!challenge.completedAt && (
+                                      <span className="text-[9px] font-black uppercase tracking-[0.12em] text-rose-200">{result}</span>
+                                      {!challenge.completedAt && !deadlinePassed && (
                                         <button
                                           type="button"
                                           disabled={Boolean(busyKey)}
@@ -712,6 +580,11 @@ export const ConnectionsModal: React.FC<{
                                       )}
                                     </div>
                                   </div>
+                                  {challenge.completedAt&&!closed&&!ownDone&&<p className="mt-2 text-xs text-white/65">O resultado está definido. Você ainda pode concluir sua arena até o prazo.</p>}
+                                  {closed&&<div className="mt-3 flex flex-wrap gap-2 text-xs">
+                                    {ownArena&&<><button disabled={Boolean(busyKey)} onClick={()=>void runBusy('copy:'+challenge.id,()=>runRelationshipRpc('manage_duel_copy',{p_challenge_id:challenge.id,p_action:'copy'}))} className="rounded border border-white/20 p-2">Copiar para minhas arenas</button><button disabled={Boolean(busyKey)} onClick={()=>void runBusy('delete:'+challenge.id,async()=>{if(await confirm({title:'Excluir cópia do duelo?',message:'O resultado e as recompensas ficam no histórico.',confirmLabel:'EXCLUIR',variant:'danger'}))await runRelationshipRpc('manage_duel_copy',{p_challenge_id:challenge.id,p_action:'delete'});})} className="p-2 text-white/50">Excluir cópia</button></>}
+                                    <button onClick={()=>{setCompetitionInviteFriend(friends.find(f=>f.id===otherId)||({id:otherId,nickname:other?.nickname||'Rival'} as UserProfile));setSelectedArenaId('');}} className="rounded border border-white/20 p-2">Revanche</button>
+                                  </div>}
                                   {(ownArena || rivalArena) && (
                                     <div className="mt-3 grid grid-cols-2 gap-2">
                                       {ownArena ? <ArenaProgress entry={ownArena} owner="Você" arenaViva={arenaVivaDoVinculo(ownArena)} acoesVivas={getActionsForArena(ownArena.arenaId)} onOpen={() => setArenaDoVinculoAberta(ownArena)} /> : <div />}
@@ -756,20 +629,20 @@ export const ConnectionsModal: React.FC<{
                           </p>
                         )}
 
-                        {link.linkType === 'mentoria' && !isMentor && (
+                        {live && link.linkType === 'mentoria' && !isMentor && (
                           <button
                             type="button"
                             onClick={() => {
-                              setSelectedArenaId(relationshipArenas[0]?.arenaId || '');
+                              setSelectedMentorshipIds(relationshipArenas.map(e=>e.arenaId));
                               setMentorshipPickerLink(link);
                             }}
                             className="mt-3 inline-flex items-center gap-2 rounded-md border border-amber-300/18 bg-amber-300/[0.06] px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-amber-100"
                           >
-                            <PlusIcon className="h-3.5 w-3.5" /> {relationshipArenas.length > 0 ? 'Trocar arena' : 'Escolher arena · 50 ouro'}
+                            <PlusIcon className="h-3.5 w-3.5" /> Selecionar arenas
                           </button>
                         )}
 
-                        {link.linkType === 'parceria' && (
+                        {live && link.linkType === 'parceria' && (
                           <button
                             id={`connections-partnership-pick-arena-${link.id}`}
                             type="button"
@@ -780,7 +653,7 @@ export const ConnectionsModal: React.FC<{
                             }}
                             className="mt-3 inline-flex items-center gap-2 rounded-md border border-cyan-300/18 bg-cyan-300/[0.06] px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-cyan-100"
                           >
-                            <PlusIcon className="h-3.5 w-3.5" /> {relationshipArenas.some((entry) => entry.createdByUserId === userProfile.id || String(entry.metadata?.owner_user_id || '') === userProfile.id) ? 'Trocar minha arena' : 'Escolher minha arena · 50 ouro'}
+                            <PlusIcon className="h-3.5 w-3.5" /> {relationshipArenas.some((entry) => entry.createdByUserId === userProfile.id || String(entry.metadata?.owner_user_id || '') === userProfile.id) ? 'Trocar minha arena' : 'Escolher arena'}
                           </button>
                         )}
                       </article>
@@ -798,6 +671,8 @@ export const ConnectionsModal: React.FC<{
           <div className="max-h-[70vh] w-full max-w-sm overflow-y-auto rounded-lg border border-white/12 bg-[#0b0c0f] p-4" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-center justify-between">
               <h3 className="text-base font-black text-white">{typeCopy[inviteType].invite}</h3>
+            <p className="my-2 text-xs text-white/60">{getRelationshipLinkPrice(inviteType)} ouros reservados no envio. Aceite confirma o pagamento; recusa ou expiração devolve a reserva.</p>
+            {inviteType==='mentoria'&&<label className="block text-xs text-white">Meu papel<select value={mentorshipRole} onChange={e=>setMentorshipRole(e.target.value as 'mentor'|'pupil')} className="ml-2 bg-black p-2"><option value="mentor">Acompanhar a outra pessoa</option><option value="pupil">Compartilhar minhas arenas</option></select></label>}
               <button aria-label="Voltar" type="button" onClick={() => setInviteType(null)} className="p-2 text-white/55"><XIcon className="h-4 w-4" /></button>
             </div>
             <div className="mt-3 space-y-2">
@@ -821,7 +696,7 @@ export const ConnectionsModal: React.FC<{
             <h3 className="text-base font-black text-white">Minha arena na parceria</h3>
             <p className="mt-1 text-[11px] text-white/45">A outra pessoa acompanha o progresso. Você continua sendo dono da arena.</p>
             <select id="connections-partnership-arena-select" value={selectedArenaId} onChange={(event) => setSelectedArenaId(event.target.value)} className="mt-4 w-full rounded-md border border-white/12 bg-black/50 px-3 py-3 text-sm text-white">
-              <option value="">Escolha uma arena</option>
+              <option value="">Escolher arena</option>
               {ownArenas.map((arena: Arena) => <option key={arena.id} value={arena.id}>{arena.name}</option>)}
             </select>
             <div className="mt-4 flex gap-2">
@@ -832,7 +707,7 @@ export const ConnectionsModal: React.FC<{
         </div>
       )}
 
-      {competitionInviteFriend && (
+      {competitionInviteFriend && !creatingArena && !editingCreatedArena && (
         <div className="fixed inset-0 z-[10030] flex items-end justify-center bg-black/70 p-3 sm:items-center" onClick={() => setCompetitionInviteFriend(null)}>
           <div className="w-full max-w-sm rounded-lg border border-white/12 bg-[#0b0c0f] p-4" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-center gap-3">
@@ -843,9 +718,10 @@ export const ConnectionsModal: React.FC<{
               </div>
             </div>
             <select id="connections-competition-arena-select" value={selectedArenaId} onChange={(event) => setSelectedArenaId(event.target.value)} className="mt-4 w-full rounded-md border border-white/12 bg-black/50 px-3 py-3 text-sm text-white">
-              <option value="">Escolha uma arena</option>
+              <option value="">Escolher arena</option>
               {competitionArenas.map((arena: Arena) => <option key={arena.id} value={arena.id}>{arena.name}</option>)}
             </select>
+            <button type="button" onClick={()=>setCreatingArena(true)} className="mt-2 rounded border border-white/20 px-3 py-2 text-xs text-white">Criar arena</button>
             {competitionArenas.length === 0 && <p className="mt-2 text-[10px] text-rose-200/70">Crie uma arena com ao menos uma ação mensurável.</p>}
 
             <div className="mt-4 flex items-center justify-between border-y border-white/8 py-3">
@@ -888,7 +764,7 @@ export const ConnectionsModal: React.FC<{
                 <div><div className="text-sm font-black text-amber-200">{selectedCompetitionStats.rewardXp} EXP</div><div className="text-[8px] font-bold uppercase text-white/45">Baú {selectedCompetitionStats.rewardChestType}</div></div>
               </div>
             )}
-            <p className="mt-3 text-[10px] leading-relaxed text-white/45">O envio é gratuito. Se o convite for aceito, 50 de ouro serão cobrados de você e as duas cópias serão seladas.</p>
+            <p className="mt-3 text-[10px] leading-relaxed text-white/45">50 ouros reservados no envio e pagos no aceite. Recusa, cancelamento ou expiração do convite devolvem a reserva. Os dois começam do zero.</p>
             <div className="mt-4 flex gap-2">
               <button type="button" onClick={() => setCompetitionInviteFriend(null)} className="flex-1 rounded-md border border-white/10 px-3 py-2 text-xs font-bold text-white/60">Cancelar</button>
               <button id="connections-competition-submit" type="button" disabled={!selectedArenaId || Boolean(busyKey)} onClick={() => void sendCompetitionInvite()} className="flex-1 rounded-md bg-rose-300 px-3 py-2 text-xs font-black text-black disabled:opacity-40">Enviar convite</button>
@@ -901,15 +777,13 @@ export const ConnectionsModal: React.FC<{
         <div className="fixed inset-0 z-[10030] flex items-end justify-center bg-black/70 p-3 sm:items-center" onClick={() => setMentorshipPickerLink(null)}>
           <div className="w-full max-w-sm rounded-lg border border-white/12 bg-[#0b0c0f] p-4" onClick={(event) => event.stopPropagation()}>
             <h3 className="text-base font-black text-white">Arena acompanhada</h3>
-            <p className="mt-1 text-[11px] leading-relaxed text-white/45">O mentor podera ver o progresso e conversar com você, mas não podera criar, editar ou apagar suas ações. A primeira escolha custa 50 de ouro; trocar depois não cobra novamente.</p>
-            <select id="connections-mentorship-arena-select" value={selectedArenaId} onChange={(event) => setSelectedArenaId(event.target.value)} className="mt-4 w-full rounded-md border border-white/12 bg-black/50 px-3 py-3 text-sm text-white">
-              <option value="">Escolha uma arena</option>
-              {ownArenas.map((arena: Arena) => <option key={arena.id} value={arena.id}>{arena.name}</option>)}
-            </select>
+            <p className="mt-1 text-xs text-white/50">Escolha quais arenas o mentor pode abrir e acompanhar. Alterações incluídas no período.</p>
+            <button onClick={()=>setSelectedMentorshipIds(selectedMentorshipIds.length===ownArenas.length?[]:ownArenas.map(a=>a.id))} className="my-2 text-xs text-amber-200">{selectedMentorshipIds.length===ownArenas.length?'Desmarcar todas':'Selecionar todas'}</button>
+            <div className="max-h-64 overflow-y-auto">{ownArenas.map(arena=><label key={arena.id} className="flex items-center gap-2 py-2 text-sm text-white"><input type="checkbox" checked={selectedMentorshipIds.includes(arena.id)} onChange={e=>setSelectedMentorshipIds(ids=>e.target.checked?[...ids,arena.id]:ids.filter(id=>id!==arena.id))}/>{arena.name}</label>)}</div>
             {ownArenas.length === 0 && <p className="mt-2 text-[10px] text-amber-200/70">Crie uma arena primeiro; o mentor não fará isso por você.</p>}
             <div className="mt-4 flex gap-2">
               <button type="button" onClick={() => setMentorshipPickerLink(null)} className="flex-1 rounded-md border border-white/10 px-3 py-2 text-xs font-bold text-white/60">Cancelar</button>
-              <button type="button" disabled={!selectedArenaId || Boolean(busyKey)} onClick={() => void saveMentorshipArena()} id="connections-mentorship-share" className="flex-1 rounded-md bg-amber-300 px-3 py-2 text-xs font-black text-black disabled:opacity-40">Compartilhar</button>
+              <button type="button" disabled={Boolean(busyKey)} onClick={() => void saveMentorshipArena()} id="connections-mentorship-share" className="flex-1 rounded-md bg-amber-300 px-3 py-2 text-xs font-black text-black disabled:opacity-40">Compartilhar</button>
             </div>
           </div>
         </div>
@@ -926,7 +800,7 @@ export const ConnectionsModal: React.FC<{
           <ArenaDetailModal
             arena={minha || previa}
             actionsOverride={minha ? undefined : (arenaDoVinculoAberta.actions || [])}
-            tasksOverride={minha ? undefined : (arenaDoVinculoAberta.tasks || [])}
+            tasksOverride={minha&&arenaDoVinculoAberta.linkType!=='competicao'?undefined:tasksForEntry(arenaDoVinculoAberta)}
             readOnly={!minha}
             linkedRelationshipLinkId={arenaDoVinculoAberta.relationshipLinkId}
             linkedRelationshipType={arenaDoVinculoAberta.linkType || null}
@@ -935,6 +809,16 @@ export const ConnectionsModal: React.FC<{
         );
       })()}
 
+      {creatingArena&&<NewArenaModal isOpen onClose={()=>setCreatingArena(false)} onArenaCreated={arena=>{setCreatingArena(false);setSelectedArenaId(arena.id);setEditingCreatedArena(arena);}}/>}
+      {editingCreatedArena&&<ArenaDetailModal arena={assets.flatMap(a=>a.arenas).find(a=>a.id===editingCreatedArena.id)||editingCreatedArena} onClose={()=>setEditingCreatedArena(null)}/>}
+      {reviewInvite&&<div className="fixed inset-0 z-[10040] flex items-center justify-center bg-black/80 p-4"><div className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-lg bg-[#10131a] p-5 text-white">
+        <h3 className="font-bold">{reviewInvite.renewalLinkId?'Renovar por 30 dias':'Revisar convite'}</h3><p className="my-2 text-sm">Quem enviou paga {reviewInvite.costGold} ouros. Você não será cobrado.</p>
+        {reviewInvite.linkType==='mentoria'&&<p className="text-sm">{reviewInvite.pupilUserId===userProfile.id?'Você escolhe as arenas que a outra pessoa poderá acompanhar.':'Você acompanhará as arenas autorizadas pela outra pessoa.'}</p>}
+        {reviewInvite.linkType==='competicao'&&<p className="text-sm">{reviewInvite.arenaSnapshot?.name} · {reviewInvite.arenaSnapshot?.durationDays} dias. Os dois começam do zero.</p>}
+        {reviewInvite.actionsSnapshot?.map((a,index)=><p key={index} className="mt-2 text-xs text-white/70">{a.name} · {a.repetitions||1} repetições · {a.duration||0} min</p>)}
+        {reviewInvite.arenaSnapshot?.selection?.map(a=><p key={a.arenaId} className="mt-2 text-sm">{a.name}</p>)}
+        <div className="mt-4 flex gap-3"><button onClick={()=>setReviewInvite(null)}>Voltar</button><button disabled={Boolean(busyKey)} onClick={async()=>{await respond(reviewInvite,'accept');setReviewInvite(null);}} className="rounded bg-amber-200 px-4 py-2 text-black">Aceitar</button></div>
+      </div></div>}
       {confirmationElement}
     </Portal>
   );

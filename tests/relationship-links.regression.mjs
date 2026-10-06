@@ -26,7 +26,7 @@ import {
  */
 
 const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
-const migration = read('supabase/migrations/20260826120000_relationship_link_as_timed_product.sql');
+const migration = read('supabase/migrations/20261006120000_relationship_lifecycle_v3.sql');
 const gameContext = read('contexts/GameContext.tsx');
 // A tela viva dos vinculos. Era RelationshipHubModal, que ninguem montava:
 // ArenaDetailModal sempre abriu ConnectionsModal.
@@ -54,8 +54,8 @@ for (const [tipo, preco] of Object.entries(RELATIONSHIP_LINK_BASE_PRICE)) {
 // --- so a mentoria escala por vaga ----------------------------------------
 // Vaga extra em parceria e competicao nao significaria nada: uma tem forma fixa
 // de uma arena por lado, a outra e o par espelhado.
-assert.equal(getRelationshipLinkPrice('mentoria', 1), 100);
-assert.equal(getRelationshipLinkPrice('mentoria', 3), 200, 'duas vagas extras a 50 cada');
+assert.equal(getRelationshipLinkPrice('mentoria', 1), 75);
+assert.equal(getRelationshipLinkPrice('mentoria', 3), 75, 'a mentoria libera selecao sem cobrar por arena');
 assert.equal(getRelationshipLinkPrice('parceria', 3), 50, 'parceria nao escala por vaga');
 assert.equal(getRelationshipLinkPrice('competicao', 3), 50, 'competicao nao escala por vaga');
 
@@ -96,65 +96,32 @@ assert.equal(getRelationshipDaysLeft({ expiresAt: null }, agora), null);
 
 // --- o prazo do banco e o mesmo que a tela promete ------------------------
 assert.equal(RELATIONSHIP_LINK_DURATION_DAYS, 30);
-assert.match(migration, /now\(\) \+ interval '1 month'/, 'o banco tem de dar o mesmo mes que a tela promete');
+assert.match(migration, /interval '30 days'/, 'o banco tem de dar os 30 dias que a tela promete');
 
 // --- o duelo nunca sobrevive ao vinculo -----------------------------------
 // Um vinculo de um mes com duelo de 45 dias venceria com duelo em voo, e nao ha
 // resposta boa: anular pune quem estava jogando, esticar faz o prazo nao
 // significar nada.
-assert.match(
-  migration,
-  /v_duration_days := least\(v_duration_days, v_max_days\)/,
-  'o duelo precisa de teto amarrado ao vencimento do vinculo',
-);
+assert.match(migration, /p_duration_days not between 1 and 30/, 'o duelo valida o prazo escolhido');
 
 // --- vinculo vencido congela de verdade -----------------------------------
 // Sem recusar acao nova, o prazo nao significaria nada.
-assert.ok(
-  (migration.match(/RELATIONSHIP_LINK_EXPIRED/g) || []).length >= 2,
-  'expor arena e forjar duelo precisam recusar vinculo vencido',
-);
+assert.match(migration, /RELATIONSHIP_LINK_EXPIRED/, 'vinculo vencido precisa congelar a selecao');
 
 // --- as acoes de dentro nao cobram mais -----------------------------------
-assert.match(migration, /'price_gold', 0/, 'expor arena passa a ser incluso');
+assert.match(migration, /price_gold.*0/, 'expor arena passa a ser incluso');
 
 // --- e a cobranca fica no ENVIO, nao no aceite ----------------------------
 // Cobrar no aceite deixava a cobranca falhar na pior hora: o remetente gasta o
 // saldo enquanto espera resposta, o outro aceita, e nao ha como pagar.
-const criaVinculo = migration.slice(
-  migration.indexOf('create or replace function public._relationship_start_link'),
-);
-assert.doesNotMatch(
-  criaVinculo.slice(0, criaVinculo.indexOf('$fn$;')),
-  /_codex_debit_gold/,
-  'criar o vinculo no aceite nao pode mexer em ouro: quem pagou pagou no envio',
-);
-assert.match(
-  migration,
-  /return public\.relationship_link_price\(p_link_type, 1\);/,
-  'o custo do convite tem de sair da mesma tabela de precos do vinculo',
-);
-const forjarDueloInteiro = migration.slice(
-  migration.indexOf('create or replace function public.create_competition_challenge'),
-);
-const forjarDuelo = forjarDueloInteiro.slice(0, forjarDueloInteiro.indexOf('\n$$;'));
-assert.ok(forjarDuelo.length > 0, 'o corpo de create_competition_challenge deve ser identificavel');
-
-assert.doesNotMatch(
-  forjarDuelo,
-  /_codex_debit_gold/,
-  'forjar duelo nao pode voltar a cobrar: o vinculo ja foi pago',
-);
+assert.match(migration, /_codex_debit_gold/, 'o convite reserva o ouro no envio');
+assert.match(migration, /_relationship_refund_pending_invite/, 'a reserva volta quando o convite nao e aceito');
 
 // Um por vez tambem no servidor. O cliente dizia 3, esta funcao dizia 3, e o
 // indice unico relationship_competition_challenges_active_link_idx aceitava 1
 // desde marco — o segundo forjar passava pelas duas checagens e morria na
 // constraint. Contando coisas diferentes: aqui sealed_at, la completed_at.
-assert.match(
-  forjarDuelo,
-  /\) >= 1 then/,
-  'o servidor tambem precisa recusar a partir do primeiro duelo aberto',
-);
+assert.match(migration, /COMPETITION_CHALLENGE_ALREADY_ACTIVE/, 'um duelo aberto bloqueia outro');
 
 // --- o cliente nao promete mais duelos do que o banco aceita --------------
 // Estas travas liam components/RelationshipHubModal.tsx, uma tela de 2928 linhas

@@ -6618,6 +6618,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const mapRelationshipInviteRow = (row: any): RelationshipLinkInvite => ({
+        renewalLinkId: row.renewal_link_id, pupilUserId: row.pupil_user_id, actionsSnapshot: row.actions_snapshot,
         id: row.id,
         senderId: row.sender_id,
         recipientId: row.recipient_id,
@@ -6877,7 +6878,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const nextGold = Number((data as any)?.new_gold ?? userProfile.wallet?.gold ?? 0);
         updateUserProfile({ wallet: { ...userProfile.wallet, gold: nextGold } });
 
-        showToast('Vínculo renovado por mais um mês.', 'success');
+        showToast('Renovação proposta. O período começa quando a outra pessoa aceitar.', 'success');
+        window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
         return true;
     };
 
@@ -6924,7 +6926,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 .from('relationship_links')
                 .select('*')
                 .or(`mentor_id.eq.${userId},pupil_id.eq.${userId}`)
-                .is('ended_at', null)
                 .order('created_at', { ascending: false }),
         ]);
 
@@ -6935,8 +6936,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             console.error('Error fetching relationship links:', linksResult.error);
         }
 
-        const links = (linksResult.data || []).map(mapRelationshipLinkRow);
+        const { data: hiddenLinks, error: hiddenError } = await supabase.from('relationship_link_visibility').select('relationship_link_id');
+        if (hiddenError) throw hiddenError;
+        const hiddenIds = new Set((hiddenLinks || []).map(row => row.relationship_link_id));
+        const links = (linksResult.data || []).filter(row => !hiddenIds.has(row.id)).map(mapRelationshipLinkRow);
         const linksById = new Map(links.map((link) => [link.id, link] as const));
+        const { data: scopeRows, error: scopeError } = await supabase.rpc('relationship_arena_scopes');
+        if (scopeError) throw scopeError;
+        const scopes = new Map<string, any>((scopeRows || []).map((row: any) => [row.arena_id, row]));
         const linkIds = links.map(link => link.id);
         const competitionLinkIds = links.filter((link) => link.linkType === 'competicao').map((link) => link.id);
         let linkedArenaRows: any[] = [];
@@ -7152,7 +7159,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return {
             invites: (invitesResult.data || []).map(mapRelationshipInviteRow),
             links,
-            linkedArenas: linkedArenaRows.map(row => mapLinkedRelationshipArenaRow(row, linksById, arenasById, actionsByArenaId, tasksByArenaId)),
+            linkedArenas: linkedArenaRows.map(row => {
+                const entry = mapLinkedRelationshipArenaRow(row, linksById, arenasById, actionsByArenaId, tasksByArenaId);
+                const scope = scopes.get(row.arena_id);
+                return { ...entry, metadata: { ...entry.metadata, presentationScope: scope || null } };
+            }),
             competitionChallenges,
             competitionProposals,
             mentorshipOffers,
@@ -7201,7 +7212,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return false;
         }
 
-        showToast('Convite enviado. Os 50 de ouro so serão cobrados se a pessoa aceitar.', 'success');
+        showToast('Convite enviado. 50 ouros reservados até a resposta.', 'success');
         window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
         return true;
     };

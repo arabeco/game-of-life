@@ -1,4 +1,4 @@
-import { buildCycleCommitment, CYCLE_SEASON_MISSION_RULE } from '../utils/cycleCommitment';
+import { buildCycleCommitment } from '../utils/cycleCommitment';
 import './readability-fixes.css';
 import './assets-stripes.css';
 ﻿import React, { lazy, Suspense, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -812,9 +812,6 @@ export const AssetsView: React.FC = () => {
                                                 </div>
                                             </div>
                                         </div>
-                                        <p className="mt-1 px-1 text-[10px] leading-snug text-white/60" title={CYCLE_SEASON_MISSION_RULE}>
-                                            Temporada é extra; pendências não descontam.
-                                        </p>
                                     </div>
                                 ) : (
                                     <div className="relative z-10 min-h-[26px]">

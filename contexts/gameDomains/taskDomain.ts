@@ -26,6 +26,7 @@ type SupabaseLike = { from: (table: string) => any };
 type CompletionAttentionResult = 'arena' | 'campaign' | null;
 
 import { buildRecurringDates, resolveScheduleHorizon } from '../../utils/cycleScheduling';
+import { buildCycleCommitment } from '../../utils/cycleCommitment';
 
 
 export interface TaskDomainApi {
@@ -500,7 +501,33 @@ export const createTaskDomain = ({
         const repsEvent = crossedThreshold >= 8
             ? 'daily_reps_high'
             : crossedThreshold >= 5 ? 'daily_reps_mid' : 'daily_reps_low';
-        const message = falarReacao(repsEvent, { count: crossedThreshold });
+
+        // O QUE FALTA HOJE E ONDE O CICLO ESTA, para a reacao dizer o que mudou
+        // e nao so contar. O ciclo usa a regua da tela (buildCycleCommitment),
+        // a mesma do widget e da leitura. Sem ciclo, {pct_ciclo} nao existe e a
+        // frase que o usa simplesmente nao e escolhida.
+        const pendentesHoje = new Set(nextTasks
+            .filter((task) => !task.completed && getTaskOperationalDateString(task) === operationalDate)
+            .map((task) => task.id)).size;
+        const vars: Record<string, string | number> = {
+            count: crossedThreshold,
+            faltam_hoje: pendentesHoje,
+            resto_do_dia: pendentesHoje === 0
+                ? 'nada pendente hoje'
+                : pendentesHoje === 1 ? 'falta 1 para hoje' : `faltam ${pendentesHoje} para hoje`,
+        };
+        if (activeCycle) {
+            const arenas = getArenas();
+            const promessa = buildCycleCommitment({
+                actions: arenas.flatMap((arena) => getActionsForArena(arena.id)),
+                arenas,
+                tasks: nextTasks,
+                startDate: activeCycle.startDate,
+                endDate: activeCycle.endDate,
+            });
+            if (promessa.plannedCount > 0) vars.pct_ciclo = Math.round(promessa.progressPercent);
+        }
+        const message = falarReacao(repsEvent, vars);
 
         emitOracleSpeech({
             title: crossedThreshold >= 8 ? 'Fechamento' : 'Ritmo',

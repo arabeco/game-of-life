@@ -130,7 +130,7 @@ export const ORACLE_SPEECH_LIBRARY: Record<OracleSpeechEvent, ToneVariants> = {
         ],
     },
 
-    /** Oito ou mais acoes reais no dia. Marcadores: {count} */
+    /** Oito ou mais acoes reais no dia. Marcadores: {count}, {faltam_hoje}, {resto_do_dia} ("faltam 2 para hoje" / "nada pendente hoje"), {pct_ciclo} (so com ciclo) */
     daily_reps_high: {
         neutro: [
             '{count} ações reais hoje. Muito bem; agora protege o fechamento.',
@@ -154,7 +154,7 @@ export const ORACLE_SPEECH_LIBRARY: Record<OracleSpeechEvent, ToneVariants> = {
         ],
     },
 
-    /** Cinco a sete acoes reais no dia. Marcadores: {count} */
+    /** Cinco a sete acoes reais no dia. Marcadores: {count}, {faltam_hoje}, {resto_do_dia} ("faltam 2 para hoje" / "nada pendente hoje"), {pct_ciclo} (so com ciclo) */
     daily_reps_mid: {
         neutro: [
             '{count} ações reais hoje. O dia ganhou corpo.',
@@ -178,7 +178,7 @@ export const ORACLE_SPEECH_LIBRARY: Record<OracleSpeechEvent, ToneVariants> = {
         ],
     },
 
-    /** Tres acoes reais no dia. Marcadores: {count} */
+    /** Tres acoes reais no dia. Marcadores: {count}, {faltam_hoje}, {resto_do_dia} ("faltam 2 para hoje" / "nada pendente hoje"), {pct_ciclo} (so com ciclo) */
     daily_reps_low: {
         neutro: [
             '{count} ações reais hoje. Muito bem.',
@@ -467,7 +467,13 @@ export const pickOracleSpeech = (
     // tentativa tinha um terco de chance de cair na mesma, e a anterior voltava
     // uma vez em vinte e sete. Raro o bastante para o teste passar por sorte, e
     // frequente o bastante para a pessoa ver. Filtrar torna impossivel.
-    const preenchidas = variants.map((linha) => fillOracleSpeech(linha, vars));
+    //
+    // Frase com marcador que ficou sem valor nao sai: "{pct_ciclo}" so existe
+    // para quem tem ciclo, e mostrar a chave crua seria pior que calar.
+    const preenchidas = variants
+        .map((linha) => fillOracleSpeech(linha, vars))
+        .filter((linha) => !/\{\w+\}/.test(linha));
+    if (preenchidas.length === 0) return '';
     const candidatas = avoid ? preenchidas.filter((linha) => linha !== avoid) : preenchidas;
     // Sobrando uma so, repetir e melhor que calar: a reacao responde a algo que a
     // pessoa acabou de fazer, e silencio ali e lido como defeito.

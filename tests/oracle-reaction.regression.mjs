@@ -70,7 +70,7 @@ assert.equal(
 // Com tres variantes e sorteio sem memoria, fechar duas arenas seguidas devolvia
 // a mesma frase uma vez em cada tres.
 
-const primeira = pickOracleReaction('arena_completed', 'neutro', { arena: 'Saude' }, {});
+const primeira = pickOracleReaction('arena_completed', 'neutro', { arena: 'Saude', entregas: 12, dias: 9 }, {});
 assert.ok(primeira.message, 'a reacao precisa sair');
 assert.equal(primeira.memory.arena_completed, primeira.message, 'a escolhida fica guardada');
 
@@ -78,7 +78,7 @@ assert.equal(primeira.memory.arena_completed, primeira.message, 'a escolhida fic
 let memoria = primeira.memory;
 for (let i = 0; i < 40; i += 1) {
   const anterior = memoria.arena_completed;
-  const proxima = pickOracleReaction('arena_completed', 'neutro', { arena: 'Saude' }, memoria);
+  const proxima = pickOracleReaction('arena_completed', 'neutro', { arena: 'Saude', entregas: 12, dias: 9 }, memoria);
   assert.notEqual(proxima.message, anterior, 'a reacao nao repete a frase imediatamente anterior');
   memoria = proxima.memory;
 }

@@ -10,6 +10,7 @@ import {
 } from '../supabase/functions/_shared/oracle-cycle-reading.ts';
 import { buildCycleCommitment } from '../utils/cycleCommitment.ts';
 import { fatosDaLeitura, lerMeuDiaECiclo } from '../utils/leituraDoCiclo.ts';
+import { ORACLE_SPEECH_LIBRARY, pickOracleSpeech } from '../constants/oracleSpeechLibrary.ts';
 
 /* ==========================================================================
  * A LEITURA DO CICLO — UM MOTOR, DUAS PORTAS.
@@ -149,5 +150,24 @@ assert.match(semLeitura, /resolveAutomaticOracleCategory/, 'sem leitura, a Sabed
 const chat = readFileSync(new URL('../components/OracleChat.tsx', import.meta.url), 'utf8');
 assert.match(chat, /lerMeuDiaECiclo\(/, 'o botao sai do motor');
 assert.doesNotMatch(chat, /Analisar meu ciclo|buildOracleDayBrief/, 'um botao so');
+
+// 8. A reacao ao concluir diz o que falta hoje e onde o ciclo esta.
+{
+  const original = ORACLE_SPEECH_LIBRARY.daily_reps_low.neutro;
+  ORACLE_SPEECH_LIBRARY.daily_reps_low.neutro = ['{count} hoje, {resto_do_dia}. Ciclo em {pct_ciclo}%.'];
+  assert.equal(
+    pickOracleSpeech('daily_reps_low', 'neutro', { count: 3, resto_do_dia: 'faltam 2 para hoje', pct_ciclo: 46 }),
+    '3 hoje, faltam 2 para hoje. Ciclo em 46%.',
+  );
+  assert.equal(
+    pickOracleSpeech('daily_reps_low', 'neutro', { count: 3, resto_do_dia: 'nada pendente hoje' }),
+    '',
+    'sem ciclo a frase com {pct_ciclo} nao sai com a chave crua',
+  );
+  ORACLE_SPEECH_LIBRARY.daily_reps_low.neutro = original;
+  const dominio = readFileSync(new URL('../contexts/gameDomains/taskDomain.ts', import.meta.url), 'utf8');
+  assert.match(dominio, /resto_do_dia:/, 'a reacao recebe o que falta hoje');
+  assert.match(dominio, /vars\.pct_ciclo = Math\.round\(promessa\.progressPercent\)/, 'e o ciclo pela regua da tela');
+}
 
 console.log('leitura-do-ciclo: ok');

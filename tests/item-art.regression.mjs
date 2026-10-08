@@ -117,17 +117,13 @@ const naPasta = (relativo) => fs.existsSync(path.join(root, 'public', relativo.r
 // vazio. O problema e que sumir nao da erro, nao aparece em log e nao tem tela
 // de aviso — o item simplesmente deixa de existir para quem joga.
 //
-// Por isso a lista fica fixada aqui, e nao vazia. Quando a arte de um item
+// Por isso a lista fica fixada aqui, mesmo vazia. Quando a arte de um item
 // entra, sua entrada e apagada. Se um item NOVO aparecer aqui, foi cadastrado
 // sem PNG e ninguem ia notar.
 {
-    // A Borda Soberano tem a arte pedida em
-    // docs/2026-10-06-handoff-fundos-de-patente-e-borda-soberano.md. Os quinze
-    // premios das regras secretas sairam desta lista em 08/10, quando a arte
-    // deles entrou.
-    const conhecidos = [
-        'item_border_4_002',        // Borda Soberano, epico
-    ];
+    // Vazia desde 08/10/2026: os quinze premios das regras secretas sairam de
+    // manha, e a Borda Soberano a noite, quando a arte de cada um entrou.
+    const conhecidos = [];
     const pendentes = ITEM_IDS_PENDING_ART.slice().sort();
     assert.deepEqual(
         pendentes,

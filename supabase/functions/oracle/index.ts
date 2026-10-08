@@ -482,7 +482,9 @@ const resolveOracleAutoDailyTarget = (
   preferences: Pick<OraclePreferencesRuntime, "enabledCategories" | "presenceLevel">,
   _appMode: AppMode,
 ): number => {
-  if (preferences.presenceLevel <= 0 || preferences.enabledCategories.length === 0) return 0;
+  if (preferences.presenceLevel <= 0) return 0;
+  // Sem tema marcado so a leitura sai: uma entrega no dia, e nao duas.
+  if (normalizeOracleManualCategories(preferences.enabledCategories).length === 0) return 1;
   // Duas entregas por dia desde 21/09: a leitura do ciclo, que vai para "Dia e
   // ciclo", e um card do banco de temas, que vai para "Sabedoria". O numero nao e
   // volume solto — ele so existe para o intervalo abaixo espalhar as duas pelo dia
@@ -1011,9 +1013,11 @@ const createAutomaticOracleMessage = async (
   if (!preferences.notificationsEnabled) return { status: "skipped", reason: "notifications_disabled" };
   if (!preferences.dailyFocusCardEnabled) return { status: "skipped", reason: "daily_focus_disabled" };
   if (preferences.presenceLevel <= 0) return { status: "skipped", reason: "presence_disabled" };
-  if (normalizeOracleManualCategories(preferences.enabledCategories).length === 0) {
-    return { status: "skipped", reason: "no_categories" };
-  }
+  // OS TEMAS SAO DA SABEDORIA, NAO DA LEITURA.
+  //
+  // Sem nenhum tema marcado, um `return` aqui calava as duas entregas do dia:
+  // quem desmarcava todos os cards perdia tambem a leitura do ciclo, que nao tem
+  // tema nenhum. Agora a falta de tema so tira a Sabedoria (veja `temSabedoria`).
   if (isQuietHours(now, preferences)) return { status: "skipped", reason: "quiet_hours" };
 
   const profile = profileResult.data ?? null;
@@ -1078,7 +1082,8 @@ const createAutomaticOracleMessage = async (
   );
 
   const faltaInsight = !jaSaiuHoje("cycle_insight");
-  const faltaSabedoria = !jaSaiuHoje("premium_content_card");
+  const temSabedoria = normalizeOracleManualCategories(preferences.enabledCategories).length > 0;
+  const faltaSabedoria = temSabedoria && !jaSaiuHoje("premium_content_card");
   if (!faltaInsight && !faltaSabedoria) return { status: "skipped", reason: "daily_limit" };
 
   const autoSentToday = automaticosDeHoje.length;

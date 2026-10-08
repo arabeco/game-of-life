@@ -75,7 +75,7 @@ assert.match(
 );
 assert.match(
   edge,
-  /const faltaSabedoria = !jaSaiuHoje\("premium_content_card"\)/,
+  /const faltaSabedoria = temSabedoria && !jaSaiuHoje\("premium_content_card"\)/,
   'O card de tema tem de ter contagem propria, senao a leitura gasta a vaga dele.',
 );
 assert.match(
@@ -214,6 +214,21 @@ const reuso = pickOracleCard({ category: tema, deliveredContents: tudoVisto });
 assert.ok(
   typeof reuso === 'string' && reuso.trim().length > 0,
   'Com o tema todo visto o banco tem de reusar, nao calar.',
+);
+
+// ---------------------------------------------------------------------------
+// OS TEMAS SAO DA SABEDORIA, NAO DA LEITURA.
+//
+// Sem tema marcado o servidor calava as duas entregas, e quem desmarcava todos
+// os cards perdia tambem a leitura do ciclo (08/10/2026). Agora sem tema so a
+// Sabedoria para.
+// ---------------------------------------------------------------------------
+
+assert.doesNotMatch(edge, /reason: "no_categories"/, 'falta de tema nao pode calar a leitura');
+assert.match(
+  edge,
+  /const faltaSabedoria = temSabedoria && !jaSaiuHoje\("premium_content_card"\);/,
+  'sem tema, so a Sabedoria deixa de sair',
 );
 
 console.log('[cards-de-sabedoria] ok');

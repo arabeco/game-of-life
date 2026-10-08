@@ -1,6 +1,6 @@
 {
-  "totalFiles": 212,
-  "totalBytes": 12515726,
+  "totalFiles": 217,
+  "totalBytes": 13149490,
   "assets": [
     {
       "path": "aurora_i.png",
@@ -603,6 +603,11 @@
       "sha256": "95c1e0e9ed8a928339ee501cb13c9a76798909a7310985f31310a4b03abdc41b"
     },
     {
+      "path": "avatars/SKIN_T1_ESCRIBA.png",
+      "bytes": 126478,
+      "sha256": "4dce198ea8533b2d9ec325fb4d1dd96cb108bea0b83893209d3b45a260b20048"
+    },
+    {
       "path": "avatars/SKIN_T1_ESCUDEIRO.png",
       "bytes": 118962,
       "sha256": "79c9b43c1a8e3647979169b90e943cfe7ad66f1f557a6fa7b6f97278b04319d3"
@@ -658,6 +663,11 @@
       "sha256": "61017e7127485ea48f30a57776bd505584471c2c2b4090246fd1f701c63aa17d"
     },
     {
+      "path": "avatars/SKIN_T2_MARATONA.png",
+      "bytes": 90097,
+      "sha256": "5dbd2f7c1752b9edd6853d4b9fa135b312c5701d70d452fbf3f8bec27cb4d6a9"
+    },
+    {
       "path": "avatars/SKIN_T2_MILITAR.png",
       "bytes": 13739,
       "sha256": "ee6fdff99c1b49a314b38d91575481fb9ca81d2f40da36ca8621ca5ad5b8ad55"
@@ -681,6 +691,11 @@
       "path": "avatars/SKIN_T3_ALQUIMISTA.png",
       "bytes": 35012,
       "sha256": "fb834bc5503143cf8a34ae1d81b26ad689b3107a6262c2238ae4bc8eccda8456"
+    },
+    {
+      "path": "avatars/SKIN_T3_ANCIAO.png",
+      "bytes": 137178,
+      "sha256": "30dcad1dd083d54f252ed08abaac192d29607ee37ecd3d88e95a74fd21acd2d0"
     },
     {
       "path": "avatars/SKIN_T3_ATELIE.png",
@@ -723,6 +738,11 @@
       "sha256": "6ebd46760f4421c73651a60a207bacc43955224f045b232ad29705d5fde5fd6b"
     },
     {
+      "path": "avatars/SKIN_T4_CAMPEAO.png",
+      "bytes": 116601,
+      "sha256": "15536c9cf565f39cf4ccf406a5391d99f8e728d849e309b0f0e6d7fb89d961d4"
+    },
+    {
       "path": "avatars/SKIN_T4_EMPREENDEDOR.png",
       "bytes": 96382,
       "sha256": "f965943accbeaf66859d167388f2db3585527d7e02418f0418957c2c5cf37860"
@@ -741,6 +761,11 @@
       "path": "avatars/SKIN_T4_REI.png",
       "bytes": 172734,
       "sha256": "95d28329da6467c959219293b3bda1c95c40ecd8b108d225d551d9d0f954e06c"
+    },
+    {
+      "path": "avatars/SKIN_T5_IMPERADOR.png",
+      "bytes": 163410,
+      "sha256": "82aa18a90c25e756df333b9aa0e739695f15f84d270d97c06e26864bd2bb022c"
     },
     {
       "path": "avatars/SKIN_T5_SOBERANO.png",

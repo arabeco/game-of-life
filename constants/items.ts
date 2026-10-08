@@ -338,26 +338,26 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_banner_t5_genesis', name: 'Gênesis', category: 'banner', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'banner', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/banner_t5_genesis.png` },
 
     // --- PREMIOS DAS REGRAS SECRETAS DE 06/10/2026 ---
-    // Arte encomendada em docs/2026-10-06-handoff-arte-das-regras-secretas.md.
-    // Nascem SEM imageUrl de proposito: peca sem PNG fica escondida do catalogo
-    // (isItemPendingArt), e a regra que a entrega so liga quando o premio
-    // inteiro aparece. Quando a arte chegar, o imageUrl entra aqui e a regra
-    // destrava para quem ja tinha cumprido.
-    { id: 'item_skin_1_012', name: 'Escriba', category: 'skin', tier: 1, rarity: 'common', icon: '📜', isRuleExclusive: true },
-    { id: 'item_skin_2_010', name: 'Maratona', category: 'skin', tier: 2, rarity: 'uncommon', icon: '🏅', isRuleExclusive: true },
-    { id: 'item_skin_3_009', name: 'Ancião', category: 'skin', tier: 3, rarity: 'rare', icon: '📿', isRuleExclusive: true },
-    { id: 'item_skin_4_005', name: 'Campeão', category: 'skin', tier: 4, rarity: 'epic', icon: '🏆', isRuleExclusive: true },
-    { id: 'item_skin_5_003', name: 'Imperador', category: 'skin', tier: 5, rarity: 'legendary', icon: '🦅', isRuleExclusive: true },
-    { id: 'item_border_t2_sereno', name: 'Sereno', category: 'border', tier: 2, rarity: 'uncommon', icon: '🌊', isRuleExclusive: true },
-    { id: 'item_banner_t2_sereno', name: 'Sereno', category: 'banner', tier: 2, rarity: 'uncommon', icon: '🌊', isRuleExclusive: true },
-    { id: 'item_border_t3_alvorada', name: 'Alvorada', category: 'border', tier: 3, rarity: 'rare', icon: '🌅', isRuleExclusive: true },
-    { id: 'item_banner_t3_alvorada', name: 'Alvorada', category: 'banner', tier: 3, rarity: 'rare', icon: '🌅', isRuleExclusive: true },
-    { id: 'item_border_t3_prisma', name: 'Prisma', category: 'border', tier: 3, rarity: 'rare', icon: '🔷', isRuleExclusive: true },
-    { id: 'item_banner_t3_prisma', name: 'Prisma', category: 'banner', tier: 3, rarity: 'rare', icon: '🔷', isRuleExclusive: true },
-    { id: 'item_border_t4_profeta', name: 'Profeta', category: 'border', tier: 4, rarity: 'epic', icon: '🧿', isRuleExclusive: true },
-    { id: 'item_banner_t4_profeta', name: 'Profeta', category: 'banner', tier: 4, rarity: 'epic', icon: '🧿', isRuleExclusive: true },
-    { id: 'item_border_t5_pedra_da_lua', name: 'Pedra da Lua', category: 'border', tier: 5, rarity: 'legendary', icon: '🌙', isRuleExclusive: true },
-    { id: 'item_banner_t5_pedra_da_lua', name: 'Pedra da Lua', category: 'banner', tier: 5, rarity: 'legendary', icon: '🌙', isRuleExclusive: true },
+    // Arte pedida em docs/2026-10-06-handoff-arte-das-regras-secretas.md e
+    // entregue em 06 e 08/10. A regra que entrega cada um so liga quando o
+    // premio inteiro tem imageUrl; sem ele a peca fica escondida do catalogo
+    // (isItemPendingArt). Como as regras contam o passado, quem ja tinha
+    // cumprido ganha no dia em que a arte entra.
+    { id: 'item_skin_1_012', name: 'Escriba', category: 'skin', tier: 1, rarity: 'common', icon: '📜', imageUrl: avatarPngAsset('SKIN_T1_ESCRIBA'), isRuleExclusive: true },
+    { id: 'item_skin_2_010', name: 'Maratona', category: 'skin', tier: 2, rarity: 'uncommon', icon: '🏅', imageUrl: avatarPngAsset('SKIN_T2_MARATONA'), isRuleExclusive: true },
+    { id: 'item_skin_3_009', name: 'Ancião', category: 'skin', tier: 3, rarity: 'rare', icon: '📿', imageUrl: avatarPngAsset('SKIN_T3_ANCIAO'), isRuleExclusive: true },
+    { id: 'item_skin_4_005', name: 'Campeão', category: 'skin', tier: 4, rarity: 'epic', icon: '🏆', imageUrl: avatarPngAsset('SKIN_T4_CAMPEAO'), isRuleExclusive: true },
+    { id: 'item_skin_5_003', name: 'Imperador', category: 'skin', tier: 5, rarity: 'legendary', icon: '🦅', imageUrl: avatarPngAsset('SKIN_T5_IMPERADOR'), isRuleExclusive: true },
+    { id: 'item_border_t2_sereno', name: 'Sereno', category: 'border', tier: 2, rarity: 'uncommon', icon: '🌊', imageUrl: `${INTERFACE_BASE_URL}/borda_t2_sereno.png`, isRuleExclusive: true },
+    { id: 'item_banner_t2_sereno', name: 'Sereno', category: 'banner', tier: 2, rarity: 'uncommon', icon: '🌊', imageUrl: `${INTERFACE_BASE_URL}/banner_t2_sereno.png`, isRuleExclusive: true },
+    { id: 'item_border_t3_alvorada', name: 'Alvorada', category: 'border', tier: 3, rarity: 'rare', icon: '🌅', imageUrl: `${INTERFACE_BASE_URL}/borda_t3_alvorada.png`, isRuleExclusive: true },
+    { id: 'item_banner_t3_alvorada', name: 'Alvorada', category: 'banner', tier: 3, rarity: 'rare', icon: '🌅', imageUrl: `${INTERFACE_BASE_URL}/banner_t3_alvorada.png`, isRuleExclusive: true },
+    { id: 'item_border_t3_prisma', name: 'Prisma', category: 'border', tier: 3, rarity: 'rare', icon: '🔷', imageUrl: `${INTERFACE_BASE_URL}/borda_t3_prisma.png`, isRuleExclusive: true },
+    { id: 'item_banner_t3_prisma', name: 'Prisma', category: 'banner', tier: 3, rarity: 'rare', icon: '🔷', imageUrl: `${INTERFACE_BASE_URL}/banner_t3_prisma.png`, isRuleExclusive: true },
+    { id: 'item_border_t4_profeta', name: 'Profeta', category: 'border', tier: 4, rarity: 'epic', icon: '🧿', imageUrl: `${INTERFACE_BASE_URL}/borda_t4_profeta.png`, isRuleExclusive: true },
+    { id: 'item_banner_t4_profeta', name: 'Profeta', category: 'banner', tier: 4, rarity: 'epic', icon: '🧿', imageUrl: `${INTERFACE_BASE_URL}/banner_t4_profeta.png`, isRuleExclusive: true },
+    { id: 'item_border_t5_pedra_da_lua', name: 'Pedra da Lua', category: 'border', tier: 5, rarity: 'legendary', icon: '🌙', imageUrl: `${INTERFACE_BASE_URL}/borda_t5_pedra_da_lua.png`, isRuleExclusive: true },
+    { id: 'item_banner_t5_pedra_da_lua', name: 'Pedra da Lua', category: 'banner', tier: 5, rarity: 'legendary', icon: '🌙', imageUrl: `${INTERFACE_BASE_URL}/banner_t5_pedra_da_lua.png`, isRuleExclusive: true },
 
     // --- GLIFOS ---
     // T1

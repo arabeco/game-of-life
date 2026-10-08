@@ -122,27 +122,11 @@ const naPasta = (relativo) => fs.existsSync(path.join(root, 'public', relativo.r
 // sem PNG e ninguem ia notar.
 {
     // A Borda Soberano tem a arte pedida em
-    // docs/2026-10-06-handoff-fundos-de-patente-e-borda-soberano.md, e os quinze
-    // premios das regras secretas de 06/10 em
-    // docs/2026-10-06-handoff-arte-das-regras-secretas.md. Os quinze nascem
-    // escondidos de proposito: a regra so dispara quando o premio aparece.
+    // docs/2026-10-06-handoff-fundos-de-patente-e-borda-soberano.md. Os quinze
+    // premios das regras secretas sairam desta lista em 08/10, quando a arte
+    // deles entrou.
     const conhecidos = [
-        'item_banner_t2_sereno',
-        'item_banner_t3_alvorada',
-        'item_banner_t3_prisma',
-        'item_banner_t4_profeta',
-        'item_banner_t5_pedra_da_lua',
         'item_border_4_002',        // Borda Soberano, epico
-        'item_border_t2_sereno',
-        'item_border_t3_alvorada',
-        'item_border_t3_prisma',
-        'item_border_t4_profeta',
-        'item_border_t5_pedra_da_lua',
-        'item_skin_1_012',
-        'item_skin_2_010',
-        'item_skin_3_009',
-        'item_skin_4_005',
-        'item_skin_5_003',
     ];
     const pendentes = ITEM_IDS_PENDING_ART.slice().sort();
     assert.deepEqual(

@@ -1,3 +1,5 @@
+import { ORACLE_ENGINE_V2, readProgress } from "../_shared/oracle-engine-v2.ts";
+import { readingFactsFromDatabase } from "../_shared/oracle-engine-facts.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import {
@@ -142,6 +144,7 @@ type ArenaRow = {
   asset_id?: string | null;
   name?: string | null;
   is_archived?: boolean | null;
+  description?: string | null;
 };
 
 type ActionRow = {
@@ -159,6 +162,8 @@ type TaskRow = {
   date: string;
   start_time?: number | null;
   completed?: boolean | null;
+  completed_at?: string | null;
+  created_at?: string | null;
 };
 
 type CycleRow = {
@@ -210,6 +215,7 @@ type UserProfileRow = {
   chests?: unknown;
   app_mode?: string | null;
   daily_proof_streak?: unknown;
+  completed_season_missions?: string[] | null;
   is_premium?: boolean | null;
   premium_expires_at?: string | null;
   subscription_tier?: string | null;
@@ -1000,7 +1006,7 @@ const createAutomaticOracleMessage = async (
       .maybeSingle<OraclePreferencesRow>(),
     supabaseAdmin
       .from("user_profiles")
-      .select("id, nickname, level, chests, app_mode, daily_proof_streak, is_premium, premium_expires_at, subscription_tier")
+      .select("id, nickname, level, chests, app_mode, daily_proof_streak, completed_season_missions, is_premium, premium_expires_at, subscription_tier")
       .eq("id", userId)
       .maybeSingle<UserProfileRow>(),
   ]);
@@ -1096,12 +1102,26 @@ const createAutomaticOracleMessage = async (
   }
 
   const operationalDate = getOperationalDateString(now);
-  const taskWindowStart = activeCycle?.start_date || shiftDateString(operationalDate, -30);
+  const resetAt = (profile?.completed_season_missions || []).filter(v => v.startsWith('free_progress_reset_at:')).map(v => v.slice('free_progress_reset_at:'.length)).filter(v => Number.isFinite(Date.parse(v))).sort().at(-1) || null;
+  const taskWindowStart = activeCycle?.start_date || (ORACLE_ENGINE_V2 ? (resetAt ? shiftDateString(resetAt.slice(0, 10), -1) : '1970-01-01') : shiftDateString(operationalDate, -30));
   // Ate o fim do ciclo, para a regua do prometido; e nunca antes de hoje, para a
   // leitura do dia existir mesmo com o prazo do ciclo ja vencido.
   const taskWindowEnd = activeCycle?.end_date && activeCycle.end_date > operationalDate
     ? activeCycle.end_date
     : operationalDate;
+  // A free round can be older than 30 days or contain more than one API page.
+  const fetchReadingTasks = async () => {
+    const data: TaskRow[] = [];
+    for (let offset = 0; ; offset += 1000) {
+      const page = await supabaseAdmin.from("scheduled_tasks")
+        .select("id, action_id, date, start_time, completed, completed_at, created_at")
+        .eq("user_id", userId).gte("date", taskWindowStart).lte("date", taskWindowEnd)
+        .order("id").range(offset, offset + 999).returns<TaskRow[]>();
+      if (page.error) return { data: [], error: page.error };
+      data.push(...(page.data || []));
+      if ((page.data || []).length < 1000) return { data, error: null };
+    }
+  };
   const [arenasResult, actionsResult, tasksResult, dailyCommitmentResult, assetLevelsResult] = await Promise.all([
     supabaseAdmin
       .from("arenas")
@@ -1116,7 +1136,7 @@ const createAutomaticOracleMessage = async (
       //
       // O campo nunca era lido: aparecia so no tipo e neste select. O efeito
       // pratico era o Oraculo parar de produzir card, e sem card nao ha push.
-      .select("id, asset_id, name, is_archived")
+      .select("id, asset_id, name, is_archived, description")
       .eq("user_id", userId)
       .returns<ArenaRow[]>(),
     supabaseAdmin
@@ -1124,13 +1144,7 @@ const createAutomaticOracleMessage = async (
       .select("id, arena_id, name, repetitions, action_type, source_quest_id")
       .eq("user_id", userId)
       .returns<ActionRow[]>(),
-    supabaseAdmin
-      .from("scheduled_tasks")
-      .select("id, action_id, date, start_time, completed")
-      .eq("user_id", userId)
-      .gte("date", taskWindowStart)
-      .lte("date", taskWindowEnd)
-      .returns<TaskRow[]>(),
+    fetchReadingTasks(),
     supabaseAdmin
       .from("daily_commitments")
       .select("date, stage")
@@ -1215,6 +1229,10 @@ const createAutomaticOracleMessage = async (
     }, {
       recentes: oracleMessages.map((message) => message.content).filter(Boolean).slice(0, 5),
     }).texto;
+    if (ORACLE_ENGINE_V2) {
+      const facts = readingFactsFromDatabase({ actions: actionsResult.data ?? [], arenas: arenasResult.data ?? [], tasks: tasksResult.data ?? [], cycle: activeCycle, resetAt, today: operationalDate });
+      text = facts.cycle || facts.arenas.some(a => a.target > 0) || facts.completed > 0 ? readProgress(facts) : null;
+    }
   }
 
   // SEM NADA PARA LER, A LEITURA FICA QUIETA — E A SABEDORIA NAO.

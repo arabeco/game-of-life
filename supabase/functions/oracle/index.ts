@@ -14,7 +14,7 @@ import {
   ORACLE_MODE_PROMPT_BLOCKS,
   type OracleHostOperationalState,
 } from "../_shared/oracle-host-voice.ts";
-import { medirCicloPrometido, montarLeituraDoCiclo } from "../_shared/oracle-cycle-reading.ts";
+import { medirCicloPrometido, montarLeituraDoCiclo, ritmoEsperado } from "../_shared/oracle-cycle-reading.ts";
 import { pickOracleCard } from "../_shared/oracle-card-library.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
@@ -733,7 +733,14 @@ const buildOracleOperationalContext = ({
 
   const completedCycleTasks = cycleTasks.filter((task) => asBoolean(task.completed, false));
   const completedActionsInCycle = new Set(completedCycleTasks.map((task) => task.action_id)).size;
-  const cycleCompletionPercent = cycleTasks.length > 0 ? Math.round((completedCycleTasks.length / cycleTasks.length) * 100) : 0;
+  // A REGUA DA TELA: as repeticoes prometidas, nao o que foi agendado. A mesma
+  // conta do widget e do botao do chat (_shared/oracle-cycle-reading.ts).
+  const promessaDoCiclo = activeCycle
+    ? medirCicloPrometido({ acoes: actions, arenas, tarefas: tasks, inicio: activeCycle.start_date, fim: activeCycle.end_date })
+    : null;
+  const cycleCompletionPercent = promessaDoCiclo && promessaDoCiclo.prometidas > 0
+    ? Math.round((promessaDoCiclo.feitas / promessaDoCiclo.prometidas) * 100)
+    : 0;
   const cycleTotalDays = activeCycle ? daysBetweenInclusive(activeCycle.start_date, activeCycle.end_date) : null;
   const cycleDayNumber = activeCycle
     ? Math.min(cycleTotalDays || 1, daysBetweenInclusive(activeCycle.start_date, operationalDate))
@@ -743,11 +750,10 @@ const buildOracleOperationalContext = ({
   // nascia devendo 14% as nove da manha, e a pessoa levava "atrasado" por ter
   // acordado. O que se cobra sao os dias FECHADOS.
   //
-  // utils/oracleOperationalContext.ts ja tinha esta correcao; esta copia ficou
-  // para tras. Sao duas contas do mesmo numero em dois runtimes, e enquanto forem
-  // duas elas precisam mudar juntas — o teste cards-de-sabedoria compara as duas.
+  // E com dois dias de folga, a mesma do app e do push: as tres contas saem de
+  // ritmoEsperado(), em _shared/oracle-cycle-reading.ts, e nao divergem mais.
   const expectedCycleProgress = activeCycle && cycleDayNumber && cycleTotalDays
-    ? Math.round(((cycleDayNumber - 1) / cycleTotalDays) * 100)
+    ? Math.round(ritmoEsperado(cycleDayNumber, cycleTotalDays))
     : null;
 
   // UM DIA CHEIO NAO E UM CICLO PERDIDO.

@@ -4,7 +4,9 @@
 import type { Action, Asset, Cycle, DailyCommitment, DailyProofStreak, OracleArenaSignal, OracleArenaTrend, OracleCategory, OracleContext, OracleMode, ScheduledTask } from '../types';
 import type { ArenaPact, ArenaPactProgress } from './arenaPacts';
 import { filterCycleTasksByScope } from './coreLoopUtils.js';
+import { buildCycleCommitment } from './cycleCommitment.ts';
 import { getOperationalDateString, getTaskOperationalDateString, shiftLocalDateString, taskMatchesOperationalDate } from './operationalDay.js';
+import { ritmoEsperado } from '../supabase/functions/_shared/oracle-cycle-reading.ts';
 
 type OracleOperationalContextInput = {
   now?: Date;
@@ -424,11 +426,15 @@ export const buildOracleOperationalContext = ({
    * comecado, e quanto mais curto o ciclo, mais cedo a cobranca.
    *
    * Com dias DECORRIDOS o dia 1 espera 0%, que e a unica expectativa honesta
-   * para quem ainda nao teve um dia inteiro. A regua so aperta a partir do dia 2,
-   * quando ja existe um dia de historia para comparar.
+   * para quem ainda nao teve um dia inteiro.
+   *
+   * E desde 08/10/2026 a conta tem DOIS DIAS DE FOLGA, a mesma do push da manha:
+   * as duas saem de ritmoEsperado(), em _shared/oracle-cycle-reading.ts. Sem
+   * isso a abertura dizia "atrasado" na mesma manha em que o push dizia "indo
+   * bem".
    */
   const expectedCycleProgress = activeCycle && cycleDayNumber && cycleTotalDays
-    ? Math.round(((cycleDayNumber - 1) / cycleTotalDays) * 100)
+    ? Math.round(ritmoEsperado(cycleDayNumber, cycleTotalDays))
     : null;
 
   /**
@@ -442,7 +448,22 @@ export const buildOracleOperationalContext = ({
   const cycleWorkableDaysLeft = cycleDaysRemaining !== null
     ? cycleDaysRemaining + 1
     : null;
-  const effectiveCycleProgress = typeof cycleProgress === 'number' ? cycleProgress : null;
+  // A REGUA DA TELA. `cycleProgress` vem do GameContext somando os relatorios
+  // diarios, e da outro numero que o widget e o card do ciclo. O Oraculo fala o
+  // numero que a pessoa ve: o prometido de buildCycleCommitment. O parametro so
+  // vale quando o ciclo nao promete nada.
+  const promessaDoCiclo = activeCycle
+    ? buildCycleCommitment({
+        actions,
+        arenas: assets.flatMap((asset) => asset.arenas),
+        tasks,
+        startDate: activeCycle.startDate,
+        endDate: activeCycle.endDate,
+      })
+    : null;
+  const effectiveCycleProgress = promessaDoCiclo && promessaDoCiclo.plannedCount > 0
+    ? Math.round(promessaDoCiclo.progressPercent)
+    : typeof cycleProgress === 'number' ? cycleProgress : null;
   const cycleCompletionDelta = expectedCycleProgress !== null && effectiveCycleProgress !== null
     ? effectiveCycleProgress - expectedCycleProgress
     : null;

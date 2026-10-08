@@ -169,9 +169,11 @@ for (const [nome, trecho] of [
 // copias tinham divergido.
 // ---------------------------------------------------------------------------
 
-const formula = /\(\(cycleDayNumber - 1\) \/ cycleTotalDays\) \* 100/;
-assert.match(edge, formula, 'O edge function tem de cobrar so os dias fechados.');
-assert.match(app, formula, 'O app tem de cobrar so os dias fechados.');
+// Desde 08/10/2026 as duas chamam a mesma funcao, com dois dias de folga — e
+// ela e quem garante os dias fechados (tests/leitura-do-ciclo).
+const formula = /Math\.round\(ritmoEsperado\(cycleDayNumber, cycleTotalDays\)\)/;
+assert.match(edge, formula, 'O edge function tem de usar a conta compartilhada.');
+assert.match(app, formula, 'O app tem de usar a conta compartilhada.');
 assert.doesNotMatch(
   edge,
   /\(cycleDayNumber \/ cycleTotalDays\) \* 100/,

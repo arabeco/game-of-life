@@ -36,8 +36,12 @@ android {
     }
     buildTypes {
         release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // R8 ligado: o Play cobra ofuscacao acima de 25% (estava em 2%).
+            // Os plugins do Capacitor trazem as proprias regras de keep; o
+            // shrinkResources fica desligado para nao sumir icone de notificacao
+            // que plugin procura pelo nome.
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             if (hasReleaseKeystore) {
                 signingConfig signingConfigs.release
             }

@@ -39,7 +39,7 @@ import { getRankBackgroundToken } from '../utils/profileBackgrounds';
 const RAIL_LEFT = 27;
 const MEDAL_CENTER = 40;
 
-export const NobilityLadder: React.FC = () => {
+export const NobilityLadder: React.FC<{ unfilteredBackgrounds?: boolean }> = ({ unfilteredBackgrounds = false }) => {
     const { userProfile, nobilityRanks } = useGame();
     const { trigger } = useSensoryFeedback();
     const [openRankId, setOpenRankId] = useState<string | null | undefined>(undefined);
@@ -90,7 +90,7 @@ export const NobilityLadder: React.FC = () => {
                         alt=""
                     />
                 </div>
-                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,7,10,0.62)_0%,rgba(6,7,10,0.88)_100%)]" />
+                {!unfilteredBackgrounds && <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,7,10,0.62)_0%,rgba(6,7,10,0.88)_100%)]" />}
 
                 <div className="relative px-4 py-5 text-center">
                     <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/56">Sua patente</p>
@@ -172,13 +172,13 @@ export const NobilityLadder: React.FC = () => {
                                 <div className="absolute inset-0">
                                     <ProfileBackgroundSurface
                                         value={getRankBackgroundToken(rank.id)}
-                                        className={'h-full w-full object-cover ' + (alcancada ? '' : 'opacity-60 grayscale-[0.5]')}
+                                        className={'h-full w-full object-cover ' + (alcancada || unfilteredBackgrounds ? '' : 'opacity-60 grayscale-[0.5]')}
                                         alt=""
                                     />
                                 </div>
                                 {/* Escurece forte a esquerda, onde o texto mora, e solta a
                                     direita, onde a imagem tem que aparecer. */}
-                                <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(6,7,10,0.94)_0%,rgba(6,7,10,0.82)_46%,rgba(6,7,10,0.42)_100%)]" />
+                                {!unfilteredBackgrounds && <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(6,7,10,0.94)_0%,rgba(6,7,10,0.82)_46%,rgba(6,7,10,0.42)_100%)]" />}
 
                                 <div className="relative px-3 py-3">
                                     {proximo && <p className="mb-2 text-[11px] font-bold text-[#f3d591]">PRÓXIMO DESBLOQUEIO · faltam {num(Math.max(0, rank.expTotalRequired - exp))} XP</p>}

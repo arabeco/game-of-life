@@ -302,7 +302,7 @@ const chat = readFileSync(new URL('../components/OracleChat.tsx', import.meta.ur
 assert.match(chat, /purpose === 'oracle_speech'/, 'falas antigas permanecem no histórico');
 assert.match(chat, /isSpeech \? msg.timestamp.toLocaleString/, 'falas antigas mostram data e hora');
 assert.match(chat, /Ler meu dia/, 'leitura diária visível');
-assert.match(chat, /Analisar meu ciclo/, 'análise de ciclo visível');
+assert.match(chat, /lerMeuDiaECiclo/, 'dia e ciclo saem do mesmo motor do push');
 assert.match(chat, /Sabedoria/, 'cards têm aba própria');
 const lerMeuDia = chat.slice(
   chat.indexOf('const handleReadMyDay'),

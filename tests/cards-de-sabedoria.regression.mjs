@@ -94,7 +94,7 @@ assert.match(
 
 assert.match(
   edge,
-  /category = "analise_padroes";\s*\n\s*purpose = "cycle_insight";/,
+  /let category: OracleCategory = "analise_padroes";[\s\S]{0,80}let purpose = "cycle_insight";/,
   'A leitura tem de gravar a propria categoria, nao uma da biblioteca.',
 );
 

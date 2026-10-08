@@ -2,7 +2,7 @@ import { writeFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { buildOracleOperationalContext } from '../utils/oracleOperationalContext.ts';
 import { buildOracleCycleCoachBrief, oracleCoachFamily } from '../utils/oracleCoach.ts';
-import { buildOracleDayBrief } from '../utils/oracleDayBrief.ts';
+import { lerMeuDiaECiclo } from '../utils/leituraDoCiclo.ts';
 
 // Fixtures fictícias e determinísticas. Nenhum acesso ao banco ou conta real.
 const now = new Date(2026, 8, 10, 18);
@@ -39,7 +39,7 @@ const profiles = [
 const ACHADOS = process.env.ACHADOS || '(preencher apos rodar)';
 const results = profiles.map(p => {
   const context = buildOracleOperationalContext(p.input);
-  const day = buildOracleDayBrief(p.tasks, now);
+  const day = lerMeuDiaECiclo({ tasks: p.tasks, actions: p.input.actions, assets: p.input.assets, activeCycle: p.input.activeCycle, now });
   const seen = {};
   const readings = Array.from({ length: 5 }, () => {
     // O auditor e o item 17 da revisao: alem da resposta, o raciocinio que levou
@@ -106,7 +106,7 @@ const por = id => results.find(r => r.id === id);
 const report = ['# Oráculo — simulação de cinco perfis', '', 'Data simulada: 10/09/2026 às 18h. Ciclos de 01 a 14/09. Dados fictícios passam pelo construtor real de contexto e pelas leituras reais do app, sem rede. Os percentuais de entrada são calculados pelas metas e conclusões destes cenários simples; não simulam toda a pontuação do produto.', '', 'Cada perfil pede a análise do ciclo cinco vezes, sem mudança nos dados. Entre consultas, a memória de assuntos é atualizada como no painel. Isso permite observar repetição e contradições. Não é validação visual, de notificações ou com usuários reais.', ''];
 report.push('## Achados da simulação', '', ACHADOS, '');
 for (const r of results) {
-  report.push(`## ${r.name}`, '', r.description, '', `Dados calculados: ${JSON.stringify(r.metrics)}.`, '', '**Ler meu dia**', '', `> ${r.day.content}`, '', '**Analisar meu ciclo — respostas reais**', '');
+  report.push(`## ${r.name}`, '', r.description, '', `Dados calculados: ${JSON.stringify(r.metrics)}.`, '', '**Ler meu dia e ciclo**', '', `> ${r.day.content}`, '', '**Analisar meu ciclo — respostas reais**', '');
   r.readings.forEach((reading, i) => {
     const a = reading.audit;
     report.push(`${i + 1}. ${reading.content}`, `   - Botões: ${reading.quickActions.map(b => b.label).join(' · ')}.`, `   - Regra: \`${reading.id}\`.`);

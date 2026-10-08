@@ -14,7 +14,7 @@ import {
   ORACLE_MODE_PROMPT_BLOCKS,
   type OracleHostOperationalState,
 } from "../_shared/oracle-host-voice.ts";
-import { buildContextualOracleLine } from "../_shared/oracle-lines.ts";
+import { medirCicloPrometido, montarLeituraDoCiclo } from "../_shared/oracle-cycle-reading.ts";
 import { pickOracleCard } from "../_shared/oracle-card-library.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
@@ -150,6 +150,7 @@ type ActionRow = {
   name?: string | null;
   repetitions?: number | null;
   action_type?: string | null;
+  source_quest_id?: string | null;
 };
 
 type TaskRow = {
@@ -1085,7 +1086,11 @@ const createAutomaticOracleMessage = async (
 
   const operationalDate = getOperationalDateString(now);
   const taskWindowStart = activeCycle?.start_date || shiftDateString(operationalDate, -30);
-  const taskWindowEnd = activeCycle?.end_date || operationalDate;
+  // Ate o fim do ciclo, para a regua do prometido; e nunca antes de hoje, para a
+  // leitura do dia existir mesmo com o prazo do ciclo ja vencido.
+  const taskWindowEnd = activeCycle?.end_date && activeCycle.end_date > operationalDate
+    ? activeCycle.end_date
+    : operationalDate;
   const [arenasResult, actionsResult, tasksResult, dailyCommitmentResult, assetLevelsResult] = await Promise.all([
     supabaseAdmin
       .from("arenas")
@@ -1105,7 +1110,7 @@ const createAutomaticOracleMessage = async (
       .returns<ArenaRow[]>(),
     supabaseAdmin
       .from("actions")
-      .select("id, arena_id, name, repetitions, action_type")
+      .select("id, arena_id, name, repetitions, action_type, source_quest_id")
       .eq("user_id", userId)
       .returns<ActionRow[]>(),
     supabaseAdmin
@@ -1156,10 +1161,10 @@ const createAutomaticOracleMessage = async (
   // A leitura sai na frente quando as duas estao pendentes: ela fala do dia que
   // esta acontecendo e envelhece dentro do proprio dia. O card de tema serve igual
   // de manha ou de noite, entao ele e o que pode esperar.
-  let category: OracleCategory;
-  let text: string | null;
-  let purpose: string;
-  let summary: string;
+  let category: OracleCategory = "analise_padroes";
+  let text: string | null = null;
+  let purpose = "cycle_insight";
+  let summary = "Leitura do seu ciclo";
 
   if (faltaInsight) {
     // A LEITURA PARA DE PEDIR UMA CATEGORIA EMPRESTADA.
@@ -1169,22 +1174,44 @@ const createAutomaticOracleMessage = async (
     // "Carta inspiradora" por fora, os seus numeros por dentro. O nome proprio dela
     // sempre existiu — analise_padroes, "Leitura de ritmo" —, e a primeira aba ja
     // sabia receber ele. Agora a categoria e o proposito dizem a mesma coisa.
-    category = "analise_padroes";
-    purpose = "cycle_insight";
-    summary = "Leitura do seu ciclo";
-    // Written line instead of a model call: these speak about the player's own numbers,
-    // so a template filled from context cannot invent them, costs nothing per delivery,
-    // and does not disappear when the provider is unreachable.
-    text = buildContextualOracleLine({
-      state: operationalState,
-      context: contextData,
-      recentLines: oracleMessages.map((message) => message.content).filter(Boolean).slice(0, 5),
-    });
+    //
+    // O MESMO MOTOR DO BOTAO DO CHAT. Eram 39 frases por estado operacional, e de
+    // manha elas mandavam cortar, deixar ir e tirar arena do ciclo — com um
+    // percentual que dividia pelo agendado, enquanto a tela divide pelo
+    // prometido. Agora o push e o botao "Ler meu dia e ciclo" saem de
+    // _shared/oracle-cycle-reading.ts, com a regua da tela e dois dias de folga.
+    const deHoje = (tasksResult.data ?? []).filter((task) => taskMatchesOperationalDate(task, operationalDate));
+    const ciclo = activeCycle && activeCycle.start_date <= operationalDate
+      ? {
+        dia: Math.max(1, contextData.cycleDayNumber || 1),
+        totalDias: Math.max(1, contextData.cycleTotalDays || 1),
+        prazoAcabou: activeCycle.end_date < operationalDate,
+        ...medirCicloPrometido({
+          acoes: actionsResult.data ?? [],
+          arenas: arenasResult.data ?? [],
+          tarefas: tasksResult.data ?? [],
+          inicio: activeCycle.start_date,
+          fim: activeCycle.end_date,
+        }),
+      }
+      : null;
+    text = montarLeituraDoCiclo({
+      hoje: {
+        agendadas: new Set(deHoje.map((task) => task.id)).size,
+        feitas: new Set(deHoje.filter((task) => asBoolean(task.completed, false)).map((task) => task.id)).size,
+      },
+      ciclo,
+    }, {
+      recentes: oracleMessages.map((message) => message.content).filter(Boolean).slice(0, 5),
+    }).texto;
+  }
 
-    // No line fits the current state with the data available. Staying quiet is better
-    // than delivering something generic that ignores what is happening.
-    if (!text) return { status: "skipped", reason: "no_line_for_state" };
-  } else {
+  // SEM NADA PARA LER, A LEITURA FICA QUIETA — E A SABEDORIA NAO.
+  //
+  // Antes o silencio da leitura dava `return` aqui e segurava o card de tema
+  // junto: quem joga sem ciclo e sem planner nunca recebia nenhum dos dois.
+  if (!text) {
+    if (!faltaSabedoria) return { status: "skipped", reason: "nothing_to_read" };
     const tema = resolveAutomaticOracleCategory(
       appMode,
       preferences.activeMode,

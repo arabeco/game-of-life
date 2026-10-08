@@ -132,10 +132,11 @@ assert.doesNotMatch(coachSource, /supabase|fetch\(|invoke\(|hasPremiumAccess/i);
 assert.doesNotMatch(coachSource, /localStorage|sessionStorage/, 'o coach nao le armazenamento');
 
 const chatSource = readFileSync(new URL('../components/OracleChat.tsx', import.meta.url), 'utf8');
-// Aceita o segundo argumento: o que a regra protege e a leitura sair do contexto
-// LOCAL, nao a aridade da chamada.
-assert.match(chatSource, /buildOracleCycleCoachBrief\(\s*operationalContext\b/);
-assert.match(chatSource, /registrarLeituraDoCoach\(/, 'o que foi lido fica registrado, senao o descanso nunca comeca');
+// Desde 08/10/2026 o botao do chat le o dia e o ciclo pelo motor do push
+// (tests/leitura-do-ciclo.regression.mjs). O coach segue local e segue vivo: e
+// ele que escolhe os botoes que acompanham a fala de abertura.
+const appSource = readFileSync(new URL('../components/AuthenticatedApp.tsx', import.meta.url), 'utf8');
+assert.match(appSource, /buildOracleCycleCoachBrief\(oracleContext\)\.quickActions/);
 assert.match(chatSource, /case 'open_arena'/);
 assert.match(chatSource, /showArenaId: arenaId/);
 

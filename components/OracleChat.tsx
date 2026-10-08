@@ -8,14 +8,11 @@ import { buildActionPoolByDate } from '../utils/coreLoopUtils.js';
 import { isTaskInPool } from '../utils/taskDomain.js';
 import { hasPremiumAccess } from '../utils/premiumAccess';
 import { getOracleFeedQuotaStatus } from '../utils/oracleFeedUtils';
-import { buildOracleOperationalContext } from '../utils/oracleOperationalContext';
 import { getNotificationBody, getNotificationTitle, getOracleChatNotificationsForProfile } from '../constants/oracleNotificationPolicy';
 import { APP_NAVIGATE_EVENT, type AppNavigatePayload } from '../utils/arenaAttention';
 import { PLANNER_OPEN_ACTION_MODAL_EVENT } from '../utils/restScreenActionSession';
 import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
-import { buildOracleDayBrief } from '../utils/oracleDayBrief';
-import { buildOracleCycleCoachBrief } from '../utils/oracleCoach';
-import { lerMemoriaDoCoach, registrarLeituraDoCoach } from '../utils/oracleCoachMemory';
+import { lerMeuDiaECiclo } from '../utils/leituraDoCiclo';
 import { emitOracleSpeech } from '../utils/oracleSpeech';
 import { OracleMissionPanel } from './OracleMissionPanel';
 import { Sun, Flag, BookOpen } from 'lucide-react';
@@ -23,8 +20,7 @@ import { Sun, Flag, BookOpen } from 'lucide-react';
 type OracleTabTarget = 'chat' | 'requests';
 // Marca a leitura pedida a mao: uma so por vez na lista, e nunca vai para o banco.
 const READING_FEED_ID = 'reading:now';
-const CYCLE_READING_FEED_ID = 'reading:cycle';
-const isReading = (id?: string) => id === READING_FEED_ID || id === CYCLE_READING_FEED_ID;
+const isReading = (id?: string) => id === READING_FEED_ID;
 
 /**
  * Leitura nao e sabedoria.
@@ -335,27 +331,6 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     }));
   }, []);
 
-  const operationalContext = useMemo(() => buildOracleOperationalContext({
-    now: new Date(),
-    assets,
-    actions,
-    tasks,
-    activeCycle,
-    dailyCommitment,
-    dailyProofStreak: userProfile.dailyProofStreak || null,
-    cycleProgress,
-    activeMode: currentMode,
-    customModeInstructions: oraclePreferences?.customModeInstructions || null,
-    enabledCategories: oraclePreferences?.enabledCategories || [],
-    username: userProfile.nickname || 'Viajante',
-    level: userProfile.level ?? 0,
-    clanName: null,
-    seasonName: null,
-    pendingChests: userProfile.chests?.reduce((acc, chest) => acc + (chest.count || 0), 0) || 0,
-    activeArenaPact,
-    arenaPactProgress,
-  }), [activeArenaPact, arenaPactProgress, activeCycle, actions, assets, currentMode, cycleProgress, dailyCommitment, oraclePreferences, tasks, userProfile]);
-
 
   // Update mode when preferences change
   useEffect(() => {
@@ -571,28 +546,20 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   // E ela não empilha: o mesmo feedId sai e volta, entao pedir de novo troca a
   // leitura no lugar e a hora muda junto. Continua sem gravar no banco — some ao
   // fechar o Oráculo, como a proposta de missão.
+  //
+  // UM BOTAO SO, O MESMO MOTOR DO PUSH DA MANHA. "Ler meu dia" e "Analisar meu
+  // ciclo" diziam quase a mesma coisa com contas diferentes; agora a leitura e
+  // uma — o ciclo e o dia — e sai de supabase/functions/_shared/
+  // oracle-cycle-reading.ts, o mesmo arquivo que monta o push.
   const handleReadMyDay = useCallback(() => {
-    const brief = buildOracleDayBrief(tasks);
+    const brief = lerMeuDiaECiclo({ tasks, actions, assets, activeCycle });
     sensory('click_soft');
     setMessages(previous => [...previous.filter(message => message.feedId !== READING_FEED_ID), {
       role: 'assistant', content: brief.content, timestamp: new Date(), mode: currentMode,
-      feedId: READING_FEED_ID, feedCategory: 'analise_padroes', feedSummary: 'Meu dia',
+      feedId: READING_FEED_ID, feedCategory: 'analise_padroes', feedSummary: 'Meu dia e ciclo',
       feedTrigger: 'manual', quickActions: brief.quickActions,
     }]);
-  }, [tasks, sensory, currentMode]);
-
-  const handleAnalyzeCycle = useCallback(() => {
-    const memoria = lerMemoriaDoCoach(userProfile.id);
-    const brief = buildOracleCycleCoachBrief(operationalContext, memoria);
-    if (!brief?.content) return;
-    registrarLeituraDoCoach(userProfile.id, brief.id);
-    sensory('click_soft');
-    setMessages(previous => [...previous.filter(message => message.feedId !== CYCLE_READING_FEED_ID), {
-      role: 'assistant', content: brief.content, timestamp: new Date(), mode: currentMode,
-      feedId: CYCLE_READING_FEED_ID, feedCategory: 'analise_padroes', feedSummary: 'Meu ciclo',
-      feedTrigger: 'manual', quickActions: brief.quickActions,
-    }]);
-  }, [operationalContext, sensory, currentMode, userProfile.id]);
+  }, [tasks, actions, assets, activeCycle, sensory, currentMode]);
 
   const runQuickAction = useCallback((action: ChatQuickAction) => {
     switch (action.kind) {
@@ -791,9 +758,8 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
             event.preventDefault(); setSection(tabs[next].id); document.getElementById(`oracle-tab-${tabs[next].id}`)?.focus();
           }} onClick={() => setSection(id)}><Icon size={15} aria-hidden="true" className="shrink-0" />{label}</button>)}
         </div>
-        {section === 'guidance' && <div className="grid shrink-0 grid-cols-2 gap-2 px-4 pt-3">
-          <button id="oracle-read-my-day" onClick={handleReadMyDay} className="min-h-14 rounded-xl border border-white/10 bg-white/5 p-3 text-left"><span className="block text-xs font-bold">Ler meu dia</span><span className="text-[11px] text-white/50">Atividades de hoje</span></button>
-          <button id="oracle-analyze-cycle" onClick={handleAnalyzeCycle} className="min-h-14 rounded-xl border border-white/10 bg-white/5 p-3 text-left"><span className="block text-xs font-bold">Analisar meu ciclo</span><span className="text-[11px] text-white/50">Metas, ritmo e progresso</span></button>
+        {section === 'guidance' && <div className="shrink-0 px-4 pt-3">
+          <button id="oracle-read-my-day" onClick={handleReadMyDay} className="min-h-14 w-full rounded-xl border border-white/10 bg-white/5 p-3 text-left"><span className="block text-xs font-bold">Ler meu dia e ciclo</span><span className="text-[11px] text-white/50">O que já foi feito e onde o ciclo está</span></button>
         </div>}
 
         {/* Messages */}

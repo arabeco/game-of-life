@@ -38,6 +38,17 @@ const manualQaNotes = [
 const suites = {
   core: [
     {
+      id: 'leitura-do-ciclo',
+      label: 'Leitura do ciclo regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'leitura-do-ciclo.regression.mjs')]],
+      kind: 'logic',
+      interactions: [
+        'push da manha e botao do chat saem do mesmo motor',
+        'a regua do servidor bate com a da tela',
+        'dois dias de folga, e nenhuma frase de bronca',
+      ],
+    },
+    {
       id: 'medidor-de-segredos',
       label: 'Medidor de segredos regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'medidor-de-segredos.regression.mjs')]],

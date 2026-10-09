@@ -1,3 +1,5 @@
+import { ORACLE_ENGINE_V2, readingFacts } from './oracleEngineV2.ts';
+import { readProgress } from '../supabase/functions/_shared/oracle-engine-v2.ts';
 import type { Action, Asset, Cycle, ScheduledTask } from '../types';
 import type { OracleCycleCoachBrief } from './oracleCoach';
 import { buildCycleCommitment } from './cycleCommitment.ts';
@@ -20,6 +22,7 @@ export const fatosDaLeitura = ({ tasks, actions, assets, activeCycle, now = new 
   actions: Action[];
   assets: Asset[];
   activeCycle: Cycle | null | undefined;
+  resetAt?: string | null;
   now?: Date;
 }): FatosDaLeitura => {
   const hojeData = getOperationalDateString(now);
@@ -57,8 +60,11 @@ export const lerMeuDiaECiclo = (entrada: Parameters<typeof fatosDaLeitura>[0]): 
   const leitura = montarLeituraDoCiclo(fatos, { nuncaVazia: true });
   return {
     id: `leitura:${leitura.estados.ciclo}:${leitura.estados.dia}`,
-    content: leitura.texto || '',
-    quickActions: [
+    content: ORACLE_ENGINE_V2 ? readProgress(readingFacts({ ...entrada, activeCycle: entrada.activeCycle || null, arenas: entrada.assets.flatMap(a => a.arenas), today: getOperationalDateString(entrada.now || new Date()) })) : leitura.texto || '',
+    quickActions: ORACLE_ENGINE_V2 ? [
+      { id: 'leitura-arenas', label: 'Ver arenas', kind: 'open_arenas' },
+      ...(fatos.ciclo ? [{ id: 'leitura-ciclo', label: 'Ver ciclo', kind: 'open_cycle' as const }] : []),
+    ] : [
       { id: 'leitura-abrir-dia', label: 'Abrir meu dia', kind: 'open_planner' },
       fatos.ciclo
         ? { id: 'leitura-ver-ciclo', label: 'Ver meu ciclo', kind: 'open_cycle' }

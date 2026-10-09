@@ -1,3 +1,4 @@
+import { ORACLE_ENGINE_V2 } from '../utils/oracleEngineV2';
 import { DailySummaryCard } from './DailySummaryCard';
 import { DailyPanelBoard } from './DailyPanelBoard';
 import { useDailyComparison } from '../hooks/useDailyComparison';
@@ -368,6 +369,7 @@ export const DailyPanelContent: React.FC<{
     // Silencioso nunca, Equilibrado uma por dia, Presente a cada abertura.
     // Sorteada uma vez por montagem para nao trocar de frase a cada re-render.
     const greeting = useMemo(() => {
+        if (ORACLE_ENGINE_V2) return null;
         if (!isToday) return null;
 
         const rules = getOraclePresenceRules(oraclePreferences?.presenceLevel ?? DEFAULT_ORACLE_PRESENCE_LEVEL);

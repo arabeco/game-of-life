@@ -252,7 +252,7 @@ const buildNotificationSignalMessage = (notification: Notification, oracleMode: 
 
 
 export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; isEmbedded?: boolean; onNavigateTab?: (tab: OracleTabTarget) => void }> = ({ onClose, hideHeader = false, isEmbedded = false }) => {
-  const { userProfile, assets, actions, tasks, taskPool, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, oracleMessages, notifications, requestOracleContentCard, activeArenaPact, arenaPactProgress, arenaPactCandidates, missaoIndividualDisponivel, missaoDeSistemaAtiva, showToast } = useGame();
+  const { userProfile, assets, actions, tasks, taskPool, activeCycle, freeProgressResetAt, dailyCommitment, cycleProgress, oraclePreferences, oracleMessages, notifications, requestOracleContentCard, activeArenaPact, arenaPactProgress, arenaPactCandidates, missaoIndividualDisponivel, missaoDeSistemaAtiva, showToast } = useGame();
   const [section, setSection] = useState<'guidance' | 'mission' | 'wisdom'>('guidance');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
@@ -552,14 +552,14 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   // uma — o ciclo e o dia — e sai de supabase/functions/_shared/
   // oracle-cycle-reading.ts, o mesmo arquivo que monta o push.
   const handleReadMyDay = useCallback(() => {
-    const brief = lerMeuDiaECiclo({ tasks, actions, assets, activeCycle });
+    const brief = lerMeuDiaECiclo({ tasks, actions, assets, activeCycle, resetAt: freeProgressResetAt });
     sensory('click_soft');
     setMessages(previous => [...previous.filter(message => message.feedId !== READING_FEED_ID), {
       role: 'assistant', content: brief.content, timestamp: new Date(), mode: currentMode,
       feedId: READING_FEED_ID, feedCategory: 'analise_padroes', feedSummary: 'Meu dia e ciclo',
       feedTrigger: 'manual', quickActions: brief.quickActions,
     }]);
-  }, [tasks, actions, assets, activeCycle, sensory, currentMode]);
+  }, [tasks, actions, assets, activeCycle, freeProgressResetAt, sensory, currentMode]);
 
   const runQuickAction = useCallback((action: ChatQuickAction) => {
     switch (action.kind) {
@@ -759,7 +759,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
           }} onClick={() => setSection(id)}><Icon size={15} aria-hidden="true" className="shrink-0" />{label}</button>)}
         </div>
         {section === 'guidance' && <div className="shrink-0 px-4 pt-3">
-          <button id="oracle-read-my-day" onClick={handleReadMyDay} className="min-h-14 w-full rounded-xl border border-white/10 bg-white/5 p-3 text-left"><span className="block text-xs font-bold">Ler meu dia e ciclo</span><span className="text-[11px] text-white/50">O que já foi feito e onde o ciclo está</span></button>
+          <button id="oracle-read-my-day" onClick={handleReadMyDay} className="min-h-14 w-full rounded-xl border border-white/10 bg-white/5 p-3 text-left"><span className="block text-xs font-bold">Ler meu ciclo e arenas</span><span className="text-[11px] text-white/50">Seu progresso nas arenas, com ou sem ciclo</span></button>
         </div>}
 
         {/* Messages */}

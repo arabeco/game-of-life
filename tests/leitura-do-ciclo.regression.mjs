@@ -129,8 +129,8 @@ for (const [estado, frases] of Object.entries(FRASES_DA_LEITURA)) {
     ciclo: { dia: 6, totalDias: 14, feitas: 3, prometidas: 10, prazoAcabou: false },
   });
   const brief = lerMeuDiaECiclo({ tasks, actions, assets, activeCycle, now });
-  assert.ok(brief.content.startsWith('Seu ciclo está indo bem: 30%, dia 6 de 14.'), brief.content);
-  assert.deepEqual(brief.quickActions.map((a) => a.kind), ['open_planner', 'open_cycle']);
+  assert.ok(brief.content.startsWith('Seu ciclo está em 30%. Faltam 8 dias.'), brief.content);
+  assert.deepEqual(brief.quickActions.map((a) => a.kind), ['open_arenas', 'open_cycle']);
   assert.equal(
     fatosDaLeitura({ tasks, actions, assets, activeCycle: { ...activeCycle, startDate: '2026-10-09' }, now }).ciclo,
     null,

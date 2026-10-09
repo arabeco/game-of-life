@@ -1,3 +1,4 @@
+import { ORACLE_ENGINE_V2 } from '../utils/oracleEngineV2';
 import { buildCycleCommitment } from '../utils/cycleCommitment';
 ﻿import { loadCatalogRows } from '../utils/networkEfficiency.js';
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
@@ -13273,7 +13274,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'marco',
             );
 
-            if (significado && presencaPermite) {
+            if (!ORACLE_ENGINE_V2 && significado && presencaPermite) {
                 const reacao = pickOracleReaction(
                     significado.event,
                     oracleTone,
@@ -13334,6 +13335,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         showToast,
         oracleTone,
         // Quanto ele comenta ao vivo sai da politica de presenca, nao de um numero solto.
+        oraclePresence: oraclePreferences?.presenceLevel ?? DEFAULT_ORACLE_PRESENCE_LEVEL,
         oracleReactions: getOraclePresenceRules(oraclePreferences?.presenceLevel).reactions,
         updateClanMissionProgress,
         updateCustomClanMissionProgress,

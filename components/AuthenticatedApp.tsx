@@ -1,3 +1,4 @@
+import { ORACLE_ENGINE_V2, chooseOpening, rememberEngineSpeech } from '../utils/oracleEngineV2';
 ﻿import React, { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { GlobalHeader } from './GlobalHeader';
@@ -425,7 +426,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     onBlockingOverlayChange,
 }) => {
     const { isBuilderMode, draftName, setDraftName, exitBuilderMode, packDraftToJson } = useCodexBuilder();
-    const { userProfile, activeTheme, notifications, showToast, assets, actions, tasks, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, achievementUnlocked, updateUserProfile, reports, activeArenaPact, arenaPactProgress, missaoIndividualDisponivel, isProfileLoaded } = useGame();
+    const { userProfile, activeTheme, notifications, showToast, assets, actions, tasks, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, achievementUnlocked, updateUserProfile, reports, activeArenaPact, arenaPactProgress, missaoIndividualDisponivel, isProfileLoaded, freeProgressResetAt } = useGame();
     const historyReady = useRef(false);
 
     const effectiveUiSkin = resolveUiSkinId(userProfile.skin || 'BASIC');
@@ -940,12 +941,15 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
      */
     const RETORNO_MINIMO_MS = 30 * 60 * 1000;
     const openingSpokenThisSessionRef = useRef(false);
+    const openingPreviousVisitRef = useRef<{ userId: string; day: string; previous: string | null } | null>(null);
+    const [openingEpoch, setOpeningEpoch] = useState(0);
     const lastOpeningSpeechAtRef = useRef(0);
     useEffect(() => {
         const onVisible = () => {
             if (document.visibilityState !== 'visible') return;
             if (Date.now() - lastOpeningSpeechAtRef.current < RETORNO_MINIMO_MS) return;
             openingSpokenThisSessionRef.current = false;
+            setOpeningEpoch(value => value + 1);
         };
         document.addEventListener('visibilitychange', onVisible);
         return () => document.removeEventListener('visibilitychange', onVisible);
@@ -1002,20 +1006,23 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         // virava "45% das vezes que você abre o Planner, uma vez por dia".
         const presenceRules = getOraclePresenceRules(oraclePreferences?.presenceLevel ?? DEFAULT_ORACLE_PRESENCE_LEVEL);
         if (presenceRules.openingLine === 'nunca') return;
-        if (isRestScreenVisible || userProfile.id === 'placeholder_user') return;
+        if (!isProfileLoaded || isRestScreenVisible || userProfile.id === 'placeholder_user') return;
         // Nada de falar por cima de premio, relatorio, perfil ou painel do dia.
         // Ver a nota de `filaNaFrenteRef`: isto adia, nao cancela.
         if (filaNaFrenteRef.current || isReportsVisible || isProfileVisible) return;
         if (typeof window !== 'undefined' && (window as any).__glyphPendingCycleResults) return;
         // No Equilibrado ele so fala ao abrir o Planner, que e onde a leitura tem
         // contexto. No Presente, qualquer abertura serve.
-        if (presenceRules.openingLine === 'diaria' && currentView !== 'planner') return;
+        if (!ORACLE_ENGINE_V2 && presenceRules.openingLine === 'diaria' && currentView !== 'planner') return;
 
         const now = new Date();
         const today = getOperationalDateString(now);
         const openKey = `${PLANNER_ORACLE_LAST_OPEN_PREFIX}${userProfile.id}`;
         const speechKey = `${PLANNER_ORACLE_LAST_SPEECH_PREFIX}${userProfile.id}`;
-        const previousPlannerOpen = localStorage.getItem(openKey);
+        if (!openingPreviousVisitRef.current || openingPreviousVisitRef.current.userId !== userProfile.id || openingPreviousVisitRef.current.day !== today) {
+            openingPreviousVisitRef.current = { userId: userProfile.id, day: today, previous: localStorage.getItem(openKey) };
+        }
+        const previousPlannerOpen = openingPreviousVisitRef.current.previous;
         const lastSpeechDate = localStorage.getItem(speechKey);
         localStorage.setItem(openKey, today);
 
@@ -1028,6 +1035,22 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         // linha para cada. A trava zera quando o app volta do segundo plano, que e
         // o que "abrir de novo" significa num celular.
         if (openingSpokenThisSessionRef.current) return;
+
+        if (ORACLE_ENGINE_V2) {
+            const tone = hasPremiumAccess(userProfile) ? resolveOracleSpeechTone(oraclePreferences?.speechTone) : 'neutro';
+            const decision = chooseOpening({ actions, arenas: assets.flatMap(a => a.arenas), tasks, activeCycle, resetAt: freeProgressResetAt, today }, previousPlannerOpen, tone, presenceRules.value, userProfile.id);
+            if (!decision.chosen) return;
+            const chosen = decision.chosen;
+            const timer = window.setTimeout(() => {
+                openingSpokenThisSessionRef.current = true;
+                lastOpeningSpeechAtRef.current = Date.now();
+                localStorage.setItem(speechKey, today);
+                rememberEngineSpeech(userProfile.id, chosen, 'opening', today);
+                emitOracleSpeech({ title: 'Oráculo', message: chosen.text, tone: 'guide', kind: 'abertura', durationMs: 6800,
+                    quickActions: [{ id: 'oracle-v2-planner', label: 'Abrir planner', kind: 'open_planner' }] });
+            }, 520);
+            return () => window.clearTimeout(timer);
+        }
 
         const daysSinceLastPlannerOpen = diffLocalDays(previousPlannerOpen, today);
         const arenasCount = assets.reduce((sum, asset) => sum + (asset.arenas?.length || 0), 0);
@@ -1153,7 +1176,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         }, 520);
 
         return () => window.clearTimeout(timer);
-    }, [actions, activeCycle, assets, currentView, cycleProgress, dailyCommitment, isRestScreenVisible, oraclePreferences, tasks, userProfile.dailyProofStreak, userProfile.id, userProfile.level, userProfile.nickname]);
+    }, [openingEpoch, isProfileLoaded, freeProgressResetAt, actions, activeCycle, assets, currentView, cycleProgress, dailyCommitment, isRestScreenVisible, oraclePreferences, tasks, userProfile.dailyProofStreak, userProfile.id, userProfile.level, userProfile.nickname]);
 
     useEffect(() => {
         if (suppressScreenIntroTips) {

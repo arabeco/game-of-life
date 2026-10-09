@@ -1,3 +1,4 @@
+import { ORACLE_ENGINE_V2, chooseReaction, rememberEngineSpeech } from '../../utils/oracleEngineV2';
 import type { Dispatch, SetStateAction } from 'react';
 import type { Action, Arena, Campaign, Clan, Cycle, DailyCommitment, DayOfWeek, FeedEvent, FeedEventType, Report, ScheduledTask, SeasonQuest } from '../../types';
 import type { ArenaPact, ArenaPactProgress } from '../../utils/arenaPacts';
@@ -90,6 +91,7 @@ interface CreateTaskDomainParams {
      * isso: no Equilibrado ele fala uma vez por dia e nao acompanha cada acao.
      */
     /** Regra de reacao do nivel de presenca: 'nenhuma', 'marcos' ou 'todas'. */
+    oraclePresence?: number;
     oracleReactions?: OraclePresenceRules['reactions'];
     updateClanMissionProgress: (questId: string, increment: number) => Promise<void>;
     updateCustomClanMissionProgress: (missionId: string, increment: number) => Promise<void>;
@@ -134,6 +136,7 @@ export const createTaskDomain = ({
     // O padrao erra para o lado silencioso. Se a preferencia ainda nao chegou,
     // 'todas' faria o Oraculo comentar o dia de quem pediu para ele calar.
     oracleReactions = 'nenhuma',
+    oraclePresence = 0,
     updateClanMissionProgress,
     updateCustomClanMissionProgress,
     handleCompetitionArenaCompletion,
@@ -709,6 +712,20 @@ export const createTaskDomain = ({
         previousTasks: ScheduledTask[],
         nextTasks: ScheduledTask[],
     ) => {
+        if (ORACLE_ENGINE_V2) {
+            if (!action) return;
+            const today = getOperationalDateString();
+            const arenas = getArenas();
+            const userId = getSupabaseUserId() || 'local';
+            const decision = chooseReaction({ actions: arenas.flatMap(a => getActionsForArena(a.id)), arenas, tasks: nextTasks, activeCycle, resetAt: freeProgressResetAt, today }, action, completedTask, previousTasks, getActiveArenaPact?.().pact || null, oracleTone, oraclePresence, userId);
+            if (decision.chosen) {
+                rememberEngineSpeech(userId, decision.chosen, 'reaction', today);
+                emitOracleSpeechRaw({ title: 'Oráculo', message: decision.chosen.text, kind: 'reacao', tone: 'success', durationMs: 5200 });
+            } else {
+                showTaskProgressToast(action, nextTasks);
+            }
+            return;
+        }
         showTaskProgressToast(action, nextTasks);
         if (maybeTriggerPactProgressAttention(action, completedTask)) return;
         if (maybeTriggerActionCycleProgressAttention(action, completedTask, previousTasks, nextTasks)) return;
@@ -1347,12 +1364,12 @@ export const createTaskDomain = ({
         }
 
         const completionAttention = maybeTriggerArenaCompletionAttention(action, tasks, [...tasks, newTask]);
-        if (!completionAttention) {
+        if (!completionAttention && !ORACLE_ENGINE_V2) {
             emitAppSensoryCue('task_complete');
             showTaskProgressToast(action, [...tasks, newTask]);
             emitOracleSpeech({
                 title: 'Marco',
-                message: falarReacao('milestone_completed', { action: action.name }),
+                message: ORACLE_ENGINE_V2 ? `Marco «${action.name}» concluído.` : falarReacao('milestone_completed', { action: action.name }),
                 tone: 'success',
                 durationMs: 5000,
             }, 'marco');

@@ -81,7 +81,7 @@ export const ORACLE_PRESENCE_RULES: Record<OraclePresenceValue, OraclePresenceRu
     [ORACLE_PRESENCE.EQUILIBRADO]: {
         value: ORACLE_PRESENCE.EQUILIBRADO,
         label: 'Equilibrado',
-        caption: 'Um card e uma fala por dia, e ele celebra quando você fecha algo grande.',
+        caption: 'Uma abertura por dia, conquistas e avanços especiais, com espaço entre as falas.',
         dailyCard: true,
         openingLine: 'diaria',
         reactions: 'marcos',
@@ -89,7 +89,7 @@ export const ORACLE_PRESENCE_RULES: Record<OraclePresenceValue, OraclePresenceRu
     [ORACLE_PRESENCE.PRESENTE]: {
         value: ORACLE_PRESENCE.PRESENTE,
         label: 'Presente',
-        caption: 'Fala toda vez que você abre e acompanha o seu dia de perto.',
+        caption: 'Acompanha seus avanços e aparece nas aberturas quando há algo novo para dizer.',
         dailyCard: true,
         openingLine: 'sempre',
         reactions: 'todas',

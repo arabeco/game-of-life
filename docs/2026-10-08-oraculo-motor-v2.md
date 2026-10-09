@@ -38,4 +38,8 @@ Com o servidor `vite.patentes.config.ts`, abrir `/oracle-v2-preview.html`. Cená
 
 Passaram: TypeScript, build web Vite, regressões do novo motor, leitura do ciclo, política de presença, um evento/uma voz e pactos. Smoke Chromium da prévia passou para silêncio, leitura manual, prioridade da missão, narrador e prazo. Bundle da função do servidor compilou sem execução.
 
-Pendente de validação externa: push real após deploy, sessão Android e aceitação editorial das falas. Não houve publicação nem commit nesta etapa.
+Pendente de validação externa: push real após deploy, sessão Android e aceitação editorial das falas. Não houve publicação nesta etapa.
+
+## Commits
+
+O núcleo compartilhado, servidor e testes foram registrados em `612cf24`. A integração das telas, domínio de tarefas e prévia é registrada no commit que atualiza esta seção. Alterações locais de onboarding, ciclos e imagens permanecem fora desta entrega.

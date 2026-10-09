@@ -1,4 +1,5 @@
 import { buildCycleCommitment, CYCLE_SEASON_MISSION_RULE } from '../utils/cycleCommitment';
+import { formatChestGain } from '../constants/rarityVisuals';
 ﻿import './readability-fixes.css';
 
 
@@ -1293,8 +1294,8 @@ export const ReportsView: React.FC<{
     const buildPostCycleRewardToast = useCallback((awardedExp: number, awardedChest: ChestType | null, awardedInsignias: string[]) => {
         if (awardedChest) {
             return awardedInsignias.length > 0
-                ? `📦 Baú ${awardedChest} e ${awardedInsignias.length} insígnia(s) adicionados\n✨ +${awardedExp} XP computados`
-                : `📦 Baú ${awardedChest} adicionado ao inventário\n✨ +${awardedExp} XP computados`;
+                ? `${formatChestGain(awardedChest)} e ${awardedInsignias.length} insígnia(s)\n✨ +${awardedExp} XP computados`
+                : `${formatChestGain(awardedChest)}\n✨ +${awardedExp} XP computados`;
         }
 
         return awardedInsignias.length > 0
@@ -1310,8 +1311,8 @@ export const ReportsView: React.FC<{
 
         if (awardedChest) {
             return awardedInsignias.length > 0
-                ? `📦 Baú ${awardedChest} e ${awardedInsignias.length} insígnia(s) adicionados\n${summaryParts.join('\n')}`
-                : `📦 Baú ${awardedChest} adicionado ao inventário\n${summaryParts.join('\n')}`;
+                ? `${formatChestGain(awardedChest)} e ${awardedInsignias.length} insígnia(s)\n${summaryParts.join('\n')}`
+                : `${formatChestGain(awardedChest)}\n${summaryParts.join('\n')}`;
         }
 
         return awardedInsignias.length > 0

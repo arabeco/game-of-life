@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { videoAsset } from '../constants/catalogAssets';
+import { formatChestGain } from '../constants/rarityVisuals';
 import { useGame } from '../contexts/GameContext';
 import { ShareIcon } from './Icons';
 import { FeedEventType } from '../types';
@@ -374,7 +375,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
             }
 
             if (rewards.chest) {
-                messages.push(`\u{1F4E6} Baú ${rewards.chest} adicionado`);
+                messages.push(formatChestGain(rewards.chest));
             }
 
             if (rewards.ornament) {

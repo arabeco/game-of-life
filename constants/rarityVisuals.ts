@@ -92,4 +92,11 @@ export const getChestDisplayName = (type: ChestType | string): string => {
     return `Baú ${getChestVisual(type).label}`;
 };
 
+/**
+ * O ganho de um baú no aviso: "+1 baú raro". Curto de propósito — o aviso
+ * não precisa dizer "adicionado ao inventário", o "+1" já diz.
+ */
+export const formatChestGain = (type: ChestType | string, quantidade = 1): string =>
+    `+${quantidade} ${getChestDisplayName(type).toLowerCase()}`;
+
 export const QUEST_VISUAL = RARITY_VISUALS.quest;

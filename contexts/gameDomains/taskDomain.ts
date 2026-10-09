@@ -1,3 +1,4 @@
+import { speechVisualTone } from '../../supabase/functions/_shared/oracle-visual-tone.ts';
 import { ORACLE_ENGINE_V2, chooseReaction, rememberEngineSpeech } from '../../utils/oracleEngineV2';
 import type { Dispatch, SetStateAction } from 'react';
 import type { Action, Arena, Campaign, Clan, Cycle, DailyCommitment, DayOfWeek, FeedEvent, FeedEventType, Report, ScheduledTask, SeasonQuest } from '../../types';
@@ -720,7 +721,7 @@ export const createTaskDomain = ({
             const decision = chooseReaction({ actions: arenas.flatMap(a => getActionsForArena(a.id)), arenas, tasks: nextTasks, activeCycle, resetAt: freeProgressResetAt, today }, action, completedTask, previousTasks, getActiveArenaPact?.().pact || null, oracleTone, oraclePresence, userId);
             if (decision.chosen) {
                 rememberEngineSpeech(userId, decision.chosen, 'reaction', today);
-                emitOracleSpeechRaw({ title: 'Oráculo', message: decision.chosen.text, kind: 'reacao', tone: 'success', durationMs: 5200 });
+                emitOracleSpeechRaw({ title: 'Oráculo', message: decision.chosen.text, kind: 'reacao', tone: speechVisualTone('reaction', decision.chosen.subject), durationMs: 5200 });
             } else {
                 showTaskProgressToast(action, nextTasks);
             }

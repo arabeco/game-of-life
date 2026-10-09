@@ -721,7 +721,7 @@ export const createTaskDomain = ({
             const decision = chooseReaction({ actions: arenas.flatMap(a => getActionsForArena(a.id)), arenas, tasks: nextTasks, activeCycle, resetAt: freeProgressResetAt, today }, action, completedTask, previousTasks, getActiveArenaPact?.().pact || null, oracleTone, oraclePresence, userId);
             if (decision.chosen) {
                 rememberEngineSpeech(userId, decision.chosen, 'reaction', today);
-                emitOracleSpeechRaw({ title: 'Oráculo', message: decision.chosen.text, kind: 'reacao', tone: speechVisualTone('reaction', decision.chosen.subject), durationMs: 5200 });
+                emitOracleSpeechRaw({ title: 'Oráculo', message: decision.chosen.text, kind: 'reacao', tone: speechVisualTone('reaction', decision.chosen.subject, Boolean(decision.chosen.important)), durationMs: 5200 });
             } else {
                 showTaskProgressToast(action, nextTasks);
             }

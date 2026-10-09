@@ -1,7 +1,17 @@
 import React from 'react';
-import { GameLogoIcon, SparklesIcon } from './Icons';
+import { SparklesIcon } from './Icons';
 
-export type OracleSpeakerTone = 'neutral' | 'guide' | 'success' | 'warning' | 'danger' | 'info';
+/**
+ * A REGUA DE CORES DO ORACULO (aprovada em 09/10/2026, ver
+ * docs/2026-10-09-handoff-push-cores-e-imagens.md, secao 9):
+ *   neutral     — branco: informacao neutra (ciclo, planner, estoque, sabedoria)
+ *   guide       — azul: orientacao, comeco ou retorno
+ *   success     — verde: avanco concreto, ainda em andamento
+ *   achievement — dourado: conquista completa
+ *   danger      — vermelho: reservado, sem gatilho automatico
+ * warning e info ficam para quem ja os usava.
+ */
+export type OracleSpeakerTone = 'neutral' | 'guide' | 'success' | 'achievement' | 'warning' | 'danger' | 'info';
 
 const TONE_TOKENS: Record<OracleSpeakerTone, {
   core: string;
@@ -11,11 +21,18 @@ const TONE_TOKENS: Record<OracleSpeakerTone, {
   label: string;
 }> = {
   neutral: {
+    core: '#eef1f6',
+    coreSoft: 'rgba(238,241,246,0.12)',
+    border: 'rgba(238,241,246,0.38)',
+    glow: 'rgba(238,241,246,0.16)',
+    label: 'Oraculo',
+  },
+  achievement: {
     core: '#f3d48a',
     coreSoft: 'rgba(243,212,138,0.16)',
     border: 'rgba(243,212,138,0.52)',
-    glow: 'rgba(243,212,138,0.2)',
-    label: 'Oraculo',
+    glow: 'rgba(243,212,138,0.22)',
+    label: 'Conquista',
   },
   guide: {
     core: '#9fd8ff',
@@ -57,22 +74,19 @@ const TONE_TOKENS: Record<OracleSpeakerTone, {
 const SIZE_CLASSES = {
   sm: {
     shell: 'h-11 w-11',
-    icon: 'h-7 w-7',
-    dot: 'h-3 w-3',
+    icon: 'h-7 w-7',
     badge: 'h-4 w-4 -right-0.5 -top-0.5',
     badgeIcon: 'h-2.5 w-2.5',
   },
   md: {
     shell: 'h-14 w-14',
-    icon: 'h-9 w-9',
-    dot: 'h-3.5 w-3.5',
+    icon: 'h-9 w-9',
     badge: 'h-4.5 w-4.5 -right-1 -top-1',
     badgeIcon: 'h-3 w-3',
   },
   lg: {
     shell: 'h-16 w-16',
-    icon: 'h-11 w-11',
-    dot: 'h-4 w-4',
+    icon: 'h-11 w-11',
     badge: 'h-5 w-5 -right-1 -top-1',
     badgeIcon: 'h-3.5 w-3.5',
   },
@@ -98,34 +112,34 @@ export const OracleSpeakerMark: React.FC<{
   const tokens = getOracleSpeakerToneTokens(resolvedTone);
   const sizes = SIZE_CLASSES[size];
 
+  /*
+   * O SIMBOLO GANHA A COR (aprovado na previa tools/oracle-colors-preview).
+   *
+   * Era o logo colorido com uma bolinha no centro levando o tom, sobre uma casca
+   * sempre dourada. Agora e a silhueta do losango acesa na cor do tom, sobre
+   * fundo escuro, com borda fina e brilho suave: a cor se ve de longe, e o
+   * desenho continua sendo o do Oraculo.
+   */
   return (
     <div
-      className={`relative flex shrink-0 items-center justify-center rounded-full border bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.22),transparent_34%),linear-gradient(145deg,rgba(45,38,28,0.98),rgba(0,0,0,0.98))] ${sizes.shell} ${className}`}
+      className={`relative flex shrink-0 items-center justify-center rounded-full border ${sizes.shell} ${className}`}
       style={{
-        borderColor: 'rgba(243,212,138,0.46)',
+        background: '#111216',
+        borderColor: tokens.border,
         color: tokens.core,
-        // A LUZ CARREGA A COR, A CASCA NAO.
-        //
-        // A marca nao vira verde nem vermelha — ela continua sendo o Oraculo, com
-        // a mesma borda dourada. O que muda e o BRILHO ao redor e o circulo no
-        // centro, que sao detalhe, nao identidade. Assim a cor informa sem que a
-        // marca deixe de ser reconhecivel de longe.
-        //
-        // A base dourada fica na primeira sombra, sempre; a cor do tom entra na
-        // segunda, mais larga e mais fraca.
-        boxShadow: `0 0 12px rgba(243,212,138,0.14), 0 0 26px ${tokens.glow}, 0 12px 28px rgba(0,0,0,0.44)`,
+        boxShadow: `0 0 12px ${tokens.coreSoft}, 0 12px 28px rgba(0,0,0,0.44)`,
       }}
       aria-label={tokens.label}
     >
-      <GameLogoIcon className={`${sizes.icon} ${pulse ? 'animate-pulse-slow' : ''}`} />
-      <span
-        className={`pointer-events-none absolute left-1/2 top-1/2 rounded-full border border-white/55 shadow-[0_0_14px_currentColor] ${sizes.dot}`}
-        style={{
-          background: `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9), ${tokens.core} 38%, ${tokens.coreSoft} 100%)`,
-          color: tokens.core,
-          transform: 'translate(-50%, -50%)',
-        }}
-      />
+      <svg
+        viewBox="-5 -5 110 110"
+        aria-hidden="true"
+        className={`${sizes.icon} ${pulse ? 'animate-pulse-slow' : ''}`}
+        style={{ filter: `drop-shadow(0 0 3px ${tokens.glow})` }}
+      >
+        <path d="M50 0 L65 35 L100 50 L65 65 L50 100 L35 65 L0 50 L35 35 Z" fill="currentColor" />
+        <path d="M50 15 L60 40 L85 50 L60 60 L50 85 L40 60 L15 50 L40 40 Z" fill="none" stroke="#111216" strokeOpacity=".3" strokeWidth="2" />
+      </svg>
       {badge && (
         <span
           className={`absolute flex items-center justify-center rounded-full border border-black/20 text-black ${sizes.badge}`}

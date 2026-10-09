@@ -10,7 +10,7 @@ export type OracleSpeechPayload = {
    * A casca continua dourada em todos — a cor informa sem tirar a identidade.
    * 'guide' faltava aqui, entao o azul era inalcancavel a partir de uma fala.
    */
-  tone?: 'success' | 'info' | 'warning' | 'danger' | 'neutral' | 'guide';
+  tone?: 'success' | 'achievement' | 'info' | 'warning' | 'danger' | 'neutral' | 'guide';
   durationMs?: number;
   /** Classifica a fala momentânea; nenhuma abertura ou reação entra no chat. */
   kind?: OracleSpeechKind;

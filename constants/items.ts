@@ -301,7 +301,7 @@ export const ITEMS_DB: ItemDef[] = [
     // T4
     { id: 'item_border_t3_transcendente', name: 'Transcendente', category: 'border', tier: 4, rarity: 'epic', icon: '✨', imageUrl: `${INTERFACE_BASE_URL}/borda_t3_transcendente.png`, isRuleExclusive: true },
     { id: 'item_border_4_001', name: 'Lenda Viva', category: 'border', tier: 4, rarity: 'epic', icon: '🏛️', imageUrl: `${INTERFACE_BASE_URL}/borda_lendaviva.png`, isRuleExclusive: true },
-    { id: 'item_border_4_002', name: 'Soberano', category: 'border', tier: 4, rarity: 'epic', icon: '👑', imageUrl: `${INTERFACE_BASE_URL}/borda_soberano.png`, isRankExclusive: true },
+    { id: 'item_border_4_002', name: 'Soberano', category: 'border', tier: 4, rarity: 'epic', icon: '👑', imageUrl: `${INTERFACE_BASE_URL}/borda_soberano.webp`, isRankExclusive: true },
     { id: 'item_border_t4_celestial', name: 'Celestial', category: 'border', tier: 4, rarity: 'epic', icon: '🌙', imageUrl: `${INTERFACE_BASE_URL}/borda_t4_celestial.png`, isRuleExclusive: true },
     { id: 'item_border_t4_guardia', name: 'Guardiã', category: 'border', tier: 4, rarity: 'epic', icon: '🛡️', imageUrl: `${INTERFACE_BASE_URL}/borda_t4_guardia.png`, isRuleExclusive: true },
 

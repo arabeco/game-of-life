@@ -76,6 +76,10 @@ const isFixedCatalogPath = (relativePath: string): boolean => (
 
 export const resolveCatalogAssetUrl = (value?: string | null): string => {
   const normalized = value?.trim() || '';
+  if (normalized === `${CATALOG_INTERFACE_ROOT}/borda_soberano.png`
+      || normalized === `${LEGACY_CATALOG_ROOT}interface/borda_soberano.png`) {
+    return `${CATALOG_INTERFACE_ROOT}/borda_soberano.webp`;
+  }
   if (!normalized.startsWith(LEGACY_CATALOG_ROOT)) return normalized;
 
   const relativePath = decodeURIComponent(normalized.slice(LEGACY_CATALOG_ROOT.length));

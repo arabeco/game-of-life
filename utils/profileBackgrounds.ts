@@ -138,16 +138,13 @@ const PROFILE_BACKGROUND_ASSETS: Record<string, ProfileBackgroundAssetDefinition
 
     // ------------------------------------------------------ OS DEZ DA ESCADA
     //
-    // Um fundo por patente. A ARTE AINDA NAO EXISTE: nenhum destes basenames
-    // tem arquivo no bucket, e por isso cada um cai no gradiente abaixo, que e
-    // um marcador honesto — a cor da patente, sem cena.
+    // Um fundo por patente. A arte chegou em 06/10/2026 e mora DENTRO do app,
+    // em public/assets/backgrounds — os dez nomes estao em FUNDOS_EMPACOTADOS.
+    // O gradiente abaixo so aparece se o arquivo faltar: a cor da patente, sem
+    // cena.
     //
-    // Para ligar um deles de verdade basta subir a imagem como
-    // `background/<basename>.jpg` no bucket user-images. Nao ha nada a mudar no
-    // codigo: a lista de fontes ja tenta .jpg, .png e .jpeg antes de desistir
-    // para o gradiente. Um por vez funciona; nao e tudo ou nada.
-    //
-    // O brief da arte esta em docs/2026-09-08-fundos-de-patente-brief-de-arte.md
+    // O pedido da arte esta em
+    // docs/2026-10-06-handoff-fundos-de-patente-e-borda-soberano.md
     [toProfileBackgroundToken('rank-vagante')]: {
         basename: 'rank01vagante',
         fallbackValue: 'linear-gradient(160deg, #16181c 0%, #2b2f36 52%, #4a5058 100%)',
@@ -224,6 +221,9 @@ const FUNDOS_EMPACOTADOS = new Set([
     '16', '19', '22', 'animeback', 'autunback', 'blackback', 'blueback',
     'darkblueback', 'goldback', 'pinkback', 'purpleback', 'rubiback',
     'silverback', 'violetback', 'whiteback',
+    'rank01vagante', 'rank02escudeiro', 'rank03cavaleiro', 'rank04lorde',
+    'rank05barao', 'rank06conde', 'rank07duque', 'rank08principe',
+    'rank09rei', 'rank10soberano',
 ]);
 
 const buildProfileBackgroundSources = (basename: string): string[] => {
@@ -234,7 +234,7 @@ const buildProfileBackgroundSources = (basename: string): string[] => {
     ];
 
     return FUNDOS_EMPACOTADOS.has(basename)
-        ? [`${PROFILE_BACKGROUND_LOCAL_ROOT}/${basename}.jpg`, ...remotos]
+        ? [`${PROFILE_BACKGROUND_LOCAL_ROOT}/${basename}.${/^rank\d{2}/.test(basename) ? 'webp' : 'jpg'}`, ...remotos]
         : remotos;
 };
 
@@ -242,6 +242,9 @@ const buildProfileBackgroundAliases = (): Record<string, string> => {
     const aliases: Record<string, string> = {};
 
     Object.entries(PROFILE_BACKGROUND_ASSETS).forEach(([token, definition]) => {
+        if (/^rank\d{2}/.test(definition.basename)) {
+            aliases[`${PROFILE_BACKGROUND_LOCAL_ROOT}/${definition.basename}.jpg`] = token;
+        }
         buildProfileBackgroundSources(definition.basename).forEach((source) => {
             aliases[source] = token;
         });

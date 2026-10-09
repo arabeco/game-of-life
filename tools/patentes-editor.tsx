@@ -7,6 +7,8 @@ import { GameContext } from '../contexts/GameContext';
 import { NobilityLadder } from '../components/NobilityLadder';
 import { AchievementModal } from '../components/AchievementModal';
 import { NOBILITY_RANKS, RANK_REWARDS } from '../constants/nobility';
+import { ITEMS_DB } from '../constants/items';
+import { getRankBackgroundToken, getProfileBackgroundPrimarySource } from '../utils/profileBackgrounds';
 import { ArtContext, Crop, DEFAULT_CROP, ProfileBackgroundSurface } from './patentes-surface';
 
 // Reuse the app's actual inline skin/button definitions without running app scripts.
@@ -17,9 +19,8 @@ sourceDoc.querySelectorAll('style').forEach(original => {
 document.body.className = 'mode-game theme-dark patentes-bench';
 document.documentElement.dataset.skin = 'GOLD';
 document.body.dataset.skin = 'GOLD';
-const assets = import.meta.glob('../output/patentes-2026-10-06/entrega/*', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
-const urls = Object.fromEntries(NOBILITY_RANKS.map((rank, i) => [rank.id, assets[`../output/patentes-2026-10-06/entrega/rank${String(i + 1).padStart(2, '0')}${rank.id}.jpg`]]));
-const border = assets['../output/patentes-2026-10-06/entrega/borda_soberano.png'];
+const urls = Object.fromEntries(NOBILITY_RANKS.map(rank => [rank.id, getProfileBackgroundPrimarySource(getRankBackgroundToken(rank.id))]));
+const border = ITEMS_DB.find(item => item.id === 'item_border_4_002')?.imageUrl;
 const KEY = 'glyph-patentes-crops-v1';
 const validate = (value: unknown): Record<string, Crop> => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Arquivo de ajustes inválido.');

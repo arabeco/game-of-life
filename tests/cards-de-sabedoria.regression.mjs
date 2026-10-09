@@ -4,6 +4,8 @@ import {
   ORACLE_CARD_LIBRARY,
   pickOracleCard,
   getOracleCardStockSize,
+  cardAsText,
+  splitCardText,
 } from '../constants/oracleCardLibrary.ts';
 
 const le = (caminho) => readFileSync(new URL(`../${caminho}`, import.meta.url), 'utf8');
@@ -209,7 +211,7 @@ for (const tema of temasDaBiblioteca) {
 // Um tema inteiro ja visto nao pode devolver null: ele reusa o mais antigo. Sem
 // isso, quem acompanha o app ha meses simplesmente para de receber card.
 const tema = temasDaBiblioteca[0];
-const tudoVisto = [...ORACLE_CARD_LIBRARY[tema]];
+const tudoVisto = ORACLE_CARD_LIBRARY[tema].map(cardAsText);
 const reuso = pickOracleCard({ category: tema, deliveredContents: tudoVisto });
 assert.ok(
   typeof reuso === 'string' && reuso.trim().length > 0,
@@ -230,5 +232,32 @@ assert.match(
   /const faltaSabedoria = temSabedoria && !jaSaiuHoje\("premium_content_card"\);/,
   'sem tema, so a Sabedoria deixa de sair',
 );
+
+// ---------------------------------------------------------------------------
+// TITULO E TEXTO (09/10/2026).
+//
+// O titulo vira o titulo da notificacao, onde cabe uma linha so; o texto e o
+// que a tela de bloqueio mostra inteiro. Os limites sao o que cabe.
+// ---------------------------------------------------------------------------
+
+const titulos = new Set();
+for (const [nomeDoTema, cards] of Object.entries(ORACLE_CARD_LIBRARY)) {
+  for (const card of cards) {
+    assert.ok(card.titulo.length <= 30, `${nomeDoTema}: titulo com ${card.titulo.length} caracteres: ${card.titulo}`);
+    assert.ok(card.texto.length <= 110, `${nomeDoTema}: texto com ${card.texto.length} caracteres: ${card.texto}`);
+    assert.ok(!titulos.has(card.titulo), `titulo repetido: ${card.titulo}`);
+    titulos.add(card.titulo);
+    assert.doesNotMatch(card.titulo, /\.$/, `titulo nao termina em ponto: ${card.titulo}`);
+    assert.deepEqual(splitCardText(cardAsText(card)), { titulo: card.titulo, texto: card.texto });
+  }
+}
+assert.deepEqual(splitCardText('Card antigo sem titulo.'), { titulo: null, texto: 'Card antigo sem titulo.' });
+
+// O push usa o titulo do card como titulo da notificacao, e o chat o mostra em destaque.
+const push = le('supabase/functions/web-push/index.ts');
+assert.match(push, /purpose === "premium_content_card"[\s\S]{0,120}splitCardText\(message\.content/, 'o titulo do push vem do card');
+assert.match(push, /purpose === "cycle_insight"\) return "Seu ciclo hoje"/, 'a leitura diz que e sobre o ciclo');
+assert.doesNotMatch(push, /"O Oraculo deixou um card\."/, 'sem o titulo antigo sem acento');
+assert.match(chat, /splitCardText\(msg\.content\)/, 'o chat mostra o titulo do card em destaque');
 
 console.log('[cards-de-sabedoria] ok');

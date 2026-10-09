@@ -13,6 +13,7 @@ import { APP_NAVIGATE_EVENT, type AppNavigatePayload } from '../utils/arenaAtten
 import { PLANNER_OPEN_ACTION_MODAL_EVENT } from '../utils/restScreenActionSession';
 import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
 import { lerMeuDiaECiclo } from '../utils/leituraDoCiclo';
+import { ORACLE_CARD_LIBRARY, splitCardText } from '../constants/oracleCardLibrary';
 import { emitOracleSpeech } from '../utils/oracleSpeech';
 import { OracleMissionPanel } from './OracleMissionPanel';
 import { Sun, Flag, BookOpen } from 'lucide-react';
@@ -824,9 +825,25 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                       {isSpeech ? msg.timestamp.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : formatFeedMoment(msg.timestamp)}
                     </span>
                   </div>
-                  <div className={`whitespace-pre-line ${feedVisual.accentClass} ${feedPresentation === 'info_card' ? 'font-medium text-[14px]' : 'text-white/88'}`}>
-                    {msg.content}
-                  </div>
+                  {/* Card de Sabedoria tem titulo e texto desde 09/10: o titulo em
+                      cima, em destaque, como chega na notificacao. Card antigo,
+                      sem titulo, continua saindo como uma frase so. */}
+                  {(() => {
+                    const card = msg.feedCategory && msg.feedCategory in ORACLE_CARD_LIBRARY ? splitCardText(msg.content) : null;
+                    if (card?.titulo) {
+                      return (
+                        <div className={feedVisual.accentClass}>
+                          <p className="text-[15px] font-bold leading-snug text-white">{card.titulo}</p>
+                          <p className="mt-1.5 text-[14px] font-medium leading-relaxed">{card.texto}</p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className={`whitespace-pre-line ${feedVisual.accentClass} ${feedPresentation === 'info_card' ? 'font-medium text-[14px]' : 'text-white/88'}`}>
+                        {msg.content}
+                      </div>
+                    );
+                  })()}
                   {!!msg.quickActions?.length && <div className="mt-3 flex flex-wrap gap-2 border-t border-white/10 pt-2">
                     {msg.quickActions.map(action => <button key={action.id} onClick={() => runQuickAction(action)} className="min-h-11 rounded-lg px-2 text-xs font-semibold text-[var(--skin-accent-color)] underline underline-offset-4">{action.label}</button>)}
                   </div>}

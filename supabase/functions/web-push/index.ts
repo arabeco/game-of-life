@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 import { SignJWT, importPKCS8 } from "npm:jose@5.9.6";
 import webpush from "npm:web-push@3.6.7";
+import { splitCardText } from "../_shared/oracle-card-library.ts";
 
 type JsonRecord = Record<string, unknown>;
 type NotificationPriority = "critical" | "actionable" | "progress" | "ambient";
@@ -733,12 +734,24 @@ const resolveDirectMessagePushPresentation = async (
 
 const getOracleMessageTitle = (message: NormalizedOracleMessage): string => {
   const presentation = (asTrimmedString(message.contextSnapshot.presentation) || "ambient_pulse") as OraclePresentation;
+  const purpose = asTrimmedString(message.contextSnapshot.purpose);
   const pickVariant = (lines: string[]) => lines[Math.abs(hashString(`${message.id}:${message.createdAt}:oracle-title`)) % lines.length] || lines[0];
+
+  // O TITULO DIZ O QUE TEM DENTRO. Era sempre "O Oraculo deixou um card": a
+  // linha mais visivel da notificacao, gasta para dizer que havia uma notificacao.
+  // O card de Sabedoria traz o proprio titulo desde 09/10/2026 (a primeira linha
+  // do conteudo); a leitura diz que e sobre o ciclo.
+  if (purpose === "premium_content_card") {
+    const card = splitCardText(message.content || "");
+    if (card.titulo) return card.titulo;
+  }
+  if (purpose === "cycle_insight") return "Seu ciclo hoje";
+
   if (presentation === "info_card") {
     return pickVariant([
-      "O Oraculo deixou um card.",
-      "Tem uma leitura nova no Oraculo.",
-      "Um sinal virou card para voce.",
+      "O Oráculo deixou um card.",
+      "Tem uma leitura nova no Oráculo.",
+      "Um sinal virou card para você.",
     ]);
   }
 
@@ -762,7 +775,11 @@ const getOracleMessageTitle = (message: NormalizedOracleMessage): string => {
 };
 
 const getOracleMessageBody = (message: NormalizedOracleMessage): string => {
-  const normalized = (message.content || "")
+  // Card com titulo: o titulo ja foi para o titulo da notificacao, o corpo e so o texto.
+  const card = asTrimmedString(message.contextSnapshot.purpose) === "premium_content_card"
+    ? splitCardText(message.content || "")
+    : null;
+  const normalized = (card?.titulo ? card.texto : (message.content || ""))
     .replace(/\s+/g, " ")
     .trim();
 

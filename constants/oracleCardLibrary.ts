@@ -13,4 +13,6 @@ export {
   ORACLE_CARD_LIBRARY,
   pickOracleCard,
   getOracleCardStockSize,
+  cardAsText,
+  splitCardText,
 } from '../supabase/functions/_shared/oracle-card-library.ts';

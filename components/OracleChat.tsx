@@ -1,3 +1,5 @@
+import { OracleSpeakerMark, getOracleSpeakerToneTokens } from './OracleSpeakerMark';
+import { resolveOracleVisualTone, type OracleVisualTone } from '../supabase/functions/_shared/oracle-visual-tone.ts';
 ﻿import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { XIcon, SparklesIcon, ZapIcon, EyeIcon, CrownIcon, LightbulbIcon, GameLogoIcon } from './Icons';
@@ -14,6 +16,7 @@ import { PLANNER_OPEN_ACTION_MODAL_EVENT } from '../utils/restScreenActionSessio
 import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
 import { lerMeuDiaECiclo } from '../utils/leituraDoCiclo';
 import { ORACLE_CARD_LIBRARY, splitCardText } from '../constants/oracleCardLibrary';
+import { secaoDaMensagem, secoesComNaoLidas } from '../utils/oracleSecoes';
 import { emitOracleSpeech } from '../utils/oracleSpeech';
 import { OracleMissionPanel } from './OracleMissionPanel';
 import { Sun, Flag, BookOpen } from 'lucide-react';
@@ -22,56 +25,6 @@ type OracleTabTarget = 'chat' | 'requests';
 // Marca a leitura pedida a mao: uma so por vez na lista, e nunca vai para o banco.
 const READING_FEED_ID = 'reading:now';
 const isReading = (id?: string) => id === READING_FEED_ID;
-
-/**
- * Leitura nao e sabedoria.
- *
- * As abas se dividiam por CANAL de entrega — tudo que chegava pelo feed caia em
- * Sabedoria. So que a leitura do ciclo tambem chega pelo feed, e ela fala do
- * SEU dia e do SEU ciclo: o lugar dela e a primeira aba, junto dos dois botoes
- * que produzem a mesma coisa a pedido. Sabedoria fica com o que ela sempre
- * quis ser: card de conteudo, que nao depende do seu estado. A divisao passa a
- * ser por ASSUNTO, e as duas pontas (hidratacao e filtro) leem daqui para nao
- * discordarem de novo.
- *
- * O card automatico furava essa regra por um detalhe: ele ESCOLHE um tema da
- * biblioteca (Carta inspiradora, Fragmento de sabedoria) e depois escreve texto
- * de CONTEXTO, sobre os seus numeros. Roteado pela categoria, ele caia em
- * Sabedoria com etiqueta de sabedoria e corpo de relatorio. Por isso o assunto
- * agora tambem se le no proposito: quem fala do seu ciclo diz isso de si mesmo,
- * em vez de deixar a categoria mentir pelos dois.
- */
-const CATEGORIAS_DE_LEITURA = new Set(['analise_padroes']);
-const ehLeitura = (category?: string | null) => Boolean(category && CATEGORIAS_DE_LEITURA.has(category));
-
-/**
- * SABEDORIA E SO O CARD TEMATICO, E A LISTA E DE PERMISSAO.
- *
- * A regra era por EXCLUSAO: tudo que nao fosse leitura de ciclo caia em
- * Sabedoria. Funcionava enquanto so existissem dois tipos de card — e parou de
- * funcionar quando o coach passou a falar. "Voce ja provou que consegue" e
- * sobre os seus numeros, nao e tema nenhum, e mesmo assim entrava ali, porque
- * nao era leitura de ciclo.
- *
- * Uma aba definida pelo que ela NAO tem herda tudo o que nascer depois. Entao
- * ela passa a ser definida pelo que tem: card que saiu da BIBLIOTECA, que e o
- * unico que e tema de verdade. Qualquer coisa nova que fale da pessoa nasce em
- * "Dia e ciclo" sem ninguem precisar lembrar de exclui-la daqui.
- */
-const PROPOSITOS_DE_BIBLIOTECA = new Set(['premium_content_card']);
-
-const ehCardDeBiblioteca = (
-    deliveryType?: string | null,
-    category?: string | null,
-    purpose?: string | null,
-) => {
-    if (deliveryType !== 'feed') return false;
-    // Card gravado antes de o proposito existir na coluna: sem ele nao da para
-    // saber a origem, e mandar o historico inteiro para a outra aba seria pior
-    // que o defeito. Ali vale a regra antiga.
-    if (!purpose) return !ehLeitura(category);
-    return PROPOSITOS_DE_BIBLIOTECA.has(purpose);
-};
 
 interface Message {
   section?: 'guidance' | 'wisdom';
@@ -88,6 +41,7 @@ interface Message {
   feedPresentation?: 'ambient_pulse' | 'info_card';
   feedSummary?: string;
   feedPurpose?: string;
+  visualTone?: OracleVisualTone;
   feedTrigger?: 'app_open' | 'cron' | 'manual';
   systemId?: string;
   quickActions?: ChatQuickAction[];
@@ -253,7 +207,7 @@ const buildNotificationSignalMessage = (notification: Notification, oracleMode: 
 
 
 export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; isEmbedded?: boolean; onNavigateTab?: (tab: OracleTabTarget) => void }> = ({ onClose, hideHeader = false, isEmbedded = false }) => {
-  const { userProfile, assets, actions, tasks, taskPool, activeCycle, freeProgressResetAt, dailyCommitment, cycleProgress, oraclePreferences, oracleMessages, notifications, requestOracleContentCard, activeArenaPact, arenaPactProgress, arenaPactCandidates, missaoIndividualDisponivel, missaoDeSistemaAtiva, showToast } = useGame();
+  const { userProfile, assets, actions, tasks, taskPool, activeCycle, freeProgressResetAt, dailyCommitment, cycleProgress, oraclePreferences, oracleMessages, markOracleMessageAsRead, notifications, requestOracleContentCard, activeArenaPact, arenaPactProgress, arenaPactCandidates, missaoIndividualDisponivel, missaoDeSistemaAtiva, showToast } = useGame();
   const [section, setSection] = useState<'guidance' | 'mission' | 'wisdom'>('guidance');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
@@ -358,7 +312,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
     const feedCards: Message[] = recentFeedCards.slice(-30).map((feedMessage) => ({
       role: 'assistant',
-      section: ehCardDeBiblioteca(feedMessage.deliveryType, feedMessage.category, feedMessage.contextSnapshot?.purpose) ? 'wisdom' : 'guidance',
+      section: secaoDaMensagem(feedMessage) === 'wisdom' ? 'wisdom' : 'guidance',
       content: feedMessage.content,
       timestamp: new Date(feedMessage.createdAt),
       mode: feedMessage.mode,
@@ -368,6 +322,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
       feedSummary: feedMessage.contextSnapshot?.summary || feedMessage.contextSnapshot?.categoryLabel || undefined,
       feedTrigger: feedMessage.contextSnapshot?.triggerType,
       feedPurpose: feedMessage.contextSnapshot?.purpose,
+      visualTone: resolveOracleVisualTone(feedMessage.contextSnapshot),
       quickActions: Array.isArray(feedMessage.contextSnapshot?.quickActions)
         ? (feedMessage.contextSnapshot?.quickActions as ChatQuickAction[])
         : undefined,
@@ -556,7 +511,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     const brief = lerMeuDiaECiclo({ tasks, actions, assets, activeCycle, resetAt: freeProgressResetAt });
     sensory('click_soft');
     setMessages(previous => [...previous.filter(message => message.feedId !== READING_FEED_ID), {
-      role: 'assistant', content: brief.content, timestamp: new Date(), mode: currentMode,
+      role: 'assistant', visualTone: brief.visualTone, content: brief.content, timestamp: new Date(), mode: currentMode,
       feedId: READING_FEED_ID, feedCategory: 'analise_padroes', feedSummary: 'Meu dia e ciclo',
       feedTrigger: 'manual', quickActions: brief.quickActions,
     }]);
@@ -699,7 +654,28 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   // Mesma lista de permissao da linha que monta `section`. Eram duas decisoes do
   // mesmo destino em dois lugares, e a segunda continuava sendo por exclusao:
   // arrumar so a primeira deixaria o card do coach entrando por aqui.
-  const wisdomIds = new Set((oracleMessages || []).filter(message => message.contextSnapshot?.purpose !== 'oracle_speech' && ehCardDeBiblioteca(message.deliveryType, message.category, message.contextSnapshot?.purpose)).map(message => message.id));
+  const wisdomIds = new Set((oracleMessages || []).filter(message => secaoDaMensagem(message) === 'wisdom').map(message => message.id));
+
+  /*
+   * A BOLINHA DE NAO LIDO EM CADA SUB-ABA.
+   *
+   * Abrir o Oraculo marcava tudo como lido de uma vez, em todas as abas — e a
+   * pessoa nunca sabia que tinha um card novo em Sabedoria se abrisse em "Dia e
+   * ciclo". Agora so a aba aberta marca o que e dela, e as outras ficam com a
+   * bolinha ate serem visitadas.
+   */
+  const secoesNaoLidas = secoesComNaoLidas(oracleMessages || []);
+  const marcandoComoLidasRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    (oracleMessages || [])
+      .filter((message) => !message.read && secaoDaMensagem(message) === section && !marcandoComoLidasRef.current.has(message.id))
+      .forEach((message) => {
+        marcandoComoLidasRef.current.add(message.id);
+        void markOracleMessageAsRead(message.id);
+      });
+    // markOracleMessageAsRead muda a cada render; o ref impede marcar duas vezes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [oracleMessages, section]);
   const visibleMessages = section === 'mission' ? [] : messages.filter(message => section === 'wisdom' ? (message.section === 'wisdom' || wisdomIds.has(message.feedId || '')) : !(message.section === 'wisdom' || wisdomIds.has(message.feedId || '')));
 
   const content = (
@@ -757,7 +733,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
             const next = event.key === 'ArrowRight' ? (index+1)%tabs.length : event.key === 'ArrowLeft' ? (index+tabs.length-1)%tabs.length : event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length-1 : -1;
             if (next < 0) return;
             event.preventDefault(); setSection(tabs[next].id); document.getElementById(`oracle-tab-${tabs[next].id}`)?.focus();
-          }} onClick={() => setSection(id)}><Icon size={15} aria-hidden="true" className="shrink-0" />{label}</button>)}
+          }} onClick={() => setSection(id)}><Icon size={15} aria-hidden="true" className="shrink-0" />{label}{section !== id && secoesNaoLidas.has(id) && <span aria-label="novo" className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--skin-accent-color)]" />}</button>)}
         </div>
         {section === 'guidance' && <div className="shrink-0 px-4 pt-3">
           <button id="oracle-read-my-day" onClick={handleReadMyDay} className="min-h-14 w-full rounded-xl border border-white/10 bg-white/5 p-3 text-left"><span className="block text-xs font-bold">Ler meu ciclo e arenas</span><span className="text-[11px] text-white/50">Seu progresso nas arenas, com ou sem ciclo</span></button>
@@ -779,6 +755,9 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
           {visibleMessages.map((msg, idx) => {
              const msgMode = msg.role === 'assistant' ? resolveTone(msg.mode) : ORACLE_FREE_TONE;
              const visuals = MODE_VISUALS[msgMode];
+             const semanticTone = msg.visualTone || 'neutral';
+             const semanticTokens = getOracleSpeakerToneTokens(semanticTone);
+             const semanticStyle = { borderColor: semanticTokens.border, background: `linear-gradient(135deg, ${semanticTokens.coreSoft}, transparent 80%), #101013` };
              const isFeedCard = msg.role === 'assistant' && Boolean(msg.feedId);
              const feedCategory = msg.feedCategory || 'frases_inspiradoras';
              const feedPresentation = msg.feedPresentation || 'ambient_pulse';
@@ -803,6 +782,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                 </div>
               ) : isFeedCard ? (
                 <div
+                  style={msg.systemId ? undefined : semanticStyle}
                   className={`max-w-[92%] rounded-[22px] border p-4 text-sm leading-relaxed shadow-[0_14px_34px_rgba(0,0,0,0.24)] ${
                     feedPresentation === 'info_card'
                       ? `${feedVisual.borderClass} ${feedVisual.bgClass}`
@@ -814,7 +794,8 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                       gatilho (AUTO/MANUAL — vocabulario de quem escreveu o codigo,
                       nao de quem le) e o resumo, que repetia o texto do selo. */}
                   <div className="mb-3 flex flex-wrap items-center gap-2">
-                    <span className={`rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.18em] ${feedVisual.badgeClass}`}>
+                    {!msg.systemId && <OracleSpeakerMark tone={semanticTone} size="sm" pulse={false} />}
+                    <span className={`rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.18em] ${msg.systemId ? feedVisual.badgeClass : 'border-white/15 text-white/80'}`}>
                       {feedLabel}
                     </span>
                     {/* A hora vem de created_at, que ja chegava na mesma consulta —
@@ -832,14 +813,14 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                     const card = msg.feedCategory && msg.feedCategory in ORACLE_CARD_LIBRARY ? splitCardText(msg.content) : null;
                     if (card?.titulo) {
                       return (
-                        <div className={feedVisual.accentClass}>
+                        <div className="text-white/90">
                           <p className="text-[15px] font-bold leading-snug text-white">{card.titulo}</p>
                           <p className="mt-1.5 text-[14px] font-medium leading-relaxed">{card.texto}</p>
                         </div>
                       );
                     }
                     return (
-                      <div className={`whitespace-pre-line ${feedVisual.accentClass} ${feedPresentation === 'info_card' ? 'font-medium text-[14px]' : 'text-white/88'}`}>
+                      <div className={`whitespace-pre-line ${msg.systemId ? feedVisual.accentClass : 'text-white/90'} ${feedPresentation === 'info_card' ? 'font-medium text-[14px]' : 'text-white/88'}`}>
                         {msg.content}
                       </div>
                     );

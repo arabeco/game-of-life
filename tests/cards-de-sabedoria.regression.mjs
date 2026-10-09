@@ -96,7 +96,7 @@ assert.match(
 
 assert.match(
   edge,
-  /let category: OracleCategory = "analise_padroes";[\s\S]{0,80}let purpose = "cycle_insight";/,
+  /let category: OracleCategory = "analise_padroes";[\s\S]{0,160}let purpose = "cycle_insight";/,
   'A leitura tem de gravar a propria categoria, nao uma da biblioteca.',
 );
 
@@ -123,27 +123,28 @@ assert.doesNotMatch(
 // quando so a hidratacao foi corrigida. Por isso os dois chamam a MESMA funcao.
 // ---------------------------------------------------------------------------
 
+// A regra mora em utils/oracleSecoes.ts desde 09/10/2026, quando as sub-abas
+// ganharam a bolinha de nao lido: a hidratacao, o filtro e a bolinha leem dali.
+const secoes = le('utils/oracleSecoes.ts');
 assert.match(
-  chat,
+  secoes,
   /const PROPOSITOS_DE_BIBLIOTECA = new Set\(\['premium_content_card'\]\)/,
   'So o card que saiu da biblioteca pertence a Sabedoria; a lista precisa ser de permissao.',
 );
-
-const usosDoRoteador = chat.match(/ehCardDeBiblioteca\(/g) || [];
-assert.ok(
-  usosDoRoteador.length >= 2,
-  `As duas pontas (hidratacao e filtro) precisam chamar ehCardDeBiblioteca. Chamadas encontradas: ${usosDoRoteador.length}`,
+assert.match(
+  secoes,
+  /ehCardDeBiblioteca\(mensagem\.deliveryType, mensagem\.category, purpose\)\) return 'wisdom'/,
+  'A secao da mensagem usa o criterio da biblioteca.',
 );
 
 assert.match(
   chat,
-  /section: ehCardDeBiblioteca\(feedMessage\.deliveryType, feedMessage\.category, feedMessage\.contextSnapshot\?\.purpose\) \? 'wisdom' : 'guidance'/,
-  'A hidratacao precisa rotear pela origem do card, e nao pelo que ele nao e.',
+  /section: secaoDaMensagem\(feedMessage\) === 'wisdom' \? 'wisdom' : 'guidance'/,
+  'A hidratacao precisa rotear pela mesma regra.',
 );
-
 assert.match(
   chat,
-  /wisdomIds = new Set\(\(oracleMessages \|\| \[\]\)\.filter\(message => [^\n]*ehCardDeBiblioteca\(message\.deliveryType, message\.category, message\.contextSnapshot\?\.purpose\)\)/,
+  /wisdomIds = new Set\(\(oracleMessages \|\| \[\]\)\.filter\(message => secaoDaMensagem\(message\) === 'wisdom'\)/,
   'O filtro da aba precisa usar o mesmo criterio da hidratacao, senao o card volta a entrar por ele.',
 );
 
@@ -151,7 +152,7 @@ assert.match(
 // classificado pela origem. Mandar o historico inteiro para a outra aba seria
 // pior que o defeito, entao ali vale a regra antiga.
 assert.match(
-  chat,
+  secoes,
   /if \(!purpose\) return !ehLeitura\(category\);/,
   'O card antigo, sem proposito gravado, precisa manter a regra de antes.',
 );

@@ -54,18 +54,17 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab: ini
     const unreadRequests = requestNotifications.filter((notification) => !notification.read).length;
     const unreadChat = oracleMessages.some((message) => !message.read) || chatNotifications.some((notification) => !notification.read);
 
+    // As mensagens do Oraculo nao se marcam mais aqui, todas de uma vez: cada
+    // sub-aba do OracleChat marca so as suas, para as outras manterem a bolinha
+    // de nao lido (09/10/2026). Os avisos do chat continuam marcados ao abrir.
     useEffect(() => {
         if (activeTab !== 'chat') return;
 
-        const unreadMessageIds = oracleMessages.filter((message) => !message.read).map((message) => message.id);
         const unreadChatNotificationIds = chatNotifications.filter((notification) => !notification.read).map((notification) => notification.id);
-        if (unreadMessageIds.length === 0 && unreadChatNotificationIds.length === 0) return;
+        if (unreadChatNotificationIds.length === 0) return;
 
-        void Promise.all([
-            ...unreadMessageIds.map((messageId) => markOracleMessageAsRead(messageId)),
-            ...unreadChatNotificationIds.map((notificationId) => markNotificationRead(notificationId)),
-        ]);
-    }, [activeTab, chatNotifications, markNotificationRead, markOracleMessageAsRead, oracleMessages]);
+        void Promise.all(unreadChatNotificationIds.map((notificationId) => markNotificationRead(notificationId)));
+    }, [activeTab, chatNotifications, markNotificationRead]);
 
     // Each alert is marked read when opened, not merely when its list appears.
 

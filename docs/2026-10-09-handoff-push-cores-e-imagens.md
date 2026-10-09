@@ -144,7 +144,7 @@ Paleta alternativa em avaliação: dourado `#947322`, azul `#2475AC`, verde `#24
 Os nomes e diretório da seção 4/6 ficam reservados para a opção escolhida. Nesta etapa não foram gerados arquivos finais nem publicados assets. Depois da escolha, testar no aparelho: notificação fechada, expandida e gaveta clara/escura. Não presumir miniatura obrigatória nem recorte exato.
 
 
-## 8. Decisao final e integracao local (09/10)
+## 8. Primeira integração local (09/10) — régua substituída pela seção 9
 
 Escolhida a opcao sem imagem. As alternativas da secao 7 sao apenas historico.
 - Dourado: leitura geral, estoque, sabedoria.
@@ -159,3 +159,40 @@ Chat e balao usam marca dourada com nucleo colorido e gradiente discreto. Missao
 Paleta Android implementada: #947322, #2475AC, #24844F. Previa final: tools/oracle-colors-preview.html (marca real, textos ilustrativos, push simulado).
 
 Validacao local: TypeScript, regressoes de leitura/motor/classificacao, bundles das duas funcoes com imports Deno externos. Nenhum deploy ou teste em aparelho efetuado. Para chegar aos aparelhos: publicar oracle e web-push; atualizar app para os cards e a cor com app aberto. Mensagens antigas nao sao reclassificadas.
+
+## 9. Régua aprovada — branco, azul, verde e dourado
+
+Esta seção substitui as classificações de cores anteriores. Decisão de produto aprovada; a nova régua ainda não foi aplicada ao motor nem aos emissores. O pedido nesta etapa é registrar a decisão e deixá-la em commit para continuidade.
+
+| Cor do símbolo | Intenção principal | Exemplo |
+| --- | --- | --- |
+| Branco sobre fundo escuro | Informação neutra: ciclo, planner, estoque e sabedoria | “Seu ciclo está em 40%. Faltam 8 dias.” |
+| Azul | Orientação, começo ou retorno | “Bom te ver de volta. Escolha por onde continuar.” |
+| Verde | Avanço concreto, ainda em andamento | “3/5 nessa ação. Faltam 2.” |
+| Dourado | Conquista completa | “Meta cumprida.” |
+| Vermelho | Reservado, sem gatilho automático aprovado | Não usar por enquanto. |
+
+### Regras para classificar sem cobrar indevidamente
+
+- Classificar pela intenção principal da fala, não pelo narrador, canal, tema de sabedoria ou uma palavra isolada.
+- Leitura geral continua neutra mesmo se mencionar uma conquista de passagem. Uma reação dedicada à conquista completa é dourada.
+- Uma reação de progresso parcial é verde. Retorno com orientação é azul.
+- Prazo encerrado, por si só, é informação neutra: “O prazo terminou. Veja seu fechamento.” Não implica azul ou vermelho automaticamente.
+- Não usar vermelho para inatividade, falta de agendamento, percentual baixo, fim do ciclo ou fins de semana. Não comparar com ritmo diário esperado nem reintroduzir cobrança de sequência.
+- A pessoa pode concluir direto do estoque. Não tratar ausência de planejamento como falta de progresso.
+- Sabedoria começa neutra; o título identifica seu tema. Missão individual mantém seu funcionamento, sem reformulação do texto nesta etapa.
+- Em caso de ambiguidade ou metadado ausente, usar neutro. Não deduzir conquista por percentual arredondado.
+
+### Símbolo aprovado visualmente
+
+O usuário preferiu a proposta sem bolinha central: o próprio símbolo recebe a cor, com fundo escuro, borda fina e brilho suave. A comparação está em `tools/oracle-colors-preview.tsx` / `.html`, usando a silhueta do `GameLogoIcon`. É somente uma prévia: `OracleSpeakerMark.tsx` ainda mantém o desenho anterior no app.
+
+### Continuidade para a outra IA
+
+1. Aplicar o símbolo aprovado ao componente compartilhado, preservando tamanhos e usos existentes.
+2. Separar avanço verde de conquista dourada no contrato compartilhado de tons; hoje `success` reúne os dois e `neutral` ainda é dourado.
+3. Propagar a régua para abertura, reação, leitura manual, leitura automática, cards e metadados de push, mantendo narradores independentes.
+4. Definir os valores finais das cores. Branco sobre fundo escuro é a direção interna do app; não enviar branco cegamente ao Android, cujo fundo claro/escuro é controlado pelo sistema. Validar contraste em aparelho antes de fechar o neutro do push.
+5. Manter push sem imagem. O destaque nativo e o card dentro do app são apresentações distintas; não prometer gradiente no fundo da notificação Android.
+
+Este registro e a prévia não constituem deploy, atualização Android nem validação em aparelho.

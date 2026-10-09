@@ -73,25 +73,20 @@ const MissionSection: React.FC<{
 );
 
 /**
- * O cartao de missão.
+ * A FAIXA DE MISSÃO.
  *
- * Ele tinha tres defeitos que se somavam ate não sobrar informacao nenhuma:
+ * Era um cartão de três linhas — título, estado, barra e recompensa —, e cada
+ * família pintava o cartão inteiro com a sua cor; algumas ainda punham arte de
+ * fundo. Na lista, pareciam quatro tipos diferentes de coisa (09/10/2026).
  *
- *   - "ACEITAR" era um CHIP DE ESTADO vestido de botao — fundo de destaque,
- *     caixa alta, negrito — ao lado de "Ver", que e o botao de verdade. Dois
- *     botoes, e o mais chamativo não clicava.
- *   - a barra de progresso so aparecia com a missão ja aceita, entao a maioria
- *     dos cartoes não mostrava progresso nenhum — que e a unica coisa que
- *     justifica um cartao existir numa lista.
- *   - `reward` era passado por sete lugares e o componente nunca o declarava.
- *     A recompensa chegava e era jogada fora.
- *
- * Agora: UM botao (Ver), o estado como texto quieto que ninguem confunde com
- * botao, a barra sempre visivel — inclusive vazia — e a recompensa a vista.
+ * Agora toda missão é uma faixa fina, do mesmo tamanho: ícone, título, onde ela
+ * está e a linha de progresso no pé. A família fica só na barrinha da esquerda
+ * e na cor da linha. Imagem, descrição e recompensa moram no modal que abre ao
+ * tocar — MissionDetailModal e QuestDetailModal já mostram as três.
  */
 type SeasonQuestFamily = 'temporada' | 'iniciante' | 'individual' | 'grupo';
 
-/** Faixa de cor por familia: da para saber de onde a missão vem sem ler o rotulo. */
+/** Cor por família: dá para saber de onde a missão vem sem ler o rótulo. */
 const QUEST_FAMILY_COLOR: Record<SeasonQuestFamily, string> = {
     temporada: 'var(--skin-accent-color)',
     iniciante: 'rgb(203,213,225)',
@@ -99,7 +94,7 @@ const QUEST_FAMILY_COLOR: Record<SeasonQuestFamily, string> = {
     grupo: 'rgb(56,189,248)',
 };
 
-const SeasonQuestCard: React.FC<{
+export const SeasonQuestCard: React.FC<{
     title: string;
     icon?: string;
     metaLabel: string;
@@ -111,110 +106,35 @@ const SeasonQuestCard: React.FC<{
     reward?: string;
     family?: SeasonQuestFamily;
     onClick: () => void;
-}> = ({ title, icon, metaLabel, isAccepted, progress, progressLabel, participants, artUrl, reward, family = 'temporada', onClick }) => {
+}> = ({ title, icon, metaLabel, isAccepted, progress, progressLabel, participants, family = 'temporada', onClick }) => {
     const isCompleted = progress >= 100;
+    const cor = QUEST_FAMILY_COLOR[family];
     const estado = isCompleted ? 'Concluída' : isAccepted ? 'Em curso' : 'Não iniciada';
-    const corDoEstado = isCompleted
-        ? 'text-green-300'
-        : isAccepted ? 'text-[var(--ui-text-accent)]' : 'text-[var(--ui-core-caption-color)]';
+    const onde = isCompleted ? null : isAccepted ? (progressLabel || `${Math.round(progress)}%`) : 'nova';
 
     return (
-        <GlassCard
-            variant="neutral"
-            className={`group relative cursor-pointer overflow-hidden rounded-xl border p-3 transition-all duration-200 active:scale-[0.99] ${isAccepted
-                ? 'border-[var(--ui-border-accent-soft)] bg-[var(--skin-accent-color)]/[0.055] hover:border-[var(--ui-border-accent)]'
-                : 'border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] hover:border-[var(--ui-border-accent-soft)]'}`}
+        <button
+            type="button"
             onClick={onClick}
+            aria-label={`${title}, ${metaLabel}, ${estado}${onde && isAccepted ? `, ${onde}` : ''}`}
+            className="group relative flex h-10 w-full items-center gap-2.5 overflow-hidden rounded-lg border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] pl-3.5 pr-3 text-left transition-colors hover:border-[var(--ui-border-accent-soft)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--skin-accent-color)] active:scale-[0.99]"
         >
-            {/* A familia colore o cartao inteiro, de leve, e marca a borda esquerda.
-                A primeira versao era uma mancha de 16px a 18% num canto — pequena
-                demais para identificar e sem relacao com a forma do cartao. Um
-                gradiente que atravessa da o tom sem disputar com o texto, e a barra
-                cheia na borda e o que se ve de relance numa lista. */}
-            <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-0 opacity-[0.13]"
-                style={{ background: `linear-gradient(105deg, ${QUEST_FAMILY_COLOR[family]} 0%, transparent 78%)` }}
-            />
-            <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-y-0 left-0 w-[3px] rounded-l-xl"
-                style={{ background: QUEST_FAMILY_COLOR[family], opacity: 0.75 }}
-            />
-            {artUrl && (
-                <>
-                    <div
-                        aria-hidden="true"
-                        className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-40 transition-opacity duration-300 group-hover:opacity-55"
-                        style={{ backgroundImage: `url('${artUrl}')` }}
-                    />
-                    {/* Scrim: the art sits behind live text, so legibility cannot depend on
-                        which image the mission happens to carry. */}
-                    <div
-                        aria-hidden="true"
-                        className="pointer-events-none absolute inset-0"
-                        style={{ background: 'linear-gradient(100deg, rgba(0,0,0,0.92) 22%, rgba(0,0,0,0.72) 52%, rgba(0,0,0,0.42) 100%)' }}
-                    />
-                </>
+            <span aria-hidden="true" className="absolute inset-y-0 left-0 w-[3px]" style={{ background: cor }} />
+            <span aria-hidden="true" className="shrink-0 text-base leading-none">{icon || '📜'}</span>
+            <span className="min-w-0 flex-1 truncate text-[13px] font-bold text-[var(--ui-card-text)]" title={title}>{title}</span>
+            {typeof participants === 'number' && (
+                <span className="flex shrink-0 items-center gap-1 text-[10px] text-[var(--ui-core-caption-color)]">
+                    <UsersIcon className="h-3 w-3" />
+                    {participants}
+                </span>
             )}
-            <div className="relative z-10 flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-pill-bg)] text-xl shadow-inner">
-                    {artUrl
-                        ? <img src={artUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
-                        : (icon || '📜')}
-                </div>
-
-                <div className="min-w-0 flex-1">
-                    {/* Maior e centralizado: o titulo e a unica coisa que diz QUAL
-                        missao e esta, e ele estava do tamanho da legenda ao lado. */}
-                    <h3 className="truncate text-center text-[14px] font-bold leading-tight text-[var(--ui-card-text)]" title={title}>{title}</h3>
-
-                    {/* Estado em texto, com um ponto. Sem fundo e sem caixa alta de
-                        botao: nada aqui pode parecer clicavel alem do "Ver". */}
-                    <div className="mt-1 flex items-center justify-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.06em]">
-                        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${isCompleted ? 'bg-green-400' : isAccepted ? 'bg-[var(--skin-accent-color)]' : 'bg-white/25'}`} />
-                        <span className={`shrink-0 ${corDoEstado}`}>{estado}</span>
-                        <span className="truncate text-[var(--ui-core-caption-color)]">· {metaLabel}</span>
-                        {typeof participants === 'number' && (
-                            <span className="flex shrink-0 items-center gap-1 text-[var(--ui-core-caption-color)]">
-                                <UsersIcon className="h-3 w-3" />
-                                {participants}
-                            </span>
-                        )}
-                    </div>
-
-                    {/* Sempre visivel, mesmo em zero. Uma lista de cartoes sem
-                        progresso e uma lista de nomes: e o progresso que responde
-                        "para que serve este cartão". */}
-                    {!isCompleted && (
-                        <div className="mt-1.5 flex items-center gap-2">
-                            <div className="relative h-1 flex-1 overflow-hidden rounded-full bg-[var(--ui-core-pill-bg)]">
-                                <div
-                                    className="h-full rounded-full bg-[var(--skin-accent-color)] transition-all duration-700 ease-out"
-                                    style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
-                                />
-                            </div>
-                            <span className="shrink-0 text-[9px] font-black tabular-nums text-[var(--ui-card-text-soft)]">
-                                {progressLabel || `${Math.round(progress)}%`}
-                            </span>
-                        </div>
-                    )}
-
-                    {reward && (
-                        <p className="mt-1 truncate text-[9px] font-bold text-[var(--ui-core-caption-color)]">{reward}</p>
-                    )}
-                </div>
-
-                {isCompleted ? (
-                    <CheckIcon className="h-5 w-5 shrink-0 text-green-400" />
-                ) : (
-                    <span className="shrink-0 rounded-lg border border-[var(--ui-border-accent-soft)] px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.1em] text-[var(--ui-text-accent-soft)] transition-colors group-hover:border-[var(--ui-border-accent)]">
-                        Ver
-                    </span>
-                )}
-            </div>
-
-        </GlassCard>
+            {isCompleted
+                ? <CheckIcon className="h-4 w-4 shrink-0 text-green-400" />
+                : <span className={`shrink-0 text-[10px] font-black tabular-nums ${isAccepted ? 'text-[var(--ui-card-text-soft)]' : 'uppercase tracking-[0.08em] text-[var(--ui-core-caption-color)]'}`}>{onde}</span>}
+            <span aria-hidden="true" className="absolute bottom-0 left-[3px] right-0 h-[2px] bg-[var(--ui-core-pill-bg)]">
+                <span className="block h-full transition-all duration-700 ease-out" style={{ width: `${Math.max(0, Math.min(100, progress))}%`, background: cor }} />
+            </span>
+        </button>
     );
 };
 

@@ -208,7 +208,8 @@ const buildNotificationSignalMessage = (notification: Notification, oracleMode: 
 
 export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; isEmbedded?: boolean; onNavigateTab?: (tab: OracleTabTarget) => void }> = ({ onClose, hideHeader = false, isEmbedded = false }) => {
   const { userProfile, assets, actions, tasks, taskPool, activeCycle, freeProgressResetAt, dailyCommitment, cycleProgress, oraclePreferences, oracleMessages, markOracleMessageAsRead, notifications, requestOracleContentCard, activeArenaPact, arenaPactProgress, arenaPactCandidates, missaoIndividualDisponivel, missaoDeSistemaAtiva, showToast } = useGame();
-  const [section, setSection] = useState<'guidance' | 'mission' | 'wisdom'>('guidance');
+  // Missao cumprida e ainda nao recebida: o Oraculo abre direto na aba dela.
+  const [section, setSection] = useState<'guidance' | 'mission' | 'wisdom'>(() => arenaPactProgress?.completed ? 'mission' : 'guidance');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
   const isInitialLoadRef = useRef(true);
@@ -665,6 +666,8 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
    * bolinha ate serem visitadas.
    */
   const secoesNaoLidas = secoesComNaoLidas(oracleMessages || []);
+  // A missao cumprida espera o "Receber" na aba dela, e a bolinha fica ate la.
+  if (arenaPactProgress?.completed) secoesNaoLidas.add('mission');
   const marcandoComoLidasRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     (oracleMessages || [])

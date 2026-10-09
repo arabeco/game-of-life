@@ -15224,7 +15224,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         showToast('Missão encerrada. O Oráculo pode propor outra quando você pedir.', 'info');
     };
 
-    const claimArenaPact = async (opcoes: { silencioso?: boolean } = {}) => {
+    const claimArenaPact = async () => {
         const pact = activeArenaPact;
         if (!pact) return;
         if (!arenaPactProgress?.completed) {
@@ -15235,7 +15235,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         // O servidor refaz a contagem e paga; o cliente nao decide recompensa.
         const { data, error } = await supabase.rpc('claim_arena_pact_reward');
         if (error || !(data as any)?.success) {
-            if (!opcoes.silencioso) showToast(error?.message || 'Não foi possível validar a missão agora.', 'error');
+            showToast(error?.message || 'Não foi possível validar a missão agora.', 'error');
             return;
         }
 
@@ -15260,28 +15260,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     /*
-     * A MISSAO CUMPRIDA SE RECEBE SOZINHA.
+     * A MISSAO INDIVIDUAL SE RECEBE NA ABA MISSAO, E NAO SOZINHA.
      *
-     * Cumprida, ela ficava parada com um botao "Receber" ate a pessoa voltar ao
-     * painel. Agora o recebimento sai no momento em que a contagem chega no
-     * alvo, pelo mesmo caminho do botao: o servidor refaz a conta e paga, e o
-     * modal de recompensa aparece. Sem toast de erro aqui — se o servidor nao
-     * confirmar, o botao continua la para tentar de novo.
-     *
-     * Uma tentativa por missao (trava pelo id do pacto), como o aviso de prazo
-     * vencido logo acima.
+     * Ela chegou a se receber sozinha (09/10/2026, manha) e voltou atras no mesmo
+     * dia: as outras missoes terminam sozinhas, mas esta e a que puxa a proxima.
+     * Cumprida, o Oraculo avisa, o botao dele e a aba Missao acendem a bolinha, e
+     * abrir o Oraculo cai direto na aba. La a pessoa recebe — e ja ve a opcao de
+     * pedir outra.
      */
-    const pactoCumpridoRecebidoRef = useRef<string | null>(null);
-    useEffect(() => {
-        if (!isProfileLoaded || !hasHydratedFromSupabase) return;
-        const pact = activeArenaPact;
-        if (!pact || !arenaPactProgress?.completed) return;
-        if (pactoCumpridoRecebidoRef.current === pact.id) return;
-        pactoCumpridoRecebidoRef.current = pact.id;
-        void claimArenaPact({ silencioso: true });
-        // claimArenaPact muda a cada render; a trava por id e o que impede repetir.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isProfileLoaded, hasHydratedFromSupabase, activeArenaPact?.id, arenaPactProgress?.completed]);
 
 
     const taskPool = useMemo(() => {

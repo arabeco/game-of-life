@@ -80,7 +80,9 @@ export interface ReactionFacts {
 }
 export function reactionCandidates(f: ReactionFacts, tone: Voice): Candidate[] {
   const result: Candidate[] = [];
-  const addProgress = (p: ProgressFact, previous: number, subject: string, prefix: string) => {
+  // `aoCumprir` fecha a frase quando a meta chega no alvo: a missao individual nao
+  // se recebe sozinha (09/10/2026), entao a fala diz onde receber.
+  const addProgress = (p: ProgressFact, previous: number, subject: string, prefix: string, aoCumprir = '') => {
     if (p.target <= 0 || p.completed <= previous || previous >= p.target) return;
     const remaining = Math.max(0, p.target - p.completed);
     const count = `${p.completed}/${p.target}`;
@@ -92,11 +94,11 @@ export function reactionCandidates(f: ReactionFacts, tone: Voice): Candidate[] {
         coach: `${summary} ${remaining === 0 ? 'Essa meta está cumprida.' : remaining === 1 ? 'Mais uma e essa meta está cumprida.' : left(remaining)}`,
         reflexivo: `${summary} ${remaining === 0 ? 'O que fez diferença nessa conquista?' : left(remaining)}`,
         calmo: `${summary} ${remaining === 0 ? 'O que você fez agora é uma conquista completa.' : `Mais um avanço registrado. ${left(remaining)}`}`,
-      }),
+      }) + (remaining === 0 ? aoCumprir : ''),
     });
   };
   addProgress(f.action, f.previousCount, 'action', '');
-  if (f.mission) addProgress(f.mission, f.mission.previous, 'mission', 'Missão ');
+  if (f.mission) addProgress(f.mission, f.mission.previous, 'mission', 'Missão ', ' Receba na aba Missão do Oráculo.');
   if (f.returned) result.push({ id: `return:${f.eventId}`, subject: 'return', score: 70, text: voice(tone, {
     neutro: `«${f.action.name}» voltou a ter uma conclusão registrada.`,
     coach: `«${f.action.name}» voltou a andar. Esse foi o primeiro passo da retomada.`,

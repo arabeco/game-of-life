@@ -52,6 +52,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         scheduleAndCompleteMilestoneNow,
         oraclePreferences,
         oracleMessages,
+        arenaPactProgress,
         notifications,
         activeTheme,
         showToast
@@ -95,7 +96,8 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     const actionSessionNotificationSentRef = useRef(false);
     const actionSessionToastSentRef = useRef(false);
     const actionSessionReturnedRef = useRef(false);
-    const unreadOracleMessages = oracleMessages.filter((message) => !message.read).length;
+    // A missao individual cumprida conta como um aviso ate ser recebida na aba Missao.
+    const unreadOracleMessages = oracleMessages.filter((message) => !message.read).length + (arenaPactProgress?.completed ? 1 : 0);
     const unreadNotifications = notifications.filter((notification) => !notification.read);
     const oracleUnreadCount = unreadOracleMessages + unreadNotifications.length;
     const hasCriticalOracleSignal = unreadNotifications.some((notification) => getNotificationPriority(notification.type) === 'critical');

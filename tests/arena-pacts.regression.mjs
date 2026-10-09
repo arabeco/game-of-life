@@ -555,10 +555,12 @@ console.log('Escopo do app: uma arena sintetica, arena nula no banco, e so volum
   assert.ok(!curto.some((p) => p.kind === 'volume'), 'ciclo curto nao oferece volume invalido');
 }
 
-// --- a contagem trava no alvo, e a missao cumprida se recebe sozinha -----
+// --- a contagem trava no alvo, e a missao cumprida espera na aba Missao ----
 // Em 09/10/2026 a missao mostrou 12/10: volume, retomada e constancia nao
-// tinham teto, e o que vinha depois de cumprir continuava somando. Cumprida, ela
-// tambem ficava parada esperando o "Receber".
+// tinham teto, e o que vinha depois de cumprir continuava somando. Ela chegou a
+// se receber sozinha e voltou atras no mesmo dia: a individual e a que puxa a
+// proxima, entao se recebe na aba Missao, com o Oraculo avisando e a bolinha
+// acesa ate la.
 {
   const tresDias = [['alvo-a', '2026-08-21'], ['alvo-b', '2026-08-22'], ['alvo-c', '2026-08-23']]
     .map(([id, dia]) => task(id, dia));
@@ -569,7 +571,11 @@ console.log('Escopo do app: uma arena sintetica, arena nula no banco, e so volum
   const volume = measurePactProgress({ ...pactoConstancia, kind: 'volume', goal: 2, endsOn: '2026-08-30' }, alvo, actionsFor(alvo), tresDias, '2026-08-23');
   assert.deepEqual([volume.current, volume.completed], [2, true], 'volume para no alvo');
 
-  const contexto = readFileSync(new URL('../contexts/GameContext.tsx', import.meta.url), 'utf8');
-  assert.match(contexto, /pactoCumpridoRecebidoRef/, 'a missao cumprida se recebe sozinha');
-  console.log('PASS a contagem trava no alvo e a missao cumprida se recebe sozinha.');
+  const ler = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url), 'utf8');
+  assert.doesNotMatch(ler('contexts/GameContext.tsx'), /pactoCumpridoRecebidoRef|silencioso: true/, 'a individual nao se recebe sozinha');
+  assert.match(ler('components/OracleChat.tsx'), /arenaPactProgress\?\.completed\) secoesNaoLidas\.add\('mission'\)/, 'a aba Missao acende');
+  assert.match(ler('components/OracleChat.tsx'), /arenaPactProgress\?\.completed \? 'mission' : 'guidance'/, 'o Oraculo abre na aba Missao');
+  assert.match(ler('components/GlobalHeader.tsx'), /Boolean\(arenaPactProgress\?\.completed\)/, 'o botao do Oraculo acende');
+  assert.match(ler('supabase/functions/_shared/oracle-engine-v2.ts'), /'Missão ', ' Receba na aba Missão do Oráculo\.'/, 'a fala diz onde receber');
+  console.log('PASS a contagem trava no alvo e a missao cumprida espera na aba Missao.');
 }

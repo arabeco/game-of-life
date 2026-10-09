@@ -37,7 +37,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     defaultRestScreenOpen = true,
     onRestScreenVisibilityChange,
 }) => {
-    const { userProfile, assets, oracleMessages, notifications, clan, oraclePreferences } = useGame();
+    const { userProfile, assets, oracleMessages, notifications, clan, oraclePreferences, arenaPactProgress } = useGame();
     const userId = userProfile?.id || '';
     const [isMoodModalOpen, setMoodModalOpen] = useState(false);
     const [isOracleOpen, setOracleOpen] = useState(false);
@@ -56,7 +56,9 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     );
     const unreadNotificationsCount = getUnreadBadgeCount(visibleNotifications);
     const unreadVisibleNotificationsCount = visibleNotifications.filter(notification => !notification.read).length;
-    const hasUnreadMessages = oracleMessages.some(m => !m.read);
+    // Missao individual cumprida e ainda nao recebida tambem acende o Oraculo: ela
+    // se recebe na aba Missao, e a bolinha fica ate a pessoa ir la (09/10/2026).
+    const hasUnreadMessages = oracleMessages.some(m => !m.read) || Boolean(arenaPactProgress?.completed);
     const hasUnread = hasUnreadMessages || unreadVisibleNotificationsCount > 0;
     const masteryIndex = getMasteryIndexFromAssets(assets);
     

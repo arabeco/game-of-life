@@ -78,8 +78,8 @@ export const SCREEN_INTRO_TIPS: Record<ScreenIntroTipId, ScreenIntroTipDef> = {
     id: 'planner',
     label: 'Planner',
     title: 'Agora o dia fica concreto.',
-    summary: 'Puxa uma ação, conclui o que cabe e deixa o ciclo sentir que você apareceu.',
-    items: ['complete uma ação real. Uma já muda o estado do dia.'],
+    summary: 'Depois de fazer uma ação, toque e segure até a barra completar. Para agendar, segure até o cartão levantar e arraste para um horário.',
+    items: ['agendar não conclui: depois de executar, segure o cartão no horário. Para desfazer, segure a ação concluída novamente.'],
   },
   action_modal: {
     id: 'action_modal',
@@ -287,9 +287,9 @@ const SCREEN_INTRO_TIP_VARIANTS: Partial<Record<ScreenIntroTipId, (state: Screen
     items: ['escolha uma para hoje. As outras não vão a lugar nenhum.'],
   }),
   planner: (state) => (state.hasActiveCycle ? null : {
-    title: 'Ainda sem ciclo.',
-    summary: 'Dá para executar sem ciclo: as ações valem e a experiência entra igual. O ciclo é quando você quer assumir uma meta com prazo.',
-    items: ['vá concluindo e ajustando as repetições. O ciclo pode vir depois.'],
+    title: 'Comece pelo que cabe hoje.',
+    summary: 'Você pode usar o planner sem ciclo. Depois de fazer uma ação, toque e segure até a barra completar. Para agendar, segure até o cartão levantar e arraste para um horário.',
+    items: ['quando quiser uma meta com prazo, abra o histórico no alto do planner, defina os dias do ciclo e ajuste as repetições para esse período.'],
   }),
   reports: (state) => (state.hasClosedCycle ? null : {
     title: 'Ainda não ha o que comparar.',

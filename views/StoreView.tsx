@@ -1,10 +1,10 @@
+import { useScreenIntroTip } from '../hooks/useScreenIntroTip';
 import React, { useState } from 'react';
 import { StoreTopBar, type StoreTab } from '../components/Store/StoreTopBar';
 import { GoldStore } from '../components/Store/GoldStore';
 import { CodexStore } from '../components/Store/CodexStore';
 import { ItemsStore } from '../components/Store/ItemsStore';
 import { MembershipStore } from '../components/Store/MembershipStore';
-import { SCREEN_INTRO_TIP_CONTEXT_EVENT, type ScreenIntroTipId } from '../utils/screenIntroTips';
 
 const ALLOWED_TABS: readonly StoreTab[] = ['codexes', 'items', 'store', 'membership'];
 
@@ -26,18 +26,11 @@ export const StoreView: React.FC = () => {
     }
   }, [activeTab, sanitizeTab]);
 
-  React.useEffect(() => {
-    const tipId: ScreenIntroTipId =
-      activeTab === 'items'
+  useScreenIntroTip(activeTab === 'items'
           ? 'store_items'
           : activeTab === 'codexes'
             ? 'store_codexes'
-            : 'store_gold';
-
-    window.dispatchEvent(new CustomEvent(SCREEN_INTRO_TIP_CONTEXT_EVENT, {
-      detail: { tipId },
-    }));
-  }, [activeTab]);
+            : 'store_gold', 20);
 
   React.useEffect(() => {
     const handleStoreViewRequest = (event: Event) => {

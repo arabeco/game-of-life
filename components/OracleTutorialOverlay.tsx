@@ -3,6 +3,7 @@ import { useTutorial } from '../contexts/TutorialContext';
 import { Portal } from './Portal';
 import { TUTORIAL_SECTIONS } from '../constants/tutorialSteps';
 import { OracleSpeakerMark } from './OracleSpeakerMark';
+import { shouldIgnoreGuideKeyboard } from '../utils/onboardingProgress';
 
 const getCategoryLabel = (category?: string) => {
     switch (category) {
@@ -80,6 +81,7 @@ export const OracleTutorialOverlay: React.FC = () => {
     }, [currentStep, isTutorialActive, step]);
 
     useEffect(() => {
+        setSpotlightRect(null);
         if (!isTutorialActive || !step?.targetId) {
             setSpotlightRect(null);
             return;
@@ -152,8 +154,9 @@ export const OracleTutorialOverlay: React.FC = () => {
         if (!isTutorialActive) return;
 
         const handleKeyDown = (e: KeyboardEvent) => {
+            if (shouldIgnoreGuideKeyboard(e)) return;
             if (e.key === 'Escape') {
-                endTutorial(true);
+                endTutorial(false);
             } else if (e.key === ' ' || e.key === 'Enter') {
                 e.preventDefault();
                 handleNext();
@@ -235,7 +238,7 @@ export const OracleTutorialOverlay: React.FC = () => {
                                             </div>
 
                                             <button
-                                                onClick={() => endTutorial(true)}
+                                                onClick={() => endTutorial(false)}
                                                 className="shrink-0 text-[8px] md:text-[10px] text-gray-500 hover:text-white uppercase tracking-[0.18em] transition-colors px-1"
                                             >
                                                 Pular

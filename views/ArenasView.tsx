@@ -2182,6 +2182,12 @@ export const ArenasView: React.FC = () => {
                     </div>
                 </div>
 
+                {activeCycle && (
+                    <div className="mb-4" aria-label="Resumo do ciclo atual">
+                        <MiniCycleHUD cycle={activeCycle} />
+                    </div>
+                )}
+
                 {/* A rodada livre, dita em voz alta.
                     Isto era um botao fantasma no canto direito chamado "Zerar
                     metas" — e o nome brigava com o que ele faz. Ele NAO apaga: as

@@ -254,20 +254,8 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
     };
 
     // Derived assets for preview
-    const equippedArtifact = SOVEREIGN_ASSETS.artifacts?.find(a => a.id === config.artifact);
-    const equippedAura = SOVEREIGN_ASSETS.auras?.find(a => a.id === config.aura);
     const sharedPlateId = getSharedPlateId();
     const equippedSharedPlate = SOVEREIGN_ASSETS.plates?.find(p => p.id === sharedPlateId);
-    
-    // Primary Display Handler
-    const setPrimary = (type: 'sovereign' | 'item') => {
-        setConfig(p => ({ ...p, primaryDisplay: type }));
-        // Also switch mode to edit that item
-        if (type === 'sovereign') setActiveMode('sovereign');
-        if (type === 'item') setActiveMode('artifact');
-    };
-
-    const primary = config.primaryDisplay || 'sovereign';
 
     /*
      * VER ANTES DE MEXER.
@@ -326,21 +314,14 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
     /*
      * MOSTRAR NO PERFIL E UMA ESCOLHA, E ELA MORA NO MESMO CAMPO.
      *
-     * `primaryDisplay` sempre respondeu "o que aparece", e "nada" e uma das
-     * respostas — por isso `'none'` em vez de um booleano ao lado, que acabaria
-     * discordando dele.
-     *
-     * Desligar guarda o modo anterior no proprio gesto de religar: voltar
-     * escolhe `sovereign` ou `item` conforme o que estiver em edicao, para
-     * ninguem perder a montagem so por ter escondido.
+     * O perfil agora mostra soberano e artefato juntos. `primaryDisplay`
+     * continua guardando a unica escolha necessaria: exibir ou ocultar.
      */
     const apareceNoPerfil = config.primaryDisplay !== 'none';
     const alternarAparicao = () => {
         setConfig(p => ({
             ...p,
-            primaryDisplay: p.primaryDisplay === 'none'
-                ? (activeMode === 'artifact' ? 'item' : 'sovereign')
-                : 'none',
+            primaryDisplay: p.primaryDisplay === 'none' ? 'sovereign' : 'none',
         }));
     };
 
@@ -368,101 +349,51 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                 )}
 
                 {modo === 'edicao' && (<>
-                {/* Preview Section (2 Slots) */}
-                <div className="p-4 bg-black/20 border-b border-white/5 flex gap-4 justify-center items-stretch shrink-0">
-                    
-                    {/* 1. O soberano, a esquerda */}
-                    <div 
-                        onClick={() => {
-                            setActiveMode('sovereign');
-                            setPrimary('sovereign');
-                        }}
-                        className={`relative w-32 h-48 bg-black/40 border-2 rounded-xl overflow-hidden cursor-pointer transition-all group hover:border-white/30 flex-shrink-0`}
-                        style={{
-                            borderColor: activeMode === 'sovereign' ? 'var(--skin-accent-color)' : 'rgba(255,255,255,0.1)',
-                            boxShadow: activeMode === 'sovereign' ? '0 0 15px var(--skin-accent-color)' : undefined
-                        }}
+                {/* O editor espelha a vitrine: soberano central e tres artefatos abaixo. */}
+                <div className="flex shrink-0 flex-col items-center gap-2 border-b border-white/5 bg-black/20 px-4 py-3">
+                    <button
+                        type="button"
+                        onClick={() => setActiveMode('sovereign')}
+                        aria-label="Editar Soberano"
+                        className="relative h-52 w-40 overflow-hidden rounded-xl border-2 bg-black/40 transition-colors hover:border-white/30"
+                        style={{ borderColor: activeMode === 'sovereign' ? 'var(--skin-accent-color)' : 'rgba(255,255,255,0.1)' }}
                     >
-                        <CanvasAvatar 
-                            sovereignConfig={{
-                                ...config,
-                                artifact: 'none',
-                                artifactPlate: 'none',
-                                sovereignPlate: sharedPlateId,
-                            }}
-                            width={200} 
-                            height={300} 
-                            className="w-full h-full object-contain"
+                        <CanvasAvatar
+                            sovereignConfig={{ ...config, artifact: 'none', artifactPlate: 'none', sovereignPlate: sharedPlateId }}
+                            width={200}
+                            height={300}
+                            className="h-full w-full object-contain"
                         />
-                         <div 
-                            className={`absolute top-2 right-2 w-5 h-5 rounded-full border border-black/50 flex items-center justify-center transition-colors shadow-md z-10`}
-                            style={{ backgroundColor: primary === 'sovereign' ? 'var(--skin-accent-color)' : 'rgba(0,0,0,0.6)' }}
-                        >
-                            {primary === 'sovereign' && <CheckIcon className="w-3 h-3 text-black" />}
-                        </div>
-                        {/* Label */}
-                        <div className="absolute bottom-0 inset-x-0 bg-black/60 p-1 text-[9px] text-center font-bold text-gray-300 uppercase tracking-wider">
-                            Soberano
-                        </div>
-                    </div>
-
-                    {/* 2. O artefato, a direita. Era uma coluna de dois: o glifo saiu.
-
-                        QUADRADO, como a placa. Sobrou da coluna antiga um slot
-                        de 96x184 — e a placa, que e um PNG quadrado, cabia nele
-                        em `contain` como um selo boiando no meio, com duas
-                        faixas vazias em cima e embaixo e o artefato de 48px
-                        por cima. Parecia que a placa nao tinha carregado. */}
-                    <div
-                        onClick={() => {
-                            setActiveMode('artifact');
-                            setPrimary('item');
-                        }}
-                        className={`relative self-center w-32 h-32 flex-shrink-0 overflow-hidden bg-black/40 border-2 rounded-xl flex items-center justify-center cursor-pointer transition-all group hover:border-white/30`}
-                        style={{
-                            borderColor: activeMode === 'artifact' ? 'var(--skin-accent-color)' : 'rgba(255,255,255,0.1)',
-                            boxShadow: activeMode === 'artifact' ? '0 0 15px var(--skin-accent-color)' : undefined
-                        }}
-                    >
-                        {/* `cover`, como o perfil desenha o artefato: a placa e o
-                            fundo do slot inteiro, nao uma figura dentro dele. */}
-                        {equippedSharedPlate?.url && (
-                            <img
-                                src={equippedSharedPlate.url}
-                                alt="Placa"
-                                className="absolute inset-0 w-full h-full object-cover opacity-90 z-0"
-                                onError={(event) => {
-                                    event.currentTarget.style.display = 'none';
-                                }}
-                            />
-                        )}
-                        {config.aura !== 'none' && (
-                            <ItemArt
-                                src={equippedAura?.url}
-                                alt={equippedAura?.name || config.aura}
-                                category="aura"
-                                className="absolute inset-0 z-[1] rounded-xl"
-                                fallback={<span />}
-                            />
-                        )}
-                        <ItemArt
-                            src={equippedArtifact?.url}
-                            alt={equippedArtifact?.name || 'Artefato'}
-                            className="relative z-10 w-[78%] h-[78%] flex items-center justify-center"
-                            imgClassName="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]"
-                            textClassName="text-[9px] text-gray-600 font-bold uppercase"
-                            fallbackText="Vazio"
-                        />
-
-                        <div
-                            className={`absolute top-1.5 right-1.5 z-10 w-4 h-4 rounded-full border border-black/50 flex items-center justify-center transition-colors shadow-md`}
-                            style={{ backgroundColor: primary === 'item' ? 'var(--skin-accent-color)' : 'rgba(0,0,0,0.6)' }}
-                        >
-                            {primary === 'item' && <CheckIcon className="w-2.5 h-2.5 text-black" />}
-                        </div>
-                        <div className="absolute bottom-0 inset-x-0 z-10 bg-black/60 p-0.5 text-[8px] text-center font-bold text-gray-300 uppercase tracking-wider">
-                            Artefato
-                        </div>
+                        <span className="absolute inset-x-0 bottom-0 bg-black/65 p-1 text-center text-[9px] font-bold uppercase tracking-wider text-gray-200">Soberano</span>
+                    </button>
+                    <div className="flex justify-center gap-2" aria-label="Artefatos equipados">
+                        {[0, 1, 2].map(indice => {
+                            const id = artefatoDoSlot(indice);
+                            const artefato = SOVEREIGN_ASSETS.artifacts?.find(item => item.id === id);
+                            const ativo = activeMode === 'artifact' && slotAtivo === indice;
+                            return (
+                                <button
+                                    key={indice}
+                                    type="button"
+                                    onClick={() => { setActiveMode('artifact'); setSlotAtivo(indice); }}
+                                    aria-label={`Editar ${indice === 0 ? 'artefato em destaque' : `artefato da vaga ${indice + 1}`}`}
+                                    className="flex w-[4.75rem] flex-col items-center gap-1"
+                                >
+                                    <span
+                                        className="relative grid h-[4.75rem] w-[4.75rem] place-items-center overflow-hidden rounded-xl border-2 bg-black/40 transition-colors hover:border-white/30"
+                                        style={{ borderColor: ativo ? 'var(--skin-accent-color)' : 'rgba(255,255,255,0.12)' }}
+                                    >
+                                        {equippedSharedPlate?.url && <img src={equippedSharedPlate.url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-85" />}
+                                        {artefato?.url ? (
+                                            <ItemArt src={artefato.url} alt={artefato.name} className="relative z-10 grid h-full w-full place-items-center p-2" imgClassName="h-full w-full object-contain" />
+                                        ) : <span className="relative z-10 text-[9px] font-bold uppercase text-white/45">Vazio</span>}
+                                    </span>
+                                    <span className={`text-[9px] font-black uppercase tracking-wider ${indice === 0 ? 'text-[var(--skin-accent-color)]' : 'text-white/50'}`}>
+                                        {indice === 0 ? 'Destaque' : `Vaga ${indice + 1}`}
+                                    </span>
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -478,14 +409,14 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                                 `primaryDisplay: 'sovereign'` fixo e ignora esta
                                 escolha. Prometer mais do que o interruptor faz
                                 seria pior do que ele nao existir. */}
-                            {apareceNoPerfil ? 'A miniatura aparece no seu perfil.' : 'Seu perfil não mostra a miniatura.'}
+                            {apareceNoPerfil ? 'Soberano e artefato de destaque aparecem no seu perfil.' : 'Seu perfil não mostra o Soberano nem o artefato.'}
                         </div>
                     </div>
                     <button
                         type="button"
                         role="switch"
                         aria-checked={apareceNoPerfil}
-                        aria-label="Mostrar a miniatura no perfil"
+                        aria-label="Mostrar Soberano e artefato no perfil"
                         onClick={alternarAparicao}
                         className={`relative h-6 w-11 shrink-0 rounded-full border transition-colors ${
                             apareceNoPerfil

@@ -1,3 +1,4 @@
+import { speechVisualTone } from '../supabase/functions/_shared/oracle-visual-tone.ts';
 import { ORACLE_ENGINE_V2, chooseOpening, rememberEngineSpeech } from '../utils/oracleEngineV2';
 ﻿import React, { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
@@ -225,6 +226,7 @@ const OracleSpeechOverlay: React.FC = () => {
                 className="pointer-events-none relative flex w-full max-w-[22rem] items-center gap-3 overflow-hidden rounded-[16px] border bg-[linear-gradient(180deg,rgba(20,17,13,0.96),rgba(7,7,8,0.98))] p-2.5 shadow-[0_12px_38px_rgba(0,0,0,0.38)] animate-in fade-in slide-in-from-top-3 duration-300"
                 style={{
                     borderColor: toneTokens.border,
+                    background: `linear-gradient(135deg, ${toneTokens.coreSoft}, transparent 80%), #101013`,
                     boxShadow: `0 12px 38px rgba(0,0,0,0.38), 0 0 20px ${toneTokens.glow}`,
                 }}
             >
@@ -425,6 +427,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     suppressScreenIntroTips = false,
     onBlockingOverlayChange,
 }) => {
+    const { isTutorialActive } = useTutorial();
     const { isBuilderMode, draftName, setDraftName, exitBuilderMode, packDraftToJson } = useCodexBuilder();
     const { userProfile, activeTheme, notifications, showToast, assets, actions, tasks, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, achievementUnlocked, updateUserProfile, reports, activeArenaPact, arenaPactProgress, missaoIndividualDisponivel, isProfileLoaded, freeProgressResetAt } = useGame();
     const historyReady = useRef(false);
@@ -472,6 +475,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     const [screenTipsEnabled, setScreenTipsEnabled] = useState(() => areScreenIntroTipsEnabled(userProfile.id, userProfile.completedSeasonMissions || []));
     const [activeScreenTipId, setActiveScreenTipId] = useState<ScreenIntroTipId | null>(null);
     const [screenIntroContextId, setScreenIntroContextId] = useState<ScreenIntroTipId | null>(null);
+    const screenTipContexts = useRef(new Map<string, { tipId: ScreenIntroTipId; priority: number }>());
     const unreadNotificationsCount = getUnreadBadgeCount(notifications);
     const previousViewRef = useRef<View>(currentView);
     const previousRestVisibilityRef = useRef(isRestScreenVisible);
@@ -534,12 +538,12 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     useEffect(() => {
         setScreenTipsEnabled(areScreenIntroTipsEnabled(userProfile.id, userProfile.completedSeasonMissions || []));
         setActiveScreenTipId(null);
-        setScreenIntroContextId(null);
     }, [userProfile.completedSeasonMissions, userProfile.id]);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
+        screenTipContexts.current.clear();
         setScreenIntroContextId(null);
-    }, [currentView]);
+    }, [currentView, userProfile.id]);
 
     useEffect(() => {
         const handleSettingsChanged = (event: Event) => {
@@ -557,11 +561,15 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
 
     useEffect(() => {
         const handleContextChanged = (event: Event) => {
-            const detail = (event as CustomEvent<{ tipId?: string | null }>).detail || {};
+            const detail = (event as CustomEvent<{ tipId?: string | null; ownerId?: string; priority?: number }>).detail || {};
             const nextTipId = typeof detail.tipId === 'string' && hasScreenIntroTip(detail.tipId)
                 ? detail.tipId
                 : null;
-            setScreenIntroContextId(nextTipId);
+            const owner = detail.ownerId || 'legacy';
+            if (nextTipId) screenTipContexts.current.set(owner, { tipId: nextTipId, priority: detail.priority || 0 });
+            else screenTipContexts.current.delete(owner);
+            const top = [...screenTipContexts.current.values()].sort((a, b) => b.priority - a.priority)[0];
+            setScreenIntroContextId(top?.tipId || null);
         };
 
         window.addEventListener(SCREEN_INTRO_TIP_CONTEXT_EVENT, handleContextChanged as EventListener);
@@ -1046,7 +1054,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
                 lastOpeningSpeechAtRef.current = Date.now();
                 localStorage.setItem(speechKey, today);
                 rememberEngineSpeech(userProfile.id, chosen, 'opening', today);
-                emitOracleSpeech({ title: 'Oráculo', message: chosen.text, tone: 'guide', kind: 'abertura', durationMs: 6800,
+                emitOracleSpeech({ title: 'Oráculo', message: chosen.text, tone: speechVisualTone('opening', chosen.subject), kind: 'abertura', durationMs: 6800,
                     quickActions: [{ id: 'oracle-v2-planner', label: 'Abrir planner', kind: 'open_planner' }] });
             }, 520);
             return () => window.clearTimeout(timer);
@@ -1179,7 +1187,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     }, [openingEpoch, isProfileLoaded, freeProgressResetAt, actions, activeCycle, assets, currentView, cycleProgress, dailyCommitment, isRestScreenVisible, oraclePreferences, tasks, userProfile.dailyProofStreak, userProfile.id, userProfile.level, userProfile.nickname]);
 
     useEffect(() => {
-        if (suppressScreenIntroTips) {
+        if (suppressScreenIntroTips || isTutorialActive) {
             setActiveScreenTipId(null);
             return;
         }
@@ -1223,6 +1231,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         screenTipsEnabled,
         screenIntroContextId,
         suppressScreenIntroTips,
+        isTutorialActive,
         userProfile.completedSeasonMissions,
         userProfile.id,
     ]);
@@ -1592,7 +1601,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
 
             <Suspense fallback={null}>
                 <ScreenIntroTipOverlay
-                    open={!suppressScreenIntroTips && !achievementUnlocked && !!activeScreenTipId}
+                    open={!suppressScreenIntroTips && !isTutorialActive && !achievementUnlocked && !!activeScreenTipId}
                     tipId={activeScreenTipId}
                     // A dica passa a olhar o que existe antes de dar conselho: a
                     // tela de Arenas dizia "crie uma arena simples" para quem
@@ -1954,7 +1963,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         window.setTimeout(() => {
             window.dispatchEvent(new CustomEvent('tutorialNavigate', {
                 detail: {
-                    view: 'assets',
+                    view: 'planner',
                     showReports: false,
                     showRestScreen: false,
                     showArenaId: null,
@@ -2346,7 +2355,6 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                     }
                     suppressScreenIntroTips={
                         isFirstUseOnboardingActive ||
-                        onboardingShownInSession ||
                         isOnboardingPushBusy ||
                         !!claimToken ||
                         shouldShowVanguardWelcome ||
@@ -2579,7 +2587,6 @@ const AuthenticatedApp: React.FC<{ session: Session; onReady?: () => void }> = (
 );
 
 export default AuthenticatedApp;
-
 
 
 

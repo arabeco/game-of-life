@@ -1010,7 +1010,7 @@ export interface GameContextType {
     applyExp: (expGained: number, options?: ApplyExpOptions) => void;
     addChest: (chestType: ChestType) => Promise<boolean>;
     buyChestWithFragments: (chestType: ChestType) => Promise<boolean>;
-    startNewCycle: (arenaChanges: ArenaSetupChange[], cycleDetails: { name: string; startDate?: string; endDate: string; }) => void;
+    startNewCycle: (arenaChanges: ArenaSetupChange[], cycleDetails: { name: string; startDate?: string; endDate: string; }) => Promise<Cycle | null>;
     deleteCycle: (cycleId: string) => Promise<boolean>; // Added deleteCycle to interface
     freeProgressResetAt: string | null;
     resetFreeProgress: () => void;
@@ -10971,6 +10971,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (createdCycle) {
             await regenerateRecurringTasksForCycle(createdCycle);
         }
+        return createdCycle || null;
     };
 
     const setCurrentSkin = (skinId: string) => updateUserProfile({ skin: skinId });

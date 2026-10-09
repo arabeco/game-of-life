@@ -1,3 +1,4 @@
+import { useScreenIntroTip } from '../hooks/useScreenIntroTip';
 import React, { useEffect, useRef, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { Arena, Asset } from '../types';
@@ -8,7 +9,6 @@ import { Portal } from './Portal';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 import { suggestEmojiForLabel } from '../utils/suggestEmojiForLabel';
 import { buildArenaLimitMessage, getArenaCapacitySummary } from '../utils/arenaCapacity';
-import { SCREEN_INTRO_TIP_CONTEXT_EVENT } from '../utils/screenIntroTips';
 import { isLifeAreaId, LIFE_AREAS, LIFE_AREA_IDS } from '../constants/lifeAreas';
 
 interface NewArenaModalProps {
@@ -72,23 +72,7 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
         });
     }, [assets, initialAssetId, isOpen]);
 
-    useEffect(() => {
-        if (!isOpen) return;
-
-        window.dispatchEvent(
-            new CustomEvent(SCREEN_INTRO_TIP_CONTEXT_EVENT, {
-                detail: { tipId: 'arena_modal' },
-            }),
-        );
-
-        return () => {
-            window.dispatchEvent(
-                new CustomEvent(SCREEN_INTRO_TIP_CONTEXT_EVENT, {
-                    detail: { tipId: null },
-                }),
-            );
-        };
-    }, [isOpen]);
+    useScreenIntroTip(isOpen ? 'arena_modal' : null, 30);
 
     if (!isOpen) return null;
     const arenaCapacity = getArenaCapacitySummary(assets, userProfile);

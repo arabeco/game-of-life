@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Portal } from './Portal';
+import { useGame } from '../contexts/GameContext';
+import { loadOnboardingProgress, saveOnboardingProgress, clearOnboardingProgress, resolveOnboardingResume, shouldIgnoreGuideKeyboard } from '../utils/onboardingProgress';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 import { OracleSpeakerMark } from './OracleSpeakerMark';
 import { AVAILABLE_SYSTEM_CHALLENGES } from '../constants/systemChallenges';
@@ -49,7 +51,6 @@ const getTargetElement = (selector?: string) => {
 };
 
 const AUTO_TRIGGER_TARGET_STEP_IDS = new Set([
-  'cycle-entry',
   'arena-entry',
   'action-entry',
 ]);
@@ -79,6 +80,9 @@ export const FirstUseOnboardingOverlay: React.FC<{
   onDismiss: () => void;
   onComplete: (acceptedSystemChallenges: string[], answers: OnboardingAnswers) => void;
 }> = ({ active, onDismiss, onComplete }) => {
+  const { userProfile, assets, actions, tasks } = useGame();
+  const [readyUserId, setReadyUserId] = useState<string | null>(null);
+  const [createdActionId, setCreatedActionId] = useState<string | null>(null);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [spotlightRect, setSpotlightRect] = useState<DOMRect | null>(null);
   const [displayedText, setDisplayedText] = useState('');
@@ -94,7 +98,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     {
       id: 'purpose',
       title: 'Pra que você quer usar o app?',
-      text: 'Não existe resposta errada, e dá pra mudar depois.',
+      text: 'Escolha o que mais combina com seu momento. Isso só orienta as explicações; você pode usar o app do seu jeito.',
       navigation: { view: 'assets', showReports: false, showRestScreen: false, showArenaId: null },
       hideNext: true,
     },
@@ -156,7 +160,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     {
       id: 'action-reps',
       title: 'Escolha uma meta leve',
-      text: 'Quantas vezes você realmente consegue fazer isso em uma semana? Começar menor ajuda a continuar.',
+      text: 'Quantas vezes você quer fazer essa ação nesta rodada? Comece com uma meta pequena. Você pode ajustar as repetições depois.',
       targetSelector: '#onboarding-action-repetitions',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: createdArenaId || 'first' },
       padding: 10,
@@ -171,29 +175,32 @@ export const FirstUseOnboardingOverlay: React.FC<{
       padding: 12,
     },
     {
-      id: 'cycle-entry',
-      title: 'Comece um ciclo curto',
-      text: 'Agora dê um prazo para essa meta. Sete dias é um bom primeiro teste.',
-      targetSelector: '#start-new-cycle-button',
-      navigation: { view: 'planner', showReports: true, showRestScreen: false, showArenaId: null },
-      padding: 12,
+      id: 'planner-hold',
+      title: 'Sua ação está no planner',
+      text: 'Você já pode usar o Glyph sem criar um ciclo. As ações disponíveis ficam no alto do planner. Quando tiver feito uma delas de verdade, toque e segure a ação, sem mover o dedo, até a barra completar. Isso registra a conclusão.',
+      targetSelector: '#planner-pool',
+      navigation: { view: 'planner' },
     },
     {
-      id: 'cycle-date',
-      title: 'Confira o prazo',
-      text: 'O primeiro ciclo já vem curto. Ajuste apenas se realmente precisar.',
-      targetSelector: '#new-cycle-date-button',
-      navigation: { view: 'planner', showReports: true, showRestScreen: false, showArenaId: null },
-      padding: 10,
+      id: 'planner-schedule',
+      title: 'Prefere escolher um horário?',
+      text: 'Na grade de horários, toque e segure a ação até ela levantar. Sem soltar, arraste até o horário desejado e solte. Agendar não conclui a ação: depois de fazê-la, toque e segure o cartão no horário até a barra completar. No modo lista, você também pode concluir segurando a ação.',
+      targetSelector: '#planner-container',
+      navigation: { view: 'planner' },
     },
     {
-      id: 'cycle-save',
-      title: 'Inicie o ciclo',
-      text: 'Confirme e comece. O Glyph vai acompanhar seu ritmo sem exigir dias perfeitos.',
-      targetSelector: '#new-cycle-submit-button',
-      navigation: { view: 'planner', showReports: true, showRestScreen: false, showArenaId: null },
-      hideNext: true,
-      padding: 12,
+      id: 'planner-undo',
+      title: 'Concluiu sem querer?',
+      text: 'Toque e segure novamente a ação concluída até a barra esvaziar para desfazer. Só marque o que você realmente fez. Não precisa concluir nada agora para terminar este guia.',
+      targetSelector: '#planner-container',
+      navigation: { view: 'planner' },
+    },
+    {
+      id: 'cycle-later',
+      title: 'O ciclo pode ficar para depois',
+      text: 'Quando estiver pronto para uma meta com prazo, abra o histórico pelo ícone no alto do planner e escolha Novo ciclo. Defina quantos dias ele vai durar e ajuste as repetições das ações para esse período. Até lá, continue usando o planner sem ciclo.',
+      targetSelector: '#report-button',
+      navigation: { view: 'planner' },
     },
     {
       id: 'missions',
@@ -204,16 +211,6 @@ export const FirstUseOnboardingOverlay: React.FC<{
     {
       id: 'finish',
       title: 'Tudo pronto',
-      // A ponte para o resto do tutorial fica AQUI, e so aqui.
-      //
-      // O app tem quatro secoes de tutorial com vinte passos, e a unica porta
-      // para elas e um botao "Reabrir" dentro de Ajustes. Ninguem procura o que
-      // nao sabe que existe: quem termina o onboarding e a unica pessoa que
-      // acabou de provar que quer aprender, e e a ela que vale contar.
-      //
-      // Contar no fim, e nao no comeco, tambem e escolha: vinte passos oferecidos
-      // na entrada assustam; oferecidos depois de a pessoa ja ter criado arena,
-      // acao e ciclo, soam como "tem mais quando você quiser".
       text: (purpose === 'organizar'
         ? 'Sua primeira base está viva. Quando ela estiver clara, adicione outras áreas aos poucos.'
         : purpose === 'habitos'
@@ -223,7 +220,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
             : 'Seu foco está pronto. Agora basta agir e registrar quando fizer.')
         + ' Cada tela se apresenta na primeira vez que você entra, e o tutorial completo fica em Ajustes quando quiser.'
         + ' O quanto eu falo também se ajusta lá, em Oráculo & Alertas.',
-      navigation: { view: 'assets', showReports: false, showRestScreen: false, showArenaId: null },
+      navigation: { view: 'planner', showReports: false, showRestScreen: false, showArenaId: null },
       final: true,
     },
   ], [createdArenaId, purpose]);
@@ -242,7 +239,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     setCurrentStepIndex((previous) => previous >= targetIndex ? previous : targetIndex);
   }, [stepIndexById]);
 
-  const step = active ? steps[currentStepIndex] : undefined;
+  const step = active && readyUserId === userProfile.id ? steps[currentStepIndex] : undefined;
 
   const bubblePosition = useMemo(() => {
     if (!spotlightRect) return 'top';
@@ -268,18 +265,31 @@ export const FirstUseOnboardingOverlay: React.FC<{
 
   useEffect(() => {
     if (!active) {
-      setCurrentStepIndex(0);
+      setReadyUserId(null);
       setSpotlightRect(null);
-      setDisplayedText('');
-      setIsTyping(false);
-      setCreatedArenaId(null);
-      setPurpose(null);
-      setSelectedMissionIds([]);
       autoAdvanceStepRef.current = null;
-      currentStepRef.current = undefined;
-      isTypingRef.current = false;
+      return;
     }
-  }, [active]);
+    const resumed = resolveOnboardingResume(loadOnboardingProgress(userProfile.id), assets.flatMap(a => a.arenas), actions);
+    setCurrentStepIndex(Math.max(0, steps.findIndex(s => s.id === resumed.stepId)));
+    setCreatedArenaId(resumed.arenaId);
+    setCreatedActionId(resumed.actionId);
+    setPurpose(resumed.purpose);
+    setSelectedMissionIds(resumed.missionIds);
+    setReadyUserId(userProfile.id);
+    // Read hydrated entities once when opening, not after each creation.
+  }, [active, userProfile.id]);
+
+  useEffect(() => {
+    if (!active || !step) return;
+    saveOnboardingProgress(userProfile.id, { stepId: step.id, arenaId: createdArenaId,
+      actionId: createdActionId, purpose, missionIds: selectedMissionIds });
+  }, [active, step?.id, createdArenaId, createdActionId, purpose, selectedMissionIds, userProfile.id]);
+
+  useEffect(() => {
+    if (!active || !createdActionId || step?.id !== 'planner-hold') return;
+    if (tasks.some(task => task.actionId === createdActionId && task.completed)) jumpToAtLeast('planner-schedule');
+  }, [active, createdActionId, step?.id, tasks, jumpToAtLeast]);
 
   useEffect(() => {
     currentStepRef.current = step;
@@ -407,22 +417,6 @@ export const FirstUseOnboardingOverlay: React.FC<{
   useEffect(() => {
     if (!active) return;
 
-    const handleCycleSetupOpened = () => {
-      jumpToAtLeast('cycle-date');
-    };
-
-    const handleCycleNameCompleted = () => {
-      jumpToAtLeast('cycle-date');
-    };
-
-    const handleCycleEndDateSelected = () => {
-      jumpToAtLeast('cycle-save');
-    };
-
-    const handleCycleCreated = () => {
-      jumpToAtLeast('missions');
-    };
-
     const handleArenaModalOpened = () => {
       window.setTimeout(() => {
         const hasArenaModalTarget = !!getTargetElement('#new-arena-asset-button') || !!getTargetElement('#new-arena-name-input');
@@ -482,13 +476,10 @@ export const FirstUseOnboardingOverlay: React.FC<{
     };
 
     const handleActionCreated = (event: Event) => {
-      jumpToAtLeast('cycle-entry');
+      setCreatedActionId((event as CustomEvent<{ actionId?: string }>).detail?.actionId || null);
+      jumpToAtLeast('planner-hold');
     };
 
-    window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.cycleSetupOpened, handleCycleSetupOpened as EventListener);
-    window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.cycleNameCompleted, handleCycleNameCompleted as EventListener);
-    window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.cycleEndDateSelected, handleCycleEndDateSelected as EventListener);
-    window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.cycleCreated, handleCycleCreated as EventListener);
     window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.arenaModalOpened, handleArenaModalOpened as EventListener);
     window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.arenaAssetSelected, handleArenaAssetSelected as EventListener);
     window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.arenaNameCompleted, handleArenaNameCompleted as EventListener);
@@ -501,10 +492,6 @@ export const FirstUseOnboardingOverlay: React.FC<{
     window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.actionCreated, handleActionCreated as EventListener);
 
     return () => {
-      window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.cycleSetupOpened, handleCycleSetupOpened as EventListener);
-      window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.cycleNameCompleted, handleCycleNameCompleted as EventListener);
-      window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.cycleEndDateSelected, handleCycleEndDateSelected as EventListener);
-      window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.cycleCreated, handleCycleCreated as EventListener);
       window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.arenaModalOpened, handleArenaModalOpened as EventListener);
       window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.arenaAssetSelected, handleArenaAssetSelected as EventListener);
       window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.arenaNameCompleted, handleArenaNameCompleted as EventListener);
@@ -520,8 +507,9 @@ export const FirstUseOnboardingOverlay: React.FC<{
 
   const handleDismiss = useCallback(() => {
     window.dispatchEvent(new CustomEvent('tutorialNavigate', { detail: { ...defaultNavigation, view: 'assets' } }));
+    clearOnboardingProgress(userProfile.id);
     onDismiss();
-  }, [onDismiss]);
+  }, [onDismiss, userProfile.id]);
 
   // Escolher ja avanca: sao perguntas de uma resposta so, e um botao Proximo
   // depois da escolha seria um clique a mais sem nada para decidir nele.
@@ -536,6 +524,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     if (!step) return;
 
     if (step.final) {
+      clearOnboardingProgress(userProfile.id);
       onComplete(selectedMissionIds, { purpose });
       return;
     }
@@ -547,6 +536,10 @@ export const FirstUseOnboardingOverlay: React.FC<{
     }
 
     if (!canAdvanceFromStep(step)) return;
+    if (step.id === 'arena-entry' && createdArenaId) {
+      jumpToAtLeast(createdActionId ? 'planner-hold' : 'action-entry');
+      return;
+    }
 
     if (shouldTriggerTargetOnNext(step)) {
       const target = getTargetElement(step.targetSelector);
@@ -555,11 +548,12 @@ export const FirstUseOnboardingOverlay: React.FC<{
     }
 
     advanceStep();
-  }, [advanceStep, isTyping, onComplete, purpose, selectedMissionIds, step]);
+  }, [advanceStep, isTyping, onComplete, purpose, selectedMissionIds, step, userProfile.id, createdArenaId, createdActionId, jumpToAtLeast]);
 
   useEffect(() => {
     if (!active) return;
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (shouldIgnoreGuideKeyboard(event)) return;
       if (event.key === 'Escape') {
         handleDismiss();
         return;
@@ -586,7 +580,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
       : 'Próximo';
   const helperText = step.hideNext
     ? step.id === 'purpose'
-      ? 'Não existe escolha errada. Dá para mudar depois, nos ajustes.'
+      ? 'Escolha o que faz sentido para você hoje.'
       : step.id === 'arena-save'
       ? 'Crie a arena e eu já sigo para a próxima etapa.'
       : step.id === 'action-save'
@@ -598,8 +592,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
       ? 'Se tocar em Abrir, eu aciono o botão + por você.'
       : step.id === 'action-entry'
         ? 'Se tocar em Abrir, eu aciono Nova ação por você.'
-        : step.id === 'cycle-entry'
-                          ? 'Se tocar em Abrir, eu levo você direto para o ciclo.'
+
         : step.id === 'action-name' && !canAdvance
           ? 'Preencha o título para liberar o próximo passo.'
           : 'Se você adiantar alguma etapa, eu acompanho.';

@@ -181,90 +181,43 @@ const UnifiedSovereignDisplay: React.FC<{
     if (escolha === 'none') return null;
     if (escolha === undefined && (sovereignConfig.outfit || 'none') === 'none') return null;
 
-    const primaryDisplay = escolha ?? 'sovereign';
     const isInteractive = !!onClick;
-
-    // Helper to get asset URL
-    const getArtifactUrl = () => {
-        try {
-            return SOVEREIGN_ASSETS.artifacts?.find(a => a.id === sovereignConfig.artifact)?.url;
-        } catch (e) { return undefined; }
+    const artifact = SOVEREIGN_ASSETS.artifacts?.find(a => a.id === sovereignConfig.artifact);
+    const artifactPlate = SOVEREIGN_ASSETS.plates?.find(p => p.id === (sovereignConfig.artifactPlate || sovereignConfig.sovereignPlate));
+    const positionClasses = className || 'absolute bottom-4 right-4 w-24';
+    // A aura permanece no Soberano. O artefato de destaque ocupa seu proprio
+    // quadrado abaixo, sem concorrer com o avatar na mesma moldura.
+    const displayConfig = {
+        ...sovereignConfig,
+        artifact: 'none',
+        artifactPlate: 'none',
+        glyphPlate: 'none',
     };
-    const getPlateUrl = () => {
-        try {
-            if (primaryDisplay === 'item') return SOVEREIGN_ASSETS.plates?.find(p => p.id === sovereignConfig.artifactPlate)?.url;
-            return SOVEREIGN_ASSETS.plates?.find(p => p.id === sovereignConfig.sovereignPlate)?.url;
-        } catch (e) { return undefined; }
-    };
-
-    const positionClasses = className || "absolute bottom-4 right-4 w-24 h-32";
-    /*
-     * A AURA FICA. Ela e do soberano, e nao dos outros modos.
-     *
-     * Este bloco desliga o que pertence aos OUTROS dois modos de exibicao —
-     * artefato, glifo, orbe e as placas deles — para que o cartao mostre so o
-     * soberano. A aura estava na lista por engano: ela e parte do visual do
-     * proprio soberano, como a roupa e o cabelo.
-     *
-     * O efeito era o avesso do pretendido: a aura aparecia para os OUTROS, na
-     * lista de membros do grupo, que renderiza o <Sovereign> com a config
-     * inteira — e sumia justamente no perfil de quem a equipou.
-     */
-    const displayConfig = primaryDisplay === 'sovereign'
-        ? {
-            ...sovereignConfig,
-            artifact: 'none',
-            artifactPlate: 'none',
-            glyphPlate: 'none'
-        }
-        : sovereignConfig;
 
     return (
-        <div
-            className={`${positionClasses} z-30 bg-[#1a1a1a] border-2 rounded-lg overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.8)] group ${isInteractive ? 'cursor-pointer transition-transform hover:scale-105 hover:shadow-[0_0_25px_var(--skin-accent-color)]' : ''}`}
+        <button
+            type="button"
+            disabled={!isInteractive}
+            aria-label={artifact?.url ? 'Ver Soberano e artefato de destaque' : 'Ver Soberano'}
+            className={`${positionClasses} group z-30 flex flex-col items-center gap-1.5 ${isInteractive ? 'cursor-pointer transition-transform hover:scale-105' : ''}`}
             onClick={(e) => {
                 if (onClick) {
                     e.stopPropagation();
                     onClick();
                 }
             }}
-            style={{ borderColor: PROFILE_METAL_EDGE }}
         >
-            {/* Background Gradient/Texture */}
-            <div className="absolute inset-0 bg-gradient-to-b from-gray-900 to-black z-0 opacity-80" />
-
-
-            {/* Content */}
-            <div className="relative z-10 w-full h-full flex items-center justify-center">
-                {primaryDisplay === 'sovereign' && (
-                    <div className="w-full h-full relative">
-                        <Sovereign sovereignConfig={displayConfig} className="w-[180%] h-[180%] object-cover absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-                    </div>
-                )}
-                {primaryDisplay === 'item' && (
-                    getArtifactUrl() ? (
-                        <div className="relative w-full h-full flex items-center justify-center">
-                            {getPlateUrl() && (
-                                <img src={getPlateUrl()} alt="Placa" className="absolute inset-0 w-full h-full object-cover opacity-90" crossOrigin="anonymous" />
-                            )}
-                            <img
-                                src={getArtifactUrl()}
-                                alt="Item"
-                                className="relative z-10 w-full h-full object-contain p-2 drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]"
-                                crossOrigin="anonymous"
-                            />
-                        </div>
-                    ) : <span className="text-[10px] text-gray-500 font-bold uppercase">Vazio</span>
-                )}
+            <div className="relative w-full aspect-[14/19] overflow-hidden rounded-lg border-2 bg-[#1a1a1a] shadow-[0_4px_20px_rgba(0,0,0,0.8)]" style={{ borderColor: PROFILE_METAL_EDGE }}>
+                <div className="absolute inset-0 bg-gradient-to-b from-gray-900 to-black opacity-80" />
+                <Sovereign sovereignConfig={displayConfig} className="absolute left-1/2 top-1/2 h-[180%] w-[180%] -translate-x-1/2 -translate-y-1/2 object-cover" />
             </div>
-
-            {/* Hover Overlay */}
-            {isInteractive && (
-                <div className="absolute inset-0 bg-black/70 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 backdrop-blur-sm">
-                    <span className="text-[8px] font-bold uppercase text-center leading-tight tracking-widest border px-1 py-0.5 rounded" style={{ color: 'var(--skin-accent-color)', borderColor: 'var(--skin-accent-color)' }}>Ver<br />Soberano</span>
+            {artifact?.url && (
+                <div className="relative aspect-square w-full overflow-hidden rounded-lg border-2 bg-[#1a1a1a] shadow-[0_4px_20px_rgba(0,0,0,0.8)]" style={{ borderColor: PROFILE_METAL_EDGE }}>
+                    {artifactPlate?.url && <img src={artifactPlate.url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-90" crossOrigin="anonymous" />}
+                    <img src={artifact.url} alt={artifact.name || 'Artefato de destaque'} className="relative h-full w-full object-contain p-2 drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]" crossOrigin="anonymous" />
                 </div>
             )}
-        </div>
+        </button>
     );
 };
 
@@ -1173,7 +1126,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                    pessoa, ela e so de ver — antes disto, o clique no
                                    perfil alheio abria o editor com a config DELE. */
                                 onClick={() => setIsSovereignModalOpen(true)}
-                                className="absolute top-[60px] right-4 w-[70px] h-[95px]"
+                                className="absolute top-[60px] right-4 w-[70px]"
                             />
                         )}
 

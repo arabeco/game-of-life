@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useGame, ArenaSetupChange, getLocalDateString } from '../contexts/GameContext';
 import { Arena } from '../types';
 import { GlassCard } from '../components/GlassCard';
@@ -60,7 +60,9 @@ interface NewCycleSetupViewProps {
 }
 
 export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, onComplete }) => {
-    const { getArenas, startNewCycle, seasons } = useGame();
+    const { getArenas, startNewCycle, seasons, showToast } = useGame();
+    const [isSaving, setIsSaving] = useState(false);
+    const savingRef = useRef(false);
     const [arenas] = useState<Arena[]>(() => getArenas());
     const [arenaChanges, setArenaChanges] = useState<Map<string, ArenaStatus>>(new Map());
     const [editingArena, setEditingArena] = useState<Arena | null>(null);
@@ -89,12 +91,23 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
         setArenaChanges(prev => new Map(prev).set(arenaId, status));
     };
 
-    const handleStartCycle = () => {
+    const handleStartCycle = async () => {
+        if (savingRef.current) return;
+        savingRef.current = true;
+        setIsSaving(true);
         const changes: ArenaSetupChange[] = Array.from(arenaChanges.entries()).map(([id, status]) => ({ id, status }));
         const cycleDetails = { name: cycleName, startDate: cycleStartDate, endDate: cycleEndDate };
-        startNewCycle(changes, cycleDetails);
-        window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.cycleCreated));
-        onComplete();
+        try {
+            const createdCycle = await startNewCycle(changes, cycleDetails);
+            if (!createdCycle) return;
+            window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.cycleCreated));
+            onComplete();
+        } catch {
+            showToast('Não foi possível finalizar a criação do ciclo. Confira sua conexão e o histórico antes de tentar novamente.', 'error');
+        } finally {
+            savingRef.current = false;
+            setIsSaving(false);
+        }
     };
 
     const handleDateSelect = (date: Date) => {
@@ -212,7 +225,7 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
                         ))}
                     </div>
                     <div className="flex-shrink-0 pt-4">
-                        <button id="new-cycle-submit-button" onClick={() => setShowConfirm(true)} disabled={!cycleName || !cycleEndDate} className="w-full py-3 luxe-bico luxe-skin-button disabled:opacity-50">INICIAR NOVO CICLO</button>
+                        <button id="new-cycle-submit-button" onClick={() => setShowConfirm(true)} disabled={isSaving || !cycleName || !cycleEndDate} className="w-full py-3 luxe-bico luxe-skin-button disabled:opacity-50">{isSaving ? 'CRIANDO CICLO…' : 'INICIAR NOVO CICLO'}</button>
                     </div>
                 </div>
             </div>

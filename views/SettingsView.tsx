@@ -1,3 +1,4 @@
+import { useScreenIntroTip } from '../hooks/useScreenIntroTip';
 import './readability-fixes.css';
 ﻿import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { useGame, STORAGE_KEY_PROFILE, STORAGE_KEY_ASSET_LEVELS, getLocalDateString, PROFILE_FLAG_TERMS_ACCEPTED, PROFILE_FLAG_TUTORIAL_COMPLETED } from '../contexts/GameContext';
@@ -31,13 +32,11 @@ import { getActiveSubscriptionTier, getPremiumDaysRemaining, hasPlatinumAccess, 
 import { getMoneyCheckoutSalesCopy } from '../utils/billingRuntime';
 import { buildUiSkinTokens, resolveUiSkinId } from '../utils/uiSkinTokens';
 import {
-    SCREEN_INTRO_TIP_CONTEXT_EVENT,
     SCREEN_INTRO_TIP_LIST,
     SCREEN_INTRO_TIPS_SETTINGS_CHANGED_EVENT,
     SCREEN_INTRO_TIPS_DISABLED_FLAG,
     areScreenIntroTipsEnabled,
     setScreenIntroTipsEnabled,
-    type ScreenIntroTipId,
 } from '../utils/screenIntroTips';
 import { ORACLE_FREE_TONE, ORACLE_TONE_LABELS } from '../constants/oracleSpeechLibrary';
 import { CodexCoverArt as SharedCodexCoverArt } from '../components/CodexCoverArt';
@@ -571,7 +570,7 @@ const TutorialSettings: React.FC<{ onStart?: () => void }> = ({ onStart }) => {
                                 }}
                                 className="shrink-0 rounded-full border border-white/12 bg-black/18 px-2.25 py-0.75 text-[7px] font-bold uppercase tracking-[0.18em] text-white/48 transition-all hover:bg-white/10 hover:text-white"
                             >
-                                Reabrir
+                                {isCompleted ? 'Rever' : 'Começar'}
                             </button>
                         </div>
                     </div>
@@ -1816,11 +1815,6 @@ const GeralTab: React.FC = () => {
         };
         window.addEventListener('tutorialOpenMasteryQuiz', handleOpenMastery);
 
-        // Robustness: If we just mounted and we are already at step 11, open it
-        if (isTutorialActive && currentStep === 11) {
-            setShowMastery(true);
-        }
-
         return () => window.removeEventListener('tutorialOpenMasteryQuiz', handleOpenMastery);
     }, [isTutorialActive, currentStep]);
 
@@ -2710,20 +2704,13 @@ export const SettingsView: React.FC = () => {
     const [isSovereignEditorOpen, setSovereignEditorOpen] = useState(false);
     const isStaff = ['admin', 'gm', 'admin_gm'].includes((userProfile?.role || '').toLowerCase());
 
-    useEffect(() => {
-        const tipId: ScreenIntroTipId =
-            activeTab === 'Preferências'
+    useScreenIntroTip(activeTab === 'Preferências'
                 ? 'settings_preferences'
                 : activeTab === 'Premium'
                     ? 'settings_premium'
                     : activeTab === 'Temporada'
                         ? 'settings_season'
-                        : 'settings_general';
-
-        window.dispatchEvent(new CustomEvent(SCREEN_INTRO_TIP_CONTEXT_EVENT, {
-            detail: { tipId },
-        }));
-    }, [activeTab]);
+                        : 'settings_general', 10);
 
     useEffect(() => {
         const handleTabChange = (e: any) => {

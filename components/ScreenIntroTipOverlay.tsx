@@ -111,7 +111,7 @@ export const ScreenIntroTipOverlay: React.FC<ScreenIntroTipOverlayProps> = ({
                 onClick={() => onClose({ disableFuture: true })}
                 className="rounded-lg border border-white/8 bg-white/[0.03] px-2.5 py-1.5 text-[8px] font-black uppercase tracking-[0.12em] text-white/46 transition-colors hover:bg-white/[0.06] hover:text-white/72"
               >
-                Desligar dicas
+                Não quero ver dicas
               </button>
               <button
                 type="button"

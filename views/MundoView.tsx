@@ -1,3 +1,4 @@
+import { useScreenIntroTip } from '../hooks/useScreenIntroTip';
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { GlassCard } from '../components/GlassCard';
@@ -15,7 +16,6 @@ import { UserAvatar } from '../components/UserAvatar';
 import { ProfileView } from './ProfileView';
 import { ConnectionsModal } from '../components/ConnectionsModal';
 import { DirectMessages } from '../components/DirectMessages';
-import { SCREEN_INTRO_TIP_CONTEXT_EVENT, type ScreenIntroTipId } from '../utils/screenIntroTips';
 import './mundo-ui.css';
 import { ClanEmblem } from '../components/ClanEmblem';
 
@@ -254,20 +254,13 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
         if (requestsRevision > 0) setActiveTab('solicitacoes');
     }, [requestsRevision]);
 
-    useEffect(() => {
-        const tipId: ScreenIntroTipId =
-            activeTab === 'solicitacoes'
+    useScreenIntroTip(activeTab === 'solicitacoes'
                 ? 'social_requests'
                 : activeSection === 'messages'
                     ? 'social_messages'
                     : activeSection === 'clan'
                         ? 'social_clan'
-                        : 'social_people';
-
-        window.dispatchEvent(new CustomEvent(SCREEN_INTRO_TIP_CONTEXT_EVENT, {
-            detail: { tipId },
-        }));
-    }, [activeSection, activeTab]);
+                        : 'social_people', 20);
 
     const incomingClanInvites = notifications.filter(notification => (
         notification.type === 'clan_invite'
@@ -937,9 +930,7 @@ const MundoView: React.FC = () => {
         return () => window.removeEventListener('tutorialTabChange', handleTabChange);
     }, [tabs]);
 
-    useEffect(() => {
-        const tipId: ScreenIntroTipId =
-            activeTab === 'hall'
+    useScreenIntroTip(activeTab === 'hall'
                 ? 'hall'
                 : activeTab === 'temporada'
                     ? 'season'
@@ -947,12 +938,7 @@ const MundoView: React.FC = () => {
                         ? 'arsenal'
                         : activeTab === 'social'
                             ? 'social'
-                            : 'store';
-
-        window.dispatchEvent(new CustomEvent(SCREEN_INTRO_TIP_CONTEXT_EVENT, {
-            detail: { tipId },
-        }));
-    }, [activeTab]);
+                            : 'store', 10);
 
     useEffect(() => {
         const handleMundoTabRequest = (event: Event) => {

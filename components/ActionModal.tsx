@@ -1,3 +1,4 @@
+import { useScreenIntroTip } from '../hooks/useScreenIntroTip';
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { countRecurringOccurrences } from '../utils/cycleScheduling';
@@ -18,7 +19,6 @@ import { OPERATIONAL_DAY_START_MINUTE, getActualDateStringForOperationalMinutes,
 import { getArenaDomainFlags } from '../utils/taskDomain';
 import { supabase } from '../supabaseClient';
 import { requestLocalNotificationPermission } from '../utils/localNotification';
-import { SCREEN_INTRO_TIP_CONTEXT_EVENT } from '../utils/screenIntroTips';
 import { hasPremiumAccess } from '../utils/premiumAccess';
 import { PRODUCT_FEATURES } from '../constants/featureFlags';
 
@@ -164,13 +164,14 @@ const getClosestSnapIndex = (value: number, snapValues: number[]) => {
 
 const StyledRangeInput: React.FC<{ label: string, value: number, min: number, max: number, step: number, unit: string, onChange: (val: number) => void, inputRef?: React.Ref<HTMLDivElement>, containerId?: string, snapValues?: number[], formatValue?: (val: number) => string }> =
     ({ label, value, min, max, step, unit, onChange, inputRef, containerId, snapValues, formatValue }) => (
-        <div id={containerId} ref={inputRef} className="p-2.5 core-surface rounded-xl space-y-1.5">
+        <div id={containerId} ref={inputRef} className="action-range p-2.5 core-surface rounded-xl space-y-1.5">
             <div className="flex justify-between items-center">
                 <label className="core-label">{label}</label>
                 <span className="text-sm font-semibold text-white">{formatValue ? formatValue(value) : `${value} ${unit}`}</span>
             </div>
             <input
                 type="range"
+                aria-label={label}
                 min={snapValues ? 0 : min}
                 max={snapValues ? Math.max(0, snapValues.length - 1) : max}
                 step={snapValues ? 1 : step}
@@ -349,23 +350,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
         dispatchFirstUseEvent(FIRST_USE_ONBOARDING_EVENTS.actionModalOpened);
     }, [isNew, isPreview, mode]);
 
-    useEffect(() => {
-        if (isPreview || mode !== 'edit' || !isNew) return;
-
-        window.dispatchEvent(
-            new CustomEvent(SCREEN_INTRO_TIP_CONTEXT_EVENT, {
-                detail: { tipId: 'action_modal' },
-            }),
-        );
-
-        return () => {
-            window.dispatchEvent(
-                new CustomEvent(SCREEN_INTRO_TIP_CONTEXT_EVENT, {
-                    detail: { tipId: null },
-                }),
-            );
-        };
-    }, [isNew, isPreview, mode]);
+    useScreenIntroTip(!isPreview && mode === 'edit' && isNew ? 'action_modal' : null, 30);
 
 
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
@@ -1328,7 +1313,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({
         ?ASSET_ACCENT_COLORS[currentArena.assetId as keyof typeof ASSET_ACCENT_COLORS]
         : undefined;
     const accentColor = customThemeColor || arenaAccentColor || '#F0C843';
-    const modalStyle = { '--skin-accent-color': customThemeColor || 'var(--skin-accent-color)', '--accent-bronze': accentColor } as React.CSSProperties;
+    // Omit the override to inherit the skin. A self-reference invalidates the token.
+    const modalStyle = { ...(customThemeColor ? { '--skin-accent-color': customThemeColor } : {}), '--accent-bronze': accentColor } as React.CSSProperties;
     const headerTitle = mode === 'view'
         ?(displayAction?.name || (isPreview ?'Preview de Ação' : 'Detalhe da Ação'))
         : (isEditingTaskInstance
@@ -1379,30 +1365,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({
             <div className="ui-modal-backdrop z-[100]" onClick={handleBackdropClick} style={modalStyle}>
                 <GlassCard
                     variant="neutral"
-                    className="ui-modal-panel w-full max-w-[22.75rem] m-0 flex flex-col max-h-[84vh] h-auto p-0 relative overflow-hidden border-white/14 shadow-[0_24px_70px_rgba(0,0,0,0.45)]"
-                    style={{
-                        backgroundImage: [
-                            `radial-gradient(circle at 48% 0%, rgba(255,255,255,0.18), rgba(255,255,255,0.07) 16%, transparent 40%)`,
-                            `radial-gradient(circle at 20% 12%, rgba(255,246,232,0.04), transparent 18%)`,
-                            `radial-gradient(circle at 100% 100%, ${rgbaString(accentColor, 0.22)}, transparent 34%)`,
-                            `linear-gradient(165deg, rgba(124,92,62,0.44) 0%, rgba(86,64,50,0.5) 18%, rgba(30,24,22,0.7) 42%, rgba(12,11,12,0.9) 74%, ${rgbaString(accentColor, 0.18)} 92%, rgba(6,6,8,0.99) 100%)`,
-                        ].join(', '),
-                    }}
+                    className="ui-modal-panel action-dialog w-full max-w-[24rem] m-0 flex flex-col max-h-[88dvh] h-auto p-0 relative overflow-hidden border-white/14 shadow-[0_24px_70px_rgba(0,0,0,0.45)]"
                 >
-                    <div
-                        className="modal-aura-overlay"
-                        style={{ '--modal-aura-color': 'rgba(176, 113, 68, 0.16)' } as React.CSSProperties}
-                    />
-                    <div
-                        className="modal-sheen-overlay"
-                        style={{ '--modal-sheen-color': 'rgba(201, 139, 90, 0.50)' } as React.CSSProperties}
-                    />
-
                     {/* Header Fixed */}
-                    {/* As duas colunas laterais tem a MESMA largura de proposito: e ela
-                        que mantem o titulo no centro. Ao entrar em edicao aparece um
-                        botao a mais a esquerda, e 4.5rem nao comportavam dois. */}
-                    <div className="flex-none p-4 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(0,0,0,0.08))] backdrop-blur-md grid grid-cols-[5.5rem_minmax(0,1fr)_5.5rem] items-start gap-2 z-30 relative border-b border-white/8">
+                    {/* Controls and title occupy separate rows, including long action names. */}
+                    <div className="action-dialog-header flex-none p-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 z-30 relative border-b border-white/8">
                         <div className="flex items-center gap-2 pt-1">
                             {!isPreview && !disableAuthoring && (hasTaskInstanceContext || !isLockedFromSource || mode === 'edit') && (
                                 <button
@@ -1438,17 +1405,17 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                 </button>
                             )}
                         </div>
-                        <div className="min-w-0 px-1 text-center">
+                        <div className="min-w-0 col-span-2 row-start-2 px-1 text-center">
                             <div className="ui-modal-eyebrow text-white/54">{headerEyebrow}</div>
-                            <h2 className="ui-modal-title mt-1 truncate text-[#fff5e8] drop-shadow-[0_1px_8px_rgba(255,240,220,0.16)]" title={headerTitle}>
+                            <h2 className="ui-modal-title mt-1 break-words" title={headerTitle}>
                                 {headerTitle}
                             </h2>
                             <p className="mt-1 truncate text-[10px] font-medium uppercase tracking-[0.22em] text-white/58">
                                 {hasTaskInstanceContext && plannerOccurrenceLabel ?`${plannerOccurrenceLabel} • ${currentArena?.name || 'Arena'}` : (currentArena?.name || 'Arena')}
                             </p>
                         </div>
-                        <button id="onboarding-action-save-button" onClick={handleHeaderOk} className="ui-modal-button luxe-skin-button justify-self-end shrink-0 min-w-[4.5rem]">
-                            OK
+                        <button id="onboarding-action-save-button" onClick={handleHeaderOk} className="ui-modal-button luxe-skin-button col-start-2 row-start-1 justify-self-end shrink-0 min-w-[4.5rem]">
+                            {mode === 'edit' ? 'Salvar' : 'OK'}
                         </button>
                     </div>
 
@@ -1705,12 +1672,14 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                             </>
                                         ) : (
                                             <>
-                                                <div className="flex justify-center pb-1">
+                                                <div className="action-identity">
+                                                <div className="flex justify-center">
                                                     <button
                                                         type="button"
+                                                        aria-label="Escolher emoji da ação"
                                                         onClick={() => canEditAuthorialContent && setIsIconPickerOpen(true)}
                                                         disabled={!canEditAuthorialContent}
-                                                        className={`w-20 h-20 border rounded-[18px] transition-colors flex items-center justify-center relative group ${canEditAuthorialContent ?'bg-[#2a211c]/40 border-[var(--skin-accent-color)]/50 hover:bg-[#2a211c]' : 'bg-[#2a211c]/25 border-white/8 opacity-60 cursor-not-allowed'}`}
+                                                        className={`action-emoji-button w-12 h-12 border rounded-xl transition-colors flex items-center justify-center relative group ${canEditAuthorialContent ? '' : 'opacity-60 cursor-not-allowed'}`}
                                                     >
                                                         <EmojiGlyph symbol={editableAction.icon || '📝'} size="picker" className="scale-[1.45] text-white" />
                                                         <div className={`absolute inset-0 bg-black/40 rounded-[18px] flex items-center justify-center transition-opacity ${canEditAuthorialContent ? 'opacity-0 group-hover:opacity-100' : 'opacity-0'}`}>
@@ -1723,6 +1692,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                     id="onboarding-action-name-input"
                                                     ref={nameInputRef}
                                                     type="text"
+                                                    aria-label="Nome da ação"
                                                     placeholder="Nome da ação"
                                                     value={editableAction.name || ''}
                                                     onBlur={(event) => {
@@ -1733,8 +1703,9 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                     }}
                                                     onChange={e => setEditableAction(p => ({ ...p, name: e.target.value }))}
                                                     disabled={!canEditAuthorialContent}
-                                                    className={`w-full h-12 px-4 bg-black/28 border rounded-xl text-center text-base font-bold text-white placeholder:text-gray-600 ${canEditAuthorialContent ?'border-[var(--glass-border)] focus:outline-none focus:border-[var(--skin-accent-color)]' : 'border-white/8 bg-black/12 opacity-65 cursor-not-allowed'}`}
+                                                    className={`action-name-input w-full min-w-0 h-12 px-3 border rounded-xl text-left text-base font-bold ${canEditAuthorialContent ? '' : 'opacity-65 cursor-not-allowed'}`}
                                                 />
+                                                </div>
                                                 {!canEditAuthorialContent && (
                                                     <p className="px-1 text-[11px] leading-relaxed text-white/52">
                                                         Nome e ícone ficam protegidos na campanha. Aqui você só ajusta a execução local.
@@ -1760,27 +1731,25 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                         <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/42">Tipo da ação</span>
                                                         <span className="text-[10px] font-semibold text-white/36">Livre = sem contador</span>
                                                     </div>
-                                                    <div className="grid grid-cols-2 gap-2">
+                                                    <div className="grid grid-cols-2 gap-2" role="group" aria-label="Tipo da ação">
                                                         {ACTION_TYPE_CHOICES.map(choice => {
                                                             const selected = (editableAction.actionType || 'Ação Recorrente') === choice.value;
                                                             return (
                                                                 <button
                                                                     key={choice.value}
                                                                     type="button"
+                                                                    aria-pressed={selected}
                                                                     onClick={() => canEditActionType && handleActionTypeChange(choice.value)}
                                                                     disabled={!canEditActionType}
-                                                                    className={`min-h-[58px] rounded-xl border px-2.5 py-2 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60 ${selected
-                                                                        ? 'border-[var(--skin-accent-color)] bg-[var(--skin-accent-color)]/16 shadow-[0_0_18px_rgba(240,200,67,0.12)]'
-                                                                        : 'border-[var(--glass-border)] bg-black/24 hover:border-white/20 hover:bg-black/32'
-                                                                    }`}
+                                                                    className="action-type-choice min-h-[54px] rounded-xl border px-2.5 py-2 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60"
                                                                 >
                                                                     <div className="flex items-center gap-2">
-                                                                        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border text-sm font-black ${selected ? 'border-[var(--skin-accent-color)]/70 bg-black/30 text-[var(--skin-accent-color)]' : 'border-white/8 bg-white/[0.03] text-white/50'}`}>
-                                                                            {choice.glyph}
+                                                                        <span className="action-type-mark flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-sm font-black" aria-hidden="true">
+                                                                            {selected ? '✓' : choice.glyph}
                                                                         </span>
                                                                         <div className="min-w-0">
-                                                                            <div className={`truncate text-[12px] font-black ${selected ? 'text-white' : 'text-white/78'}`}>{choice.title}</div>
-                                                                            <div className={`truncate text-[10px] font-semibold ${selected ? 'text-[var(--skin-accent-color)]/85' : 'text-white/38'}`}>{choice.subtitle}</div>
+                                                                            <div className="action-type-title text-[12px] font-bold">{choice.title}</div>
+                                                                            <div className="action-type-subtitle text-[10px] font-medium">{choice.subtitle}</div>
                                                                         </div>
                                                                     </div>
                                                                 </button>
@@ -1795,10 +1764,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                 )}
 
 
+                                                <div className={`action-measures grid gap-2 ${editableAction.actionType === 'Ação Recorrente' ? 'grid-cols-2' : 'grid-cols-1'}`}>
                                                 <StyledRangeInput
                                                     containerId="onboarding-action-duration"
                                                     inputRef={durationInputRef}
-                                                    label="Duração base"
+                                                    label="Duração"
                                                     value={editableAction.duration || 60}
                                                     min={15} max={480} step={1} unit="min"
                                                     snapValues={ACTION_DURATION_OPTIONS}
@@ -1825,6 +1795,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                         }}
                                                     />
                                                 )}
+
+                                                </div>
 
                                                 {/* QUANDO VEM DEPOIS DE O QUE.
 
@@ -1969,15 +1941,16 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                 </ActionSectionCard>
 
                                 {/* Sub-Tabs */}
-                                <div className="flex bg-black/40 p-1.5 rounded-xl border border-white/8 mx-4 mt-0 mb-2 shrink-0 z-20 backdrop-blur-sm sticky top-0">
+                                <div className="action-detail-tabs flex gap-1 overflow-x-auto p-1.5 rounded-xl border border-white/8 mx-4 mt-0 mb-2 shrink-0 z-20 sticky top-0" role="group" aria-label="Detalhes da ação">
                                     {(['AGENDA', 'MÍDIA', 'ANOTAÇÃO', 'CHECKLIST', 'CONTEXTO'] as const).map((tab) => {
                                         const tabKey = tab === 'AGENDA' ? 'schedule' : tab === 'MÍDIA' ?'media' : tab === 'ANOTAÇÃO' ?'note' : tab === 'CHECKLIST' ?'checklist' : 'context';
                                         const isActive = advancedSubTab === tabKey;
                                         return (
                                             <button
                                                 key={tab}
+                                                aria-pressed={isActive}
                                                 onClick={() => setAdvancedSubTab(tabKey)}
-                                                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all duration-300 ${isActive
+                                                className={`shrink-0 whitespace-nowrap px-3 py-2 text-[11px] font-bold rounded-lg transition-all duration-300 ${isActive
                                                     ?'bg-white/10 text-white shadow-lg border border-white/8'
                                                     : 'text-gray-600 hover:text-gray-400'
                                                     }`}

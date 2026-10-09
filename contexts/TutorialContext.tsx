@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, ReactNode, useCallback, use
 import { useGame, PROFILE_FLAG_TUTORIAL_COMPLETED } from './GameContext';
 import { TUTORIAL_STEPS, TUTORIAL_SECTIONS } from '../constants/tutorialSteps';
 import { TutorialStep } from '../types';
+import { completedTutorialFlags } from '../utils/tutorialCompletion';
 
 interface TooltipContent {
     title: string;
@@ -41,7 +42,7 @@ const getTutorialSection = (level: number | null) => {
 };
 
 export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const { userProfile, completeTutorialMission, addProfileFlag, updateUserProfile } = useGame();
+    const { userProfile, completeTutorialMission, updateUserProfile } = useGame();
     const [isTutorialActive, setIsTutorialActive] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
     const [activeLevel, setActiveLevel] = useState<number | null>(null);
@@ -55,10 +56,18 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
         return (userProfile.completedSeasonMissions || []).includes(flag);
     }, [userProfile.completedSeasonMissions]);
 
-    // Use the unified 25+1 steps tutorial
+    // Sections share one ordered catalog.
     const tutorialSteps = useMemo(() => {
         return TUTORIAL_STEPS;
     }, []);
+
+    useEffect(() => {
+        const flags = userProfile.completedSeasonMissions || [];
+        if (flags.includes(PROFILE_FLAG_TUTORIAL_COMPLETED)) return;
+        if (!TUTORIAL_SECTIONS.every(section => flags.includes(section.flag))) return;
+        updateUserProfile({ completedSeasonMissions: [...flags, PROFILE_FLAG_TUTORIAL_COMPLETED],
+            tutorialCompletedAt: userProfile.tutorialCompletedAt || Date.now() });
+    }, [userProfile.completedSeasonMissions, userProfile.tutorialCompletedAt, updateUserProfile]);
 
     const restartTutorial = useCallback(() => {
         setActiveLevel(null);
@@ -75,15 +84,17 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
 
         if (completed) {
             if (finishedLevel !== null && finishedLevel > 0) {
-                // Mark specific level as completed
-                addProfileFlag(`tutorial_level_${finishedLevel}_completed`);
+                const result = completedTutorialFlags(userProfile.completedSeasonMissions || [], finishedLevel,
+                    TUTORIAL_SECTIONS.map(section => section.id), PROFILE_FLAG_TUTORIAL_COMPLETED);
+                updateUserProfile({ completedSeasonMissions: result.flags,
+                    ...(result.allCompleted ? { tutorialCompletedAt: userProfile.tutorialCompletedAt || Date.now() } : {}) });
             } else {
                 // Original full tutorial completion
                 completeTutorialMission();
                 updateUserProfile({ tutorialCompletedAt: Date.now() });
             }
         }
-    }, [completeTutorialMission, activeLevel, addProfileFlag, startedFromSettings, updateUserProfile]);
+    }, [completeTutorialMission, activeLevel, updateUserProfile, userProfile.completedSeasonMissions, userProfile.tutorialCompletedAt]);
 
     const startTutorial = useCallback((startIndex: number | null = null, levelIndicator: number | null = null, fromSettings: boolean = false) => {
         const index = startIndex !== null ? startIndex : 0;
@@ -103,11 +114,7 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
 
         (window as any).__GOL_TUTORIAL_ACTIVE__ = true;
 
-        // Open the mastery sliders whenever the focused tutorial step points there.
-        if (TUTORIAL_STEPS[currentStep]?.targetId === 'mastery-sliders-button') {
-            console.log('Tutorial Engine: Triggering Mastery Quiz Event');
-            window.dispatchEvent(new CustomEvent('tutorialOpenMasteryQuiz'));
-        }
+        // The guide highlights controls; opening a subview would remove its anchor.
     }, [currentStep, isTutorialActive]);
 
     const nextStep = useCallback(() => {
@@ -124,14 +131,8 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
             return;
         }
 
-        const currentCategory = TUTORIAL_STEPS[currentStep]?.category;
-        const nextCategory = TUTORIAL_STEPS[nextIdx]?.category;
-
-        // CRITICAL: Stop flow IF category changes (except when finishing INTRO)
-        // This forces the user back to the HUB after completing a station
-        if (nextIdx >= TUTORIAL_STEPS.length || (currentCategory !== nextCategory && currentCategory !== 'INTRO')) {
-            console.log(`Tutorial Engine: End of station reached (${currentCategory}).`);
-            // Every end of station represents a completed section
+        // A full guide only completes after the final step, not a category boundary.
+        if (nextIdx >= TUTORIAL_STEPS.length) {
             endTutorial(true);
         } else {
             setCurrentStep(nextIdx);

@@ -404,18 +404,12 @@ async function main() {
     }
     checkpoints.push('action-created');
 
-    await waitForOnboardingTitle(page, 'Comece um ciclo curto', 20000);
-    await advanceOverlay(page, 'Comece um ciclo curto');
-    await page.waitForSelector('#new-cycle-name-input', 20000);
-    await waitForOnboardingTitle(page, 'Confira o prazo', 12000);
-    await advanceOverlay(page, 'Confira o prazo');
-    await waitForOnboardingTitle(page, 'Inicie o ciclo', 12000);
-    await page.clickSelector('#new-cycle-submit-button');
-    await page.clickText('CONFIRMAR');
-    checkpoints.push('cycle-created');
+    for (const title of ['Sua ação está no planner', 'Prefere escolher um horário?', 'Concluiu sem querer?', 'O ciclo pode ficar para depois']) {
+      await waitForOnboardingTitle(page, title, 20000);
+      await advanceOverlay(page, title);
+    }
+    checkpoints.push('planner-explained-without-cycle');
 
-    // 1.0.58 added an optional mission step between the cycle and the finish. Taking
-    // none is a valid answer, so the happy path just moves past it.
     await waitForOnboardingTitle(page, 'Quer uma missao para comecar?', 20000);
     await advanceOverlay(page, 'Quer uma missao para comecar?');
     checkpoints.push('mission-step-skipped');

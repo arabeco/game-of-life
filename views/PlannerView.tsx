@@ -1,7 +1,7 @@
 import { FloatingActionDock } from '../components/FloatingActionDock';
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon, PlusIcon, SquareCheckIcon, PanelIcon, ArchiveBoxIcon, ZapIcon } from '../components/Icons';
-import { Search as SearchIcon } from 'lucide-react';
+import { ChevronLeftIcon, ChevronRightIcon, PlusIcon, SquareCheckIcon, PanelIcon, ZapIcon } from '../components/Icons';
+import { History as HistoryIcon, Search as SearchIcon } from 'lucide-react';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { useConfirmation } from '../hooks/useConfirmation';
 import { Action, ScheduledTask, DayOfWeek, Arena, DailyCommitment, SeasonQuest, ActionType, PlannerMatrixQuadrant, Report } from '../types';
@@ -13,7 +13,6 @@ import { DailyPanelModal } from '../components/DailyPanelModal';
 import { announceBlockingOverlay } from '../utils/blockingOverlay';
 import { ActionModal } from '../components/ActionModal';
 import { GlassCard } from '../components/GlassCard';
-import { useTutorial } from '../contexts/TutorialContext';
 import { buildActionPoolByDate, buildDailyExpSnapshot, filterCycleTasksByScope, getInitialDailyCommitmentTaskIds, getVisiblePoolTaskIdsForAction } from '../utils/coreLoopUtils.js';
 import { OPERATIONAL_DAY_START_MINUTE, OPERATIONAL_DAY_TOTAL_MINUTES, buildLocalDateFromString, formatLocalDateString, formatOperationalHourLabel, getActualDateStringForOperationalMinutes, getActualStartTimeForOperationalMinutes, getOperationalDateString, getOperationalDisplayMinutes, getOperationalHourTicks, getTaskDisplayStartTime, getTaskOperationalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 import { hasScheduledTime, isClanQuestAction, isTaskInPool } from '../utils/taskDomain.js';
@@ -872,7 +871,6 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         getActionBackgroundStyle,
         showToast,
     } = useGame();
-    const { isTutorialActive, currentStep, nextStep } = useTutorial();
     const getActionById = useCallback((id: string) => actions.find(a => a.id === id), [actions]);
     const allArenas = useMemo(() => assets.flatMap(asset => asset.arenas || []), [assets]);
     const isClanQuestActionId = useCallback((actionId: string) => isClanQuestAction(actionId, actions, allArenas), [actions, allArenas]);
@@ -1610,7 +1608,6 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 const { dateString, startTimeInMinutes } = resolveOperationalDropSlot(operationalDateString, dailyDropIndicator.top);
                 const { type, payload } = dragState.item;
                 const scheduledTask = type === 'new_action' ?scheduleTask(payload.actionId, dateString, startTimeInMinutes) : rescheduleTask(payload, dateString, startTimeInMinutes);
-                if (scheduledTask && isTutorialActive && currentStep === 7) nextStep();
             } else if (isOver(weeklyGridRect, 150) && viewMode === 'week' && weeklyDropIndicator) {
                 const dayIndex = weeklyDropIndicator.dayIndex;
                 const startOfWeek = new Date(currentDate);
@@ -1623,7 +1620,6 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 const { dateString, startTimeInMinutes } = resolveOperationalDropSlot(operationalDateString, weeklyDropIndicator.top);
                 const { type, payload } = dragState.item;
                 const scheduledTask = type === 'new_action' ?scheduleTask(payload.actionId, dateString, startTimeInMinutes) : rescheduleTask(payload, dateString, startTimeInMinutes);
-                if (scheduledTask && isTutorialActive && currentStep === 7) nextStep();
             }
 
             if (scrollContainerRef.current) {
@@ -1662,7 +1658,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 (el as HTMLElement).style.pointerEvents = '';
             });
         };
-    }, [buildClampedDropIndicator, clearRestScreenSessionForTask, currentDate, dailyDropIndicator, dragState, getActionById, isSimpleList, resolveBayQuadrantFromPosition, resolveExecutionDropTarget, resolveOperationalDropSlot, scaleFactor, selectedOperationalDateString, tasks, updateAction, viewMode, weeklyDropIndicator, executionDropTarget, placeExecutionTask, removeExecutionTask, activeCycle, returnTaskToPool, deleteTask, scheduleTask, rescheduleTask, isTutorialActive, currentStep, nextStep, refreshDragTargets]);
+    }, [buildClampedDropIndicator, clearRestScreenSessionForTask, currentDate, dailyDropIndicator, dragState, getActionById, isSimpleList, resolveBayQuadrantFromPosition, resolveExecutionDropTarget, resolveOperationalDropSlot, scaleFactor, selectedOperationalDateString, tasks, updateAction, viewMode, weeklyDropIndicator, executionDropTarget, placeExecutionTask, removeExecutionTask, activeCycle, returnTaskToPool, deleteTask, scheduleTask, rescheduleTask, refreshDragTargets]);
 
     useEffect(() => {
         const timerId = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -2123,7 +2119,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     };
 
     return (
-        <div id="planner-container" className="planner-root relative flex flex-col h-full min-h-0 overflow-hidden bg-[#0d0d0e]">
+        <div id="planner-container" className="planner-root relative flex flex-col h-full w-full min-w-0 max-w-full min-h-0 overflow-hidden bg-[#0d0d0e]">
             {dragState.isDragging && (
                 <div
                     ref={ghostRef}
@@ -2168,8 +2164,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                             </button>
                         </div>
                         <div className="absolute right-3 flex items-center" id="planner-history-tool">
-                            <button id="report-button" onClick={onReportsClick} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white transition-colors" title="Histórico do ciclo" aria-label="Abrir histórico do ciclo">
-                                <ArchiveBoxIcon className="h-3.5 w-3.5" />
+                            <button id="report-button" onClick={onReportsClick} className="planner-soft-control flex h-9 w-9 items-center justify-center rounded-full hover:bg-white/8 text-[var(--skin-accent-color)] hover:text-white transition-colors" title="Histórico do ciclo" aria-label="Abrir histórico do ciclo">
+                                <HistoryIcon className="h-4 w-4" />
                             </button>
                         </div>
                         <div className="flex items-center justify-center space-x-0.5" id="cycle-hud">
@@ -2293,8 +2289,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
 
             <div
                 ref={scrollContainerRef}
-                className="planner-scroll-surface flex-grow min-h-0 overflow-y-auto overflow-x-hidden relative bg-[#111111]"
-                style={{ scrollBehavior: 'smooth', overscrollBehaviorY: 'contain' }}
+                className="planner-scroll-surface scrollbar-hide flex-grow w-full min-w-0 max-w-full min-h-0 overflow-y-auto overflow-x-hidden relative bg-[#111111]"
+                style={{ scrollBehavior: 'smooth', overscrollBehaviorY: 'contain', overscrollBehaviorX: 'none' }}
             >
                 <div className={dragState.isDragging ?'pointer-events-auto' : ''}>
                     {plannerArenaOptions.length === 0 ? (

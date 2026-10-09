@@ -1,3 +1,4 @@
+import { readingVisualTone, type OracleVisualTone } from "../_shared/oracle-visual-tone.ts";
 import { ORACLE_ENGINE_V2, readProgress } from "../_shared/oracle-engine-v2.ts";
 import { readingFactsFromDatabase } from "../_shared/oracle-engine-facts.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -1188,6 +1189,7 @@ const createAutomaticOracleMessage = async (
   // de manha ou de noite, entao ele e o que pode esperar.
   let category: OracleCategory = "analise_padroes";
   let text: string | null = null;
+  let visualTone: OracleVisualTone = "neutral";
   let purpose = "cycle_insight";
   let summary = "Leitura do seu ciclo";
 
@@ -1231,6 +1233,7 @@ const createAutomaticOracleMessage = async (
     }).texto;
     if (ORACLE_ENGINE_V2) {
       const facts = readingFactsFromDatabase({ actions: actionsResult.data ?? [], arenas: arenasResult.data ?? [], tasks: tasksResult.data ?? [], cycle: activeCycle, resetAt, today: operationalDate });
+      visualTone = readingVisualTone(facts);
       text = facts.cycle || facts.arenas.some(a => a.target > 0) || facts.completed > 0 ? readProgress(facts) : null;
     }
   }
@@ -1286,6 +1289,7 @@ const createAutomaticOracleMessage = async (
         // chegam pelo feed, e so ele sabe dizer de qual assunto cada uma fala.
         purpose,
         operationalState,
+        visualTone: purpose === "premium_content_card" ? "neutral" : visualTone,
         summary,
       },
       read: false,

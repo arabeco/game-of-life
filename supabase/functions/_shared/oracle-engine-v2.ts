@@ -109,7 +109,7 @@ export function reactionCandidates(f: ReactionFacts, tone: Voice): Candidate[] {
 }
 
 export interface ReadingFacts {
-  cycle: null | { percent: number | null; daysLeft: number; ended: boolean };
+  cycle: null | { percent: number | null; daysLeft: number; ended: boolean; startsToday?: boolean };
   arenas: ProgressFact[];
   completed: number;
 }
@@ -118,11 +118,15 @@ export function readProgress(f: ReadingFacts): string {
   const header = f.cycle
     ? `${f.cycle.percent === null ? 'Seu ciclo está aberto, sem metas de repetição.' : `Seu ciclo está em ${Math.round(f.cycle.percent)}%.`} ${f.cycle.ended ? 'O prazo terminou.' : f.cycle.daysLeft === 0 ? 'O prazo termina hoje.' : `Faltam ${f.cycle.daysLeft} ${f.cycle.daysLeft === 1 ? 'dia' : 'dias'}.`}`
     : 'Nesta rodada, suas arenas continuam valendo, mesmo sem ciclo.';
-  const arena = [...f.arenas].filter(a => a.target > 0).sort((a, b) => {
-    const score = (p: ProgressFact) => p.completed >= p.target ? 60 : p.completed > 0 ? 80 + p.completed / p.target : 20;
-    return score(b) - score(a) || a.id.localeCompare(b.id);
-  })[0];
+  const arena = readingArena(f);
   if (!arena) return `${header} ${f.completed > 0 ? `${actions(f.completed)} concluídas nesse período.` : 'Ainda não há progresso de metas para mostrar.'}`;
   const remaining = Math.max(0, arena.target - arena.completed);
   return `${header} Em «${arena.name}»: ${arena.completed}/${arena.target}. ${remaining ? left(remaining) : 'Meta cumprida.'}`;
+}
+
+export function readingArena(f: ReadingFacts): ProgressFact | undefined {
+  return [...f.arenas].filter(a => a.target > 0).sort((a, b) => {
+    const score = (p: ProgressFact) => p.completed >= p.target ? 60 : p.completed > 0 ? 80 + p.completed / p.target : 20;
+    return score(b) - score(a) || a.id.localeCompare(b.id);
+  })[0];
 }

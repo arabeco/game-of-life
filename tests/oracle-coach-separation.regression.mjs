@@ -129,6 +129,8 @@ assert.ok(totalReacoes >= 120, `reacoes: 10 eventos x 4 tons x 3; tem ${totalRea
 
 // Custo de rede das duas: zero. Sao bancos escritos, escolhidos no aparelho.
 const coachSrc = readFileSync(new URL('../utils/oracleCoach.ts', import.meta.url), 'utf8');
-assert.doesNotMatch(coachSrc, /fetch\(|supabase|invoke\(/, 'a abertura nao pode ir a rede');
+// A pasta supabase/functions/_shared guarda codigo puro que o app tambem le;
+// importar um TIPO de la nao e rede. Rede e o cliente: supabase.algo ou supabaseClient.
+assert.doesNotMatch(coachSrc, /fetch\(|supabase\.|supabaseClient|invoke\(/, 'a abertura nao pode ir a rede');
 
 console.log('Oracle coach separation regression: coach is local and independent from premium content.');

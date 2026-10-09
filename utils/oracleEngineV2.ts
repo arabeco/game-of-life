@@ -22,7 +22,7 @@ export function readingFacts(s: Scope): ReadingFacts {
   let cycle: ReadingFacts['cycle'] = null;
   if (s.activeCycle && s.activeCycle.startDate <= s.today) {
     const p = buildCycleCommitment({ ...s, tasks, startDate: s.activeCycle.startDate, endDate: s.activeCycle.endDate });
-    cycle = { percent: p.plannedCount ? p.progressPercent : null, daysLeft: Math.max(0, Math.round((Date.parse(s.activeCycle.endDate) - Date.parse(s.today)) / 86400000)), ended: s.activeCycle.endDate < s.today };
+    cycle = { startsToday: s.activeCycle.startDate === s.today, percent: p.plannedCount ? p.progressPercent : null, daysLeft: Math.max(0, Math.round((Date.parse(s.activeCycle.endDate) - Date.parse(s.today)) / 86400000)), ended: s.activeCycle.endDate < s.today };
   }
   const activeIds = new Set(s.actions.filter(a => s.arenas.some(r => r.id === a.arenaId && !r.isArchived)).map(a => a.id));
   return { cycle, arenas, completed: tasks.filter(t => t.completed && activeIds.has(t.actionId)).length };

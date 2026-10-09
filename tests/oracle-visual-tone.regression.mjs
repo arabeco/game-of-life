@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import { speechVisualTone, readingVisualTone, resolveOracleVisualTone, ORACLE_PUSH_COLORS } from '../supabase/functions/_shared/oracle-visual-tone.ts';
+const arena = (id, completed, target) => ({id, name: id, completed, target});
+const facts = { cycle: null, completed: 3, arenas: [arena('a', 3, 5)] };
+assert.equal(readingVisualTone(facts), 'neutral');
+assert.equal(readingVisualTone({...facts, arenas: [arena('a', 5, 5)]}), 'success');
+// A completed arena in the background must not recolor a different highlighted arena.
+assert.equal(readingVisualTone({...facts, arenas: [...facts.arenas, arena('b', 5, 5)]}), 'neutral');
+assert.equal(readingVisualTone({...facts, cycle: {percent: 30, daysLeft: 0, ended: true}}), 'guide');
+assert.equal(readingVisualTone({...facts, cycle: {percent: 0, daysLeft: 7, ended: false, startsToday: true}}), 'guide');
+assert.equal(readingVisualTone({...facts, cycle: {percent: 100, daysLeft: 2, ended: false}}), 'success');
+for (const [subject, tone] of [['return','guide'],['done','success'],['planned','guide'],['stock','neutral'],['open','guide']]) assert.equal(speechVisualTone('opening',subject),tone);
+for (const subject of ['action','arena','mission']) assert.equal(speechVisualTone('reaction',subject),'success');
+assert.equal(speechVisualTone('reaction','return'),'guide');
+assert.equal(resolveOracleVisualTone({purpose:'premium_content_card',visualTone:'success'}),'neutral');
+assert.equal(resolveOracleVisualTone({visualTone:'danger',mode:'coach'}),'neutral');
+assert.equal(resolveOracleVisualTone({visualTone:'guide'}),'guide');
+assert.equal(resolveOracleVisualTone(), 'neutral');
+for (const color of Object.values(ORACLE_PUSH_COLORS)) assert.match(color,/^#[0-9a-f]{6}$/i);
+console.log('oracle-visual-tone: factual classification, fallback and Android palette passed');

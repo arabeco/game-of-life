@@ -54,13 +54,13 @@ gradiente de `rgba(45,38,28,0.98)` para preto.
 
 ---
 
-## 3. Qual push usa qual tom (combinado com o Afonso em 08/10)
+## 3. Qual push usa qual tom — revisão de 09/10
 
 | Push | Tom |
 |---|---|
-| Leitura: ciclo indo bem | `success` (verde, Progresso) |
+| Leitura destaca uma conquista confirmada | `success` (verde, Progresso) |
 | Leitura: ciclo começa hoje | `guide` (azul, Guia) |
-| Leitura: abaixo do ritmo, ou só o dia | `neutral` (dourado, Oráculo) |
+| Leitura geral do ciclo ou da rodada, sem julgamento de ritmo | `neutral` (dourado, Oráculo) |
 | Leitura: prazo do ciclo acabou | `guide` (azul, Guia) |
 | Card de Sabedoria | `neutral` (dourado, Oráculo) |
 
@@ -82,8 +82,8 @@ Se quiserem mudar alguma cor ou tom, escrevam aqui. O Claude lê esta tabela.
 **Formato:**
 
 - **1024 × 512 px** (proporção 2:1), PNG ou JPG, **até ~300 KB**. O Android
-  recusa imagem de push acima de 1 MB e corta a proporção para 2:1 quando
-  expandida.
+  tem limite de 1 MB no FCM. A proporção 2:1 é uma escolha de composição; o
+  recorte e a miniatura variam conforme versão do sistema e aparelho.
 - **Fundo escuro e opaco**, sem transparência, no tom do app: quase preto,
   levemente quente. Imagem transparente vira fundo branco em alguns aparelhos.
 - **A marca centralizada, ocupando uns 60% da altura.** Com a notificação
@@ -124,3 +124,38 @@ Escolham as definitivas e anotem nesta tabela.
 
 O resto é do Claude: o servidor passa a mandar a cor e a imagem de cada push, e
 o Afonso testa no celular.
+
+
+## 7. Comparação visual antes da entrega — 09/10
+
+Afonso levantou que o logo já aparece no ícone do push. A imagem grande deixou de ser obrigatória. Comparar antes de produzir os arquivos finais:
+
+- A: só texto e cor, sem imagem.
+- B: atmosfera abstrata, com luz discreta e sem logo.
+- C: a mesma atmosfera com marca pequena, sem texto.
+
+Prévia: `tools/oracle-push-preview.html`, servida pela bancada em
+`http://127.0.0.1:3016/oracle-push-preview.html`. Comparação fechada/expandida e clara/escura, com troca de cenário e paleta. É simulação, não prova de renderização Android. Não há alteração nos emissores de push.
+
+A leitura do ciclo e da rodada usa o motor V2. Os outros textos são exemplos editoriais identificados na página. "Indo bem/abaixo do ritmo" não deve voltar como regra para escolher cores.
+
+Paleta alternativa em avaliação: dourado `#947322`, azul `#2475AC`, verde `#24844F`. A original continua disponível na prévia. Ambas usam a mesma cor nos dois temas; nenhuma está aprovada como definitiva. Brilhos das imagens mantêm os tons claros do app.
+
+Os nomes e diretório da seção 4/6 ficam reservados para a opção escolhida. Nesta etapa não foram gerados arquivos finais nem publicados assets. Depois da escolha, testar no aparelho: notificação fechada, expandida e gaveta clara/escura. Não presumir miniatura obrigatória nem recorte exato.
+
+
+## 8. Decisao final e integracao local (09/10)
+
+Escolhida a opcao sem imagem. As alternativas da secao 7 sao apenas historico.
+- Dourado: leitura geral, estoque, sabedoria.
+- Azul: orientacao, retorno, inicio e prazo encerrado.
+- Verde: conclusao/progresso confirmado; leitura verde so quando a meta destacada ou o ciclo esta completo.
+- Narrador independente da cor. Sem regra de ritmo esperado, atraso ou sequencia.
+
+Implementado em oracle-visual-tone.ts, compartilhado entre app e servidor. Leitura automatica salva context_snapshot.visualTone; registros antigos sem metadado ficam neutros. Sabedoria permanece neutra. Aberturas e reacoes continuam temporarias.
+
+Chat e balao usam marca dourada com nucleo colorido e gradiente discreto. Missao individual preservada. Android envia android.notification.color e accentColor nos dados, consumido como iconColor pela notificacao local quando o app esta aberto. Sem imagem e sem alterar fundo nativo.
+
+Paleta Android implementada: #947322, #2475AC, #24844F. Previa final: tools/oracle-colors-preview.html (marca real, textos ilustrativos, push simulado).
+
+Validacao local: TypeScript, regressoes de leitura/motor/classificacao, bundles das duas funcoes com imports Deno externos. Nenhum deploy ou teste em aparelho efetuado. Para chegar aos aparelhos: publicar oracle e web-push; atualizar app para os cards e a cor com app aberto. Mensagens antigas nao sao reclassificadas.

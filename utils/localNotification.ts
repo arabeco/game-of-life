@@ -10,6 +10,7 @@ interface LocalNotificationPayload {
   url?: string;
   requireInteraction?: boolean;
   renotify?: boolean;
+  accentColor?: string;
 }
 
 const APP_NOTIFICATION_ICON = '/logo-diamond.png';
@@ -168,6 +169,7 @@ const showNativeLocalNotification = async (
           title: payload.title,
           body: payload.body,
           largeBody: payload.body,
+          ...(payload.accentColor && /^#[0-9a-f]{6}$/i.test(payload.accentColor) ? { iconColor: payload.accentColor } : {}),
           channelId: GLYPH_LOCAL_CHANNEL_ID,
           autoCancel: true,
           ongoing: Boolean(payload.requireInteraction),

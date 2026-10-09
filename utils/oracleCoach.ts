@@ -18,6 +18,7 @@ export type OracleCycleCoachAction =
   | { id: string; label: string; kind: 'open_arena'; arenaId: string };
 
 export interface OracleCycleCoachBrief {
+  visualTone?: import('../supabase/functions/_shared/oracle-visual-tone.ts').OracleVisualTone;
   id: string;
   content: string;
   quickActions: OracleCycleCoachAction[];

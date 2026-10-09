@@ -1,3 +1,4 @@
+import { ORACLE_PUSH_COLORS, resolveOracleVisualTone } from "../_shared/oracle-visual-tone.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 import { SignJWT, importPKCS8 } from "npm:jose@5.9.6";
 import webpush from "npm:web-push@3.6.7";
@@ -174,6 +175,7 @@ type PushDispatchPayload = {
   renotify: boolean;
   notificationId?: string;
   oracleMessageId?: string;
+  accentColor?: string;
   type: string;
 };
 
@@ -323,6 +325,7 @@ const sendNativePushNotification = async (
             body: payload.body,
           },
           data: {
+            ...(payload.accentColor ? { accentColor: payload.accentColor } : {}),
             url: normalizeFcmDataValue(payload.url),
             tag: normalizeFcmDataValue(payload.tag),
             type: normalizeFcmDataValue(payload.type),
@@ -336,6 +339,7 @@ const sendNativePushNotification = async (
             notification: {
               tag: payload.tag,
               click_action: "OPEN_APP",
+              ...(payload.accentColor ? { color: payload.accentColor } : {}),
             },
           },
         },
@@ -1590,6 +1594,7 @@ const dispatchOracleMessage = async (req: Request, body: JsonRecord, origin: str
       renotify: presentation === "info_card",
       notificationId: message.id,
       oracleMessageId: message.id,
+      accentColor: ORACLE_PUSH_COLORS[resolveOracleVisualTone(message.contextSnapshot)],
       type: "oracle_prompt",
     };
 

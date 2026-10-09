@@ -1,4 +1,5 @@
 import { ORACLE_ENGINE_V2, readingFacts } from './oracleEngineV2.ts';
+import { readingVisualTone } from '../supabase/functions/_shared/oracle-visual-tone.ts';
 import { readProgress } from '../supabase/functions/_shared/oracle-engine-v2.ts';
 import type { Action, Asset, Cycle, ScheduledTask } from '../types';
 import type { OracleCycleCoachBrief } from './oracleCoach';
@@ -56,11 +57,13 @@ export const fatosDaLeitura = ({ tasks, actions, assets, activeCycle, now = new 
 
 /** O que o botao "Ler meu dia e ciclo" devolve: o mesmo motor do push da manha. */
 export const lerMeuDiaECiclo = (entrada: Parameters<typeof fatosDaLeitura>[0]): OracleCycleCoachBrief => {
+  const facts = readingFacts({ ...entrada, activeCycle: entrada.activeCycle || null, arenas: entrada.assets.flatMap(a => a.arenas), today: getOperationalDateString(entrada.now || new Date()) });
   const fatos = fatosDaLeitura(entrada);
   const leitura = montarLeituraDoCiclo(fatos, { nuncaVazia: true });
   return {
+    visualTone: ORACLE_ENGINE_V2 ? readingVisualTone(facts) : 'neutral',
     id: `leitura:${leitura.estados.ciclo}:${leitura.estados.dia}`,
-    content: ORACLE_ENGINE_V2 ? readProgress(readingFacts({ ...entrada, activeCycle: entrada.activeCycle || null, arenas: entrada.assets.flatMap(a => a.arenas), today: getOperationalDateString(entrada.now || new Date()) })) : leitura.texto || '',
+    content: ORACLE_ENGINE_V2 ? readProgress(facts) : leitura.texto || '',
     quickActions: ORACLE_ENGINE_V2 ? [
       { id: 'leitura-arenas', label: 'Ver arenas', kind: 'open_arenas' },
       ...(fatos.ciclo ? [{ id: 'leitura-ciclo', label: 'Ver ciclo', kind: 'open_cycle' as const }] : []),

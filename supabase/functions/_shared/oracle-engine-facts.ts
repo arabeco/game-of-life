@@ -28,6 +28,6 @@ export function readingFactsFromDatabase(input: {
   const promise = cycle ? medirCicloPrometido({ acoes: input.actions, arenas: input.arenas, tarefas: tasks, inicio: cycle.start_date, fim: cycle.end_date }) : null;
   return {
     arenas, completed: tasks.filter(t => t.completed && activeIds.has(t.action_id)).length,
-    cycle: cycle && cycle.start_date <= today ? { percent: promise!.prometidas ? promise!.feitas / promise!.prometidas * 100 : null, daysLeft: Math.max(0, Math.round((Date.parse(cycle.end_date) - Date.parse(today)) / 86400000)), ended: cycle.end_date < today } : null,
+    cycle: cycle && cycle.start_date <= today ? { startsToday: cycle.start_date === today, percent: promise!.prometidas ? promise!.feitas / promise!.prometidas * 100 : null, daysLeft: Math.max(0, Math.round((Date.parse(cycle.end_date) - Date.parse(today)) / 86400000)), ended: cycle.end_date < today } : null,
   };
 }

@@ -135,6 +135,7 @@ const ensureNativePushEventListeners = async () => {
       await PushNotifications.addListener('pushNotificationReceived', (notification) => {
         const data = notification.data || {};
         void showLocalNotification({
+          accentColor: data.type === 'oracle_prompt' && typeof data.accentColor === 'string' ? data.accentColor : undefined,
           title: notification.title || 'Glyph',
           body: notification.body || 'Você recebeu um novo aviso.',
           tag: String(data.tag || notification.id || 'glyph-remote-push'),

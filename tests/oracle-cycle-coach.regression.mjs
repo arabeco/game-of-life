@@ -126,7 +126,8 @@ const tudoDescansando = buildOracleCycleCoachBrief(atrasadoHoje, {
 assert.ok(tudoDescansando.content, 'com tudo descansando, ainda ha resposta');
 
 const coachSource = readFileSync(new URL('../utils/oracleCoach.ts', import.meta.url), 'utf8');
-assert.doesNotMatch(coachSource, /supabase|fetch\(|invoke\(|hasPremiumAccess/i);
+// Rede e o cliente (supabase.algo, supabaseClient), e nao o caminho supabase/functions/_shared.
+assert.doesNotMatch(coachSource, /supabase\.|supabaseClient|fetch\(|invoke\(|hasPremiumAccess/i);
 // A memoria mora no cliente, nao aqui. Se o coach passar a ler armazenamento
 // direto, ele deixa de ser testavel sem navegador — e este teste morre junto.
 assert.doesNotMatch(coachSource, /localStorage|sessionStorage/, 'o coach nao le armazenamento');

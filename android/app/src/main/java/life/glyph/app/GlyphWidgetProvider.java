@@ -186,7 +186,7 @@ public class GlyphWidgetProvider extends AppWidgetProvider {
                 "Progresso",
                 completed + "/" + total + " (" + progressPercent + "%)",
                 "Tempo",
-                elapsedDays + "/" + totalDays + " (" + timeProgress + "%)",
+                day,
                 progressPercent,
                 timeProgress,
                 false,

@@ -877,7 +877,9 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         const toFetch = missing.filter(isUuid);
         if (toFetch.length === 0) return;
 
-        const { data, error } = await supabase.from('user_profiles').select('*').in('id', toFetch);
+        // O perfil dos outros vem pelo cartao publico; a tabela so devolve a
+        // propria linha desde a fronteira de 29/09.
+        const { data, error } = await supabase.rpc('get_public_profile_cards', { p_user_ids: toFetch });
         if (error || !data) return;
         setProfilesById(prev => {
             const next = { ...prev };

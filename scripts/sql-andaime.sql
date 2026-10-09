@@ -259,6 +259,21 @@ create table if not exists public.friends (
   created_at timestamptz default now()
 );
 
+-- Cla: o nome e o icone entram no cartao publico de cada pessoa
+-- (get_public_profile_cards).
+create table if not exists public.clans (
+  id uuid primary key,
+  name text,
+  icon text
+);
+
+create table if not exists public.clan_members (
+  user_id uuid,
+  clan_id uuid,
+  role text,
+  joined_at timestamptz default now()
+);
+
 create table if not exists public.user_purchases (
   user_id uuid,
   product_type text,

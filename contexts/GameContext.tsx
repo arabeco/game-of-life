@@ -3903,10 +3903,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         uniqueIds = uniqueIds.filter(id => isUuid(id));
         if (uniqueIds.length === 0) return {} as Record<string, UserProfile>;
 
+        // O perfil dos outros nao se le mais na tabela: desde a fronteira de
+        // 29/09 ela devolve so a propria linha, e esta consulta voltava vazia
+        // sem erro — a lista de amigos sumia e a parceria virava fantasma.
+        // O cartao publico, com o cla, vem desta RPC.
         const { data: profilesData, error: profilesError } = await supabase
-            .from('user_profiles')
-            .select('*, clan_members(clans(name, icon))')
-            .in('id', uniqueIds);
+            .rpc('get_public_profile_cards', { p_user_ids: uniqueIds });
         if (profilesError || !profilesData) {
             console.error('Error fetching profiles:', profilesError?.message);
             return {} as Record<string, UserProfile>;
@@ -3914,14 +3916,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const mapped = mapToCamelCase(profilesData) as any[];
         return mapped.reduce((acc, profileData) => {
-            // Extrair informações do clã se existirem
-            const clanInfo = profileData.clanMembers?.[0]?.clans;
-
             const profile = {
                 ...profileData,
-                username: profileData.nickname || profileData.email?.split('@')[0] || 'usuario',
-                clanName: clanInfo?.name,
-                clanIcon: clanInfo?.icon,
+                username: profileData.nickname || 'usuario',
+                clanName: profileData.clanName,
+                clanIcon: profileData.clanIcon,
                 wallet: resolveProfileWallet(profileData),
                 inventory: []
             } as UserProfile;
@@ -4554,7 +4553,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const memberIds = uniqueMembersData.map((m: any) => m.user_id).filter((id: string) => isUuid(id));
         if (memberIds.length === 0) { setEnrichedClanMembers([]); return; }
 
-        const { data: memberProfiles, error: profilesError } = await supabase.from('user_profiles').select('*').in('id', memberIds);
+        // Cartao publico pela RPC: a tabela so devolve a propria linha, e cada
+        // colega virava "Membro Desconhecido".
+        const { data: memberProfiles, error: profilesError } = await supabase.rpc('get_public_profile_cards', { p_user_ids: memberIds });
         if (profilesError || !memberProfiles) { console.error('Error fetching member profiles:', profilesError?.message); return; }
 
         const contributionTotals = new Map<string, number>();
@@ -14599,17 +14600,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (!userId) return;
         const blockedSet = new Set(blockedUserIds);
 
+        // O remetente vinha embutido (`user_profiles!direct_messages_sender_id_fkey`),
+        // e desde a fronteira de 29/09 o perfil dos outros volta nulo ali: a
+        // conversa com quem nao era amigo sumia. O cartao publico de cada
+        // participante vem da RPC, como em amigos e no cla.
         const { data, error } = await supabase
             .from('direct_messages')
-            .select(`
-        id,
-        sender_id,
-        recipient_id,
-        content,
-        read,
-        created_at,
-        sender_profile:user_profiles!direct_messages_sender_id_fkey(id,nickname,avatar_url,level,is_premium,is_online,role)
-      `)
+            .select('id, sender_id, recipient_id, content, read, created_at')
             .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
             .order('created_at', { ascending: false })
             .limit(200);
@@ -14619,7 +14616,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
 
-        const mapped = mapToCamelCase(data || []) as DirectMessage[];
+        const linhas = (data || []) as any[];
+        const participantes = [...new Set(linhas.map((row) => row.sender_id === userId ? row.recipient_id : row.sender_id))];
+        const cartoes = participantes.length > 0 ? await hydrateProfilesByIds(participantes) : {};
+        const mapped = (mapToCamelCase(linhas) as DirectMessage[]).map((msg) => ({
+            ...msg,
+            senderProfile: msg.senderId === userId ? undefined : cartoes[msg.senderId],
+        })) as DirectMessage[];
         setDirectMessages(mapped);
 
         // Group into conversations
@@ -14629,7 +14632,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const isBlockedConversation = blockedSet.has(otherId);
             if (!convsMap.has(otherId)) {
                 // Find profile for this conversation
-                let profile = msg.senderId === otherId ?msg.senderProfile : undefined;
+                let profile = cartoes[otherId] || (msg.senderId === otherId ? msg.senderProfile : undefined);
                 // If profile not in message (sent by us), we might need to fetch it or find it in friends
                 if (!profile) {
                     const friend = friendsRef.current.find(f => f.id === otherId);
@@ -14651,7 +14654,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
         });
         setDMConversations(Array.from(convsMap.values()));
-    }, [blockedUserIds, session?.user.id]);
+    }, [blockedUserIds, hydrateProfilesByIds, session?.user.id]);
 
     const sendDirectMessage = async (recipientId: string, content: string) => {
         const userId = session?.user.id;

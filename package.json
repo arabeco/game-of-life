@@ -36,6 +36,7 @@
     "test:luz-e-placa-do-soberano": "node tests/luz-e-placa-do-soberano.regression.mjs",
     "test:medidor-de-segredos": "node tests/medidor-de-segredos.regression.mjs",
     "test:leitura-do-ciclo": "node tests/leitura-do-ciclo.regression.mjs",
+    "test:cartoes-publicos": "node tests/cartoes-publicos.regression.mjs",
     "test:pact-speech": "node tests/pact-speech.regression.mjs",
     "test:device-only": "node tests/safe-area-insets.regression.mjs",
     "test:relationship-links": "node tests/relationship-links.regression.mjs",

@@ -240,10 +240,10 @@ export const ConnectionsModal: React.FC<{
       ])].filter((id) => id && !seeded[id]);
 
       if (participantIds.length > 0) {
+        // Pelo cartao publico: a tabela so devolve a propria linha, e o outro
+        // lado de cada vinculo aparecia sem nome.
         const { data, error } = await supabase
-          .from('user_profiles')
-          .select('id,nickname,avatar_url,level')
-          .in('id', participantIds);
+          .rpc('get_public_profile_cards', { p_user_ids: participantIds });
         if (error) console.error('Connections profile hydration failed:', error);
         (data || []).forEach((row) => {
           seeded[row.id] = profileFromRow(row);

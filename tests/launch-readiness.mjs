@@ -38,6 +38,17 @@ const manualQaNotes = [
 const suites = {
   core: [
     {
+      id: 'cartoes-publicos',
+      label: 'Cartoes publicos regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'cartoes-publicos.regression.mjs')]],
+      kind: 'logic',
+      interactions: [
+        'amigos, cla, vinculos e mensagens leem o perfil dos outros pela RPC',
+        'nenhuma tela le varios perfis direto de user_profiles',
+        'o cartao publico nao carrega dado privado',
+      ],
+    },
+    {
       id: 'leitura-do-ciclo',
       label: 'Leitura do ciclo regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'leitura-do-ciclo.regression.mjs')]],

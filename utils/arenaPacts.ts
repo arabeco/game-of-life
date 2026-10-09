@@ -756,8 +756,10 @@ export const measurePactProgress = (
     // Pelos actionIds da arena, e nao por `a.arenaId === arena.id`: a arena do
     // escopo do app e SINTETICA e nao tem id proprio, mas carrega a lista de
     // acoes. Arena real tem os dois, entao a regra unica serve as duas.
+    // A CONTAGEM PARA NO ALVO. Sem o teto a missao mostrava 12/10: o que vem
+    // depois de cumprir e da arena, nao da missao.
     const current = countedTasks.length;
-    return { current, goal: pact.goal, percent: Math.min(100, Math.round(current / pact.goal * 100)),
+    return { current: Math.min(current, pact.goal), goal: pact.goal, percent: Math.min(100, Math.round(current / pact.goal * 100)),
       completed: current >= pact.goal, windowEnded: today > pact.endsOn };
   }
 
@@ -781,7 +783,7 @@ export const measurePactProgress = (
   if (pact.kind === 'retomada') {
     const current = desdeOAceite.length;
     const goal = Math.max(1, pact.goal);
-    return { current, goal, percent: Math.min(100, Math.round(current / goal * 100)), completed: current >= goal };
+    return { current: Math.min(current, goal), goal, percent: Math.min(100, Math.round(current / goal * 100)), completed: current >= goal };
   }
 
   // constancia: dias distintos, nao numero de acoes. Cinco acoes num dia so
@@ -789,7 +791,7 @@ export const measurePactProgress = (
   const dias = new Set(desdeOAceite.map(getTaskOperationalDateString));
   const current = dias.size;
   return {
-    current,
+    current: Math.min(current, Math.max(1, pact.goal)),
     goal: pact.goal,
     percent: Math.min(100, Math.round((current / Math.max(1, pact.goal)) * 100)),
     completed: current >= pact.goal,

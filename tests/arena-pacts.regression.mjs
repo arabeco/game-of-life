@@ -554,3 +554,22 @@ console.log('Escopo do app: uma arena sintetica, arena nula no banco, e so volum
   );
   assert.ok(!curto.some((p) => p.kind === 'volume'), 'ciclo curto nao oferece volume invalido');
 }
+
+// --- a contagem trava no alvo, e a missao cumprida se recebe sozinha -----
+// Em 09/10/2026 a missao mostrou 12/10: volume, retomada e constancia nao
+// tinham teto, e o que vinha depois de cumprir continuava somando. Cumprida, ela
+// tambem ficava parada esperando o "Receber".
+{
+  const tresDias = [['alvo-a', '2026-08-21'], ['alvo-b', '2026-08-22'], ['alvo-c', '2026-08-23']]
+    .map(([id, dia]) => task(id, dia));
+  const constancia = measurePactProgress({ ...pactoConstancia, goal: 2 }, alvo, actionsFor(alvo), tresDias, '2026-08-23');
+  assert.deepEqual([constancia.current, constancia.goal, constancia.percent, constancia.completed], [2, 2, 100, true], 'constancia para no alvo');
+  const retomada = measurePactProgress({ ...pactoRetomada, goal: 1 }, alvo, actionsFor(alvo), tresDias, '2026-08-23');
+  assert.equal(retomada.current, 1, 'retomada para no alvo');
+  const volume = measurePactProgress({ ...pactoConstancia, kind: 'volume', goal: 2, endsOn: '2026-08-30' }, alvo, actionsFor(alvo), tresDias, '2026-08-23');
+  assert.deepEqual([volume.current, volume.completed], [2, true], 'volume para no alvo');
+
+  const contexto = readFileSync(new URL('../contexts/GameContext.tsx', import.meta.url), 'utf8');
+  assert.match(contexto, /pactoCumpridoRecebidoRef/, 'a missao cumprida se recebe sozinha');
+  console.log('PASS a contagem trava no alvo e a missao cumprida se recebe sozinha.');
+}

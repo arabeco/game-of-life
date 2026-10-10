@@ -94,7 +94,7 @@ Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 
 
 ## Marketing
 
-- [ ] Criar códigos de resgate novos *(Afonso)*
+- [ ] Criar códigos de resgate novos *(Afonso)* — 10/10: cofre em sql/cofre-de-cupons.sql — PRIMEIRALUZ100, CANDEIA50, FAGULHA30, VIGILIA20 e ZERODAY0 (Genesis secreto, prêmio a decidir), todos desligados. Rever prêmios e soltar um por vez.
 - [ ] Segredos no marketing *(Afonso)*
 - [ ] Artes para Instagram e TikTok *(artista)*
 

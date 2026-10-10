@@ -1,6 +1,6 @@
 # Prancheta do Glyph
 
-Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 2026-10-10. 17 abertos de 58.
+Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 2026-10-10. 16 abertos de 58.
 
 **Não edite as listas abaixo** — elas são regravadas a partir da prancheta. Para avisar algo, escreva em "Recados da outra IA", no fim: o Claude lê e passa para a prancheta.
 
@@ -23,10 +23,9 @@ Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 
 ## App
 
 - [ ] Planner treme para o lado ao abrir, como se quisesse mudar de página *(Afonso)* — Gravar a tela abrindo o planner e pôr o vídeo na pasta (output/). O Claude tira os quadros e acha o que mexe.
-- [ ] Rodar a migração 20261010150000_convite_de_amigo.sql *(Afonso)* — Sem ela o bloco do convite não aparece e o código de amigo não entra (não quebra nada).
 - [ ] Convite, etapa 2: o app aplica o código sozinho quando a pessoa instala pelo link *(Claude)* — Nativo (Install Referrer da Play Store): testar no emulador antes do AAB.
 
-<details><summary>Feitos (17)</summary>
+<details><summary>Feitos (18)</summary>
 
 - [x] Onboarding novo: fechar e commitar *(Claude)* — Commitado em 09/10 (fb05e4e).
 - [x] Planner sem tremer: commitar *(Claude)* — Commitado em 09/10 (fb05e4e).
@@ -45,6 +44,7 @@ Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 
 - [x] Missão inicial "Sete dias no Glyph": abrir o app em 7 dias (não precisam ser seguidos) paga 10 de ouro *(Claude)* — Commitado em 10/10 (4b37938). Chega no próximo AAB.
 - [x] Rodar a migração 20261010120000_sete_dias_no_app.sql *(Afonso)* — Rodado pelo Afonso em 10/10.
 - [x] Convide um amigo: código no modal de cupom, barrinha com baú Raro no 5 e 25 de ouro no 10 *(Claude)* — Commitado em 10/10 (6a5f3dc). Chega no próximo AAB (110).
+- [x] Rodar a migração 20261010150000_convite_de_amigo.sql *(Afonso)* — Rodado pelo Afonso em 10/10.
 
 </details>
 

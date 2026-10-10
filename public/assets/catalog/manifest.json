@@ -1,6 +1,6 @@
 {
   "totalFiles": 217,
-  "totalBytes": 13149490,
+  "totalBytes": 13200317,
   "assets": [
     {
       "path": "aurora_i.png",
@@ -594,8 +594,8 @@
     },
     {
       "path": "avatars/SKIN_T1_CHUVA.png",
-      "bytes": 127546,
-      "sha256": "e37bfe672b603f30bb91dada448bdc0e3ca77fbec215d4aa8612365ff4d281a3"
+      "bytes": 131677,
+      "sha256": "94eecac6bcd21ff30eeb8dd57f9ab128757c79de741446c8475c96c4aecb942e"
     },
     {
       "path": "avatars/SKIN_T1_CORRIDA.png",
@@ -609,8 +609,8 @@
     },
     {
       "path": "avatars/SKIN_T1_ESCUDEIRO.png",
-      "bytes": 118962,
-      "sha256": "79c9b43c1a8e3647979169b90e943cfe7ad66f1f557a6fa7b6f97278b04319d3"
+      "bytes": 123600,
+      "sha256": "bd46647316fb5c133f060779e52e8a6a6f5d85a4affc7865184d672161e169e6"
     },
     {
       "path": "avatars/SKIN_T1_GYM_RAT.png",
@@ -644,13 +644,13 @@
     },
     {
       "path": "avatars/SKIN_T2_BARAO.png",
-      "bytes": 127528,
-      "sha256": "d48300ec197ea034499092611f02e5b513bf4636f483b47c9d0e76feb8b74cab"
+      "bytes": 129357,
+      "sha256": "02837e2bd46f20ad5899d81e3e183aff9ff7dda0c6353903f4f73ab30b799fed"
     },
     {
       "path": "avatars/SKIN_T2_CAVALEIRO.png",
-      "bytes": 131428,
-      "sha256": "650fd5b0ddd055b4d933955a3510de8109e6c9337b31624a484def39d2c46252"
+      "bytes": 138618,
+      "sha256": "8e71facb1bf2d0e428dfdbe723c10463a8b7c9733208005aaf30d22bcc6b7199"
     },
     {
       "path": "avatars/SKIN_T2_EXECUTIVO.png",
@@ -674,8 +674,8 @@
     },
     {
       "path": "avatars/SKIN_T2_OFICINA.png",
-      "bytes": 102603,
-      "sha256": "ad4c76539707a490ba7d2ed10aea7daea4338b41168a16f4de76f1fa3ae2bf98"
+      "bytes": 103354,
+      "sha256": "e2b9f3204e2bd7dfb7a38dad8c1989592d68e26721c19c053ab09d77e30a6772"
     },
     {
       "path": "avatars/SKIN_T2_TATICO.png",
@@ -684,8 +684,8 @@
     },
     {
       "path": "avatars/SKIN_T2_TRILHA.png",
-      "bytes": 112103,
-      "sha256": "3ce6e204340ffbe7434a1997f4855b0d3fc2f24df14651dd03aa0291984352ed"
+      "bytes": 118458,
+      "sha256": "2c19423edd2f3e6ff5eafb561b6a6e6b09d1e585ba53f1046541e8b2e31ce139"
     },
     {
       "path": "avatars/SKIN_T3_ALQUIMISTA.png",
@@ -699,18 +699,18 @@
     },
     {
       "path": "avatars/SKIN_T3_ATELIE.png",
-      "bytes": 106195,
-      "sha256": "e7a5a89d5a7f9e2dae662161b469f89c430fca23a9172c96798fabe219b8e965"
+      "bytes": 106380,
+      "sha256": "94e30a98eb75dd9f59cd5023c0f01c6f973798fa42adaf4f51c4fe9f3d79d3e9"
     },
     {
       "path": "avatars/SKIN_T3_CONDE.png",
-      "bytes": 107148,
-      "sha256": "a005d63b81477db05dd96072eb6083459c6f3afc17878fb7482e1c9834888386"
+      "bytes": 111254,
+      "sha256": "154445f7169a263a01b961113c5a48d031b93bec1da28b79518c9c438cb98a81"
     },
     {
       "path": "avatars/SKIN_T3_DUQUE.png",
-      "bytes": 162929,
-      "sha256": "bc230247df02ca84eae09250a267e3fcbbd6b871fd93adddc0c6fac3a63f4fd5"
+      "bytes": 166190,
+      "sha256": "9e85ceff6f952fb191665c5fea61ddbb3f137da8f0e2481bbea5fa4f3dbf8bde"
     },
     {
       "path": "avatars/SKIN_T3_HIBRIDO.png",
@@ -719,8 +719,8 @@
     },
     {
       "path": "avatars/SKIN_T3_INVERNO.png",
-      "bytes": 124837,
-      "sha256": "33d0ed64db3f78a72c03ff9caff748169974888f4f634a2409e83f04073d41fe"
+      "bytes": 127722,
+      "sha256": "cd8abad560bb21c72eafb5f26841e6086a76666c28e416d15006342d7be81a6f"
     },
     {
       "path": "avatars/SKIN_T3_NOMADE.png",
@@ -729,8 +729,8 @@
     },
     {
       "path": "avatars/SKIN_T3_NOTURNO.png",
-      "bytes": 109996,
-      "sha256": "b91ad8b09bc14d2a839c3dbc4b558576be667009ea734706ebc3f0a374c681fc"
+      "bytes": 114305,
+      "sha256": "c2dc4e5e221032c75ad8b01ff768e86f81d25e19b58a27b2148397d1df746032"
     },
     {
       "path": "avatars/SKIN_T4_ARMADURA_PLACA.png",
@@ -744,8 +744,8 @@
     },
     {
       "path": "avatars/SKIN_T4_EMPREENDEDOR.png",
-      "bytes": 96382,
-      "sha256": "f965943accbeaf66859d167388f2db3585527d7e02418f0418957c2c5cf37860"
+      "bytes": 98624,
+      "sha256": "5e39438ed84b0105ba87e3591e2e553b3389d162f581e63fa29e87a849be6393"
     },
     {
       "path": "avatars/SKIN_T4_MAGO_CIRCULO.png",
@@ -754,13 +754,13 @@
     },
     {
       "path": "avatars/SKIN_T4_PRINCIPE.png",
-      "bytes": 115061,
-      "sha256": "7d12d3ee6c5f38b7bc72926f61d4ecd3a41ffc53c38b2ab39c910687490015f1"
+      "bytes": 119384,
+      "sha256": "70bafe6576d98455df1cd072ad52ccf93512b02f891a50c62d868571abfdfc5f"
     },
     {
       "path": "avatars/SKIN_T4_REI.png",
-      "bytes": 172734,
-      "sha256": "95d28329da6467c959219293b3bda1c95c40ecd8b108d225d551d9d0f954e06c"
+      "bytes": 175637,
+      "sha256": "60547983b732daf5907b779c1ca21f468bbae351477d0525fde147ce34dd37f3"
     },
     {
       "path": "avatars/SKIN_T5_IMPERADOR.png",
@@ -769,8 +769,8 @@
     },
     {
       "path": "avatars/SKIN_T5_SOBERANO.png",
-      "bytes": 136886,
-      "sha256": "73057c3a8e0b480778152ce85097e1be1634ea2be77ca8038020ef9e5d3f38fb"
+      "bytes": 138605,
+      "sha256": "339b3fb9cb8174ad661d89881de4b1c5254a82f2485b195bf694fe490aedff8c"
     },
     {
       "path": "avatars/SKIN_T5_VESTIDO_REAL.png",

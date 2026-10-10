@@ -58,6 +58,7 @@ No mesmo modal do cupom, embaixo do OK.
 - [ ] **Usar um segundo código de convite.** Esperado: "Você já usou um código de convite."
 - [ ] **Conta antiga** (mais de 7 dias) tentando usar um código. Esperado: "Código de convite vale só para contas criadas há até 7 dias."
 - [ ] ⏳ **Barrinha de quem convidou:** o amigo só conta depois de completar os 7 dias no app. Esperado: "1 completou os 7 dias" e a barra anda um risquinho.
+- [ ] **Convite pelo link (sem digitar):** num celular **sem o Glyph instalado**, abra o link que veio no "Enviar" do outro jogador, instale pela Play Store e crie uma conta nova. Esperado: sem digitar nada, aparece "+10 de ouro. Você e (nome) agora são amigos." Se o app já estava instalado, o link só abre a loja — aí o código é digitado no campo de cupom, como antes.
 
 ## 6. Oráculo e notificações
 

@@ -1,6 +1,6 @@
 # Prancheta do Glyph
 
-Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 2026-10-10. 15 abertos de 60.
+Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 2026-10-10. 14 abertos de 60.
 
 **Não edite as listas abaixo** — elas são regravadas a partir da prancheta. Para avisar algo, escreva em "Recados da outra IA", no fim: o Claude lê e passa para a prancheta.
 
@@ -23,9 +23,8 @@ Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 
 ## App
 
 - [ ] Planner treme para o lado ao abrir, como se quisesse mudar de página *(Afonso)* — Gravar a tela abrindo o planner e pôr o vídeo na pasta (output/). O Claude tira os quadros e acha o que mexe.
-- [ ] Convite, etapa 2: o app aplica o código sozinho quando a pessoa instala pelo link *(Claude)* — Nativo (Install Referrer da Play Store): testar no emulador antes do AAB.
 
-<details><summary>Feitos (20)</summary>
+<details><summary>Feitos (21)</summary>
 
 - [x] Onboarding novo: fechar e commitar *(Claude)* — Commitado em 09/10 (fb05e4e).
 - [x] Planner sem tremer: commitar *(Claude)* — Commitado em 09/10 (fb05e4e).
@@ -45,6 +44,7 @@ Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 
 - [x] Rodar a migração 20261010120000_sete_dias_no_app.sql *(Afonso)* — Rodado pelo Afonso em 10/10.
 - [x] Convide um amigo: código no modal de cupom, barrinha com baú Raro no 5 e 25 de ouro no 10 *(Claude)* — Commitado em 10/10 (6a5f3dc). Chega no próximo AAB (110).
 - [x] Rodar a migração 20261010150000_convite_de_amigo.sql *(Afonso)* — Rodado pelo Afonso em 10/10.
+- [x] Convite, etapa 2: o app aplica o código sozinho quando a pessoa instala pelo link *(Claude)* — Commitado em 10/10 (0ece185). Plugin provado no emulador com R8. O caminho com código só se prova instalando pela Play (versão de teste): está no SMOKETEST, seção 5. Chega no AAB 110.
 - [x] Ciclo: a barra de tempo inclui o dia atual *(outra IA)* — Commit 993064d. Vai no AAB 109.
 - [x] Ciclo e resumos alinhados à virada das 4h *(outra IA)* — Commit 5749288. Vai no AAB 109.
 

@@ -328,3 +328,14 @@ create table if not exists public.reward_code_redemptions (
   reward_snapshot jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
+
+-- O storage do Supabase, so o que as consultas de peso leem.
+create schema if not exists storage;
+create table if not exists storage.objects (
+  id uuid primary key default gen_random_uuid(),
+  bucket_id text,
+  name text,
+  owner uuid,
+  metadata jsonb,
+  created_at timestamptz default now()
+);

@@ -1,6 +1,6 @@
 # Prancheta do Glyph
 
-Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 2026-10-10. 16 abertos de 60.
+Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 2026-10-10. 15 abertos de 60.
 
 **Não edite as listas abaixo** — elas são regravadas a partir da prancheta. Para avisar algo, escreva em "Recados da outra IA", no fim: o Claude lê e passa para a prancheta.
 
@@ -78,16 +78,16 @@ Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 
 
 ## Arte
 
-- [ ] Catálogo acima do teto de tamanho (14,8 MB de 12) *(Claude)* — O teto é o orçamento de tests/egress-estatico.regression.mjs ('public/assets/catalog', 12). Medido em 10/10: 14,8 MB na pasta (o manifesto cobre 12,6 MB). Decidir: encolher arte ou subir o teto de propósito.
 - [ ] Gerar as artes das próximas temporadas *(outra IA)*
 
-<details><summary>Feitos (6)</summary>
+<details><summary>Feitos (7)</summary>
 
 - [x] Borda Soberano no app e no banco (SQL rodado) *(Claude)*
 - [x] Commitar a conversão para WEBP (borda e catálogo) *(Claude)* — Commitado em 09/10 (d1c53b3).
 - [x] Commitar os 10 fundos de patente (WEBP) *(Claude)* — Commitado em 09/10 (d1c53b3).
 - [x] Ajustar o enquadramento de cada fundo de patente *(Afonso)* — Conferido pelo Afonso em 10/10.
 - [x] Conferir os 7 fundos de clã nas telas reais *(Afonso)* — Conferido pelo Afonso em 10/10.
+- [x] Catálogo acima do teto de tamanho (14,8 MB de 12) *(Claude)* — 10/10: teto subiu de 12 para 18 MB de propósito (03f61f7); a pasta está com 14,8 MB. Teste egress-estatico passa.
 - [x] Skin Chuva mudou de arquivo e o teste do catálogo acusa *(Claude)* — Fica. O teste acusava só a lista de tamanhos, desatualizada desde a arte das mãos de 23/09 (15 roupas). Lista atualizada em 10/10 (52d3592); encaixe conferido nos 4 corpos.
 
 </details>

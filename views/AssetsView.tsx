@@ -1,3 +1,4 @@
+import { useOperationalDate } from '../hooks/useOperationalDate';
 import { buildCycleCommitment } from '../utils/cycleCommitment';
 import './readability-fixes.css';
 import './assets-stripes.css';
@@ -211,10 +212,11 @@ export const AssetsView: React.FC = () => {
     }, [allArenas, assets, actions, cycleScopedTasks]);
 
 
+    const operationalDate = useOperationalDate();
     const cycleSummary = useMemo(() => {
         if (!activeCycle) return null;
 
-        const cycleTiming = getCycleTimingSummary(activeCycle.startDate, activeCycle.endDate, dailyCommitment?.date);
+        const cycleTiming = getCycleTimingSummary(activeCycle.startDate, activeCycle.endDate, operationalDate);
         const activeArenaCount = allArenas.filter(arena => !arena.isArchived).length;
         const archivedArenaCount = allArenas.filter(arena => arena.isArchived).length;
         const commitment = buildCycleCommitment({ actions, arenas: allArenas, tasks: cycleScopedTasks,
@@ -238,7 +240,7 @@ export const AssetsView: React.FC = () => {
             startDate: activeCycle.startDate,
             endDate: activeCycle.endDate,
         };
-    }, [activeCycle, allArenas, dailyCommitment?.date, actions, cycleScopedTasks]);
+    }, [activeCycle, allArenas, operationalDate, actions, cycleScopedTasks]);
 
     /*
      * O PATAMAR DA FAIXA SAI DA MESMA FONTE DO WIDGET.
@@ -257,12 +259,13 @@ export const AssetsView: React.FC = () => {
         if (!activeCycle) return null;
         const snapshot = buildCycleWidgetSnapshot({
             cycle: activeCycle,
+            todayDate: operationalDate,
             tasks: cycleScopedTasks,
             actions,
             arenas: allArenas,
         });
         return snapshot ? getMetalRankPalette(snapshot.grade) : null;
-    }, [activeCycle, actions, allArenas, cycleScopedTasks]);
+    }, [activeCycle, actions, allArenas, cycleScopedTasks, operationalDate]);
 
     useLayoutEffect(() => {
         const summaryCard = cycleSummaryRef.current;

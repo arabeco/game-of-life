@@ -1,3 +1,4 @@
+import { useOperationalDate } from '../hooks/useOperationalDate';
 import React, { useMemo } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { Cycle } from '../types';
@@ -9,15 +10,16 @@ interface MiniCycleHUDProps {
 }
 
 export const MiniCycleHUD: React.FC<MiniCycleHUDProps> = ({ cycle }) => {
-    const { tasks, assets, actions, dailyCommitment } = useGame();
+    const { tasks, assets, actions } = useGame();
+    const operationalDate = useOperationalDate();
     const arenas = useMemo(() => assets.flatMap(asset => asset.arenas), [assets]);
     const snapshot = useMemo(() => buildCycleWidgetSnapshot({
         cycle,
         tasks,
         actions,
         arenas,
-        todayDate: dailyCommitment?.date,
-    }), [actions, arenas, cycle, tasks, dailyCommitment?.date]);
+        todayDate: operationalDate,
+    }), [actions, arenas, cycle, tasks, operationalDate]);
 
     if (!snapshot) return null;
     

@@ -14,7 +14,7 @@ import { getCycleTimingSummary } from './dateUtils';
 import { falaDaNota, notaDoCiclo } from './cycleGrade.js';
 import { buildActionPoolByDate, buildCyclePaceMetrics, buildDailyArenaFocus, filterCycleTasksByScope } from './coreLoopUtils.js';
 import { buildFairScoreFromTasks } from './fairScoreUtils.js';
-import { formatLocalDateString, getOperationalDateString, taskMatchesOperationalDate } from './operationalDay.js';
+import { getOperationalDateString, taskMatchesOperationalDate } from './operationalDay.js';
 import { hasScheduledTime } from './taskDomain.js';
 import type { RestScreenActionSessionDetail } from './restScreenActionSession';
 
@@ -244,7 +244,7 @@ export const buildCycleWidgetSnapshot = ({
    * um ciclo vencido e ainda nao fechado nao pode ganhar dias vazios depois do
    * prazo so por estar esperando.
    */
-  const hoje = todayDate || formatLocalDateString(new Date());
+  const hoje = todayDate || getOperationalDateString();
   const ultimoDiaContado = hoje < cycle.endDate ? hoje : cycle.endDate;
   const metasDoCiclo = buildFairScoreFromTasks({
     plannedEntries: commitment.entries,

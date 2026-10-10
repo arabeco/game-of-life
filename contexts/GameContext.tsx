@@ -41,6 +41,7 @@ import { getArenaDomainFlags, isClanQuestAction, isOfficeArena, isQuestAction, i
 import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscribeInstallPrompt } from '../utils/installPrompt';
 import { buildCodexTemplateFromDraft, getCodexLevelDisplayTitle } from '../utils/codexPreview';
 import { getNextExpBoostExpiryAt, hasActiveExpBoost } from '../utils/expBoostAccess';
+import { useOperationalDate } from '../hooks/useOperationalDate';
 import { formatLocalDateString, getOperationalDateString as getOperationalDateStringValue, getTaskOperationalDateString, shiftLocalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 import { getCycleXpBonusRate, getNextPremiumExpiryAt, hasPremiumAccess, isPremiumActive, normalizeSubscriptionTier } from '../utils/premiumAccess';
 import { MASTERY_AREA_MAX_LEVEL, toMasteryIndex } from '../constants/lifeAreas';
@@ -1257,6 +1258,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const clanRanks = CLAN_RANKS;
 
     const [dailyCommitment, setDailyCommitmentState] = useState<DailyCommitment>(() => createDefaultDailyCommitment());
+    const cycleOperationalDate = useOperationalDate();
     const [judgedOperationalDates, setJudgedOperationalDates] = useState<string[]>([]);
     const [judgedTaskIdsByDate, setJudgedTaskIdsByDate] = useState<Record<string, string[]>>({});
 
@@ -5862,7 +5864,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             const { data: cyclesData, error: cyclesError } = cyclesResult;
             if (!cyclesError && cyclesData && cyclesData.length > 0) {
-                const today = getLocalDateString();
+                const today = getTodayString();
                 const openCycles = (mapToCamelCase(cyclesData) as Cycle[])
                     .sort((left, right) => {
                         return new Date(left.startDate).getTime() - new Date(right.startDate).getTime();
@@ -9806,7 +9808,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const startCycle = async (name: string, endDate: string, startDate?: string, arenaIds?: string[]): Promise<Cycle | null> => {
         const userId = getSupabaseUserId();
         if (!userId) return null;
-        const today = getLocalDateString();
+        const today = getTodayString();
         if (activeCycle || upcomingCycle) {
             showToast('Você já tem um ciclo ativo ou agendado. Encerre ou remova o atual antes de criar outro.', 'error');
             return null;
@@ -9894,7 +9896,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const historicalReportToEdit = !cycleToEdit
             ? reports.find((report) => report.cycleId === cycleId || report.id === cycleId) || null
             : null;
-        const today = getLocalDateString();
+        const today = getTodayString();
         const minimumAllowedEndDate = cycleToEdit?.startDate && cycleToEdit.startDate > today
             ? cycleToEdit.startDate
             : today;
@@ -9995,7 +9997,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
          *
          * Antes do prazo, o fim e hoje. Depois do prazo, o fim e o prazo.
          */
-        const hojeNoFecho = getLocalDateString();
+        const hojeNoFecho = getTodayString();
         const fimDoPrazo = plannedEndDate ? String(plannedEndDate).slice(0, 10) : null;
         const endDate = fimDoPrazo && hojeNoFecho > fimDoPrazo ? fimDoPrazo : hojeNoFecho;
         const cycleSeasonId = cycle?.seasonId || activeRuntimeSeasonId; // Use stored season or default to current
@@ -10521,7 +10523,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const userId = getSupabaseUserId();
         if (!userId) return;
 
-        const hasExpired = getLocalDateString() > activeCycle.endDate;
+        const hasExpired = getTodayString() > activeCycle.endDate;
         if (!hasExpired) {
             if (autoFinishingCycleRef.current === activeCycle.id) {
                 autoFinishingCycleRef.current = null;
@@ -10567,21 +10569,21 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }, 350);
 
         return () => window.clearTimeout(timeoutId);
-    }, [activeCycle, actions, assets, endCycle, hasHydratedFromSupabase, showToast]);
+    }, [activeCycle, actions, assets, endCycle, hasHydratedFromSupabase, showToast, cycleOperationalDate]);
 
     useEffect(() => {
         if (!hasHydratedFromSupabase || activeCycle || !upcomingCycle?.id) return;
 
-        const today = getLocalDateString();
+        const today = getTodayString();
         if (upcomingCycle.startDate > today) return;
 
         setActiveCycle(upcomingCycle);
         setUpcomingCycle(null);
         setCycleProgress(0);
         setCycleExpBonus(0);
-        setFreeProgressResetMarker(`${upcomingCycle.startDate}T00:00:00`, false);
+        setFreeProgressResetMarker(`${upcomingCycle.startDate}T04:00:00`, false);
         showToast(`O ciclo "${upcomingCycle.name}" começou hoje.`, 'success');
-    }, [activeCycle, hasHydratedFromSupabase, showToast, upcomingCycle]);
+    }, [activeCycle, hasHydratedFromSupabase, showToast, upcomingCycle, cycleOperationalDate]);
 
     const recordClanContribution = async (xpAmount: number, sourceKey?: string) => {
         if (!clan?.id || !sourceKey?.startsWith('cycle:') || xpAmount <= 0) return;
@@ -10834,7 +10836,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         // If it was the active cycle, try to fetch another one or just clear state
         if (wasActiveCycle || wasUpcomingCycle) {
-            const today = getLocalDateString();
+            const today = getTodayString();
             const { data: remainingCycles } = await supabase
                 .from('cycles')
                 .select('*')
@@ -10869,7 +10871,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const userId = getSupabaseUserId();
         if (!userId || !cycle?.endDate) return;
 
-        const today = getLocalDateString();
+        const today = getTodayString();
         const from = cycle.startDate > today ? cycle.startDate : today;
         if (cycle.endDate < from) return;
 
@@ -15323,6 +15325,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         session?.refresh_token,
         taskPool,
         tasks,
+        cycleOperationalDate,
     ]);
 
     return (

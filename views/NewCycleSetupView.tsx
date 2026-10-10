@@ -1,3 +1,5 @@
+import { useOperationalDate } from '../hooks/useOperationalDate';
+import { shiftLocalDateString } from '../utils/operationalDay.js';
 import React, { useState, useEffect, useRef } from 'react';
 import { useGame, ArenaSetupChange, getLocalDateString } from '../contexts/GameContext';
 import { Arena } from '../types';
@@ -68,10 +70,10 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
     const [editingArena, setEditingArena] = useState<Arena | null>(null);
     const [showConfirm, setShowConfirm] = useState(false);
     const [cycleName, setCycleName] = useState(`Ciclo de ${new Date().toLocaleString('default', { month: 'long' })}`);
-    const today = getLocalDateString();
+    const today = useOperationalDate();
     const activeSeason = resolveRuntimeActiveSeason(seasons);
     const [cycleStartDate, setCycleStartDate] = useState(today);
-    const sevenDayEnd = getLocalDateString(new Date(Date.now() + 6 * 24 * 60 * 60 * 1000));
+    const sevenDayEnd = shiftLocalDateString(today, 6);
     const defaultCycleEnd = activeSeason && activeSeason.end_date >= today && activeSeason.end_date < sevenDayEnd
         ? activeSeason.end_date
         : sevenDayEnd;

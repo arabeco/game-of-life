@@ -24,3 +24,19 @@ for (const [hour, minute, expected] of [[3, 59, 'Dia 2/7'], [4, 0, 'Dia 3/7']]) 
   assert.equal(getCycleTimingSummary('2026-10-05', '2026-10-11', date).statusLabel, expected);
 }
 console.log('Dia do ciclo: contagem inclusiva, limites e virada às 4h OK.');
+
+// Starting Monday remains upcoming until Monday 04:00. The final Sunday
+// remains available through Monday 03:59, including after reopening the app.
+for (const [date, upcoming, expired, label] of [
+  [new Date(2026, 9, 5, 0, 0), true, false, 'Começa amanhã'],
+  [new Date(2026, 9, 5, 3, 59), true, false, 'Começa amanhã'],
+  [new Date(2026, 9, 5, 4, 0), false, false, 'Dia 1/7'],
+  [new Date(2026, 9, 12, 3, 59), false, false, 'Dia 7/7'],
+  [new Date(2026, 9, 12, 4, 0), false, true, 'Dia 7/7'],
+]) {
+  const operationalDate = getOperationalDateString(date);
+  const timing = getCycleTimingSummary('2026-10-05', '2026-10-11', operationalDate);
+  assert.equal(operationalDate < '2026-10-05', upcoming);
+  assert.equal(operationalDate > '2026-10-11', expired);
+  assert.equal(timing.statusLabel, label);
+}

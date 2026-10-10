@@ -59,9 +59,12 @@ for (const quest of systemRewards) {
 }
 
 // Inicial nao da bau, nao da ouro, e paga fragmento fixo. Sao faceis de proposito.
+// UMA excecao, decidida pelo Afonso em 10/10/2026: os sete dias no app pagam 10
+// de ouro, uma vez — e a unica inicial que pede uma semana, e nao um gesto.
+const INICIAIS_COM_OURO = { 'system-seven-days-in-app': 10 };
 for (const quest of SYSTEM_CHALLENGES.filter((entry) => entry.inicial)) {
   assert.ok(!quest.rewardChest, quest.title + ': inicial nao da bau');
-  assert.ok(!quest.rewardGold, quest.title + ': inicial nao da ouro');
+  assert.equal(quest.rewardGold || 0, INICIAIS_COM_OURO[quest.id] || 0, quest.title + ': inicial nao da ouro (fora a excecao declarada)');
   assert.equal(quest.rewardFragments, INITIAL_MISSION_FRAGMENTS, quest.title + ': fragmentos da inicial');
 }
 

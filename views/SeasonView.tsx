@@ -7,7 +7,7 @@ import { SeasonMission, SeasonQuest } from '../types';
 import { MissionDetailModal, QuestDetailModal, SeasonDetailModal, SeasonTransitionModal } from '../components/SeasonDetailModal';
 import { calculateArenaProgress } from '../utils/progressUtils';
 import { getNextSeasonConfig, getSeasonLaunchToastStorageKey, isGenesisSeason, resolveRuntimeActiveSeason, resolveSeasonBackgroundUrl, resolveSeasonLoreText } from '../utils/seasonPresentation';
-import { SYSTEM_CHALLENGES, AVAILABLE_SYSTEM_CHALLENGES, SystemChallenge } from '../constants/systemChallenges';
+import { SYSTEM_CHALLENGES, AVAILABLE_SYSTEM_CHALLENGES, SEVEN_DAYS_IN_APP_GOAL, SEVEN_DAYS_IN_APP_ID, SystemChallenge } from '../constants/systemChallenges';
 import { GM_SEASON_MISSIONS } from '../constants/seasonContent';
 import { PRODUCT_FEATURES } from '../constants/featureFlags';
 import { ArenaPactBalloon, ArenaPactProposal } from '../components/ArenaPactBalloon';
@@ -160,6 +160,7 @@ export const SeasonView: React.FC = () => {
         updateUserProfile,
         activeArenaPact,
         missaoIndividualDisponivel,
+        diasNoApp,
     } = useGame();
     const [selectedQuest, setSelectedQuest] = useState<SelectableQuest | null>(null);
     const [selectedAutomaticMission, setSelectedAutomaticMission] = useState<SeasonMission | null>(null);
@@ -287,6 +288,8 @@ export const SeasonView: React.FC = () => {
         if (completedFlags.has(quest.id)) return 100;
 
         switch (quest.id) {
+            case SEVEN_DAYS_IN_APP_ID:
+                return Math.min(100, (diasNoApp / SEVEN_DAYS_IN_APP_GOAL) * 100);
             case 'tutorial-quest':
                 return tutorialCompleted ? 100 : 0;
             case 'system-first-campaign':
@@ -496,7 +499,13 @@ export const SeasonView: React.FC = () => {
      * entao ele nao aparece. Com dois ou mais, ele volta a fazer o que titulo de
      * secao faz: dividir.
      */
-    const gruposDeMissaoVisiveis = (automaticSeasonMissions.length > 0 ? 1 : 0)
+    // A dos sete dias e inicial (nao se aceita), mas aparece em andamento ate
+    // pagar: e ela que diz a pessoa quantos dias ja contaram.
+    const seteDiasNoApp = completedFlags.has(SEVEN_DAYS_IN_APP_ID)
+        ? null
+        : SYSTEM_CHALLENGES.find((quest) => quest.id === SEVEN_DAYS_IN_APP_ID) || null;
+    const gruposDeMissaoVisiveis = (seteDiasNoApp ? 1 : 0)
+        + (automaticSeasonMissions.length > 0 ? 1 : 0)
         + ((individualSlotCount > 0 || missaoIndividualDisponivel) ? 1 : 0)
         + (activeClanQuests.length > 0 ? 1 : 0);
     const mostrarCabecalhoDeGrupo = gruposDeMissaoVisiveis > 1;
@@ -533,10 +542,10 @@ export const SeasonView: React.FC = () => {
 
     const selectedQuestProgress = selectedQuest
         ? (isSystemQuest(selectedQuest)
-            ? (activeSystemQuests[0]?.id === selectedQuest.id ? getSystemQuestProgress(selectedQuest) : 0)
+            ? ((activeSystemQuests[0]?.id === selectedQuest.id || selectedQuest.id === SEVEN_DAYS_IN_APP_ID) ? getSystemQuestProgress(selectedQuest) : 0)
             : calculateQuestProgress(selectedQuest))
         : 0;
-    const selectedQuestIsActive = selectedQuest ? (isSystemQuest(selectedQuest) ? activeSystemQuests[0]?.id === selectedQuest.id : isQuestAccepted(selectedQuest)) : false;
+    const selectedQuestIsActive = selectedQuest ? (isSystemQuest(selectedQuest) ? (activeSystemQuests[0]?.id === selectedQuest.id || selectedQuest.id === SEVEN_DAYS_IN_APP_ID) : isQuestAccepted(selectedQuest)) : false;
 
     return (
         <div className="space-y-8 pb-20 animate-fade-in">
@@ -612,6 +621,21 @@ export const SeasonView: React.FC = () => {
                             </button>
                         </div>
                         <div className="space-y-5">
+                            {seteDiasNoApp && (
+                                <MissionSection title="Para começar" hint="Missão inicial" count={1} mostrarCabecalho={mostrarCabecalhoDeGrupo}>
+                                    <SeasonQuestCard
+                                        title={seteDiasNoApp.title}
+                                        icon={seteDiasNoApp.actionTemplate.icon}
+                                        metaLabel="Missão inicial"
+                                        family="iniciante"
+                                        isAccepted={true}
+                                        progress={getSystemQuestProgress(seteDiasNoApp)}
+                                        progressLabel={`${Math.min(diasNoApp, SEVEN_DAYS_IN_APP_GOAL)}/${SEVEN_DAYS_IN_APP_GOAL} dias`}
+                                        reward={formatQuestReward(seteDiasNoApp)}
+                                        onClick={() => setSelectedQuest(seteDiasNoApp)}
+                                    />
+                                </MissionSection>
+                            )}
                             {automaticSeasonMissions.length > 0 && (
                                 <MissionSection title="Da temporada" hint="Atribuídas" count={automaticSeasonMissions.length} mostrarCabecalho={mostrarCabecalhoDeGrupo}>
                                     {automaticSeasonMissions.map((mission) => (
@@ -891,7 +915,8 @@ export const SeasonView: React.FC = () => {
                             setSelectedQuest(null);
                         }
                     }}
-                    onAbandon={selectedQuestIsActive ? () => {
+                    // A inicial dos sete dias nao se aceita, entao tambem nao se abandona.
+                    onAbandon={selectedQuestIsActive && selectedQuest.id !== SEVEN_DAYS_IN_APP_ID ? () => {
                         setPendingAbandon({
                             id: selectedQuest.id,
                             title: selectedQuest.title,

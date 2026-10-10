@@ -71,7 +71,7 @@ import { buildOracleAwareDailyWidgetSnapshot } from '../utils/widgetSnapshots';
 import { resolveCatalogAssetUrl } from '../constants/catalogAssets';
 import { getChestArtUrl } from '../constants/catalogAssets';
 import { getChestDisplayName, getChestVisual } from '../constants/rarityVisuals';
-import { SYSTEM_CHALLENGES, SYSTEM_CHALLENGE_INSIGNIA_ID } from '../constants/systemChallenges';
+import { SEVEN_DAYS_IN_APP_GOAL, SEVEN_DAYS_IN_APP_ID, SYSTEM_CHALLENGES, SYSTEM_CHALLENGE_INSIGNIA_ID } from '../constants/systemChallenges';
 import type { SystemChallenge } from '../constants/systemChallenges';
 import { getOraclePresenceRules } from '../constants/oraclePresencePolicy';
 import {
@@ -947,6 +947,8 @@ export interface GameContextType {
     abandonArenaPact: () => Promise<void>;
     /** A missao individual de SISTEMA em curso, se houver. Divide o slot com a de arena. */
     missaoDeSistemaAtiva: SystemChallenge | null;
+    /** Dias diferentes em que a pessoa abriu o app (a missao inicial dos sete dias). */
+    diasNoApp: number;
     /** `substituir` troca o pacto ativo pelo novo, encerrando o anterior. */
     claimArenaPact: () => Promise<void>;
     addArena: (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb?: boolean) => Promise<Arena>;
@@ -12878,6 +12880,39 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         // Fazer isso tambem aqui duplicava insignias, inventario e modal.
     };
 
+    /*
+     * OS DIAS NO APP, para a missao inicial dos sete dias (10/10/2026).
+     *
+     * Marca o dia ao abrir e ao voltar para a frente — o app fica aberto de um
+     * dia para o outro. Quem conta e o servidor; aqui so se guarda o numero que
+     * ele devolve. Depois que a missao paga, para de marcar. Sem a migracao
+     * 20261010120000 a chamada falha calada e a missao so nao anda.
+     */
+    const [diasNoApp, setDiasNoApp] = useState(0);
+    const diaMarcadoRef = useRef<string | null>(null);
+    const seteDiasConcluida = (userProfile.completedSeasonMissions || []).includes(SEVEN_DAYS_IN_APP_ID);
+    useEffect(() => {
+        if (!hasHydratedFromSupabase || !userProfile?.id || userProfile.id === 'placeholder_user') return;
+        if (seteDiasConcluida) return;
+        const marcar = () => {
+            if (document.visibilityState === 'hidden') return;
+            const hoje = getOperationalDateString(new Date());
+            if (diaMarcadoRef.current === hoje) return;
+            diaMarcadoRef.current = hoje;
+            void supabase.rpc('marcar_dia_no_app', { p_dia: hoje }).then(({ data, error }) => {
+                if (error) {
+                    diaMarcadoRef.current = null;
+                    return;
+                }
+                const dias = Number((data as { dias?: number } | null)?.dias || 0);
+                if (dias > 0) setDiasNoApp(dias);
+            });
+        };
+        marcar();
+        document.addEventListener('visibilitychange', marcar);
+        return () => document.removeEventListener('visibilitychange', marcar);
+    }, [hasHydratedFromSupabase, userProfile?.id, seteDiasConcluida]);
+
     /**
      * O BOM-DIA: fragmentos por ter voltado.
      *
@@ -13565,6 +13600,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             // efeito no provider, e cita-lo na lista de dependencias quebraria.
             if (challenge.id === 'system-first-individual-mission') return Boolean(arenaPactRef.current.pact);
             if (challenge.id === 'system-first-clan') return Boolean(clan?.id);
+            if (challenge.id === SEVEN_DAYS_IN_APP_ID) return diasNoApp >= SEVEN_DAYS_IN_APP_GOAL;
             return false;
         });
 
@@ -13606,6 +13642,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         activeRuntimeSeasonId,
         actions,
         automaticChallengeClaimTick,
+        diasNoApp,
         getActionsForArena,
         getArenas,
         getClanQuestProgress,
@@ -15350,7 +15387,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             addSeason, updateSeason, addSeasonMission, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, isProfileLoaded, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, donateItem, craftItem, buyChestWithFragments, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, createCompetitionInvite, respondToRelationshipInvite, endRelationshipLink, renewRelationshipLink, offerMentorshipArena, respondMentorshipOffer, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, respondCompetitionChallenge, cancelCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,
             aldeiaSlots, aldeiaPresence, loadAldeiaData, setAldeiaSlots, setAldeiaPresence,
-            activeArenaPact, arenaPactProgress, arenaPactCandidates, missaoIndividualDisponivel, getArenaPactOptionsForArena, acceptArenaPact, abandonArenaPact, claimArenaPact, missaoDeSistemaAtiva
+            activeArenaPact, arenaPactProgress, arenaPactCandidates, missaoIndividualDisponivel, getArenaPactOptionsForArena, acceptArenaPact, abandonArenaPact, claimArenaPact, missaoDeSistemaAtiva, diasNoApp
         }}>
             {children}
         </GameContext.Provider>

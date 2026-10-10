@@ -41,6 +41,10 @@ export const INITIAL_MISSION_FRAGMENTS = 5;
  */
 export const SYSTEM_CHALLENGE_INSIGNIA_ID = 'insignia_quest_incomum';
 
+/** A missao dos sete dias no app: o id e o mesmo do ramo no servidor. */
+export const SEVEN_DAYS_IN_APP_ID = 'system-seven-days-in-app';
+export const SEVEN_DAYS_IN_APP_GOAL = 7;
+
 export const SYSTEM_CHALLENGES: SystemChallenge[] = [
   {
     id: 'system-first-arena-gold',
@@ -266,6 +270,31 @@ export const SYSTEM_CHALLENGES: SystemChallenge[] = [
     inicial: true,
     rewards: { xp: INITIAL_MISSION_XP },
     rewardFragments: INITIAL_MISSION_FRAGMENTS,
+  },
+  {
+    // Decidida em 10/10/2026: conta ENTRADA no app, e nao acao concluida, e
+    // os dias nao precisam ser seguidos — faltar um nao zera nada. Paga uma
+    // vez so, e quem conta os dias e o servidor (public.dias_no_app).
+    id: SEVEN_DAYS_IN_APP_ID,
+    source: 'system',
+    title: 'Sete dias no Glyph',
+    description: 'Abra o app em 7 dias diferentes. Os dias não precisam ser seguidos. Recompensa: 10 de ouro.',
+    type: 'individual',
+    category: 'spiritual',
+    actionTemplate: {
+      name: 'Sete Dias no Glyph',
+      description: 'Abrir o app em 7 dias diferentes.',
+      icon: '📅',
+      duration: 0,
+      repetitions: SEVEN_DAYS_IN_APP_GOAL,
+      isMilestone: true,
+    },
+    requirements: { totalReps: SEVEN_DAYS_IN_APP_GOAL, milestone: true },
+    progressLabel: 'dias',
+    inicial: true,
+    rewards: { xp: INITIAL_MISSION_XP },
+    rewardFragments: INITIAL_MISSION_FRAGMENTS,
+    rewardGold: 10,
   },
 ];
 

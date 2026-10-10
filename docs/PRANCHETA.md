@@ -1,6 +1,6 @@
 # Prancheta do Glyph
 
-Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 2026-10-10. 16 abertos de 58.
+Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 2026-10-10. 16 abertos de 60.
 
 **Não edite as listas abaixo** — elas são regravadas a partir da prancheta. Para avisar algo, escreva em "Recados da outra IA", no fim: o Claude lê e passa para a prancheta.
 
@@ -25,7 +25,7 @@ Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 
 - [ ] Planner treme para o lado ao abrir, como se quisesse mudar de página *(Afonso)* — Gravar a tela abrindo o planner e pôr o vídeo na pasta (output/). O Claude tira os quadros e acha o que mexe.
 - [ ] Convite, etapa 2: o app aplica o código sozinho quando a pessoa instala pelo link *(Claude)* — Nativo (Install Referrer da Play Store): testar no emulador antes do AAB.
 
-<details><summary>Feitos (18)</summary>
+<details><summary>Feitos (20)</summary>
 
 - [x] Onboarding novo: fechar e commitar *(Claude)* — Commitado em 09/10 (fb05e4e).
 - [x] Planner sem tremer: commitar *(Claude)* — Commitado em 09/10 (fb05e4e).
@@ -36,7 +36,7 @@ Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 
 - [x] Amigos, clã, parceria e mensagens sem perfil (fantasma / desconhecido) *(Claude)* — Consertado no código (commit c52de66). Causa: a migração de 29/09 fechou a leitura do perfil dos outros.
 - [x] Rodar a migração 20261009090000_cartoes_publicos_em_lote.sql *(Afonso)* — Rodado em 09/10. Chega no celular com o AAB 109 (ou no site publicado).
 - [x] Toast do baú: só "+1 baú raro", sem "adicionado" *(Claude)* — Commit d9b1bc9. Vale para o modal de recompensa e o fim de ciclo.
-- [x] Missão individual: conferir se completa sozinha ao cumprir e se fecha sozinha no fim do prazo *(Claude)* — Agora se recebe sozinha ao cumprir (8763253). Fecha sozinha no fim do prazo nos tipos que têm prazo (volume e primeira); os outros não têm prazo.
+- [x] Missão individual: conferir se completa sozinha ao cumprir e se fecha sozinha no fim do prazo *(Claude)* — Comportamento atual (desde b3f19de, 09/10 à noite): ao cumprir, a individual ESPERA na aba Missão, com aviso do Oráculo e bolinha, e a pessoa recebe lá. O recebimento sozinho (8763253, 09/10 de manhã) foi desfeito. Fecha sozinha no fim do prazo nos tipos que têm prazo (volume e primeira).
 - [x] Missão individual: botão pequeno para sair *(Claude)* — Já existia: o botão pequeno "Encerrar" no balão da missão.
 - [x] Missão mostra 12/10: travar a contagem ao concluir *(Claude)* — Commit 8763253. Trava no alvo; o que vem depois é da arena.
 - [x] Mundo > Temporadas: faixa de quest bem fina, um estilo só, e o clique abre o modal com as recompensas *(Claude)* — Commit 38cb74b. Faixa de uma linha; imagem, descrição e recompensa no modal. Bancada: tools/as-faixas.html.
@@ -45,6 +45,8 @@ Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 
 - [x] Rodar a migração 20261010120000_sete_dias_no_app.sql *(Afonso)* — Rodado pelo Afonso em 10/10.
 - [x] Convide um amigo: código no modal de cupom, barrinha com baú Raro no 5 e 25 de ouro no 10 *(Claude)* — Commitado em 10/10 (6a5f3dc). Chega no próximo AAB (110).
 - [x] Rodar a migração 20261010150000_convite_de_amigo.sql *(Afonso)* — Rodado pelo Afonso em 10/10.
+- [x] Ciclo: a barra de tempo inclui o dia atual *(outra IA)* — Commit 993064d. Vai no AAB 109.
+- [x] Ciclo e resumos alinhados à virada das 4h *(outra IA)* — Commit 5749288. Vai no AAB 109.
 
 </details>
 
@@ -76,7 +78,7 @@ Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 
 
 ## Arte
 
-- [ ] Catálogo acima do teto de tamanho (16 MB de 12) *(Claude)*
+- [ ] Catálogo acima do teto de tamanho (14,8 MB de 12) *(Claude)* — O teto é o orçamento de tests/egress-estatico.regression.mjs ('public/assets/catalog', 12). Medido em 10/10: 14,8 MB na pasta (o manifesto cobre 12,6 MB). Decidir: encolher arte ou subir o teto de propósito.
 - [ ] Gerar as artes das próximas temporadas *(outra IA)*
 
 <details><summary>Feitos (6)</summary>

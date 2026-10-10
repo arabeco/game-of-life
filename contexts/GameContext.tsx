@@ -71,6 +71,8 @@ import { buildOracleAwareDailyWidgetSnapshot } from '../utils/widgetSnapshots';
 import { resolveCatalogAssetUrl } from '../constants/catalogAssets';
 import { getChestArtUrl } from '../constants/catalogAssets';
 import { formatChestGain, getChestDisplayName, getChestVisual } from '../constants/rarityVisuals';
+import { conviteDaInstalacaoPendente, esquecerConviteDaInstalacao, lerConviteDaInstalacao } from '../utils/conviteDaInstalacao';
+import { conviteDeveSerEsquecido } from '../utils/referrerDoConvite';
 import { lerMeusConvites, mensagemDoErroDeCodigo, type MarcoDeConvite, type MeusConvites } from '../utils/convites';
 import { SEVEN_DAYS_IN_APP_GOAL, SEVEN_DAYS_IN_APP_ID, SYSTEM_CHALLENGES, SYSTEM_CHALLENGE_INSIGNIA_ID } from '../constants/systemChallenges';
 import type { SystemChallenge } from '../constants/systemChallenges';
@@ -951,7 +953,7 @@ export interface GameContextType {
     /** Dias diferentes em que a pessoa abriu o app (a missao inicial dos sete dias). */
     diasNoApp: number;
     /** Convide um amigo: o codigo de convite digitado no campo de cupom. */
-    usarCodigoDeConvite: (codigo: string) => Promise<{ ok: boolean; erro?: string; naoEConvite?: boolean }>;
+    usarCodigoDeConvite: (codigo: string) => Promise<{ ok: boolean; erro?: string; naoEConvite?: boolean; definitivo?: boolean }>;
     buscarMeusConvites: () => Promise<MeusConvites | null>;
     receberPremioDeConvite: (marco: MarcoDeConvite) => Promise<boolean>;
     /** `substituir` troca o pacto ativo pelo novo, encerrando o anterior. */
@@ -13143,20 +13145,43 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             seasonId: mission.season_id,
         });
     };
+    /*
+     * CONVITE, ETAPA 2: quem instalou pelo link nao digita nada. Com a conta
+     * pronta, o codigo que veio com a instalacao e usado uma vez; so e esquecido
+     * quando o servidor responde (sim ou um "nao" definitivo). Falha de rede
+     * guarda para a proxima abertura. Erro nao vira aviso: convite e bonus.
+     */
+    const conviteDaInstalacaoTentadoRef = useRef(false);
+    useEffect(() => {
+        if (!hasHydratedFromSupabase || !userProfile?.id || userProfile.id === 'placeholder_user') return;
+        if (conviteDaInstalacaoTentadoRef.current) return;
+        conviteDaInstalacaoTentadoRef.current = true;
+        void (async () => {
+            await lerConviteDaInstalacao();
+            const codigo = conviteDaInstalacaoPendente();
+            if (!codigo) return;
+            const resultado = await usarCodigoDeConvite(codigo);
+            if (conviteDeveSerEsquecido(resultado)) esquecerConviteDaInstalacao();
+        })();
+        // usarCodigoDeConvite e recriado a cada render; a tentativa e uma por sessao.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [hasHydratedFromSupabase, userProfile?.id]);
+
 
     /*
      * CONVIDE UM AMIGO (10/10/2026). Quem decide e paga e o servidor
      * (20261010150000_convite_de_amigo.sql); aqui a carteira, os baus e a lista
      * de amigos acompanham o que ele devolveu.
      */
-    const usarCodigoDeConvite = async (codigo: string): Promise<{ ok: boolean; erro?: string; naoEConvite?: boolean }> => {
+    const usarCodigoDeConvite = async (codigo: string): Promise<{ ok: boolean; erro?: string; naoEConvite?: boolean; definitivo?: boolean }> => {
         const userId = getSupabaseUserId();
         if (!userId) return { ok: false, erro: 'Sua sessão não foi encontrada.' };
         const { data, error } = await supabase.rpc('usar_codigo_de_convite', { p_codigo: codigo });
-        if (error) return { ok: false, erro: mensagemDoErroDeCodigo(error.message) };
+        // Falha de rede ou servidor fora: nao e um "nao" do servidor.
+        if (error) return { ok: false, erro: mensagemDoErroDeCodigo(error.message), definitivo: false };
         const resposta = (data || {}) as { success?: boolean; error?: string; new_gold?: number; amigo?: string };
         if (!resposta.success) {
-            return { ok: false, erro: mensagemDoErroDeCodigo(resposta.error), naoEConvite: resposta.error === 'CODE_NOT_FOUND' };
+            return { ok: false, erro: mensagemDoErroDeCodigo(resposta.error), naoEConvite: resposta.error === 'CODE_NOT_FOUND', definitivo: true };
         }
         const ouro = Number(resposta.new_gold ?? userProfile.wallet?.gold ?? 0);
         updateUserProfile({ wallet: { ...userProfile.wallet, gold: ouro } });

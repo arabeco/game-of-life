@@ -29,4 +29,6 @@
 # o 107 fechava ao abrir, no fim do video inicial. As regras que o proprio
 # Capacitor traz guardam os plugins, mas nao o nucleo que os le.
 -keep class com.getcapacitor.** { *; }
+# A Install Referrer fala com a Play Store por AIDL; o R8 nao pode renomear a ponte.
+-keep class com.android.installreferrer.** { *; }
 -keepattributes *Annotation*

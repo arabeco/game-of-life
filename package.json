@@ -42,6 +42,7 @@
     "test:abas-do-oraculo": "node tests/abas-do-oraculo.regression.mjs",
     "test:modais-das-missoes": "node tests/modais-das-missoes.regression.mjs",
     "test:sete-dias-no-app": "node tests/sete-dias-no-app.regression.mjs",
+    "test:convite-de-amigo": "node tests/convite-de-amigo.regression.mjs",
     "test:pact-speech": "node tests/pact-speech.regression.mjs",
     "test:device-only": "node tests/safe-area-insets.regression.mjs",
     "test:relationship-links": "node tests/relationship-links.regression.mjs",

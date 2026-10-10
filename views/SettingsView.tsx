@@ -43,6 +43,8 @@ import { CodexCoverArt as SharedCodexCoverArt } from '../components/CodexCoverAr
 import './settings-ui.css';
 import { getDisplayLevel } from '../constants/lifeAreas';
 import { NobilityLadder } from '../components/NobilityLadder';
+import { ConviteDeAmigo } from '../components/ConviteDeAmigo';
+import { mensagemDoErroDeCodigo } from '../utils/convites';
 
 const OracleChat = lazy(() =>
     import('../components/OracleChat').then((module) => ({ default: module.OracleChat }))
@@ -787,6 +789,8 @@ const RedeemCodeModal: React.FC<{
                             {submitting ? 'OK...' : 'OK'}
                         </button>
                     </div>
+
+                    <ConviteDeAmigo />
                 </GlassCard>
             </div>
         </Portal>
@@ -1930,7 +1934,7 @@ const GeralTab: React.FC = () => {
 };
 
 const PreferenciasTab: React.FC = () => {
-    const { userProfile, oraclePreferences, updateOraclePreferences, updateUserProfile, activeTheme, toggleTheme, inventory, setCurrentSkin, showToast } = useGame();
+    const { userProfile, oraclePreferences, updateOraclePreferences, updateUserProfile, activeTheme, toggleTheme, inventory, setCurrentSkin, showToast, usarCodigoDeConvite } = useGame();
     const [modal, setModal] = useState<'oracle' | 'tutorial' | 'privacy' | 'ui' | 'primer' | 'redeem' | null>(null);
     // O resgate termina numa TELA, nao num toast: e a unica hora em que a
     // pessoa digita alguma coisa esperando um premio.
@@ -2046,7 +2050,15 @@ const PreferenciasTab: React.FC = () => {
 
         const result = await SupabaseService.redeemRewardCode(code, userId);
         if (!result.success) {
-            throw new Error(result.error || 'Não consegui resgatar esse código agora.');
+            // Nao e cupom? Pode ser o convite de um amigo — o mesmo campo serve
+            // aos dois (10/10/2026). So "nao existe" passa para o convite: cupom
+            // vencido ou esgotado tem de dizer isso, e nao "codigo nao encontrado".
+            if (result.error === 'CODE_NOT_FOUND') {
+                const convite = await usarCodigoDeConvite(code);
+                if (convite.ok) return;
+                throw new Error(convite.erro || mensagemDoErroDeCodigo('CODE_NOT_FOUND'));
+            }
+            throw new Error(mensagemDoErroDeCodigo(result.error));
         }
 
         const { data: profileRow, error: profileError } = await supabase

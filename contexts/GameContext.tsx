@@ -70,7 +70,8 @@ import { publishGlyphAndroidWidgetSnapshot } from '../utils/androidWidget';
 import { buildOracleAwareDailyWidgetSnapshot } from '../utils/widgetSnapshots';
 import { resolveCatalogAssetUrl } from '../constants/catalogAssets';
 import { getChestArtUrl } from '../constants/catalogAssets';
-import { getChestDisplayName, getChestVisual } from '../constants/rarityVisuals';
+import { formatChestGain, getChestDisplayName, getChestVisual } from '../constants/rarityVisuals';
+import { lerMeusConvites, mensagemDoErroDeCodigo, type MarcoDeConvite, type MeusConvites } from '../utils/convites';
 import { SEVEN_DAYS_IN_APP_GOAL, SEVEN_DAYS_IN_APP_ID, SYSTEM_CHALLENGES, SYSTEM_CHALLENGE_INSIGNIA_ID } from '../constants/systemChallenges';
 import type { SystemChallenge } from '../constants/systemChallenges';
 import { getOraclePresenceRules } from '../constants/oraclePresencePolicy';
@@ -949,6 +950,10 @@ export interface GameContextType {
     missaoDeSistemaAtiva: SystemChallenge | null;
     /** Dias diferentes em que a pessoa abriu o app (a missao inicial dos sete dias). */
     diasNoApp: number;
+    /** Convide um amigo: o codigo de convite digitado no campo de cupom. */
+    usarCodigoDeConvite: (codigo: string) => Promise<{ ok: boolean; erro?: string; naoEConvite?: boolean }>;
+    buscarMeusConvites: () => Promise<MeusConvites | null>;
+    receberPremioDeConvite: (marco: MarcoDeConvite) => Promise<boolean>;
     /** `substituir` troca o pacto ativo pelo novo, encerrando o anterior. */
     claimArenaPact: () => Promise<void>;
     addArena: (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb?: boolean) => Promise<Arena>;
@@ -13139,6 +13144,59 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         });
     };
 
+    /*
+     * CONVIDE UM AMIGO (10/10/2026). Quem decide e paga e o servidor
+     * (20261010150000_convite_de_amigo.sql); aqui a carteira, os baus e a lista
+     * de amigos acompanham o que ele devolveu.
+     */
+    const usarCodigoDeConvite = async (codigo: string): Promise<{ ok: boolean; erro?: string; naoEConvite?: boolean }> => {
+        const userId = getSupabaseUserId();
+        if (!userId) return { ok: false, erro: 'Sua sessão não foi encontrada.' };
+        const { data, error } = await supabase.rpc('usar_codigo_de_convite', { p_codigo: codigo });
+        if (error) return { ok: false, erro: mensagemDoErroDeCodigo(error.message) };
+        const resposta = (data || {}) as { success?: boolean; error?: string; new_gold?: number; amigo?: string };
+        if (!resposta.success) {
+            return { ok: false, erro: mensagemDoErroDeCodigo(resposta.error), naoEConvite: resposta.error === 'CODE_NOT_FOUND' };
+        }
+        const ouro = Number(resposta.new_gold ?? userProfile.wallet?.gold ?? 0);
+        updateUserProfile({ wallet: { ...userProfile.wallet, gold: ouro } });
+        await loadFriendsAndRequests(userId);
+        window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
+        showToast(resposta.amigo
+            ? `+10 de ouro. Você e ${resposta.amigo} agora são amigos.`
+            : '+10 de ouro. Convite aceito.', 'success');
+        return { ok: true };
+    };
+
+    const buscarMeusConvites = async (): Promise<MeusConvites | null> => {
+        if (!getSupabaseUserId()) return null;
+        const { data, error } = await supabase.rpc('meus_convites');
+        if (error) return null;
+        return lerMeusConvites(data);
+    };
+
+    const receberPremioDeConvite = async (marco: MarcoDeConvite): Promise<boolean> => {
+        const userId = getSupabaseUserId();
+        if (!userId) return false;
+        const { data, error } = await supabase.rpc('receber_premio_de_convite', { p_marco: marco });
+        if (error) {
+            showToast('Não foi possível receber agora.', 'error');
+            return false;
+        }
+        const resposta = (data || {}) as { already_claimed?: boolean; chest_type?: string | null; new_gold?: number | null };
+        if (resposta.already_claimed) return true;
+        if (resposta.chest_type) {
+            const baus = await fetchChestsFromDB(userId);
+            if (baus) setUserProfile((prev) => ({ ...prev, chests: baus }));
+            showToast(formatChestGain(resposta.chest_type), 'success');
+        } else {
+            const ouro = Number(resposta.new_gold ?? userProfile.wallet?.gold ?? 0);
+            updateUserProfile({ wallet: { ...userProfile.wallet, gold: ouro } });
+            showToast('+25 de ouro', 'success');
+        }
+        return true;
+    };
+
     const claimSystemChallenge = async (challengeId: string) => {
         const challenge = SYSTEM_CHALLENGES.find((candidate) => candidate.id === challengeId);
         if (!challenge || userProfile.completedSeasonMissions?.includes(challengeId)) return;
@@ -15387,7 +15445,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             addSeason, updateSeason, addSeasonMission, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, isProfileLoaded, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, donateItem, craftItem, buyChestWithFragments, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, createCompetitionInvite, respondToRelationshipInvite, endRelationshipLink, renewRelationshipLink, offerMentorshipArena, respondMentorshipOffer, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, respondCompetitionChallenge, cancelCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,
             aldeiaSlots, aldeiaPresence, loadAldeiaData, setAldeiaSlots, setAldeiaPresence,
-            activeArenaPact, arenaPactProgress, arenaPactCandidates, missaoIndividualDisponivel, getArenaPactOptionsForArena, acceptArenaPact, abandonArenaPact, claimArenaPact, missaoDeSistemaAtiva, diasNoApp
+            activeArenaPact, arenaPactProgress, arenaPactCandidates, missaoIndividualDisponivel, getArenaPactOptionsForArena, acceptArenaPact, abandonArenaPact, claimArenaPact, missaoDeSistemaAtiva, diasNoApp,
+            usarCodigoDeConvite, buscarMeusConvites, receberPremioDeConvite
         }}>
             {children}
         </GameContext.Provider>

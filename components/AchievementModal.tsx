@@ -102,7 +102,9 @@ const getAchievementDetails = (type: FeedEventType, data: any) => {
                 title: 'Missão concluída!',
                 subtitle: data.title,
                 icon: data.icon || '\u{1F3AF}',
-                message: 'A recompensa desta missão já entrou.',
+                // O que a pessoa fez, quando quem chamou sabe (10/10/2026). A
+                // frase generica nao distinguia uma missao da outra.
+                message: data.feito || 'A recompensa desta missão já entrou.',
             };
         }
         case 'REPORT_COMPLETED':
@@ -184,7 +186,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
         || rewardItemIds.some((itemId) => String(itemId).startsWith('insignia_season_'));
     // A sobrancelha diz de onde o feito veio. Antes o modal so tinha titulo, e
     // "Parabens" sozinho nao distinguia subir de patente de fechar um ciclo.
-    const sobrancelha = isCompetitionResult ? 'Resultado do desafio' : '';
+    const sobrancelha = isCompetitionResult ? 'Resultado do desafio' : (achievement.data.sobrancelha || '');
     // O tipo do acontecimento decide DUAS coisas de uma vez: o emblema do topo
     // e o tom do reflexo. Antes o emblema era emoji escolhido no meio do JSX e
     // o reflexo era dourado fixo — subir de patente e fechar um ciclo saiam

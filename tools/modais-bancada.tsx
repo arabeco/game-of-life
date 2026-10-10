@@ -24,6 +24,7 @@ import { MasteryWheel } from '../components/MasteryWheel';
 import { AssetPentagon } from '../components/AssetPentagon';
 import { LIFE_AREAS } from '../constants/lifeAreas';
 import { resolveItemDef } from '../constants/items';
+import { REGRAS_DE_DESBLOQUEIO, montarModalDeSegredos } from '../utils/medidorDeSegredos';
 import '../views/mastery-quiz.css';
 
 type Cenario = { id: string; rotulo: string; nota: string; type: string; data: Record<string, unknown> };
@@ -77,6 +78,30 @@ const CENARIOS: Cenario[] = [
             icon: '🎯',
             reward: { exp: 500, gold: 10, chest: 'Raro', items: ['insignia_quest_incomum'] },
         },
+    },
+    // As tres "missoes" que se confundem (10/10/2026), com os dados que o jogo
+    // manda de verdade: titulo do pacto, ouro da faixa e a regra secreta real.
+    {
+        id: 'missao-inicial', rotulo: 'Missão inicial', nota: 'pacto primeira · sem vídeo',
+        type: 'QUEST_COMPLETED',
+        data: {
+            title: 'Montar a primeira frente', icon: '🧭', semVideo: true, reward: { exp: 50, gold: 2, items: [] },
+            sobrancelha: 'Missão inicial', feito: 'Você montou sua primeira arena e concluiu uma ação nela.',
+        },
+    },
+    {
+        id: 'missao-individual', rotulo: 'Missão individual', nota: 'pacto do Oráculo · com vídeo',
+        type: 'QUEST_COMPLETED',
+        data: {
+            title: 'Acelerar Treino', icon: '💪', reward: { exp: 150, gold: 5, items: [] },
+            sobrancelha: 'Missão do Oráculo',
+            feito: 'Você concluiu 5 ações em Treino em 7 dias.',
+        },
+    },
+    {
+        id: 'segredo-oraculo', rotulo: 'Conquista secreta', nota: 'regra Oráculo · 2 missões',
+        type: 'QUEST_COMPLETED',
+        data: montarModalDeSegredos(REGRAS_DE_DESBLOQUEIO.filter((regra) => regra.id === 'oraculo')),
     },
     {
         id: 'relatorio', rotulo: 'Relatório concluído', nota: 'com vídeo',

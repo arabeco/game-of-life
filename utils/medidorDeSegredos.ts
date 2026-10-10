@@ -135,6 +135,9 @@ export const montarModalDeSegredos = (regras: RegraDeDesbloqueio[]) => {
     return {
         id: MARCA_DE_SEGREDO + regras.map((regra) => regra.id).join('+'),
         secreta: true,
+        // Segredo nao e missao: o video "Missao!" fazia a conquista parecer uma
+        // missao secreta cumprida (relatado em 10/10/2026).
+        semVideo: true,
         title: regras.map((regra) => regra.nome).join(' · '),
         frase: regras.length === 1
             ? regras[0].frase

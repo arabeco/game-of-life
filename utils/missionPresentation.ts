@@ -10,6 +10,16 @@ export const missionObjective = (pact: ArenaPact): string => {
   return `Conclua ${pact.goal} ${pact.goal === 1 ? 'ação' : 'ações'} ${scope}${days && days > 0 ? ` em ${days} dias` : ''}`;
 };
 
+/** O objetivo no passado: a frase do modal de missao cumprida diz o que a pessoa fez. */
+export const missionFeito = (pact: ArenaPact): string => {
+  if (pact.kind === 'primeira') return 'Você montou sua primeira arena e concluiu uma ação nela.';
+  const scope = pact.arenaId ? `em ${pact.arenaName}` : 'entre suas arenas';
+  if (pact.kind === 'conclusao') return `Você concluiu a arena ${pact.arenaName}.`;
+  if (pact.kind === 'constancia') return `Você concluiu ações ${scope} em ${pact.goal} dias diferentes.`;
+  const days = pact.endsOn ? dayNumber(pact.endsOn) - dayNumber(pact.startedOn) + 1 : null;
+  return `Você concluiu ${pact.goal} ${pact.goal === 1 ? 'ação' : 'ações'} ${scope}${days && days > 0 ? ` em ${days} dias` : ''}.`;
+};
+
 export const missionCountingRule = (pact: ArenaPact): string => {
   if (pact.kind === 'conclusao') return 'Conta o progresso das ações desta arena. Agendamentos não são conclusões; desfazer uma conclusão reduz o progresso.';
   const period = `Contam ações concluídas com data a partir de ${pact.startedOn.split('-').reverse().join('/')}${pact.endsOn ? ` até ${pact.endsOn.split('-').reverse().join('/')}` : ''}, inclusive as de hoje.`;

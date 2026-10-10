@@ -99,8 +99,11 @@ const varrer = (dir, saida = []) => {
     const nomes = [...bloco[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
     assert.ok(nomes.length >= 15, `FUNDOS_EMPACOTADOS tem ${nomes.length} nomes; eram 15`);
 
+    // A mesma regra de buildProfileBackgroundSources: os dez fundos de patente
+    // (06/10/2026) chegaram em webp; os outros continuam jpg.
     for (const nome of nomes) {
-        const arquivo = path.join(root, 'public', 'assets', 'backgrounds', `${nome}.jpg`);
+        const extensao = /^rank\d{2}/.test(nome) ? 'webp' : 'jpg';
+        const arquivo = path.join(root, 'public', 'assets', 'backgrounds', `${nome}.${extensao}`);
         assert.ok(fs.existsSync(arquivo), `FUNDOS_EMPACOTADOS lista ${nome}, sem arquivo em public/assets/backgrounds`);
     }
 }

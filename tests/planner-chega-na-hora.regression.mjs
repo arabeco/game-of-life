@@ -59,4 +59,17 @@ assert.match(rolar, /prefers-reduced-motion: reduce/,
     'a rolagem do planner deixou de respeitar quem pediu menos movimento');
 console.log('ok - quem pediu menos movimento recebe o pulo, sem animacao');
 
+// ============================ 5. o pulo e pulo mesmo, e nao rolagem disfarcada
+// Relatado de novo em 10/10/2026: "parece que ele quer ir pro lado e nao vai por
+// uns 4 segundos". O item 1 passava, e o planner continuava rolando ao abrir: a
+// caixa de rolagem tem `scrollBehavior: 'smooth'` no estilo, e `behavior: 'auto'`
+// no scrollTo quer dizer "faca o que o CSS mandar" — rolagem suave. Medido no
+// Chromium: com smooth no CSS, `auto` deixa o scrollTop em 0 no mesmo instante;
+// `instant` chega no alvo.
+assert.match(fonte, /planner-scroll-surface[^\n]*\n[^\n]*scrollBehavior: 'smooth'/,
+    'a caixa do planner deixou de ter rolagem suave no CSS — reveja se este item ainda faz sentido');
+assert.match(rolar, /behavior: semMovimento \? 'instant' : 'smooth'/,
+    "o pulo sem animacao voltou a usar 'auto', que segue o CSS suave da caixa e rola em vez de pular");
+console.log('ok - o pulo da abertura ignora o CSS suave da caixa e chega de uma vez');
+
 console.log('Planner chega na hora: posicionado ao abrir, e so se move quando a pessoa pede.');

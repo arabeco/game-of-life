@@ -1684,7 +1684,9 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         const targetTop = Math.max(0, indicatorTop - (scroller.clientHeight * 0.42));
         const semMovimento = !suave
             || Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
-        scroller.scrollTo({ top: targetTop, behavior: semMovimento ? 'auto' : 'smooth' });
+        // 'instant', e nao 'auto': a caixa tem scrollBehavior smooth no estilo, e
+        // 'auto' obedece ao CSS — o pulo da abertura virava rolagem (10/10/2026).
+        scroller.scrollTo({ top: targetTop, behavior: semMovimento ? 'instant' : 'smooth' });
     }, []);
 
     /*

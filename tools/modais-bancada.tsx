@@ -86,7 +86,7 @@ const CENARIOS: Cenario[] = [
         type: 'QUEST_COMPLETED',
         data: {
             title: 'Montar a primeira frente', icon: '🧭', semVideo: true, reward: { exp: 50, gold: 2, items: [] },
-            sobrancelha: 'Missão inicial', feito: 'Você montou sua primeira arena e concluiu uma ação nela.',
+            sobrancelha: 'Missão inicial', feito: 'Monte sua primeira arena e conclua uma ação nela',
         },
     },
     {
@@ -95,7 +95,7 @@ const CENARIOS: Cenario[] = [
         data: {
             title: 'Acelerar Treino', icon: '💪', reward: { exp: 150, gold: 5, items: [] },
             sobrancelha: 'Missão do Oráculo',
-            feito: 'Você concluiu 5 ações em Treino em 7 dias.',
+            feito: 'Conclua 5 ações em Treino em 7 dias',
         },
     },
     {

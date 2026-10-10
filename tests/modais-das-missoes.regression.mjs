@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { build } from 'esbuild';
-import { missionFeito } from '../utils/missionPresentation.ts';
+import { missionObjective } from '../utils/missionPresentation.ts';
 
 /**
  * CADA MODAL DIZ O QUE A PESSOA FEZ.
@@ -19,27 +19,28 @@ import { missionFeito } from '../utils/missionPresentation.ts';
 
 const fonte = (caminho) => readFileSync(new URL(`../${caminho}`, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 
-// ============================== 1. a missao do Oraculo diz o que foi cumprido
+// ============================== 1. a missao do Oraculo traz a descricao do cartao
+// Decidido em 10/10/2026: a frase e a MESMA do cartao da missao, no imperativo
+// ("Conclua 5 acoes em Treino em 7 dias"), e nao reescrita no passado — a pessoa
+// reconhece o que aceitou.
 const pacto = (kind, extra = {}) => ({
   kind, arenaId: 'a1', arenaName: 'Treino', goal: 5,
   startedOn: '2026-10-05', endsOn: '2026-10-11', ...extra,
 });
-assert.equal(missionFeito(pacto('volume')), 'Você concluiu 5 ações em Treino em 7 dias.');
-assert.equal(missionFeito(pacto('volume', { arenaId: null, goal: 1 })), 'Você concluiu 1 ação entre suas arenas em 7 dias.');
-assert.equal(missionFeito(pacto('constancia', { endsOn: null })), 'Você concluiu ações em Treino em 5 dias diferentes.');
-assert.equal(missionFeito(pacto('conclusao', { endsOn: null })), 'Você concluiu a arena Treino.');
-assert.equal(missionFeito(pacto('primeira', { arenaId: null })), 'Você montou sua primeira arena e concluiu uma ação nela.');
-console.log('ok - a missao do Oraculo diz, no passado, o que a pessoa cumpriu');
+assert.equal(missionObjective(pacto('volume')), 'Conclua 5 ações em Treino em 7 dias');
+console.log('ok - a missao do Oraculo mostra a descricao igual a do cartao');
 
 const contexto = fonte('contexts/GameContext.tsx');
 const receber = contexto.slice(contexto.indexOf('const claimArenaPact = async'), contexto.indexOf('A MISSAO INDIVIDUAL SE RECEBE NA ABA MISSAO'));
-assert.match(receber, /feito: missionFeito\(pact\)/, 'receber a missao individual deixou de mandar o que foi feito ao modal');
+assert.match(receber, /feito: missionObjective\(pact\)/, 'o modal da missao individual deixou de mostrar a descricao do cartao');
 assert.match(receber, /sobrancelha: pact\.kind === 'primeira' \? 'Missão inicial' : 'Missão do Oráculo'/,
   'o modal da missao individual deixou de dizer de que tipo de missao ela e');
 
 const sistema = contexto.slice(contexto.indexOf('const claimSystemChallenge = async'), contexto.indexOf('const claimSystemChallenge = async') + 2200);
-assert.match(sistema, /sobrancelha: challenge\.inicial \? 'Missão inicial' : undefined/,
+assert.match(sistema, /sobrancelha: 'Missão inicial',/,
   'a missao inicial deixou de se apresentar como missao inicial');
+assert.match(sistema, /feito: challenge\.description\.replace\(\/\\s\*Recompensa:\.\*\$\/, ''\)/,
+  'a missao inicial deixou de mostrar a descricao do cartao');
 console.log('ok - o modal diz se a missao e inicial ou do Oraculo');
 
 // ============================== 2. o modal usa o que recebe
@@ -62,10 +63,12 @@ const { montarModalDeSegredos, REGRAS_DE_DESBLOQUEIO } = await import(pathToFile
 const oraculo = REGRAS_DE_DESBLOQUEIO.find((regra) => regra.id === 'oraculo');
 const segredo = montarModalDeSegredos([oraculo]);
 assert.equal(segredo.semVideo, true, 'a conquista secreta voltou a tocar o video "Missao!"');
-assert.equal(segredo.frase, 'Você cumpriu duas missões individuais do Oráculo.');
+// Como o cartao de missao: a regra no imperativo, e nao contada no passado.
+assert.equal(segredo.frase, 'Cumpra duas missões individuais do Oráculo');
 for (const regra of REGRAS_DE_DESBLOQUEIO) {
-  assert.match(regra.frase, /^Você /, `a frase de ${regra.id} deixou de dizer o que a pessoa fez`);
+  assert.doesNotMatch(regra.frase, /^Você /, `a frase de ${regra.id} voltou para o passado`);
+  assert.doesNotMatch(regra.frase, /\.$/, `a frase de ${regra.id} ganhou ponto final, e o cartao de missao nao tem`);
 }
-console.log('ok - a conquista secreta entra sem o video de missao e diz o que a pessoa fez');
+console.log('ok - a conquista secreta entra sem o video de missao e diz a regra como um cartao');
 
 console.log('Modais das missoes: cada um diz o tipo e o que foi cumprido.');

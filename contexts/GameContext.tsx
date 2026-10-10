@@ -86,7 +86,7 @@ import {
     type ArenaPact,
     type ArenaPactProgress,
 } from '../utils/arenaPacts';
-import { missionFeito } from '../utils/missionPresentation';
+import { missionObjective } from '../utils/missionPresentation';
 
 // --- Universal Supabase Data Mappers ---
 
@@ -12780,7 +12780,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         /** Selo final da temporada: escolhe a apresentacao heroica e o fundo. */
         seloDaTemporada?: boolean;
         seasonId?: string;
-        /** O que a pessoa fez, no passado. Sem isto o modal so diz que a recompensa entrou. */
+        /** A descricao da missao, igual a do cartao. Sem isto o modal so diz que a recompensa entrou. */
         feito?: string;
         /** Que missao e esta, acima do titulo: inicial, do Oraculo. */
         sobrancelha?: string;
@@ -13135,7 +13135,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             // cheia por cinco segundos.
             semInsignia: Boolean(challenge.inicial),
             semVideo: Boolean(challenge.inicial),
-            sobrancelha: challenge.inicial ? 'Missão inicial' : undefined,
+            sobrancelha: 'Missão inicial',
+            // A descricao do cartao; a recompensa o proprio modal ja lista.
+            feito: challenge.description.replace(/\s*Recompensa:.*$/, ''),
             itemIds: challenge.inicial ? [] : [SYSTEM_CHALLENGE_INSIGNIA_ID],
         });
     };
@@ -15267,7 +15269,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             xp: pact.reward.xp,
             goldGranted,
             chest: pact.reward.chest || null,
-            feito: missionFeito(pact),
+            feito: missionObjective(pact),
             sobrancelha: pact.kind === 'primeira' ? 'Missão inicial' : 'Missão do Oráculo',
         });
     };

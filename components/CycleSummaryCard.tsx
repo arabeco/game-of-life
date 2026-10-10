@@ -139,7 +139,7 @@ export const CycleSummaryCard: React.FC<CycleSummaryCardProps> = ({ cycleSummary
                     <div>
                         <div className="flex items-center justify-between gap-2 text-[7px] font-black uppercase tracking-[0.08em]">
                             <span style={{ color: cycleWidgetMetaColor }}>Tempo</span>
-                            <span className="shrink-0" style={{ color: cycleWidgetSubtitleColor }} title={`${cycleSummary.elapsedDays} dias encerrados (${cycleSummary.timeProgress}%)`}>{cycleSummary.statusLabel}</span>
+                            <span className="shrink-0" style={{ color: cycleWidgetSubtitleColor }} title={`Tempo do ciclo, incluindo hoje: ${cycleSummary.timeProgress}%`}>{cycleSummary.statusLabel}</span>
                         </div>
                         <div className="mt-0.5 h-[3px] w-full overflow-hidden rounded-full bg-black/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
                             <div

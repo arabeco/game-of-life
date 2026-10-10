@@ -76,15 +76,9 @@ assert.match(
 );
 
 // ---------------------------------------------------------------------------
-// 4. "TEMPO" CONTINUA SENDO DIAS DECORRIDOS.
+// 4. TEMPO USA O MESMO ROTULO DO DIA E A BARRA INCLUI HOJE.
 // ---------------------------------------------------------------------------
-
-// Ali o numero cru e o CERTO: ele anda junto de timeProgress, que e a fracao do
-// ciclo ja vencida. Somar 1 aqui quebraria a coerencia com a porcentagem.
-assert.match(
-  codigo,
-  /elapsedDays \+ "\/" \+ totalDays \+ " \(" \+ timeProgress/,
-  'a linha de Tempo mede dias decorridos, e nao deve ganhar o +1',
-);
+assert.match(codigo, /"Tempo",\s*day,\s*progressPercent,\s*timeProgress/);
+assert.match(datas, /const timeProgress = isUpcoming \? 0 : Math\.min\(100, \(displayDay \/ totalDays\) \* 100\)/);
 
 console.log('[ok] o widget e o app contam o mesmo dia');

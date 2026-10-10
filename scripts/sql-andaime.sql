@@ -304,3 +304,27 @@ create table if not exists public.relationship_competition_challenges (
   id uuid primary key default gen_random_uuid(),
   winner_user_id uuid
 );
+
+-- Codigos de resgate (20260420190000_reward_codes_como_o_banco_tem).
+create table if not exists public.reward_codes (
+  id uuid primary key default gen_random_uuid(),
+  code text not null,
+  title text not null,
+  description text null,
+  is_active boolean not null default true,
+  starts_at timestamptz null,
+  ends_at timestamptz null,
+  max_redemptions integer null,
+  per_user_limit integer not null default 1,
+  reward_payload jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create table if not exists public.reward_code_redemptions (
+  id uuid primary key default gen_random_uuid(),
+  code_id uuid not null references public.reward_codes(id) on delete cascade,
+  user_id uuid not null,
+  code text not null,
+  reward_snapshot jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);

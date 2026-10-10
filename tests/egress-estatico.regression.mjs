@@ -124,7 +124,10 @@ const varrer = (dir, saida = []) => {
 
     const orcamentos = [
         ['public/assets/backgrounds', 4],
-        ['public/assets/catalog', 12],
+        // Subiu de 12 para 18 de proposito em 10/10/2026: a arte das regras
+        // secretas, das patentes e das maos levou a pasta a 14,8 MB, e o Afonso
+        // aceitou o peso em vez de encolher a arte.
+        ['public/assets/catalog', 18],
         // Only the approved full tree and compact sand now ship in the experiment.
         ['public/garden-experiment', 2],
         // Integrated renderer includes the shared full tree, rock and sand detail.

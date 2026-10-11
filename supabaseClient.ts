@@ -1,4 +1,5 @@
 import { createCoalescedFetch } from './utils/networkEfficiency.js';
+import { medirFetch } from './utils/medidorDeAbertura';
 import { createClient } from '@supabase/supabase-js';
 import { Preferences } from '@capacitor/preferences';
 import { isCapacitorNativeRuntime } from './utils/runtimePlatform';
@@ -84,7 +85,8 @@ const createNoopRealtimeChannel = () => {
 };
 
 const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-    global: { fetch: createCoalescedFetch((input, init) => fetch(input, init), new URL(supabaseUrl).origin) },
+    // O medidor fica POR DENTRO do coalescer: conta o que de fato foi a rede, uma vez por resposta.
+    global: { fetch: createCoalescedFetch(medirFetch((input, init) => fetch(input, init)), new URL(supabaseUrl).origin) },
     auth: {
         autoRefreshToken: true,
         persistSession: true,

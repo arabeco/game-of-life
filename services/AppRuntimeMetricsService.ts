@@ -1,4 +1,5 @@
 import { supabase } from '../supabaseClient';
+import { pesoDaAberturaAnterior } from '../utils/medidorDeAbertura';
 
 export type AppRuntimeEntryMode =
     | 'unknown'
@@ -162,6 +163,8 @@ export class AppRuntimeMetricsService {
             metadata: this.sanitizeMetadata({
                 render_mode: payload.renderMode || 'default',
                 theme: payload.theme || 'DARK',
+                // Quanto a abertura anterior baixou nos primeiros 30s (utils/medidorDeAbertura).
+                ...(pesoDaAberturaAnterior() || {}),
             }),
         });
     }

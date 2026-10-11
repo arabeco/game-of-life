@@ -75,8 +75,8 @@
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingLeft="46dp"
-                android:paddingRight="46dp">
+                android:paddingLeft="62dp"
+                android:paddingRight="62dp">
 
                 <ImageView
                     android:id="@+id/glyph_widget_rule_left"

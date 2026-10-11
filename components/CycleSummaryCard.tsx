@@ -111,8 +111,9 @@ export const CycleSummaryCard: React.FC<CycleSummaryCardProps> = ({ cycleSummary
         />
         {cycleSummary ? (
             <div className="relative z-10 space-y-0.5">
-                <div className="relative flex min-h-[14px] items-center gap-1.5 px-8">
-                    <span className="absolute left-0 top-1/2 max-w-[86px] -translate-y-1/2 truncate text-left text-[8px] font-black tracking-[0.02em]" style={{ color: cycleWidgetMetaColor }}>
+                {/* O mesmo recuo dos dois lados, maior que as datas: os dois riscos ficam do mesmo tamanho e o titulo cai no meio deles (11/10/2026). O widget usa o mesmo recuo. */}
+                <div className="relative flex min-h-[14px] items-center gap-1.5 px-[62px]">
+                    <span className="absolute left-0 top-1/2 max-w-[58px] -translate-y-1/2 truncate text-left text-[8px] font-black tracking-[0.02em]" style={{ color: cycleWidgetMetaColor }}>
                         {`${formatDate(cycleSummary.startDate)}-${formatDate(cycleSummary.endDate)}`}
                     </span>
                     <span className="h-px min-w-0 flex-1" style={{ background: `linear-gradient(90deg, transparent, ${cycleWidgetFinish.pale}b8)` }} />

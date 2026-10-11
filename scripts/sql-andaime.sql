@@ -339,3 +339,15 @@ create table if not exists storage.objects (
   metadata jsonb,
   created_at timestamptz default now()
 );
+
+-- O registro de abertura do app (20260329183000_create_app_runtime_events).
+create table if not exists public.app_runtime_events (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  user_id uuid,
+  page_session_id uuid,
+  event_name text,
+  duration_ms integer,
+  entry_mode text,
+  metadata jsonb not null default '{}'::jsonb
+);

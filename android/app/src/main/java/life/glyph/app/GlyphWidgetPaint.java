@@ -423,6 +423,12 @@ final class GlyphWidgetPaint {
      * patamar, a de TEMPO usa prata. Nao e a mesma cor esmaecida — sao dois
      * metais, que e como as duas barras sempre se distinguiram.
      */
+    /** Ouro e prata das barras: escuro, meio, claro. Os mesmos de constants/barrasDoCiclo.ts. */
+    static final int[] BARRA_OURO = { Color.parseColor("#a8822a"), Color.parseColor("#f0c95c"), Color.parseColor("#fff4c4") };
+    static final int[] BARRA_PRATA = { Color.parseColor("#7f95a3"), Color.parseColor("#d5e2ea"), Color.parseColor("#ffffff") };
+    /** O reflexo branco no topo: 0,55 de opacidade, como REFLEXO_DA_BARRA no app. */
+    static final int REFLEXO_DA_BARRA_ALFA = 0x8C;
+
     static Bitmap barra(Acabamento metal, int porcento, boolean forte, int largura) {
         // A barra tem 3dp fixos no layout; 12px de altura no bitmap dao folga
         // para as pontas arredondadas nao serrilharem quando o ImageView encolhe.
@@ -454,18 +460,31 @@ final class GlyphWidgetPaint {
              * trabalho so — mostrar quanto andou — e para isso precisa CONTRASTAR
              * com o fundo, nao combinar com ele.
              */
-            Acabamento tinta = forte ? acabamentoDe("A") : acabamentoDe("B");
+            /*
+             * A MESMA RECEITA DO APP (constants/barrasDoCiclo.ts, 11/10/2026):
+             * ouro no progresso, prata no tempo, o gradiente so no pedaco
+             * PREENCHIDO — a ponta e sempre a parte mais clara — e um reflexo
+             * branco na metade de cima. tests/barras-do-ciclo confere que as
+             * cores daqui e de la nao se separam.
+             */
+            int[] cores = forte ? BARRA_OURO : BARRA_PRATA;
+            RectF preenchido = new RectF(0f, 0f, cheio, altura);
             Paint preenchimento = new Paint(Paint.ANTI_ALIAS_FLAG);
-            // O gradiente cobre a LARGURA CHEIA da barra, e nao so o pedaço
-            // preenchido: assim o brilho anda junto com o progresso em vez de
-            // ser reimpresso inteiro a cada ponto percentual.
             preenchimento.setShader(new LinearGradient(
-                0f, 0f, largura, 0f,
-                new int[] { tinta.dark, tinta.mid, tinta.pale },
+                0f, 0f, cheio, 0f,
+                cores,
                 new float[] { 0f, 0.55f, 1f },
                 Shader.TileMode.CLAMP
             ));
-            tela.drawRoundRect(new RectF(0f, 0f, cheio, altura), raio, raio, preenchimento);
+            tela.drawRoundRect(preenchido, raio, raio, preenchimento);
+
+            Paint reflexo = new Paint(Paint.ANTI_ALIAS_FLAG);
+            reflexo.setShader(new LinearGradient(
+                0f, 0f, 0f, altura * 0.55f,
+                comAlfa(0xFFFFFF, REFLEXO_DA_BARRA_ALFA), comAlfa(0xFFFFFF, 0x00),
+                Shader.TileMode.CLAMP
+            ));
+            tela.drawRoundRect(preenchido, raio, raio, reflexo);
         }
 
         return bitmap;

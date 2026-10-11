@@ -1,6 +1,7 @@
 import React from 'react';
 import { formatDate } from '../utils/dateUtils';
 import { getMetalRankPalette, getPlateFinish, TEXTURA_POR_PATAMAR } from './MetalReportCard';
+import { BARRA_OURO, BARRA_PRATA, fundoDaBarra, haloDaBarra } from '../constants/barrasDoCiclo';
 
 interface CycleSummaryCardProps {
     cycleSummary: {
@@ -56,9 +57,10 @@ export const CycleSummaryCard: React.FC<CycleSummaryCardProps> = ({ cycleSummary
         `linear-gradient(135deg, ${cycleWidgetFinish.mid}0e 0%, transparent 35%, ${cycleWidgetFinish.mid}07 72%, transparent 100%)`,
         `radial-gradient(circle at 45% 10%, ${cycleWidgetFinish.face} 0%, #090a0c 66%, #111315 100%)`,
     ].join(', ');
-    const cycleWidgetProgressBackground = `linear-gradient(90deg, ${cycleWidgetFinish.dark} 0%, ${cycleWidgetFinish.mid} 55%, ${cycleWidgetFinish.pale} 100%)`;
-    const cycleWidgetTimeFinish = getPlateFinish('B');
-    const cycleWidgetTimeBackground = `linear-gradient(90deg, ${cycleWidgetTimeFinish.dark} 0%, ${cycleWidgetTimeFinish.mid} 55%, ${cycleWidgetTimeFinish.pale} 100%)`;
+    // As barras seguem a receita unica de constants/barrasDoCiclo (a mesma do
+    // widget): progresso em ouro, tempo em prata, brilhantes, sem depender da nota.
+    const cycleWidgetProgressBackground = fundoDaBarra(BARRA_OURO);
+    const cycleWidgetTimeBackground = fundoDaBarra(BARRA_PRATA);
     const cycleWidgetTitleColor = cycleWidgetFinish.pale;
     const cycleWidgetMetaColor = '#a8b6c9';
     const cycleWidgetSubtitleColor = '#c7d1df';
@@ -131,7 +133,7 @@ export const CycleSummaryCard: React.FC<CycleSummaryCardProps> = ({ cycleSummary
                                 style={{
                                     width: `${cycleSummary.progress}%`,
                                     background: cycleWidgetProgressBackground,
-                                    boxShadow: `0 0 10px ${cycleWidgetFinish.pale}55, 0 0 2px rgba(255,255,255,0.72)`,
+                                    boxShadow: haloDaBarra(BARRA_OURO),
                                 }}
                             />
                         </div>
@@ -147,7 +149,7 @@ export const CycleSummaryCard: React.FC<CycleSummaryCardProps> = ({ cycleSummary
                                 style={{
                                     width: `${cycleSummary.timeProgress}%`,
                                     background: cycleWidgetTimeBackground,
-                                    boxShadow: '0 0 10px rgba(226,237,255,0.34), 0 0 2px rgba(255,255,255,0.68)',
+                                    boxShadow: haloDaBarra(BARRA_PRATA),
                                 }}
                             />
                         </div>

@@ -80,6 +80,7 @@ A barra de cima e o patamar do ciclo; a de baixo e prata, que e o tempo.</p>
 <div id="saida"></div>
 
 <script type="module">
+import { BARRA_OURO, BARRA_PRATA, REFLEXO_DA_BARRA } from '../constants/barrasDoCiclo.ts';
 /** Copia de PLATE_FINISHES e de GlyphWidgetPaint.acabamentoDe. */
 const METAIS = {
   SS: { face: '#3f0a18', dark: '#64401f', mid: '#c39a51', pale: '#ffe4a2', nome: 'Rubi imperial' },
@@ -130,6 +131,27 @@ const octogono = (ctx, x0, y0, x1, y1, corte) => {
 };
 
 /** GlyphWidgetPaint.fundo */
+/*
+ * A PEDRA DO FUNDO (11/10/2026). O GlyphWidgetPaint.fundo desenha a foto do
+ * patamar por cima do corpo, a 96%, com um veu preto de 42% — e esta bancada
+ * tinha ficado sem ela, mostrando um widget que nao existe mais. As fotos sao as
+ * mesmas do cartao do app (TEXTURA_POR_PATAMAR).
+ */
+const PEDRAS = {
+  SSS: '/assets/cycles/plate-sss.webp', SS: '/assets/cycles/plate-ss.webp', S: '/assets/cycles/plate-s.webp',
+  A: '/assets/cycles/plate-a.webp', B: '/assets/cycles/plate-b.webp', C: '/assets/cycles/plate-c.webp',
+  D: '/assets/cycles/plate-d.webp', E: '/assets/cycles/plate-e.webp',
+};
+const carregar = (src) => new Promise((ok) => {
+  const imagem = new Image();
+  imagem.onload = () => ok(imagem);
+  imagem.onerror = () => ok(null);
+  imagem.src = src;
+});
+const FOTOS = Object.fromEntries(await Promise.all(
+  Object.entries(PEDRAS).map(async ([patamar, src]) => [patamar, await carregar(src)]),
+));
+
 const desenharFundo = (canvas, metal, patamar) => {
   const L = 900, A = 168; // 300dp x 56dp numa tela de densidade 3
   canvas.width = L; canvas.height = A;
@@ -145,6 +167,20 @@ const desenharFundo = (canvas, metal, patamar) => {
   corpo.addColorStop(0.58, '#090A0C');
   corpo.addColorStop(1, '#111315');
   ctx.fillStyle = corpo; ctx.fill(placa);
+
+  const foto = FOTOS[patamar];
+  if (foto) {
+    ctx.save();
+    ctx.clip(placa);
+    const escala = Math.max(L / foto.width, A / foto.height);
+    const w = foto.width * escala, h = foto.height * escala;
+    ctx.globalAlpha = 0xF5 / 255;
+    ctx.drawImage(foto, (L - w) / 2, (A - h) / 2, w, h);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = `rgba(0,0,0,${0x6B / 255})`;
+    ctx.fillRect(0, 0, L, A);
+    ctx.restore();
+  }
 
   ctx.save();
   ctx.clip(placa);
@@ -177,8 +213,8 @@ const desenharFundo = (canvas, metal, patamar) => {
   });
 };
 
-/** GlyphWidgetPaint.barra */
-const desenharBarra = (canvas, metal, porcento) => {
+/** GlyphWidgetPaint.barra — a receita unica de constants/barrasDoCiclo.ts (11/10/2026). */
+const desenharBarra = (canvas, forte, porcento) => {
   const L = 900, A = 12;
   canvas.width = L; canvas.height = A;
   const ctx = canvas.getContext('2d');
@@ -190,13 +226,18 @@ const desenharBarra = (canvas, metal, porcento) => {
 
   if (porcento > 0) {
     const cheio = Math.max(A, L * (porcento / 100));
-    const grad = ctx.createLinearGradient(0, 0, L, 0);
-    grad.addColorStop(0, metal.dark);
-    grad.addColorStop(0.55, metal.mid);
-    grad.addColorStop(1, metal.pale);
+    const metal = forte ? BARRA_OURO : BARRA_PRATA;
+    const grad = ctx.createLinearGradient(0, 0, cheio, 0);
+    grad.addColorStop(0, metal.escuro);
+    grad.addColorStop(0.55, metal.meio);
+    grad.addColorStop(1, metal.claro);
     const p = new Path2D();
     p.roundRect(0, 0, cheio, A, raio);
     ctx.fillStyle = grad; ctx.fill(p);
+    const reflexo = ctx.createLinearGradient(0, 0, 0, A * 0.55);
+    reflexo.addColorStop(0, `rgba(255,255,255,${REFLEXO_DA_BARRA})`);
+    reflexo.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = reflexo; ctx.fill(p);
   }
 };
 
@@ -236,8 +277,8 @@ for (const [patamar, metal] of Object.entries(METAIS)) {
   t.style.color = m.trim;
   const letras = t.textContent.trim().length;
   t.style.fontSize = (letras <= 14 ? 13 : letras <= 20 ? 11.5 : letras <= 26 ? 10 : 9) + 'px';
-  desenharBarra(linha.querySelector('canvas.acoes'), metal, 75);
-  desenharBarra(linha.querySelector('canvas.tempo'), METAIS.B, 40);
+  desenharBarra(linha.querySelector('canvas.acoes'), true, 75);
+  desenharBarra(linha.querySelector('canvas.tempo'), false, 40);
 }
 </script>
 <script src="/bancada-nav.js"></script>

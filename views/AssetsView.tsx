@@ -23,6 +23,7 @@ import { buildCycleWidgetSnapshot } from '../utils/widgetSnapshots';
 import { isQuestAction } from '../utils/taskDomain.js';
 import { getMetalRankPalette } from '../components/MetalReportCard';
 import { CycleSummaryCard } from '../components/CycleSummaryCard';
+import { useCartaoDoCiclo } from '../hooks/useCartaoDoCiclo';
 import { getProfileBackgroundPrimarySource, isCssProfileBackground } from '../utils/profileBackgrounds';
 import { getTaskExp } from '../utils/taskExp';
 import type { Action, Asset, Slot, SlotValue } from '../types';
@@ -255,6 +256,9 @@ export const AssetsView: React.FC = () => {
      * terceira regua do mesmo numero, que e o defeito que este projeto ja
      * pagou caro para tirar de tres lugares hoje.
      */
+    // O cartao do topo sai da mesma fonte do cartao das Arenas e do widget.
+    const cartaoDoCiclo = useCartaoDoCiclo(activeCycle);
+
     const patamarDoCiclo = useMemo(() => {
         if (!activeCycle) return null;
         const snapshot = buildCycleWidgetSnapshot({
@@ -686,7 +690,7 @@ export const AssetsView: React.FC = () => {
 
                     <div className="relative z-10 h-full w-full">
                         <div className="absolute inset-x-0 z-20 flex justify-center px-3" style={{ top: cycleSummaryTop }}>
-                            <CycleSummaryCard cycleSummary={cycleSummary} rank={patamarDoCiclo?.rank} buttonRef={cycleSummaryRef} onOpenHistory={handleOpenReports} />
+                            <CycleSummaryCard cycleSummary={cartaoDoCiclo?.cycleSummary ?? null} rank={cartaoDoCiclo?.rank ?? patamarDoCiclo?.rank} buttonRef={cycleSummaryRef} onOpenHistory={handleOpenReports} />
                         </div>
 
                         <div id="assets-grid" className="absolute inset-x-0" style={{ top: assetsGridTopPx, bottom: assetsGridBottomPx }}>

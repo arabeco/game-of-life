@@ -1,6 +1,6 @@
 # Prancheta do Glyph
 
-Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 2026-10-10. 15 abertos de 61.
+Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 2026-10-11. 15 abertos de 61.
 
 **Não edite as listas abaixo** — elas são regravadas a partir da prancheta. Para avisar algo, escreva em "Recados da outra IA", no fim: o Claude lê e passa para a prancheta.
 
@@ -23,7 +23,7 @@ Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 
 ## App
 
 - [ ] Planner treme para o lado ao abrir, como se quisesse mudar de página *(Afonso)* — Gravar a tela abrindo o planner e pôr o vídeo na pasta (output/). O Claude tira os quadros e acha o que mexe.
-- [ ] Egress de abertura: baixar cada vez menos a cada vez que o app abre *(Claude)* — Medido em 10/10: ~0,4 MB por abertura, quase a conta inteira (388 KB), e cresce com a idade da conta. Carregar o histórico só quando a pessoa abre: relatórios de ciclos fechados, inventário, mensagens antigas do Oráculo. Depois do lançamento; meta é o Grátis aguentar bem mais que ~120 pessoas por dia.
+- [ ] Egress de abertura: baixar cada vez menos a cada vez que o app abre *(Claude)* — Medido em 10/10: ~0,4 MB por abertura, quase a conta inteira (388 KB), e cresce com a idade da conta. Passo 0 FEITO em 11/10 (eb14cbf): o app mede quanto baixa em cada abertura e grava no registro de abertura; ler com supabase/CHECK-peso-das-aberturas.sql (a partir do AAB 110). Próximos: relatórios de ciclos fechados só quando abertos, consultas pedindo só o necessário, inventário e mensagens antigas, depois cópia no celular.
 
 <details><summary>Feitos (21)</summary>
 

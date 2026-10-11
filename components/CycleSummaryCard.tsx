@@ -86,14 +86,16 @@ export const CycleSummaryCard: React.FC<CycleSummaryCardProps> = ({ cycleSummary
          * os dois tinham o mesmo defeito pela mesma razao, e
          * agora repartem a folga da mesma forma.
          */
-        className={`group relative flex flex-col justify-center overflow-hidden px-3 text-left transition-all duration-300 hover:-translate-y-[1px] ${cycleSummary ? 'pb-1 pt-1' : 'py-2'}`}
+        className={`group relative flex flex-col justify-center overflow-hidden px-3 text-left transition-all duration-300 hover:-translate-y-[1px] ${cycleSummary ? 'py-[6px]' : 'py-2'}`}
         style={{
             width: cycleSummary ? '96%' : '82%',
             maxWidth: cycleSummary ? '460px' : '300px',
             clipPath: CYCLE_WIDGET_CLIP_PATH,
             background: cycleWidgetFrameBackground,
             filter: 'drop-shadow(0 12px 18px rgba(0,0,0,0.32))',
-            minHeight: cycleSummary ? '68px' : '42px',
+            // 56, e nao mais 68 (11/10/2026): o Afonso pediu o cartao mais baixo,
+            // como o widget — 56 e o minHeight do proprio glyph_widget_info.xml.
+            minHeight: cycleSummary ? '56px' : '42px',
         }}
     >
         <span
@@ -112,7 +114,7 @@ export const CycleSummaryCard: React.FC<CycleSummaryCardProps> = ({ cycleSummary
         {cycleSummary ? (
             <div className="relative z-10 space-y-0.5">
                 {/* O mesmo recuo dos dois lados, maior que as datas: os dois riscos ficam do mesmo tamanho e o titulo cai no meio deles (11/10/2026). O widget usa o mesmo recuo. */}
-                <div className="relative flex min-h-[14px] items-center gap-1.5 px-[62px]">
+                <div className="relative flex min-h-[12px] items-center gap-1.5 px-[62px]">
                     <span className="absolute left-0 top-1/2 max-w-[58px] -translate-y-1/2 truncate text-left text-[8px] font-black tracking-[0.02em]" style={{ color: cycleWidgetMetaColor }}>
                         {`${formatDate(cycleSummary.startDate)}-${formatDate(cycleSummary.endDate)}`}
                     </span>
@@ -124,7 +126,7 @@ export const CycleSummaryCard: React.FC<CycleSummaryCardProps> = ({ cycleSummary
                 </div>
                 <div className="space-y-0.5 px-1">
                     <div>
-                        <div className="flex items-center justify-between gap-2 text-[7px] font-black uppercase tracking-[0.08em]">
+                        <div className="flex items-center justify-between gap-2 text-[7px] font-black uppercase leading-none tracking-[0.08em]">
                             <span style={{ color: cycleWidgetMetaColor }}>Progresso</span>
                             <span className="shrink-0" style={{ color: '#f7f3e9' }}>{`${cycleSummary.totalCompleted}/${cycleSummary.totalPlanned} (${cycleSummary.progress}%)`}</span>
                         </div>
@@ -140,7 +142,7 @@ export const CycleSummaryCard: React.FC<CycleSummaryCardProps> = ({ cycleSummary
                         </div>
                     </div>
                     <div>
-                        <div className="flex items-center justify-between gap-2 text-[7px] font-black uppercase tracking-[0.08em]">
+                        <div className="flex items-center justify-between gap-2 text-[7px] font-black uppercase leading-none tracking-[0.08em]">
                             <span style={{ color: cycleWidgetMetaColor }}>Tempo</span>
                             <span className="shrink-0" style={{ color: cycleWidgetSubtitleColor }} title={`Tempo do ciclo, incluindo hoje: ${cycleSummary.timeProgress}%`}>{cycleSummary.statusLabel}</span>
                         </div>

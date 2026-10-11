@@ -273,7 +273,7 @@ export const AssetsView: React.FC = () => {
 
     useLayoutEffect(() => {
         const summaryCard = cycleSummaryRef.current;
-        const fallbackHeight = activeCycle ? 68 : 42;
+        const fallbackHeight = activeCycle ? 56 : 42;
 
         if (!summaryCard) {
             setCycleSummaryHeight(fallbackHeight);

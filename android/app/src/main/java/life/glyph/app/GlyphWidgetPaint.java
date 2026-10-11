@@ -168,6 +168,20 @@ final class GlyphWidgetPaint {
      * altura, entao o corte sai em proporcao da MENOR dimensao, que e quem
      * governa como o chanfro se le.
      */
+    private static Path octogono(float x0, float y0, float x1, float y1, float cx, float cy) {
+        Path p = new Path();
+        p.moveTo(x0, y0 + cy);
+        p.lineTo(x0 + cx, y0);
+        p.lineTo(x1 - cx, y0);
+        p.lineTo(x1, y0 + cy);
+        p.lineTo(x1, y1 - cy);
+        p.lineTo(x1 - cx, y1);
+        p.lineTo(x0 + cx, y1);
+        p.lineTo(x0, y1 - cy);
+        p.close();
+        return p;
+    }
+
     private static Path octogono(float x0, float y0, float x1, float y1, float corte) {
         Path p = new Path();
         p.moveTo(x0, y0 + corte);
@@ -229,138 +243,109 @@ final class GlyphWidgetPaint {
         Bitmap bitmap = Bitmap.createBitmap(largura, altura, Bitmap.Config.ARGB_8888);
         Canvas tela = new Canvas(bitmap);
 
-        final float menor = Math.min(largura, altura);
-        final float corte = menor * 0.20f;
-        final float traco = Math.max(2f, menor * 0.05f);
-
-        Path placa = octogono(traco / 2f, traco / 2f, largura - traco / 2f, altura - traco / 2f, corte);
-
         /*
-         * 1. O corpo: aco escuro, com o canto de entrada no tom do patamar.
+         * A MESMA PECA DO CARTAO DO APP (CycleSummaryCard, 11/10/2026).
          *
-         * Quem distingue os patamares e a FACE — rubi no SS, violeta no S, ouro
-         * no A —, e nao o mid, que e dourado nos tres. Sem a face aqui, SS, S e A
-         * saiam identicos e a ficha deixava de mudar de cor, que era o pedido.
-         *
-         * A face ja nasce escura (#3f0a18, #4a2169, #705513), entao ela tinge sem
-         * clarear: o corpo continua sendo uma chapa preta, so que de rubi ou de
-         * violeta no canto onde a luz bate.
+         * O Afonso pediu o widget "igual o maximo possivel" ao cartao da Ativos e
+         * da Arenas. Cada camada daqui e uma camada de la, na mesma ordem:
+         *   1. a moldura: o octogono inteiro no gradiente de 118 graus do
+         *      acabamento do patamar (escuro, claro, meio, claro, escuro, claro);
+         *   2. a face, 3dp para dentro: base escura com o tom do patamar, a
+         *      diagonal, o halo, a pedra e o veu preto de 42%;
+         *   3. o fio de 1dp no claro do metal, a 5dp da borda — so nos lados
+         *      retos, porque no cartao o recorte come a borda nos chanfros.
+         * O corte do canto e o do clip-path do cartao: 5% da largura, 20% da
+         * altura. A escada de molduras e as tres linhas escuras concentricas
+         * sairam: o cartao nao tem, e o widget era o unico que mostrava.
          */
-        Paint corpo = new Paint(Paint.ANTI_ALIAS_FLAG);
-        corpo.setShader(new LinearGradient(
-            0f, 0f, largura * 0.35f, altura,
-            new int[] { metal.face, 0xFF090A0C, 0xFF111315 },
-            new float[] { 0f, 0.58f, 1f },
-            Shader.TileMode.CLAMP
-        ));
-        tela.drawPath(placa, corpo);
+        final float dp = recursos != null ? recursos.getDisplayMetrics().density : 3f;
 
-        /*
-         * A pedra entra ENTRE o corpo e o halo.
-         *
-         * Depois do corpo porque ela e a face, e nao o fundo: o corpo continua
-         * dando a chapa escura por baixo dos cantos que a foto nao cobre. Antes
-         * do halo porque o halo e luz do patamar, e luz vem por cima da pedra —
-         * inverter deixaria a foto lavando o brilho que identifica o degrau.
-         *
-         * O veu de 26% e o mesmo da placa do app, pela mesma razao: sem ele o
-         * texto claro some nas pedras claras.
-         */
+        // 1. A moldura.
+        Path borda = octogono(0f, 0f, largura, altura, largura * 0.05f, altura * 0.20f);
+        Paint moldura = new Paint(Paint.ANTI_ALIAS_FLAG);
+        moldura.setShader(gradienteCss(118, 0f, 0f, largura, altura,
+            new int[] { metal.dark, metal.pale, metal.mid, metal.pale, metal.dark, metal.pale },
+            new float[] { 0f, 0.12f, 0.40f, 0.52f, 0.84f, 1f }));
+        tela.drawPath(borda, moldura);
+
+        // 2. A face.
+        final float m3 = 3f * dp;
+        final float fx0 = m3, fy0 = m3, fx1 = largura - m3, fy1 = altura - m3;
+        final float fw = fx1 - fx0, fh = fy1 - fy0;
+        Path face = octogono(fx0, fy0, fx1, fy1, fw * 0.05f, fh * 0.20f);
+        tela.save();
+        tela.clipPath(face);
+
+        // A base: radial a partir de 45% x 10%, do tom do patamar ao quase-preto.
+        Paint base = new Paint(Paint.ANTI_ALIAS_FLAG);
+        float bx = fx0 + fw * 0.45f, by = fy0 + fh * 0.10f;
+        base.setShader(new RadialGradient(bx, by, cantoMaisLonge(bx, by, fx0, fy0, fx1, fy1),
+            new int[] { metal.face, 0xFF090A0C, 0xFF111315 }, new float[] { 0f, 0.66f, 1f }, Shader.TileMode.CLAMP));
+        tela.drawPaint(base);
+
+        Paint diagonal = new Paint(Paint.ANTI_ALIAS_FLAG);
+        diagonal.setShader(gradienteCss(135, fx0, fy0, fw, fh,
+            new int[] { comAlfa(metal.mid, 0x0E), comAlfa(metal.mid, 0x00), comAlfa(metal.mid, 0x07), comAlfa(metal.mid, 0x00) },
+            new float[] { 0f, 0.35f, 0.72f, 1f }));
+        tela.drawPaint(diagonal);
+
+        Paint halo = new Paint(Paint.ANTI_ALIAS_FLAG);
+        float hx = fx0 + fw * 0.45f, hy = fy0;
+        halo.setShader(new RadialGradient(hx, hy, cantoMaisLonge(hx, hy, fx0, fy0, fx1, fy1),
+            new int[] { comAlfa(metal.mid, 0x2A), comAlfa(metal.mid, 0x00) }, new float[] { 0f, 0.44f }, Shader.TileMode.CLAMP));
+        tela.drawPaint(halo);
+
         int pedra = desenhoDaPedra(patamar);
         if (pedra != 0 && recursos != null) {
             Bitmap foto = BitmapFactory.decodeResource(recursos, pedra);
             if (foto != null) {
-                tela.save();
-                tela.clipPath(placa);
-                // `cover`: a maior escala das duas, para nao sobrar borda vazia
-                // numa faixa larga desenhada a partir de uma foto em pe.
-                float escala = Math.max((float) largura / foto.getWidth(), (float) altura / foto.getHeight());
+                float escala = Math.max(fw / foto.getWidth(), fh / foto.getHeight());
                 Matrix encaixe = new Matrix();
                 encaixe.setScale(escala, escala);
-                encaixe.postTranslate(
-                    (largura - foto.getWidth() * escala) / 2f,
-                    (altura - foto.getHeight() * escala) / 2f
-                );
+                encaixe.postTranslate(fx0 + (fw - foto.getWidth() * escala) / 2f, fy0 + (fh - foto.getHeight() * escala) / 2f);
                 Paint tinta = new Paint(Paint.ANTI_ALIAS_FLAG);
                 tinta.setFilterBitmap(true);
-                tinta.setAlpha(0xF5);
                 tela.drawBitmap(foto, encaixe, tinta);
-                Paint veu = new Paint(Paint.ANTI_ALIAS_FLAG);
-                // 26% bastava na ficha grande do app e nao basta aqui: o widget
-                // e uma faixa estreita, com barras de 3dp e texto pequeno por
-                // cima da mesma foto. Em 42% a pedra continua se lendo como
-                // pedra e para de competir com o que esta escrito nela.
-                veu.setColor(comAlfa(0x000000, 0x6B));
-                tela.drawPaint(veu);
-                tela.restore();
                 foto.recycle();
+                Paint veu = new Paint(Paint.ANTI_ALIAS_FLAG);
+                veu.setColor(0x6B06080C);
+                tela.drawPaint(veu);
             }
         }
-
-        // 2. O tom do patamar, so como luz. Um halo no alto e uma diagonal fraca:
-        //    sao os mesmos 16% e 5,5% do fundoComTom da placa do app.
-        tela.save();
-        tela.clipPath(placa);
-        Paint halo = new Paint(Paint.ANTI_ALIAS_FLAG);
-        halo.setShader(new RadialGradient(
-            largura / 2f, -altura * 0.06f, Math.max(largura * 0.55f, altura),
-            comAlfa(metal.mid, 0x29), comAlfa(metal.mid, 0x00),
-            Shader.TileMode.CLAMP
-        ));
-        tela.drawPaint(halo);
-        Paint diagonal = new Paint(Paint.ANTI_ALIAS_FLAG);
-        diagonal.setShader(new LinearGradient(
-            0f, 0f, largura, altura,
-            new int[] { comAlfa(metal.mid, 0x0E), comAlfa(metal.mid, 0x00), comAlfa(metal.mid, 0x07), comAlfa(metal.mid, 0x00) },
-            new float[] { 0f, 0.35f, 0.72f, 1f },
-            Shader.TileMode.CLAMP
-        ));
-        tela.drawPaint(diagonal);
         tela.restore();
 
-        // 3. A MOLDURA. Esta e a parte bonita, e ela e a escada.
-        //
-        // Gradiente diagonal do escuro ao claro do metal: e o que faz a borda
-        // parecer chanfrada em vez de desenhada. Uma linha de cor unica devolveria
-        // o contorno chapado que esta peca existe para nao ser.
-        Paint linha = new Paint(Paint.ANTI_ALIAS_FLAG);
-        linha.setStyle(Paint.Style.STROKE);
-
-        /*
-         * `edge` e `trim` sao os dois CLAROS do metal — na ficha grande eles
-         * aparecem como aro e como fio de luz, em camadas diferentes. Numa borda
-         * unica de 56dp nao ha espaco para duas camadas, entao o volume sai de
-         * escurecer o `edge` no meio do gradiente: claro nas pontas, fundo no
-         * centro. E o que faz a moldura parecer chanfrada em vez de desenhada.
-         */
-        Moldura moldura = molduraDe(patamar);
-        linha.setStrokeWidth(traco);
-        linha.setShader(new LinearGradient(
-            0f, 0f, largura, altura,
-            new int[] { moldura.claro, escurecer(moldura.escuro, 0.42f), moldura.escuro },
-            new float[] { 0f, 0.5f, 1f },
-            Shader.TileMode.CLAMP
-        ));
-        tela.drawPath(placa, linha);
-        linha.setShader(null);
-
-        final float fino = Math.max(1f, traco * 0.36f);
-        final float[] recuos = { traco * 1.3f, traco * 1.9f, traco * 2.9f };
-        final int[] cores = { 0xFF090B0D, 0xFF33363A, 0xFF0B0D0F };
-        for (int k = 0; k < recuos.length; k++) {
-            float r = recuos[k];
-            if (largura - r * 2f <= corte || altura - r * 2f <= corte) break;
-            linha.setStrokeWidth(fino);
-            linha.setColor(cores[k]);
-            tela.drawPath(octogono(r, r, largura - r, altura - r, Math.max(2f, corte - r)), linha);
+        // 3. O fio interno.
+        final float m5 = 5f * dp;
+        final float iw = largura - 2f * m5, ih = altura - 2f * m5;
+        if (iw > 0f && ih > 0f) {
+            tela.save();
+            tela.clipPath(octogono(m5, m5, largura - m5, altura - m5, iw * 0.05f, ih * 0.20f));
+            Paint fio = new Paint(Paint.ANTI_ALIAS_FLAG);
+            fio.setStyle(Paint.Style.STROKE);
+            fio.setStrokeWidth(dp);
+            fio.setColor(comAlfa(metal.pale, 0x38));
+            float meio = dp / 2f;
+            tela.drawRect(m5 + meio, m5 + meio, largura - m5 - meio, altura - m5 - meio, fio);
+            tela.restore();
         }
 
-        // O fio interno no tom do metal SAIU. Ele existia para dizer de que
-        // material a ficha e feita, e quem diz isso agora e a moldura — que e o
-        // lugar certo. Desenhado por dentro, virava um retangulo claro em volta do
-        // texto: uma caixa, e nao um acabamento.
-
         return bitmap;
+    }
+
+    /** Um linear-gradient(<graus>) do CSS, na caixa dada, como o navegador desenha. */
+    private static LinearGradient gradienteCss(float graus, float x, float y, float w, float h, int[] cores, float[] paradas) {
+        double a = Math.toRadians(graus);
+        float dx = (float) Math.sin(a), dy = (float) -Math.cos(a);
+        float metade = (Math.abs(w * dx) + Math.abs(h * dy)) / 2f;
+        float cx = x + w / 2f, cy = y + h / 2f;
+        return new LinearGradient(cx - dx * metade, cy - dy * metade, cx + dx * metade, cy + dy * metade, cores, paradas, Shader.TileMode.CLAMP);
+    }
+
+    /** O raio "farthest-corner" do radial-gradient do CSS. */
+    private static float cantoMaisLonge(float cx, float cy, float x0, float y0, float x1, float y1) {
+        float dx = Math.max(Math.abs(cx - x0), Math.abs(x1 - cx));
+        float dy = Math.max(Math.abs(cy - y0), Math.abs(y1 - cy));
+        return Math.max(1f, (float) Math.sqrt(dx * dx + dy * dy));
     }
 
     /**
@@ -377,9 +362,11 @@ final class GlyphWidgetPaint {
      * do ciclo pode crescer que as linhas encolhem sozinhas, sem ninguem medir.
      */
     static Bitmap linhaDoTitulo(String patamar, boolean aDireita) {
+        // A mesma do cartao do app: transparente na ponta de fora, o claro do
+        // metal a 72% (b8) encostando no titulo.
         final int largura = 200;
         final int altura = 3;
-        Moldura m = molduraDe(patamar);
+        int claro = acabamentoDe(patamar).pale;
 
         Bitmap bitmap = Bitmap.createBitmap(largura, altura, Bitmap.Config.ARGB_8888);
         Canvas tela = new Canvas(bitmap);
@@ -387,9 +374,9 @@ final class GlyphWidgetPaint {
         pincel.setShader(new LinearGradient(
             0f, 0f, largura, 0f,
             aDireita
-                ? new int[] { m.claro, comAlfa(m.escuro, 0x88), comAlfa(m.escuro, 0x00) }
-                : new int[] { comAlfa(m.escuro, 0x00), comAlfa(m.escuro, 0x88), m.claro },
-            new float[] { 0f, 0.55f, 1f },
+                ? new int[] { comAlfa(claro, 0xB8), comAlfa(claro, 0x00) }
+                : new int[] { comAlfa(claro, 0x00), comAlfa(claro, 0xB8) },
+            null,
             Shader.TileMode.CLAMP
         ));
         tela.drawRect(0f, 0f, largura, altura, pincel);
@@ -405,11 +392,9 @@ final class GlyphWidgetPaint {
      * mudar de cara a cada renomeacao.
      */
     static float tamanhoDoTitulo(String titulo) {
-        int letras = titulo == null ? 0 : titulo.trim().length();
-        if (letras <= 14) return 13f;
-        if (letras <= 20) return 11.5f;
-        if (letras <= 26) return 10f;
-        return 9f;
+        // O cartao do app usa 10px fixo, e o nome longo corta com reticencias.
+        // O widget segue igual (11/10/2026) — antes crescia ate 13.
+        return 10f;
     }
 
     /**

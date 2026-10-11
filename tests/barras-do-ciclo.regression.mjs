@@ -40,4 +40,26 @@ assert.match(ler('views/AssetsView.tsx'), /<CycleSummaryCard cycleSummary=\{cart
 assert.match(ler('hooks/useCartaoDoCiclo.ts'), /buildCycleWidgetSnapshot\(\{ cycle, tasks, actions, arenas, todayDate \}\)/, 'a fonte unica deixou de ser o retrato do widget');
 console.log('ok - Ativos, Arenas e widget saem do mesmo retrato do ciclo');
 
+// ============================== 4. o resto da ficha tambem igual (11/10/2026: "tudo igual o maximo possivel")
+const provedor = ler('android/app/src/main/java/life/glyph/app/GlyphWidgetProvider.java');
+const layout = ler('android/app/src/main/res/layout/glyph_widget.xml');
+// Moldura: o mesmo gradiente de 118 graus, com as mesmas paradas, dos dois lados.
+assert.match(cartao, /linear-gradient\(118deg, \$\{cycleWidgetFinish\.dark\} 0%, \$\{cycleWidgetFinish\.pale\} 12%, \$\{cycleWidgetFinish\.mid\} 40%, \$\{cycleWidgetFinish\.pale\} 52%, \$\{cycleWidgetFinish\.dark\} 84%, \$\{cycleWidgetFinish\.pale\} 100%\)/);
+assert.match(java, /gradienteCss\(118, 0f, 0f, largura, altura,\s*new int\[\] \{ metal\.dark, metal\.pale, metal\.mid, metal\.pale, metal\.dark, metal\.pale \},\s*new float\[\] \{ 0f, 0\.12f, 0\.40f, 0\.52f, 0\.84f, 1f \}\)/,
+  'a moldura do widget deixou de ser a do cartao');
+// O corte de canto do clip-path do cartao: 5% da largura, 20% da altura.
+assert.match(cartao, /polygon\(5% 0, 95% 0, 100% 20%, 100% 80%, 95% 100%, 5% 100%, 0 80%, 0 20%\)/);
+assert.match(java, /octogono\(0f, 0f, largura, altura, largura \* 0\.05f, altura \* 0\.20f\)/, 'o corte do canto do widget deixou de ser o do cartao');
+// A pedra com o mesmo veu de 42% (rgba 6,8,12).
+assert.match(cartao, /rgba\(6, 8, 12, 0\.42\)/);
+assert.match(java, /veu\.setColor\(0x6B06080C\);/);
+// Titulo: o claro do acabamento, 10 de corpo, as mesmas linhas a 72%.
+assert.match(provedor, /views\.setTextColor\(R\.id\.glyph_widget_title, metal\.pale\);/, 'o titulo do widget deixou de usar o claro do acabamento, como o cartao');
+assert.match(java, /static float tamanhoDoTitulo\(String titulo\) \{[\s\S]*?return 10f;/, 'o titulo do widget voltou a crescer alem dos 10 do cartao');
+assert.match(java, /comAlfa\(claro, 0xB8\)/, 'as linhas do titulo do widget deixaram de ser as do cartao');
+// Layout: so periodo, titulo, Progresso e Tempo com ciclo; as mesmas cores do cartao.
+assert.match(provedor, /progressPercent,\s*timeProgress,\s*false,\s*false,\s*true,/, 'com ciclo, o widget voltou a mostrar as linhas de dia e de status a mais');
+assert.match(layout, /android:textColor="#A8B6C9"\s*android:textSize="8sp"/, 'o periodo do widget saiu da cor do cartao');
+console.log('ok - moldura, corte, pedra, titulo, linhas e textos do widget seguem o cartao do app');
+
 console.log('Barras do ciclo: uma receita, uma fonte, igual no app e no widget.');

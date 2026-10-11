@@ -71,7 +71,7 @@ public class GlyphWidgetProvider extends AppWidgetProvider {
         // O titulo recebe o tom claro do metal e o corpo cai quando o nome e longo.
         views.setImageViewBitmap(R.id.glyph_widget_rule_left, GlyphWidgetPaint.linhaDoTitulo(copy.grade, false));
         views.setImageViewBitmap(R.id.glyph_widget_rule_right, GlyphWidgetPaint.linhaDoTitulo(copy.grade, true));
-        views.setTextColor(R.id.glyph_widget_title, GlyphWidgetPaint.molduraDe(copy.grade).claro);
+        views.setTextColor(R.id.glyph_widget_title, metal.pale);
         views.setTextViewTextSize(R.id.glyph_widget_title, TypedValue.COMPLEX_UNIT_SP, GlyphWidgetPaint.tamanhoDoTitulo(copy.title));
         views.setViewVisibility(R.id.glyph_widget_subtitle, copy.showSubtitle ? View.VISIBLE : View.GONE);
         views.setViewVisibility(R.id.glyph_widget_meta, copy.showMeta ? View.VISIBLE : View.GONE);

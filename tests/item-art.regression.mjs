@@ -241,31 +241,29 @@ const naPasta = (relativo) => fs.existsSync(path.join(root, 'public', relativo.r
     );
     assert.equal(MISSOES_POR_TEMPORADA, 3, 'mudou o numero de missoes por temporada');
 
-    // Quem ja tem missao escrita precisa ter exatamente tres.
+    // Quem ja tem missao escrita precisa ter exatamente tres DA COLECAO.
     //
-    // A Aurora II tem QUATRO: as tres da colecao mais 'aurora-quest-cla-vigilia',
-    // uma missao de cla. Ela nao entrega peca e nao e o fecho — entrou fora da
-    // regra. Fica anotada aqui ate a decisao: ou vira o selo (o quarto passo que
-    // entrega insignia e tema), ou sai. Enquanto estiver na lista, o teste
-    // aceita; no dia que mudar, ele avisa.
+    // Missao de cla nao conta: ela paga bau normal (Raro), nao entrega peca e
+    // nao e o fecho. Decidido com o Afonso em 12/10/2026, quando a missao de
+    // cla voltou (docs/superpowers/specs/2026-10-12-missao-de-cla-design.md).
+    // Antes, a 'aurora-quest-cla-vigilia' da Aurora II era uma excecao anotada.
     const todas = Object.values(SEASONS);
-    // A temporada mudou de casa: a Genesis ocupou a vaga da Aurora na Primeira
-    // Era, entao a colecao passou a ser entregue pela Aurora II.
-    const excecoesConhecidas = { 'season-aurora-2-2027': 4 };
-    const comQuests = todas.filter((season) => (season.quests || []).length > 0);
+    const daColecao = (season) => (season.quests || []).filter((quest) => quest.type !== 'clan');
+    const comQuests = todas.filter((season) => daColecao(season).length > 0);
     const foraDaRegra = comQuests
-        .filter((season) => season.quests.length !== (excecoesConhecidas[season.id] ?? MISSOES_POR_TEMPORADA))
-        .map((season) => `${season.id}: ${season.quests.length}`);
+        .filter((season) => daColecao(season).length !== MISSOES_POR_TEMPORADA)
+        .map((season) => `${season.id}: ${daColecao(season).length}`);
     assert.deepEqual(foraDaRegra, [], `temporada com numero errado de missoes: ${foraDaRegra.join(', ')}`);
 
     // E nenhuma quest deveria pagar o bau mitico se a regra e entregar a PECA.
     // Hoje todas pagam. Enquanto a decisao nao vier, o teste so conta — para o
     // numero aparecer em vez de virar folclore.
+    // Missao de cla fica fora: o bau dela e normal (Raro/Epico), nao o da colecao.
     const pagamComBau = comQuests.flatMap((season) =>
-        season.quests.filter((quest) => quest.reward_type === 'chest').map((quest) => quest.id));
+        daColecao(season).filter((quest) => quest.reward_type === 'chest').map((quest) => quest.id));
     assert.equal(
         pagamComBau.length,
-        7,
+        6,
         `mudou quantas quests de temporada pagam bau em vez da peca (${pagamComBau.length}): ${pagamComBau.join(', ')}`,
     );
 

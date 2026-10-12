@@ -226,6 +226,33 @@ export const SEASONS: Record<string, SeasonConfig> = {
         reward_type: 'chest',
         reward_value: 'Season',
       },
+      {
+        id: 'clan-genesis-socializar',
+        title: 'Socializar',
+        description: 'Como grupo, completem 20 encontros, conversas ou chamadas com alguém que importa. Quem entrou ganha 1 Baú Raro.',
+        type: 'clan',
+        category: 'social',
+        season_id: 'season-genesis-0',
+        actionTemplate: {
+          name: 'Socializar',
+          description: 'Um encontro, uma conversa ou uma chamada com alguém que importa.',
+          duration: 30,
+          icon: '🤝',
+          repetitions: 20,
+          difficulty: 1,
+        },
+        requirements: { clanGoal: 20 },
+        // Sem XP: o premio e o bau Raro e a insignia de quest. A meta e o fim
+        // moram tambem no servidor (clan_quests); um teste garante que batem.
+        rewards: { xp: 0, gold: 0 },
+        clanConfig: { collectiveGoal: 20 },
+        goal_type: 'actions_completed',
+        goal_value: 20,
+        progressLabel: 'encontros',
+        reward_type: 'chest',
+        // Nunca 'Season': a colecao da temporada e contada em 3 baus para 3 pecas.
+        reward_value: 'Raro',
+      },
     ],
   },
   'season-zenite-1-2026': {

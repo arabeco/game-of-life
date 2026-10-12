@@ -77,8 +77,10 @@ const genesisEnd = seasonSource.indexOf("'season-zenite-1-2026': {", genesisStar
 assert.ok(genesisStart >= 0 && genesisEnd > genesisStart, 'o bloco da Genesis deve ser identificavel');
 const genesis = seasonSource.slice(genesisStart, genesisEnd);
 
-const questRewards = [...genesis.matchAll(/title: '([^']+)',[\s\S]*?rewards: \{ xp: (\d+)/g)]
-  .map((match) => ({ nome: match[1], xp: Number(match[2]) }));
+// Missao de cla fica fora da escala: ela paga o bau Raro, sem XP (12/10/2026).
+const questRewards = [...genesis.matchAll(/title: '([^']+)',[\s\S]*?type: '(\w+)',[\s\S]*?rewards: \{ xp: (\d+)/g)]
+  .filter((match) => match[2] !== 'clan')
+  .map((match) => ({ nome: match[1], xp: Number(match[3]) }));
 
 assert.equal(questRewards.length, 3, 'a Genesis tem tres jornadas');
 assert.deepEqual(

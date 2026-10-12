@@ -32,8 +32,8 @@ Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 
 - [ ] Egress de abertura: baixar cada vez menos a cada vez que o app abre *(Claude)* — Passo 0 FEITO em 11/10 (eb14cbf): o app mede quanto baixa em cada abertura (ler com supabase/CHECK-peso-das-aberturas.sql). Medido em 12/10 (CHECK-o-que-a-abertura-baixa.sql): 325 KB por abertura — relatórios fechados 131 (atlas semanal 111), tarefas 99, inventário 43, perfil 25 (garden_state 19). Passo 1 FEITO (35da095): relatórios fechados guardados no celular, só desce o novo ou mudado (−130 KB). Passo 2 FEITO (bb107b6): tarefas e inventário sem user_id, perfil sem garden_state (−46 KB). Os dois SQLs rodados pelo Afonso em 12/10, CHECK-egress-de-abertura.sql deu tudo true. O ganho chega no celular com o AAB 111. Próximo: janela de 3 meses de tarefas (99 KB) e cópia no celular com delta.
 - [ ] Planner: vibração e fluidez ao arrastar, segurar e concluir *(outra IA)* — Codex, prioridade 4. A sensação tátil só se confere no aparelho.
 - [ ] AAB 111 (só quando o Afonso pedir) *(Afonso)* — Entra: convite com prêmios baratos, “Cinco dias no Glyph”, widget e cartão do ciclo iguais, egress de abertura passos 1 e 2, e a tela nova dos e-mails/exclusão do Codex. O 110 ainda mostra os prêmios antigos e a missão de 7 dias.
-- [ ] Clã: mexer antes do lançamento *(Afonso)* — 12/10: pedido do Afonso. Escopo e quem faz a combinar.
-- [ ] Rankings e interatividade: mexer antes do lançamento *(Afonso)* — 12/10: pedido do Afonso. Escopo e quem faz a combinar.
+- [ ] Clã: mexer antes do lançamento *(Afonso)* — 12/10: pedido do Afonso. O que ele quer do social: dopamina, reconhecimento e cooperação (não competição nem cobrança). Prompt para outra IA dar ideias: docs/2026-10-12-prompt-apelo-social.md. Escopo e quem faz a combinar.
+- [ ] Rankings e interatividade: mexer antes do lançamento *(Afonso)* — 12/10: pedido do Afonso. Ranking a serviço de reconhecimento e cooperação (ex.: de grupo, não pessoa contra pessoa). Mesmo prompt do clã: docs/2026-10-12-prompt-apelo-social.md. Escopo e quem faz a combinar.
 
 <details><summary>Feitos (24)</summary>
 

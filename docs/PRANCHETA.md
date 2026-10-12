@@ -1,6 +1,6 @@
 # Prancheta do Glyph
 
-Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 2026-10-12. 20 abertos de 70.
+Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 2026-10-12. 19 abertos de 70.
 
 **Não edite as listas abaixo** — elas são regravadas a partir da prancheta. Para avisar algo, escreva em "Recados da outra IA", no fim: o Claude lê e passa para a prancheta.
 
@@ -27,11 +27,10 @@ Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 
 ## App
 
 - [ ] Planner treme para o lado ao abrir, como se quisesse mudar de página *(Afonso)* — Gravar a tela abrindo o planner e pôr o vídeo na pasta (output/). O Claude tira os quadros e acha o que mexe.
-- [ ] Egress de abertura: baixar cada vez menos a cada vez que o app abre *(Claude)* — Medido em 10/10: ~0,4 MB por abertura, quase a conta inteira (388 KB), e cresce com a idade da conta. Passo 0 FEITO em 11/10 (eb14cbf): o app mede quanto baixa em cada abertura e grava no registro de abertura; ler com supabase/CHECK-peso-das-aberturas.sql (a partir do AAB 110). Próximos: relatórios de ciclos fechados só quando abertos, consultas pedindo só o necessário, inventário e mensagens antigas, depois cópia no celular.
+- [ ] Egress de abertura: baixar cada vez menos a cada vez que o app abre *(Claude)* — Passo 0 FEITO em 11/10 (eb14cbf): o app mede quanto baixa em cada abertura (ler com supabase/CHECK-peso-das-aberturas.sql). Medido em 12/10 (CHECK-o-que-a-abertura-baixa.sql): 325 KB por abertura — relatórios fechados 131 (atlas semanal 111), tarefas 99, inventário 43, perfil 25 (garden_state 19). Passo 1 FEITO em 12/10 (35da095): relatórios fechados guardados no celular, só desce o novo ou mudado (−130 KB); FALTA o Afonso rodar a migração 20261012170000_impressao_do_relatorio.sql e entrar no próximo AAB. Próximo (passo 2): tirar user_id e colunas sem uso de tarefas e inventário, garden_state fora do perfil na abertura.
 - [ ] Planner: vibração e fluidez ao arrastar, segurar e concluir *(outra IA)* — Codex, prioridade 4. A sensação tátil só se confere no aparelho.
-- [ ] Rodar a migração 20261012150000_convite_e_missao_com_5_dias.sql *(Afonso)* — A missão paga com 5 dias e o convite paga 10 fragmentos, baú Comum e baú Incomum. Pode rodar de novo se já tiver rodado a versão anterior.
 
-<details><summary>Feitos (23)</summary>
+<details><summary>Feitos (24)</summary>
 
 - [x] Onboarding novo: fechar e commitar *(Claude)* — Commitado em 09/10 (fb05e4e).
 - [x] Planner sem tremer: commitar *(Claude)* — Commitado em 09/10 (fb05e4e).
@@ -56,6 +55,7 @@ Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 
 - [x] Ciclo e resumos alinhados à virada das 4h *(outra IA)* — Commit 5749288. Vai no AAB 109.
 - [x] Onboarding: nome já preenchido e faixa etária antes do propósito *(outra IA)* — Codex, 11/10. Vai no AAB 110. A faixa declarada não comprova idade.
 - [x] Planos sem baús, e renovação com ouro sem pagar duas vezes *(outra IA)* — Codex. Afonso rodou 20261011010000 (dez verificações OK). Vai no AAB 110. O teste reward-routing ainda espera o baú antigo do plano e falha.
+- [x] Rodar a migração 20261012150000_convite_e_missao_com_5_dias.sql *(Afonso)* — 12/10: rodada a versão final pelo Afonso (antes tinha rodado a anterior, de 5 dias no convite).
 
 </details>
 

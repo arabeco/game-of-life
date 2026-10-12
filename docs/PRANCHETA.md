@@ -94,7 +94,7 @@ Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 
 ## Arte
 
 - [ ] Gerar as artes das próximas temporadas *(outra IA)* — 12/10: o Codex está fazendo. Não depende do AAB.
-- [ ] Arrumar as skins das temporadas futuras: detalhe de sobreposição *(Afonso)* — 12/10: pedido do Afonso. Ajustar o encaixe/sobreposição das roupas no corpo nas skins das próximas temporadas.
+- [ ] Arrumar as skins das temporadas futuras: detalhe de sobreposição *(Claude)* — 12/10: pedido do Afonso. Ajustar o encaixe/sobreposição das roupas no corpo nas skins das próximas temporadas. Claude ajuda, mas não hoje nem amanhã (depois de 13/10).
 
 <details><summary>Feitos (7)</summary>
 
@@ -224,3 +224,9 @@ Afonso aprovou recuperação de senha + confirmação de exclusão; novidades fi
 - Produzidas propostas de Zênite I, Eclipse I, Égide I, Aurora II e Zênite II, com as paletas aprovadas por Afonso. Relatório: docs/2026-10-12-skins-proximas-temporadas.md. Galeria: output/temporadas-skins-2026-10-12/galeria.html.
 - PNGs 500×500 com alpha real, originais e prompts preservados. Ainda há ajustes geométricos nas mangas/calçados; NÃO marcar como arte integrada nem encaixe aprovado. Nenhum asset do catálogo foi substituído.
 - Quatro dessas temporadas ainda têm jornadas vazias e não têm coleção própria cadastrada. Aurora II já tem coleção; a proposta nova preserva o Guardião atual. Não confundir com as cinco skins de regras secretas, já feitas.
+
+### 12/10 — Codex: 12 artes das próximas quatro temporadas
+
+- Afonso pediu apenas borda, banner e insígnia de Zênite I, Eclipse I, Égide I e Aurora II. As 12 peças foram geradas e salvas em art-delivery/temporadas-2027/. Galeria: galeria.html; instruções e limites: README.md; prompts: prompts.json.
+- PNGs com alpha (500×500; banners 1020×170) e WEBP lossless, cerca de 2 MiB os 12. Alpha 0 no centro das quatro bordas, preview com avatar por baixo, nomes/acento e Aurora II conferidos. Galeria verificada em 390/1280 px e temas claro/escuro.
+- Não integrado ao catálogo/servidor, nenhum arquivo antigo substituído. Não marcar temporadas como lançáveis: três coleções ainda precisam de cadastro/missões. Skins continuam com encaixe pendente; temas/fundos não foram gerados nesta rodada.

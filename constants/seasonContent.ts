@@ -384,35 +384,6 @@ export const SEASONS: Record<string, SeasonConfig> = {
         reward_type: 'chest',
         reward_value: 'Season',
       },
-      {
-        id: 'aurora-quest-cla-vigilia',
-        title: 'A Vigília da Aurora',
-        description: 'Como grupo, completem 30 rondas da Aurora para manter a temporada desperta. Recompensa: 1 Baú Épico por participante.',
-        type: 'clan',
-        category: 'social',
-        season_id: 'season-aurora-2-2027',
-        actionTemplate: {
-          name: 'Ronda da Aurora',
-          description: 'Ronda coletiva do grupo para manter a Aurora desperta.',
-          duration: 20,
-          icon: '🌆',
-          repetitions: 30,
-          difficulty: 2,
-        },
-        requirements: { clanGoal: 30 },
-        rewards: { xp: 2600, gold: 0 },
-        clanConfig: { collectiveGoal: 30 },
-        goal_type: 'actions_completed',
-        goal_value: 30,
-        progressLabel: 'rondas',
-        reward_type: 'chest',
-        // Missao de CLA nao paga bau mitico. A colecao da temporada e dimensionada
-        // por tres baus para tres pecas — skin, borda e banner. Um quarto bau
-        // seria duplicata garantida. Cla tem economia propria, e o Epico ja e
-        // recompensa alta.
-        reward_value: 'Épico',
-        maxParticipants: 20,
-      },
     ],
   },
   'season-zenite-2-2027': {

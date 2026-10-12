@@ -253,6 +253,11 @@ export const SeasonView: React.FC = () => {
 
     const calculateQuestProgress = (quest: SeasonQuest): number => {
         if (completedFlags.has(quest.id)) return 100;
+        // Missao de cla: o total e a meta como o servidor contou.
+        if (quest.type === 'clan' && missoesDoCla[quest.id]) {
+            const status = missoesDoCla[quest.id];
+            return Math.min(100, Math.round((status.total / Math.max(1, missoesDoCla[quest.id].meta)) * 100));
+        }
 
         const required = quest.type === 'clan'
             ? (quest.requirements?.clanGoal || quest.goal_value || quest.actionTemplate.repetitions || 1)

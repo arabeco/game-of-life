@@ -76,3 +76,11 @@ As missões de clã antigas foram desligadas por serem "muito joguinho, pouca si
   - a meta e o fim batem com o servidor;
   - o baú não é de temporada.
 - `tsc` e a suíte inteira. O teste `challenge-reward-flow` passa a olhar a flag nova onde for o caso.
+
+## Ajustes do Afonso depois da revisão (12/10/2026)
+
+- **"Se depositou, já era."** Quem sai do clã ou abandona a missão deixa no grupo o que fez, e não leva nada para o clã novo. Cada período dentro da missão é uma linha própria (`clan_quest_participants`, com `encerrada_em`). Sair do clã encerra o período por gatilho, e voltar abre um período novo, então o que se fez fora não entra. A contagem usa o momento da conclusão (`completed_at`). Quem saiu continua na lista do cartão, apagado e marcado "(saiu)", e não recebe o baú.
+- **Humor sem registro:** quem nunca registrou humor aparece com a barra vazia (transparente, "sem dados"), e não com o 50 do cadastro. `humor_do_meu_cla()` devolve `registrado`, que verifica se a pessoa tem alguma linha em `mood_entries`.
+- **A meta que vale é a do servidor** (`clan_quests.goal`). A arena e a Temporada usam a meta que vem no status; a do app fica só de reserva.
+- **Aurora II sem missão de clã:** a `aurora-quest-cla-vigilia` saiu. Um teste garante que toda missão de clã tem semente em `clan_quests`.
+- **`clan_quests`:** `revoke all` e só `select` para `authenticated`.

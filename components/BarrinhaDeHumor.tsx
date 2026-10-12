@@ -6,8 +6,19 @@ import { MOODS_DATA } from '../constants';
  * `compacta` e a do palco da Sede: cabe embaixo do nome, sem o rotulo (que
  * continua no title e no leitor de tela).
  */
-export const BarrinhaDeHumor: React.FC<{ mood?: number; compacta?: boolean }> = ({ mood, compacta = false }) => {
-    if (typeof mood !== 'number' || !Number.isFinite(mood)) return null;
+export const BarrinhaDeHumor: React.FC<{ mood?: number | null; compacta?: boolean }> = ({ mood, compacta = false }) => {
+    // undefined: o app ainda nao sabe nada do membro. null: ele nunca registrou
+    // humor — o 50 do cadastro nao e humor de ninguem, entao a barra fica vazia.
+    if (mood === undefined) return null;
+    if (mood === null) {
+        return (
+            <div className={`flex items-center gap-2 ${compacta ? 'mt-1 justify-center' : 'mt-1'}`} title="Humor: sem dados">
+                <div aria-label="Humor: sem dados" className={`h-1 rounded-full border border-white/15 bg-transparent ${compacta ? 'w-14' : 'w-20'}`} />
+                {compacta ? null : <span className="text-[9px] uppercase tracking-[0.12em] text-white/30">Sem dados</span>}
+            </div>
+        );
+    }
+    if (!Number.isFinite(mood)) return null;
     const valor = Math.max(0, Math.min(100, mood));
     const faixa = MOODS_DATA.find((m) => valor >= m.min && valor < m.max) || MOODS_DATA[MOODS_DATA.length - 1];
     return (

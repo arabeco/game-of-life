@@ -968,7 +968,7 @@ export interface GameContextType {
     atualizarMissaoDoCla: (questId: string) => Promise<StatusDaMissao | null>;
     entrarNaMissaoDoCla: (questId: string) => Promise<boolean>;
     receberPremioDaMissaoDoCla: (questId: string) => Promise<boolean>;
-    humorDoCla: Record<string, number>;
+    humorDoCla: Record<string, number | null>;
     carregarHumorDoCla: () => Promise<void>;
     completeTutorialMission: () => void;
     toggleChecklistItem: (id: string) => void;
@@ -3489,7 +3489,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const [userMissionParticipations, setUserMissionParticipations] = useState<Record<string, boolean>>({}); // missionId -> boolean
     /** Status da missao de cla da temporada, como o servidor contou. */
     const [missoesDoCla, setMissoesDoCla] = useState<Record<string, StatusDaMissao>>({});
-    const [humorDoCla, setHumorDoCla] = useState<Record<string, number>>({});
+    const [humorDoCla, setHumorDoCla] = useState<Record<string, number | null>>({});
     const entrandoNaMissaoRef = useRef<Set<string>>(new Set());
     const getCurrentClanRole = useCallback((): 'leader' | 'member' | null => {
         const currentUserId = getSupabaseUserId();
@@ -12513,7 +12513,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const carregarHumorDoCla = useCallback(async () => {
         const { data, error } = await supabase.rpc('humor_do_meu_cla');
         if (error || !Array.isArray(data)) return;
-        setHumorDoCla(Object.fromEntries(data.map((linha: any) => [String(linha.user_id), Number(linha.mood)])));
+        setHumorDoCla(Object.fromEntries(data.map((linha: any) => [String(linha.user_id), linha.registrado ? Number(linha.mood) : null])));
     }, []);
 
     // Ao entrar no clã (ou trocar), o humor do grupo e o status de cada missão.
@@ -12537,6 +12537,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             .map((status) => [status.minhaAcao as string, status.questId]),
     ) as Record<string, string>, [missoesDoCla]);
     const acoesDaMissaoDoCla = useMemo(() => new Set(Object.keys(acaoParaMissaoDoCla)), [acaoParaMissaoDoCla]);
+    // A meta que vale e a do servidor (clan_quests); a do app e so o ponto de partida.
+    const metaDaMissaoDoCla = useMemo(() => Object.fromEntries(
+        Object.values(missoesDoCla).map((status) => [status.questId, status.meta]),
+    ) as Record<string, number>, [missoesDoCla]);
     const assinaturaDaMissaoDoCla = useMemo(() => assinaturaDaMissao(tasks, acoesDaMissaoDoCla), [tasks, acoesDaMissaoDoCla]);
     useEffect(() => {
         if (!acoesDaMissaoDoCla.size) return;
@@ -12576,9 +12580,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             // esta entrada criou — uma ação antiga nunca é apagada.
             const minhaAcao = missoesDoCla[questId]?.minhaAcao;
             const acaoExistente = minhaAcao ? actions.find((candidate) => candidate.id === minhaAcao) || null : null;
+            const arenaExistente = acaoExistente ? getArenas().find((candidate) => candidate.id === acaoExistente.arenaId) || null : null;
             const resultado = await entrarComDesfazer<Arena, Action>({
                 acaoExistente,
-                arenaExistente: null,
+                arenaExistente,
                 criarArena: () => addArena(assets[0]?.id || 'geral', {
                     name: quest.title,
                     description: quest.description || 'Missão de clã',
@@ -13376,6 +13381,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const questSharedDomain = useQuestSharedDomain({
         acaoParaMissaoDoCla,
+        metaDaMissaoDoCla,
         seasonQuests,
         sessionUserId: session?.user.id,
         supabase,

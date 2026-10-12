@@ -7,7 +7,8 @@
 
 export const QUEST_DE_CLA_DE_TESTE = 'clan-genesis-socializar';
 
-export interface MembroDaMissao { userId: string; nickname: string; feito: number }
+/** `ativo` falso = saiu (do cla ou da missao): o que depositou fica no grupo. */
+export interface MembroDaMissao { userId: string; nickname: string; feito: number; ativo: boolean }
 export interface StatusDaMissao {
     questId: string;
     meta: number;
@@ -40,6 +41,7 @@ export const lerStatusDaMissao = (data: unknown): StatusDaMissao | null => {
             userId: String(m?.user_id || ''),
             nickname: String(m?.nickname || 'Membro'),
             feito: Math.max(0, Number(m?.done) || 0),
+            ativo: m?.active !== false,
         })),
     };
 };
@@ -95,13 +97,15 @@ export const entrarComDesfazer = async <A extends { id: string; isArchived?: boo
     let criouAcao = false;
     let desarquivou = false;
     try {
+        // Voltar para a missao na mesma arena: ela sai do arquivo.
+        if (arena?.isArchived) {
+            passos.desarquivarArena(arena);
+            desarquivou = true;
+        }
         if (!acao) {
             if (!arena) {
                 arena = await passos.criarArena();
                 criouArena = true;
-            } else if (arena.isArchived) {
-                passos.desarquivarArena(arena);
-                desarquivou = true;
             }
             acao = await passos.criarAcao(arena);
             criouAcao = true;

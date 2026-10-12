@@ -45,8 +45,8 @@ export const MissaoDoClaCard: React.FC = () => {
             {status.membros.length > 0 && (
                 <ul className="mt-3 space-y-1">
                     {status.membros.map((membro) => (
-                        <li key={membro.userId} className="flex justify-between text-[11px] text-white/70">
-                            <span className="truncate">{membro.nickname}</span>
+                        <li key={membro.userId} className={`flex justify-between text-[11px] ${membro.ativo ? 'text-white/70' : 'text-white/35'}`}>
+                            <span className="truncate">{membro.nickname}{membro.ativo ? '' : ' (saiu)'}</span>
                             <span className="tabular-nums text-white/50">{membro.feito}</span>
                         </li>
                     ))}

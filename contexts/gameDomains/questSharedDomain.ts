@@ -25,6 +25,8 @@ interface UseQuestSharedDomainParams {
     showToast: (message: string, tone: ToastTone) => void;
     /** acao -> missao de cla, vindo da participacao no servidor (o unico elo). */
     acaoParaMissaoDoCla?: Record<string, string>;
+    /** missao de cla -> meta que o servidor guarda (vale mais que a escrita no app). */
+    metaDaMissaoDoCla?: Record<string, number>;
 }
 
 export interface QuestSharedDomainApi {
@@ -51,6 +53,7 @@ export const useQuestSharedDomain = ({
     updateArena,
     showToast,
     acaoParaMissaoDoCla = {},
+    metaDaMissaoDoCla = {},
 }: UseQuestSharedDomainParams): QuestSharedDomainApi => {
     const normalizeQuestLabel = (value?: string) => normalizeDomainLabel(value);
 
@@ -72,7 +75,13 @@ export const useQuestSharedDomain = ({
 
     const missaoDaParticipacao = (action: Action) => {
         const questId = acaoParaMissaoDoCla[action.id];
-        return questId ? seasonQuests.find(quest => quest.id === questId) || null : null;
+        const quest = questId ? seasonQuests.find(candidate => candidate.id === questId) || null : null;
+        if (!quest) return null;
+        // A meta que vale e a do servidor; a do app fica so de reserva.
+        const meta = metaDaMissaoDoCla[quest.id];
+        return meta
+            ? { ...quest, goal_value: meta, requirements: { ...quest.requirements, clanGoal: meta } }
+            : quest;
     };
 
     const getClanQuestsForArena = (arena: Arena, arenaActions: Action[]) => {

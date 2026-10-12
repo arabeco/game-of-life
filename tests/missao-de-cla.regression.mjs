@@ -70,7 +70,6 @@ const visao = ler('components/ClanOverviewModal.tsx');
 assert.match(cartao, /rotuloDaMissao\(status\)/, 'o cartao tem de mostrar X/Y');
 assert.match(cartao, /disabled=\{ocupado\}/, 'o botao nao trava em voo');
 assert.match(cartao, /podeReceber\(status\)/);
-assert.match(barrinha, /if \(typeof mood !== 'number' \|\| !Number\.isFinite\(mood\)\) return null;/, 'sem humor tinha de sumir');
 assert.match(visao, /<MissaoDoClaCard \/>/);
 assert.match(visao, /<BarrinhaDeHumor mood=\{humorDoCla\[member\.id\]\} \/>/);
 console.log('ok - a tela do cla mostra a missao em X/Y e o humor de cada um, que some sem registro');
@@ -170,3 +169,40 @@ const abandonar = contexto2.slice(contexto2.indexOf('const abortSeasonQuest = as
 assert.match(abandonar, /supabase\.rpc\('sair_da_missao_de_cla'/, 'abandonar nao tira a pessoa da missao');
 assert.match(abandonar, /if \(quest\.type === 'clan'\) \{[\s\S]*?updateArena\([^)]*isArchived: true/, 'abandonar a missao de cla tinha de arquivar a arena, nao apagar');
 console.log('ok - abandonar a missao de cla sai dela no servidor e arquiva a arena');
+
+// ============================== 7. pedidos do Afonso depois da revisao (12/10/2026)
+// "Se depositou, ja era": quem saiu fica na lista, apagado
+const comSaida = lerStatusDaMissao({ ...bruto, members: [{ user_id: 'a', nickname: 'Ana', done: 3, active: true }, { user_id: 'b', nickname: 'Beto', done: 2, active: false }] });
+assert.deepEqual(comSaida.membros.map((m) => m.ativo), [true, false], 'o app nao sabe quem saiu');
+assert.match(ler('components/MissaoDoClaCard.tsx'), /membro\.ativo \? '' : ' \(saiu\)'/, 'quem saiu aparece igual a quem esta dentro');
+
+// Humor: quem nunca registrou aparece "sem dados" (transparente), nao 50
+const barra = ler('components/BarrinhaDeHumor.tsx');
+assert.match(barra, /if \(mood === undefined\) return null;/, 'membro sem dado nenhum ainda tinha de nao desenhar nada');
+assert.match(barra, /if \(mood === null\) \{[\s\S]{0,900}Sem dados/, 'quem nunca registrou humor tinha de aparecer sem dados');
+assert.match(ler('contexts/GameContext.tsx'), /linha\.registrado \? Number\(linha\.mood\) : null/, 'o 50 do cadastro aparecia como humor');
+
+// A meta vale a do servidor
+assert.match(ler('contexts/gameDomains/questSharedDomain.ts'), /metaDaMissaoDoCla\[quest\.id\]/, 'a arena usa a meta escrita no app, nao a do servidor');
+assert.match(ler('views/SeasonView.tsx'), /if \(quest\.type === 'clan' && missoesDoCla\[quest\.id\]\) \{[\s\S]{0,200}missoesDoCla\[quest\.id\]\.meta/, 'a Temporada usa a meta escrita no app');
+
+// Aurora II sem missao de cla, e toda missao de cla tem semente no servidor
+const temporadas = ler('constants/seasonContent.ts');
+assert.doesNotMatch(temporadas, /aurora-quest-cla-vigilia/, 'a missao de cla quebrada da Aurora II voltou');
+const semente = ler('supabase/migrations/20261012200000_missao_de_cla.sql');
+const missoesDeCla = [...temporadas.matchAll(/id: '([^']+)',[\s\S]{0,400}?type: 'clan'/g)].map((m) => m[1]);
+assert.ok(missoesDeCla.length > 0);
+for (const id of missoesDeCla) assert.ok(semente.includes(`'${id}'`), `missao de cla ${id} sem semente em clan_quests — Entrar daria MISSAO_DESCONHECIDA`);
+
+// Entrar de novo na mesma arena guardada: desarquiva (e arquiva de volta se der errado)
+{
+  const ok = montar({ acaoExistente: { id: 'acao-velha' }, arenaExistente: { id: 'arena-guardada', isArchived: true } });
+  await entrarComDesfazer(ok.passos);
+  assert.deepEqual(ok.feito.desarquivadas, ['arena-guardada'], 'voltar para a missao deixou a arena arquivada');
+  assert.deepEqual(ok.feito.removidas, []);
+  const falhou = montar({ acaoExistente: { id: 'acao-velha' }, arenaExistente: { id: 'arena-guardada', isArchived: true }, rpcFalha: true });
+  await entrarComDesfazer(falhou.passos);
+  assert.deepEqual(falhou.feito.rearquivadas, ['arena-guardada']);
+  assert.deepEqual(falhou.feito.removidas, [], 'a recusa apagou a acao antiga');
+}
+console.log('ok - quem saiu fica na lista, humor sem registro e "sem dados", meta do servidor, Aurora sem missao de cla, voltar desarquiva');

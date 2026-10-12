@@ -32,7 +32,7 @@ export const semODono = async (
 };
 
 /**
- * O perfil sem `garden_state` (migracao 20261012180000). Perfil vazio tambem
+ * O perfil sem `garden_state` (migracao 20261012190000). Perfil vazio tambem
  * confere na consulta antiga: "nao tem perfil" leva a abertura a criar um, e
  * isso nao pode sair de uma funcao que talvez nem exista ainda.
  */

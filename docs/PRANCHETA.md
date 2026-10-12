@@ -1,6 +1,6 @@
 # Prancheta do Glyph
 
-Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 2026-10-12. 19 abertos de 70.
+Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 2026-10-12. 21 abertos de 72.
 
 **Não edite as listas abaixo** — elas são regravadas a partir da prancheta. Para avisar algo, escreva em "Recados da outra IA", no fim: o Claude lê e passa para a prancheta.
 
@@ -12,10 +12,11 @@ Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 
 - [ ] Site: banner de cookie *(outra IA)* — 12/10: fora desta rodada, por decisão do Afonso. Continua aberto.
 - [ ] Site: contador "guerreiros na fila" quebrado *(outra IA)* — 11/10 (Codex): corrigido no site local — usa get_waitlist_count() (deu 12) e o rótulo virou “inscrições recebidas”. Ainda não publicado.
 - [ ] Teste final: excluir conta *(Afonso)* — 12/10: permissões das sete funções de exclusão corrigidas (Afonso rodou 20261012120000). O fluxo completo, no app e no site, está com o Codex; o teste final vem depois.
-- [ ] Exclusão de conta e pedido de exclusão completos, no app e no site *(outra IA)* — Codex, prioridade 1: identidade, estados confiáveis, arquivos pendentes e retentativas. Hoje o site só prepara e-mail.
+- [ ] Exclusão de conta e pedido de exclusão completos, no app e no site *(outra IA)* — 12/10 (Codex): e-mails essenciais (recuperação de senha + confirmação de exclusão) prontos; SQL 20261012180000_email_dispatch_state rodado pelo Afonso; resend v18 e account-delete v29 publicados. Falta: entrega real, conta de teste com senha, fluxo completo de exclusão, pedido pelo site; a tela nova entra no próximo AAB.
 - [ ] Teste final: pedir reembolso *(Afonso)*
-- [ ] Resend: e-mails da exclusão, plano e limites, e a cobrança de US$ 10 *(outra IA)* — Codex, prioridade 2. Causa da cobrança ainda não confirmada; não mexer em assinatura sem o Afonso.
+- [ ] Resend: e-mails da exclusão, plano e limites, e a cobrança de US$ 10 *(outra IA)* — 12/10 (Codex): painel conferido — planos gratuitos, sem método de pagamento nem fatura; o adicional cobrado no passado o Afonso já removeu. SMTP do Supabase confirmado no Resend (smtp.resend.com:465). Falta só um envio real de teste (recuperação de senha numa conta própria).
 - [ ] Site: revisar contadores, Termos, prints e posts e publicar *(outra IA)* — Codex, prioridade 3. O site é outro repositório (Desktop/glyph-landing); post de lançamento ainda em rascunho, sem link do Play.
+- [ ] Rodar a migração 20261012160000_landing_stats_include_gm.sql (contadores do site contam os perfis gm) *(Afonso)* — 12/10 (Codex): o filtro role='user' deixava de fora 2 perfis gm, 32 arenas e 332 ações concluídas. Esperado depois: 5 perfis, 38 arenas, 336 ações. Não precisa de AAB.
 
 <details><summary>Feitos (2)</summary>
 
@@ -27,8 +28,9 @@ Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 
 ## App
 
 - [ ] Planner treme para o lado ao abrir, como se quisesse mudar de página *(Afonso)* — Gravar a tela abrindo o planner e pôr o vídeo na pasta (output/). O Claude tira os quadros e acha o que mexe.
-- [ ] Egress de abertura: baixar cada vez menos a cada vez que o app abre *(Claude)* — Passo 0 FEITO em 11/10 (eb14cbf): o app mede quanto baixa em cada abertura (ler com supabase/CHECK-peso-das-aberturas.sql). Medido em 12/10 (CHECK-o-que-a-abertura-baixa.sql): 325 KB por abertura — relatórios fechados 131 (atlas semanal 111), tarefas 99, inventário 43, perfil 25 (garden_state 19). Passo 1 FEITO em 12/10 (35da095): relatórios fechados guardados no celular, só desce o novo ou mudado (−130 KB). Passo 2 FEITO em 12/10 (bb107b6): tarefas e inventário sem user_id, perfil sem garden_state (−46 KB). FALTA o Afonso rodar as migrações 20261012170000_impressao_do_relatorio.sql e 20261012180000_perfil_de_abertura.sql, e entrar no próximo AAB. Próximo: janela de 3 meses de tarefas (99 KB) e cópia no celular com delta.
+- [ ] Egress de abertura: baixar cada vez menos a cada vez que o app abre *(Claude)* — Passo 0 FEITO em 11/10 (eb14cbf): o app mede quanto baixa em cada abertura (ler com supabase/CHECK-peso-das-aberturas.sql). Medido em 12/10 (CHECK-o-que-a-abertura-baixa.sql): 325 KB por abertura — relatórios fechados 131 (atlas semanal 111), tarefas 99, inventário 43, perfil 25 (garden_state 19). Passo 1 FEITO em 12/10 (35da095): relatórios fechados guardados no celular, só desce o novo ou mudado (−130 KB). Passo 2 FEITO em 12/10 (bb107b6): tarefas e inventário sem user_id, perfil sem garden_state (−46 KB). FALTA o Afonso rodar 20261012170000_impressao_do_relatorio.sql e 20261012190000_perfil_de_abertura.sql (era 180000; renomeada porque colidia com a do Codex), e entrar no AAB 111. Próximo: janela de 3 meses de tarefas (99 KB) e cópia no celular com delta.
 - [ ] Planner: vibração e fluidez ao arrastar, segurar e concluir *(outra IA)* — Codex, prioridade 4. A sensação tátil só se confere no aparelho.
+- [ ] AAB 111 (só quando o Afonso pedir) *(Afonso)* — Entra: convite com prêmios baratos, “Cinco dias no Glyph”, widget e cartão do ciclo iguais, egress de abertura passos 1 e 2, e a tela nova dos e-mails/exclusão do Codex. O 110 ainda mostra os prêmios antigos e a missão de 7 dias.
 
 <details><summary>Feitos (24)</summary>
 
@@ -193,3 +195,9 @@ Recuperação de senha chama Supabase Auth resetPasswordForEmail; configuração
 Afonso aprovou recuperação de senha + confirmação de exclusão; novidades fica para depois. Código e testes em docs/2026-10-12-emails-essenciais.md. Novo SQL 20261012180000_email_dispatch_state.sql reutiliza notification_email_dispatches (três colunas); aguarda execução antes de publicar resend/account-delete. Envio só backend, retentativas limitadas e estado accepted distinto de entrega. Login orienta senha própria versus Google. Storage com falha não vira completed. Não houve envio real, exclusão, alteração de plano ou deploy; trabalhador de limpeza e pedido do site ainda pendentes.
 
 - E-mails essenciais: SQL 20261012180000 confirmado por Afonso (três colunas). Publicados resend v18 e account-delete v29, ambos ACTIVE. Teste remoto com chave pública recusado em ambas (HTTP 401), sem envio/exclusão. Entrega real, conta de teste com senha e fluxo completo de exclusão continuam pendentes; interface ainda exige próximo build.
+
+### 12/10 — Claude (egress de abertura e recados passados)
+
+- Recados passados para a prancheta: Resend conferido (falta só um envio real), e-mails essenciais publicados (resend v18, account-delete v29), e um item novo para o Afonso rodar `20261012160000_landing_stats_include_gm.sql`. Item novo: AAB 111, só quando o Afonso pedir.
+- Egress de abertura, passos 1 e 2 (`35da095`, `bb107b6`): relatórios fechados guardados no celular; tarefas e inventário sem `user_id`; perfil sem `garden_state`. Mexe em `GameContext.tsx` (consulta do perfil, das tarefas, do inventário e dos relatórios na abertura).
+- Para o Codex: a minha migração do perfil também saiu como `20261012180000`, igual à `email_dispatch_state`. Renomeei a minha para `20261012190000_perfil_de_abertura.sql`; a sua ficou como está.

@@ -92,7 +92,7 @@ assert.match(contexto, /perfilDeAbertura\(\s*userId,\s*\(\) => supabase\.rpc\('m
 console.log('ok - a abertura usa as consultas enxutas, e as antigas ficam de reserva');
 
 // ============================== 5. o banco, e o jardim 2D continua sem leitor
-const migracao = ler('supabase/migrations/20261012180000_perfil_de_abertura.sql');
+const migracao = ler('supabase/migrations/20261012190000_perfil_de_abertura.sql');
 assert.match(migracao, /select to_jsonb\(p\) - 'garden_state'\s+from public\.user_profiles p\s+where p\.id = auth\.uid\(\)/);
 assert.doesNotMatch(migracao, /^\s*security definer/im, 'a funcao do perfil passou a ignorar a regra de acesso da tabela');
 

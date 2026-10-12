@@ -52,7 +52,7 @@ export const useQuestSharedDomain = ({
     const normalizeQuestLabel = (value?: string) => normalizeDomainLabel(value);
 
     const getClanQuestForActionName = (actionName?: string): SeasonQuest | null => {
-        if (!PRODUCT_FEATURES.clanMissions) return null;
+        if (!PRODUCT_FEATURES.clanMissions && !PRODUCT_FEATURES.clanSeasonQuests) return null;
         if (!actionName) return null;
         const normalized = normalizeQuestLabel(actionName);
         const direct = seasonQuests.find(quest => quest.type === 'clan' && normalizeQuestLabel(quest.actionTemplate?.name) === normalized);

@@ -82,7 +82,9 @@ assert.match(gameContext, /: SYSTEM_CHALLENGE_INSIGNIA_ID/);
 assert.match(gameContext, /grant\.semInsignia/);
 assert.match(gameContext, /\[\.\.\.new Set\(\[\.\.\.\(grant\.itemIds \|\| \[\]\), missionInsigniaId\]\)\]/);
 assert.match(gameContext, /automaticChallengeClaimInFlightRef/);
-assert.match(gameContext, /PRODUCT_FEATURES\.clanMissions[\s\S]*?filter\(\(quest\) => quest\.type !== 'clan'\)/);
+// A missao de cla da temporada voltou em 12/10/2026 (clanSeasonQuests); a
+// prioridade do lider (clanMissions) segue fora.
+assert.match(gameContext, /\(PRODUCT_FEATURES\.clanMissions \|\| PRODUCT_FEATURES\.clanSeasonQuests\)[\s\S]*?filter\(\(quest\) => quest\.type !== 'clan'\)/);
 assert.match(gameContext, /completedSeasonQuest[\s\S]*?claimSeasonQuest/);
 assert.match(gameContext, /completedSystemChallenge[\s\S]*?claimSystemChallenge/);
 assert.match(inventory, /x\{item\.count\}/);

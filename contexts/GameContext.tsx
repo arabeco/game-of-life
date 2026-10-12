@@ -37,6 +37,7 @@ import { buildCyclePaceMetrics, buildDailyExpSnapshot, buildTaskPoolEntries, fil
 import { buildFairScoreFromTasks, recalculateReportsWithFairScore } from '../utils/fairScoreUtils.js';
 import { carregarCiclosFechados } from '../utils/ciclosFechados';
 import { COLUNAS_DA_TAREFA, COLUNAS_DO_INVENTARIO, perfilDeAbertura, semODono } from '../utils/aberturaEnxuta';
+import { assinaturaDaMissao, deveRecolher, lerStatusDaMissao, mensagemDoErroDaMissao, type StatusDaMissao } from '../utils/missaoDoCla';
 import { notaDoCiclo } from '../utils/cycleGrade.js';
 import { buildCycleWeeklyAtlas } from '../utils/reportAtlasUtils.js';
 import { DEFAULT_ORACLE_PRESENCE_LEVEL, getOracleFeedQuotaStatus } from '../utils/oracleFeedUtils';
@@ -962,6 +963,12 @@ export interface GameContextType {
     updateTask: (taskId: string, updates: Partial<ScheduledTask>) => void;
     setTaskExecutionOrder: (taskId: string, executionOrder: number | null) => void;
     toggleTaskCompletion: (taskId: string) => Promise<void>;
+    missoesDoCla: Record<string, StatusDaMissao>;
+    missoesDeClaAtivas: SeasonQuest[];
+    atualizarMissaoDoCla: (questId: string) => Promise<StatusDaMissao | null>;
+    entrarNaMissaoDoCla: (questId: string) => Promise<boolean>;
+    receberPremioDaMissaoDoCla: (questId: string) => Promise<boolean>;
+    humorDoCla: Record<string, number>;
     completeTutorialMission: () => void;
     toggleChecklistItem: (id: string) => void;
     addChecklistItem: (text: string) => void;
@@ -3479,6 +3486,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const [clanQuestParticipants, setClanQuestParticipants] = useState<Record<string, number>>({});
     const [userMissionParticipations, setUserMissionParticipations] = useState<Record<string, boolean>>({}); // missionId -> boolean
+    /** Status da missao de cla da temporada, como o servidor contou. */
+    const [missoesDoCla, setMissoesDoCla] = useState<Record<string, StatusDaMissao>>({});
+    const [humorDoCla, setHumorDoCla] = useState<Record<string, number>>({});
+    const entrandoNaMissaoRef = useRef<Set<string>>(new Set());
     const getCurrentClanRole = useCallback((): 'leader' | 'member' | null => {
         const currentUserId = getSupabaseUserId();
         if (!currentUserId) return null;
@@ -3771,7 +3782,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }));
 
         const availableQuests = [...quests, ...mappedMissions];
-        return PRODUCT_FEATURES.clanMissions
+        // A missao de cla da temporada voltou (12/10/2026); a prioridade do
+        // lider (clanMissions) segue desligada.
+        return (PRODUCT_FEATURES.clanMissions || PRODUCT_FEATURES.clanSeasonQuests)
             ? availableQuests
             : availableQuests.filter((quest) => quest.type !== 'clan');
     }, [activeRuntimeSeasonConfig, activeRuntimeSeasonId, seasonMissions]);
@@ -11097,9 +11110,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const getActionById = (actionId: string) => actions.find(a => a.id === actionId);
 
     const getClanQuestProgress = useCallback((questId: string) => {
+        // A missao de cla da temporada conta no servidor (status_da_missao_de_cla).
+        if (PRODUCT_FEATURES.clanSeasonQuests && missoesDoCla[questId]) return missoesDoCla[questId].total;
         if (!clan) return 0;
         return clanQuestProgress[clan.id]?.[questId] || 0;
-    }, [clan?.id, clanQuestProgress]);
+    }, [clan?.id, clanQuestProgress, missoesDoCla]);
 
 
     /**
@@ -12471,6 +12486,109 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         recolherArenaDaJornada,
     ]);
 
+    // ---------------------------------------------------------------------
+    // MISSAO DE CLA DA TEMPORADA (12/10/2026).
+    // Desenho: docs/superpowers/specs/2026-10-12-missao-de-cla-design.md
+    // O servidor conta as tarefas marcadas de quem entrou; aqui so se le.
+    // ---------------------------------------------------------------------
+    const missoesDeClaAtivas = useMemo(() => (
+        PRODUCT_FEATURES.clanSeasonQuests
+            ? seasonQuests.filter((quest) => quest.type === 'clan' && (!quest.season_id || quest.season_id === activeRuntimeSeasonId))
+            : []
+    ), [seasonQuests, activeRuntimeSeasonId]);
+
+    const atualizarMissaoDoCla = useCallback(async (questId: string) => {
+        const { data, error } = await supabase.rpc('status_da_missao_de_cla', { p_quest_id: questId });
+        if (error) return null;
+        const status = lerStatusDaMissao(data);
+        if (status) setMissoesDoCla((prev) => ({ ...prev, [questId]: status }));
+        return status;
+    }, []);
+
+    // Ao entrar no clã (ou trocar), o status de cada missão e o humor do grupo.
+    useEffect(() => {
+        if (!clan?.id || !missoesDeClaAtivas.length) return;
+        missoesDeClaAtivas.forEach((quest) => { void atualizarMissaoDoCla(quest.id); });
+        void supabase.rpc('humor_do_meu_cla').then(({ data, error }) => {
+            if (error || !Array.isArray(data)) return;
+            setHumorDoCla(Object.fromEntries(data.map((linha: any) => [String(linha.user_id), Number(linha.mood)])));
+        });
+    }, [clan?.id, missoesDeClaAtivas, atualizarMissaoDoCla]);
+
+    // Marcou ou desmarcou uma tarefa da missão: o grupo recontado, juntando toques.
+    // `sourceQuestId` nao vai para o banco (addAction nao manda source_quest_id):
+    // depois de recarregar, a acao e achada pelo nome, como nas outras jornadas.
+    const acoesDaMissaoDoCla = useMemo(() => new Set(
+        missoesDeClaAtivas
+            .map((quest) => findSeasonQuestArenaAndAction(quest).action?.id)
+            .filter((id): id is string => Boolean(id)),
+    ), [findSeasonQuestArenaAndAction, missoesDeClaAtivas]);
+    const assinaturaDaMissaoDoCla = useMemo(() => assinaturaDaMissao(tasks, acoesDaMissaoDoCla), [tasks, acoesDaMissaoDoCla]);
+    useEffect(() => {
+        if (!acoesDaMissaoDoCla.size) return;
+        const espera = window.setTimeout(() => {
+            missoesDeClaAtivas.forEach((quest) => { void atualizarMissaoDoCla(quest.id); });
+        }, 800);
+        return () => window.clearTimeout(espera);
+    }, [assinaturaDaMissaoDoCla]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Vencida sem meta: a arena se recolhe (arquiva, não apaga).
+    useEffect(() => {
+        Object.values(missoesDoCla).forEach((status) => {
+            const quest = missoesDeClaAtivas.find((candidate) => candidate.id === status.questId);
+            if (quest && deveRecolher(status)) void recolherArenaDaJornada(quest, 'encerrada');
+        });
+    }, [missoesDoCla, missoesDeClaAtivas, recolherArenaDaJornada]);
+
+    const entrarNaMissaoDoCla = useCallback(async (questId: string): Promise<boolean> => {
+        const quest = findSeasonQuestById(questId);
+        if (!quest || quest.type !== 'clan') return false;
+        if (!clan) {
+            showToast(mensagemDoErroDaMissao('SEM_CLA'), 'info');
+            return false;
+        }
+        if (entrandoNaMissaoRef.current.has(questId)) return false;
+        entrandoNaMissaoRef.current.add(questId);
+        try {
+            let acao = findSeasonQuestArenaAndAction(quest).action;
+            if (!acao) {
+                let { arena } = findSeasonQuestArenaAndAction(quest);
+                if (!arena) {
+                    arena = await addArena(assets[0]?.id || 'geral', {
+                        name: quest.title,
+                        description: quest.description || 'Missão de clã',
+                        icon: quest.actionTemplate.icon || '\u{1F91D}',
+                        priority: 'alta',
+                    });
+                }
+                if (arena?.isArchived) updateArena(arena.id, { isArchived: false });
+                acao = await addAction({
+                    arenaId: arena.id,
+                    sourceQuestId: quest.id,
+                    name: quest.actionTemplate.name,
+                    description: quest.actionTemplate.description,
+                    icon: quest.actionTemplate.icon || '\u{1F91D}',
+                    duration: quest.actionTemplate.duration,
+                    repetitions: quest.actionTemplate.repetitions || quest.goal_value || 1,
+                    actionType: 'A\u00E7\u00E3o Recorrente',
+                    difficulty: 3,
+                });
+            }
+            const resposta = await supabase.rpc('entrar_na_missao_de_cla', { p_quest_id: quest.id, p_action_id: acao.id });
+            if (resposta.error) {
+                await deleteAction(acao.id);
+                showToast(mensagemDoErroDaMissao(resposta.error.message), 'error');
+                return false;
+            }
+            const status = lerStatusDaMissao(resposta.data);
+            if (status) setMissoesDoCla((prev) => ({ ...prev, [quest.id]: status }));
+            showToast(`Você entrou em "${quest.title}". A arena está no seu ArenasView.`, 'success');
+            return true;
+        } finally {
+            entrandoNaMissaoRef.current.delete(questId);
+        }
+    }, [addAction, addArena, assets, clan, deleteAction, findSeasonQuestArenaAndAction, findSeasonQuestById, showToast, updateArena]);
+
     const acceptSeasonQuest = async (questId: string) => {
         const quest = findSeasonQuestById(questId);
         if (!quest) return;
@@ -12480,34 +12598,20 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
 
-        /**
-         * MISSAO DE CLA NAO SE PEGA, E NAO GANHA ARENA.
-         *
-         * Ela exigia dois passos: o lider ativava e cada membro aceitava, e o
-         * aceite criava uma ARENA PESSOAL com o nome da missao. Dois problemas.
-         *
-         * O primeiro e que o botao de ativar mora na tela da Aldeia, que esta
-         * desligada — entao o fluxo inteiro era inalcancavel: nem o lider
-         * conseguia comecar.
-         *
-         * O segundo e de desenho. Missao de grupo que pede arena individual faz
-         * cada um carregar um recipiente proprio para somar num numero comum, e
-         * ainda enche o planner de arena que se arquiva sozinha. O que o grupo
-         * quer e o contrario: contribuir sem combinar nada, do que ja se faz.
-         *
-         * (A regra de "cada quest cria uma arena com o nome da missao" continua
-         * valendo para as INDIVIDUAIS e as de temporada. So o cla sai dela.)
-         */
+        // MISSAO DE CLA SE PEGA DE NOVO (12/10/2026) — revoga a nota de 22/09.
+        // Ela ganha arena porque e a arena que leva a missao para o planner de
+        // quem entrou; o total do grupo e contado no servidor.
+        // Desenho: docs/superpowers/specs/2026-10-12-missao-de-cla-design.md
         if (quest.type === 'clan') {
-            showToast('A tarefa do grupo soma sozinha, pelo que cada um ja faz.', 'info');
+            await entrarNaMissaoDoCla(quest.id);
             return;
         }
 
         // 1. Verificar se a ação já existe
         // NOME DA ARENA = TÍTULO DA MISSÃO
         // O usuario pediu isto para as INDIVIDUAIS e as de temporada: cada quest
-        // ganha uma arena com o nome da missao. O cla saiu da regra em 22/09/2026 —
-        // ver a nota acima.
+        // ganha uma arena com o nome da missao. A de cla voltou a ganhar
+        // arena em 12/10/2026, pelo entrarNaMissaoDoCla.
         const seasonArenaName = quest.title; // Ex: "Correr 15km", "Ler Livro X"
 
         // 2. Buscar ou Criar Arena (Específica para esta missão)
@@ -12607,6 +12711,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
          */
         fragments?: number;
         chest?: ChestType | null;
+        /** Bau que o SERVIDOR ja entregou (missao de cla). Entra so na exibicao. */
+        chestJaEntregue?: ChestType | null;
         /**
          * Missao inicial nao ganha insignia.
          *
@@ -12711,7 +12817,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
 
         const allEarnedItems: string[] = [...new Set(earnedItemIds)];
-        const chestForModal = chestGranted ? grant.chest : null;
+        const chestForModal = grant.chestJaEntregue || (chestGranted ? grant.chest : null);
 
         // As DUAS telas, nesta ordem: a missao primeiro, a patente depois.
         //
@@ -12744,6 +12850,36 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         // A mudanca de EXP aciona o observador unico de patente acima neste
         // provider. Ele e quem libera os cosmeticos e enfileira a celebracao.
         // Fazer isso tambem aqui duplicava insignias, inventario e modal.
+    };
+
+    // Funcao comum, e nao useCallback: grantMissionReward e recriada a cada
+    // render e le o perfil do proprio closure; memorizar aqui a deixaria velha.
+    const receberPremioDaMissaoDoCla = async (questId: string): Promise<boolean> => {
+        const quest = findSeasonQuestById(questId);
+        if (!quest) return false;
+        const { data, error } = await supabase.rpc('receber_premio_da_missao_de_cla', { p_quest_id: questId });
+        if (error) {
+            showToast(mensagemDoErroDaMissao(error.message), 'error');
+            return false;
+        }
+        const resposta = (data || {}) as { already_claimed?: boolean; chest_type?: ChestType | null };
+        const userId = getSupabaseUserId();
+        if (userId) {
+            const baus = await fetchChestsFromDB(userId);
+            if (baus) setUserProfile((prev) => ({ ...prev, chests: baus }));
+        }
+        await grantMissionReward({
+            completionId: quest.id,
+            title: quest.title,
+            icon: quest.actionTemplate?.icon,
+            xp: 0,
+            chestJaEntregue: resposta.already_claimed ? null : (resposta.chest_type || 'Raro'),
+            origem: 'quest_temporada',
+            feito: quest.description,
+            sobrancelha: 'MISSÃO DE CLÃ',
+        });
+        void atualizarMissaoDoCla(questId);
+        return true;
     };
 
     /*
@@ -12879,6 +13015,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const claimSeasonQuest = async (questId: string) => {
         const quest = findSeasonQuestById(questId);
         if (!quest) return;
+        // Missao de cla e paga pelo SERVIDOR, que confere meta e participacao.
+        if (quest.type === 'clan') {
+            await receberPremioDaMissaoDoCla(questId);
+            return;
+        }
         if (quest.season_id && quest.season_id !== activeRuntimeSeasonId) {
             showToast("Essa jornada pertence a uma temporada encerrada.", 'info');
             return;
@@ -15335,6 +15476,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             session,
             getSharedActionPoolProgress, isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, sequenceItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, upcomingCycle, dailyCommitment, judgedOperationalDates, judgedTaskIdsByDate, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, grantInventoryItem, acceptSeasonQuest,
             abortSeasonQuest,
+            missoesDoCla, missoesDeClaAtivas, atualizarMissaoDoCla, entrarNaMissaoDoCla, receberPremioDaMissaoDoCla, humorDoCla,
             roundExpBonus, addProfileFlag, feed, addFeedEvent, deleteFeedEvent, toggleFeedLike, fetchLikesReceived, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, ensureTasksLoadedThrough, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, addSequenceItem, updateSequenceItem, markSequenceItemToday, adjustSequenceItemDays, resetSequenceItem, deleteSequenceItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, recordMoodEntry, fetchMoodHistory, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, respondToClanInvite, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
             directMessages, dmConversations, blockedUsers, blockedUserIds, sendDirectMessage, markDMAsRead, fetchDMs, blockUser, unblockUser, submitModerationReport,
             addSeason, updateSeason, addSeasonMission, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, isProfileLoaded, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, donateItem, craftItem, buyChestWithFragments, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, createCompetitionInvite, respondToRelationshipInvite, endRelationshipLink, renewRelationshipLink, offerMentorshipArena, respondMentorshipOffer, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, respondCompetitionChallenge, cancelCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,

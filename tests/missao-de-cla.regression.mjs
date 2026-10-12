@@ -46,3 +46,20 @@ assert.match(missao.slice(0, missao.indexOf('reward_value') + 30), /reward_value
 const sql = ler('supabase/migrations/20261012200000_missao_de_cla.sql');
 assert.match(sql, /'clan-genesis-socializar', 'season-genesis-0', 20, date '2026-12-31', 'Raro'/, 'a meta ou o fim do app nao bate com o servidor');
 console.log('ok - a missao de teste esta na Genesis, igual ao servidor, com bau Raro');
+// ============================== 4. o contexto (riscos 1, 2 e 3)
+const contexto = ler('contexts/GameContext.tsx');
+const entrar = contexto.slice(contexto.indexOf('const entrarNaMissaoDoCla = useCallback('), contexto.indexOf('const acceptSeasonQuest = async'));
+assert.match(entrar, /if \(!clan\) \{[\s\S]*?mensagemDoErroDaMissao\('SEM_CLA'\)/, 'sem cla, entrar tinha de avisar em vez de criar arena');
+assert.match(entrar, /findSeasonQuestArenaAndAction\(quest\)\.action/, 'entrar de novo criaria outra arena');
+assert.match(entrar, /entrandoNaMissaoRef\.current\.has\(questId\)/, 'duplo toque cria duas arenas');
+assert.match(entrar, /supabase\.rpc\('entrar_na_missao_de_cla'/);
+assert.match(entrar, /if \(resposta\.error\) \{[\s\S]*?deleteAction\(acao\.id\)/, 'recusa do servidor deixava arena orfa');
+assert.match(contexto, /supabase\.rpc\('receber_premio_da_missao_de_cla'/);
+assert.match(contexto, /chestJaEntregue: resposta\.already_claimed \? null : \(resposta\.chest_type \|\| 'Raro'\)/, 'o bau do servidor nao aparece no modal');
+const resgate = contexto.slice(contexto.indexOf('const claimSeasonQuest = async'), contexto.indexOf('const claimSeasonQuest = async') + 600);
+assert.match(resgate, /if \(quest\.type === 'clan'\) \{\s*await receberPremioDaMissaoDoCla\(questId\);/, 'o resgate generico pagaria a missao de cla pelo cliente');
+assert.doesNotMatch(contexto, /A tarefa do grupo soma sozinha/, 'a nota de 22/09 (cla nao se pega) continua barrando');
+assert.match(contexto, /deveRecolher\(status\)[\s\S]{0,200}recolherArenaDaJornada/, 'vencida sem meta nao se recolhe');
+assert.match(ler('views/SeasonView.tsx'), /PRODUCT_FEATURES\.clanSeasonQuests \|\| quest\.type !== 'clan'/);
+assert.match(ler('contexts/gameDomains/questSharedDomain.ts'), /!PRODUCT_FEATURES\.clanMissions && !PRODUCT_FEATURES\.clanSeasonQuests/);
+console.log('ok - entrar trava duplo toque, exige cla, desfaz na recusa; receber mostra o bau do servidor');

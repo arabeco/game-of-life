@@ -173,12 +173,11 @@ export const SeasonView: React.FC = () => {
     const [isCompletedOpen, setCompletedOpen] = useState(false);
 
     const activeSeason = resolveRuntimeActiveSeason(seasons);
-    // Clan missions are switched off at the product level. Nothing can activate one
-    // for a clan any more, so listing them only leads the player to a dead end.
-    // Filtering here keeps every downstream list, count and section consistent.
+    // A missao de cla DA TEMPORADA voltou (12/10/2026): tem botao Entrar e
+    // arena propria. A prioridade do lider (`clanMissions`) segue desligada.
     const quests = useMemo(
         () => seasonQuests.filter((quest) => (
-            (PRODUCT_FEATURES.clanMissions || quest.type !== 'clan')
+            (PRODUCT_FEATURES.clanSeasonQuests || quest.type !== 'clan')
             && (!activeSeason || !quest.season_id || quest.season_id === activeSeason.id)
         )),
         [seasonQuests, activeSeason?.id]

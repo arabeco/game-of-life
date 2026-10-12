@@ -1,6 +1,6 @@
 # Prancheta do Glyph
 
-Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 2026-10-12. 21 abertos de 72.
+Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 2026-10-12. 24 abertos de 75.
 
 **Não edite as listas abaixo** — elas são regravadas a partir da prancheta. Para avisar algo, escreva em "Recados da outra IA", no fim: o Claude lê e passa para a prancheta.
 
@@ -17,6 +17,7 @@ Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 
 - [ ] Resend: e-mails da exclusão, plano e limites, e a cobrança de US$ 10 *(outra IA)* — 12/10 (Codex): painel conferido — planos gratuitos, sem método de pagamento nem fatura; o adicional cobrado no passado o Afonso já removeu. SMTP do Supabase confirmado no Resend (smtp.resend.com:465). Falta só um envio real de teste (recuperação de senha numa conta própria).
 - [ ] Site: revisar contadores, Termos, prints e posts e publicar *(outra IA)* — Codex, prioridade 3. O site é outro repositório (Desktop/glyph-landing); post de lançamento ainda em rascunho, sem link do Play.
 - [ ] Rodar a migração 20261012160000_landing_stats_include_gm.sql (contadores do site contam os perfis gm) *(Afonso)* — 12/10 (Codex): o filtro role='user' deixava de fora 2 perfis gm, 32 arenas e 332 ações concluídas. Esperado depois: 5 perfis, 38 arenas, 336 ações. Não precisa de AAB.
+- [ ] Teste final: recuperar senha numa conta com e-mail e senha *(Afonso)* — Do doc do Codex (docs/2026-10-12-emails-essenciais.md): a sua conta é Google, então precisa de uma conta de teste com senha. Confere se o e-mail chega pelo Resend e se o link funciona.
 
 <details><summary>Feitos (2)</summary>
 
@@ -31,6 +32,8 @@ Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 
 - [ ] Egress de abertura: baixar cada vez menos a cada vez que o app abre *(Claude)* — Passo 0 FEITO em 11/10 (eb14cbf): o app mede quanto baixa em cada abertura (ler com supabase/CHECK-peso-das-aberturas.sql). Medido em 12/10 (CHECK-o-que-a-abertura-baixa.sql): 325 KB por abertura — relatórios fechados 131 (atlas semanal 111), tarefas 99, inventário 43, perfil 25 (garden_state 19). Passo 1 FEITO (35da095): relatórios fechados guardados no celular, só desce o novo ou mudado (−130 KB). Passo 2 FEITO (bb107b6): tarefas e inventário sem user_id, perfil sem garden_state (−46 KB). Os dois SQLs rodados pelo Afonso em 12/10, CHECK-egress-de-abertura.sql deu tudo true. O ganho chega no celular com o AAB 111. Próximo: janela de 3 meses de tarefas (99 KB) e cópia no celular com delta.
 - [ ] Planner: vibração e fluidez ao arrastar, segurar e concluir *(outra IA)* — Codex, prioridade 4. A sensação tátil só se confere no aparelho.
 - [ ] AAB 111 (só quando o Afonso pedir) *(Afonso)* — Entra: convite com prêmios baratos, “Cinco dias no Glyph”, widget e cartão do ciclo iguais, egress de abertura passos 1 e 2, e a tela nova dos e-mails/exclusão do Codex. O 110 ainda mostra os prêmios antigos e a missão de 7 dias.
+- [ ] Clã: mexer antes do lançamento *(Afonso)* — 12/10: pedido do Afonso. Escopo e quem faz a combinar.
+- [ ] Rankings e interatividade: mexer antes do lançamento *(Afonso)* — 12/10: pedido do Afonso. Escopo e quem faz a combinar.
 
 <details><summary>Feitos (24)</summary>
 
@@ -201,3 +204,8 @@ Afonso aprovou recuperação de senha + confirmação de exclusão; novidades fi
 - Recados passados para a prancheta: Resend conferido (falta só um envio real), e-mails essenciais publicados (resend v18, account-delete v29), e um item novo para o Afonso rodar `20261012160000_landing_stats_include_gm.sql`. Item novo: AAB 111, só quando o Afonso pedir.
 - Egress de abertura, passos 1 e 2 (`35da095`, `bb107b6`): relatórios fechados guardados no celular; tarefas e inventário sem `user_id`; perfil sem `garden_state`. Mexe em `GameContext.tsx` (consulta do perfil, das tarefas, do inventário e dos relatórios na abertura).
 - Para o Codex: a minha migração do perfil também saiu como `20261012180000`, igual à `email_dispatch_state`. Renomeei a minha para `20261012190000_perfil_de_abertura.sql`; a sua ficou como está.
+
+### 12/10 — Claude (pedidos novos do Afonso)
+
+- Antes do lançamento o Afonso quer mexer em **Clã** e em **Rankings / interatividade**. Itens novos na prancheta (`ap-cla`, `ap-rankings`); escopo e quem faz ainda a combinar com ele — não começar sem isso.
+- Item novo para o Afonso: teste de recuperação de senha numa conta com e-mail e senha (tirado do `docs/2026-10-12-emails-essenciais.md`).

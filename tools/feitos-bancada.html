@@ -1,189 +1,191 @@
 <!doctype html>
-<html lang="pt-BR">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Bancada dos Feitos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800;900&display=swap" rel="stylesheet">
 <style>
-  :root { color-scheme: dark; }
-  body { margin: 0; background: #07080a; color: #e9e4da; font: 14px/1.4 system-ui, -apple-system, Segoe UI, sans-serif; padding: 20px 16px 60px; }
-  h1 { font: 600 18px Georgia, serif; color: #e9c981; margin: 0 0 4px; }
-  .sub { color: #8f8a80; margin: 0 0 18px; font-size: 12px; }
-  .colunas { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 22px; }
-  .coluna h2 { font: 700 11px system-ui; letter-spacing: .16em; text-transform: uppercase; color: #bdb5a4; margin: 0 0 4px; }
-  .coluna p.nota { color: #8f8a80; font-size: 11px; margin: 0 0 10px; min-height: 30px; }
-  .pilha { display: grid; gap: 10px; max-width: 390px; }
+body { margin: 0; background: #07080a; color: #e9e4da; font-family: "Inter", ui-sans-serif, system-ui, sans-serif; padding: 18px 16px 60px; }
+h1 { font: 600 18px Georgia, serif; color: #e9c981; margin: 0 0 4px; }
+.sub { color: #8f8a80; font-size: 12px; margin: 0 0 16px; }
+.colunas { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 22px; }
+.coluna h2 { font: 700 11px "Inter", sans-serif; letter-spacing: .16em; text-transform: uppercase; color: #bdb5a4; margin: 0 0 8px; }
+.pilha { display: grid; gap: 12px; max-width: 420px; }
+button { font: inherit; background: none; border: 0; cursor: pointer; }
+p, h3, dl, dd { margin: 0; }
+.h-5 { height: 1.25rem; } .w-5 { width: 1.25rem; } .h-3\.5 { height: .875rem; } .w-3\.5 { width: .875rem; }
+/* ===== CSS REAL: components/feed-cards.css ===== */
+/* Feitos: typography, fine metal edges and breathing room. No image assets. */
+.feed-achievement-card {
+  --feat-accent: #e9c981;
+  --feat-rgb: 233, 201, 129;
+  --feat-hue: #87744e;
+  --feat-hue-secondary: #514535;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid rgba(var(--feat-rgb), .65);
+  border-radius: 15px;
+  color: #f5f0e7;
+  background:
+    linear-gradient(116deg, transparent 9%, rgba(240, 244, 250, .025) 21%, rgba(240, 244, 250, .10) 28%, transparent 37%, rgba(0, 0, 0, .4) 54%, transparent 73%),
+    radial-gradient(ellipse at 4% 0%, color-mix(in srgb, var(--feat-hue) 36%, #c6cbd2) 0%, color-mix(in srgb, var(--feat-hue) 45%, #08090b) 18%, transparent 58%),
+    linear-gradient(128deg, color-mix(in srgb, var(--feat-hue) 28%, #030405), #020304 48%, color-mix(in srgb, var(--feat-hue-secondary) 27%, #060709) 78%, #020304);
+  box-shadow: inset 0 0 0 3px #0c0e10, inset 0 0 0 4px rgba(var(--feat-rgb), .11), 0 5px 22px #0003;
+}
+.feed-achievement-card::before {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--feat-accent), transparent);
+  box-shadow: 0 0 8px rgba(var(--feat-rgb), .4);
+}
+.feat-topline { display: flex; align-items: center; gap: 12px; padding: 4px 12px 0; }
+.feat-medallion { display: flex; align-items: center; justify-content: center; flex: 0 0 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(var(--feat-rgb), .6); color: var(--feat-accent); background: linear-gradient(145deg, rgba(var(--feat-rgb), .13), transparent 65%); box-shadow: inset 0 0 0 3px #0c0e10, inset 0 0 0 4px rgba(var(--feat-rgb), .09); }
+.feat-author { min-width: 0; flex: 1; margin: 0; font-size: 10px; line-height: 1.4; }
+.feat-author strong { display: block; color: var(--feat-accent); font-family: Georgia, 'Times New Roman', serif; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.feat-controls { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.feat-time { color: #bcb8b0; font-size: 10px; margin-right: 5px; font-variant-numeric: tabular-nums; }
+.feed-achievement-card .feed-like-button { min-width: 44px; min-height: 44px; justify-content: center; border: 1px solid rgba(var(--feat-rgb), .5); color: var(--feat-accent); background: linear-gradient(135deg, rgba(var(--feat-rgb), .1), transparent); padding: 5px 8px; }
+.feed-achievement-card .feed-like-button.is-curtido { background: rgba(var(--feat-rgb), .18); color: var(--feat-accent); }
+.feat-remove { min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; justify-content: center; color: #ccd0d7; border-radius: 50%; }
+.feat-remove:hover { color: #f1f3f7; background: #ffffff0a; }
+.feat-remove:disabled { opacity: .4; }
+.feed-achievement-card button:focus-visible { outline: 2px solid var(--feat-accent); outline-offset: 3px; }
+.feat-body { padding: 0 14px 8px; text-align: center; }
+.feat-category { display: grid; grid-template-columns: minmax(14px, 1fr) minmax(0, auto) minmax(14px, 1fr); align-items: center; column-gap: 14px; max-width: 360px; margin: -7px auto 7px; color: var(--feat-accent); font-size: 10px; line-height: 14px; font-weight: 500; letter-spacing: .13em; text-transform: uppercase; }
+.feat-category-line { display: block; width: 100%; height: 1px; background: linear-gradient(90deg, transparent, rgba(var(--feat-rgb), .5)); }
+.feat-category-line:last-child { transform: rotate(180deg); }
+.feed-achievement-title { margin: 3px 0 0; color: #f7f2e9; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(21px, 4.8vw, 25px); font-weight: 400; line-height: 1.15; letter-spacing: -.025em; white-space: normal; overflow-wrap: anywhere; text-wrap: balance; }
+.feat-details { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 14px; margin: 5px 0 0; padding-top: 4px; line-height: 16px; border-top: 1px solid rgba(var(--feat-rgb), .13); }
+.feat-details > div { display: flex; align-items: baseline; gap: 4px; }
+.feat-details dd { margin: 0; font-family: Georgia, serif; font-size: 15px; color: var(--feat-accent); font-variant-numeric: tabular-nums; }
+.feat-details dt { color: #bdb9b1; font-size: 9px; }
+@media (max-width: 380px) {
+  .feat-topline { padding: 3px 10px 0; gap: 6px; }
+  .feat-medallion { flex-basis: 28px; height: 28px; }
+  .feat-author strong { font-size: 13px; }
+  .feat-controls { gap: 0; }
+  .feat-time { margin-right: 0; font-size: 9px; }
+  .feat-body { padding: 0 12px 7px; }
+  .feat-category { letter-spacing: .08em; gap: 8px; font-size: 10px; }
+  .feat-category-label { text-wrap: balance; }
+  .feat-details { gap: 5px 12px; }
+}
+.feed-daily-post { background: linear-gradient(145deg, #2f2b22, #11191d 70%); border: 1px solid #766b51; color: #f3ecdc; border-radius: 20px; overflow: hidden; }
+.feed-share-control { min-width: 40px; min-height: 40px; color: #f1d599; }
+.feed-daily-post { padding: 12px; }
+.feed-daily-author { font-size: 12px; padding: 0 2px 10px; color: #d7cfbf; }
+.feed-share-control { display: flex; align-items: center; gap: 8px; margin-left: auto; font-size: 12px; padding: 8px; }
 
-  /* ====================== ATUAL (copia de components/feed-cards.css) */
-  .atual { --feat-accent: #e9c981; --feat-rgb: 233,201,129; --feat-hue: #87744e; --feat-hue-secondary: #514535;
-    position: relative; overflow: hidden; border: 1px solid rgba(var(--feat-rgb), .65); border-radius: 15px; color: #f5f0e7;
-    background:
-      linear-gradient(116deg, transparent 9%, rgba(240,244,250,.025) 21%, rgba(240,244,250,.10) 28%, transparent 37%, rgba(0,0,0,.4) 54%, transparent 73%),
-      radial-gradient(ellipse at 4% 0%, color-mix(in srgb, var(--feat-hue) 36%, #c6cbd2) 0%, color-mix(in srgb, var(--feat-hue) 45%, #08090b) 18%, transparent 58%),
-      linear-gradient(128deg, color-mix(in srgb, var(--feat-hue) 28%, #030405), #020304 48%, color-mix(in srgb, var(--feat-hue-secondary) 27%, #060709) 78%, #020304);
-    box-shadow: inset 0 0 0 3px #0c0e10, inset 0 0 0 4px rgba(var(--feat-rgb), .11), 0 5px 22px #0003; }
-  .atual::before { content: ''; position: absolute; top: 0; left: 12%; right: 12%; height: 1px; background: linear-gradient(90deg, transparent, var(--feat-accent), transparent); }
-  .atual .top { display: flex; align-items: center; gap: 12px; padding: 6px 12px 0; }
-  .atual .med { flex: 0 0 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(var(--feat-rgb), .6); color: var(--feat-accent); display: grid; place-items: center; font-size: 15px; }
-  .atual .autor { flex: 1; color: var(--feat-accent); font: 600 14px Georgia, serif; }
-  .atual .tempo { color: #bcb8b0; font-size: 10px; }
-  .atual .like { border: 1px solid rgba(var(--feat-rgb), .5); color: var(--feat-accent); border-radius: 999px; padding: 4px 9px; font-size: 11px; font-weight: 900; }
-  .atual .corpo { padding: 0 14px 9px; text-align: center; }
-  .atual .cat { color: var(--feat-accent); font-size: 10px; letter-spacing: .13em; text-transform: uppercase; margin: 2px 0 4px; }
-  .atual .tit { font: 400 22px/1.15 Georgia, serif; letter-spacing: -.02em; }
-  .atual .nums { display: flex; justify-content: center; gap: 14px; margin-top: 6px; padding-top: 5px; border-top: 1px solid rgba(var(--feat-rgb), .13); font-size: 9px; color: #bdb9b1; }
-  .atual .nums b { font: 15px Georgia, serif; color: var(--feat-accent); margin-right: 3px; }
+/* A linha de controles do cartao do dia. Compartilhar e, para o autor, tirar do
+   mural. Os dois lado a lado; em tela estreita, um embaixo do outro. */
+.feed-daily-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 
-  /* ====================== A — SELO E FAIXA
-     Uma faixa vertical na cor do feito (patente/temporada/area), o selo grande
-     do tipo dentro dela, o rosto do autor no canto. Gradiente com direcao. */
-  .faixa { --c1: #b89048; --c2: #5a4320; --luz: #f3d58c;
-    display: grid; grid-template-columns: 74px 1fr; min-height: 104px; border-radius: 14px; overflow: hidden; position: relative;
-    background: linear-gradient(100deg, #0b0c0f 0%, #0b0c0f 55%, color-mix(in srgb, var(--c2) 35%, #0b0c0f) 100%);
-    border: 1px solid color-mix(in srgb, var(--c1) 55%, transparent); }
-  .faixa .fita { position: relative; display: grid; place-items: center;
-    background: linear-gradient(180deg, var(--c1), var(--c2)); box-shadow: inset -1px 0 0 rgba(255,255,255,.18); }
-  .faixa .fita::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 14px; background: #0b0c0f; clip-path: polygon(0 100%, 50% 0, 100% 100%); }
-  .faixa .selo { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; font-size: 22px; color: #1a1408;
-    background: radial-gradient(circle at 35% 30%, #fff8dc, var(--luz) 40%, var(--c1) 75%); box-shadow: 0 0 0 2px rgba(0,0,0,.35), 0 0 18px color-mix(in srgb, var(--luz) 45%, transparent); }
-  .faixa .info { padding: 10px 12px 10px 14px; display: grid; gap: 3px; align-content: center; }
-  .faixa .linha1 { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #a9a294; }
-  .faixa .rosto { width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(135deg, #3c4452, #171a20); border: 1px solid color-mix(in srgb, var(--c1) 60%, transparent); display: grid; place-items: center; font-size: 10px; color: #e9e4da; font-weight: 700; }
-  .faixa .linha1 strong { color: #f1ece2; font-weight: 600; }
-  .faixa .tipo { color: var(--luz); font-size: 9px; letter-spacing: .18em; text-transform: uppercase; font-weight: 700; }
-  .faixa .tit { font: 400 21px/1.1 Georgia, serif; color: #fbf6ec; }
-  .faixa .nums { display: flex; gap: 12px; font-size: 10px; color: #9b9486; margin-top: 2px; }
-  .faixa .nums b { color: var(--luz); font: 14px Georgia, serif; margin-right: 3px; }
-  .faixa .like { position: absolute; top: 8px; right: 10px; font-size: 11px; color: var(--luz); font-weight: 800; }
+.feed-daily-controls .feed-share-control {
+  flex: 1 1 auto;
+  min-width: 10rem;
+  justify-content: center;
+}
 
-  /* ====================== B — FOIL
-     Card de colecao: brilho metalico que cruza o card, numero grande como
-     protagonista, rosto do autor e o tipo como etiqueta. */
-  .foil { --c1: #c9a24f; --c2: #4b3a1a; --luz: #ffe3a1;
-    position: relative; border-radius: 16px; padding: 12px 14px 12px; overflow: hidden; color: #f8f3e8;
-    background:
-      linear-gradient(115deg, transparent 30%, rgba(255,255,255,.16) 42%, rgba(255,255,255,.04) 50%, transparent 58%),
-      conic-gradient(from 210deg at 85% 120%, var(--c2), color-mix(in srgb, var(--c1) 70%, #000) 18%, #0a0b0e 40%, #0a0b0e 75%, var(--c2));
-    border: 1px solid transparent; background-clip: padding-box; box-shadow: 0 0 0 1px color-mix(in srgb, var(--luz) 45%, transparent), 0 8px 26px rgba(0,0,0,.45); }
-  .foil .cab { display: flex; align-items: center; gap: 8px; }
-  .foil .rosto { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #48505f, #1c1f26); border: 1.5px solid var(--luz); display: grid; place-items: center; font-size: 11px; font-weight: 800; }
-  .foil .quem { flex: 1; font-size: 12px; color: #d9d2c4; }
-  .foil .quem strong { color: #fff; }
-  .foil .etq { font-size: 9px; letter-spacing: .14em; text-transform: uppercase; font-weight: 800; color: #120d04; background: linear-gradient(90deg, var(--luz), var(--c1)); padding: 3px 8px; border-radius: 999px; }
-  .foil .meio { display: flex; align-items: end; gap: 12px; margin-top: 8px; }
-  .foil .grande { font: 700 40px/0.9 Georgia, serif; color: var(--luz); text-shadow: 0 0 18px color-mix(in srgb, var(--luz) 40%, transparent); min-width: 54px; }
-  .foil .tit { font: 400 19px/1.15 Georgia, serif; }
-  .foil .sobre { font-size: 10px; color: #b7af9f; margin-top: 2px; }
-  .foil .rod { display: flex; justify-content: space-between; margin-top: 9px; padding-top: 7px; border-top: 1px solid rgba(255,255,255,.08); font-size: 10px; color: #a39b8c; }
-  .foil .rod b { color: var(--luz); }
+/* A CURTIDA.
+   Mesma altura dos outros controles do cartao para a fileira nao serrilhar, e
+   `tabular-nums` no contador para o botao nao mudar de largura quando passa de
+   9 para 10 — largura que dança a cada toque le como instabilidade. */
+.feed-like-button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.28rem;
+  border-radius: 999px;
+  padding: 0.2rem 0.5rem 0.2rem 0.42rem;
+  color: rgba(255, 255, 255, 0.34);
+  transition: color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
 
-  /* ====================== C — PLACA DO REINO
-     Mais sobrio que o atual, mas com hierarquia clara: o feito em cima em
-     letra grande, quem fez embaixo, e uma barra de cor na base que diz o tipo
-     sem precisar ler. */
-  .placa { --c1: #b89048; --luz: #f0cf86;
-    border-radius: 12px; overflow: hidden; background: linear-gradient(180deg, #121317, #0a0b0d); border: 1px solid #23252b; }
-  .placa .faixa-top { height: 3px; background: linear-gradient(90deg, transparent, var(--luz), transparent); }
-  .placa .dentro { padding: 11px 14px 10px; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; }
-  .placa .tipo { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; font-size: 9px; letter-spacing: .2em; text-transform: uppercase; color: var(--luz); font-weight: 700; }
-  .placa .tipo i { width: 7px; height: 7px; border-radius: 2px; background: var(--c1); transform: rotate(45deg); }
-  .placa .tit { font: 400 23px/1.1 Georgia, serif; color: #fbf7ee; }
-  .placa .icone { grid-row: 2 / 4; grid-column: 2; align-self: center; width: 42px; height: 42px; border-radius: 10px; display: grid; place-items: center; font-size: 20px;
-    background: linear-gradient(145deg, color-mix(in srgb, var(--c1) 45%, #111), #0b0c0f); border: 1px solid color-mix(in srgb, var(--c1) 60%, transparent); }
-  .placa .quem { font-size: 11px; color: #9f998d; }
-  .placa .quem strong { color: #e7e1d5; }
-  .placa .rodape { display: flex; gap: 14px; padding: 7px 14px; background: color-mix(in srgb, var(--c1) 12%, #0b0c0e); border-top: 1px solid color-mix(in srgb, var(--c1) 25%, transparent); font-size: 10px; color: #a8a194; }
-  .placa .rodape b { color: var(--luz); font: 14px Georgia, serif; margin-right: 3px; }
-  .placa .rodape .like { margin-left: auto; color: var(--luz); font-weight: 800; }
+.feed-like-button:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.feed-like-button.is-curtido {
+  color: var(--skin-accent-color);
+  background-color: color-mix(in srgb, var(--skin-accent-color) 12%, transparent);
+}
+
+.feed-like-button.is-curtido svg {
+  fill: currentColor;
+}
+
+.feed-like-button:active {
+  transform: scale(0.94);
+}
+
+.feed-like-count {
+  font-size: 0.68rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
 
 
-  /* ====================== ATUAL ARRUMADO
-     A mesma moldura de hoje (que o Afonso gosta), com tres consertos:
-     1. alinhamento: tudo numa grade de 2 colunas (icone | texto), nada flutuando;
-     2. o icone conta a historia: placa do ciclo, arte da patente, arte da area;
-     3. as infos juntas: "NOME ação" numa linha (o nome e tocavel), o titulo do feito. */
-  .arr { --feat-accent: #e9c981; --feat-rgb: 233,201,129; --feat-hue: #87744e; --feat-hue-secondary: #514535;
-    position: relative; overflow: hidden; border: 1px solid rgba(var(--feat-rgb), .65); border-radius: 15px; color: #f5f0e7;
-    background:
-      linear-gradient(116deg, transparent 9%, rgba(240,244,250,.025) 21%, rgba(240,244,250,.10) 28%, transparent 37%, rgba(0,0,0,.4) 54%, transparent 73%),
-      radial-gradient(ellipse at 4% 0%, color-mix(in srgb, var(--feat-hue) 36%, #c6cbd2) 0%, color-mix(in srgb, var(--feat-hue) 45%, #08090b) 18%, transparent 58%),
-      linear-gradient(128deg, color-mix(in srgb, var(--feat-hue) 28%, #030405), #020304 48%, color-mix(in srgb, var(--feat-hue-secondary) 27%, #060709) 78%, #020304);
-    box-shadow: inset 0 0 0 3px #0c0e10, inset 0 0 0 4px rgba(var(--feat-rgb), .11), 0 5px 22px #0003;
-    display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; column-gap: 12px; align-items: center; padding: 11px 12px 11px 11px; }
-  .arr::before { content: ''; position: absolute; top: 0; left: 12%; right: 12%; height: 1px; background: linear-gradient(90deg, transparent, var(--feat-accent), transparent); }
-  .arr .ico { width: 54px; height: 54px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; font-size: 22px; color: var(--feat-accent);
-    border: 1px solid rgba(var(--feat-rgb), .6); box-shadow: inset 0 0 0 2px #0c0e10, 0 0 14px rgba(var(--feat-rgb), .18);
-    background: radial-gradient(circle at 35% 30%, rgba(var(--feat-rgb), .22), #0b0c0f 70%); }
-  .arr .ico img { width: 100%; height: 100%; object-fit: cover; }
-  .t-patente .ico img { object-fit: contain; padding: 5px; }
-  .arr .ico.placa { border-radius: 12px; background: #0b0c0f; }
-  .arr .ico.placa img { object-fit: cover; }
-  .arr .ico.placa { position: relative; }
-  .arr .ico.placa::after { content: attr(data-letra); position: absolute; inset: 0; display: grid; place-items: center; font: 700 26px Georgia, serif; color: #2a1d06; text-shadow: 0 1px 0 rgba(255,240,200,.6); }
-  .arr .txt { min-width: 0; display: grid; gap: 1px; }
-  .arr .quem { font-size: 12.5px; color: #d6cfc2; line-height: 1.25; }
-  .arr .quem a { color: var(--feat-accent); font: 600 14px Georgia, serif; text-decoration: none; border-bottom: 1px dotted rgba(var(--feat-rgb), .5); }
-  .arr .tit { font: 400 21px/1.12 Georgia, serif; color: #fbf6ec; letter-spacing: -.01em; overflow-wrap: anywhere; }
-  .arr .nums { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 9.5px; color: #bdb9b1; margin-top: 3px; }
-  .arr .nums b { font: 14px Georgia, serif; color: var(--feat-accent); margin-right: 3px; }
-  .arr .lado { display: grid; justify-items: end; gap: 6px; align-self: start; }
-  .arr .tempo { color: #bcb8b0; font-size: 10px; }
-  .arr .like { border: 1px solid rgba(var(--feat-rgb), .5); color: var(--feat-accent); border-radius: 999px; padding: 3px 8px; font-size: 11px; font-weight: 900; }
-  /* variante 2: "NOME ação" e a manchete; o titulo do feito vem menor */
-  .arr.v2 .quem { font-size: 15px; color: #f3ede2; }
-  .arr.v2 .quem a { font-size: 16px; }
-  .arr.v2 .tit { font: 500 14px/1.2 system-ui, sans-serif; color: var(--feat-accent); letter-spacing: .02em; }
+/* ===== PROPOSTA (Afonso, 12/10): NOME • AÇÃO / ——— título ——— / números ===== */
+.proposta .feat-author { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 7px; }
+.proposta .feat-nome { color: var(--feat-accent); font-family: Georgia, 'Times New Roman', serif; font-size: 14px; font-weight: 600; text-decoration: none; text-transform: uppercase; letter-spacing: .06em; }
+.proposta .feat-nome:hover { text-decoration: underline; text-underline-offset: 3px; }
+.proposta .feat-ponto { color: rgba(var(--feat-rgb), .7); font-size: 10px; }
+.proposta .feat-acao { color: #d9d3c8; font-size: 10px; letter-spacing: .13em; text-transform: uppercase; }
+.proposta .feat-body { padding-top: 2px; }
+.feat-titulo-riscado { display: grid; grid-template-columns: minmax(14px, 1fr) minmax(0, auto) minmax(14px, 1fr); align-items: center; column-gap: 12px; max-width: 360px; margin: 0 auto; }
+.feat-titulo-riscado .feed-achievement-title { margin: 0; }
+.feat-titulo-riscado .feat-category-line:last-child { transform: rotate(180deg); }
 
-  /* cores por tipo (as mesmas familias do app) */
-  .t-patente { --c1: #c9a24f; --c2: #4f3c17; --luz: #ffe09a; --feat-hue: #87744e; }
-  .t-ciclo   { --c1: #9fb0c6; --c2: #3c4757; --luz: #eaf1fb; --feat-accent: #e0e5ee; --feat-rgb: 210,220,235; --feat-hue: #9baabc; --feat-hue-secondary: #606e82; }
-  .t-missao  { --c1: #8b6fd0; --c2: #3b2a63; --luz: #d9c8ff; --feat-hue: #7663a4; --feat-hue-secondary: #a48a53; }
-  .t-arena   { --c1: #3fa58a; --c2: #164a3d; --luz: #a9f0d8; --feat-hue: #3f8f7a; --feat-hue-secondary: #3f8f7a; }
-</style>
-</head>
-<body>
+</style></head><body>
 <h1>Bancada dos Feitos</h1>
-<p class="sub">Os mesmos 4 feitos em 4 desenhos: o atual e 3 direções. Escolha uma (ou misture: "a faixa do A com o número grande do B").</p>
-
-<div class="colunas" id="colunas"></div>
-
-<script>
-const feitos = [
-  { arte: 'data:image/webp;base64,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', tipo: 't-patente', nome: 'Ascensão', frase: 'subiu de patente', tit: 'Conde', icone: '♛', autor: 'Mister X', ini: 'MX', tempo: '2h', curt: 12, grande: '6ª', sobre: 'patente de 10', nums: [['38', 'ciclos'], ['91', 'níveis']] },
-  { arte: 'data:image/webp;base64,UklGRp4YAABXRUJQVlA4IJIYAACwTACdASprAKAAPmkmjkWkIiEZnYa0QAaEswBOnblIUb7+B8krlXvW1Hbt/Ed930Y/2ndu+Y/z0PSR/ofTm6kfec/8rv8OkX7fft35GeYvjN+AfvnnrYH+wDUI7s/Q/o73k/KDUC9pebN9v2Um5/8H0CPfLLL/F80/ED8w+99oCeLfnwfYP9n7BXSs/eH2mRIezGveM57FqtOISELDpldk8fmCqul+vElAbtrmtRdnXNWsvRaCV4m3cj7zfWQ8gaRS+KeGZgtTr9CCiTzfUb0QX+nKwlsnn6QLgjy/8W8JLKGH3hy0x1fhua0WXZruATZRwxDhTiTPr7fvXgjq0B/5RY2pVhWPr3IrCGbNgkXMei/Tq2caznxJEBMQm9sBMCOmpnc7aQxk0VtMsyRP3bKXEw3rWxxKboZG3m713H7cySda2uEoajewe6DZR99iJHp5rFoqKrS5w/YAvngdXt7CQ8+e3j/Xlu21K8gvmqr41xAUQWAofmkL3gzRjN1dYhatFDL0IB48CPb3Ohp/UjLDBws8dRG/CCTVfBqERmQ8E5BeDqecF0Fqfq8f/xtG6tT0r5rf6ynRVwBoaf+qQEQtY1g4OES/tTR7RQAVS0FgsLa4DXRYGvP050EyltfmitL28m3TFGAGyD8QR5oN45h+M/Y0d126FDXfyRfDN+cO8UqhqCvuU0cIT1yahHLy1P9EDEzcI7D0rRFcNB8wbWWpGkyLHHcMRlq8WUjJTSAo+BGRCqZvXmBq3f0jUlbdFuDK99SN4HdXRycNUd+9qe/ahW31m09eMceKNq6j67Gxu5WmXI6yLu6DVzWlZXAAAP6GHKhhbV7RvQianzsCvYyH1c64v2MQIthpJ+m9HHiD5TEycsT9eH113cZuvJIJEzS5hHor3OeOEwuS+9JaPdA3F2TffTL5PL2LFy9BhH//wx6gz33M0R9TuzBof7s/hYl8B5riMKaXkQ6SPl71osoNSF245a3rhTRKAXzHadst3Teew3AThnMAe2qSPHADCX08ZPiGpnc1puDBiymTCIES51VDljXLJ9K7sKNjh3p9wE4PM7KaSaMdAhoxuO7iLHC5ZLhyOsJUX2jDzA9dHLYYCdmPTZEIvn569xHaWClsQp1StD0mCkngUy50aM1WaASHdGpGDfwN+OvKqzA7cQwFCPfytZGLj3dj9QdeU4pyqGNmD0gtp7QkmhQ0OaB33aTrtMmPJnAFO/0hyufb5s6Wgmx0CwfTIVetAE43YiH3VbPEe3J0jkbPWhLOeYHKEyx00uXV7TnAuiOF0RDA8twO+4jzasmIwYfGKjN0qNciWNr/vkJczxUHBc7Jq7NDvaDBNWztRxqHTh1OSe5Bx+18fzYJVeUzjqxj3QAnR9OP/5wT301LxlQ4NMSWYkcrzUrqb1QwGOlH4SANd/qOoKF8R8A62G/Q4SIUQ0J9SmAVNmCnak6ECA7sdWgazSHAC/gp0udV8UrnA8I/eSLPO4KnYtqHGWbuLf05tjAnJ9y+2JKwTYC0SYzSSxTZBZDEc1Rq5EjWM7kuawFLV+aKKXfXjPvBtciPFeD92P0GLztsT0DHszP0BDa6S0O3fey8X4nJa/Nq8uid2ehTtnE03z2/k7OvRp/fYMKC4bPs3vq7Ve3Q3S4WTbORbnKYPPY2bWnGwU6JpJmbIZbDruMNeqE93xmEQ9wsUU6rV3aPR64SQMus3E2/q6a0lCLzwfS8u2Op7nWzfq8bJRmPjuglmcqxNzUd3qNX/rUfcw1AEhys2QWlKL4OkCrd+joHqeXtJJli/Qhupi1lpGpNVbt31GF0PMhpNvSxr3lMe/jvwy+MNrnXztHo1kuPwYkdUqaATW7AtwSW6WqQ74ZI7KM3ky1GgpSv85A8MPnJ+YxJpS+9t9cCmOBFWQ9hfHUNudoFZhT5swyd0BoojgX8w7ZpBIz4OPdnECqgHSO3KefmNFBdBhsMbjeNldTZLmyUL1lUoXMoOzZzU4xZS53szXJhl1/mbqwHx10P5vqJPmn8qwYXa0HIZKT0AQv3V3PUotrjCDaKHBUgf+zjcq3lE/luu2m1HZ1CRmSVPTHA3Ob8U1ZWuGh78Jrpb/eEKFw7f1icnSGpWN4KsuDlapCmtK+dDYLL+7u/3+WBopNFE6T8+IYqy8ncWBbL/STLZ0cTSen/IHQhO0DtggMBfPAjMpr3aa9vMyPUNKtfUITalod3NaiPaL8DTrF+enc2xOZe/Rj3HG4imsE+ZdoXrUfD8fiLNRmbtVz3TLPy3HZACreTQl7UBWTAF67LSkdu5+cRyNHXd3IgRIQtjg+tzGeFADPGZ65AFemhfgnvgl+Ps0AwKt8R4hj7efw/DHRCjl1vFrZAmHwVSJXiDXCH1pi5wc2N1cZm7oqCV/e89PI8kNNiJa2186YRtQcnDg7WlB3yasP++Z/gg8pGWK7Bf7vv6ERxrOuwG4kNYCGUT93c0p7ZeC1N/gk1h9nU6+t8XHwA0xLHi48c4QHTchMBeYg/J68bmfyAxrvVvTtqAsyE7qAGx2Yn2pv95vhqCd//J6tDM+W9rqYZT98hRynqxT/KrEgJvIXvOhTcM2aNsfqUrAKCTuVZpODjjYDweosd6kfroVXaVcJ4eGMjr8XILwoGI9wLS18LkS+6aQWTTlI8SzWf4XWTdOgulJzkhoa/tz0e5kfWci3rjXBMsiED1pBFStKmSM6p4Nh6DN/Fn0qGhfpji76maE6bIEmZuU0rD9JPif+/8k9QzX+w3F3ZvZxGfTEz1WVufmkqfFDe36XIo9ewLdZU0dwOclvpaCHtw8ZviowvF+ASfsUeZW+KhfzN8j3XR77cNojwLMMHN84dAmfDEba/U2AXzZStk0g46Vd+xNGcZEQ+Jpsi27NfLYjMAmDPw5rerLAp3khn4TnENxHeW7jcmkZe7e6uc8W/BhaaISHNX7H/SENJvMF3vQ8O3Tr8jvWqeA6R/HAHD7evxB8euLDrhTwSmqEP4i4jY1ev5bKn6X7p72Ok9+hAgUFxGtfLvLyc+f5b1n1aZVv+10T59VimCBXmjKM4fN/vBZV2OUzuWSzQFVq6e1HY6MSc+QAsJ9P3aZNrp2bv+SiAIxJCzJ8mdjmf9oYxhuCqg3h10mwK8O4g4qTnDOZUHbVPfTQfv5LETnuyGkAVIBZN7XMi1Jl6i+QyS7XtLwP3GyUKEHyEbXbrqk2zNUOZ1e37z45QKfZYmgeu/iRyHCi1ocueCeMMEWfAsPOM222gcFW82ZaxXWLZgPNI404eVwJ2WvhV7IOe8WDtKhfZy8rHNIuIhVJQ8IM7ZM9bHWWWTJKJCrin3mUAxnLmtJe9f9kG+Q71XiPtNZD0XH4CWoGSk9BpUAL0lMW+Tdze9qglof/9DYRMOXKsr+1xNPs6ZigM2Ic3QPWNZVYlsXhQsraGQ7taEmErEom764hZ8gR0afknvwEF41rMrUz3qA4//DKVehG0YjWkRprSzOL7k2yEb1tnh0fqCKDjuqB7v1XJbaBdSZi41DTTHwONvNjHV5yP0coBFG99yAbUaEDiLyHAufaRoqJvJ14nuSrMtGULMNrS0g5pLiNOJJmnL7gp92qLeW/2EJFyVoVi6q6npq3AOcHA5/ssaQxYZe4qL3hAkhyoxIuq9sJfNWEHo0cJd57NV8x10lsk0ltaMs88jp41rXVqXuEznFJeGT4OGPo36HHxLoWAuTcXFRAt4u7MMRH6Zw6WBsqgW68F+1dAPz5z3JHIHlO9RNX3tarNq5jzbRo4MIPC+bNKZ4dJwENNy8NXhEQ1fbmmn6fbaaaxIfMyyflqeoRq67Ys4KOQfjC8D+p0isvodwzfgmN5WT2NiLw7ajGeuQsgbF25NKcn0ZI4xEH7UairwEtoH1eWbwYgr+TjQVlN1ek6dP7cEnlxdeVTxpbdhkJ1W+xq6TUYLh/W8llZnORofXbBtEVUqMJEw0CGM+eJ+eymWPjDqrs2pvx5EQmY5suoMLgXm2xxL+2V9Fkmx6/qKswxNXi3NJ1mVPJWLEagb5EhpaLxnQdaauwnwn1+w3BLGSFq0nMLpzoc/0wW8oWGBePlxPyRGx+qbTTa56VIsd+GG2SJO9I/mKc305KGKgzPrP9VlY3gB9a6kBuypxdofkuDaxtbJxwN0m3SIJ8kH22ynKQZN3RvjvcOZfJ5tahce0GKFwSDe8jVsUpFbS7BW7wWiOgKBY05tV+fqcfF6Lzt+GV/h2hawBZeH2dy9pr0WlM1hXIoCps5kNe7fUkOkFYmN/L2IJTSjQ9xU3xejZHHBM2VzTDs0SgbFbdh7LWntL9r1L9rnhwOWI5+0ltwPczANHQemSJ6pGTfe+OAK5Gr7gfZTHJZTcIgxpdFZ8tJPyCSXKvDsf3SBgtljSSoXiPiRVkHRS8vpUyIKZy3kA5E9mpdQJ1MtGWQSGWFzFv+8inRHrt6MHBZpn4CNl5lRRgWpB8aTkOkqWCNQyzR+Snt8D8XKwOLH6FvkI2djG6J/xEP1njaRZcab2NDVDuU3zsU79o9OR5sFHH8566mdw10nqQfcF9Vc3x287Sxi5qT8lRgH04ydLVGeHDWE98390PYdGOx4CHUMI032VFMdpE/JJ0gw/APFqbRUFehIYsOUjoF96gsPbKvqJ2cW1YnTHbgD00M/aXGIWFPpRdc75vjNIKdl9gQkGz/Geodngf+t347bVZiH8Yb94ehYy4CKFgzuH+kRtAhyPteOgk0dC8x4oJsds2TbdGsXYpx/i+4lqjfWAj8mqgvoLT5Gfguaq4FW/HmpMXTrd1yXF7n8aC8KsWyxHifgO6doN2OzYbs7/YWGhuTlTh9uIeDVDNsQRqCtcHfb4XSigXkZ8Q/nPZV7YrdtrrCHl7rDLR0yaZdfivGpbPW/fb1q2ScJOX93P5rn3SQR8o46nCEBulbC9mSwLMiU2NLbGWCkcA4toTDxNLQkZJYClaOsSAhjUjOzLoLsuD6Z+AWGmoBOafjNT8ViQdvc5NI+QdFZc5RJwsF2QJOAan6bR/gGlXu1zHdbtxVDpOdwXJGUQdFf9KIcKDda2txLfW0m9pXhFmrVRA+0dOX2bEiSGy8GY8LObf70dBMc9D9AzE59BuCApZMvfigADt58F/xtGBVD7jg+KZPhsrwIhUM+KbM2TvWA8FBVPVx9zyKoNWUtF77doOEPwLHlljvFi4422r3yho8LsGdnzgDIBUKT419Dvc+ZfbmbE6uMYTTuPtV/hyH27YEIArsaTD+NuyKUrQssTgO/7endGUhNfhCqp0E7nlApGWrPEX1FeI+MlcB+A+4/NfyY3Db4024nqX6QwDFYs6MNtSbZg6Z1/jIZ1VDiRYbxPUFfhwhOdbkhP8+xWozw9PCaQqIZbh5RpD5LLb3YirQIDwIjcJuJaO+dmlgxu6WAcZouvUBFb6uPFtUrlwNIXRpqDL1fVTsG3vQhzDe1B35evypQYcYicjd/pbeXQfue4E9BA3jYlfJimu7CZiE58t32p9awrKzslmR2JligRf3OrBch+QsC6plWhGUtUab0hhbu7eGTinRu0Ha97mfgwNluSuePGCIfL7Gjp2Ep1jpxEF8vMcSweGVYTis4vxJypqX0IXL6kbLDU5rL0vL1eWPRFIN+cHr7QpReuOshhWjTUzfOMsmsEHkcUaoGROaso8Istk7zqIOqyHffkzrM1e2NrDsuOWfGXW9VWYBXl394x1V9rphOkI92enyXiVbERoYS+IUts579gt+GWnMUp2kpOayF8G37M9tSX3Vo2TBZmZTkfFSKal5iFCBnvvUrT0smnnSJlP1fukk+4H2TtcRFqtRPmQbsPDCnkd0HFld5zWZbA8fx/bsWlTH35g+INjK+c4CTIPvvc8IPosZrfF7pHdzJXh4/lCTaNFOJdp9rioxrur64wZJ150WK8QJMAsfwP3SZokaJwY2K6TqznNHm0xFkwBkBU3pn+Ou55gJnOwPLx4NNGpNlOz0plS0dDKu2ojLSYCjXMs7Ay7QAQprg2foWfQa7iO7HxahBoXbjk78bVdYYZ7m39o0fDx2g4nv5rG/VvpGBAoTFxt9G2gbC8U2piMHJ0TNsNQ8ZR5xmS0b0BoUcpBZLcFfz+dgHS6Nb+W5L9BtHmrTyU6FZL95HgeR2OSTqBbh5K3le8grdPXii491g/VVvEsG6EHEfSJ9hudtfiHmZEkhiBSQ8u1G0X2NmMDJEWj0R3UkXk4IB3q/Q3fZAXzhfqpCTP92Y4GT3W8hLZPYRvPkLwVDmeDNS1Wc1lmcQpx3KYOyrA9nEMStSOUUKLdmoqiaFa5afS/mNbVIZXHOKYdxLOyeCCOM0btMbxDxcM22a8u8oK+DGRUHdw/FFy5+0oW7QttED24VKJr7ND0mLqKUSzlB59Rfa35qNXClS35oVUHm97Yv7i7EkoiNML0TUfEgorSVH76mC5soG5XHZUaFbpYLoB6HKcWF4fdGvU2fh8QAZDS+XZHS5A1vcjIz75xVo6PErjh7TqOurb9p4blfTpRbwv4qP3xjtmq+QViwJDKkJVMLiGpklIY+24fUfhZOZoUpQo7b7WVKxMML6UQytG4IAWfzBZ85WWV2oaD3pElQLMdADK2k9wC4F1gpQc8cTh7BQABrPMp+9KBOOyWLMXMNCVzla5JmSe94ieS8sOm4js5n0AL+F08LwAFsmdz6P3CeoQIPwvKtyGfbMohkid53woz/n0eLO3pc0Jgflb4Pod/C7nELbWnEjpPm4YXzx8VnzHIWJajegSGvVSCPp5/QuHDLQReD2mwks9+b+A+u8zsSYov5v6a+BQhTS1Pz8EAYYo/Hs7Jirp/o6yvovLZeynECtguz4aykX1VLVvVyPogh04XNsfP7G2OpxcLleavOrBGPxKqaF4wg+op5U7QGkEUSjhiMFMJPYVljWEK9m5pO0o6Pv4Zrpz2YyqYKPSPVd8PykvW/zphHYFkZ1UJm5nmKaBVoJAVo2pxAV7eRhEamrqHkZ9Vkgr/z6hxTK9TLcAGbPOSxRP06ZS9Y9WlCZeRZib71CskzJb885GvZBBnqTE94QATbtmtKWgPYNvk+RcwjUPN7SmplSXURnQj5AiQo1NuygqlFDuOaPcF65y9Ne9RldiJ+iMszndC7zGVs0zGKuEK5jpIpesxhRr4Fpg1phJdtpZmuzvgklcdGczgJA3mOEreJDLQDgCYZIpTj40CXDc1w84VsCsQafef6fYQDl5pyPG7REmCnfXtJFq+jgI4WmmSMcjmctn57MzryFsxDhRpsOyi+nP9EQnBw5L7HINStuMBPgxfJkdw3tUra81XE14Aig9KNp0OHO44Ie3QwwgqXCSQzYNFGeXnPa7/EUf+8MBV7CVi1RBNAqIN4lLqJq7v01gtc2Dvq49pX+EAjeCzu5ajuV/QXyyHIrgSgNx5tkPs5Xca0Knf1zotZk8J9bBIKmAFCWCeJfoQkKI4zP0AdRXMUjmh0HjAPNgqgCij8AAKWkt1sVvkecsJAN2MjkHY7osCCUydR3kWA/DtO9Vbw9NLWF97f1p8Sl9kh+11zWl2HZ/WGabowl4reIxqB6FFfKzh/mIOId+lBeb/1pV9OYbq2Q4psiSG1OcxzYy7MdhFWp544sVk5TaAPud9YZjLWdgxoBexVW58OtAoIyao+w02l4xaUAAtNDhyXgZa/xxK6tSOGzw6+kdXGNoO0wr4UrMt8Ag2KPVP1NVG2iX1BNqON49EGmV/M4kD17a/LGX5m12AQFC+s4EM5fAjxxNM2RKmNplfx1JNKV0njXkq52uGXVFrL0zQsppSTZtt6KvjSsgoa1uU+9WMSTN71JIVnv5CHPfsPuTebeFX2t2vZ/TyIkNrrXyjC5JJyEJ0JydD7qxhAOsq8anuxN/KbXJBHhV2nNoNQAeyDgg9T3RgubQ8zaanj3Pro8NGSxDeXu7cdtba5Kg8+fdZZIjoYRuTXUXlEGzMjLmfj7s+spHSB969dCTHyeep2qmPNtLg8ww13V0ELSKwO5brRGWhJXonqBKEGs4hcNZ4w4SaaskBgxUbFd9m7cICWxKxmJbwKhm1Lfksl4fZFkMMX5zyTukS/hxQE3AsWEJhP3DaVzK/5O/a2DhfqoI1mLzZNI3Qo1MMzLhJqZBRFJG2SNFL3xVppZesdO220zsF1L88aeU9Qc+rjoMO5CutTRBCr5UGwfft/ur/6WtuP92wyEs6SWpxjukYrnCDy8LrXILbvh/cMh3ZkHSsmbIKZpRqJLy8JsFuZLJmA5BVBv45dU+XhkUn6KVVbPnGkyzcEwVRZ7jMTtlsfqoIYZrMku7pW4kR2vUFSsDAooM52c/0NQGulptcrgzPhf5e0BRUvypIuqYebHUNj/miBTP1CT+PctwAAAA==', placa: true, tipo: 't-ciclo', nome: 'Ciclo', frase: 'fechou um ciclo', tit: 'Ciclo de Outono · A', icone: '✦', autor: 'Luna', ini: 'LU', tempo: '5h', curt: 7, grande: 'A', sobre: 'placa do ciclo', nums: [['92%', 'concluído'], ['7', 'dias'], ['36h', 'registradas']] },
-  { tipo: 't-missao', nome: 'Missão de temporada', frase: 'concluiu uma missão', tit: 'O Erudito', icone: '⚑', autor: 'Rafa', ini: 'RA', tempo: 'ontem', curt: 4, grande: '30', sobre: 'leituras', nums: [['30', 'leituras'], ['300', 'EXP']] },
-  { arte: 'data:image/webp;base64,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', tipo: 't-arena', nome: 'Arena', frase: 'concluiu uma arena', tit: 'Treino de força', icone: '✓', autor: 'Kael', ini: 'KA', tempo: '2d', curt: 2, grande: '24', sobre: 'ações', nums: [['24', 'ações'], ['18', 'dias ativos'], ['540', 'min']] },
-];
-const nums = (f, cls) => f.nums.map(([v, l]) => `<span><b>${v}</b>${l}</span>`).join('');
-
-const desenhos = [
-  { titulo: 'Atual arrumado · 1', nota: 'A moldura de hoje, alinhada em grade. "Nome ação" numa linha (nome tocável), o feito grande embaixo. Ícone com a arte real.', html: (f) => `
-    <article class="arr ${f.tipo}"><div class="ico ${f.placa ? 'placa' : ''}" data-letra="${f.grande}">${f.arte ? `<img src="${f.arte}" alt="">` : f.icone}</div>
-    <div class="txt"><div class="quem"><a href="#">${f.autor}</a> ${f.frase}</div><div class="tit">${f.tit}</div><div class="nums">${nums(f)}</div></div>
-    <div class="lado"><span class="tempo">${f.tempo}</span><span class="like">★ ${f.curt}</span></div></article>` },
-  { titulo: 'Atual arrumado · 2', nota: 'Igual ao 1, mas "Nome ação" é a manchete e o feito vem menor, na cor do tipo.', html: (f) => `
-    <article class="arr v2 ${f.tipo}"><div class="ico ${f.placa ? 'placa' : ''}" data-letra="${f.grande}">${f.arte ? `<img src="${f.arte}" alt="">` : f.icone}</div>
-    <div class="txt"><div class="quem"><a href="#">${f.autor}</a> ${f.frase}</div><div class="tit">${f.tit}</div><div class="nums">${nums(f)}</div></div>
-    <div class="lado"><span class="tempo">${f.tempo}</span><span class="like">★ ${f.curt}</span></div></article>` },
-  { titulo: 'Atual', nota: 'O que está no app hoje: tudo centralizado, mesma moldura para todo tipo.', html: (f) => `
-    <article class="atual ${f.tipo}"><div class="top"><div class="med">${f.icone}</div><div class="autor">${f.autor}</div><span class="tempo">${f.tempo}</span><span class="like">★ ${f.curt}</span></div>
-    <div class="corpo"><div class="cat">${f.frase}</div><div class="tit">${f.tit}</div><div class="nums">${nums(f)}</div></div></article>` },
-  { titulo: 'A · Selo e faixa', nota: 'Uma faixa na cor do feito com o selo grande; o rosto de quem fez ao lado do nome. Lê o tipo de longe.', html: (f) => `
-    <article class="faixa ${f.tipo}"><div class="fita"><div class="selo">${f.icone}</div></div>
-    <div class="info"><div class="linha1"><span class="rosto">${f.ini}</span><strong>${f.autor}</strong> · ${f.tempo}</div>
-    <div class="tipo">${f.nome}</div><div class="tit">${f.tit}</div><div class="nums">${nums(f)}</div></div><span class="like">★ ${f.curt}</span></article>` },
-  { titulo: 'B · Foil', nota: 'Card de coleção: brilho metálico, um número grande como protagonista, etiqueta do tipo.', html: (f) => `
-    <article class="foil ${f.tipo}"><div class="cab"><span class="rosto">${f.ini}</span><span class="quem"><strong>${f.autor}</strong> ${f.frase}</span><span class="etq">${f.nome}</span></div>
-    <div class="meio"><div class="grande">${f.grande}</div><div><div class="tit">${f.tit}</div><div class="sobre">${f.sobre}</div></div></div>
-    <div class="rod"><span>${f.tempo}</span><span><b>★ ${f.curt}</b></span></div></article>` },
-  { titulo: 'C · Placa do reino', nota: 'Mais sóbrio, hierarquia clara: o feito grande em cima, quem fez embaixo, rodapé na cor do tipo.', html: (f) => `
-    <article class="placa ${f.tipo}"><div class="faixa-top"></div><div class="dentro"><div class="tipo"><i></i>${f.nome}</div>
-    <div class="tit">${f.tit}</div><div class="icone">${f.icone}</div><div class="quem"><strong>${f.autor}</strong> ${f.frase} · ${f.tempo}</div></div>
-    <div class="rodape">${nums(f)}<span class="like">★ ${f.curt}</span></div></article>` },
-];
-
-document.getElementById('colunas').innerHTML = desenhos.map((d) => `
-  <section class="coluna"><h2>${d.titulo}</h2><p class="nota">${d.nota}</p><div class="pilha">${feitos.map(d.html).join('')}</div></section>`).join('');
-</script>
-</body>
-</html>
+<p class="sub">À esquerda, o card como está no app (o CSS e o HTML reais). À direita, a proposta: NOME • AÇÃO em cima, o título entre os risquinhos dourados, os números embaixo.</p>
+<div class="colunas">
+<section class="coluna"><h2>No app hoje</h2><div class="pilha"><article class="feed-achievement-card" data-feat-type="PLAYER_RANK_UP" style="--feat-hue:#87744e;--feat-hue-secondary:#514535;--feat-accent:#e9c981;--feat-rgb:233, 201, 129">
+  <div class="feat-topline"><div class="feat-medallion"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"></path></svg></div><p class="feat-author"><strong>Mister X</strong></p>
+  <div class="feat-controls"><time class="feat-time">2h</time><button type="button" class="feed-like-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="m12 2 3.09 6.26 6.91 1-5 4.87 1.18 6.87L12 17.77 5.82 21 7 14.13l-5-4.87 6.91-1L12 2Z"></path></svg><span class="feed-like-count">12</span></button></div></div>
+  <div class="feat-body"><div class="feat-category"><span class="feat-category-line"></span><span class="feat-category-label">subiu de patente</span><span class="feat-category-line"></span></div>
+  <h3 class="feed-achievement-title">Conde</h3><dl class="feat-details"><div><dd>38</dd><dt>ciclos</dt></div><div><dd>91</dd><dt>níveis</dt></div></dl></div></article><article class="feed-achievement-card" data-feat-type="CYCLE_COMPLETED" style="--feat-hue:#9baabc;--feat-hue-secondary:#606e82;--feat-accent:#e0e5ee;--feat-rgb:210, 220, 235">
+  <div class="feat-topline"><div class="feat-medallion"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" /></svg></div><p class="feat-author"><strong>Luna</strong></p>
+  <div class="feat-controls"><time class="feat-time">5h</time><button type="button" class="feed-like-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="m12 2 3.09 6.26 6.91 1-5 4.87 1.18 6.87L12 17.77 5.82 21 7 14.13l-5-4.87 6.91-1L12 2Z"></path></svg><span class="feed-like-count">7</span></button></div></div>
+  <div class="feat-body"><div class="feat-category"><span class="feat-category-line"></span><span class="feat-category-label">encerrou um ciclo</span><span class="feat-category-line"></span></div>
+  <h3 class="feed-achievement-title">Ciclo de Outono · Score 92</h3><dl class="feat-details"><div><dd>7</dd><dt>dias ativos</dt></div><div><dd>2.160</dd><dt>min registrados</dt></div></dl></div></article><article class="feed-achievement-card" data-feat-type="QUEST_COMPLETED" style="--feat-hue:#7663a4;--feat-hue-secondary:#a48a53;--feat-accent:#e9c981;--feat-rgb:233, 201, 129">
+  <div class="feat-topline"><div class="feat-medallion"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div><p class="feat-author"><strong>Rafa</strong></p>
+  <div class="feat-controls"><time class="feat-time">1d</time><button type="button" class="feed-like-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="m12 2 3.09 6.26 6.91 1-5 4.87 1.18 6.87L12 17.77 5.82 21 7 14.13l-5-4.87 6.91-1L12 2Z"></path></svg><span class="feed-like-count">4</span></button></div></div>
+  <div class="feat-body"><div class="feat-category"><span class="feat-category-line"></span><span class="feat-category-label">concluiu uma missão de temporada</span><span class="feat-category-line"></span></div>
+  <h3 class="feed-achievement-title">O Erudito</h3><dl class="feat-details"><div><dd>300</dd><dt>EXP ganhos</dt></div></dl></div></article><article class="feed-achievement-card" data-feat-type="ARENA_COMPLETED" style="--feat-hue:#3f9b7c;--feat-hue-secondary:#3f9b7c;--feat-accent:#e9c981;--feat-rgb:233, 201, 129">
+  <div class="feat-topline"><div class="feat-medallion"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div><p class="feat-author"><strong>Kael</strong></p>
+  <div class="feat-controls"><time class="feat-time">2d</time><button type="button" class="feed-like-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="m12 2 3.09 6.26 6.91 1-5 4.87 1.18 6.87L12 17.77 5.82 21 7 14.13l-5-4.87 6.91-1L12 2Z"></path></svg><span class="feed-like-count">2</span></button></div></div>
+  <div class="feat-body"><div class="feat-category"><span class="feat-category-line"></span><span class="feat-category-label">concluiu uma arena</span><span class="feat-category-line"></span></div>
+  <h3 class="feed-achievement-title">Treino de força</h3><dl class="feat-details"><div><dd>24</dd><dt>ações</dt></div><div><dd>18</dd><dt>dias ativos</dt></div><div><dd>540</dd><dt>min registrados</dt></div></dl></div></article></div></section>
+<section class="coluna"><h2>Proposta</h2><div class="pilha"><article class="feed-achievement-card proposta" data-feat-type="PLAYER_RANK_UP" style="--feat-hue:#87744e;--feat-hue-secondary:#514535;--feat-accent:#e9c981;--feat-rgb:233, 201, 129">
+  <div class="feat-topline"><div class="feat-medallion"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"></path></svg></div>
+  <p class="feat-author"><a href="#" class="feat-nome">Mister X</a><span class="feat-ponto" aria-hidden="true">•</span><span class="feat-acao">subiu de patente</span></p>
+  <div class="feat-controls"><time class="feat-time">2h</time><button type="button" class="feed-like-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="m12 2 3.09 6.26 6.91 1-5 4.87 1.18 6.87L12 17.77 5.82 21 7 14.13l-5-4.87 6.91-1L12 2Z"></path></svg><span class="feed-like-count">12</span></button></div></div>
+  <div class="feat-body"><div class="feat-titulo-riscado"><span class="feat-category-line"></span><h3 class="feed-achievement-title">Conde</h3><span class="feat-category-line"></span></div>
+  <dl class="feat-details"><div><dd>38</dd><dt>ciclos</dt></div><div><dd>91</dd><dt>níveis</dt></div></dl></div></article><article class="feed-achievement-card proposta" data-feat-type="CYCLE_COMPLETED" style="--feat-hue:#9baabc;--feat-hue-secondary:#606e82;--feat-accent:#e0e5ee;--feat-rgb:210, 220, 235">
+  <div class="feat-topline"><div class="feat-medallion"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" /></svg></div>
+  <p class="feat-author"><a href="#" class="feat-nome">Luna</a><span class="feat-ponto" aria-hidden="true">•</span><span class="feat-acao">encerrou um ciclo</span></p>
+  <div class="feat-controls"><time class="feat-time">5h</time><button type="button" class="feed-like-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="m12 2 3.09 6.26 6.91 1-5 4.87 1.18 6.87L12 17.77 5.82 21 7 14.13l-5-4.87 6.91-1L12 2Z"></path></svg><span class="feed-like-count">7</span></button></div></div>
+  <div class="feat-body"><div class="feat-titulo-riscado"><span class="feat-category-line"></span><h3 class="feed-achievement-title">Ciclo de Outono · Score 92</h3><span class="feat-category-line"></span></div>
+  <dl class="feat-details"><div><dd>7</dd><dt>dias ativos</dt></div><div><dd>2.160</dd><dt>min registrados</dt></div></dl></div></article><article class="feed-achievement-card proposta" data-feat-type="QUEST_COMPLETED" style="--feat-hue:#7663a4;--feat-hue-secondary:#a48a53;--feat-accent:#e9c981;--feat-rgb:233, 201, 129">
+  <div class="feat-topline"><div class="feat-medallion"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div>
+  <p class="feat-author"><a href="#" class="feat-nome">Rafa</a><span class="feat-ponto" aria-hidden="true">•</span><span class="feat-acao">concluiu uma missão de temporada</span></p>
+  <div class="feat-controls"><time class="feat-time">1d</time><button type="button" class="feed-like-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="m12 2 3.09 6.26 6.91 1-5 4.87 1.18 6.87L12 17.77 5.82 21 7 14.13l-5-4.87 6.91-1L12 2Z"></path></svg><span class="feed-like-count">4</span></button></div></div>
+  <div class="feat-body"><div class="feat-titulo-riscado"><span class="feat-category-line"></span><h3 class="feed-achievement-title">O Erudito</h3><span class="feat-category-line"></span></div>
+  <dl class="feat-details"><div><dd>300</dd><dt>EXP ganhos</dt></div></dl></div></article><article class="feed-achievement-card proposta" data-feat-type="ARENA_COMPLETED" style="--feat-hue:#3f9b7c;--feat-hue-secondary:#3f9b7c;--feat-accent:#e9c981;--feat-rgb:233, 201, 129">
+  <div class="feat-topline"><div class="feat-medallion"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div>
+  <p class="feat-author"><a href="#" class="feat-nome">Kael</a><span class="feat-ponto" aria-hidden="true">•</span><span class="feat-acao">concluiu uma arena</span></p>
+  <div class="feat-controls"><time class="feat-time">2d</time><button type="button" class="feed-like-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="m12 2 3.09 6.26 6.91 1-5 4.87 1.18 6.87L12 17.77 5.82 21 7 14.13l-5-4.87 6.91-1L12 2Z"></path></svg><span class="feed-like-count">2</span></button></div></div>
+  <div class="feat-body"><div class="feat-titulo-riscado"><span class="feat-category-line"></span><h3 class="feed-achievement-title">Treino de força</h3><span class="feat-category-line"></span></div>
+  <dl class="feat-details"><div><dd>24</dd><dt>ações</dt></div><div><dd>18</dd><dt>dias ativos</dt></div><div><dd>540</dd><dt>min registrados</dt></div></dl></div></article></div></section>
+</div></body></html>

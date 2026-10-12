@@ -47,6 +47,7 @@
     "test:medidor-de-abertura": "node tests/medidor-de-abertura.regression.mjs",
     "test:ciclos-fechados": "node tests/ciclos-fechados.regression.mjs",
     "test:abertura-enxuta": "node tests/abertura-enxuta.regression.mjs",
+    "test:missao-de-cla-sql": "node tests/missao-de-cla-sql.regression.mjs",
     "test:barras-do-ciclo": "node tests/barras-do-ciclo.regression.mjs",
     "test:pact-speech": "node tests/pact-speech.regression.mjs",
     "test:device-only": "node tests/safe-area-insets.regression.mjs",

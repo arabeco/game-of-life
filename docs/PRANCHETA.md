@@ -132,3 +132,22 @@ Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 
 - Egress de abertura permanece no item do Claude; não assumir essa frente nesta rodada. Arte depois das frentes técnicas e skin por último, conforme prioridade anterior.
 
 - 12/10 — Permissões de exclusão corrigidas no banco: Afonso retornou false/false/true nas sete funções de 20261012120000. Checkpoint e preparo do AAB 110: docs/2026-10-12-checkpoint-aab-110.md; exclusão completa, Resend e haptics continuam pendentes.
+
+### 12/10 — Checkpoint entregue e divisão das próximas frentes (Codex)
+
+Este recado atualiza os estados anteriores; “outra IA” aqui é o Codex. Afonso pediu esta divisão para evitar trabalho duplicado.
+
+**Checkpoint fechado:** commit local `6b33f9a` (44 arquivos). AAB **1.0.110 / 110** gerado em `android/app/build/outputs/bundle/release/Glyph-1.0.110-110.aab`. Pacote `life.glyph.app`, targetSdk 36; build web, Capacitor sync, Gradle/R8 e verificação da assinatura concluídos. TypeScript, nove arquivos de regressão e onboarding em navegador passaram. Hash e ressalvas da assinatura em `docs/2026-10-12-checkpoint-aab-110.md`. Não houve push nem upload no Play Console nesta entrega.
+
+- Incluídos no AAB: identidade no onboarding (apelido/faixa etária), contraste dos Termos, convites imediatos com prêmios em 1/5/10 e modal de recompensa, planos sem baús e renovação com ouro idempotente; também incorpora os commits anteriores presentes no checkout.
+- Banco: planos, convites imediatos, limpeza restrita e permissões de exclusão têm confirmação de execução por Afonso. As sete funções de exclusão retornaram `false/false/true` para anon/authenticated/service_role. A correção de permissões está concluída; o fluxo completo de exclusão ainda não.
+- Site é outro repositório (`C:/Users/Afonso/Desktop/glyph-landing`): mudanças locais não fazem parte deste commit do app nem comprovam publicação. Não marcar site publicado por causa do AAB.
+
+**Ficam com o Codex, nesta ordem:**
+
+1. **Exclusão e pedido de exclusão:** integrar app/site usando as tabelas oficiais já diagnosticadas; comprovação de identidade, estados confiáveis, arquivos pendentes e retentativas. Hoje o site só prepara e-mail e o servidor ainda pode registrar conclusão com falha de Storage. Nenhuma conta real foi apagada nos testes.
+2. **Resend, junto da exclusão:** autorização de envio, tratamento de tentativa falha e dependência real de e-mail. Conferir plano/limites e a cobrança de US$ 10 quando houver acesso à fatura; causa ainda não confirmada. Não alterar assinatura ou contratar serviços por inferência.
+3. **Fechar o site:** revisar o conjunto contadores/Termos/prints/posts contra o app atual, atualizar evidências e preparar publicação. Post de lançamento continua rascunho com CTA Play pendente. Revalidar o agregado público antes de repetir a nota antiga de RPC ausente.
+4. **Planner — haptics e fluidez:** revisar agendamento por arrastar/segurar, conclusão/desfazer e feedback tátil/visual, preservando o uso livre pelo estoque. Ainda não implementado; sensação tátil e fluidez no aparelho vão para a lista de testes humanos.
+
+**Coordenação:** egress/volume baixado ao abrir continua com o Claude. Antes de alterar trechos compartilhados de `GameContext.tsx` ou Planner, conferir o diff atual para preservar trabalho simultâneo. Os testes humanos continuam na lista do amigo/Afonso (`docs/SMOKETEST.md`); build local não os substitui. Banner de cookies está fora desta rodada por decisão de Afonso. Arte depois das frentes técnicas; skin por último. Não ampliar a limpeza do banco sem comprovar desuso e combinar o escopo.

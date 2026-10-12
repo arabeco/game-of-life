@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bancada dos Feitos</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #07080a; color: #e9e4da; font: 14px/1.4 system-ui, -apple-system, Segoe UI, sans-serif; padding: 20px 16px 60px; }
+  h1 { font: 600 18px Georgia, serif; color: #e9c981; margin: 0 0 4px; }
+  .sub { color: #8f8a80; margin: 0 0 18px; font-size: 12px; }
+  .colunas { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 22px; }
+  .coluna h2 { font: 700 11px system-ui; letter-spacing: .16em; text-transform: uppercase; color: #bdb5a4; margin: 0 0 4px; }
+  .coluna p.nota { color: #8f8a80; font-size: 11px; margin: 0 0 10px; min-height: 30px; }
+  .pilha { display: grid; gap: 10px; max-width: 390px; }
+
+  /* ====================== ATUAL (copia de components/feed-cards.css) */
+  .atual { --feat-accent: #e9c981; --feat-rgb: 233,201,129; --feat-hue: #87744e; --feat-hue-secondary: #514535;
+    position: relative; overflow: hidden; border: 1px solid rgba(var(--feat-rgb), .65); border-radius: 15px; color: #f5f0e7;
+    background:
+      linear-gradient(116deg, transparent 9%, rgba(240,244,250,.025) 21%, rgba(240,244,250,.10) 28%, transparent 37%, rgba(0,0,0,.4) 54%, transparent 73%),
+      radial-gradient(ellipse at 4% 0%, color-mix(in srgb, var(--feat-hue) 36%, #c6cbd2) 0%, color-mix(in srgb, var(--feat-hue) 45%, #08090b) 18%, transparent 58%),
+      linear-gradient(128deg, color-mix(in srgb, var(--feat-hue) 28%, #030405), #020304 48%, color-mix(in srgb, var(--feat-hue-secondary) 27%, #060709) 78%, #020304);
+    box-shadow: inset 0 0 0 3px #0c0e10, inset 0 0 0 4px rgba(var(--feat-rgb), .11), 0 5px 22px #0003; }
+  .atual::before { content: ''; position: absolute; top: 0; left: 12%; right: 12%; height: 1px; background: linear-gradient(90deg, transparent, var(--feat-accent), transparent); }
+  .atual .top { display: flex; align-items: center; gap: 12px; padding: 6px 12px 0; }
+  .atual .med { flex: 0 0 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(var(--feat-rgb), .6); color: var(--feat-accent); display: grid; place-items: center; font-size: 15px; }
+  .atual .autor { flex: 1; color: var(--feat-accent); font: 600 14px Georgia, serif; }
+  .atual .tempo { color: #bcb8b0; font-size: 10px; }
+  .atual .like { border: 1px solid rgba(var(--feat-rgb), .5); color: var(--feat-accent); border-radius: 999px; padding: 4px 9px; font-size: 11px; font-weight: 900; }
+  .atual .corpo { padding: 0 14px 9px; text-align: center; }
+  .atual .cat { color: var(--feat-accent); font-size: 10px; letter-spacing: .13em; text-transform: uppercase; margin: 2px 0 4px; }
+  .atual .tit { font: 400 22px/1.15 Georgia, serif; letter-spacing: -.02em; }
+  .atual .nums { display: flex; justify-content: center; gap: 14px; margin-top: 6px; padding-top: 5px; border-top: 1px solid rgba(var(--feat-rgb), .13); font-size: 9px; color: #bdb9b1; }
+  .atual .nums b { font: 15px Georgia, serif; color: var(--feat-accent); margin-right: 3px; }
+
+  /* ====================== A — SELO E FAIXA
+     Uma faixa vertical na cor do feito (patente/temporada/area), o selo grande
+     do tipo dentro dela, o rosto do autor no canto. Gradiente com direcao. */
+  .faixa { --c1: #b89048; --c2: #5a4320; --luz: #f3d58c;
+    display: grid; grid-template-columns: 74px 1fr; min-height: 104px; border-radius: 14px; overflow: hidden; position: relative;
+    background: linear-gradient(100deg, #0b0c0f 0%, #0b0c0f 55%, color-mix(in srgb, var(--c2) 35%, #0b0c0f) 100%);
+    border: 1px solid color-mix(in srgb, var(--c1) 55%, transparent); }
+  .faixa .fita { position: relative; display: grid; place-items: center;
+    background: linear-gradient(180deg, var(--c1), var(--c2)); box-shadow: inset -1px 0 0 rgba(255,255,255,.18); }
+  .faixa .fita::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 14px; background: #0b0c0f; clip-path: polygon(0 100%, 50% 0, 100% 100%); }
+  .faixa .selo { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; font-size: 22px; color: #1a1408;
+    background: radial-gradient(circle at 35% 30%, #fff8dc, var(--luz) 40%, var(--c1) 75%); box-shadow: 0 0 0 2px rgba(0,0,0,.35), 0 0 18px color-mix(in srgb, var(--luz) 45%, transparent); }
+  .faixa .info { padding: 10px 12px 10px 14px; display: grid; gap: 3px; align-content: center; }
+  .faixa .linha1 { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #a9a294; }
+  .faixa .rosto { width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(135deg, #3c4452, #171a20); border: 1px solid color-mix(in srgb, var(--c1) 60%, transparent); display: grid; place-items: center; font-size: 10px; color: #e9e4da; font-weight: 700; }
+  .faixa .linha1 strong { color: #f1ece2; font-weight: 600; }
+  .faixa .tipo { color: var(--luz); font-size: 9px; letter-spacing: .18em; text-transform: uppercase; font-weight: 700; }
+  .faixa .tit { font: 400 21px/1.1 Georgia, serif; color: #fbf6ec; }
+  .faixa .nums { display: flex; gap: 12px; font-size: 10px; color: #9b9486; margin-top: 2px; }
+  .faixa .nums b { color: var(--luz); font: 14px Georgia, serif; margin-right: 3px; }
+  .faixa .like { position: absolute; top: 8px; right: 10px; font-size: 11px; color: var(--luz); font-weight: 800; }
+
+  /* ====================== B — FOIL
+     Card de colecao: brilho metalico que cruza o card, numero grande como
+     protagonista, rosto do autor e o tipo como etiqueta. */
+  .foil { --c1: #c9a24f; --c2: #4b3a1a; --luz: #ffe3a1;
+    position: relative; border-radius: 16px; padding: 12px 14px 12px; overflow: hidden; color: #f8f3e8;
+    background:
+      linear-gradient(115deg, transparent 30%, rgba(255,255,255,.16) 42%, rgba(255,255,255,.04) 50%, transparent 58%),
+      conic-gradient(from 210deg at 85% 120%, var(--c2), color-mix(in srgb, var(--c1) 70%, #000) 18%, #0a0b0e 40%, #0a0b0e 75%, var(--c2));
+    border: 1px solid transparent; background-clip: padding-box; box-shadow: 0 0 0 1px color-mix(in srgb, var(--luz) 45%, transparent), 0 8px 26px rgba(0,0,0,.45); }
+  .foil .cab { display: flex; align-items: center; gap: 8px; }
+  .foil .rosto { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #48505f, #1c1f26); border: 1.5px solid var(--luz); display: grid; place-items: center; font-size: 11px; font-weight: 800; }
+  .foil .quem { flex: 1; font-size: 12px; color: #d9d2c4; }
+  .foil .quem strong { color: #fff; }
+  .foil .etq { font-size: 9px; letter-spacing: .14em; text-transform: uppercase; font-weight: 800; color: #120d04; background: linear-gradient(90deg, var(--luz), var(--c1)); padding: 3px 8px; border-radius: 999px; }
+  .foil .meio { display: flex; align-items: end; gap: 12px; margin-top: 8px; }
+  .foil .grande { font: 700 40px/0.9 Georgia, serif; color: var(--luz); text-shadow: 0 0 18px color-mix(in srgb, var(--luz) 40%, transparent); min-width: 54px; }
+  .foil .tit { font: 400 19px/1.15 Georgia, serif; }
+  .foil .sobre { font-size: 10px; color: #b7af9f; margin-top: 2px; }
+  .foil .rod { display: flex; justify-content: space-between; margin-top: 9px; padding-top: 7px; border-top: 1px solid rgba(255,255,255,.08); font-size: 10px; color: #a39b8c; }
+  .foil .rod b { color: var(--luz); }
+
+  /* ====================== C — PLACA DO REINO
+     Mais sobrio que o atual, mas com hierarquia clara: o feito em cima em
+     letra grande, quem fez embaixo, e uma barra de cor na base que diz o tipo
+     sem precisar ler. */
+  .placa { --c1: #b89048; --luz: #f0cf86;
+    border-radius: 12px; overflow: hidden; background: linear-gradient(180deg, #121317, #0a0b0d); border: 1px solid #23252b; }
+  .placa .faixa-top { height: 3px; background: linear-gradient(90deg, transparent, var(--luz), transparent); }
+  .placa .dentro { padding: 11px 14px 10px; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; }
+  .placa .tipo { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; font-size: 9px; letter-spacing: .2em; text-transform: uppercase; color: var(--luz); font-weight: 700; }
+  .placa .tipo i { width: 7px; height: 7px; border-radius: 2px; background: var(--c1); transform: rotate(45deg); }
+  .placa .tit { font: 400 23px/1.1 Georgia, serif; color: #fbf7ee; }
+  .placa .icone { grid-row: 2 / 4; grid-column: 2; align-self: center; width: 42px; height: 42px; border-radius: 10px; display: grid; place-items: center; font-size: 20px;
+    background: linear-gradient(145deg, color-mix(in srgb, var(--c1) 45%, #111), #0b0c0f); border: 1px solid color-mix(in srgb, var(--c1) 60%, transparent); }
+  .placa .quem { font-size: 11px; color: #9f998d; }
+  .placa .quem strong { color: #e7e1d5; }
+  .placa .rodape { display: flex; gap: 14px; padding: 7px 14px; background: color-mix(in srgb, var(--c1) 12%, #0b0c0e); border-top: 1px solid color-mix(in srgb, var(--c1) 25%, transparent); font-size: 10px; color: #a8a194; }
+  .placa .rodape b { color: var(--luz); font: 14px Georgia, serif; margin-right: 3px; }
+  .placa .rodape .like { margin-left: auto; color: var(--luz); font-weight: 800; }
+
+  /* cores por tipo (as mesmas familias do app) */
+  .t-patente { --c1: #c9a24f; --c2: #4f3c17; --luz: #ffe09a; --feat-hue: #87744e; }
+  .t-ciclo   { --c1: #9fb0c6; --c2: #3c4757; --luz: #eaf1fb; --feat-accent: #e0e5ee; --feat-rgb: 210,220,235; --feat-hue: #9baabc; --feat-hue-secondary: #606e82; }
+  .t-missao  { --c1: #8b6fd0; --c2: #3b2a63; --luz: #d9c8ff; --feat-hue: #7663a4; --feat-hue-secondary: #a48a53; }
+  .t-arena   { --c1: #3fa58a; --c2: #164a3d; --luz: #a9f0d8; --feat-hue: #3f8f7a; --feat-hue-secondary: #3f8f7a; }
+</style>
+</head>
+<body>
+<h1>Bancada dos Feitos</h1>
+<p class="sub">Os mesmos 4 feitos em 4 desenhos: o atual e 3 direções. Escolha uma (ou misture: "a faixa do A com o número grande do B").</p>
+
+<div class="colunas" id="colunas"></div>
+
+<script>
+const feitos = [
+  { tipo: 't-patente', nome: 'Ascensão', frase: 'subiu de patente', tit: 'Conde', icone: '♛', autor: 'Mister X', ini: 'MX', tempo: '2h', curt: 12, grande: '6ª', sobre: 'patente de 10', nums: [['38', 'ciclos'], ['91', 'níveis']] },
+  { tipo: 't-ciclo', nome: 'Ciclo', frase: 'fechou um ciclo', tit: 'Ciclo de Outono · A', icone: '✦', autor: 'Luna', ini: 'LU', tempo: '5h', curt: 7, grande: 'A', sobre: 'placa do ciclo', nums: [['92%', 'concluído'], ['7', 'dias'], ['36h', 'registradas']] },
+  { tipo: 't-missao', nome: 'Missão de temporada', frase: 'concluiu uma missão', tit: 'O Erudito', icone: '⚑', autor: 'Rafa', ini: 'RA', tempo: 'ontem', curt: 4, grande: '30', sobre: 'leituras', nums: [['30', 'leituras'], ['300', 'EXP']] },
+  { tipo: 't-arena', nome: 'Arena', frase: 'concluiu uma arena', tit: 'Treino de força', icone: '✓', autor: 'Kael', ini: 'KA', tempo: '2d', curt: 2, grande: '24', sobre: 'ações', nums: [['24', 'ações'], ['18', 'dias ativos'], ['540', 'min']] },
+];
+const nums = (f, cls) => f.nums.map(([v, l]) => `<span><b>${v}</b>${l}</span>`).join('');
+
+const desenhos = [
+  { titulo: 'Atual', nota: 'O que está no app hoje: tudo centralizado, mesma moldura para todo tipo.', html: (f) => `
+    <article class="atual ${f.tipo}"><div class="top"><div class="med">${f.icone}</div><div class="autor">${f.autor}</div><span class="tempo">${f.tempo}</span><span class="like">★ ${f.curt}</span></div>
+    <div class="corpo"><div class="cat">${f.frase}</div><div class="tit">${f.tit}</div><div class="nums">${nums(f)}</div></div></article>` },
+  { titulo: 'A · Selo e faixa', nota: 'Uma faixa na cor do feito com o selo grande; o rosto de quem fez ao lado do nome. Lê o tipo de longe.', html: (f) => `
+    <article class="faixa ${f.tipo}"><div class="fita"><div class="selo">${f.icone}</div></div>
+    <div class="info"><div class="linha1"><span class="rosto">${f.ini}</span><strong>${f.autor}</strong> · ${f.tempo}</div>
+    <div class="tipo">${f.nome}</div><div class="tit">${f.tit}</div><div class="nums">${nums(f)}</div></div><span class="like">★ ${f.curt}</span></article>` },
+  { titulo: 'B · Foil', nota: 'Card de coleção: brilho metálico, um número grande como protagonista, etiqueta do tipo.', html: (f) => `
+    <article class="foil ${f.tipo}"><div class="cab"><span class="rosto">${f.ini}</span><span class="quem"><strong>${f.autor}</strong> ${f.frase}</span><span class="etq">${f.nome}</span></div>
+    <div class="meio"><div class="grande">${f.grande}</div><div><div class="tit">${f.tit}</div><div class="sobre">${f.sobre}</div></div></div>
+    <div class="rod"><span>${f.tempo}</span><span><b>★ ${f.curt}</b></span></div></article>` },
+  { titulo: 'C · Placa do reino', nota: 'Mais sóbrio, hierarquia clara: o feito grande em cima, quem fez embaixo, rodapé na cor do tipo.', html: (f) => `
+    <article class="placa ${f.tipo}"><div class="faixa-top"></div><div class="dentro"><div class="tipo"><i></i>${f.nome}</div>
+    <div class="tit">${f.tit}</div><div class="icone">${f.icone}</div><div class="quem"><strong>${f.autor}</strong> ${f.frase} · ${f.tempo}</div></div>
+    <div class="rodape">${nums(f)}<span class="like">★ ${f.curt}</span></div></article>` },
+];
+
+document.getElementById('colunas').innerHTML = desenhos.map((d) => `
+  <section class="coluna"><h2>${d.titulo}</h2><p class="nota">${d.nota}</p><div class="pilha">${feitos.map(d.html).join('')}</div></section>`).join('');
+</script>
+</body>
+</html>

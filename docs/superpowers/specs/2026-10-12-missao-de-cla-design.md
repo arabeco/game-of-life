@@ -48,11 +48,17 @@ As missões de clã antigas foram desligadas por serem "muito joguinho, pouca si
 - **Arena compartilhada mostrando % e "brigando":** achar a causa (suspeita: duas fontes de progresso disputando, o `getSharedActionPoolProgress` em tempo real contra o progresso pessoal) e fazer ela mostrar X/Y como as outras arenas, sem oscilar.
 - **Parceria:** revisar o que a arena da parceria mostra, quando vence (`expiresAt`: vencida congela) e a tag no ArenasView. Corrigir o que estiver estranho e descrever o resto para o Afonso.
 
+## Barrinha de humor dos membros
+
+- Na lista "Pessoas do grupo", embaixo do nome de cada membro, vai uma barrinha fina com o humor atual, nas cores e no rótulo do `MOODS_DATA` (as mesmas do modal de humor).
+- O humor só é visto por quem é do mesmo clã. Ele não entra no cartão público: quem não é do clã continua sem ver.
+- O servidor ganha `humor_do_meu_cla()`, que devolve `(user_id, mood)` dos membros do clã de quem pede, e nada se a pessoa não tem clã. É `security definer`, com grant só para `authenticated`, e fica na mesma migração.
+- Sem humor registrado, a barrinha não aparece (nada de barra vazia fingindo 0).
+
 ## Fora deste desenho
 
-- A barrinha de humor dos membros: precisa de SQL e de uma decisão de privacidade. Fica para outro passo.
 - Ranking de clãs: escondido até decidirmos.
-- Aviso do Oráculo quando o grupo bate a meta: próximo passo.
+- Aviso do Oráculo quando o grupo bate a meta (mensagem e push "o clã fechou, seu baú está esperando"): próximo passo.
 - Prioridade do líder e Clan Office: continuam desligados.
 
 ## Testes

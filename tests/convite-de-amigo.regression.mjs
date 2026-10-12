@@ -5,8 +5,8 @@ import { readFileSync } from 'node:fs';
  * CONVIDE UM AMIGO (10/10/2026), como o Afonso decidiu:
  *   - o codigo de cada um fica no modal de cupom, com copiar e enviar;
  *   - o amigo digita no MESMO campo de cupom e ganha 10 de ouro, e os dois viram amigos;
- *   - quem convidou so conta o amigo quando ele completa os sete dias no app;
- *   - bolinha no 5 (bau Raro) e no 10 (25 de ouro) — "50 e muito, 100 e absurdo";
+ *   - quem convidou conta o amigo assim que o código é vinculado;
+ *   - bolinha no 1 (baú Comum), no 5 (bau Raro) e no 10 (25 de ouro) — "50 e muito, 100 e absurdo";
  *   - travas: so conta nova (7 dias), nao vale o proprio codigo, um convite por conta.
  */
 
@@ -25,13 +25,12 @@ assert.match(usar, /v_criada_em < now\(\) - interval '7 days'/, 'convite deixou 
 assert.match(usar, /_starter_reward_credit_gold\(\s*v_user_id, 10,/, 'o amigo deixou de ganhar 10 de ouro');
 assert.match(usar, /insert into public\.friends \(user_id, friend_id\)[\s\S]*insert into public\.friends \(user_id, friend_id\)/,
   'o convite deixou de criar a amizade nos dois sentidos');
-const conta = /count\(\*\) from public\.dias_no_app d where d\.user_id = cu\.convidado\) >= 7/;
-assert.match(migracao.slice(migracao.indexOf('function public.meus_convites')), conta,
-  'a barrinha deixou de contar so quem completou os sete dias');
-const receber = migracao.slice(migracao.indexOf('function public.receber_premio_de_convite'));
-assert.match(receber, conta, 'o premio deixou de conferir os sete dias de cada amigo');
-assert.match(receber, /p_marco not in \(5, 10\)/);
-assert.match(receber, /grant_chest\(v_user_id, 'Raro'\)/, 'a bolinha do 5 deixou de ser o bau Raro');
+const atual = ler('supabase/migrations/20261011120000_convites_imediatos.sql');
+assert.doesNotMatch(atual, /public\.dias_no_app/, 'convite conta sem esperar dias');
+const receber = atual.slice(atual.indexOf('function public.receber_premio_de_convite'));
+assert.match(receber, /p_marco not in \(1, 5, 10\)/);
+assert.match(receber, /grant_chest\(v_user_id, 'Comum'\)/);
+assert.match(receber, /grant_chest\(v_user_id, 'Raro'\)/);
 assert.match(receber, /_starter_reward_credit_gold\(\s*v_user_id, 25,/, 'a bolinha do 10 deixou de ser 25 de ouro');
 assert.match(receber, /_starter_reward_has_purchase_marker\(v_user_id, 'invite_milestone', p_marco::text\)/,
   'a bolinha pode ser recebida duas vezes');
@@ -47,13 +46,13 @@ assert.match(ajustes, /if \(result\.error === 'CODE_NOT_FOUND'\) \{\s*const conv
   'o campo de cupom deixou de tentar o convite quando o cupom nao existe');
 assert.match(ajustes, /throw new Error\(mensagemDoErroDeCodigo\(result\.error\)\);/,
   'o modal voltou a mostrar o erro cru do servidor');
-assert.match(ajustes, /<ConviteDeAmigo \/>\s*<\/GlassCard>/, 'o bloco do convite saiu de baixo do campo de cupom');
+assert.match(ajustes, /<ConviteDeAmigo onReward=\{onReward\} \/>\s*<\/GlassCard>/, 'o bloco do convite saiu de baixo do campo de cupom');
 assert.match(convites, /case 'CODE_NOT_FOUND': return 'Código não encontrado\.';/);
 assert.match(convites, /case 'ACCOUNT_TOO_OLD':/);
 console.log('ok - o cupom que nao existe vira tentativa de convite, e o erro aparece em portugues');
 
 // ============================== 3. o bloco: codigo, enviar, barrinha
-assert.match(convites, /export const MARCOS_DE_CONVITE = \[5, 10\] as const;/);
+assert.match(convites, /export const MARCOS_DE_CONVITE = \[1, 5, 10\] as const;/);
 assert.match(convites, /play\.google\.com\/store\/apps\/details\?id=life\.glyph\.app&referrer=/,
   'o link do convite deixou de levar o codigo para a Play Store');
 assert.match(convites, /Meu código de convite: \$\{codigo\}/, 'a mensagem deixou de trazer o codigo escrito');
@@ -61,6 +60,6 @@ assert.match(bloco, /Copiar/);
 assert.match(bloco, /compartilharConvite\(convites\.codigo\)/);
 assert.match(bloco, /if \(!convites\) return null;/, 'sem a migracao, o bloco tem de sumir em vez de quebrar');
 assert.match(contexto, /supabase\.rpc\('receber_premio_de_convite', \{ p_marco: marco \}\)/);
-console.log('ok - o bloco mostra o codigo com copiar e enviar, e a barrinha com as duas bolinhas');
+console.log('ok - o bloco mostra o codigo com copiar e enviar, e a barrinha com as três bolinhas');
 
 console.log('Convite de amigo: um campo so, travas no servidor, bau Raro no 5 e 25 de ouro no 10.');

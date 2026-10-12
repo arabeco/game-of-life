@@ -1,3 +1,4 @@
+import { getPendingMembershipPurchase } from '../utils/membershipPurchase';
 import { speechVisualTone } from '../supabase/functions/_shared/oracle-visual-tone.ts';
 import { ORACLE_ENGINE_V2, chooseOpening, rememberEngineSpeech } from '../utils/oracleEngineV2';
 ﻿import React, { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -1956,9 +1957,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         // Ajustes > Oraculo & Alertas, nasce num padrao razoavel, e NAO e o
         // consentimento de push — quem decide isso e o pedido de permissao do
         // sistema, que este mesmo arquivo dispara logo depois do onboarding.
-        // A faixa etaria saiu junto: nao mudava nada e pedia um dado pessoal
-        // antes de a pessoa ter visto o app fazer qualquer coisa. O campo
-        // continua no tipo do perfil para nao perder o que ja foi respondido.
+        // Nome e faixa etária são confirmados antes do balão, nos campos do perfil.
         setFirstUseOnboardingActive(false);
         window.setTimeout(() => {
             window.dispatchEvent(new CustomEvent('tutorialNavigate', {
@@ -2226,7 +2225,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
 
     const handleConfirmPremiumRenewalOffer = useCallback(async () => {
         const currentGold = Number(userProfile.wallet?.gold || 0);
-        if (currentGold < discountedPremiumPrice) {
+        if (currentGold < discountedPremiumPrice && !getPendingMembershipPurchase(userProfile.id, activeMembershipProduct.id)) {
             window.dispatchEvent(new CustomEvent('navigate-to-store', {
                 detail: {
                     tab: 'store',
@@ -2246,7 +2245,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         } finally {
             setPremiumRenewalBusy(false);
         }
-    }, [activeMembershipProduct.id, activeMembershipProduct.tier, buyStoreItem, discountedPremiumPrice, handleDismissPremiumRenewalOffer, userProfile.wallet?.gold]);
+    }, [activeMembershipProduct.id, activeMembershipProduct.tier, buyStoreItem, discountedPremiumPrice, handleDismissPremiumRenewalOffer, userProfile.wallet?.gold, userProfile.id]);
 
     const handleAcceptTerms = () => {
         const acceptedAt = new Date().toISOString();

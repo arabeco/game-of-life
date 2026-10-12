@@ -76,23 +76,8 @@ export const MembershipStore: React.FC<{ scrollRequest?: { section: string; nonc
         return '30 dias';
     }, [isPremium, isStaffAccess, premiumDaysRemaining, premiumExpiresLabel]);
 
-    const premiumBenefits = useMemo(() => ([
-        'Ate 15 arenas ativas',
-        'Fundos premium de perfil e ativos',
-        'Todos os tons de fala do Oraculo',
-        'Cena do legado com 50% off',
-        'Bonus de legado +5% XP',
-        '1 bau raro por ativacao',
-    ]), []);
-
-    const platinumBenefits = useMemo(() => ([
-        'Todas as vantagens do Premium, com o dobro do bonus de XP (+10%)',
-        'Ate 30 arenas ativas',
-        'Cena do legado com 70% off',
-        '1 campanha media gratis por ativacao',
-        'Todos os planos de fundo e aparencias premium',
-        '1 bau raro + 1 bau lendario por ativacao',
-    ]), []);
+    const premiumBenefits = useMemo(() => [...GOLD_PREMIUM_PRODUCT.benefits], []);
+    const platinumBenefits = useMemo(() => [...GOLD_PLATINUM_PRODUCT.benefits], []);
     const [premiumBenefitLeft, premiumBenefitRight] = useMemo(() => splitBenefitsIntoColumns(premiumBenefits), [premiumBenefits]);
     const [platinumBenefitLeft, platinumBenefitRight] = useMemo(() => splitBenefitsIntoColumns(platinumBenefits), [platinumBenefits]);
 

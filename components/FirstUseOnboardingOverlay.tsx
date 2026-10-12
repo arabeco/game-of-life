@@ -1,3 +1,5 @@
+import { OnboardingIdentity } from './OnboardingIdentity';
+import { supabase } from '../supabaseClient';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Portal } from './Portal';
 import { useGame } from '../contexts/GameContext';
@@ -32,11 +34,7 @@ export type OnboardingAnswers = {
   purpose: OnboardingPurpose | null;
 };
 
-// A UNICA pergunta de primeiro uso, e a unica que muda alguma coisa: o proposito
-// escolhe o texto dos passos seguintes.
-//
-// Saiu a faixa etaria, que nao mudava nada e pedia um dado pessoal antes de a
-// pessoa ter visto o app fazer qualquer coisa.
+// Depois da apresentação do perfil, o propósito adapta o balão do guia.
 
 const PURPOSES = [
   { id: 'organizar' as const, icon: '\u{1F5C2}', label: 'Organizar a vida', detail: 'Por ordem no que já existe' },
@@ -80,7 +78,8 @@ export const FirstUseOnboardingOverlay: React.FC<{
   onDismiss: () => void;
   onComplete: (acceptedSystemChallenges: string[], answers: OnboardingAnswers) => void;
 }> = ({ active, onDismiss, onComplete }) => {
-  const { userProfile, assets, actions, tasks } = useGame();
+  const { userProfile, assets, actions, tasks, updateUserProfile } = useGame();
+  const [identityReady, setIdentityReady] = useState(false);
   const [readyUserId, setReadyUserId] = useState<string | null>(null);
   const [createdActionId, setCreatedActionId] = useState<string | null>(null);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -270,6 +269,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
       autoAdvanceStepRef.current = null;
       return;
     }
+    setIdentityReady(Boolean(userProfile.onboardingAgeRange));
     const resumed = resolveOnboardingResume(loadOnboardingProgress(userProfile.id), assets.flatMap(a => a.arenas), actions);
     setCurrentStepIndex(Math.max(0, steps.findIndex(s => s.id === resumed.stepId)));
     setCreatedArenaId(resumed.arenaId);
@@ -551,7 +551,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
   }, [advanceStep, isTyping, onComplete, purpose, selectedMissionIds, step, userProfile.id, createdArenaId, createdActionId, jumpToAtLeast]);
 
   useEffect(() => {
-    if (!active) return;
+    if (!active || !identityReady) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (shouldIgnoreGuideKeyboard(event)) return;
       if (event.key === 'Escape') {
@@ -566,9 +566,16 @@ export const FirstUseOnboardingOverlay: React.FC<{
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [active, handleDismiss, handleNext, step?.hideNext]);
+  }, [active, identityReady, handleDismiss, handleNext, step?.hideNext]);
 
   if (!active || !step) return null;
+  if (!identityReady) return <OnboardingIdentity nickname={userProfile.nickname || ''} onExit={() => { void supabase.auth.signOut(); }} onSave={async (nickname, range) => {
+    const { data, error } = await supabase.from('user_profiles')
+      .update({ nickname, onboarding_age_range: range }).eq('id', userProfile.id).select('id').single();
+    if (error || !data) throw error || new Error('Profile not saved');
+    updateUserProfile({ nickname, onboardingAgeRange: range });
+    setIdentityReady(true);
+  }} />;
 
   const canAdvance = canAdvanceFromStep(step);
   const padding = step.padding ?? 12;

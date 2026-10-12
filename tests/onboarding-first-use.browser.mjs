@@ -35,7 +35,7 @@ function App() {
  const [assets,setAssets] = useState(seed.assets || []);
  const [actions,setActions] = useState(seed.actions || []);
  const [tasks,setTasks] = useState([]);
- const [userProfile,setProfile] = useState({id:'qa-guide', completedSeasonMissions:[]});
+ const [userProfile,setProfile] = useState({id:'qa-guide', nickname:'Teste', onboardingAgeRange:'25_34', completedSeasonMissions:[]});
  const [active,setActive] = useState(true);
  const [arenaModal,setArenaModal] = useState(false);
  const [actionModal,setActionModal] = useState(false);

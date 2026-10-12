@@ -508,6 +508,11 @@ const dispatchAppView = (detail: AppNavigatePayload) => {
 };
 
 const navigateFromNotification = (notification: Notification, onClose: () => void) => {
+    if (notification.metadata?.source === 'friend_invite') {
+        dispatchAppView({ view: 'settings' });
+        onClose();
+        return;
+    }
     if (notification.type === 'direct_message') {
         dispatchAppView({ view: 'social' });
         window.dispatchEvent(new CustomEvent('mundo-tab-request', {
@@ -574,6 +579,7 @@ const navigateFromNotification = (notification: Notification, onClose: () => voi
 };
 
 const getNotificationActionLabel = (notification: Notification): string | null => {
+    if (notification.metadata?.source === 'friend_invite') return 'Abrir Ajustes';
     switch (notification.type) {
         case 'direct_message':
             return 'Abrir Mensagens';

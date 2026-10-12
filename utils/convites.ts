@@ -1,24 +1,17 @@
 import { Capacitor } from '@capacitor/core';
 import { Share as CapacitorShare } from '@capacitor/share';
 
-/**
- * CONVIDE UM AMIGO (10/10/2026).
- *
- * O amigo digita o codigo no campo de cupom e ganha 10 de ouro; quem convidou
- * so conta o amigo quando ele completa os sete dias no app. A barrinha tem duas
- * bolinhas: 5 amigos pagam um bau Raro, 10 pagam 25 de ouro. Quem decide tudo
- * isso e o servidor (supabase/migrations/20261010150000_convite_de_amigo.sql);
- * aqui so se mostra e se chama.
- */
+/** Convites contam ao vincular a conta: prêmios nos marcos 1, 5 e 10. */
 
-export const MARCOS_DE_CONVITE = [5, 10] as const;
+export const MARCOS_DE_CONVITE = [1, 5, 10] as const;
 export type MarcoDeConvite = typeof MARCOS_DE_CONVITE[number];
-export const PREMIO_DO_MARCO: Record<MarcoDeConvite, string> = { 5: 'Baú Raro', 10: '25 de ouro' };
+export const PREMIO_DO_MARCO: Record<MarcoDeConvite, string> = { 1: 'Baú Comum', 5: 'Baú Raro', 10: '25 de ouro' };
 
 export interface MeusConvites {
     codigo: string;
     entraram: number;
     completaram: number;
+    recebeu1: boolean;
     recebeu5: boolean;
     recebeu10: boolean;
 }
@@ -31,19 +24,18 @@ export const lerMeusConvites = (data: unknown): MeusConvites | null => {
         codigo,
         entraram: Number(bruto.entraram || 0),
         completaram: Number(bruto.completaram || 0),
+        recebeu1: Boolean(bruto.recebeu_1),
         recebeu5: Boolean(bruto.recebeu_5),
         recebeu10: Boolean(bruto.recebeu_10),
     };
 };
 
 export const marcoRecebido = (convites: MeusConvites, marco: MarcoDeConvite) => (
-    marco === 5 ? convites.recebeu5 : convites.recebeu10
+    marco === 1 ? convites.recebeu1 : marco === 5 ? convites.recebeu5 : convites.recebeu10
 );
 
 /**
- * O link vai direto para a Play Store, com o codigo no `referrer`. Por enquanto
- * o app ainda nao le esse campo (etapa 2, nativa): o amigo digita o codigo, que
- * vai escrito na propria mensagem.
+ * O link vai direto para a Play Store, com o codigo no `referrer`. A leitura nativa guarda o código até o cadastro; a mensagem também traz o código para digitar.
  */
 export const linkDoConvite = (codigo: string) => (
     `https://play.google.com/store/apps/details?id=life.glyph.app&referrer=${encodeURIComponent(`convite=${codigo}`)}`

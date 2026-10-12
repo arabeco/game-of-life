@@ -708,7 +708,8 @@ const RedeemCodeModal: React.FC<{
     open: boolean;
     onClose: () => void;
     onRedeem: (code: string) => Promise<void>;
-}> = ({ open, onClose, onRedeem }) => {
+    onReward: (payload: RewardModalPayload) => void;
+}> = ({ open, onClose, onRedeem, onReward }) => {
     const [code, setCode] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -790,7 +791,7 @@ const RedeemCodeModal: React.FC<{
                         </button>
                     </div>
 
-                    <ConviteDeAmigo />
+                    <ConviteDeAmigo onReward={onReward} />
                 </GlassCard>
             </div>
         </Portal>
@@ -2173,6 +2174,7 @@ const PreferenciasTab: React.FC = () => {
                     open
                     onClose={() => setModal(null)}
                     onRedeem={handleRedeemCode}
+                    onReward={(payload) => { setModal(null); setPremioResgatado(payload); }}
                 />
             )}
             {isFeedbackOpen && <ReportarProblemaModal onClose={() => setFeedbackOpen(false)} />}
@@ -2318,22 +2320,8 @@ const PremiumTab: React.FC = () => {
     const activeMembershipTier = getActiveSubscriptionTier(userProfile);
     const premiumLabel = isPremium ? 'ATIVO' : 'DISPONÍVEL';
     const premiumDaysRemaining = getPremiumDaysRemaining(userProfile);
-    const premiumBenefits = [
-        'Até 15 arenas ativas',
-        'Fundos premium de perfil e ativos',
-        'Todos os tons de fala do Oráculo',
-        'Cena do legado com 50% off',
-        'Bônus de legado +5% XP',
-        '1 baú raro por ativação',
-    ];
-    const platinumBenefits = [
-        'Todas as vantagens do Premium, com o dobro do bônus de XP (+10%)',
-        'Até 30 arenas ativas',
-        'Cena do legado com 70% off',
-        '1 campanha média grátis por ativação',
-        'Todos os planos de fundo e aparências premium',
-        '1 baú raro + 1 baú lendário por ativação',
-    ];
+    const premiumBenefits = [...GOLD_PREMIUM_PRODUCT.benefits];
+    const platinumBenefits = [...GOLD_PLATINUM_PRODUCT.benefits];
     const [premiumBenefitLeft, premiumBenefitRight] = useMemo(() => splitBenefitsIntoColumns(premiumBenefits), [premiumBenefits]);
     const [platinumBenefitLeft, platinumBenefitRight] = useMemo(() => splitBenefitsIntoColumns(platinumBenefits), [platinumBenefits]);
     const premiumExpiresLabel = userProfile.premiumExpiresAt

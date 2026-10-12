@@ -11,10 +11,10 @@ import { ConviteDeAmigo } from '../components/ConviteDeAmigo';
 import type { MeusConvites } from '../utils/convites';
 
 const CASOS: Array<[string, MeusConvites]> = [
-    ['Comecando', { codigo: 'MISTERX-7K2', entraram: 0, completaram: 0, recebeu5: false, recebeu10: false }],
-    ['Tres amigos no caminho', { codigo: 'MISTERX-7K2', entraram: 4, completaram: 3, recebeu5: false, recebeu10: false }],
-    ['Bolinha do 5 pronta', { codigo: 'MISTERX-7K2', entraram: 7, completaram: 6, recebeu5: false, recebeu10: false }],
-    ['Tudo recebido', { codigo: 'MISTERX-7K2', entraram: 12, completaram: 10, recebeu5: true, recebeu10: true }],
+    ['Comecando', { codigo: 'MISTERX-7K2', entraram: 0, completaram: 0, recebeu1: false, recebeu5: false, recebeu10: false }],
+    ['Primeiro amigo: baú Comum disponível', { codigo: 'MISTERX-7K2', entraram: 1, completaram: 1, recebeu1: false, recebeu5: false, recebeu10: false }],
+    ['Bolinha do 5 pronta', { codigo: 'MISTERX-7K2', entraram: 7, completaram: 6, recebeu1: false, recebeu5: false, recebeu10: false }],
+    ['Tudo recebido', { codigo: 'MISTERX-7K2', entraram: 12, completaram: 10, recebeu1: true, recebeu5: true, recebeu10: true }],
 ];
 
 const Caso: React.FC<{ titulo: string; dados: MeusConvites }> = ({ titulo, dados }) => (

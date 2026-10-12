@@ -22,8 +22,6 @@ import { LegacyProjectionModal } from '../components/LegacyProjectionModal';
 import { ReportResultCarousel } from '../components/ReportResultCarousel';
 import { RewardPackModal } from '../components/RewardPackModal';
 import { getRewardEmblemUrl, getRewardToneRgb } from '../constants/rewardEmblems';
-import { getChestArtUrl } from '../constants/catalogAssets';
-import { getChestDisplayName, getChestVisual } from '../constants/rarityVisuals';
 import { SvgRadarChart } from '../components/SvgRadarChart';
 import { supabase } from '../supabaseClient';
 import { useGame } from '../contexts/GameContext';
@@ -1578,7 +1576,7 @@ const CYCLE_REPORT_SHOWCASE: Report = (() => {
 })();
 
 const GM_PREMIUM_ACTIVE_BENEFITS = [
-  { label: 'Capacidade', value: 'Até 15 arenas ativas', tone: 'gold' as const },
+  { label: 'Capacidade', value: 'Até 15 arenas no total (incluindo arquivadas)', tone: 'gold' as const },
   { label: 'Personalização', value: 'Fundos premium de perfil', tone: 'violet' as const },
   { label: 'Oráculo', value: 'Todos os tons de fala liberados', tone: 'cyan' as const },
   { label: 'Legado', value: 'Cena do legado com 50% de desconto', tone: 'violet' as const },
@@ -1587,7 +1585,7 @@ const GM_PREMIUM_ACTIVE_BENEFITS = [
 
 const GM_PLATINUM_ACTIVE_BENEFITS = [
   { label: 'Progressão', value: 'Todas as vantagens Premium e +10% EXP', tone: 'emerald' as const },
-  { label: 'Capacidade', value: 'Até 30 arenas ativas', tone: 'gold' as const },
+  { label: 'Capacidade', value: 'Até 30 arenas no total (incluindo arquivadas)', tone: 'gold' as const },
   { label: 'Personalização', value: 'Todos os fundos e aparências premium', tone: 'violet' as const },
   { label: 'Oráculo', value: 'Todos os tons de fala liberados', tone: 'cyan' as const },
   { label: 'Legado', value: 'Cena do legado com 70% de desconto', tone: 'violet' as const },
@@ -1610,20 +1608,14 @@ const buildMembershipRewardMockPayload = (tier: 'premium' | 'platinum'): RewardM
     ],
     rewardHighlightsTitle: 'Itens e créditos entregues',
     rewardHighlights: [
-      ...(isPlatinum ? (['Lendário', 'Raro'] as ChestType[]) : (['Raro'] as ChestType[])).map((chestType) => {
-        const visual = getChestVisual(chestType);
-        return { label: visual.label, value: getChestDisplayName(chestType), detail: 'Baú entregue ao Arsenal.', rarityRgb: visual.rgb, imageUrl: getChestArtUrl(chestType) };
-      }),
       ...(isPlatinum ? [{ label: 'Ficha de quiz', value: '1 campanha média', detail: 'Crédito disponível para o próximo quiz.', tone: 'cyan' as const }] : []),
     ],
     itemSectionTitle: 'Cosméticos entregues',
-    itemIds: isPlatinum ? [] : ['item_border_genesis_01', 'item_banner_origin_01'],
-    emptyMessage: isPlatinum
-      ? 'Nenhum cosmético novo precisava cair agora, mas os baús, o crédito de legado e a ficha da rodada já foram aplicados.'
-      : 'Nenhum cosmético novo precisava cair agora, mas o baú raro e a ficha da rodada já foram aplicados.',
+    itemIds: [],
+    emptyMessage: 'Vantagens do plano disponíveis.',
     activeBenefitsTitle: 'Vantagens ativadas',
     activeBenefits: isPlatinum ? GM_PLATINUM_ACTIVE_BENEFITS : GM_PREMIUM_ACTIVE_BENEFITS,
-    campaignQuizFreeCreditsGranted: isPlatinum ? 0 : 1,
+    campaignQuizFreeCreditsGranted: 0,
     campaignQuizMediumCreditsGranted: isPlatinum ? 1 : 0,
   };
 };

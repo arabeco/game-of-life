@@ -21,7 +21,7 @@ export const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void }> = (
     const clauses = [
         {
             title: 'O DESPERTAR DO SOBERANO',
-            text: 'Ao seguir, você confirma que leu este resumo de aceite. O uso do GLYPH também e regido pelos Termos de Uso e pela Politica de Privacidade completos, disponíveis para consulta permanente.',
+            text: 'O Glyph é destinado a pessoas com 13 anos ou mais. Menores de 18 anos devem contar com a participação e autorização do responsável legal. Ao seguir, você confirma que leu este resumo, os Termos de Uso e a Política de Privacidade, disponíveis para consulta.',
         },
         {
             title: 'I. CONTA E DADOS ESSENCIAIS',
@@ -33,7 +33,7 @@ export const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void }> = (
         },
         {
             title: 'III. COMPRAS E LIMITES DO SERVIÇO',
-            text: 'Compras de recursos digitais são processadas por parceiro de pagamento e so geram crédito após confirmação. O GLYPH e uma ferramenta de organização e jogo, não substitui orientacao medica, psicologica, juridica ou financeira.',
+            text: 'Compras digitais são liberadas após confirmação do pagamento. Você pode solicitar arrependimento em até 7 dias nas hipóteses legais, pelo canal da compra ou pelo suporte indicado nos Termos. Cancelar renovação, pedir reembolso e excluir a conta são operações diferentes. O GLYPH e uma ferramenta de organização e jogo, não substitui orientacao medica, psicologica, juridica ou financeira.',
         },
         {
             title: 'IV. SEUS DIREITOS E SUA SAÍDA',
@@ -138,7 +138,7 @@ export const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void }> = (
                             </>
                         )}
 
-                        <div className={`animate-fade-in-down flex w-full gap-4 rounded-[24px] border border-black/10 border-b-4 border-b-[var(--gold)] bg-white/90 p-4 shadow-2xl backdrop-blur-xl md:p-6 ${isSealing ? 'terms-contract-card--sealing' : ''}`}>
+                        <div className={`animate-fade-in-down flex w-full gap-4 rounded-[24px] border border-black/10 border-b-4 border-b-[var(--gold)] bg-[#f5f0e6] p-4 shadow-2xl backdrop-blur-xl md:p-6 ${isSealing ? 'terms-contract-card--sealing' : ''}`}>
                         <div className="flex-shrink-0">
                             <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-[var(--gold)] bg-gradient-to-br from-gray-100 to-white shadow-lg md:h-16 md:w-16">
                                 <OracleIcon className="h-8 w-8 opacity-80 md:h-10 md:w-10" />
@@ -149,15 +149,15 @@ export const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void }> = (
                             <div className="space-y-2">
                                 <div className="flex items-start justify-between">
                                     <div className="flex flex-col">
-                                        <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--gold)] drop-shadow-sm md:text-sm">
+                                        <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#725015] drop-shadow-sm md:text-sm">
                                             {currentClause.title}
                                         </h3>
-                                        <span className="font-mono text-[8px] text-gray-400 md:text-[10px]">
+                                        <span className="font-mono text-[8px] text-[#625c53] md:text-[10px]">
                                             CLÁUSULA {step + 1} / {clauses.length}
                                         </span>
                                     </div>
                                 </div>
-                                <p className="min-h-[80px] whitespace-pre-wrap font-mono text-xs font-medium leading-relaxed text-gray-900 md:text-sm">
+                                <p className="min-h-[80px] whitespace-pre-wrap font-mono text-xs font-medium leading-relaxed text-[#24211d] md:text-sm">
                                     {typedText}
                                     {isTyping && <span className="ml-1 inline-block h-3 w-1 animate-pulse align-middle bg-[var(--gold)] opacity-70 md:h-4 md:w-2" />}
                                 </p>
@@ -179,13 +179,13 @@ export const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void }> = (
                                     } as React.CSSProperties}
                                 >
                                     <span
-                                        className={`luxe-title-shadow font-black uppercase text-[var(--gold)] ${
+                                        className={`font-black uppercase text-[#725015] ${
                                             isLast ? 'text-sm tracking-widest md:text-base' : 'text-xs tracking-[0.4em] md:text-sm'
                                         }`}
                                     >
                                         {isLast ? (isHolding ? 'FIRMAR...' : 'ACEITAR') : 'PRÓXIMO'}
                                     </span>
-                                    <span className={`${isLast ? 'text-gray-400' : 'text-gray-500'} px-2 text-center text-[9px] font-bold uppercase tracking-[0.1em] md:text-[10px]`}>
+                                    <span className={`${isLast ? 'text-[#625c53]' : 'text-[#625c53]'} px-2 text-center text-[11px] font-bold uppercase tracking-[0.1em] md:text-[10px]`}>
                                         {isHolding ? 'ASSINANDO' : isLast ? 'SEGURE' : 'AVANÇAR'}
                                     </span>
 
@@ -212,21 +212,21 @@ export const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void }> = (
                                     {isHolding && isLast && <div className="pointer-events-none absolute inset-0 animate-pulse rounded-full bg-[var(--gold)]/10" />}
                                 </div>
                             </div>
-                            <div className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[10px] text-gray-500 md:text-[11px]">
+                            <div className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[10px] text-[#625c53] md:text-[11px]">
                                 <a
                                     href={LEGAL_TERMS_URL_PLACEHOLDER}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="transition-colors hover:text-[var(--gold)]"
+                                    className="transition-colors hover:text-[#725015]"
                                 >
                                     Termos completos
                                 </a>
-                                <span className="text-gray-400">?</span>
+                                <span className="text-[#625c53]">?</span>
                                 <a
                                     href={LEGAL_PRIVACY_URL_PLACEHOLDER}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="transition-colors hover:text-[var(--gold)]"
+                                    className="transition-colors hover:text-[#725015]"
                                 >
                                     Privacidade completa
                                 </a>

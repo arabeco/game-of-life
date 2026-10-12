@@ -80,13 +80,12 @@
       name: 'Premium (30 dias)',
       cost: 200,
       benefits: [
-        'Até 15 arenas ativas (vs 10 no plano base)',
+        'Até 15 arenas no total (incluindo arquivadas) (vs 10 no plano base)',
         'Fundos premium de perfil',
         'Cena do legado com 50% off',
         'Oráculo: todos os tons de fala',
         'Oráculo: escolha os temas e peça card na hora',
         'Bônus de legado: +5% XP no ciclo',
-        '1 campanha curta grátis por renovação',
       ],
     },
     platinum_monthly: {
@@ -95,12 +94,11 @@
       cost: 500,
       benefits: [
         'Todas as vantagens do Premium, com o dobro do bônus de XP (+10%)',
-        'Até 30 arenas ativas',
+        'Até 30 arenas no total (incluindo arquivadas)',
         'Cena do legado com 70% off',
         '1 campanha média grátis por renovação',
         'Todos os planos de fundo',
         'Todas as aparências premium',
-        '1 baú raro + 1 baú lendário por renovação',
       ],
     },
     codex: 150,

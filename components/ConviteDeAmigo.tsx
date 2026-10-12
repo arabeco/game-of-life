@@ -1,3 +1,4 @@
+import type { RewardModalPayload } from '../types';
 import React, { useEffect, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import {
@@ -10,26 +11,24 @@ import {
     type MeusConvites,
 } from '../utils/convites';
 
-/**
- * O CONVITE, LOGO ABAIXO DO CAMPO DE CUPOM (10/10/2026).
- *
- * O codigo com copiar e compartilhar, e uma barrinha discreta com bolinha no 5
- * e no 10. A barrinha conta so quem completou os sete dias no app: e assim que
- * o servidor paga. Sem a migracao do convite, o bloco simplesmente nao aparece.
- */
+/** Progresso e resgate dos convites vinculados à conta. */
 /** Um risquinho por amigo, menos onde ja tem bolinha. */
 const RISQUINHOS = Array.from({ length: 9 }, (_, i) => i + 1)
     .filter((n) => !(MARCOS_DE_CONVITE as readonly number[]).includes(n));
 
-export const ConviteDeAmigo: React.FC = () => {
+export const ConviteDeAmigo: React.FC<{ onReward?: (payload: RewardModalPayload) => void }> = ({ onReward }) => {
     const { buscarMeusConvites, receberPremioDeConvite, showToast } = useGame();
     const [convites, setConvites] = useState<MeusConvites | null>(null);
     const [recebendo, setRecebendo] = useState<MarcoDeConvite | null>(null);
 
     useEffect(() => {
         let vivo = true;
-        void buscarMeusConvites().then((dados) => { if (vivo) setConvites(dados); });
-        return () => { vivo = false; };
+        const atualizar = () => { if (document.visibilityState === 'visible') void buscarMeusConvites().then((dados) => { if (vivo) setConvites(dados); }).catch(() => {}); };
+        atualizar();
+        const intervalo = window.setInterval(atualizar, 30000);
+        window.addEventListener('focus', atualizar);
+        document.addEventListener('visibilitychange', atualizar);
+        return () => { vivo = false; window.clearInterval(intervalo); window.removeEventListener('focus', atualizar); document.removeEventListener('visibilitychange', atualizar); };
         // Busca uma vez por abertura do modal.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -37,7 +36,7 @@ export const ConviteDeAmigo: React.FC = () => {
     if (!convites) return null;
 
     const meta = MARCOS_DE_CONVITE[MARCOS_DE_CONVITE.length - 1];
-    const preenchido = Math.min(100, (convites.completaram / meta) * 100);
+    const preenchido = Math.min(100, (convites.entraram / meta) * 100);
 
     const copiar = async () => {
         await copiarTexto(convites.codigo);
@@ -51,9 +50,10 @@ export const ConviteDeAmigo: React.FC = () => {
 
     const receber = async (marco: MarcoDeConvite) => {
         setRecebendo(marco);
-        const ok = await receberPremioDeConvite(marco);
-        setRecebendo(null);
-        if (ok) setConvites(await buscarMeusConvites());
+        try {
+            const ok = await receberPremioDeConvite(marco, onReward);
+            if (ok) setConvites(await buscarMeusConvites());
+        } finally { setRecebendo(null); }
     };
 
     return (
@@ -81,12 +81,10 @@ export const ConviteDeAmigo: React.FC = () => {
                 </button>
             </div>
 
-            {/* A barrinha (pedido de 10/10/2026): trilho fundo, um risquinho para
-                cada amigo, gradiente no que ja contou, e o 5 e o 10 escritos
-                dentro das bolinhas. */}
+            {/* Um marco no primeiro, quinto e décimo convite. */}
             <div
                 className="relative mx-3 mt-3 h-[6px] rounded-full bg-white/[0.07] shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]"
-                aria-label={`${convites.completaram} de ${meta} amigos`}
+                aria-label={`${convites.entraram} de ${meta} amigos`}
             >
                 <div
                     className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-700 ease-out"
@@ -99,13 +97,13 @@ export const ConviteDeAmigo: React.FC = () => {
                 {RISQUINHOS.map((n) => (
                     <span
                         key={n}
-                        className={`absolute top-1/2 h-[10px] w-px -translate-x-1/2 -translate-y-1/2 rounded-full ${convites.completaram >= n ? 'bg-black/35' : 'bg-white/[0.18]'}`}
+                        className={`absolute top-1/2 h-[10px] w-px -translate-x-1/2 -translate-y-1/2 rounded-full ${convites.entraram >= n ? 'bg-black/35' : 'bg-white/[0.18]'}`}
                         style={{ left: `${(n / meta) * 100}%` }}
                     />
                 ))}
                 {MARCOS_DE_CONVITE.map((marco) => {
                     const recebido = marcoRecebido(convites, marco);
-                    const pronto = !recebido && convites.completaram >= marco;
+                    const pronto = !recebido && convites.entraram >= marco;
                     return (
                         <button
                             key={marco}
@@ -136,22 +134,25 @@ export const ConviteDeAmigo: React.FC = () => {
             <div className="relative mx-3 mt-1 h-6 text-[9px] leading-tight text-white/45">
                 {MARCOS_DE_CONVITE.map((marco) => {
                     const recebido = marcoRecebido(convites, marco);
-                    const pronto = !recebido && convites.completaram >= marco;
+                    const pronto = !recebido && convites.entraram >= marco;
                     return (
                         <span
                             key={marco}
                             // A do fim alinha pela direita, senao o texto vaza do modal.
-                            className={`absolute whitespace-nowrap ${marco === meta ? '-translate-x-full text-right' : '-translate-x-1/2 text-center'} ${pronto ? 'font-bold text-[var(--skin-accent-color)]' : ''}`}
+                            className={`absolute whitespace-nowrap ${marco === meta ? '-translate-x-full text-right' : marco === 1 ? 'text-left' : '-translate-x-1/2 text-center'} ${pronto ? 'font-bold text-[var(--skin-accent-color)]' : ''}`}
                             style={{ left: `${(marco / meta) * 100}%` }}
                         >
-                            {recebido ? 'recebido' : pronto ? 'toque para receber' : PREMIO_DO_MARCO[marco]}
+                            {recebido ? 'recebido' : PREMIO_DO_MARCO[marco]}
                         </span>
                     );
                 })}
             </div>
+            {MARCOS_DE_CONVITE.some(m => convites.entraram >= m && !marcoRecebido(convites, m)) && (
+                <p role="status" className="text-xs font-bold text-[var(--skin-accent-color)]">Você tem prêmio disponível! Toque na bolinha iluminada para receber.</p>
+            )}
             <p className="text-[10px] leading-snug text-white/40">
-                {convites.entraram} {convites.entraram === 1 ? 'amigo entrou' : 'amigos entraram'} · {convites.completaram} {convites.completaram === 1 ? 'completou' : 'completaram'} os 7 dias.
-                {' '}O amigo ganha 10 de ouro ao usar seu código; ele conta aqui quando completar os 7 dias no app.
+                {convites.entraram} {convites.entraram === 1 ? 'amigo vinculado' : 'amigos vinculados'} ao seu convite.
+                {' '}O amigo ganha 10 de ouro e conta assim que o código é vinculado à conta. Cada conta só pode usar um convite.
             </p>
         </div>
     );

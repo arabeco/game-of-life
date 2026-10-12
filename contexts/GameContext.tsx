@@ -1,3 +1,6 @@
+import { getChestArtUrl } from '../constants/catalogAssets';
+import { getChestVisual } from '../constants/rarityVisuals';
+import { beginMembershipPurchase, finishMembershipPurchase, getPendingMembershipPurchase } from '../utils/membershipPurchase';
 import { ORACLE_ENGINE_V2 } from '../utils/oracleEngineV2';
 import { buildCycleCommitment } from '../utils/cycleCommitment';
 ﻿import { loadCatalogRows } from '../utils/networkEfficiency.js';
@@ -43,7 +46,7 @@ import { buildCodexTemplateFromDraft, getCodexLevelDisplayTitle } from '../utils
 import { getNextExpBoostExpiryAt, hasActiveExpBoost } from '../utils/expBoostAccess';
 import { useOperationalDate } from '../hooks/useOperationalDate';
 import { formatLocalDateString, getOperationalDateString as getOperationalDateStringValue, getTaskOperationalDateString, shiftLocalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
-import { getCycleXpBonusRate, getNextPremiumExpiryAt, hasPremiumAccess, isPremiumActive, normalizeSubscriptionTier } from '../utils/premiumAccess';
+import { getCycleXpBonusRate, hasPremiumAccess, isPremiumActive, normalizeSubscriptionTier } from '../utils/premiumAccess';
 import { MASTERY_AREA_MAX_LEVEL, toMasteryIndex } from '../constants/lifeAreas';
 import { buildArenaLimitMessage, getArenaCapacitySummary } from '../utils/arenaCapacity';
 import { resolveUiSkinId } from '../utils/uiSkinTokens';
@@ -69,11 +72,10 @@ import { ECONOMY } from '../constants/economy';
 import { publishGlyphAndroidWidgetSnapshot } from '../utils/androidWidget';
 import { buildOracleAwareDailyWidgetSnapshot } from '../utils/widgetSnapshots';
 import { resolveCatalogAssetUrl } from '../constants/catalogAssets';
-import { getChestArtUrl } from '../constants/catalogAssets';
-import { formatChestGain, getChestDisplayName, getChestVisual } from '../constants/rarityVisuals';
+import { formatChestGain } from '../constants/rarityVisuals';
+import { lerMeusConvites, mensagemDoErroDeCodigo, type MarcoDeConvite, type MeusConvites } from '../utils/convites';
 import { conviteDaInstalacaoPendente, esquecerConviteDaInstalacao, lerConviteDaInstalacao } from '../utils/conviteDaInstalacao';
 import { conviteDeveSerEsquecido } from '../utils/referrerDoConvite';
-import { lerMeusConvites, mensagemDoErroDeCodigo, type MarcoDeConvite, type MeusConvites } from '../utils/convites';
 import { SEVEN_DAYS_IN_APP_GOAL, SEVEN_DAYS_IN_APP_ID, SYSTEM_CHALLENGES, SYSTEM_CHALLENGE_INSIGNIA_ID } from '../constants/systemChallenges';
 import type { SystemChallenge } from '../constants/systemChallenges';
 import { getOraclePresenceRules } from '../constants/oraclePresencePolicy';
@@ -546,40 +548,6 @@ const DEFAULT_USER_PROFILE: UserProfile = {
 
 const defaultChecklistItems: ChecklistItem[] = [];
 const defaultSequenceItems: SequenceItem[] = [];
-const PREMIUM_REWARD_CHEST: ChestType = 'Raro';
-const PLATINUM_REWARD_CHESTS: ChestType[] = ['Raro', 'Lendário'];
-// A cena de legado virou desconto permanente (70% no Platinum, 50% no Premium)
-// em vez de um voucher por renovacao: gasto o credito, o Platinum voltava a
-// pagar o mesmo que o Premium. Zerado em vez de removido para nao quebrar quem
-// ainda tem saldo — o credito antigo continua zerando o preco.
-const PLATINUM_REWARD_LEGACY_SCENE_CREDITS = 0;
-// A ficha "gratis" nao valia nada: o RPC que a resgata recusa qualquer campanha
-// com preco (CAMPAIGN_QUIZ_FREE_CODEX_INELIGIBLE), entao ela so servia para
-// pegar o que ja era gratuito. Zerada em vez de removida para nao quebrar quem
-// tem saldo — o credito antigo continua funcionando como sempre funcionou.
-const MEMBERSHIP_REWARD_CAMPAIGN_QUIZ_FREE_CREDITS = 0;
-const MEMBERSHIP_REWARD_CAMPAIGN_QUIZ_MEDIUM_CREDITS = 1;
-const PREMIUM_ACTIVE_BENEFITS = [
-    { label: 'Capacidade', value: 'Até 15 arenas ativas', tone: 'gold' as const },
-    { label: 'Personalização', value: 'Fundos premium de perfil e ativos', tone: 'violet' as const },
-    { label: 'Oráculo', value: 'Todos os tons de fala liberados', tone: 'cyan' as const },
-    { label: 'Legado', value: 'Cena do legado com 50% de desconto', tone: 'violet' as const },
-    { label: 'Progressão', value: 'Bônus de legado de +5% EXP', tone: 'emerald' as const },
-] as const;
-const PLATINUM_ACTIVE_BENEFITS = [
-    { label: 'Progressão', value: 'Todas as vantagens Premium e +10% EXP', detail: 'O dobro do bônus do plano Premium.', tone: 'emerald' as const },
-    { label: 'Capacidade', value: 'Até 30 arenas ativas', tone: 'gold' as const },
-    { label: 'Personalização', value: 'Todos os fundos e aparências premium', tone: 'violet' as const },
-    { label: 'Oráculo', value: 'Todos os tons de fala liberados', tone: 'cyan' as const },
-    { label: 'Legado', value: 'Cena do legado com 70% de desconto', tone: 'violet' as const },
-] as const;
-
-const formatPremiumExpiryLabel = (expiresAt: string): string => {
-    const parsed = new Date(expiresAt);
-    if (Number.isNaN(parsed.getTime())) return '30 dias ativos';
-    return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(parsed);
-};
-
 type TaskPoolItem = {
     actionId: string;
     unlimited?: boolean;
@@ -955,7 +923,7 @@ export interface GameContextType {
     /** Convide um amigo: o codigo de convite digitado no campo de cupom. */
     usarCodigoDeConvite: (codigo: string) => Promise<{ ok: boolean; erro?: string; naoEConvite?: boolean; definitivo?: boolean }>;
     buscarMeusConvites: () => Promise<MeusConvites | null>;
-    receberPremioDeConvite: (marco: MarcoDeConvite) => Promise<boolean>;
+    receberPremioDeConvite: (marco: MarcoDeConvite, onReward?: (payload: RewardModalPayload) => void) => Promise<boolean>;
     /** `substituir` troca o pacto ativo pelo novo, encerrando o anterior. */
     claimArenaPact: () => Promise<void>;
     addArena: (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb?: boolean) => Promise<Arena>;
@@ -2454,6 +2422,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return true;
     };
 
+    const membershipPurchaseBusy = useRef(false);
     const buyStoreItem = async (
         itemId: string,
         type: 'premium' | 'codex' | 'exclusive' | 'boost',
@@ -2501,7 +2470,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             name = membershipProduct.name;
         }
 
-        if ((userProfile.wallet?.gold || 0) < cost) {
+        if ((userProfile.wallet?.gold || 0) < cost && !(type === 'premium' && getPendingMembershipPurchase(userId, itemId))) {
             const missingGold = Math.max(0, cost - Number(userProfile.wallet?.gold || 0));
             showToast(`Saldo insuficiente. Faltam ${missingGold} de ouro para ${name || 'essa compra'}.`, "warning");
             if (type === 'premium') {
@@ -2541,13 +2510,27 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
          * o aviso com "Adquira N moedas aqui" e leva pra aba certa da loja.
          */
 
-        const { data, error } = await withLatencyToast<{ data: any, error: any }>(
-            supabase.rpc('buy_store_item', {
-                p_item_id: itemId,
-                p_cost_gold: cost,
-                p_type: type
-            }) as any
-        );
+        if (type === 'premium' && membershipPurchaseBusy.current) return;
+        let membershipRequestId: string | null = null;
+        if (type === 'premium') {
+            membershipPurchaseBusy.current = true;
+            membershipRequestId = beginMembershipPurchase(userId, itemId);
+        }
+        let result: { data: any; error: any };
+        try {
+            result = await withLatencyToast<{ data: any; error: any }>(
+                (type === 'premium'
+                    ? supabase.rpc('buy_membership_with_gold', {
+                        p_item_id: itemId,
+                        p_request_id: membershipRequestId,
+                    })
+                    : supabase.rpc('buy_store_item', { p_item_id: itemId, p_cost_gold: cost, p_type: type })) as any
+            );
+        } finally {
+            if (type === 'premium') membershipPurchaseBusy.current = false;
+        }
+        const { data, error } = result;
+
 
         if (error) {
             console.error("Error buying store item:", error);
@@ -2600,45 +2583,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             showToast(`Débito de ${cobrado} Ouro confirmado. ${boost.name} ativo.`, "success");
             return;
         } else if (type === 'premium') {
-            const membershipProduct = getGoldMembershipProduct(itemId) || GOLD_PREMIUM_PRODUCT;
-            const premiumExpiresAt = getNextPremiumExpiryAt(userProfile.premiumExpiresAt);
-            const nextSubscriptionTier = membershipProduct.tier;
-            const currentLegacyCredits = Math.max(0, Number(userProfile.legacyProjectionSceneCredits || 0));
-            const currentCampaignQuizFreeCredits = Math.max(0, Number(userProfile.campaignQuizFreeCredits || 0));
-            const currentCampaignQuizMediumCredits = Math.max(0, Number(userProfile.campaignQuizMediumCredits || 0));
-            let premiumRewardPayload: RewardModalPayload;
-            let legacyProjectionSceneCredits = currentLegacyCredits;
-            let campaignQuizFreeCredits = currentCampaignQuizFreeCredits;
-            let campaignQuizMediumCredits = currentCampaignQuizMediumCredits;
-
-            if (nextSubscriptionTier === 'platinum') {
-                const platinumReward = await unlockPlatinumPack(premiumExpiresAt);
-                premiumRewardPayload = platinumReward.payload;
-                legacyProjectionSceneCredits += platinumReward.legacySceneCreditsGranted;
-                campaignQuizFreeCredits += platinumReward.campaignQuizFreeCreditsGranted;
-                campaignQuizMediumCredits += platinumReward.campaignQuizMediumCreditsGranted;
-            } else {
-                const premiumReward = await unlockPremiumPack(premiumExpiresAt);
-                premiumRewardPayload = premiumReward.payload;
-                campaignQuizFreeCredits += premiumReward.campaignQuizFreeCreditsGranted;
-                campaignQuizMediumCredits += premiumReward.campaignQuizMediumCreditsGranted;
+            const membership = (data as any)?.membership;
+            if (!membership?.premiumExpiresAt) {
+                showToast('Não foi possível confirmar a ativação. Atualize a conta antes de tentar novamente.', 'error');
+                return;
             }
-
-            updateUserProfile({
-                isPremium: true,
-                premiumExpiresAt,
-                subscriptionTier: nextSubscriptionTier,
-                premiumRewardPending: true,
-                premiumRewardPayload,
-                legacyProjectionSceneCredits,
-                campaignQuizFreeCredits,
-                campaignQuizMediumCredits,
-            });
-            showToast(
-                options?.successMessage
-                    || `Débito de ${cobrado} Ouro confirmado. ${nextSubscriptionTier === 'platinum' ? 'Platinum' : 'Premium'} renovado por 30 dias.`,
-                "success",
-            );
+            finishMembershipPurchase(userId, itemId);
+            setUserProfile(prev => ({ ...prev, ...membership }));
+            showToast((data as any)?.already_processed
+                ? 'Compra já confirmada. Sua assinatura foi atualizada, sem nova cobrança.'
+                : `Débito de ${cobrado} ouro confirmado. ${membership.subscriptionTier === 'platinum' ? 'Platinum' : 'Premium'} ativo por mais 30 dias.`, 'success');
             return;
         }
 
@@ -9462,118 +9416,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return { item: null, granted: false, duplicateConverted: false, fragmentsGranted: 0 };
     };
 
-    const buildMembershipRewardPayload = (
-        tier: 'premium' | 'platinum',
-        expiresAt: string,
-        grantedItemIds: string[],
-        grantedChests: ChestType[],
-        legacySceneCreditsGranted: number,
-        campaignQuizFreeCreditsGranted: number,
-        campaignQuizMediumCreditsGranted: number,
-    ): RewardModalPayload => {
-        const isPlatinum = tier === 'platinum';
-        const rewardHighlights: NonNullable<RewardModalPayload['rewardHighlights']> = [];
-        grantedChests.forEach((chestType) => {
-            const visual = getChestVisual(chestType);
-            rewardHighlights.push({
-                label: visual.label,
-                value: getChestDisplayName(chestType),
-                detail: 'Baú entregue ao Arsenal.',
-                rarityRgb: visual.rgb,
-                imageUrl: getChestArtUrl(chestType),
-            });
-        });
-        if (legacySceneCreditsGranted > 0) {
-            rewardHighlights.push({ label: 'Legado', value: `${legacySceneCreditsGranted} cena grátis`, detail: 'Crédito já aplicado.', tone: 'violet' });
-        }
-        if (campaignQuizFreeCreditsGranted > 0 || campaignQuizMediumCreditsGranted > 0) {
-            const quizCredits = campaignQuizMediumCreditsGranted || campaignQuizFreeCreditsGranted;
-            rewardHighlights.push({
-                label: 'Ficha de quiz',
-                value: campaignQuizMediumCreditsGranted > 0 ? `${quizCredits} campanha média` : `${quizCredits} campanha grátis`,
-                detail: 'Crédito disponível para o próximo quiz.',
-                tone: 'cyan',
-            });
-        }
 
-        return {
-            membershipTier: tier,
-            eyebrow: '',
-            title: 'Recompensa entregue!',
-            subtitle: isPlatinum ? 'Platinum ativado' : 'Premium ativado',
-            summary: isPlatinum
-                ? 'Mais 30 dias ativos. Os baús e a ficha desta ativação já foram entregues; as vantagens abaixo já estão liberadas.'
-                : 'Mais 30 dias ativos. O baú desta ativação já foi entregue e as vantagens abaixo já estão liberadas.',
-            buttonLabel: 'Continuar',
-            rewardHighlightsTitle: 'Itens e créditos entregues',
-            rewardHighlights,
-            itemSectionTitle: 'Cosméticos entregues',
-            activeBenefitsTitle: 'Vantagens ativadas',
-            activeBenefits: isPlatinum ? [...PLATINUM_ACTIVE_BENEFITS] : [...PREMIUM_ACTIVE_BENEFITS],
-            emptyMessage: '',
-            metricCards: [
-                {
-                    label: 'Plano',
-                    value: isPlatinum ? 'Platinum' : 'Premium',
-                    detail: '30 dias ativos',
-                },
-                {
-                    label: 'Ativo até',
-                    value: formatPremiumExpiryLabel(expiresAt),
-                    detail: 'validade atual',
-                },
-            ],
-            chestType: grantedChests[0] || null,
-            itemIds: grantedItemIds,
-            legacyProjectionSceneCreditsGranted: legacySceneCreditsGranted,
-            campaignQuizFreeCreditsGranted,
-            campaignQuizMediumCreditsGranted,
-        };
-    };
-
-    const unlockPremiumPack = async (expiresAt: string): Promise<{ payload: RewardModalPayload; campaignQuizFreeCreditsGranted: number; campaignQuizMediumCreditsGranted: number }> => {
-        const grantedItemIds: string[] = [];
-
-        const grantedChests: ChestType[] = [];
-        const chestGranted = await addChest(PREMIUM_REWARD_CHEST);
-        if (chestGranted) grantedChests.push(PREMIUM_REWARD_CHEST);
-        return {
-            payload: buildMembershipRewardPayload(
-                'premium',
-                expiresAt,
-                grantedItemIds,
-                grantedChests,
-                0,
-                MEMBERSHIP_REWARD_CAMPAIGN_QUIZ_FREE_CREDITS,
-                0,
-            ),
-            campaignQuizFreeCreditsGranted: MEMBERSHIP_REWARD_CAMPAIGN_QUIZ_FREE_CREDITS,
-            campaignQuizMediumCreditsGranted: 0,
-        };
-    };
-
-    const unlockPlatinumPack = async (expiresAt: string): Promise<{ payload: RewardModalPayload; legacySceneCreditsGranted: number; campaignQuizFreeCreditsGranted: number; campaignQuizMediumCreditsGranted: number }> => {
-        const grantedChests: ChestType[] = [];
-        for (const chestType of PLATINUM_REWARD_CHESTS) {
-            const granted = await addChest(chestType);
-            if (granted) grantedChests.push(chestType);
-        }
-
-        return {
-            payload: buildMembershipRewardPayload(
-                'platinum',
-                expiresAt,
-                [],
-                grantedChests,
-                PLATINUM_REWARD_LEGACY_SCENE_CREDITS,
-                0,
-                MEMBERSHIP_REWARD_CAMPAIGN_QUIZ_MEDIUM_CREDITS,
-            ),
-            legacySceneCreditsGranted: PLATINUM_REWARD_LEGACY_SCENE_CREDITS,
-            campaignQuizFreeCreditsGranted: 0,
-            campaignQuizMediumCreditsGranted: MEMBERSHIP_REWARD_CAMPAIGN_QUIZ_MEDIUM_CREDITS,
-        };
-    };
 
     const addProfileFlag = (flag: string) => {
         const completed = userProfile.completedSeasonMissions || [];
@@ -13145,28 +12988,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             seasonId: mission.season_id,
         });
     };
-    /*
-     * CONVITE, ETAPA 2: quem instalou pelo link nao digita nada. Com a conta
-     * pronta, o codigo que veio com a instalacao e usado uma vez; so e esquecido
-     * quando o servidor responde (sim ou um "nao" definitivo). Falha de rede
-     * guarda para a proxima abertura. Erro nao vira aviso: convite e bonus.
-     */
-    const conviteDaInstalacaoTentadoRef = useRef(false);
-    useEffect(() => {
-        if (!hasHydratedFromSupabase || !userProfile?.id || userProfile.id === 'placeholder_user') return;
-        if (conviteDaInstalacaoTentadoRef.current) return;
-        conviteDaInstalacaoTentadoRef.current = true;
-        void (async () => {
-            await lerConviteDaInstalacao();
-            const codigo = conviteDaInstalacaoPendente();
-            if (!codigo) return;
-            const resultado = await usarCodigoDeConvite(codigo);
-            if (conviteDeveSerEsquecido(resultado)) esquecerConviteDaInstalacao();
-        })();
-        // usarCodigoDeConvite e recriado a cada render; a tentativa e uma por sessao.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [hasHydratedFromSupabase, userProfile?.id]);
-
 
     /*
      * CONVIDE UM AMIGO (10/10/2026). Quem decide e paga e o servidor
@@ -13193,6 +13014,28 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return { ok: true };
     };
 
+    /*
+     * CONVITE, ETAPA 2: quem instalou pelo link nao digita nada. Com a conta
+     * pronta, o codigo que veio com a instalacao e usado uma vez; so e esquecido
+     * quando o servidor responde (sim ou um "nao" definitivo). Falha de rede
+     * guarda para a proxima abertura. Erro nao vira aviso: convite e bonus.
+     */
+    const conviteDaInstalacaoTentadoRef = useRef(false);
+    useEffect(() => {
+        if (!hasHydratedFromSupabase || !userProfile?.id || userProfile.id === 'placeholder_user') return;
+        if (conviteDaInstalacaoTentadoRef.current) return;
+        conviteDaInstalacaoTentadoRef.current = true;
+        void (async () => {
+            await lerConviteDaInstalacao();
+            const codigo = conviteDaInstalacaoPendente();
+            if (!codigo) return;
+            const resultado = await usarCodigoDeConvite(codigo);
+            if (conviteDeveSerEsquecido(resultado)) esquecerConviteDaInstalacao();
+        })();
+        // usarCodigoDeConvite e recriado a cada render; a tentativa e uma por sessao.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [hasHydratedFromSupabase, userProfile?.id]);
+
     const buscarMeusConvites = async (): Promise<MeusConvites | null> => {
         if (!getSupabaseUserId()) return null;
         const { data, error } = await supabase.rpc('meus_convites');
@@ -13200,7 +13043,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return lerMeusConvites(data);
     };
 
-    const receberPremioDeConvite = async (marco: MarcoDeConvite): Promise<boolean> => {
+    const receberPremioDeConvite = async (marco: MarcoDeConvite, onReward?: (payload: RewardModalPayload) => void): Promise<boolean> => {
         const userId = getSupabaseUserId();
         if (!userId) return false;
         const { data, error } = await supabase.rpc('receber_premio_de_convite', { p_marco: marco });
@@ -13213,12 +13056,21 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (resposta.chest_type) {
             const baus = await fetchChestsFromDB(userId);
             if (baus) setUserProfile((prev) => ({ ...prev, chests: baus }));
-            showToast(formatChestGain(resposta.chest_type), 'success');
+            if (!onReward) showToast(formatChestGain(resposta.chest_type), 'success');
         } else {
             const ouro = Number(resposta.new_gold ?? userProfile.wallet?.gold ?? 0);
             updateUserProfile({ wallet: { ...userProfile.wallet, gold: ouro } });
-            showToast('+25 de ouro', 'success');
+            if (!onReward) showToast('+25 de ouro', 'success');
         }
+        const chestType = resposta.chest_type as ChestType | null;
+        onReward?.({
+            title: 'Recompensa entregue!',
+            subtitle: marco === 1 ? 'Seu primeiro amigo' : `${marco} amigos convidados`,
+            summary: chestType ? 'O baú está guardado no Arsenal. Abra quando quiser.' : 'O ouro já entrou na sua conta.',
+            buttonLabel: 'Continuar', itemIds: [], emptyMessage: '',
+            metricCards: chestType ? [] : [{ label: 'Ouro', simbolo: 'ouro', value: '+25' }],
+            rewardHighlights: chestType ? [{ label: 'Baú conquistado', value: `Baú ${chestType}`, imageUrl: getChestArtUrl(chestType), rarityRgb: getChestVisual(chestType).rgb }] : [],
+        });
         return true;
     };
 

@@ -63,3 +63,20 @@ assert.match(contexto, /deveRecolher\(status\)[\s\S]{0,200}recolherArenaDaJornad
 assert.match(ler('views/SeasonView.tsx'), /PRODUCT_FEATURES\.clanSeasonQuests \|\| quest\.type !== 'clan'/);
 assert.match(ler('contexts/gameDomains/questSharedDomain.ts'), /!PRODUCT_FEATURES\.clanMissions && !PRODUCT_FEATURES\.clanSeasonQuests/);
 console.log('ok - entrar trava duplo toque, exige cla, desfaz na recusa; receber mostra o bau do servidor');
+// ============================== 5. a tela do cla (risco 5)
+const cartao = ler('components/MissaoDoClaCard.tsx');
+const barrinha = ler('components/BarrinhaDeHumor.tsx');
+const visao = ler('components/ClanOverviewModal.tsx');
+assert.match(cartao, /rotuloDaMissao\(status\)/, 'o cartao tem de mostrar X/Y');
+assert.match(cartao, /disabled=\{ocupado\}/, 'o botao nao trava em voo');
+assert.match(cartao, /podeReceber\(status\)/);
+assert.match(barrinha, /if \(typeof mood !== 'number' \|\| !Number\.isFinite\(mood\)\) return null;/, 'sem humor tinha de sumir');
+assert.match(visao, /<MissaoDoClaCard \/>/);
+assert.match(visao, /<BarrinhaDeHumor mood=\{humorDoCla\[member\.id\]\} \/>/);
+console.log('ok - a tela do cla mostra a missao em X/Y e o humor de cada um, que some sem registro');
+// A Sede e a aba que abre (a que o Afonso veria todo dia): a missao e o humor moram nela.
+const sede = visao.slice(visao.indexOf("{activeTab === 'headquarters' ? ("), visao.indexOf('Temporada atual'));
+assert.match(sede, /<MissaoDoClaCard \/>/, 'a missao saiu da Sede, a aba que abre');
+assert.match(sede, /<BarrinhaDeHumor mood=\{humorDoCla\[member\.id\]\} compacta \/>/, 'o humor saiu de baixo do nome no palco');
+assert.match(barrinha, /compacta \? null :/, 'no palco a barrinha vai sem rotulo, para caber embaixo do nome');
+console.log('ok - na Sede, a missao e o humor embaixo do nome de cada soberano');

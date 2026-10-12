@@ -11,6 +11,8 @@ import { Sovereign } from './Avatar';
 import { ClanEmblem } from './ClanEmblem';
 import { getDisplayLevel } from '../constants/lifeAreas';
 import { SovereignVitrineModal } from './SovereignVitrine';
+import { MissaoDoClaCard } from './MissaoDoClaCard';
+import { BarrinhaDeHumor } from './BarrinhaDeHumor';
 
 type ClanOverviewTab = 'headquarters' | 'members';
 
@@ -47,6 +49,7 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
     const {
         clan,
         clanRanks,
+        humorDoCla,
         enrichedClanMembers,
         loadClanAndMembers,
         leaveClan,
@@ -249,6 +252,7 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
                                                         <div className="relative -mt-5 max-w-[96px] rounded-full border border-white/12 bg-black/75 px-2 py-1 text-center backdrop-blur-sm">
                                                             <p className="truncate text-[8px] font-black uppercase tracking-[0.05em] text-white/82">{member.nickname}</p>
                                                         </div>
+                                                        <BarrinhaDeHumor mood={humorDoCla[member.id]} compacta />
                                                         <p className="relative mt-1 font-mono text-[9px] font-bold text-amber-200/80">
                                                             {Number(member.seasonContributionPoints || 0).toLocaleString('pt-BR')} exp
                                                         </p>
@@ -256,6 +260,8 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
                                                 ))}
                                             </div>
                                         </div>
+
+                                        <MissaoDoClaCard />
 
                                         <div>
                                             <div className="mb-2 flex items-center justify-between px-1">
@@ -302,6 +308,7 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
                                                         <p className="truncate text-sm font-bold text-white">{member.nickname}</p>
                                                         {member.role === 'leader' && <CrownIcon className="h-3.5 w-3.5 shrink-0 text-amber-300" />}
                                                     </div>
+                                                    <BarrinhaDeHumor mood={humorDoCla[member.id]} />
                                                     <p className="text-[10px] text-white/38">
                                                         {Number(member.contributionPoints || 0).toLocaleString('pt-BR')} EXP desde sempre
                                                         <span className="text-white/24"> · {Number(member.seasonContributionPoints || 0).toLocaleString('pt-BR')} nesta temporada</span>

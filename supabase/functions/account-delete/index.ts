@@ -134,6 +134,8 @@ serve(async (req) => {
   const deletionReason = typeof payload.reason === "string" && payload.reason.trim() ? payload.reason.trim() : null;
   let deletionRequestId: number | null = null;
   let removedFiles: string[] = [];
+  let storageListingPending = false;
+  let pendingStorageFiles: { bucket: string; name: string }[] = [];
   let deletionEmailStatus = userEmail ? "pending" : "skipped_missing_email";
 
   try {
@@ -228,6 +230,7 @@ serve(async (req) => {
      * se varre depois. O que nao pode sobrar e a conta.
      */
     if (storageListError) {
+      storageListingPending = true;
       console.warn("Account storage listing failed; deleting the account anyway:", storageListError.message);
     }
 
@@ -245,6 +248,7 @@ serve(async (req) => {
         const { error: removeError } = await supabaseAdmin.storage.from(bucket).remove(batch);
         // Mesma razao da varredura: o arquivo que ficar e problema de faxina.
         if (removeError) {
+          pendingStorageFiles.push(...batch.map(name => ({ bucket, name })));
           console.warn(`Failed to remove storage objects from ${bucket}; continuing:`, removeError.message);
           continue;
         }
@@ -274,7 +278,9 @@ serve(async (req) => {
         const { data: emailData, error: emailError } = await supabaseAdmin.functions.invoke("resend", {
           body: {
             type: "account_deleted",
-            content: "Sua conta e os dados associados foram excluidos permanentemente. Se voltar ao Glyph no futuro, uma nova conta comecara vazia.",
+            content: storageListingPending || pendingStorageFiles.length
+              ? "Sua conta do Glyph foi excluída. A remoção de alguns arquivos ainda está pendente de conclusão. Se precisar de ajuda, fale com glyph.life.app@gmail.com."
+              : "Sua conta do Glyph foi excluída. Se voltar no futuro, uma nova conta começará vazia. Registros mínimos sujeitos a retenção seguem a Política de Privacidade. Se precisar de ajuda, fale com glyph.life.app@gmail.com.",
             metadata: {
               sendEmail: true,
               accountDeleted: true,
@@ -284,7 +290,7 @@ serve(async (req) => {
           },
         });
 
-        deletionEmailStatus = emailError || emailData?.error || emailData?.skipped ? "failed" : "sent";
+        deletionEmailStatus = !emailError && emailData?.accepted === true ? "accepted" : "failed";
       } catch (emailError) {
         console.warn("Account deletion email failed without blocking deletion:", normalizeErrorMessage(emailError));
         deletionEmailStatus = "failed";
@@ -295,12 +301,14 @@ serve(async (req) => {
       await supabaseAdmin
         .from("account_deletion_requests")
         .update({
-          status: "completed",
-          completed_at: new Date().toISOString(),
+          status: storageListingPending || pendingStorageFiles.length ? "cleanup_pending" : "completed",
+          completed_at: storageListingPending || pendingStorageFiles.length ? null : new Date().toISOString(),
           metadata: {
             deleted_via: "edge_function",
             storage_cleanup: "all-owned-objects",
             storage_removed_count: removedFiles.length,
+            storage_listing_pending: storageListingPending,
+            storage_pending_files: pendingStorageFiles,
             auth_deleted: true,
             clan_outcome: cleanupData?.clan_outcome ?? null,
             deletion_email_status: deletionEmailStatus,
@@ -315,6 +323,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         storageRemovedCount: removedFiles.length,
+        cleanupPending: storageListingPending || pendingStorageFiles.length > 0,
         clanOutcome: cleanupData?.clan_outcome ?? null,
         deletionEmailStatus,
       }),
@@ -332,6 +341,8 @@ serve(async (req) => {
           metadata: {
             deleted_via: "edge_function",
             storage_removed_count: removedFiles.length,
+            storage_listing_pending: storageListingPending,
+            storage_pending_files: pendingStorageFiles,
             block_reentry: blockReentry,
             reason: deletionReason,
             error: message,

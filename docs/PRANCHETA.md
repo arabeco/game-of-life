@@ -179,3 +179,17 @@ Afonso trouxe o diagnóstico oficial: o filtro role='user' excluía dois perfis 
 
 - Decidido com o Afonso (versão final de 12/10, commit `4fb0571`): o amigo **conta assim que põe o código**, e os prêmios do convite ficaram baratos para conta falsa não render nada — 1 amigo = 10 fragmentos, 5 = baú Comum, 10 = baú Incomum. A missão inicial caiu de 7 para 5 dias ("Cinco dias no Glyph", sem precisar ser seguidos). Tudo na migração `20261012150000_convite_e_missao_com_5_dias.sql`, que pode ser rodada de novo.
 - Isso pede um AAB novo (111): o 110 ainda mostra os prêmios antigos e a missão de 7 dias.
+
+### 12/10 — Resend verificado no painel autenticado
+
+Equipe exibida: misterxhermit. Transactional Free (0/3000 no mês, 0/100 no dia); Marketing Free (0/1000 contatos). Cobrança mostra dois planos de USD 0/mês, nenhum método de pagamento e nenhuma fatura. Extras de consumo aparecem desligados/desabilitados. glyph.life está Verified. Emails sem envios nos últimos 15 dias e Logs sem entradas nos últimos 30 dias. Não há evidência nesta equipe para atribuir cobrança de USD 10 ao Resend; origem permanece em aberto. Sem alteração de plano/configuração e sem envio de e-mail.
+
+Recuperação de senha chama Supabase Auth resetPasswordForEmail; configuração SMTP remota ainda depende de login no painel Supabase (aba aberta). Ausência de logs no Resend não prova que toda integração está correta nem explica envios anteriores. Novidades continua possibilidade, sem campanha ativada.
+
+- Esclarecimento de Afonso: existia um adicional cobrado no passado e ele já o removeu. Painel atual gratuito não identifica esse adicional histórico. SMTP remoto confirmado no Supabase: ativado, smtp.resend.com, porta 465, remetente Glyph App, intervalo por usuário 117 segundos. Nenhuma configuração alterada; credencial e entrega ainda não validadas por envio. Solicitado e-mail de conta própria e autorização para um único teste de recuperação, sem abrir link nem trocar senha.
+
+### 12/10 — E-mails essenciais preparados (Codex)
+
+Afonso aprovou recuperação de senha + confirmação de exclusão; novidades fica para depois. Código e testes em docs/2026-10-12-emails-essenciais.md. Novo SQL 20261012180000_email_dispatch_state.sql reutiliza notification_email_dispatches (três colunas); aguarda execução antes de publicar resend/account-delete. Envio só backend, retentativas limitadas e estado accepted distinto de entrega. Login orienta senha própria versus Google. Storage com falha não vira completed. Não houve envio real, exclusão, alteração de plano ou deploy; trabalhador de limpeza e pedido do site ainda pendentes.
+
+- E-mails essenciais: SQL 20261012180000 confirmado por Afonso (três colunas). Publicados resend v18 e account-delete v29, ambos ACTIVE. Teste remoto com chave pública recusado em ambas (HTTP 401), sem envio/exclusão. Entrega real, conta de teste com senha e fluxo completo de exclusão continuam pendentes; interface ainda exige próximo build.

@@ -547,7 +547,7 @@ export class SupabaseService {
     }
   }
 
-  static async deleteMyAccount(options?: { blockReentry?: boolean; reason?: string }): Promise<{ success: boolean; error?: string }> {
+  static async deleteMyAccount(options?: { blockReentry?: boolean; reason?: string }): Promise<{ success: boolean; error?: string; cleanupPending?: boolean }> {
     const blockReentry = options?.blockReentry === true;
     const reason = options?.reason?.trim() || null;
 
@@ -562,11 +562,11 @@ export class SupabaseService {
       });
 
       if (!error) {
-        if ((data as any)?.success === false) {
+        if ((data as any)?.success !== true) {
           return { success: false, error: (data as any)?.error || 'Não foi possível excluir a conta.' };
         }
 
-        return { success: true };
+        return { success: true, cleanupPending: data?.cleanupPending === true };
       }
 
       console.error('Erro ao excluir conta via Edge Function:', error);
@@ -581,8 +581,8 @@ export class SupabaseService {
       return {
         success: false,
         error: contextualMessage || (responseStatus
-          ? `Não foi possível excluir a conta. HTTP ${responseStatus}. Nenhum dado foi removido.`
-          : 'Não foi possível excluir a conta. Nenhum dado foi removido.'),
+          ? `Não foi possível confirmar a exclusão. HTTP ${responseStatus}. Tente novamente ou contate o suporte.`
+          : 'Não foi possível confirmar a exclusão. Tente novamente ou contate o suporte.'),
       };
     } catch (error) {
       console.error('Erro inesperado ao excluir conta:', error);

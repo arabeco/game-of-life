@@ -1797,8 +1797,10 @@ const GeralTab: React.FC = () => {
         clearSupabaseSessionStorage();
         await signOutAndClearSupabaseSession('local');
 
-        showToast('Conta excluída. Encerrando sessão...', 'success');
-        window.setTimeout(() => window.location.reload(), 900);
+        showToast(result.cleanupPending
+            ? 'Conta excluída. A remoção de alguns arquivos ainda está pendente.'
+            : 'Conta excluída. Encerrando sessão...', result.cleanupPending ? 'info' : 'success');
+        window.setTimeout(() => window.location.reload(), result.cleanupPending ? 4000 : 900);
     };
 
     const currentRank = nobilityRanks.find(r => r.id === userProfile.nobility.rankId);

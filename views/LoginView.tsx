@@ -575,11 +575,11 @@ export const LoginView: React.FC = () => {
         setError(null);
         setMessage(null);
         try {
-            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
                 redirectTo: `${canonicalAppOrigin}/auth/callback`,
             });
             if (error) throw error;
-            setMessage('E-mail de recuperação enviado. Verifique sua caixa de entrada.');
+            setMessage('Se esse endereço tiver uma conta com senha no Glyph, você receberá as instruções. Confira também o spam. Se entrou pelo Google, use Continuar com Google.');
         } catch (err: any) {
             setError(err.message || 'Erro ao enviar e-mail de recuperação.');
         } finally {
@@ -783,14 +783,16 @@ export const LoginView: React.FC = () => {
                                             </button>
                                         </div>
                                         {!isSigningUp && (
-                                            <div className="flex justify-end px-1">
+                                            <div className="flex flex-col items-end gap-2 px-1">
                                                 <button
                                                     type="button"
                                                     onClick={handleResetPassword}
+                                                    disabled={loading}
                                                     className="login-forgot-link"
                                                 >
                                                     Esqueci minha senha
                                                 </button>
+                                                <p className="text-right text-xs leading-relaxed text-white/60">Para quem criou uma senha no Glyph. Se entrou pelo Google, use Continuar com Google.</p>
                                             </div>
                                         )}
                                     </div>

@@ -1,6 +1,6 @@
 # Prancheta do Glyph
 
-Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 2026-10-12. 25 abertos de 76.
+Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 2026-10-12. 26 abertos de 77.
 
 **Não edite as listas abaixo** — elas são regravadas a partir da prancheta. Para avisar algo, escreva em "Recados da outra IA", no fim: o Claude lê e passa para a prancheta.
 
@@ -93,7 +93,8 @@ Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 
 
 ## Arte
 
-- [ ] Gerar as artes das próximas temporadas *(outra IA)*
+- [ ] Gerar as artes das próximas temporadas *(outra IA)* — 12/10: o Codex está fazendo. Não depende do AAB.
+- [ ] Arrumar as skins das temporadas futuras: detalhe de sobreposição *(Afonso)* — 12/10: pedido do Afonso. Ajustar o encaixe/sobreposição das roupas no corpo nas skins das próximas temporadas.
 
 <details><summary>Feitos (7)</summary>
 
@@ -217,3 +218,9 @@ Afonso aprovou recuperação de senha + confirmação de exclusão; novidades fi
 - App: `utils/convites.ts` compartilha somente código e instruções enquanto `ANDROID_PUBLICO_DISPONIVEL = false`. Link com Install Referrer preservado para liberação após confirmar a página pública na Play. Mudança exige próximo build; não entrou no AAB 110.
 - Entrar na web significa usar o aplicativo no navegador. Abrir o Android pelo site exigirá configurar um link próprio de abertura e fallback; não foi implementado nesta rodada.
 - Verificado localmente: regressão de convites, mensagem sem URL, JavaScript do site e navegador a 390/1440px (sem overflow, CTA desativado e lista de interesse abre). Não publicado no site; nenhum AAB gerado.
+
+### 12/10 — Codex: cinco skins das próximas temporadas
+
+- Produzidas propostas de Zênite I, Eclipse I, Égide I, Aurora II e Zênite II, com as paletas aprovadas por Afonso. Relatório: docs/2026-10-12-skins-proximas-temporadas.md. Galeria: output/temporadas-skins-2026-10-12/galeria.html.
+- PNGs 500×500 com alpha real, originais e prompts preservados. Ainda há ajustes geométricos nas mangas/calçados; NÃO marcar como arte integrada nem encaixe aprovado. Nenhum asset do catálogo foi substituído.
+- Quatro dessas temporadas ainda têm jornadas vazias e não têm coleção própria cadastrada. Aurora II já tem coleção; a proposta nova preserva o Guardião atual. Não confundir com as cinco skins de regras secretas, já feitas.

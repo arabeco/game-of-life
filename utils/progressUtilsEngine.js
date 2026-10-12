@@ -4,7 +4,9 @@ const normalizeArenaName = (value = '') =>
         .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase();
 
-const isExplicitSharedArena = (arena) =>
+// Arena COLETIVA de verdade: marcada [SHARED] ou o Clan Office. So nela o
+// progresso e o do grupo; nas outras, a conta e sempre a pessoal.
+export const isExplicitSharedArena = (arena) =>
     Boolean(arena.description?.includes('[SHARED]')) || normalizeArenaName(arena.name).startsWith('clan office');
 
 const getPersonalCompletedCount = (actionId, tasks) =>

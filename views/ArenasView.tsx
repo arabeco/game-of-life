@@ -18,7 +18,7 @@ import { CreateCampaignModal } from '../components/CreateCampaignModal';
 import { CampaignArenaStack } from '../components/CampaignArenaStack';
 import { ConnectionsModal } from '../components/ConnectionsModal';
 import { EmojiGlyph } from '../components/EmojiGlyph';
-import { calculateArenaProgress, calculateCampaignProgress, calculateCampaignProgressSummary } from '../utils/progressUtils';
+import { calculateArenaProgress, calculateCampaignProgress, calculateCampaignProgressSummary, isExplicitSharedArena } from '../utils/progressUtils';
 import { ARENA_ATTENTION_EVENT, ArenaAttentionPayload, ArenaAttentionPhase, consumeArenaAttention } from '../utils/arenaAttention';
 import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../utils/codexPreview';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
@@ -1299,7 +1299,7 @@ export const ArenasView: React.FC = () => {
                  * entrando pela porta do lado. Como o par esta indo aparece no
                  * cartao de Vinculos, que e onde essa pergunta e feita.
                  */
-                forceSharedPool: relationshipLinkTypeByArenaId.has(arena.id) ? false : undefined,
+                forceSharedPool: isExplicitSharedArena(arena) ? undefined : false,
             });
 
             map.set(arena.id, progress.progressPercent);

@@ -9,6 +9,15 @@ export const describeArenaProgress = (
     displayedPercent = progress.progressPercent,
 ): { label: string; accessibleLabel: string; remaining: number | null } | null => {
     if (!progress.hasMeasurableProgress) return null;
+    // Missao de cla: o total e a meta do GRUPO ja sao contagens inteiras.
+    if (progress.isClanQuestArena && Number.isInteger(progress.totalCompleted) && Number.isInteger(progress.totalPlanned) && progress.totalPlanned > 0) {
+        const feito = Math.min(progress.totalCompleted, progress.totalPlanned);
+        return {
+            label: `${feito}/${progress.totalPlanned}`,
+            accessibleLabel: `${feito}/${progress.totalPlanned} do grupo`,
+            remaining: Math.max(0, progress.totalPlanned - progress.totalCompleted),
+        };
+    }
     const measured = actions.filter(action => action.actionType !== 'Livre');
     const sameType = new Set(measured.map(action => action.actionType)).size === 1;
     const canCount = measured.length > 0 && sameType

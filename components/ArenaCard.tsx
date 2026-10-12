@@ -4,7 +4,7 @@ import { CheckIcon, UsersIcon } from './Icons';
 import { PRODUCT_FEATURES } from '../constants/featureFlags';
 import { getLocalDateString, useGame } from '../contexts/GameContext';
 import { supabase } from '../supabaseClient';
-import { calculateArenaProgress } from '../utils/progressUtils';
+import { calculateArenaProgress, isExplicitSharedArena } from '../utils/progressUtils';
 import { describeArenaProgress, getArenaPresentationTasks } from '../utils/arenaProgressPresentation';
 import { EmojiGlyph } from './EmojiGlyph';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
@@ -395,12 +395,16 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
             // lado. O numero do par aparece no cartao de Vinculos, que e onde a
             // pergunta "como o outro esta indo?" e feita. Office segue no pool:
             // la a arena e de fato coletiva.
-            forceSharedPool: linkType ? false : undefined,
+            // E o pool so vale para arena EXPLICITAMENTE coletiva ([SHARED] ou
+            // Clan Office). Esperar o tipo de vinculo chegar fazia o cartao
+            // mostrar o numero do par por uns segundos e depois trocar.
+            forceSharedPool: isExplicitSharedArena(arena) ? undefined : false,
         });
-    }, [actions, arena, clanQuests, getClanQuestProgress, getSharedActionPoolProgress, linkType, tasksForCounts]);
-    const progress = typeof progressPercent === 'number'
-        ? progressPercent
-        : calculatedProgress.progressPercent;
+    }, [actions, arena, clanQuests, getClanQuestProgress, getSharedActionPoolProgress, tasksForCounts]);
+    // UMA CONTA SO. O numero pronto que vinha da lista era feito com outra
+    // regra de pool e chegava em outro instante: a arena mostrava um, depois o
+    // outro, e o rotulo caia para % porque os dois nao batiam.
+    const progress = calculatedProgress.progressPercent;
     const hasMeasurableProgress = calculatedProgress.hasMeasurableProgress;
     const progressDescription = describeArenaProgress(actions, calculatedProgress, progress);
 
@@ -417,12 +421,13 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     const visibleRelationshipType = PRODUCT_FEATURES.relationshipCompetition || effectiveLinkType !== 'competicao'
         ? effectiveLinkType
         : null;
-    const hasArenaStatusTags = Boolean(visibleRelationshipType || hasPersonalPact || isSeasonQuestArena);
+    const hasArenaStatusTags = Boolean(visibleRelationshipType || hasPersonalPact || isSeasonQuestArena || isClanQuestArena);
     const renderArenaStatusTags = (compact = false) => (
         <ArenaStatusTags
             relationshipType={visibleRelationshipType}
             hasPersonalPact={hasPersonalPact}
             hasSeasonMission={isSeasonQuestArena}
+            hasClanMission={isClanQuestArena}
             compact={compact}
         />
     );

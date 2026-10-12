@@ -6,6 +6,7 @@ interface ArenaStatusTagsProps {
     relationshipType?: RelationshipLinkType | null;
     hasPersonalPact?: boolean;
     hasSeasonMission?: boolean;
+    hasClanMission?: boolean;
     compact?: boolean;
     className?: string;
 }
@@ -21,6 +22,7 @@ export const ArenaStatusTags: React.FC<ArenaStatusTagsProps> = ({
     relationshipType = null,
     hasPersonalPact = false,
     hasSeasonMission = false,
+    hasClanMission = false,
     compact = false,
     className = '',
 }) => {
@@ -54,6 +56,9 @@ export const ArenaStatusTags: React.FC<ArenaStatusTagsProps> = ({
             : null,
         hasSeasonMission
             ? seal('Missão de temporada', 'border-violet-300/45 bg-violet-500/28 text-violet-100', <FlagIcon className={icon} />)
+            : null,
+        hasClanMission
+            ? seal('Missão de clã', 'border-amber-300/45 bg-amber-600/28 text-amber-100', <UsersIcon className={icon} />)
             : null,
     ].filter(Boolean);
 

@@ -1,5 +1,5 @@
 import { Action, Arena, Campaign, ScheduledTask, SeasonQuest } from '../types';
-export { calculateArenaProgress, getCampaignArenaStates, calculateCampaignProgress, calculateCampaignProgressSummary } from './progressUtilsEngine.js';
+export { calculateArenaProgress, getCampaignArenaStates, calculateCampaignProgress, calculateCampaignProgressSummary, isExplicitSharedArena } from './progressUtilsEngine.js';
 
 type SharedProgressGetter = (arenaId: string, actionId: string) => number;
 

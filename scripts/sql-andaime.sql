@@ -351,3 +351,31 @@ create table if not exists public.app_runtime_events (
   entry_mode text,
   metadata jsonb not null default '{}'::jsonb
 );
+
+-- Dias no app, convites e o sino (20261010120000, 20261010150000).
+create table if not exists public.dias_no_app (
+  user_id uuid not null,
+  dia date not null,
+  created_at timestamptz not null default now(),
+  primary key (user_id, dia)
+);
+create table if not exists public.convites (
+  dono uuid primary key,
+  codigo text not null,
+  created_at timestamptz not null default now()
+);
+create table if not exists public.convites_usados (
+  convidado uuid primary key,
+  dono uuid not null,
+  codigo text not null,
+  created_at timestamptz not null default now()
+);
+create table if not exists public.notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid,
+  type text,
+  content text,
+  read boolean default false,
+  created_at timestamptz default now(),
+  metadata jsonb
+);

@@ -19,9 +19,13 @@ const tela = ler('views/SeasonView.tsx');
 const migracao = ler('supabase/migrations/20261010120000_sete_dias_no_app.sql');
 
 // ============================== 1. a missao e inicial e paga 10 de ouro
-assert.match(missoes, /export const SEVEN_DAYS_IN_APP_ID = 'system-seven-days-in-app';/);
-assert.match(missoes, /export const SEVEN_DAYS_IN_APP_GOAL = 7;/);
-const missao = missoes.slice(missoes.indexOf('id: SEVEN_DAYS_IN_APP_ID'), missoes.indexOf('rewardGold: 10') + 20);
+assert.match(missoes, /export const DIAS_NO_APP_ID = 'system-seven-days-in-app';/);
+// 12/10/2026: a meta caiu para 5 e virou tambem a regra do convite de amigo.
+assert.match(missoes, /export const DIAS_NO_APP_META = 5;/);
+const cinco = ler('supabase/migrations/20261012150000_convite_e_missao_com_5_dias.sql');
+assert.match(cinco, /elsif p_reward_id = 'system-seven-days-in-app' then\s*v_reward := 10;\s*select count\(\*\) >= 5/,
+  'o servidor deixou de pagar a missao com 5 dias');
+const missao = missoes.slice(missoes.indexOf('id: DIAS_NO_APP_ID'), missoes.indexOf('rewardGold: 10') + 20);
 assert.ok(missao.length > 100, 'a missao dos sete dias sumiu do catalogo');
 assert.match(missao, /inicial: true/, 'a missao dos sete dias deixou de ser inicial — passaria a ocupar o slot');
 assert.match(missao, /Os dias não precisam ser seguidos/, 'a descricao deixou de dizer que faltar um dia nao zera');
@@ -40,17 +44,17 @@ assert.match(migracao, /if p_reward_id <> 'system-seven-days-in-app' and not exi
   'a missao inicial voltou a exigir aceite, e o resgate recusaria com MISSION_NOT_ACCEPTED');
 // Nada de sequencia: a contagem e de dias distintos, sem "seguidos".
 assert.doesNotMatch(migracao.slice(migracao.indexOf("elsif p_reward_id = 'system-seven-days-in-app'")), /lag\(|consecut|seguid/i);
-console.log('ok - o servidor guarda um dia por linha, recusa dia fora da janela e paga com 7 dias, seguidos ou nao');
+console.log('ok - o servidor guarda um dia por linha, recusa dia fora da janela e paga com 5 dias, seguidos ou nao');
 
 // ============================== 3. o app marca o dia, conclui e mostra
 assert.match(contexto, /supabase\.rpc\('marcar_dia_no_app', \{ p_dia: hoje \}\)/);
 assert.match(contexto, /document\.addEventListener\('visibilitychange', marcar\)/,
   'o app deixou de marcar o dia ao voltar para a frente — quem deixa aberto de um dia para o outro nao contaria');
-assert.match(contexto, /if \(challenge\.id === SEVEN_DAYS_IN_APP_ID\) return diasNoApp >= SEVEN_DAYS_IN_APP_GOAL;/);
-assert.match(tela, /progressLabel=\{`\$\{Math\.min\(diasNoApp, SEVEN_DAYS_IN_APP_GOAL\)\}\/\$\{SEVEN_DAYS_IN_APP_GOAL\} dias`\}/,
+assert.match(contexto, /if \(challenge\.id === DIAS_NO_APP_ID\) return diasNoApp >= DIAS_NO_APP_META;/);
+assert.match(tela, /progressLabel=\{`\$\{Math\.min\(diasNoApp, DIAS_NO_APP_META\)\}\/\$\{DIAS_NO_APP_META\} dias`\}/,
   'a tela deixou de mostrar quantos dias ja contaram');
-assert.match(tela, /onAbandon=\{selectedQuestIsActive && selectedQuest\.id !== SEVEN_DAYS_IN_APP_ID/,
+assert.match(tela, /onAbandon=\{selectedQuestIsActive && selectedQuest\.id !== DIAS_NO_APP_ID/,
   'a missao inicial dos sete dias ganhou um botao de abandonar');
-console.log('ok - o app marca o dia ao abrir e ao voltar, conclui sozinho com 7 e mostra x/7 dias em Missoes');
+console.log('ok - o app marca o dia ao abrir e ao voltar, conclui sozinho com 5 e mostra x/5 dias em Missoes');
 
-console.log('Sete dias no Glyph: entrar conta, faltar nao zera, o servidor paga 10 de ouro uma vez.');
+console.log('Cinco dias no Glyph: entrar conta, faltar nao zera, o servidor paga 10 de ouro uma vez.');

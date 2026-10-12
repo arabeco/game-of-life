@@ -76,7 +76,7 @@ import { formatChestGain } from '../constants/rarityVisuals';
 import { lerMeusConvites, mensagemDoErroDeCodigo, type MarcoDeConvite, type MeusConvites } from '../utils/convites';
 import { conviteDaInstalacaoPendente, esquecerConviteDaInstalacao, lerConviteDaInstalacao } from '../utils/conviteDaInstalacao';
 import { conviteDeveSerEsquecido } from '../utils/referrerDoConvite';
-import { SEVEN_DAYS_IN_APP_GOAL, SEVEN_DAYS_IN_APP_ID, SYSTEM_CHALLENGES, SYSTEM_CHALLENGE_INSIGNIA_ID } from '../constants/systemChallenges';
+import { DIAS_NO_APP_META, DIAS_NO_APP_ID, SYSTEM_CHALLENGES, SYSTEM_CHALLENGE_INSIGNIA_ID } from '../constants/systemChallenges';
 import type { SystemChallenge } from '../constants/systemChallenges';
 import { getOraclePresenceRules } from '../constants/oraclePresencePolicy';
 import {
@@ -12740,7 +12740,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
      */
     const [diasNoApp, setDiasNoApp] = useState(0);
     const diaMarcadoRef = useRef<string | null>(null);
-    const seteDiasConcluida = (userProfile.completedSeasonMissions || []).includes(SEVEN_DAYS_IN_APP_ID);
+    const seteDiasConcluida = (userProfile.completedSeasonMissions || []).includes(DIAS_NO_APP_ID);
     useEffect(() => {
         if (!hasHydratedFromSupabase || !userProfile?.id || userProfile.id === 'placeholder_user') return;
         if (seteDiasConcluida) return;
@@ -13535,7 +13535,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             // efeito no provider, e cita-lo na lista de dependencias quebraria.
             if (challenge.id === 'system-first-individual-mission') return Boolean(arenaPactRef.current.pact);
             if (challenge.id === 'system-first-clan') return Boolean(clan?.id);
-            if (challenge.id === SEVEN_DAYS_IN_APP_ID) return diasNoApp >= SEVEN_DAYS_IN_APP_GOAL;
+            if (challenge.id === DIAS_NO_APP_ID) return diasNoApp >= DIAS_NO_APP_META;
             return false;
         });
 

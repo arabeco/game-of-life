@@ -5,7 +5,8 @@ import { readFileSync } from 'node:fs';
  * CONVIDE UM AMIGO (10/10/2026), como o Afonso decidiu:
  *   - o codigo de cada um fica no modal de cupom, com copiar e enviar;
  *   - o amigo digita no MESMO campo de cupom e ganha 10 de ouro, e os dois viram amigos;
- *   - quem convidou conta o amigo assim que o código é vinculado;
+ *   - quem convidou conta o amigo quando ele completa a missao "Cinco dias no Glyph"
+ *     (abrir o app em 5 dias) — 12/10/2026; antes contava na hora, e isso abria farm;
  *   - bolinha no 1 (baú Comum), no 5 (bau Raro) e no 10 (25 de ouro) — "50 e muito, 100 e absurdo";
  *   - travas: so conta nova (7 dias), nao vale o proprio codigo, um convite por conta.
  */
@@ -39,7 +40,19 @@ for (const tabela of ['convites', 'convites_usados']) {
   assert.match(migracao, new RegExp(`revoke insert, update, delete on public\\.${tabela} from anon, authenticated`),
     `a tabela ${tabela} voltou a aceitar escrita direta do cliente`);
 }
-console.log('ok - o servidor trava conta velha, o proprio codigo e o segundo convite, e paga bau Raro no 5 e 25 de ouro no 10');
+// 12/10/2026: o amigo so conta depois de abrir o app em 5 dias (a mesma regra da missao).
+const cinco = ler('supabase/migrations/20261012150000_convite_e_missao_com_5_dias.sql');
+const contaComCinco = /\(select count\(\*\) from public\.dias_no_app d where d\.user_id = cu\.convidado\) >= 5/;
+assert.match(cinco.slice(cinco.indexOf('function public.meus_convites'), cinco.indexOf('function public.receber_premio_de_convite')), contaComCinco,
+  'a barrinha voltou a contar o amigo na hora, sem os 5 dias');
+assert.match(cinco.slice(cinco.indexOf('function public.receber_premio_de_convite'), cinco.indexOf('function public.avisar_novo_convite')), contaComCinco,
+  'o premio do convite voltou a sair sem os 5 dias do amigo');
+assert.match(cinco, /create trigger avisar_amigo_completou_5_dias after insert on public\.dias_no_app/,
+  'o sino deixou de avisar quando o amigo completa os 5 dias');
+assert.doesNotMatch(cinco.slice(cinco.indexOf('function public.avisar_novo_convite'), cinco.indexOf('function public.avisar_amigo_completou_5_dias')), /Prêmio disponível/,
+  'o aviso de codigo usado voltou a prometer premio antes dos 5 dias');
+assert.match(bloco, /const pronto = !recebido && convites\.completaram >= marco;/, 'a bolinha voltou a acender pelo amigo que so usou o codigo');
+console.log('ok - o servidor trava conta velha, o proprio codigo e o segundo convite, e o amigo so conta depois de 5 dias no app');
 
 // ============================== 2. o campo de cupom serve aos dois
 assert.match(ajustes, /if \(result\.error === 'CODE_NOT_FOUND'\) \{\s*const convite = await usarCodigoDeConvite\(code\);/,

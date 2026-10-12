@@ -36,7 +36,7 @@ export const ConviteDeAmigo: React.FC<{ onReward?: (payload: RewardModalPayload)
     if (!convites) return null;
 
     const meta = MARCOS_DE_CONVITE[MARCOS_DE_CONVITE.length - 1];
-    const preenchido = Math.min(100, (convites.entraram / meta) * 100);
+    const preenchido = Math.min(100, (convites.completaram / meta) * 100);
 
     const copiar = async () => {
         await copiarTexto(convites.codigo);
@@ -84,7 +84,7 @@ export const ConviteDeAmigo: React.FC<{ onReward?: (payload: RewardModalPayload)
             {/* Um marco no primeiro, quinto e décimo convite. */}
             <div
                 className="relative mx-3 mt-3 h-[6px] rounded-full bg-white/[0.07] shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]"
-                aria-label={`${convites.entraram} de ${meta} amigos`}
+                aria-label={`${convites.completaram} de ${meta} amigos`}
             >
                 <div
                     className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-700 ease-out"
@@ -97,13 +97,13 @@ export const ConviteDeAmigo: React.FC<{ onReward?: (payload: RewardModalPayload)
                 {RISQUINHOS.map((n) => (
                     <span
                         key={n}
-                        className={`absolute top-1/2 h-[10px] w-px -translate-x-1/2 -translate-y-1/2 rounded-full ${convites.entraram >= n ? 'bg-black/35' : 'bg-white/[0.18]'}`}
+                        className={`absolute top-1/2 h-[10px] w-px -translate-x-1/2 -translate-y-1/2 rounded-full ${convites.completaram >= n ? 'bg-black/35' : 'bg-white/[0.18]'}`}
                         style={{ left: `${(n / meta) * 100}%` }}
                     />
                 ))}
                 {MARCOS_DE_CONVITE.map((marco) => {
                     const recebido = marcoRecebido(convites, marco);
-                    const pronto = !recebido && convites.entraram >= marco;
+                    const pronto = !recebido && convites.completaram >= marco;
                     return (
                         <button
                             key={marco}
@@ -134,7 +134,7 @@ export const ConviteDeAmigo: React.FC<{ onReward?: (payload: RewardModalPayload)
             <div className="relative mx-3 mt-1 h-6 text-[9px] leading-tight text-white/45">
                 {MARCOS_DE_CONVITE.map((marco) => {
                     const recebido = marcoRecebido(convites, marco);
-                    const pronto = !recebido && convites.entraram >= marco;
+                    const pronto = !recebido && convites.completaram >= marco;
                     return (
                         <span
                             key={marco}
@@ -147,12 +147,12 @@ export const ConviteDeAmigo: React.FC<{ onReward?: (payload: RewardModalPayload)
                     );
                 })}
             </div>
-            {MARCOS_DE_CONVITE.some(m => convites.entraram >= m && !marcoRecebido(convites, m)) && (
+            {MARCOS_DE_CONVITE.some(m => convites.completaram >= m && !marcoRecebido(convites, m)) && (
                 <p role="status" className="text-xs font-bold text-[var(--skin-accent-color)]">Você tem prêmio disponível! Toque na bolinha iluminada para receber.</p>
             )}
             <p className="text-[10px] leading-snug text-white/40">
-                {convites.entraram} {convites.entraram === 1 ? 'amigo vinculado' : 'amigos vinculados'} ao seu convite.
-                {' '}O amigo ganha 10 de ouro e conta assim que o código é vinculado à conta. Cada conta só pode usar um convite.
+                {convites.entraram} {convites.entraram === 1 ? 'amigo usou' : 'amigos usaram'} seu convite · {convites.completaram} {convites.completaram === 1 ? 'já conta' : 'já contam'}.
+                {' '}O amigo ganha 10 de ouro ao usar o código e conta aqui quando completar a missão "Cinco dias no Glyph" (abrir o app em 5 dias). Cada conta só pode usar um convite.
             </p>
         </div>
     );

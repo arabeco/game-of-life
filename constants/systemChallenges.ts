@@ -41,9 +41,13 @@ export const INITIAL_MISSION_FRAGMENTS = 5;
  */
 export const SYSTEM_CHALLENGE_INSIGNIA_ID = 'insignia_quest_incomum';
 
-/** A missao dos sete dias no app: o id e o mesmo do ramo no servidor. */
-export const SEVEN_DAYS_IN_APP_ID = 'system-seven-days-in-app';
-export const SEVEN_DAYS_IN_APP_GOAL = 7;
+/**
+ * A missao dos dias no app. O id ficou o de quando eram sete (e o do ramo no
+ * servidor); a meta caiu para 5 em 12/10/2026 e passou a ser tambem a regra do
+ * convite: o amigo conta para quem convidou quando completa esta missao.
+ */
+export const DIAS_NO_APP_ID = 'system-seven-days-in-app';
+export const DIAS_NO_APP_META = 5;
 
 export const SYSTEM_CHALLENGES: SystemChallenge[] = [
   {
@@ -274,22 +278,23 @@ export const SYSTEM_CHALLENGES: SystemChallenge[] = [
   {
     // Decidida em 10/10/2026: conta ENTRADA no app, e nao acao concluida, e
     // os dias nao precisam ser seguidos — faltar um nao zera nada. Paga uma
-    // vez so, e quem conta os dias e o servidor (public.dias_no_app).
-    id: SEVEN_DAYS_IN_APP_ID,
+    // vez so, e quem conta os dias e o servidor (public.dias_no_app). Em
+    // 12/10/2026 caiu de 7 para 5 dias, a mesma regra do convite de amigo.
+    id: DIAS_NO_APP_ID,
     source: 'system',
-    title: 'Sete dias no Glyph',
-    description: 'Abra o app em 7 dias diferentes. Os dias não precisam ser seguidos. Recompensa: 10 de ouro.',
+    title: 'Cinco dias no Glyph',
+    description: 'Abra o app em 5 dias diferentes. Os dias não precisam ser seguidos. Recompensa: 10 de ouro.',
     type: 'individual',
     category: 'spiritual',
     actionTemplate: {
-      name: 'Sete Dias no Glyph',
-      description: 'Abrir o app em 7 dias diferentes.',
+      name: 'Cinco Dias no Glyph',
+      description: 'Abrir o app em 5 dias diferentes.',
       icon: '📅',
       duration: 0,
-      repetitions: SEVEN_DAYS_IN_APP_GOAL,
+      repetitions: DIAS_NO_APP_META,
       isMilestone: true,
     },
-    requirements: { totalReps: SEVEN_DAYS_IN_APP_GOAL, milestone: true },
+    requirements: { totalReps: DIAS_NO_APP_META, milestone: true },
     progressLabel: 'dias',
     inicial: true,
     rewards: { xp: INITIAL_MISSION_XP },

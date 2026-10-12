@@ -27,9 +27,9 @@ Atualizado em 10/10/2026.
 
 ## 3. Missões
 
-- [ ] **MUNDO › Temporada.** Esperado: em "Para começar" aparece **"Sete dias no Glyph"** com **1/7 dias**.
+- [ ] **MUNDO › Temporada.** Esperado: em "Para começar" aparece **"Cinco dias no Glyph"** com **1/5 dias**.
 - [ ] ⏳ **Abrir o app em outros dias** (não precisa ser seguido). Esperado: o contador sobe um por dia, e abrir duas vezes no mesmo dia conta uma só.
-- [ ] ⏳ **No 7º dia.** Esperado: aparece o modal com **"MISSÃO INICIAL"** em cima, o nome da missão e a descrição; entram **10 de ouro**.
+- [ ] ⏳ **No 5º dia.** Esperado: aparece o modal com **"MISSÃO INICIAL"** em cima, o nome da missão e a descrição; entram **10 de ouro**.
 - [ ] **Qualquer outra missão inicial** que você completar (ex.: criar a primeira arena). Esperado: modal com "MISSÃO INICIAL" em cima e a descrição da missão embaixo — não "A recompensa desta missão já entrou".
 - [ ] **Missão individual:** abra o Oráculo, peça uma missão e aceite. Cumpra o que ela pede. Esperado:
   - ela **não** se completa sozinha: o Oráculo avisa, e a aba **Missão** dele ganha uma bolinha;
@@ -57,7 +57,7 @@ No mesmo modal do cupom, embaixo do OK.
 - [ ] **Usar o código da outra pessoa** (na sua conta nova). Esperado: **+10 de ouro**, aviso "Você e (nome) agora são amigos", e os dois aparecem na lista de amigos um do outro.
 - [ ] **Usar um segundo código de convite.** Esperado: "Você já usou um código de convite."
 - [ ] **Conta antiga** (mais de 7 dias) tentando usar um código. Esperado: "Código de convite vale só para contas criadas há até 7 dias."
-- [ ] ⏳ **Barrinha de quem convidou:** o amigo só conta depois de completar os 7 dias no app. Esperado: "1 completou os 7 dias" e a barra anda um risquinho.
+- [ ] ⏳ **Barrinha de quem convidou:** o amigo só conta depois de completar a missão "Cinco dias no Glyph". Esperado: ao usar o código, o sino avisa "Um amigo usou seu convite! Ele conta... quando abrir o Glyph em 5 dias"; no 5º dia do amigo, o sino avisa o prêmio, a bolinha do 1 acende e "1 já conta".
 - [ ] **Convite pelo link (sem digitar):** num celular **sem o Glyph instalado**, abra o link que veio no "Enviar" do outro jogador, instale pela Play Store e crie uma conta nova. Esperado: sem digitar nada, aparece "+10 de ouro. Você e (nome) agora são amigos." Se o app já estava instalado, o link só abre a loja — aí o código é digitado no campo de cupom, como antes.
 
 ## 6. Oráculo e notificações

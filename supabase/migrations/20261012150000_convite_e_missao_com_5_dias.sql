@@ -1,23 +1,23 @@
--- O CONVITE E A MISSAO DOS DIAS: 5 DIAS, UMA REGRA SO (12/10/2026).
+-- O CONVITE COM PREMIO BARATO E A MISSAO DOS DIAS COM 5 (12/10/2026).
 --
--- A missao inicial de abrir o app passa de 7 para 5 dias ("Cinco dias no
--- Glyph", continua pagando 10 de ouro), e o convite usa a mesma regra: o amigo
--- conta para quem convidou quando completa essa missao. Ideia do Afonso: "quando
--- a conta X completa essa missao, ja valida pra mim".
+-- Decidido com o Afonso, depois de pensar no farm:
 --
--- A 20261011120000 fez o amigo contar no instante em que usava o codigo. Isso
--- abria farm: dez contas novas com o proprio codigo pagavam bau Comum, bau Raro
--- e 25 de ouro. Decidido com o Afonso: o amigo conta para os premios de quem
--- convidou depois de abrir o app em 5 dias diferentes (public.dias_no_app, a
--- mesma tabela da missao dos sete dias). Os premios continuam em 1, 5 e 10.
+--   * O CONVITE conta o amigo assim que ele poe o codigo — sem esperar dias. Em
+--     troca, os premios ficaram baratos, para conta falsa nao render nada de
+--     valor: 1 amigo = 10 fragmentos, 5 = bau Comum, 10 = bau Incomum. (Antes:
+--     bau Comum, bau Raro e 25 de ouro.) O amigo continua ganhando 10 de ouro na
+--     propria conta ao usar o codigo — isso nao passa para quem convidou.
+--   * A MISSAO INICIAL de abrir o app caiu de 7 para 5 dias ("Cinco dias no
+--     Glyph"), sem precisar ser seguidos, e continua pagando 10 de ouro.
 --
--- O sino muda junto:
---   * quando o amigo usa o codigo: avisa que ele vai contar depois dos 5 dias;
---   * quando o amigo completa o 5o dia: avisa quantos ja contam e o premio que
---     ficou disponivel.
--- Premios ja recebidos continuam recebidos (a marca invite_milestone nao muda).
+-- Pode ser rodado de novo sem estrago: tudo e create or replace, e o gatilho dos
+-- 5 dias de uma versao anterior deste arquivo e removido se existir.
 
 BEGIN;
+
+-- Uma versao anterior deste arquivo fazia o convite esperar 5 dias no app.
+drop trigger if exists avisar_amigo_completou_5_dias on public.dias_no_app;
+drop function if exists public.avisar_amigo_completou_5_dias();
 
 create or replace function public.meus_convites()
 returns jsonb
@@ -29,7 +29,6 @@ declare
   v_user_id uuid := auth.uid();
   v_codigo text;
   v_entraram integer;
-  v_completaram integer;
 begin
   if v_user_id is null then
     raise exception 'AUTH_REQUIRED';
@@ -40,15 +39,11 @@ begin
   select count(*)::integer into v_entraram
   from public.convites_usados where dono = v_user_id;
 
-  select count(*)::integer into v_completaram
-  from public.convites_usados cu
-  where cu.dono = v_user_id
-    and (select count(*) from public.dias_no_app d where d.user_id = cu.convidado) >= 5;
-
+  -- `completaram` fica igual a `entraram`: o amigo conta ao por o codigo.
   return jsonb_build_object(
     'codigo', v_codigo,
     'entraram', v_entraram,
-    'completaram', v_completaram,
+    'completaram', v_entraram,
     'recebeu_1', public._starter_reward_has_purchase_marker(v_user_id, 'invite_milestone', '1'),
     'recebeu_5', public._starter_reward_has_purchase_marker(v_user_id, 'invite_milestone', '5'),
     'recebeu_10', public._starter_reward_has_purchase_marker(v_user_id, 'invite_milestone', '10')
@@ -66,8 +61,8 @@ set search_path = public, auth
 as $$
 declare
   v_user_id uuid := auth.uid();
-  v_completaram integer;
-  v_novo_ouro integer;
+  v_amigos integer;
+  v_novos_fragmentos integer;
 begin
   if v_user_id is null then
     raise exception 'AUTH_REQUIRED';
@@ -76,11 +71,9 @@ begin
     raise exception 'MARCO_INVALIDO';
   end if;
 
-  select count(*)::integer into v_completaram
-  from public.convites_usados cu
-  where cu.dono = v_user_id
-    and (select count(*) from public.dias_no_app d where d.user_id = cu.convidado) >= 5;
-  if v_completaram < p_marco then
+  select count(*)::integer into v_amigos
+  from public.convites_usados where dono = v_user_id;
+  if v_amigos < p_marco then
     raise exception 'MARCO_NAO_ALCANCADO';
   end if;
 
@@ -90,13 +83,20 @@ begin
   end if;
 
   if p_marco = 1 then
-    perform public.grant_chest(v_user_id, 'Comum');
+    -- 10 fragmentos, nas duas colunas do saldo (vale a maior, como no app).
+    update public.user_profiles
+    set
+      fragments = greatest(coalesce((coalesce(wallet, '{}'::jsonb) ->> 'fragments')::integer, 0), coalesce(fragments, 0)) + 10,
+      wallet = coalesce(wallet, '{}'::jsonb) || jsonb_build_object(
+        'fragments',
+        greatest(coalesce((coalesce(wallet, '{}'::jsonb) ->> 'fragments')::integer, 0), coalesce(fragments, 0)) + 10
+      )
+    where id = v_user_id
+    returning fragments into v_novos_fragmentos;
   elsif p_marco = 5 then
-    perform public.grant_chest(v_user_id, 'Raro');
+    perform public.grant_chest(v_user_id, 'Comum');
   else
-    v_novo_ouro := public._starter_reward_credit_gold(
-      v_user_id, 25, 'invite', 'Convites: dez amigos', jsonb_build_object('marco', p_marco)
-    );
+    perform public.grant_chest(v_user_id, 'Incomum');
   end if;
   perform public._starter_reward_mark_purchase(v_user_id, 'invite_milestone', p_marco::text, false);
 
@@ -104,74 +104,42 @@ begin
     'success', true,
     'already_claimed', false,
     'marco', p_marco,
-    'chest_type', case when p_marco = 1 then 'Comum' when p_marco = 5 then 'Raro' end,
-    'gold_granted', case when p_marco = 10 then 25 else 0 end,
-    'new_gold', v_novo_ouro
+    'chest_type', case when p_marco = 5 then 'Comum' when p_marco = 10 then 'Incomum' end,
+    'fragments_granted', case when p_marco = 1 then 10 else 0 end,
+    'new_fragments', v_novos_fragmentos
   );
 end;
 $$;
 revoke all on function public.receber_premio_de_convite(integer) from public;
 grant execute on function public.receber_premio_de_convite(integer) to authenticated;
 
--- O sino quando o amigo USA o codigo: ainda nao ha premio, so a promessa.
+-- O sino quando o amigo poe o codigo: ja conta, e diz o premio que abriu.
 create or replace function public.avisar_novo_convite()
 returns trigger language plpgsql security definer set search_path = public, auth
 as $$
+declare
+  v_total integer;
+  v_premios text;
 begin
+  perform pg_advisory_xact_lock(hashtextextended(new.dono::text || ':convites-aviso', 0));
+  select count(*) into v_total from public.convites_usados where dono = new.dono;
+  select string_agg(premio, ', ' order by marco) into v_premios
+  from (values (1, '10 fragmentos'), (5, 'baú Comum'), (10, 'baú Incomum')) as marcos(marco, premio)
+  where marco <= v_total
+    and not public._starter_reward_has_purchase_marker(new.dono, 'invite_milestone', marco::text);
   insert into public.notifications(id, user_id, type, content, read, created_at, metadata)
   values (gen_random_uuid(), new.dono, 'system',
-    'Um amigo usou seu convite! Ele conta para os seus prêmios quando abrir o Glyph em 5 dias diferentes.',
-    false, now(), jsonb_build_object('source', 'friend_invite', 'stage', 'used'));
+    format('Um amigo usou seu convite! Agora você tem %s. ', v_total)
+      || case when v_premios is not null then 'Prêmio disponível: ' || v_premios || '. ' else '' end
+      || 'Veja em Ajustes > Resgatar código, nas bolinhas de convites.',
+    false, now(), jsonb_build_object('source', 'friend_invite', 'count', v_total));
   return new;
 end;
 $$;
 revoke all on function public.avisar_novo_convite() from public, anon, authenticated;
-
--- O sino quando o amigo COMPLETA o 5o dia: agora sim ha premio.
-create or replace function public.avisar_amigo_completou_5_dias()
-returns trigger language plpgsql security definer set search_path = public, auth
-as $$
-declare
-  v_dono uuid;
-  v_dias integer;
-  v_total integer;
-  v_premios text;
-begin
-  select dono into v_dono from public.convites_usados where convidado = new.user_id;
-  if v_dono is null then
-    return new;
-  end if;
-
-  select count(*) into v_dias from public.dias_no_app where user_id = new.user_id;
-  if v_dias <> 5 then
-    return new;
-  end if;
-
-  perform pg_advisory_xact_lock(hashtextextended(v_dono::text || ':convites-aviso', 0));
-  select count(*) into v_total
-  from public.convites_usados cu
-  where cu.dono = v_dono
-    and (select count(*) from public.dias_no_app d where d.user_id = cu.convidado) >= 5;
-
-  select string_agg(premio, ', ' order by marco) into v_premios
-  from (values (1, 'baú Comum'), (5, 'baú Raro'), (10, '25 de ouro')) as marcos(marco, premio)
-  where marco <= v_total
-    and not public._starter_reward_has_purchase_marker(v_dono, 'invite_milestone', marco::text);
-
-  insert into public.notifications(id, user_id, type, content, read, created_at, metadata)
-  values (gen_random_uuid(), v_dono, 'system',
-    format('Um amigo que você convidou abriu o Glyph em 5 dias! Agora %s %s para os seus prêmios. ',
-      v_total, case when v_total = 1 then 'conta' else 'contam' end)
-      || case when v_premios is not null then 'Prêmio disponível: ' || v_premios || '. ' else '' end
-      || 'Veja em Ajustes > Resgatar código, nas bolinhas de convites.',
-    false, now(), jsonb_build_object('source', 'friend_invite', 'stage', 'five_days', 'count', v_total));
-  return new;
-end;
-$$;
-revoke all on function public.avisar_amigo_completou_5_dias() from public, anon, authenticated;
-drop trigger if exists avisar_amigo_completou_5_dias on public.dias_no_app;
-create trigger avisar_amigo_completou_5_dias after insert on public.dias_no_app
-for each row execute function public.avisar_amigo_completou_5_dias();
+drop trigger if exists avisar_novo_convite on public.convites_usados;
+create trigger avisar_novo_convite after insert on public.convites_usados
+for each row execute function public.avisar_novo_convite();
 
 -- A missao dos dias paga com 5 (era 7). Copia fiel da funcao de
 -- 20261010120000_sete_dias_no_app.sql, so com o 7 trocado por 5.

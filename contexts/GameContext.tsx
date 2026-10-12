@@ -13051,24 +13051,26 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             showToast('Não foi possível receber agora.', 'error');
             return false;
         }
-        const resposta = (data || {}) as { already_claimed?: boolean; chest_type?: string | null; new_gold?: number | null };
+        // 12/10/2026: 1 amigo = 10 fragmentos, 5 = bau Comum, 10 = bau Incomum.
+        const resposta = (data || {}) as { already_claimed?: boolean; chest_type?: string | null; fragments_granted?: number | null; new_fragments?: number | null };
         if (resposta.already_claimed) return true;
+        const fragmentos = Number(resposta.fragments_granted || 0);
         if (resposta.chest_type) {
             const baus = await fetchChestsFromDB(userId);
             if (baus) setUserProfile((prev) => ({ ...prev, chests: baus }));
             if (!onReward) showToast(formatChestGain(resposta.chest_type), 'success');
         } else {
-            const ouro = Number(resposta.new_gold ?? userProfile.wallet?.gold ?? 0);
-            updateUserProfile({ wallet: { ...userProfile.wallet, gold: ouro } });
-            if (!onReward) showToast('+25 de ouro', 'success');
+            const saldo = Number(resposta.new_fragments ?? ((userProfile.wallet?.fragments || 0) + fragmentos));
+            updateUserProfile({ wallet: { ...userProfile.wallet, fragments: saldo } });
+            if (!onReward) showToast(`+${fragmentos} fragmentos`, 'success');
         }
         const chestType = resposta.chest_type as ChestType | null;
         onReward?.({
             title: 'Recompensa entregue!',
             subtitle: marco === 1 ? 'Seu primeiro amigo' : `${marco} amigos convidados`,
-            summary: chestType ? 'O baú está guardado no Arsenal. Abra quando quiser.' : 'O ouro já entrou na sua conta.',
+            summary: chestType ? 'O baú está guardado no Arsenal. Abra quando quiser.' : 'Os fragmentos já entraram na sua conta.',
             buttonLabel: 'Continuar', itemIds: [], emptyMessage: '',
-            metricCards: chestType ? [] : [{ label: 'Ouro', simbolo: 'ouro', value: '+25' }],
+            metricCards: chestType ? [] : [{ label: 'Fragmentos', simbolo: 'fragmento', value: `+${fragmentos}` }],
             rewardHighlights: chestType ? [{ label: 'Baú conquistado', value: `Baú ${chestType}`, imageUrl: getChestArtUrl(chestType), rarityRgb: getChestVisual(chestType).rgb }] : [],
         });
         return true;

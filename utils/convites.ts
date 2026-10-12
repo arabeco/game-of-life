@@ -5,7 +5,9 @@ import { Share as CapacitorShare } from '@capacitor/share';
 
 export const MARCOS_DE_CONVITE = [1, 5, 10] as const;
 export type MarcoDeConvite = typeof MARCOS_DE_CONVITE[number];
-export const PREMIO_DO_MARCO: Record<MarcoDeConvite, string> = { 1: 'Baú Comum', 5: 'Baú Raro', 10: '25 de ouro' };
+// Baratos de proposito (12/10/2026): o amigo conta ao por o codigo, entao conta
+// falsa nao pode render nada de valor.
+export const PREMIO_DO_MARCO: Record<MarcoDeConvite, string> = { 1: '10 fragmentos', 5: 'Baú Comum', 10: 'Baú Incomum' };
 
 export interface MeusConvites {
     codigo: string;

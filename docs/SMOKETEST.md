@@ -57,7 +57,7 @@ No mesmo modal do cupom, embaixo do OK.
 - [ ] **Usar o código da outra pessoa** (na sua conta nova). Esperado: **+10 de ouro**, aviso "Você e (nome) agora são amigos", e os dois aparecem na lista de amigos um do outro.
 - [ ] **Usar um segundo código de convite.** Esperado: "Você já usou um código de convite."
 - [ ] **Conta antiga** (mais de 7 dias) tentando usar um código. Esperado: "Código de convite vale só para contas criadas há até 7 dias."
-- [ ] ⏳ **Barrinha de quem convidou:** o amigo só conta depois de completar a missão "Cinco dias no Glyph". Esperado: ao usar o código, o sino avisa "Um amigo usou seu convite! Ele conta... quando abrir o Glyph em 5 dias"; no 5º dia do amigo, o sino avisa o prêmio, a bolinha do 1 acende e "1 já conta".
+- [ ] **Barrinha de quem convidou:** o amigo conta assim que usa o código. Esperado: o sino avisa "Um amigo usou seu convite! Agora você tem 1. Prêmio disponível: 10 fragmentos", a bolinha do 1 acende e, ao tocar, entram **10 fragmentos**. Os próximos prêmios: baú Comum no 5 e baú Incomum no 10.
 - [ ] **Convite pelo link (sem digitar):** num celular **sem o Glyph instalado**, abra o link que veio no "Enviar" do outro jogador, instale pela Play Store e crie uma conta nova. Esperado: sem digitar nada, aparece "+10 de ouro. Você e (nome) agora são amigos." Se o app já estava instalado, o link só abre a loja — aí o código é digitado no campo de cupom, como antes.
 
 ## 6. Oráculo e notificações

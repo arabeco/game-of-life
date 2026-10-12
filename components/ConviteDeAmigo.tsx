@@ -151,8 +151,8 @@ export const ConviteDeAmigo: React.FC<{ onReward?: (payload: RewardModalPayload)
                 <p role="status" className="text-xs font-bold text-[var(--skin-accent-color)]">Você tem prêmio disponível! Toque na bolinha iluminada para receber.</p>
             )}
             <p className="text-[10px] leading-snug text-white/40">
-                {convites.entraram} {convites.entraram === 1 ? 'amigo usou' : 'amigos usaram'} seu convite · {convites.completaram} {convites.completaram === 1 ? 'já conta' : 'já contam'}.
-                {' '}O amigo ganha 10 de ouro ao usar o código e conta aqui quando completar a missão "Cinco dias no Glyph" (abrir o app em 5 dias). Cada conta só pode usar um convite.
+                {convites.entraram} {convites.entraram === 1 ? 'amigo usou' : 'amigos usaram'} seu convite.
+                {' '}O amigo ganha 10 de ouro ao usar o código e já conta aqui. Cada conta só pode usar um convite.
             </p>
         </div>
     );

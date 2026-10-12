@@ -11,7 +11,7 @@ import { supabase } from '../supabaseClient';
 import { QUEST_VISUAL, withAlpha } from '../constants/rarityVisuals';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
-import { calculateArenaProgress } from '../utils/progressUtils';
+import { calculateArenaProgress, isExplicitSharedArena } from '../utils/progressUtils';
 import { getActionSurfaceBadgeClassName, resolveActionSurfaceBadge } from '../utils/actionSurfaceBadges';
 import { filterTasksAfterFreeProgressReset } from '../utils/freeProgressScope';
 import './arena-ui.css';
@@ -317,7 +317,9 @@ export const ArenaDetailModal: React.FC<{
     const isOfficeMode = PRODUCT_FEATURES.clanSharedActions && clan?.clanType === 'Office';
     const isLeader = enrichedClanMembers.some(member => member.id === userProfile?.id && member.role === 'leader');
     // Ver ArenaCard: vinculo NAO troca o seu contador pelo pool. Office sim.
-    const forceSharedPool = effectiveRelationshipType ? false : (isOfficeMode ? true : undefined);
+    // E o pool so vale para arena explicitamente coletiva — esperar o tipo de
+    // vinculo chegar fazia o numero trocar depois de aberto.
+    const forceSharedPool = isOfficeMode ? true : (isExplicitSharedArena(arena) ? undefined : false);
     const tasksForCounts = useMemo(() => {
         if (Array.isArray(tasksOverride)) return tasksOverride;
         if (!activeCycle) return filterTasksAfterFreeProgressReset(tasks, freeProgressResetAt);

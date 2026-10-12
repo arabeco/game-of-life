@@ -7,5 +7,6 @@ select
   coalesce(has_function_privilege('authenticated', to_regprocedure('public.status_da_missao_de_cla(text)'), 'execute'), false) as app_le,
   coalesce(has_function_privilege('authenticated', to_regprocedure('public.receber_premio_da_missao_de_cla(text)'), 'execute'), false) as app_recebe,
   coalesce(has_function_privilege('authenticated', to_regprocedure('public.humor_do_meu_cla()'), 'execute'), false) as app_ve_humor,
+  coalesce(has_function_privilege('authenticated', to_regprocedure('public.sair_da_missao_de_cla(text)'), 'execute'), false) as app_sai,
   not coalesce(has_function_privilege('anon', to_regprocedure('public.humor_do_meu_cla()'), 'execute'), false) as visitante_nao_ve_humor,
   not has_table_privilege('authenticated', 'public.clan_quest_participants', 'insert') as ninguem_escreve_direto;

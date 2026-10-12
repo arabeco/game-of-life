@@ -4,7 +4,7 @@ Levantamento pedido pelo Afonso junto da missão de clã: o que a parceria mostr
 
 ## O que a arena da parceria mostra no ArenasView
 
-- **O número é o seu, em X/Y.** Depois do acerto de 12/10 (commit `9e914f3`), cartão e lista fazem uma conta só e nunca trocam para o número do par (`components/ArenaCard.tsx`, `views/ArenasView.tsx`, `forceSharedPool: isExplicitSharedArena(arena) ? undefined : false`). Antes, durante uns segundos depois de abrir, o cartão mostrava o pool do par (em %) até o tipo de vínculo chegar. Era o "carregando estado antigo e brigando".
+- **O número é o seu, em X/Y.** Depois do acerto de 12/10 (commit `9e914f3`), cartão, lista e detalhe da arena fazem uma conta só e nunca trocam para o número do par (`components/ArenaCard.tsx`, `views/ArenasView.tsx`, `forceSharedPool: isExplicitSharedArena(arena) ? undefined : false`). Antes, durante uns segundos depois de abrir, o cartão mostrava o pool do par (em %) até o tipo de vínculo chegar. Era o "carregando estado antigo e brigando".
 - **Quanto o par fez** aparece no cartão de Vínculos (Conexões), não na arena. Essa escolha está escrita no comentário do mapa de progresso em `views/ArenasView.tsx` (perto de `arenaProgressById`).
 - As arenas **do outro** que estão ligadas a você aparecem como prévia, com as tarefas dele (`views/ArenasView.tsx:358`, `sharedLinkedArenas` sem dono local).
 

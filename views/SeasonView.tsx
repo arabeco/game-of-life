@@ -12,6 +12,7 @@ import { GM_SEASON_MISSIONS } from '../constants/seasonContent';
 import { PRODUCT_FEATURES } from '../constants/featureFlags';
 import { ArenaPactBalloon, ArenaPactProposal } from '../components/ArenaPactBalloon';
 import { SegredosSection } from '../components/SegredosSection';
+import { rotuloDaMissao } from '../utils/missaoDoCla';
 
 type SelectableQuest = SeasonQuest | SystemChallenge;
 
@@ -156,6 +157,8 @@ export const SeasonView: React.FC = () => {
         clanQuestParticipants,
         fetchClanQuestParticipants,
         userMissionParticipations,
+        missoesDoCla,
+        clan,
         showToast,
         updateUserProfile,
         activeArenaPact,
@@ -241,6 +244,7 @@ export const SeasonView: React.FC = () => {
     };
 
     const isQuestAccepted = (quest: SeasonQuest): boolean => {
+        if (quest.type === 'clan' && PRODUCT_FEATURES.clanSeasonQuests) return Boolean(missoesDoCla[quest.id]?.entrei);
         if (quest.type === 'clan') {
             return Boolean(userMissionParticipations?.[quest.id]) || hasQuestAction(quest);
         }
@@ -725,8 +729,9 @@ export const SeasonView: React.FC = () => {
                                             metaLabel="Grupo"
                                             isAccepted={true}
                                             progress={calculateQuestProgress(quest)}
+                                            progressLabel={missoesDoCla[quest.id] ? rotuloDaMissao(missoesDoCla[quest.id]) : undefined}
                                             family="grupo"
-                                            participants={clanQuestParticipants[quest.id] || 0}
+                                            participants={missoesDoCla[quest.id]?.membros.length ?? 0}
                                             reward={formatQuestReward(quest)}
                                             onClick={() => setSelectedQuest(quest)}
                                         />
@@ -813,7 +818,7 @@ export const SeasonView: React.FC = () => {
                                         family="grupo"
                                         isAccepted={false}
                                         progress={0}
-                                        participants={clanQuestParticipants[quest.id] || 0}
+                                        participants={missoesDoCla[quest.id]?.membros.length ?? 0}
                                         reward={formatQuestReward(quest)}
                                         onClick={() => setSelectedQuest(quest)}
                                     />
@@ -901,7 +906,9 @@ export const SeasonView: React.FC = () => {
                     quest={selectedQuest}
                     progress={selectedQuestProgress}
                     isActive={selectedQuestIsActive}
-                    participants={!isSystemQuest(selectedQuest) && selectedQuest.type === 'clan' ? (clanQuestParticipants[selectedQuest.id] || 0) : undefined}
+                    participants={!isSystemQuest(selectedQuest) && selectedQuest.type === 'clan' ? (missoesDoCla[selectedQuest.id]?.membros.length ?? 0) : undefined}
+                    semCla={selectedQuest.type === 'clan' && !clan}
+                    progressoTexto={selectedQuest.type === 'clan' && missoesDoCla[selectedQuest.id] ? rotuloDaMissao(missoesDoCla[selectedQuest.id]) : undefined}
                     onClose={() => setSelectedQuest(null)}
                     onTake={() => {
                         if (isSystemQuest(selectedQuest)) {

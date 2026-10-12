@@ -23,6 +23,8 @@ interface UseQuestSharedDomainParams {
     addArena: (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb?: boolean) => Promise<Arena>;
     updateArena: (arenaId: string, arenaData: Partial<Pick<Arena, 'assetId' | 'name' | 'description' | 'icon' | 'folderId' | 'isArchived' | 'priority'>>) => void;
     showToast: (message: string, tone: ToastTone) => void;
+    /** acao -> missao de cla, vindo da participacao no servidor (o unico elo). */
+    acaoParaMissaoDoCla?: Record<string, string>;
 }
 
 export interface QuestSharedDomainApi {
@@ -48,11 +50,15 @@ export const useQuestSharedDomain = ({
     addArena,
     updateArena,
     showToast,
+    acaoParaMissaoDoCla = {},
 }: UseQuestSharedDomainParams): QuestSharedDomainApi => {
     const normalizeQuestLabel = (value?: string) => normalizeDomainLabel(value);
 
     const getClanQuestForActionName = (actionName?: string): SeasonQuest | null => {
-        if (!PRODUCT_FEATURES.clanMissions && !PRODUCT_FEATURES.clanSeasonQuests) return null;
+        // So o legado (prioridade do lider). A missao de cla DA TEMPORADA e achada
+        // pela acao da participacao, nunca pelo nome: uma "Socializar" pessoal
+        // continua pessoal (revisao final de 12/10/2026).
+        if (!PRODUCT_FEATURES.clanMissions) return null;
         if (!actionName) return null;
         const normalized = normalizeQuestLabel(actionName);
         const direct = seasonQuests.find(quest => quest.type === 'clan' && normalizeQuestLabel(quest.actionTemplate?.name) === normalized);
@@ -64,8 +70,19 @@ export const useQuestSharedDomain = ({
         return null;
     };
 
+    const missaoDaParticipacao = (action: Action) => {
+        const questId = acaoParaMissaoDoCla[action.id];
+        return questId ? seasonQuests.find(quest => quest.id === questId) || null : null;
+    };
+
     const getClanQuestsForArena = (arena: Arena, arenaActions: Action[]) => {
         const map = new Map<string, SeasonQuest>();
+        arenaActions.forEach(action => {
+            const quest = acaoParaMissaoDoCla[action.id] ? missaoDaParticipacao(action) : null;
+            if (quest) map.set(quest.id, quest);
+        });
+        if (!PRODUCT_FEATURES.clanMissions) return Array.from(map.values());
+
         const byArenaName = seasonQuests.find(quest => quest.type === 'clan' && normalizeQuestLabel(quest.title) === normalizeQuestLabel(arena.name));
         if (byArenaName) {
             map.set(byArenaName.id, byArenaName);
@@ -83,7 +100,7 @@ export const useQuestSharedDomain = ({
 
     const getClanQuestForAction = (action: Action | undefined) => {
         if (!action) return null;
-        return getClanQuestForActionName(action.name);
+        return missaoDaParticipacao(action) || getClanQuestForActionName(action.name);
     };
 
     const [sharedActionCompletions, setSharedActionCompletions] = useState<Record<string, Record<string, number>>>(() => ({}));

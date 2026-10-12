@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { metaBatida, podeReceber, rotuloDaMissao } from '../utils/missaoDoCla';
 
@@ -8,9 +8,15 @@ import { metaBatida, podeReceber, rotuloDaMissao } from '../utils/missaoDoCla';
  * quanto cada um fez; botao Entrar no estilo do botao de missao do Oraculo.
  */
 export const MissaoDoClaCard: React.FC = () => {
-    const { missoesDeClaAtivas, missoesDoCla, entrarNaMissaoDoCla, receberPremioDaMissaoDoCla } = useGame();
+    const { missoesDeClaAtivas, missoesDoCla, entrarNaMissaoDoCla, receberPremioDaMissaoDoCla, atualizarMissaoDoCla, carregarHumorDoCla } = useGame();
     const [ocupado, setOcupado] = useState(false);
     const quest = missoesDeClaAtivas[0];
+    // Abrir o cla recontar o grupo e o humor: o que os outros marcaram desde a
+    // ultima vez aparece aqui, sem precisar fechar o app.
+    useEffect(() => {
+        if (quest) void atualizarMissaoDoCla(quest.id);
+        void carregarHumorDoCla();
+    }, [quest?.id]); // eslint-disable-line react-hooks/exhaustive-deps
     const status = quest ? missoesDoCla[quest.id] : undefined;
     if (!quest || !status || !status.temCla) return null;
     if (status.vencida && !metaBatida(status)) return null;

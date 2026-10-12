@@ -107,6 +107,17 @@ const humor = (await como(A, `select user_id::text, mood from public.humor_do_me
 assert.deepEqual(humor.map((h) => h.mood), [55, 80], 'humor vazou de outro cla ou trouxe nulo');
 console.log('ok - humor so do proprio cla, e quem nao registrou nao aparece');
 
+// 8. revisao final: a minha acao no status, e sair da missao
+s = (await rpc(A, `select public.status_da_missao_de_cla('${Q}') as s`)).s;
+assert.equal(s.my_action_id, acao(A), 'o status nao diz qual e a minha acao da missao');
+await db.exec(`update public.clan_quests set ends_on = current_date + 30, goal = 3 where id = '${Q}'`);
+await rpc(B, `select public.sair_da_missao_de_cla('${Q}')`);
+s = (await rpc(B, `select public.status_da_missao_de_cla('${Q}') as s`)).s;
+assert.equal(s.joined, false); assert.equal(s.my_action_id, null);
+assert.ok(!s.members.some((m) => m.nickname === 'Beto'), 'quem saiu continuou na lista');
+await falha(B, `select public.receber_premio_da_missao_de_cla('${Q}')`, 'NAO_ENTROU');
+console.log('ok - o status diz qual e a minha acao, e quem sai da missao deixa de contar e de receber');
+
 // 7. ninguem escreve direto nas tabelas
 const sql = ler('supabase/migrations/20261012200000_missao_de_cla.sql');
 assert.match(sql, /revoke all on public\.clan_quest_participants from anon, authenticated/);

@@ -82,7 +82,11 @@ type ArenaAttentionState = {
 };
 
 export const ArenasView: React.FC = () => {
-    const { getArenas, assets, actions, tasks, addArena, updateArena, addAction, arenaFolders, createArenaFolder, moveArenaToFolder, reorderArena, reorderEntity, reorderEntityPriority, campaigns, addCampaign, updateCampaign, deleteCampaign, activeCycle, freeProgressResetAt, resetFreeProgress, arenasViewMode, setArenasViewMode, userProfile, getClanQuestProgress, getClanQuestsForArena, getSharedActionPoolProgress, userCodexes, installCodex } = useGame();
+    const { getArenas, assets, actions, tasks, addArena, updateArena, addAction, arenaFolders, createArenaFolder, moveArenaToFolder, reorderArena, reorderEntity, reorderEntityPriority, campaigns, addCampaign, updateCampaign, deleteCampaign, activeCycle, freeProgressResetAt, resetFreeProgress, arenasViewMode, setArenasViewMode, userProfile, getClanQuestProgress, getClanQuestsForArena, getSharedActionPoolProgress, userCodexes, installCodex, missoesDeClaAtivas, atualizarMissaoDoCla } = useGame();
+    // Abrir as arenas reconta a missao de cla: o que o grupo marcou aparece aqui.
+    useEffect(() => {
+        missoesDeClaAtivas.forEach((quest) => { void atualizarMissaoDoCla(quest.id); });
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
     const { isBuilderMode } = useCodexBuilder();
     const [selectedArenaId, setSelectedArenaId] = useState<string | null>(null);
     const [sharedLinkedArenas, setSharedLinkedArenas] = useState<LinkedRelationshipArena[]>([]);
@@ -1259,6 +1263,8 @@ export const ArenasView: React.FC = () => {
             clanQuests: getClanQuestsForArena(arena, arenaActions),
             getClanQuestProgress,
             getSharedActionPoolProgress,
+            // A mesma conta do cartao: o pool do par nao liga sozinho.
+            forceSharedPool: isExplicitSharedArena(arena) ? undefined : false,
         });
 
         return {

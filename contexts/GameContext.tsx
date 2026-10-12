@@ -37,7 +37,7 @@ import { buildCyclePaceMetrics, buildDailyExpSnapshot, buildTaskPoolEntries, fil
 import { buildFairScoreFromTasks, recalculateReportsWithFairScore } from '../utils/fairScoreUtils.js';
 import { carregarCiclosFechados } from '../utils/ciclosFechados';
 import { COLUNAS_DA_TAREFA, COLUNAS_DO_INVENTARIO, perfilDeAbertura, semODono } from '../utils/aberturaEnxuta';
-import { assinaturaDaMissao, deveRecolher, lerStatusDaMissao, mensagemDoErroDaMissao, type StatusDaMissao } from '../utils/missaoDoCla';
+import { assinaturaDaMissao, deveRecolher, entrarComDesfazer, lerStatusDaMissao, mensagemDoErroDaMissao, podeReceber, type StatusDaMissao } from '../utils/missaoDoCla';
 import { notaDoCiclo } from '../utils/cycleGrade.js';
 import { buildCycleWeeklyAtlas } from '../utils/reportAtlasUtils.js';
 import { DEFAULT_ORACLE_PRESENCE_LEVEL, getOracleFeedQuotaStatus } from '../utils/oracleFeedUtils';
@@ -969,6 +969,7 @@ export interface GameContextType {
     entrarNaMissaoDoCla: (questId: string) => Promise<boolean>;
     receberPremioDaMissaoDoCla: (questId: string) => Promise<boolean>;
     humorDoCla: Record<string, number>;
+    carregarHumorDoCla: () => Promise<void>;
     completeTutorialMission: () => void;
     toggleChecklistItem: (id: string) => void;
     addChecklistItem: (text: string) => void;
@@ -12357,9 +12358,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const normalized = normalizeDomainLabel(action.name || '');
             if (!normalized) return;
 
+            // A missao de cla fica fora: o elo dela e a participacao no servidor,
+            // e gravar por nome a ligaria a uma acao pessoal "Socializar".
             const quest = seasonQuests.find(candidate =>
-                normalizeDomainLabel(candidate.actionTemplate?.name || '') === normalized
-                || normalizeDomainLabel(candidate.title || '') === normalized
+                candidate.type !== 'clan' && (
+                    normalizeDomainLabel(candidate.actionTemplate?.name || '') === normalized
+                    || normalizeDomainLabel(candidate.title || '') === normalized
+                )
             );
             if (quest) matches.push({ actionId: action.id, questId: quest.id });
         });
@@ -12505,24 +12510,33 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return status;
     }, []);
 
-    // Ao entrar no clã (ou trocar), o status de cada missão e o humor do grupo.
+    const carregarHumorDoCla = useCallback(async () => {
+        const { data, error } = await supabase.rpc('humor_do_meu_cla');
+        if (error || !Array.isArray(data)) return;
+        setHumorDoCla(Object.fromEntries(data.map((linha: any) => [String(linha.user_id), Number(linha.mood)])));
+    }, []);
+
+    // Ao entrar no clã (ou trocar), o humor do grupo e o status de cada missão.
+    // Sem clã, nada do clã antigo fica para trás (nem o resgate automático).
     useEffect(() => {
-        if (!clan?.id || !missoesDeClaAtivas.length) return;
+        if (!clan?.id) {
+            setMissoesDoCla({});
+            setHumorDoCla({});
+            return;
+        }
+        void carregarHumorDoCla();
         missoesDeClaAtivas.forEach((quest) => { void atualizarMissaoDoCla(quest.id); });
-        void supabase.rpc('humor_do_meu_cla').then(({ data, error }) => {
-            if (error || !Array.isArray(data)) return;
-            setHumorDoCla(Object.fromEntries(data.map((linha: any) => [String(linha.user_id), Number(linha.mood)])));
-        });
-    }, [clan?.id, missoesDeClaAtivas, atualizarMissaoDoCla]);
+    }, [clan?.id, missoesDeClaAtivas, atualizarMissaoDoCla, carregarHumorDoCla]);
 
     // Marcou ou desmarcou uma tarefa da missão: o grupo recontado, juntando toques.
-    // `sourceQuestId` nao vai para o banco (addAction nao manda source_quest_id):
-    // depois de recarregar, a acao e achada pelo nome, como nas outras jornadas.
-    const acoesDaMissaoDoCla = useMemo(() => new Set(
-        missoesDeClaAtivas
-            .map((quest) => findSeasonQuestArenaAndAction(quest).action?.id)
-            .filter((id): id is string => Boolean(id)),
-    ), [findSeasonQuestArenaAndAction, missoesDeClaAtivas]);
+    // O elo entre uma ação e a missão é a MINHA participação no servidor
+    // (my_action_id), nunca o nome: uma "Socializar" pessoal continua pessoal.
+    const acaoParaMissaoDoCla = useMemo(() => Object.fromEntries(
+        Object.values(missoesDoCla)
+            .filter((status) => Boolean(status.minhaAcao))
+            .map((status) => [status.minhaAcao as string, status.questId]),
+    ) as Record<string, string>, [missoesDoCla]);
+    const acoesDaMissaoDoCla = useMemo(() => new Set(Object.keys(acaoParaMissaoDoCla)), [acaoParaMissaoDoCla]);
     const assinaturaDaMissaoDoCla = useMemo(() => assinaturaDaMissao(tasks, acoesDaMissaoDoCla), [tasks, acoesDaMissaoDoCla]);
     useEffect(() => {
         if (!acoesDaMissaoDoCla.size) return;
@@ -12532,13 +12546,20 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return () => window.clearTimeout(espera);
     }, [assinaturaDaMissaoDoCla]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Vencida sem meta: a arena se recolhe (arquiva, não apaga).
+    // Vencida sem meta: a arena da MINHA participação se recolhe (arquiva, não apaga).
+    // Achada pela ação da participação — nunca por nome, para não arquivar uma
+    // arena pessoal que só se chama igual.
     useEffect(() => {
         Object.values(missoesDoCla).forEach((status) => {
-            const quest = missoesDeClaAtivas.find((candidate) => candidate.id === status.questId);
-            if (quest && deveRecolher(status)) void recolherArenaDaJornada(quest, 'encerrada');
+            if (!deveRecolher(status) || !status.minhaAcao) return;
+            const acao = actions.find((candidate) => candidate.id === status.minhaAcao);
+            const arena = acao ? getArenas().find((candidate) => candidate.id === acao.arenaId) : undefined;
+            if (!acao || !arena || arena.isArchived) return;
+            if (actions.some((candidate) => candidate.arenaId === arena.id && candidate.id !== acao.id)) return;
+            updateArena(arena.id, { isArchived: true });
+            showToast(`Arena "${arena.name}" arquivada: a missão do clã venceu.`, 'info');
         });
-    }, [missoesDoCla, missoesDeClaAtivas, recolherArenaDaJornada]);
+    }, [missoesDoCla, actions]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const entrarNaMissaoDoCla = useCallback(async (questId: string): Promise<boolean> => {
         const quest = findSeasonQuestById(questId);
@@ -12550,19 +12571,23 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (entrandoNaMissaoRef.current.has(questId)) return false;
         entrandoNaMissaoRef.current.add(questId);
         try {
-            let acao = findSeasonQuestArenaAndAction(quest).action;
-            if (!acao) {
-                let { arena } = findSeasonQuestArenaAndAction(quest);
-                if (!arena) {
-                    arena = await addArena(assets[0]?.id || 'geral', {
-                        name: quest.title,
-                        description: quest.description || 'Missão de clã',
-                        icon: quest.actionTemplate.icon || '\u{1F91D}',
-                        priority: 'alta',
-                    });
-                }
-                if (arena?.isArchived) updateArena(arena.id, { isArchived: false });
-                acao = await addAction({
+            // Reaproveita SO a ação da minha participação (o servidor sabe qual é);
+            // nunca uma ação pessoal com o mesmo nome. Na recusa, desfaz só o que
+            // esta entrada criou — uma ação antiga nunca é apagada.
+            const minhaAcao = missoesDoCla[questId]?.minhaAcao;
+            const acaoExistente = minhaAcao ? actions.find((candidate) => candidate.id === minhaAcao) || null : null;
+            const resultado = await entrarComDesfazer<Arena, Action>({
+                acaoExistente,
+                arenaExistente: null,
+                criarArena: () => addArena(assets[0]?.id || 'geral', {
+                    name: quest.title,
+                    description: quest.description || 'Missão de clã',
+                    icon: quest.actionTemplate.icon || '\u{1F91D}',
+                    priority: 'alta',
+                }),
+                desarquivarArena: (arena) => updateArena(arena.id, { isArchived: false }),
+                rearquivarArena: (arena) => updateArena(arena.id, { isArchived: true }),
+                criarAcao: (arena) => addAction({
                     arenaId: arena.id,
                     sourceQuestId: quest.id,
                     name: quest.actionTemplate.name,
@@ -12572,22 +12597,23 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     repetitions: quest.actionTemplate.repetitions || quest.goal_value || 1,
                     actionType: 'A\u00E7\u00E3o Recorrente',
                     difficulty: 3,
-                });
-            }
-            const resposta = await supabase.rpc('entrar_na_missao_de_cla', { p_quest_id: quest.id, p_action_id: acao.id });
-            if (resposta.error) {
-                await deleteAction(acao.id);
-                showToast(mensagemDoErroDaMissao(resposta.error.message), 'error');
+                }),
+                removerAcao: (acao) => deleteAction(acao.id),
+                removerArena: (arena) => deleteArena(arena.id),
+                registrar: (acao) => supabase.rpc('entrar_na_missao_de_cla', { p_quest_id: quest.id, p_action_id: acao.id }),
+            });
+            if (resultado.ok === false) {
+                showToast(mensagemDoErroDaMissao(resultado.erro), 'error');
                 return false;
             }
-            const status = lerStatusDaMissao(resposta.data);
+            const status = lerStatusDaMissao(resultado.data);
             if (status) setMissoesDoCla((prev) => ({ ...prev, [quest.id]: status }));
             showToast(`Você entrou em "${quest.title}". A arena está no seu ArenasView.`, 'success');
             return true;
         } finally {
             entrandoNaMissaoRef.current.delete(questId);
         }
-    }, [addAction, addArena, assets, clan, deleteAction, findSeasonQuestArenaAndAction, findSeasonQuestById, showToast, updateArena]);
+    }, [actions, addAction, addArena, assets, clan, deleteAction, deleteArena, findSeasonQuestById, missoesDoCla, showToast, updateArena]);
 
     const acceptSeasonQuest = async (questId: string) => {
         const quest = findSeasonQuestById(questId);
@@ -12661,6 +12687,23 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const abortSeasonQuest = async (questId: string) => {
         const quest = findSeasonQuestById(questId);
         if (!quest) return;
+
+        // Missão de clã: sair no servidor (deixa de contar e de receber) e
+        // arquivar a arena da participação. Nada é apagado.
+        if (quest.type === 'clan') {
+            const minhaAcao = missoesDoCla[questId]?.minhaAcao;
+            const { data, error } = await supabase.rpc('sair_da_missao_de_cla', { p_quest_id: questId });
+            if (error) {
+                showToast(mensagemDoErroDaMissao(error.message), 'error');
+                return;
+            }
+            const status = lerStatusDaMissao(data);
+            if (status) setMissoesDoCla((prev) => ({ ...prev, [questId]: status }));
+            const acao = minhaAcao ? actions.find((candidate) => candidate.id === minhaAcao) : undefined;
+            if (acao) updateArena(acao.arenaId, { isArchived: true });
+            showToast(`Você saiu de "${quest.title}".`);
+            return;
+        }
 
         const { action: existingAction } = findSeasonQuestArenaAndAction(quest);
         if (existingAction) {
@@ -13276,7 +13319,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const staleSeasonQuests = Object.values(SEASONS)
             .flatMap((season) => season.quests || [])
-            .filter((quest) => quest.season_id && quest.season_id !== activeRuntimeSeasonId);
+            // A missao de cla fica fora: ela e recolhida (arquivada) pela varredura
+            // da participacao, e apagar suas tarefas zeraria o total de quem nao recebeu.
+            .filter((quest) => quest.season_id && quest.season_id !== activeRuntimeSeasonId && quest.type !== 'clan');
 
         if (staleSeasonQuests.length === 0) return;
 
@@ -13330,6 +13375,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     ]);
 
     const questSharedDomain = useQuestSharedDomain({
+        acaoParaMissaoDoCla,
         seasonQuests,
         sessionUserId: session?.user.id,
         supabase,
@@ -13605,6 +13651,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const completedSeasonQuest = seasonQuests.find((quest) => {
             if (quest.season_id && quest.season_id !== activeRuntimeSeasonId) return false;
             if (completedIds.has(quest.id) || automaticChallengeClaimsRef.current.has(quest.id)) return false;
+            // Missao de cla: so quem entrou, com a meta batida e sem ter recebido —
+            // como o servidor contou. Nunca pelo nome da acao.
+            if (quest.type === 'clan' && PRODUCT_FEATURES.clanSeasonQuests) {
+                const status = missoesDoCla[quest.id];
+                return Boolean(status && podeReceber(status));
+            }
             const accepted = quest.type === 'clan'
                 ? Boolean(userMissionParticipations[quest.id]) || hasQuestAction(quest)
                 : hasQuestAction(quest);
@@ -13731,7 +13783,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 automaticChallengeClaimInFlightRef.current = false;
                 setAutomaticChallengeClaimTick((value) => value + 1);
             });
-    }, [
+    }, [missoesDoCla, 
         activeCycle,
         activeRuntimeSeasonId,
         actions,
@@ -15476,7 +15528,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             session,
             getSharedActionPoolProgress, isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, sequenceItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, upcomingCycle, dailyCommitment, judgedOperationalDates, judgedTaskIdsByDate, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, grantInventoryItem, acceptSeasonQuest,
             abortSeasonQuest,
-            missoesDoCla, missoesDeClaAtivas, atualizarMissaoDoCla, entrarNaMissaoDoCla, receberPremioDaMissaoDoCla, humorDoCla,
+            missoesDoCla, missoesDeClaAtivas, atualizarMissaoDoCla, entrarNaMissaoDoCla, receberPremioDaMissaoDoCla, humorDoCla, carregarHumorDoCla,
             roundExpBonus, addProfileFlag, feed, addFeedEvent, deleteFeedEvent, toggleFeedLike, fetchLikesReceived, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, ensureTasksLoadedThrough, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, addSequenceItem, updateSequenceItem, markSequenceItemToday, adjustSequenceItemDays, resetSequenceItem, deleteSequenceItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, recordMoodEntry, fetchMoodHistory, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, respondToClanInvite, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
             directMessages, dmConversations, blockedUsers, blockedUserIds, sendDirectMessage, markDMAsRead, fetchDMs, blockUser, unblockUser, submitModerationReport,
             addSeason, updateSeason, addSeasonMission, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, isProfileLoaded, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, donateItem, craftItem, buyChestWithFragments, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, createCompetitionInvite, respondToRelationshipInvite, endRelationshipLink, renewRelationshipLink, offerMentorshipArena, respondMentorshipOffer, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, respondCompetitionChallenge, cancelCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,

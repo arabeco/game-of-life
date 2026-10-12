@@ -17,6 +17,8 @@ export interface StatusDaMissao {
     entrei: boolean;
     recebi: boolean;
     temCla: boolean;
+    /** A acao da MINHA participacao. E por ela, nunca pelo nome, que se acha a arena da missao. */
+    minhaAcao: string | null;
     membros: MembroDaMissao[];
 }
 
@@ -33,6 +35,7 @@ export const lerStatusDaMissao = (data: unknown): StatusDaMissao | null => {
         entrei: Boolean(bruto.joined),
         recebi: Boolean(bruto.claimed),
         temCla: Boolean(bruto.has_clan),
+        minhaAcao: typeof bruto.my_action_id === 'string' && bruto.my_action_id ? bruto.my_action_id : null,
         membros: membros.map((m: any) => ({
             userId: String(m?.user_id || ''),
             nickname: String(m?.nickname || 'Membro'),
@@ -62,3 +65,58 @@ export const assinaturaDaMissao = (
     tasks: { actionId: string; completed?: boolean }[],
     actionIds: Set<string>,
 ) => [...actionIds].sort().map((id) => `${id}:${tasks.filter((t) => t.actionId === id && t.completed).length}`).join('|');
+
+/**
+ * ENTRAR, E DESFAZER SO O QUE FOI CRIADO.
+ *
+ * Se o servidor recusar (vencida, sem cla, rede), desfaz exatamente o que esta
+ * entrada criou: a acao nova, a arena nova, ou arquiva de novo a arena que
+ * desarquivou. Uma acao que JA existia nunca e apagada — apagar levaria junto
+ * as tarefas concluidas dela (revisao final de 12/10/2026).
+ */
+export interface PassosDaEntrada<A extends { id: string; isArchived?: boolean }, X extends { id: string }> {
+    acaoExistente: X | null;
+    arenaExistente: A | null;
+    criarArena: () => Promise<A>;
+    desarquivarArena: (arena: A) => void;
+    rearquivarArena: (arena: A) => void;
+    criarAcao: (arena: A) => Promise<X>;
+    removerAcao: (acao: X) => Promise<void> | void;
+    removerArena: (arena: A) => Promise<void> | void;
+    registrar: (acao: X) => PromiseLike<{ data: unknown; error: { message: string } | null }>;
+}
+
+export const entrarComDesfazer = async <A extends { id: string; isArchived?: boolean }, X extends { id: string }>(
+    passos: PassosDaEntrada<A, X>,
+): Promise<{ ok: true; data: unknown } | { ok: false; erro: string }> => {
+    let arena = passos.arenaExistente;
+    let acao = passos.acaoExistente;
+    let criouArena = false;
+    let criouAcao = false;
+    let desarquivou = false;
+    try {
+        if (!acao) {
+            if (!arena) {
+                arena = await passos.criarArena();
+                criouArena = true;
+            } else if (arena.isArchived) {
+                passos.desarquivarArena(arena);
+                desarquivou = true;
+            }
+            acao = await passos.criarAcao(arena);
+            criouAcao = true;
+        }
+        const resposta = await passos.registrar(acao);
+        if (resposta.error) throw new Error(resposta.error.message);
+        return { ok: true, data: resposta.data };
+    } catch (erro) {
+        try {
+            if (criouAcao && acao) await passos.removerAcao(acao);
+            if (criouArena && arena) await passos.removerArena(arena);
+            else if (desarquivou && arena) passos.rearquivarArena(arena);
+        } catch {
+            // Desfazer e o melhor esforco; o erro que a pessoa precisa ver e o da entrada.
+        }
+        return { ok: false, erro: String((erro as Error)?.message || erro) };
+    }
+};

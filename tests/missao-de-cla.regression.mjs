@@ -50,18 +50,18 @@ console.log('ok - a missao de teste esta na Genesis, igual ao servidor, com bau 
 const contexto = ler('contexts/GameContext.tsx');
 const entrar = contexto.slice(contexto.indexOf('const entrarNaMissaoDoCla = useCallback('), contexto.indexOf('const acceptSeasonQuest = async'));
 assert.match(entrar, /if \(!clan\) \{[\s\S]*?mensagemDoErroDaMissao\('SEM_CLA'\)/, 'sem cla, entrar tinha de avisar em vez de criar arena');
-assert.match(entrar, /findSeasonQuestArenaAndAction\(quest\)\.action/, 'entrar de novo criaria outra arena');
+assert.match(entrar, /missoesDoCla\[questId\]\?\.minhaAcao/, 'entrar de novo criaria outra arena (o elo e a acao da participacao)');
 assert.match(entrar, /entrandoNaMissaoRef\.current\.has\(questId\)/, 'duplo toque cria duas arenas');
 assert.match(entrar, /supabase\.rpc\('entrar_na_missao_de_cla'/);
-assert.match(entrar, /if \(resposta\.error\) \{[\s\S]*?deleteAction\(acao\.id\)/, 'recusa do servidor deixava arena orfa');
+assert.match(entrar, /entrarComDesfazer<Arena, Action>\(/, 'a entrada deixou de desfazer so o que criou');
+assert.match(entrar, /removerArena: \(arena\) => deleteArena\(arena\.id\)/, 'recusa do servidor deixava arena orfa');
 assert.match(contexto, /supabase\.rpc\('receber_premio_da_missao_de_cla'/);
 assert.match(contexto, /chestJaEntregue: resposta\.already_claimed \? null : \(resposta\.chest_type \|\| 'Raro'\)/, 'o bau do servidor nao aparece no modal');
 const resgate = contexto.slice(contexto.indexOf('const claimSeasonQuest = async'), contexto.indexOf('const claimSeasonQuest = async') + 600);
 assert.match(resgate, /if \(quest\.type === 'clan'\) \{\s*await receberPremioDaMissaoDoCla\(questId\);/, 'o resgate generico pagaria a missao de cla pelo cliente');
 assert.doesNotMatch(contexto, /A tarefa do grupo soma sozinha/, 'a nota de 22/09 (cla nao se pega) continua barrando');
-assert.match(contexto, /deveRecolher\(status\)[\s\S]{0,200}recolherArenaDaJornada/, 'vencida sem meta nao se recolhe');
+assert.match(contexto, /deveRecolher\(status\)[\s\S]{0,600}updateArena\(arena\.id, \{ isArchived: true \}\)/, 'vencida sem meta nao se recolhe');
 assert.match(ler('views/SeasonView.tsx'), /PRODUCT_FEATURES\.clanSeasonQuests \|\| quest\.type !== 'clan'/);
-assert.match(ler('contexts/gameDomains/questSharedDomain.ts'), /!PRODUCT_FEATURES\.clanMissions && !PRODUCT_FEATURES\.clanSeasonQuests/);
 console.log('ok - entrar trava duplo toque, exige cla, desfaz na recusa; receber mostra o bau do servidor');
 // ============================== 5. a tela do cla (risco 5)
 const cartao = ler('components/MissaoDoClaCard.tsx');
@@ -80,3 +80,93 @@ assert.match(sede, /<MissaoDoClaCard \/>/, 'a missao saiu da Sede, a aba que abr
 assert.match(sede, /<BarrinhaDeHumor mood=\{humorDoCla\[member\.id\]\} compacta \/>/, 'o humor saiu de baixo do nome no palco');
 assert.match(barrinha, /compacta \? null :/, 'no palco a barrinha vai sem rotulo, para caber embaixo do nome');
 console.log('ok - na Sede, a missao e o humor embaixo do nome de cada soberano');
+
+// ============================== 6. revisao final (12/10/2026)
+const { entrarComDesfazer } = await import('../utils/missaoDoCla.ts');
+const montar = ({ acaoExistente = null, arenaExistente = null, rpcFalha = false, criarAcaoFalha = false } = {}) => {
+  const feito = { arenasCriadas: [], acoesCriadas: [], removidas: [], arenasRemovidas: [], desarquivadas: [], rearquivadas: [] };
+  const passos = {
+    acaoExistente, arenaExistente,
+    criarArena: async () => { const a = { id: 'arena-nova', isArchived: false }; feito.arenasCriadas.push(a.id); return a; },
+    desarquivarArena: (a) => feito.desarquivadas.push(a.id),
+    rearquivarArena: (a) => feito.rearquivadas.push(a.id),
+    criarAcao: async () => { if (criarAcaoFalha) throw new Error('limite de arenas'); const x = { id: 'acao-nova' }; feito.acoesCriadas.push(x.id); return x; },
+    removerAcao: async (x) => { feito.removidas.push(x.id); },
+    removerArena: async (a) => { feito.arenasRemovidas.push(a.id); },
+    registrar: async () => (rpcFalha ? { data: null, error: { message: 'MISSAO_VENCIDA' } } : { data: { quest_id: 'q' }, error: null }),
+  };
+  return { passos, feito };
+};
+{
+  // acao que ja existia: recusa NUNCA apaga (C1 — perda de dados)
+  const { passos, feito } = montar({ acaoExistente: { id: 'acao-velha' }, rpcFalha: true });
+  const r = await entrarComDesfazer(passos);
+  assert.equal(r.ok, false); assert.equal(r.erro, 'MISSAO_VENCIDA');
+  assert.deepEqual(feito.removidas, [], 'a recusa apagou uma acao que ja existia, com o historico dela');
+  // criou arena e acao: recusa desfaz as duas (C1 — arena orfa)
+  const b = montar({ rpcFalha: true });
+  await entrarComDesfazer(b.passos);
+  assert.deepEqual(b.feito.removidas, ['acao-nova']);
+  assert.deepEqual(b.feito.arenasRemovidas, ['arena-nova'], 'a arena criada ficou orfa depois da recusa');
+  // desarquivou: recusa arquiva de novo
+  const c = montar({ arenaExistente: { id: 'arena-guardada', isArchived: true }, rpcFalha: true });
+  await entrarComDesfazer(c.passos);
+  assert.deepEqual(c.feito.desarquivadas, ['arena-guardada']);
+  assert.deepEqual(c.feito.rearquivadas, ['arena-guardada']);
+  assert.deepEqual(c.feito.arenasRemovidas, [], 'apagou uma arena que ja existia');
+  // criar a acao estourou: nada de rejeicao solta, e a arena criada some
+  const d = montar({ criarAcaoFalha: true });
+  const rd = await entrarComDesfazer(d.passos);
+  assert.equal(rd.ok, false);
+  assert.deepEqual(d.feito.arenasRemovidas, ['arena-nova']);
+  // deu certo: nada desfeito
+  const e = montar();
+  const re = await entrarComDesfazer(e.passos);
+  assert.equal(re.ok, true); assert.deepEqual(e.feito.removidas, []); assert.deepEqual(e.feito.arenasRemovidas, []);
+}
+console.log('ok - entrar desfaz so o que criou: acao antiga nunca e apagada, arena nova nunca fica orfa');
+
+// I4: o casamento e pela participacao do servidor, nunca pelo nome
+assert.equal(lerStatusDaMissao({ ...bruto, my_action_id: 'acao-x' }).minhaAcao, 'acao-x');
+const dominio = ler('contexts/gameDomains/questSharedDomain.ts');
+assert.match(dominio, /const getClanQuestForActionName = [\s\S]{0,500}if \(!PRODUCT_FEATURES\.clanMissions\) return null;/, 'qualquer acao chamada Socializar virou a missao');
+assert.match(dominio, /acaoParaMissaoDoCla\[action\.id\]/, 'a arena da missao tinha de ser achada pela acao da participacao');
+const contexto2 = ler('contexts/GameContext.tsx');
+const backfill = contexto2.slice(contexto2.indexOf('const questLinkBackfillRef = useRef(false);'), contexto2.indexOf('const findSeasonQuestArenaAndAction = useCallback('));
+assert.match(backfill, /candidate\.type !== 'clan'/, 'o preenchimento por nome gravava a missao de cla em acao pessoal');
+assert.match(contexto2, /quest\.type === 'clan' && PRODUCT_FEATURES\.clanSeasonQuests\) \{\s*const status = missoesDoCla\[quest\.id\];\s*return Boolean\(status && podeReceber\(status\)\);/, 'o resgate automatico decidia pelo nome da acao');
+assert.match(contexto2, /if \(!clan\?\.id\) \{\s*setMissoesDoCla\(\{\}\);\s*setHumorDoCla\(\{\}\);/, 'saiu do cla e o status velho ficou');
+console.log('ok - a missao e reconhecida pela acao da participacao; Socializar pessoal fica pessoal');
+
+// I3: abrir a tela recarrega
+const cartao2 = ler('components/MissaoDoClaCard.tsx');
+assert.match(cartao2, /useEffect\(\(\) => \{[\s\S]{0,200}atualizarMissaoDoCla\([\s\S]{0,120}carregarHumorDoCla\(\)/, 'abrir o cla nao recarrega o grupo');
+assert.match(ler('views/ArenasView.tsx'), /missoesDeClaAtivas\.forEach\(\(quest\) => \{ void atualizarMissaoDoCla\(quest\.id\); \}\)/, 'abrir as arenas nao recarrega a missao');
+assert.doesNotMatch(contexto2, /if \(!clan\?\.id \|\| !missoesDeClaAtivas\.length\) return;\s*missoesDeClaAtivas\.forEach[\s\S]{0,120}humor_do_meu_cla/, 'o humor so carregava se houvesse missao');
+console.log('ok - abrir o cla e as arenas recarrega a missao e o humor');
+
+// I2: Temporada com Entrar e X/Y
+const temporada2 = ler('views/SeasonView.tsx');
+const detalhe = ler('components/SeasonDetailModal.tsx');
+assert.match(temporada2, /if \(quest\.type === 'clan' && PRODUCT_FEATURES\.clanSeasonQuests\) return Boolean\(missoesDoCla\[quest\.id\]\?\.entrei\);/, 'na Temporada, quem entrou nao aparece como dentro');
+assert.match(temporada2, /progressLabel=\{missoesDoCla\[quest\.id\] \? rotuloDaMissao\(missoesDoCla\[quest\.id\]\) : undefined\}/, 'a Temporada mostra a missao de cla em %');
+assert.doesNotMatch(detalhe, /Ative pelo menu do grupo/, 'a Temporada ainda manda ativar pelo grupo, sem Entrar');
+assert.match(detalhe, /semCla \? \([\s\S]{0,300}Entre num clã para participar/);
+assert.match(detalhe, /\{progressoTexto \?\? `\$\{Math\.round\(progress\)\}%`\}/, 'o detalhe so sabe mostrar %');
+console.log('ok - na Temporada a missao de cla tem Entrar (ou o aviso sem cla) e mostra X/Y');
+
+// I5: virada de temporada nao apaga a missao de cla
+const virada = contexto2.slice(contexto2.indexOf('const staleSeasonQuests = Object.values(SEASONS)'), contexto2.indexOf('const staleSeasonQuests = Object.values(SEASONS)') + 400);
+assert.match(virada, /quest\.type !== 'clan'/, 'a virada de temporada apaga as tarefas da missao de cla');
+console.log('ok - a virada de temporada deixa a missao de cla em paz (quem recolhe e a varredura, arquivando)');
+
+// I6: lista e detalhe fazem a mesma conta
+assert.match(ler('views/ArenasView.tsx'), /const getArenaListMetrics = [\s\S]{0,700}forceSharedPool: isExplicitSharedArena\(arena\) \? undefined : false/, 'a lista ainda liga o pool do par sozinha');
+assert.match(ler('components/ArenaDetailModal.tsx'), /isExplicitSharedArena\(arena\) \? undefined : false/, 'o detalhe ainda liga o pool do par sozinho');
+console.log('ok - cartao, lista e detalhe fazem a mesma conta');
+
+// I7: abandonar = sair da missao, sem apagar historico
+const abandonar = contexto2.slice(contexto2.indexOf('const abortSeasonQuest = async'), contexto2.indexOf('const abortSeasonQuest = async') + 1600);
+assert.match(abandonar, /supabase\.rpc\('sair_da_missao_de_cla'/, 'abandonar nao tira a pessoa da missao');
+assert.match(abandonar, /if \(quest\.type === 'clan'\) \{[\s\S]*?updateArena\([^)]*isArchived: true/, 'abandonar a missao de cla tinha de arquivar a arena, nao apagar');
+console.log('ok - abandonar a missao de cla sai dela no servidor e arquiva a arena');

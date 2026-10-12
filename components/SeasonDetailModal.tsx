@@ -18,10 +18,12 @@ const DetailModalShell: React.FC<{
     description: string;
     badge: string;
     progress: number;
+    /** Texto no lugar do %: a missao de cla mostra o grupo em X/Y. */
+    progressoTexto?: string;
     onClose: () => void;
     children?: React.ReactNode;
     footer: React.ReactNode;
-}> = ({ title, icon, artUrl, description, badge, progress, onClose, children, footer }) => (
+}> = ({ title, icon, artUrl, description, badge, progress, progressoTexto, onClose, children, footer }) => (
     <Portal>
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/90 p-4 backdrop-blur-md animate-fade-in" onClick={onClose}>
             <div className="relative flex max-h-[80vh] w-full max-w-sm flex-col overflow-hidden rounded-[20px] border border-[var(--skin-accent-color)]/20 bg-[linear-gradient(180deg,rgba(14,14,14,0.98),rgba(4,4,4,0.99))] shadow-[0_0_50px_rgba(0,0,0,0.8)]" onClick={(event) => event.stopPropagation()}>
@@ -52,7 +54,7 @@ const DetailModalShell: React.FC<{
                         <div className="space-y-2 rounded-[16px] border border-white/8 bg-white/[0.03] p-4 text-left">
                             <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.18em] text-white/54">
                                 <span>Progresso</span>
-                                <span>{Math.round(progress)}%</span>
+                                <span>{progressoTexto ?? `${Math.round(progress)}%`}</span>
                             </div>
                             <div className="h-2 overflow-hidden rounded-full border border-white/5 bg-black/40 p-[1px]">
                                 <div className="h-full rounded-full bg-gradient-to-r from-[var(--skin-accent-color)] to-white transition-all duration-700" style={{ width: `${Math.min(100, progress)}%` }} />
@@ -77,7 +79,10 @@ export const QuestDetailModal: React.FC<{
     onAbandon?: () => void;
     onOpenArena?: () => void;
     createsArena?: boolean;
-}> = ({ quest, progress, isActive, participants, onClose, onTake, onAbandon, onOpenArena, createsArena = true }) => {
+    /** Missao de cla sem cla: no lugar do Entrar, o aviso. */
+    semCla?: boolean;
+    progressoTexto?: string;
+}> = ({ quest, progress, isActive, participants, onClose, onTake, onAbandon, onOpenArena, createsArena = true, semCla = false, progressoTexto }) => {
     const getQuestRewardChest = (targetQuest: SeasonQuest): ChestType | null => {
         const rewardValue = typeof targetQuest.reward_value === 'string' ? targetQuest.reward_value.trim() : '';
         if (targetQuest.reward_type === 'chest' && rewardValue) {
@@ -132,6 +137,7 @@ export const QuestDetailModal: React.FC<{
             description={quest.description}
             badge={quest.type === 'clan' ? 'Missão do grupo' : 'Missão'}
             progress={progress}
+            progressoTexto={progressoTexto}
             onClose={onClose}
             footer={
                 progress >= 100 ? (
@@ -140,9 +146,15 @@ export const QuestDetailModal: React.FC<{
                     </div>
                 ) : !isActive ? (
                     quest.type === 'clan' ? (
-                        <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center text-[11px] font-bold uppercase tracking-[0.12em] text-white/58">
-                            Ative pelo menu do grupo
-                        </div>
+                        semCla ? (
+                            <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center text-[11px] font-bold uppercase tracking-[0.12em] text-white/58">
+                                Entre num clã para participar
+                            </div>
+                        ) : (
+                            <button onClick={onTake} className="w-full luxe-bico py-3 text-xs font-black uppercase tracking-[0.2em] text-black shadow-[0_0_20px_var(--sephirot-glow-color)] luxe-skin-button">
+                                Entrar
+                            </button>
+                        )
                     ) : (
                         <button onClick={onTake} className="w-full luxe-bico py-3 text-xs font-black uppercase tracking-[0.2em] text-black shadow-[0_0_20px_var(--sephirot-glow-color)] luxe-skin-button">
                             Aceitar missão

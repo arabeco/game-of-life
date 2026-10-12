@@ -78,15 +78,21 @@ declare
   v_total integer;
   v_membros jsonb;
   v_vencida boolean;
+  v_minha_acao text;
 begin
   if v_user is null then raise exception 'AUTH_REQUIRED'; end if;
   select * into v_quest from public.clan_quests where id = p_quest_id;
   if not found then return null; end if;
   v_vencida := (now() at time zone 'America/Sao_Paulo')::date > v_quest.ends_on;
+  -- A acao da minha participacao: e por ela, e nunca pelo nome, que o app acha
+  -- a arena da missao (uma acao pessoal chamada "Socializar" continua pessoal).
+  select action_id into v_minha_acao from public.clan_quest_participants
+  where quest_id = p_quest_id and user_id = v_user;
   v_clan := public._cla_de(v_user);
   if v_clan is null then
     return jsonb_build_object('quest_id', v_quest.id, 'goal', v_quest.goal, 'ends_on', v_quest.ends_on,
-      'expired', v_vencida, 'total', 0, 'joined', false, 'claimed', false, 'has_clan', false, 'members', '[]'::jsonb);
+      'expired', v_vencida, 'total', 0, 'joined', false, 'claimed', false, 'has_clan', false,
+      'my_action_id', v_minha_acao, 'members', '[]'::jsonb);
   end if;
   select coalesce(sum(c.feito), 0)::integer,
          coalesce(jsonb_agg(jsonb_build_object('user_id', c.user_id, 'nickname', coalesce(up.nickname, 'Membro'), 'done', c.feito)
@@ -101,6 +107,7 @@ begin
                       where p.quest_id = p_quest_id and p.user_id = v_user and p.clan_id = v_clan),
     'claimed', public._starter_reward_has_purchase_marker(v_user, 'clan_quest', p_quest_id),
     'has_clan', true,
+    'my_action_id', v_minha_acao,
     'members', v_membros);
 end;
 $$;
@@ -154,6 +161,19 @@ begin
 end;
 $$;
 
+-- Sair da missao: a participacao sai, entao a pessoa deixa de contar no total
+-- do grupo e de poder receber. As tarefas dela ficam (nada e apagado).
+create or replace function public.sair_da_missao_de_cla(p_quest_id text)
+returns jsonb language plpgsql security definer set search_path = public, auth as $$
+declare
+  v_user uuid := auth.uid();
+begin
+  if v_user is null then raise exception 'AUTH_REQUIRED'; end if;
+  delete from public.clan_quest_participants where quest_id = p_quest_id and user_id = v_user;
+  return public.status_da_missao_de_cla(p_quest_id);
+end;
+$$;
+
 -- O humor dos membros, so para o proprio cla. Nao entra no cartao publico.
 create or replace function public.humor_do_meu_cla()
 returns table (user_id uuid, mood integer)
@@ -168,10 +188,12 @@ revoke all on function public.status_da_missao_de_cla(text) from public, anon;
 revoke all on function public.entrar_na_missao_de_cla(text, text) from public, anon;
 revoke all on function public.receber_premio_da_missao_de_cla(text) from public, anon;
 revoke all on function public.humor_do_meu_cla() from public, anon;
+revoke all on function public.sair_da_missao_de_cla(text) from public, anon;
 grant execute on function public.status_da_missao_de_cla(text) to authenticated;
 grant execute on function public.entrar_na_missao_de_cla(text, text) to authenticated;
 grant execute on function public.receber_premio_da_missao_de_cla(text) to authenticated;
 grant execute on function public.humor_do_meu_cla() to authenticated;
+grant execute on function public.sair_da_missao_de_cla(text) to authenticated;
 
 commit;
 notify pgrst, 'reload schema';

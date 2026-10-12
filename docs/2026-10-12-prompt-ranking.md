@@ -26,6 +26,11 @@ Quero ideias de **ranking** para o Glyph antes do lançamento. Você conhece o a
 - **Rede leve.** O servidor agrega; nada de baixar a lista de todo mundo a cada abertura, nem tempo real pesado.
 - **O lançamento está perto.** Prefira recombinar o que existe a criar sistema grande.
 
+**Também quero sua opinião sobre (pode ser o mesmo sistema):**
+- **Ranking pessoal, além do de clã:** nível de maestria (a roda de áreas), nota/placa do ciclo e contribuição no clã. Um sistema só serve para os três (a mesma "régua" mostrada em lugares diferentes) ou isso vira poluição? Lembre: pessoa contra pessoa exposta não é o foco — posição privada ("você está entre os 20%") pode ser.
+- **Hall da Fama (aba Feitos):** hoje é uma lista de conquistas com filtros Reino / Grupo / Aliados e curtida. Vale ter "ver outras pessoas" ali (perfis, destaques da semana)? Ou isso floparia como em apps de dieta, onde o feed dos outros vira vitrine que ninguém olha ou que desmotiva? Diga o que faz funcionar e o que mata.
+- **Pesquisar clã:** hoje a busca mostra só o emblema, o nome, o tipo e se está recrutando. Quero ver a imagem do clã (a sede/fundo da patente) e quem está lá (soberanos ou nomes), para virar uma forma de achar gente e adicionar amigos. Como fazer isso sem expor demais e sem pesar na rede?
+
 **Que tipo de ideia eu quero de volta:**
 - De 2 a 4 ideias, da melhor para a pior.
 - Para cada uma:
@@ -37,4 +42,5 @@ Quero ideias de **ranking** para o Glyph antes do lançamento. Você conhece o a
   - **o custo de rede**;
   - **o tamanho** (pequeno, médio, grande).
 - A sua opinião sobre **tabela explícita ou "top N"**.
+- Uma resposta curta para cada item de "Também quero sua opinião".
 - Sem código. Se faltar informação, pergunte antes de chutar.

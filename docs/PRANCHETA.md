@@ -29,7 +29,7 @@ Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 
 - [ ] Planner treme para o lado ao abrir, como se quisesse mudar de página *(Afonso)* — Gravar a tela abrindo o planner e pôr o vídeo na pasta (output/). O Claude tira os quadros e acha o que mexe.
 - [ ] Egress de abertura: baixar cada vez menos a cada vez que o app abre *(Claude)* — Medido em 10/10: ~0,4 MB por abertura, quase a conta inteira (388 KB), e cresce com a idade da conta. Passo 0 FEITO em 11/10 (eb14cbf): o app mede quanto baixa em cada abertura e grava no registro de abertura; ler com supabase/CHECK-peso-das-aberturas.sql (a partir do AAB 110). Próximos: relatórios de ciclos fechados só quando abertos, consultas pedindo só o necessário, inventário e mensagens antigas, depois cópia no celular.
 - [ ] Planner: vibração e fluidez ao arrastar, segurar e concluir *(outra IA)* — Codex, prioridade 4. A sensação tátil só se confere no aparelho.
-- [ ] Rodar a migração 20261012150000_convite_e_missao_com_5_dias.sql *(Afonso)* — Missão paga com 5 dias e o convite conta o amigo só depois dos 5 dias. Junto com o AAB 111.
+- [ ] Rodar a migração 20261012150000_convite_e_missao_com_5_dias.sql *(Afonso)* — A missão paga com 5 dias e o convite paga 10 fragmentos, baú Comum e baú Incomum. Pode rodar de novo se já tiver rodado a versão anterior.
 
 <details><summary>Feitos (23)</summary>
 
@@ -47,9 +47,9 @@ Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 
 - [x] Missão mostra 12/10: travar a contagem ao concluir *(Claude)* — Commit 8763253. Trava no alvo; o que vem depois é da arena.
 - [x] Mundo > Temporadas: faixa de quest bem fina, um estilo só, e o clique abre o modal com as recompensas *(Claude)* — Commit 38cb74b. Faixa de uma linha; imagem, descrição e recompensa no modal. Bancada: tools/as-faixas.html.
 - [x] Modais de missão: tipo em cima e a descrição igual ao cartão (inicial, Oráculo e conquista secreta) *(Claude)* — Commitado em 10/10 (f418e4b). Chega no próximo AAB.
-- [x] Missão inicial "Cinco dias no Glyph": abrir o app em 5 dias (não precisam ser seguidos) paga 10 de ouro *(Claude)* — Era de 7 dias; caiu para 5 em 12/10 (bf903fe) e virou também a regra do convite. Precisa da migração 20261012150000 e do AAB 111.
+- [x] Missão inicial "Cinco dias no Glyph": abrir o app em 5 dias (não precisam ser seguidos) paga 10 de ouro *(Claude)* — Era de 7 dias; caiu para 5 em 12/10, sem precisar ser seguidos. Precisa da migração 20261012150000 e do AAB 111.
 - [x] Rodar a migração 20261010120000_sete_dias_no_app.sql *(Afonso)* — Rodado pelo Afonso em 10/10.
-- [x] Convide um amigo: código no modal de cupom, barrinha com baú Raro no 5 e 25 de ouro no 10 *(Claude)* — 12/10 (bf903fe): o amigo conta para os prêmios (1, 5 e 10) só depois de completar a missão "Cinco dias no Glyph". O prêmio imediato abria farm. O sino avisa nos dois momentos. Precisa da migração 20261012150000 e de um AAB novo (111).
+- [x] Convide um amigo: código no modal de cupom, barrinha com baú Raro no 5 e 25 de ouro no 10 *(Claude)* — 12/10 (4fb0571): o amigo conta assim que põe o código, e os prêmios ficaram baratos para conta falsa não render nada: 1 = 10 fragmentos, 5 = baú Comum, 10 = baú Incomum. Precisa da migração 20261012150000 e do AAB 111.
 - [x] Rodar a migração 20261010150000_convite_de_amigo.sql *(Afonso)* — Rodado pelo Afonso em 10/10.
 - [x] Convite, etapa 2: o app aplica o código sozinho quando a pessoa instala pelo link *(Claude)* — Commitado em 10/10 (0ece185). Plugin provado no emulador com R8. O caminho com código só se prova instalando pela Play (versão de teste): está no SMOKETEST, seção 5. Chega no AAB 110.
 - [x] Ciclo: a barra de tempo inclui o dia atual *(outra IA)* — Commit 993064d. Vai no AAB 109.
@@ -177,5 +177,5 @@ Afonso trouxe o diagnóstico oficial: o filtro role='user' excluía dois perfis 
 
 ### 12/10 — Claude (convite e missão dos dias)
 
-- Decidido com o Afonso: o convite volta a esperar o amigo, agora por **5 dias no app**, e a missão inicial caiu de 7 para 5 ("Cinco dias no Glyph"). O amigo conta para os prêmios (1, 5 e 10) quando completa essa missão. Commit `bf903fe`, migração `20261012150000_convite_e_missao_com_5_dias.sql` (redefine `meus_convites`, `receber_premio_de_convite`, `avisar_novo_convite` e `claim_glyph_progress_gold`, e cria o gatilho `avisar_amigo_completou_5_dias` em `dias_no_app`).
-- Isso pede um AAB novo (111): o 110 ainda acende as bolinhas pelo amigo que só usou o código.
+- Decidido com o Afonso (versão final de 12/10, commit `4fb0571`): o amigo **conta assim que põe o código**, e os prêmios do convite ficaram baratos para conta falsa não render nada — 1 amigo = 10 fragmentos, 5 = baú Comum, 10 = baú Incomum. A missão inicial caiu de 7 para 5 dias ("Cinco dias no Glyph", sem precisar ser seguidos). Tudo na migração `20261012150000_convite_e_missao_com_5_dias.sql`, que pode ser rodada de novo.
+- Isso pede um AAB novo (111): o 110 ainda mostra os prêmios antigos e a missão de 7 dias.

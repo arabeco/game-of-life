@@ -45,6 +45,7 @@
     "test:convite-de-amigo": "node tests/convite-de-amigo.regression.mjs",
     "test:convite-da-instalacao": "node tests/convite-da-instalacao.regression.mjs",
     "test:medidor-de-abertura": "node tests/medidor-de-abertura.regression.mjs",
+    "test:ciclos-fechados": "node tests/ciclos-fechados.regression.mjs",
     "test:barras-do-ciclo": "node tests/barras-do-ciclo.regression.mjs",
     "test:pact-speech": "node tests/pact-speech.regression.mjs",
     "test:device-only": "node tests/safe-area-insets.regression.mjs",

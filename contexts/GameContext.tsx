@@ -35,6 +35,7 @@ import { createTaskDomain } from './gameDomains/taskDomain';
 import { useQuestSharedDomain } from './gameDomains/questSharedDomain';
 import { buildCyclePaceMetrics, buildDailyExpSnapshot, buildTaskPoolEntries, filterCycleTasksByScope, getInitialDailyCommitmentTaskIds, getTaskBaseExp, mergeTasksIntoCommitment } from '../utils/coreLoopUtils.js';
 import { buildFairScoreFromTasks, recalculateReportsWithFairScore } from '../utils/fairScoreUtils.js';
+import { carregarCiclosFechados } from '../utils/ciclosFechados';
 import { notaDoCiclo } from '../utils/cycleGrade.js';
 import { buildCycleWeeklyAtlas } from '../utils/reportAtlasUtils.js';
 import { DEFAULT_ORACLE_PRESENCE_LEVEL, getOracleFeedQuotaStatus } from '../utils/oracleFeedUtils';
@@ -5900,7 +5901,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 ] = await rateLimiter.batchRequests([
                     () => supabase.from('clan_members').select('clan_id').eq('user_id', userId).order('joined_at', { ascending: true }).limit(1).maybeSingle(),
                     () => supabase.from('arena_folders').select('*').eq('user_id', userId),
-                    () => supabase.from('cycles').select('*').eq('user_id', userId).not('report_data', 'is', null).order('end_date', { ascending: false }).limit(100),
+                    // Relatorio fechado vem da copia no celular; so o novo ou mudado desce.
+                    () => carregarCiclosFechados(userId, {
+                        impressoes: () => supabase.from('cycles').select('id, report_hash').eq('user_id', userId).not('report_data', 'is', null).order('end_date', { ascending: false }).limit(100),
+                        linhas: (ids) => supabase.from('cycles').select('*').eq('user_id', userId).in('id', ids),
+                        tudo: () => supabase.from('cycles').select('*').eq('user_id', userId).not('report_data', 'is', null).order('end_date', { ascending: false }).limit(100),
+                    }),
                     () => supabase.from('campaigns').select('*').eq('user_id', userId),
                 ]) as any[];
 

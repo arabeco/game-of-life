@@ -379,3 +379,12 @@ create table if not exists public.notifications (
   created_at timestamptz default now(),
   metadata jsonb
 );
+
+-- O que a abertura do app le (supabase/CHECK-o-que-a-abertura-baixa.sql).
+create table if not exists public.asset_levels (user_id uuid, asset_id text, level integer);
+create table if not exists public.campaigns (id uuid primary key, user_id uuid, name text);
+create table if not exists public.arena_folders (id uuid primary key, user_id uuid, name text);
+create table if not exists public.oracle_messages (id uuid primary key, user_id uuid, content text, created_at timestamptz default now());
+create table if not exists public.friend_requests (id uuid primary key, sender_id uuid, recipient_id uuid, status text);
+create table if not exists public.seasons (id text primary key, name text);
+create table if not exists public.season_missions (id text primary key, season_id text, title text);

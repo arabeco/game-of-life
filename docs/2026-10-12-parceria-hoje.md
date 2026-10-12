@@ -22,6 +22,6 @@ Levantamento pedido pelo Afonso junto da missão de clã: o que a parceria mostr
 ## O que ainda parece estranho (para o Afonso decidir)
 
 1. **Selo de parceria vencida.** Tirar o selo quando vence, ou trocar por um selo apagado de "vencida"? Hoje ele fica igual ao de uma parceria viva.
-2. **Os dias que faltam não aparecem em lugar nenhum.** `getRelationshipDaysLeft` existe (`constants/relationshipLinks.ts:37`) para "o selo discreto no canto do card", mas nenhuma tela o usa. Só a tela de Conexões mostra a data ("Até dd/mm").
+2. **Os dias que faltam não aparecem em lugar nenhum.** `getRelationshipDaysLeft` existe (`constants/relationshipLinks.ts:39`) para "o selo discreto no canto do card", mas nenhuma tela o usa. Só a tela de Conexões mostra a data ("Até dd/mm").
 
 Nada disso foi mudado. São escolhas de produto, e não defeitos com uma resposta certa.

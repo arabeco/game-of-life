@@ -36,6 +36,7 @@ import { useQuestSharedDomain } from './gameDomains/questSharedDomain';
 import { buildCyclePaceMetrics, buildDailyExpSnapshot, buildTaskPoolEntries, filterCycleTasksByScope, getInitialDailyCommitmentTaskIds, getTaskBaseExp, mergeTasksIntoCommitment } from '../utils/coreLoopUtils.js';
 import { buildFairScoreFromTasks, recalculateReportsWithFairScore } from '../utils/fairScoreUtils.js';
 import { carregarCiclosFechados } from '../utils/ciclosFechados';
+import { COLUNAS_DA_TAREFA, COLUNAS_DO_INVENTARIO, perfilDeAbertura, semODono } from '../utils/aberturaEnxuta';
 import { notaDoCiclo } from '../utils/cycleGrade.js';
 import { buildCycleWeeklyAtlas } from '../utils/reportAtlasUtils.js';
 import { DEFAULT_ORACLE_PRESENCE_LEVEL, getOracleFeedQuotaStatus } from '../utils/oracleFeedUtils';
@@ -2255,7 +2256,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const [inventory, setInventory] = useState<InventoryItem[]>([]);
 
     const fetchInventory = useCallback(async (userId: string) => {
-        const { data, error } = await supabase.from('user_inventory').select('*').eq('user_id', userId);
+        const { data, error } = await semODono(
+            userId,
+            () => supabase.from('user_inventory').select(COLUNAS_DO_INVENTARIO).eq('user_id', userId),
+            () => supabase.from('user_inventory').select('*').eq('user_id', userId),
+        );
         if (error) {
             console.error("Error fetching inventory:", error);
             return;
@@ -2993,12 +2998,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         loadedTaskHorizonRef.current = targetDate;
 
         try {
-            const { data, error } = await supabase
-                .from('scheduled_tasks')
-                .select('*')
-                .eq('user_id', userId)
-                .gt('date', horizon)
-                .lte('date', targetDate);
+            const { data, error } = await semODono(
+                userId,
+                () => supabase.from('scheduled_tasks').select(COLUNAS_DA_TAREFA).eq('user_id', userId).gt('date', horizon).lte('date', targetDate),
+                () => supabase.from('scheduled_tasks').select('*').eq('user_id', userId).gt('date', horizon).lte('date', targetDate),
+            );
 
             if (error) throw error;
             if (!data || data.length === 0) return;
@@ -5399,9 +5403,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
 
             // 1. Load Profile
-            const profileResult = await rateLimiter.addRequest(() =>
-                supabase.from('user_profiles').select('*').eq('id', userId).maybeSingle()
-            );
+            const profileResult = await rateLimiter.addRequest(() => perfilDeAbertura(
+                userId,
+                () => supabase.rpc('meu_perfil_de_abertura'),
+                () => supabase.from('user_profiles').select('*').eq('id', userId).maybeSingle(),
+            ));
             const { data: profileData, error: profileError } = profileResult;
 
             if (!profileData && !profileError) {
@@ -5598,7 +5604,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             ] = await rateLimiter.batchRequests([
                 () => supabase.from('arenas').select('*').eq('user_id', userId),
                 () => supabase.from('actions').select('*').eq('user_id', userId),
-                () => supabase.from('scheduled_tasks').select('*').eq('user_id', userId).gte('date', minDate).lte('date', maxDate),
+                () => semODono(
+                    userId,
+                    () => supabase.from('scheduled_tasks').select(COLUNAS_DA_TAREFA).eq('user_id', userId).gte('date', minDate).lte('date', maxDate),
+                    () => supabase.from('scheduled_tasks').select('*').eq('user_id', userId).gte('date', minDate).lte('date', maxDate),
+                ),
                 () => supabase.from('asset_levels').select('*').eq('user_id', userId),
                 () => supabase
                     .from('cycles')

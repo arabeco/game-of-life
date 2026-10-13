@@ -21,11 +21,15 @@ const ClanOverviewShell: React.FC<{
     onClose: () => void;
     children: React.ReactNode;
 }> = ({ embedded, onClose, children }) => {
+    // NA ABA CLA, O CLA E A TELA (13/10/2026). Embutido, ele vinha como um
+    // cartao com borda, sombra e rolagem propria dentro da tela Mundo — o modal
+    // colado na pagina, "tela dentro de tela". Agora, embutido, sem moldura: ocupa
+    // a largura e rola junto com a pagina. A moldura fica so no modal de verdade.
     const panel = (
         <section
-            className={`relative flex w-full max-w-xl flex-col overflow-hidden border border-white/12 bg-[#090b0e] shadow-2xl ${embedded
-                ? 'min-h-[calc(100dvh-15rem)] rounded-[20px]'
-                : 'max-h-[92dvh] rounded-[24px]'}`}
+            className={embedded
+                ? 'relative flex w-full max-w-xl flex-col overflow-hidden'
+                : 'relative flex w-full max-w-xl max-h-[92dvh] flex-col overflow-hidden rounded-[24px] border border-white/12 bg-[#090b0e] shadow-2xl'}
             onClick={event => event.stopPropagation()}
         >
             {children}
@@ -145,13 +149,13 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
     return (
         <>
             <ClanOverviewShell embedded={embedded} onClose={onClose}>
-                            <div className="pointer-events-none absolute inset-x-0 top-0 h-[590px] overflow-hidden">
+                            <div className={`pointer-events-none absolute inset-x-0 top-0 h-[590px] overflow-hidden ${embedded ? 'rounded-t-[18px] [mask-image:linear-gradient(to_bottom,black_45%,transparent)]' : ''}`}>
                                 <img
                                     src={sceneBackground}
                                     alt=""
                                     className="absolute inset-0 h-full w-full object-cover"
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-b from-black/28 via-black/12 to-[#090b0e]" />
+                                <div className={`absolute inset-0 bg-gradient-to-b from-black/28 via-black/12 ${embedded ? 'to-transparent' : 'to-[#090b0e]'}`} />
                             </div>
                             <div className="relative z-10 min-h-[300px] overflow-hidden border-b border-white/10">
                                 <div className="relative flex items-start justify-between p-4">
@@ -222,7 +226,7 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
                                 </button>
                             </div>
 
-                            <div className={`relative z-10 min-h-0 flex-1 overflow-y-auto p-4 ${activeTab === 'members' ? 'bg-[#090b0e]' : ''}`}>
+                            <div className={`relative z-10 ${embedded ? 'px-1 py-4' : 'min-h-0 flex-1 overflow-y-auto p-4'} ${activeTab === 'members' && !embedded ? 'bg-[#090b0e]' : ''}`}>
                                 {activeTab === 'headquarters' ? (
                                     <div className="space-y-4">
                                         <div className="relative min-h-[246px] overflow-hidden rounded-xl border border-white/10 px-3">

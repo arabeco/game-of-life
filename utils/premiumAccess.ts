@@ -126,9 +126,12 @@ export const getNextPremiumExpiryAt = (currentExpiresAt?: string | null, now: nu
  *
  * O numero mora aqui para que codigo e vitrine nao possam divergir.
  */
+// SEM PAY-TO-WIN (13/10/2026): os planos nao dao mais EXP. EXP sobe a patente
+// (status publico) e alimenta cla e ranking; pagar mais nao pode subir mais
+// rapido. A tabela fica, zerada, para quem chama continuar somando zero.
 export const CYCLE_XP_BONUS_BY_TIER: Record<SubscriptionTier, number> = {
-  premium: 0.05,
-  platinum: 0.10,
+  premium: 0,
+  platinum: 0,
 };
 
 /** Fracao a somar sobre o XP base do ciclo. Zero para quem nao assina. */

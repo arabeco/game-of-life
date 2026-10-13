@@ -2,30 +2,19 @@
 import type { BillingInternalProductId } from '../../constants/billingCatalog';
 import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
-import { GOLD_BOOST_PRODUCTS, GOLD_PACK_CATALOG } from '../../constants/goldCatalog';
+import { GOLD_PACK_CATALOG } from '../../constants/goldCatalog';
 import { BillingCheckoutGate } from './BillingCheckoutGate';
-import { getExpBoostHoursRemaining, getExpBoostLabel, hasActiveExpBoost } from '../../utils/expBoostAccess';
-import { ConfirmationModal } from '../ConfirmationModal';
 import { ValorIcon } from '../ValorIcon';
-
-type GoldConfirmState = { kind: 'boost'; boostId: string; boostName: string; costGold: number };
-
-const GOLD_SYMBOL = '\u{1FA99}';
 
 export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: number } | null }> = ({ scrollRequest = null }) => {
     const { buyStoreItem, userProfile } = useGame();
     const [loading, setLoading] = useState<string | null>(null);
     const [selectedPack, setSelectedPack] = useState<{ amount: number; goldAmount: number; internalProductId: BillingInternalProductId } | null>(null);
-    const [confirmState, setConfirmState] = useState<GoldConfirmState | null>(null);
-    const hasExpBoost = hasActiveExpBoost(userProfile);
-    const expBoostHoursRemaining = getExpBoostHoursRemaining(userProfile);
-    const expBoostLabel = getExpBoostLabel(userProfile);
 
     useEffect(() => {
         if (!scrollRequest) return;
         const idBySection: Record<string, string> = {
             packs: 'gold-store-packs',
-            boosts: 'gold-store-boosts',
         };
         const targetId = idBySection[scrollRequest.section];
         if (!targetId) return;
@@ -35,31 +24,10 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
     }, [scrollRequest]);
 
 
-    const activeBoostBadge = useMemo(() => {
-        if (!hasExpBoost) return 'sem boost';
-        return `${expBoostLabel || 'boost ativo'}${expBoostHoursRemaining != null ? ` - ${expBoostHoursRemaining}h` : ''}`;
-    }, [expBoostHoursRemaining, expBoostLabel, hasExpBoost]);
-
-
-
     const handleBuyPack = async (packId: string) => {
         const pack = GOLD_PACK_CATALOG.find((entry) => entry.id === packId);
         if (!pack) return;
         setSelectedPack({ amount: pack.priceBrl, goldAmount: pack.totalGold, internalProductId: pack.id });
-    };
-
-    const handleConfirmPurchase = async () => {
-        if (!confirmState || loading) return;
-
-        setLoading(confirmState.boostId);
-        try {
-            await buyStoreItem(confirmState.boostId, 'boost');
-        } catch (error) {
-            console.error('Boost purchase failed', error);
-        } finally {
-            setLoading(null);
-            setConfirmState(null);
-        }
     };
 
     return (
@@ -69,7 +37,9 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                     Ouro e consumivel; plano e assinatura. As lojas tratam os dois
                     como produtos de tipo diferente, e quem chega por "faltam 40
                     moedas" nao deve aterrissar ao lado de um pitch de assinatura.
-                    Os boosts ficaram, porque sao pagos EM ouro. */}
+                    Os boosts de XP sairam em 13/10/2026: ouro se compra com
+                    dinheiro, entao boost de EXP era pay-to-win do mesmo jeito (e
+                    o multiplicador nunca chegou a ser aplicado na EXP). */}
                 <GlassCard id="gold-store-packs" variant="neutral" className="space-y-4 border-white/10 p-4">
                     {/* O titulo e o selo do canal sairam.
                         "Pacotes de Ouro" nomeava o que a tela inteira ja e — a aba
@@ -117,36 +87,6 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                     </div>
                 </GlassCard>
 
-                <GlassCard id="gold-store-boosts" className="space-y-4 p-6">
-                    <div className="flex items-start justify-between gap-4">
-                        <div>
-                            <h3 className="text-lg font-bold text-[color:var(--ui-card-text)]">Boosts de XP</h3>
-                            <p className="text-sm text-[color:var(--ui-card-text-soft)]">Aceleradores simples para fases de execucao pesada.</p>
-                        </div>
-                        <div className="rounded-full border border-[var(--ui-border-accent-soft)] bg-[var(--ui-core-surface-bg)] px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--ui-text-accent)]">
-                            {activeBoostBadge}
-                        </div>
-                    </div>
-
-                    <div className="space-y-3">
-                        {GOLD_BOOST_PRODUCTS.map((boost) => (
-                            <div key={boost.id} className="flex items-center justify-between gap-3 rounded-lg border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] p-3">
-                                <div>
-                                    <div className="font-bold text-[var(--ui-text-accent)]">{boost.name}</div>
-                                    <div className="text-xs text-[color:var(--ui-card-text-soft)]">{boost.description}</div>
-                                </div>
-                                <button
-                                    onClick={() => setConfirmState({ kind: 'boost', boostId: boost.id, boostName: boost.name, costGold: boost.priceGold })}
-                                    disabled={!!loading}
-                                    className="luxe-skin-button inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold disabled:opacity-50"
-                                >
-                                    <span className="text-[11px] leading-none">{GOLD_SYMBOL}</span>
-                                    <span>{loading === boost.id ? '...' : boost.priceGold}</span>
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                </GlassCard>
 
                 {selectedPack && (
                     <BillingCheckoutGate
@@ -159,15 +99,6 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                 )}
             </div>
 
-            {confirmState && (
-                <ConfirmationModal
-                    title="Confirmar boost"
-                    message={`${confirmState.boostName} vai debitar ${confirmState.costGold} ouro da sua conta. Deseja continuar?`}
-                    confirmLabel={`BOOST - ${confirmState.costGold} ${GOLD_SYMBOL}`}
-                    onConfirm={() => { void handleConfirmPurchase(); }}
-                    onCancel={() => setConfirmState(null)}
-                />
-            )}
         </>
     );
 };

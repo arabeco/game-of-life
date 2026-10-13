@@ -34,11 +34,10 @@ export const GOLD_PREMIUM_PRODUCT = {
     priceGold: 200,
     priceBrl: 17.9,
     benefits: [
-        'Até 15 arenas no total (incluindo arquivadas) (vs 10 no plano base)',
+        'Até 20 arenas no total (incluindo arquivadas) (vs 10 no plano base)',
         'Fundos premium de perfil e ativos',
         'Oráculo: todos os tons de fala',
         'Oráculo: escolha os temas e peça card na hora',
-        'Bônus de legado: +5% XP no ciclo',
         'Cena do legado com 50% off',
     ],
 } as const;
@@ -50,7 +49,7 @@ export const GOLD_PLATINUM_PRODUCT = {
     priceGold: 500,
     priceBrl: 44.9,
     benefits: [
-        'Todas as vantagens do Premium, com o dobro do bônus de XP (+10%)',
+        'Todas as vantagens do Premium',
         'Até 30 arenas no total (incluindo arquivadas)',
         'Cena do legado com 70% off',
         '1 campanha média grátis por renovação',

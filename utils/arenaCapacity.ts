@@ -5,7 +5,7 @@ import { getActiveSubscriptionTier, hasPremiumAccess } from './premiumAccess';
 // quase tudo antes da pessoa entender o app. 10 deixa espaco para experimentar
 // sem que o limite vire a primeira coisa que ela encontra.
 export const STANDARD_ARENA_LIMIT = 10;
-export const PREMIUM_ARENA_LIMIT = 15;
+export const PREMIUM_ARENA_LIMIT = 20;
 export const PLATINUM_ARENA_LIMIT = 30;
 
 export type ArenaCapacitySummary = {

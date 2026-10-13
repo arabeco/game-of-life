@@ -1,17 +1,18 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   CYCLE_XP_BONUS_BY_TIER,
-  getCycleXpBonusPercentLabel,
   getCycleXpBonusRate,
   hasPlatinumAccess,
   hasPremiumAccess,
 } from '../utils/premiumAccess.ts';
 
-// O bonus era um `0.1` solto no GameContext atras de hasPremiumAccess — que
-// responde true para platinum tambem. Os dois tiers pagos recebiam o mesmo
-// bonus e o Platinum nao tinha vantagem nenhuma de progressao.
-// A escada agora e 0 / 5% / 10%, e este teste existe para que ela nao volte a
-// achatar.
+// SEM PAY-TO-WIN (13/10/2026, decisao do Afonso).
+//
+// Premium e Platinum davam +5% e +10% de EXP no fecho do ciclo. EXP sobe a
+// patente, que e status publico (perfil, Feitos, Hall da Fama), e alimenta o cla
+// e qualquer ranking futuro: pagar mais = subir mais rapido. Saiu. Os planos
+// vendem conforto, visual e leitura; progressao e so do que a pessoa faz.
 
 const futuro = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 const passado = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -23,55 +24,24 @@ const premium = perfil({ isPremium: true, premiumExpiresAt: futuro, subscription
 const platinum = perfil({ isPremium: true, premiumExpiresAt: futuro, subscriptionTier: 'platinum' });
 const expirado = perfil({ isPremium: true, premiumExpiresAt: passado, subscriptionTier: 'platinum' });
 
-// --- a escada existe e tem a ordem certa ----------------------------------
-assert.equal(getCycleXpBonusRate(gratis), 0);
-assert.equal(getCycleXpBonusRate(premium), 0.05);
-assert.equal(getCycleXpBonusRate(platinum), 0.10);
-
-assert.ok(
-  getCycleXpBonusRate(platinum) > getCycleXpBonusRate(premium),
-  'Platinum precisa render mais que Premium — foi exatamente isso que faltava antes',
-);
-assert.ok(
-  getCycleXpBonusRate(premium) > getCycleXpBonusRate(gratis),
-  'Premium precisa render mais que o plano gratuito',
-);
-
-// --- assinatura vencida nao paga bonus ------------------------------------
-assert.equal(getCycleXpBonusRate(expirado), 0, 'assinatura expirada nao rende bonus');
-assert.equal(getCycleXpBonusRate(null), 0);
-assert.equal(getCycleXpBonusRate(undefined), 0);
+for (const [nome, p] of [['gratis', gratis], ['premium', premium], ['platinum', platinum], ['expirado', expirado], ['gm', perfil({ role: 'gm' })]]) {
+  assert.equal(getCycleXpBonusRate(p), 0, `${nome} ganhava EXP extra por pagar`);
+}
+assert.deepEqual(CYCLE_XP_BONUS_BY_TIER, { premium: 0, platinum: 0 });
 
 // --- platinum continua contando como premium para o resto do app ----------
-// Varias telas checam hasPremiumAccess para liberar recurso; se platinum caisse
-// fora dali, o tier de cima perderia funcionalidade do de baixo.
 assert.equal(hasPremiumAccess(platinum), true);
 assert.equal(hasPlatinumAccess(platinum), true);
 assert.equal(hasPremiumAccess(premium), true);
 assert.equal(hasPlatinumAccess(premium), false);
 
-// --- staff enxerga como platinum ------------------------------------------
-const staff = perfil({ role: 'gm' });
-if (hasPremiumAccess(staff)) {
-  assert.equal(getCycleXpBonusRate(staff), 0.10, 'staff equivale a platinum');
+// --- e nenhum texto de plano promete EXP -----------------------------------
+const lerFonte = (c) => readFileSync(new URL(`../${c}`, import.meta.url), 'utf8');
+for (const arquivo of ['constants/goldCatalog.ts', 'constants/economy.ts', 'views/SovereignPanelView.tsx']) {
+  assert.doesNotMatch(lerFonte(arquivo), /\+\s?(5|10)%\s?(de\s)?(XP|EXP)|bônus de XP|Bônus de legado/i, `${arquivo} ainda vende EXP no plano`);
 }
 
-// --- o rotulo da vitrine sai do mesmo numero do calculo -------------------
-// Antes o texto vivia solto em 8 arquivos e podia divergir do codigo.
-assert.equal(getCycleXpBonusPercentLabel('premium'), '5%');
-assert.equal(getCycleXpBonusPercentLabel('platinum'), '10%');
-assert.equal(
-  getCycleXpBonusPercentLabel('premium'),
-  `${Math.round(CYCLE_XP_BONUS_BY_TIER.premium * 100)}%`,
-);
-
-// --- o calculo aplicado sobre uma base real -------------------------------
-const baseXp = 1000;
-assert.equal(Math.round(baseXp * getCycleXpBonusRate(gratis)), 0);
-assert.equal(Math.round(baseXp * getCycleXpBonusRate(premium)), 50);
-assert.equal(Math.round(baseXp * getCycleXpBonusRate(platinum)), 100);
-
-console.log('Subscription XP bonus regression: escada 0 / 5% / 10% e vitrine presa ao calculo.');
+console.log('Sem pay-to-win: nenhum plano da EXP extra, e nenhum texto promete.');
 
 // --- descontos: o tier de cima sempre paga menos ---------------------------
 // O Platinum ganhava UMA cena de legado por renovacao e, gasto o voucher,

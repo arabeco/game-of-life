@@ -27,8 +27,9 @@ for (const proibido of ['GOLD_PREMIUM_PRODUCT', 'GOLD_PLATINUM_PRODUCT', 'gold-s
 for (const exigido of ['GOLD_PREMIUM_PRODUCT', 'GOLD_PLATINUM_PRODUCT']) {
     assert.match(membershipStore, new RegExp(exigido), `a aba de planos precisa conter ${exigido}`);
 }
-// Os boosts ficam com o ouro: sao pagos EM ouro, entao quem esta ali ja tem a moeda.
-assert.match(goldStore, /gold-store-boosts/, 'os boosts continuam na aba de ouro');
+// Os boosts de XP sairam da loja (13/10/2026): ouro se compra com dinheiro,
+// entao boost de EXP era pay-to-win do mesmo jeito.
+assert.doesNotMatch(goldStore, /gold-store-boosts|GOLD_BOOST_PRODUCTS/, 'a loja ainda vende boost de EXP');
 assert.doesNotMatch(membershipStore, /GOLD_BOOST_PRODUCTS/, 'boost nao e assinatura');
 
 // --- 2. O tipo da aba tem um dono so -----------------------------------------

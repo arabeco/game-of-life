@@ -75,3 +75,17 @@ export function periodoDaPagina(conteudo: string): string | null {
     if (inicio.slice(6) === fim.slice(6)) return `${inicio.slice(0, 5)} – ${fim}`;
     return `${inicio} – ${fim}`;
 }
+
+/** Onde a entrada vai: a ultima pagina (o padrao), uma escolhida, ou uma nova. */
+export type DestinoDaEntrada = 'ultima' | 'nova' | number;
+
+/**
+ * O numero da pagina de destino. Pagina nova vem depois da ultima (nao tapa
+ * buraco de pagina apagada); null quando o diario ja esta no teto.
+ */
+export function paginaDeDestino(existentes: number[], destino: DestinoDaEntrada, maxPaginas = 99): number | null {
+    const ultima = existentes.length ? Math.max(...existentes) : 0;
+    if (typeof destino === 'number' && Number.isInteger(destino) && destino >= 1 && destino <= maxPaginas) return destino;
+    if (destino !== 'nova') return ultima || 1;
+    return ultima < maxPaginas ? ultima + 1 : null;
+}

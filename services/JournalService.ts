@@ -1,5 +1,5 @@
 import { supabase } from '../supabaseClient';
-import { lerEntradas, periodoDaPagina, type TagDoDiario } from '../utils/diario';
+import { lerEntradas, paginaDeDestino, periodoDaPagina, type DestinoDaEntrada, type TagDoDiario } from '../utils/diario';
 
 /**
  * O DIARIO NAO PASSA PELO GameContext, E ISSO E A FEATURE.
@@ -147,7 +147,7 @@ export const cabecalhoDeHoje = (agora: Date = new Date()): string => {
 export const SEPARADOR_DE_ENTRADA = '--------------';
 
 /**
- * Anexa uma entrada na pagina corrente — a de numero mais alto que ainda cabe.
+ * Anexa uma entrada na pagina escolhida — por padrao a de numero mais alto.
  *
  * Nao existe "pagina de hoje": a pessoa escolhe como preencher, e uma pagina
  * pode guardar um dia ou um ano. O que este helper faz e o gesto minimo de um
@@ -157,13 +157,18 @@ export const anexarEntrada = async (
   userId: string,
   cabecalho: string,
   texto: string,
+  destino: DestinoDaEntrada = 'ultima',
 ): Promise<boolean> => {
   const paginas = await listarPaginas(userId);
-  const ultima = paginas.length ? Math.max(...paginas.map((p) => p.pageNumber)) : 0;
+  const existentes = paginas.map((p) => p.pageNumber);
+  const ultima = existentes.length ? Math.max(...existentes) : 0;
 
   const entrada = `${cabecalho}\n${texto}`.trim();
-  let numero = ultima || 1;
-  let conteudo = ultima ? await lerPagina(userId, ultima) : '';
+  // A pessoa pode escolher a pagina (12/10/2026); o padrao continua sendo a ultima.
+  const escolhida = paginaDeDestino(existentes, destino, JOURNAL_MAX_PAGINAS);
+  if (escolhida === null) return false;
+  let numero = escolhida;
+  let conteudo = existentes.includes(numero) ? await lerPagina(userId, numero) : '';
 
   // Nao cabe? A entrada comeca numa pagina nova em vez de ser cortada no meio.
   if (conteudo && conteudo.length + entrada.length + SEPARADOR_DE_ENTRADA.length + 4 > JOURNAL_MAX_CARACTERES) {

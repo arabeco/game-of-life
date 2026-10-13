@@ -73,3 +73,21 @@ assert.match(aba, />\s*Editar\s*</, 'sem o botao de editar o texto cru');
 assert.match(aba, /ICONE_DA_TAG/, 'o cartao da entrada mostra o simbolo da tag, nao a bolinha');
 assert.match(aba, /pagina\.periodo/, 'a lista mostra o periodo da pagina');
 console.log('Diario: cor, tag e paginas como leitura.');
+
+// ============================== ESCOLHER A PAGINA (12/10/2026)
+// Escrever pode ir para outra pagina: o seletor comeca em "Ultima pagina".
+import { paginaDeDestino } from '../utils/diario.ts';
+assert.equal(paginaDeDestino([], 'ultima'), 1, 'sem pagina nenhuma, a primeira');
+assert.equal(paginaDeDestino([1, 2, 5], 'ultima'), 5);
+assert.equal(paginaDeDestino([1, 2, 5], 2), 2, 'pagina escolhida');
+assert.equal(paginaDeDestino([1, 2, 5], 'nova'), 6, 'pagina nova: depois da ultima, sem tapar buraco');
+assert.equal(paginaDeDestino([], 'nova'), 1);
+assert.equal(paginaDeDestino([1, 2], 0), 2, 'pagina invalida cai na ultima');
+assert.equal(paginaDeDestino([1, 2], 120), 2, 'pagina acima do teto cai na ultima');
+assert.match(ler('components/MoodModal.tsx'), /const gravou = await anexarEntrada\([\s\S]{0,400}if \(!gravou\)/, 'falha ao gravar apagava o texto');
+assert.equal(paginaDeDestino(Array.from({ length: 99 }, (_, i) => i + 1), 'nova'), null, 'sem espaco para pagina nova');
+const humor2 = ler('components/MoodModal.tsx');
+assert.match(humor2, /aria-label="Página onde escrever"/, 'sem o seletor de pagina');
+assert.match(humor2, />\s*Escrever\s*</, 'a aba Humor virou Escrever');
+assert.match(ler('services/JournalService.ts'), /export const anexarEntrada = async \([\s\S]{0,200}destino/, 'anexarEntrada nao recebe a pagina escolhida');
+console.log('ok - escolher a pagina onde escrever');

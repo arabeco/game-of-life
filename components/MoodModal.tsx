@@ -6,8 +6,8 @@ import { MOODS_DATA } from '../constants';
 import { XIcon } from './Icons';
 import { Portal } from './Portal';
 import JournalTab from './JournalTab';
-import { anexarEntrada, cabecalhoDeHoje } from '../services/JournalService';
-import { TAGS_DO_DIARIO, cabecalhoDaEntrada, type TagDoDiario } from '../utils/diario';
+import { anexarEntrada, cabecalhoDeHoje, listarPaginas } from '../services/JournalService';
+import { TAGS_DO_DIARIO, cabecalhoDaEntrada, type DestinoDaEntrada, type TagDoDiario } from '../utils/diario';
 
 const ESPECTRO_DO_HUMOR = `linear-gradient(90deg, ${MOODS_DATA.flatMap((mood) => [
     `${mood.trackStart} ${mood.min}%`,
@@ -38,6 +38,16 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     // Tocar na bolinha tira o humor da entrada: vira so uma nota, sem emocao.
     // Mexer na regua devolve.
     const [semHumor, setSemHumor] = useState(false);
+    // Onde a entrada vai. Comeca na ultima pagina; a lista so e lida quando a
+    // pessoa toca no seletor, para abrir o Diario nao custar uma leitura a mais.
+    const [destino, setDestino] = useState<DestinoDaEntrada>('ultima');
+    const [falhaAoGravar, setFalhaAoGravar] = useState(false);
+    const [paginasDoSeletor, setPaginasDoSeletor] = useState<number[] | null>(null);
+    const carregarPaginasDoSeletor = () => {
+        if (paginasDoSeletor !== null || !userProfile?.id) return;
+        setPaginasDoSeletor([]);
+        void listarPaginas(userProfile.id).then((lista) => setPaginasDoSeletor(lista.map((p) => p.pageNumber)));
+    };
     const [localMood, setLocalMood] = useState(userProfile.mood);
 
     const resolveMood = (value: number) => 
@@ -87,14 +97,27 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                com uma bolinha do lado. Com ela, a linha se le sozinha, e quem
                quiser continuar escrevendo continua ali mesmo. */
             if (userProfile?.id) {
-                void anexarEntrada(
+                // Espera a gravacao: se falhar, o texto fica no campo em vez de sumir.
+                const gravou = await anexarEntrada(
                     userProfile.id,
                     cabecalhoDaEntrada(cabecalhoDeHoje(), semHumor ? null : currentMoodInfo.label, tag),
                     frase.trim() || 'Estava me sentindo assim.',
+                    destino,
                 );
+                if (!gravou) {
+                    setFalhaAoGravar(true);
+                    return;
+                }
+                setFalhaAoGravar(false);
                 setFrase('');
                 setTag(null);
                 setSemHumor(false);
+                // Pagina nova muda a lista do seletor: relida no proximo toque, e a
+                // proxima entrada volta para a ultima (que agora e essa nova).
+                if (destino === 'nova') {
+                    setPaginasDoSeletor(null);
+                    setDestino('ultima');
+                }
             }
         } finally {
             setRegistrando(false);
@@ -159,7 +182,7 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         onClick={() => setAba('humor')}
                         className={`border-b-2 px-3 py-2 text-[11px] font-black uppercase tracking-[0.16em] transition-colors ${aba === 'humor' ? 'border-[#b89252] bg-[#b89252]/10 text-[#f1d595]' : 'border-transparent text-white/45 hover:text-white/75'}`}
                     >
-                        Humor
+                        Escrever
                     </button>
                     <button
                         type="button"
@@ -254,6 +277,33 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             </button>
                         ))}
                     </div>
+
+                    <label className="flex items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-white/40">
+                        Escrever em
+                        <select
+                            aria-label="Página onde escrever"
+                            value={String(destino)}
+                            onFocus={carregarPaginasDoSeletor}
+                            onPointerDown={carregarPaginasDoSeletor}
+                            onChange={(evento) => {
+                                const valor = evento.target.value;
+                                const numero = Number(valor);
+                                setDestino(valor === 'nova' ? 'nova' : Number.isInteger(numero) && numero >= 1 ? numero : 'ultima');
+                            }}
+                            className="border border-white/10 bg-black/40 px-2 py-1 text-[11px] font-semibold normal-case tracking-normal text-white/80 focus:border-[#b89252]/50 focus:outline-none"
+                        >
+                            <option value="ultima">Última página</option>
+                            {/* A pagina escolhida aparece sempre, mesmo antes de a lista chegar. */}
+                            {Array.from(new Set([...(paginasDoSeletor || []), ...(typeof destino === 'number' ? [destino] : [])])).sort((a, b) => b - a).map((numero) => (
+                                <option key={numero} value={numero}>Página {numero}</option>
+                            ))}
+                            <option value="nova">Página nova</option>
+                        </select>
+                    </label>
+
+                    {falhaAoGravar && (
+                        <p role="alert" className="text-[11px] text-red-300/90">Não consegui guardar no diário. O texto continua aqui; tente de novo.</p>
+                    )}
 
                     {/* Registrar tem nome e numero na frente: e a pessoa dizendo
                         "hoje eu estou assim", nao o app anotando o dedo dela.

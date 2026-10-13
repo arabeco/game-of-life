@@ -2,7 +2,7 @@ import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { MASTERY_LEVEL_DESCRIPTIONS } from '../constants';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
-import { MASTERY_TOTAL_MAX_LEVEL, PONTOS_POR_DEGRAU, getMasteryIndexFromAssets } from '../constants/lifeAreas';
+import { LIFE_AREA_IDS, MASTERY_TOTAL_MAX_LEVEL, PONTOS_POR_DEGRAU, getMasteryIndexFromAssets } from '../constants/lifeAreas';
 import { GlassCard } from '../components/GlassCard';
 import { ShareIcon, ChevronLeftIcon, ChevronRightIcon } from '../components/Icons';
 import { shareElementWithFeedback } from '../components/Share';
@@ -15,7 +15,9 @@ const AssetPentagon = React.lazy(() => import('../components/AssetPentagon').the
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 export const MasteryView: React.FC<{ onClose?: () => void; embedded?: boolean }> = ({ onClose, embedded = false }) => {
-    const { assets, updateAllAssetLevels, showToast, userProfile, oraclePreferences } = useGame();
+    const { assets, updateAllAssetLevels, showToast, userProfile, oraclePreferences, addFeedEvent } = useGame();
+    // Recalibrou: pode publicar nos Feitos (o card "recalibrou a maestria · Nível N").
+    const [podePublicarMaestria, setPodePublicarMaestria] = useState(false);
     const [tempLevels, setTempLevels] = useState<Record<string, number>>({});
     /**
      * Previa fracionaria enquanto o dedo arrasta a roda.
@@ -115,7 +117,20 @@ export const MasteryView: React.FC<{ onClose?: () => void; embedded?: boolean }>
         if (success) {
             setShowConfirmModal(false);
             setIsAssessmentActive(false);
+            setPodePublicarMaestria(true);
             showToast('Avaliação salva.', 'success');
+        }
+    };
+
+    const publicarMaestria = async () => {
+        const niveisDasAreas = LIFE_AREA_IDS.map((id) => ({ id, level: Number(assets.find((asset) => asset.id === id)?.level || 0) }));
+        const published = await addFeedEvent({
+            type: 'LEVEL_UP',
+            content: { title: 'Maestria', level: getMasteryIndexFromAssets(assets), areas: niveisDasAreas },
+        });
+        if (published) {
+            showToast('Maestria publicada em Feitos.', 'success');
+            setPodePublicarMaestria(false);
         }
     };
 
@@ -213,6 +228,11 @@ export const MasteryView: React.FC<{ onClose?: () => void; embedded?: boolean }>
                         <div className="mastery-quiz-lower">
                             {!isAssessmentActive ? <>
                                 <p className="mastery-quiz-start-hint">{isMasteryLocked ? `Nova avaliação em ${remainingHours}h` : 'Toque no pentágono para avaliar suas cinco áreas.'}</p>
+                                {podePublicarMaestria && (
+                                    <button type="button" onClick={() => void publicarMaestria()} className="luxe-skin-button mx-auto mt-3 block px-5 py-2 text-xs font-bold">
+                                        Publicar nos Feitos
+                                    </button>
+                                )}
                             </> : <>
                                 <div className="mastery-quiz-meta">
                                     <div>

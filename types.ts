@@ -1258,6 +1258,13 @@ export interface FeedEvent {
       seasonId?: string;
       exp?: number;
       minutes?: number;
+      /** Ciclo: a nota, para o fundo da placa. */
+      grade?: string;
+      /** Patente: o id, para o fundo da patente. */
+      rankId?: string;
+      /** Maestria: o nivel (o "Nv.") e o de cada area. */
+      level?: number;
+      areas?: { id: string; level: number }[];
   };
   timestamp: string;
   /**

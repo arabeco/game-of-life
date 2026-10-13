@@ -1,25 +1,14 @@
 ﻿import React, { useState } from 'react';
-import { FeedEvent, FeedEventType } from '../types';
-import type { GlassCardVariant } from './GlassCard';
+import { FeedEvent, UserProfile } from '../types';
 import { useGame } from '../contexts/GameContext';
 import { useConfirmation } from '../hooks/useConfirmation';
-import { ArrowRightIcon, CheckCircleIcon, CrownIcon, ShareIcon, SparklesIcon, StarIcon, TrashIcon, TrophyIcon, ZapIcon } from './Icons';
+import { ShareIcon, StarIcon, TrashIcon } from './Icons';
 import { shareElementWithFeedback } from './Share';
 import { DailySummaryCard } from './DailySummaryCard';
+import { UserAvatar } from './UserAvatar';
 import { readDailyFeedSnapshot } from '../utils/dailyFeedSnapshot';
-import { getFeedAppearance } from '../utils/feedAppearance';
+import { acaoDoFeito, getFeedAppearance, numerosDoFeito, tituloDoFeito } from '../utils/feedAppearance';
 import './feed-cards.css';
-
-type FeedTone = 'major' | 'social' | 'progress';
-
-interface FeedEventPresentation {
-    message: string;
-    title: string;
-    badge: string;
-    tone: FeedTone;
-    variant: GlassCardVariant;
-    icon: React.ReactNode;
-}
 
 const timeAgo = (date: Date): string => {
     const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
@@ -36,120 +25,20 @@ const timeAgo = (date: Date): string => {
     return `${Math.max(seconds, 1)}s`;
 };
 
-const getFeedPresentation = (event: FeedEvent): FeedEventPresentation => {
-    const title = event.content.title?.trim() || 'Feito sem título';
-    const score = event.content.score ?? null;
-    const rankName = event.content.rankName?.trim() || 'Novo patamar';
-    // Vector symbols inherit the metal color; color emoji cannot do that.
-
-    const iconByType: Record<FeedEventType, React.ReactNode> = {
-        MILESTONE_COMPLETED: <TrophyIcon className="h-5 w-5" />,
-        ARENA_COMPLETED: <CheckCircleIcon className="h-5 w-5" />,
-        CYCLE_COMPLETED: <SparklesIcon className="h-5 w-5" />,
-        PLAYER_RANK_UP: <CrownIcon className="h-5 w-5" />,
-        CLAN_RANK_UP: <CrownIcon className="h-5 w-5" />,
-        LEVEL_UP: <ZapIcon className="h-5 w-5" />,
-        QUEST_COMPLETED: <ArrowRightIcon className="h-5 w-5" />,
-        REPORT_COMPLETED: <SparklesIcon className="h-5 w-5" />,
-        COMPETITION_COMPLETED: <TrophyIcon className="h-5 w-5" />,
-    };
-
-    switch (event.type) {
-        case 'MILESTONE_COMPLETED':
-            return {
-                title,
-                message: 'fechou um marco importante',
-                badge: 'Marco',
-                tone: 'major',
-                variant: 'gold',
-                icon: iconByType[event.type],
-            };
-        case 'ARENA_COMPLETED':
-            return {
-                title,
-                message: 'concluiu uma arena',
-                badge: 'Arena',
-                tone: 'progress',
-                variant: 'accent',
-                icon: iconByType[event.type],
-            };
-        case 'CYCLE_COMPLETED':
-            return {
-                title: score !== null ? `${title} · Score ${score}` : title,
-                message: 'encerrou um ciclo',
-                badge: 'Ciclo',
-                tone: 'major',
-                variant: 'gold',
-                icon: iconByType[event.type],
-            };
-        case 'REPORT_COMPLETED':
-            return {
-                title,
-                message: 'publicou um relato no reino',
-                badge: 'Relato',
-                tone: 'social',
-                variant: 'silver',
-                icon: iconByType[event.type],
-            };
-        case 'PLAYER_RANK_UP':
-            return {
-                title: rankName,
-                message: 'subiu de patente pessoal',
-                badge: 'Ascensão',
-                tone: 'major',
-                variant: 'gold',
-                icon: iconByType[event.type],
-            };
-        case 'CLAN_RANK_UP':
-            return {
-                title: rankName,
-                message: 'elevou o grupo para uma nova patente',
-                badge: 'Grupo',
-                tone: 'social',
-                variant: 'silver',
-                icon: iconByType[event.type],
-            };
-        case 'LEVEL_UP':
-            return {
-                title,
-                message: 'evoluiu de nível',
-                badge: 'Nível',
-                tone: 'progress',
-                variant: 'accent',
-                icon: iconByType[event.type],
-            };
-        case 'QUEST_COMPLETED':
-            return {
-                title,
-                message: event.content.seasonId ? 'concluiu uma missão de temporada' : 'concluiu uma missão',
-                badge: event.content.seasonId ? 'Missão de temporada' : 'Missão',
-                tone: 'progress',
-                variant: 'accent',
-                icon: iconByType[event.type],
-            };
-        case 'COMPETITION_COMPLETED':
-            return {
-                title,
-                message: 'encerrou um desafio entre aliados',
-                badge: 'Desafio',
-                tone: 'social',
-                variant: 'silver',
-                icon: iconByType[event.type],
-            };
-        default:
-            return {
-                title,
-                message: 'teve um momento digno de nota',
-                badge: 'Feito',
-                tone: 'progress',
-                variant: 'neutral',
-                icon: <SparklesIcon className="h-5 w-5" />,
-            };
-    }
-};
-
-export const FeedEventCard: React.FC<{ event: FeedEvent }> = ({ event }) => {
-    const { friends, userProfile, showToast, deleteFeedEvent, toggleFeedLike } = useGame();
+/**
+ * O CARD DO FEITO (12/10/2026, fechado na bancada tools/feitos-bancada.html).
+ *
+ * Sem icone de tipo: quem diz o tipo e o fundo (utils/feedAppearance.ts). No
+ * lugar do icone, a foto da pessoa com a borda dela. Primeira linha
+ * centralizada, "NOME • ação"; o titulo entre os risquinhos dourados; os
+ * numeros embaixo. O nome e a foto abrem o perfil.
+ *
+ * O NOME E O DE HOJE: vem do perfil atual (o proprio, os amigos, ou o cartao
+ * publico que o feed busca para os outros). O guardado no post fica so de
+ * reserva — trocar de nome nao deixa os posts antigos com o nome velho.
+ */
+export const FeedEventCard: React.FC<{ event: FeedEvent; onAbrirPerfil?: (perfil: UserProfile) => void }> = ({ event, onAbrirPerfil }) => {
+    const { friends, userProfile, showToast, deleteFeedEvent, toggleFeedLike, autoresDoFeed } = useGame();
     const { confirm, confirmationElement } = useConfirmation();
     const [removendo, setRemovendo] = useState(false);
 
@@ -211,30 +100,16 @@ export const FeedEventCard: React.FC<{ event: FeedEvent }> = ({ event }) => {
             <TrashIcon className="h-4 w-4" /> {removendo ? 'Tirando…' : 'Tirar do mural'}
         </button>
     ) : null;
-    const allUsers = [userProfile, ...friends];
-    const author = allUsers.find((user) => user.id === event.userId);
-    const authorName = event.authorNickname || author?.nickname || 'Soberano';
+    const autor: UserProfile | undefined = event.userId === userProfile?.id
+        ? userProfile
+        : friends.find((user) => user.id === event.userId) || autoresDoFeed[event.userId];
+    const authorName = autor?.nickname || event.authorNickname || 'Soberano';
 
+    if (!autor && !event.authorNickname) return null;
 
+    const abrirPerfil = autor && onAbrirPerfil ? () => onAbrirPerfil(autor) : undefined;
+    const numeros = numerosDoFeito(event);
 
-    if (!author && !event.authorNickname) return null;
-
-    const presentation = getFeedPresentation(event);
-
-    /**
-     * Os numeros gravados no evento, se houver.
-     *
-     * Ausentes em tudo que aconteceu antes destes campos existirem — e ai a linha
-     * some, em vez de mostrar zeros. Zero entregas numa arena concluida seria
-     * mentira; nao ter o dado e so nao ter o dado.
-     */
-    const numerosDoFeito = [
-        { value: event.content.actionCount, label: 'ações' },
-        { value: event.content.deliveries, label: 'entregas' },
-        { value: event.content.days, label: 'dias ativos' },
-        { value: event.content.exp, label: 'EXP ganhos' },
-        { value: event.content.minutes, label: 'min registrados' },
-    ].filter((stat) => typeof stat.value === 'number' && Number.isFinite(stat.value) && stat.value >= 0);
     const dailySnapshot = readDailyFeedSnapshot(event.content.dailySummary);
     if (dailySnapshot) return (
         <div className="feed-daily-post">
@@ -259,8 +134,19 @@ export const FeedEventCard: React.FC<{ event: FeedEvent }> = ({ event }) => {
         <>
             <article id={`feed-event-${event.id}`} className="feed-achievement-card" data-feat-type={event.type} style={getFeedAppearance(event)}>
                 <div className="feat-topline">
-                    <div className="feat-medallion" aria-hidden="true">{presentation.icon}</div>
-                    <p className="feat-author"><strong>{authorName}</strong></p>
+                    <button type="button" className="feat-retrato" onClick={abrirPerfil} disabled={!abrirPerfil} aria-label={`Ver o perfil de ${authorName}`}>
+                        <UserAvatar
+                            avatarUrl={autor?.avatarUrl || event.authorAvatarUrl}
+                            nickname={authorName}
+                            borderId={autor?.border}
+                            className="h-11 w-11"
+                        />
+                    </button>
+                    <p className="feat-author">
+                        <button type="button" className="feat-nome" onClick={abrirPerfil} disabled={!abrirPerfil}>{authorName}</button>
+                        <span className="feat-ponto" aria-hidden="true">•</span>
+                        <span className="feat-acao">{acaoDoFeito(event)}</span>
+                    </p>
                     <div className="feat-controls">
                         <time dateTime={event.timestamp} className="feat-time">{timeAgo(new Date(event.timestamp))}</time>
                         {botaoDeCurtir}
@@ -273,9 +159,21 @@ export const FeedEventCard: React.FC<{ event: FeedEvent }> = ({ event }) => {
                     </div>
                 </div>
                 <div className="feat-body">
-                    <div className="feat-category"><span className="feat-category-line" aria-hidden="true" /><span className="feat-category-label">{presentation.message}</span><span className="feat-category-line" aria-hidden="true" /></div>
-                    <h3 className="feed-achievement-title">{presentation.title}</h3>
-                    {numerosDoFeito.length > 0 && <dl className="feat-details">{numerosDoFeito.map(stat => <div key={stat.label}><dd>{stat.value!.toLocaleString('pt-BR')}</dd><dt>{stat.label}</dt></div>)}</dl>}
+                    <div className="feat-titulo-riscado">
+                        <span className="feat-category-line" aria-hidden="true" />
+                        <h3 className="feed-achievement-title">{tituloDoFeito(event)}</h3>
+                        <span className="feat-category-line" aria-hidden="true" />
+                    </div>
+                    {numeros.length > 0 && (
+                        <dl className="feat-details">
+                            {numeros.map((n) => (
+                                <div key={n.rotulo}>
+                                    <dd style={n.cor ? { color: `color-mix(in srgb, ${n.cor} 62%, #ffffff)` } : undefined}>{n.valor.toLocaleString('pt-BR')}</dd>
+                                    <dt>{n.rotulo}</dt>
+                                </div>
+                            ))}
+                        </dl>
+                    )}
                 </div>
             </article>
             {confirmationElement}

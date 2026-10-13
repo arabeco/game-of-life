@@ -1,6 +1,6 @@
-﻿import { Season, SeasonMission, SeasonQuest } from '../types';
+﻿import type { Season, SeasonMission, SeasonQuest } from '../types';
 
-import { CATALOG_ASSET_ROOT } from './catalogAssets';
+import { CATALOG_ASSET_ROOT } from './catalogAssets.ts';
 
 const ROOT_IMAGES_URL = CATALOG_ASSET_ROOT;
 const EMPTY_SEASON_QUESTS: SeasonQuest[] = [];

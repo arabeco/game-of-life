@@ -323,7 +323,8 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                 break;
             case 'PLAYER_RANK_UP':
             case 'CLAN_RANK_UP':
-                content = { title: achievement.data.name, rankName: achievement.data.name, icon };
+                // O id leva o fundo da patente ao card dos Feitos.
+                content = { title: achievement.data.name, rankName: achievement.data.name, rankId: achievement.data.id, icon };
                 break;
             case 'QUEST_COMPLETED':
                 content = { title: achievement.data.title || 'Missão concluída', icon, seasonId: achievement.data.seasonId, exp: achievement.data.reward?.exp };

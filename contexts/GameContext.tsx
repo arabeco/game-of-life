@@ -969,6 +969,7 @@ export interface GameContextType {
     entrarNaMissaoDoCla: (questId: string) => Promise<boolean>;
     receberPremioDaMissaoDoCla: (questId: string) => Promise<boolean>;
     humorDoCla: Record<string, number | null>;
+    autoresDoFeed: Record<string, UserProfile>;
     carregarHumorDoCla: () => Promise<void>;
     completeTutorialMission: () => void;
     toggleChecklistItem: (id: string) => void;
@@ -3218,6 +3219,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const userProfileRef = useRef(userProfile);
     userProfileRef.current = userProfile;
     const [feed, setFeed] = useState<FeedEvent[]>(() => []);
+    /** O cartao publico ATUAL de quem publicou nos Feitos e nao e amigo: nome, foto e borda de hoje. */
+    const [autoresDoFeed, setAutoresDoFeed] = useState<Record<string, UserProfile>>({});
 
     /**
      * Identidade de uma celebracao, para a fila nao repetir a mesma.
@@ -3337,6 +3340,17 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const eventos = (data || []).map(mapFeedEventFromDbRow);
         setFeed(eventos);
+
+        // O nome que aparece e o de hoje: o cartao publico de quem nao e amigo
+        // (amigos e o proprio ja estao no contexto). Uma chamada so, e so dos
+        // autores desta pagina do feed.
+        const conhecidos = new Set([userId, ...friendsRef.current.map((amigo) => amigo.id)]);
+        const desconhecidos = [...new Set(eventos.map((evento) => evento.userId))].filter((id) => !conhecidos.has(id));
+        if (desconhecidos.length > 0) {
+            void hydrateProfilesByIds(desconhecidos).then((perfis) => {
+                if (Object.keys(perfis).length > 0) setAutoresDoFeed((anteriores) => ({ ...anteriores, ...perfis }));
+            });
+        }
 
         const curtidas = await buscarCurtidasDoFeed(eventos.map((evento) => evento.id), userId);
         if (!curtidas) return;
@@ -15534,7 +15548,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             session,
             getSharedActionPoolProgress, isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, sequenceItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, upcomingCycle, dailyCommitment, judgedOperationalDates, judgedTaskIdsByDate, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, grantInventoryItem, acceptSeasonQuest,
             abortSeasonQuest,
-            missoesDoCla, missoesDeClaAtivas, atualizarMissaoDoCla, entrarNaMissaoDoCla, receberPremioDaMissaoDoCla, humorDoCla, carregarHumorDoCla,
+            missoesDoCla, missoesDeClaAtivas, atualizarMissaoDoCla, entrarNaMissaoDoCla, receberPremioDaMissaoDoCla, humorDoCla, carregarHumorDoCla, autoresDoFeed,
             roundExpBonus, addProfileFlag, feed, addFeedEvent, deleteFeedEvent, toggleFeedLike, fetchLikesReceived, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, ensureTasksLoadedThrough, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, addSequenceItem, updateSequenceItem, markSequenceItemToday, adjustSequenceItemDays, resetSequenceItem, deleteSequenceItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, recordMoodEntry, fetchMoodHistory, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, respondToClanInvite, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
             directMessages, dmConversations, blockedUsers, blockedUserIds, sendDirectMessage, markDMAsRead, fetchDMs, blockUser, unblockUser, submitModerationReport,
             addSeason, updateSeason, addSeasonMission, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, isProfileLoaded, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, donateItem, craftItem, buyChestWithFragments, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, createCompetitionInvite, respondToRelationshipInvite, endRelationshipLink, renewRelationshipLink, offerMentorshipArena, respondMentorshipOffer, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, respondCompetitionChallenge, cancelCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,

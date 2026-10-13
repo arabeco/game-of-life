@@ -1,4 +1,4 @@
-import { LIFE_AREAS } from './lifeAreas';
+import { LIFE_AREAS } from './lifeAreas.ts';
 
 export const DEFAULT_ASSET_ART_BY_ID = {
   proposito: '/assets/life-areas/purpose.webp',

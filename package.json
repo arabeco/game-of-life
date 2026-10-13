@@ -50,6 +50,7 @@
     "test:missao-de-cla-sql": "node tests/missao-de-cla-sql.regression.mjs",
     "test:missao-de-cla": "node tests/missao-de-cla.regression.mjs",
     "test:arena-compartilhada": "node tests/arena-compartilhada.regression.mjs",
+    "test:feitos-cards": "node tests/feitos-cards.regression.mjs",
     "test:barras-do-ciclo": "node tests/barras-do-ciclo.regression.mjs",
     "test:pact-speech": "node tests/pact-speech.regression.mjs",
     "test:device-only": "node tests/safe-area-insets.regression.mjs",

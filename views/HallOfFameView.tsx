@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { FeedEventCard } from '../components/FeedEventCard';
-import { FeedEvent, FeedEventType } from '../types';
+import { FeedEvent, FeedEventType, UserProfile } from '../types';
+import { ProfileView } from './ProfileView';
 
 type FeedFilter = 'Reino' | 'Grupo' | 'Aliados';
 
@@ -34,6 +35,8 @@ const formatFeedDate = (timestamp: string): string => {
 export const HallOfFameView: React.FC = () => {
     const { feed, userProfile, friends, clan } = useGame();
     const [filter, setFilter] = useState<FeedFilter>('Reino');
+    // Tocar no nome ou na foto de quem publicou abre o perfil dele.
+    const [perfilAberto, setPerfilAberto] = useState<UserProfile | null>(null);
 
     const friendIds = useMemo(() => new Set(friends.map((friend) => friend.id)), [friends]);
 
@@ -110,7 +113,7 @@ export const HallOfFameView: React.FC = () => {
                             </div>
                             <div className="space-y-3">
                                 {events.map((event) => (
-                                    <FeedEventCard key={event.id} event={event} />
+                                    <FeedEventCard key={event.id} event={event} onAbrirPerfil={setPerfilAberto} />
                                 ))}
                             </div>
                         </section>
@@ -122,6 +125,7 @@ export const HallOfFameView: React.FC = () => {
                     </div>
                 )}
             </div>
+            {perfilAberto && <ProfileView profile={perfilAberto} onClose={() => setPerfilAberto(null)} />}
         </div>
     );
 };

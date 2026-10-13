@@ -1257,6 +1257,8 @@ export const ReportsView: React.FC<{
             content: {
                 title: report.cycleName || activeCycle?.name || 'um ciclo',
                 score: report.performanceScore,
+                // A nota leva o fundo da placa ao card dos Feitos.
+                grade: report.grade || undefined,
                 deliveries: report.metrics?.actionsCompleted,
                 exp: report.expGained ?? report.metrics?.expGained,
                 days: report.metrics?.consistencyDays,

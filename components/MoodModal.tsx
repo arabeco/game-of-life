@@ -30,6 +30,9 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [frase, setFrase] = useState('');
     // A tag da entrada: nenhuma marcada = sem tag. Tocar de novo desmarca.
     const [tag, setTag] = useState<TagDoDiario | null>(null);
+    // Tocar na bolinha tira o humor da entrada: vira so uma nota, sem emocao.
+    // Mexer na regua devolve.
+    const [semHumor, setSemHumor] = useState(false);
     const [localMood, setLocalMood] = useState(userProfile.mood);
 
     const resolveMood = (value: number) => 
@@ -53,6 +56,7 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
      */
     const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setLocalMood(Number(e.target.value));
+        setSemHumor(false);
     };
 
     const mudou = localMood !== userProfile.mood;
@@ -61,9 +65,11 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         if (registrando) return;
         setRegistrando(true);
         try {
-            updateMood(localMood);
-            await recordMoodEntry(localMood);
-            setHistorico(await fetchMoodHistory(20));
+            if (!semHumor) {
+                updateMood(localMood);
+                await recordMoodEntry(localMood);
+                setHistorico(await fetchMoodHistory(20));
+            }
 
             /* REGISTRAR HUMOR ESCREVE NO DIARIO.
 
@@ -77,11 +83,12 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             if (userProfile?.id) {
                 void anexarEntrada(
                     userProfile.id,
-                    cabecalhoDaEntrada(cabecalhoDeHoje(), currentMoodInfo.label, tag),
+                    cabecalhoDaEntrada(cabecalhoDeHoje(), semHumor ? null : currentMoodInfo.label, tag),
                     frase.trim() || 'Estava me sentindo assim.',
                 );
                 setFrase('');
                 setTag(null);
+                setSemHumor(false);
             }
         } finally {
             setRegistrando(false);
@@ -125,7 +132,7 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 onClick={e => e.stopPropagation()}
             >
                 <div className="flex justify-between items-center">
-                    <h2 className="text-lg font-bold uppercase tracking-wider text-[var(--skin-accent-color)]">Diário</h2>
+                    <h2 className="text-[13px] font-semibold uppercase tracking-[0.2em] text-white/70">Diário</h2>
                     <button aria-label="Fechar" onClick={onClose} className="p-1 rounded-full bg-white/5 hover:bg-white/10 transition-colors">
                         <XIcon className="w-5 h-5 text-gray-400"/>
                     </button>
@@ -201,11 +208,16 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     {/* A bolinha ao lado do campo tem a cor do humor da regua, e muda
                         enquanto a pessoa arrasta: a frase ja nasce com a cor dela. */}
                     <div className="flex items-start gap-2.5 rounded-xl border border-white/10 bg-black/30 px-3 py-2 focus-within:border-[var(--skin-accent-color)]/45">
-                        <span
-                            role="img"
-                            aria-label={`Humor: ${currentMoodInfo.label}`}
-                            className="mt-[0.3rem] h-3 w-3 flex-shrink-0 rounded-full transition-colors duration-200"
-                            style={{ background: currentMoodInfo.trackEnd, boxShadow: `0 0 10px ${currentMoodInfo.trackEnd}88` }}
+                        <button
+                            type="button"
+                            onClick={() => setSemHumor((atual) => !atual)}
+                            aria-pressed={!semHumor}
+                            aria-label={semHumor ? 'Sem humor (tocar para incluir)' : `Humor: ${currentMoodInfo.label} (tocar para tirar)`}
+                            title={semHumor ? 'Incluir o humor' : 'Escrever sem o humor'}
+                            className="mt-[0.3rem] h-3 w-3 flex-shrink-0 rounded-full border transition-colors duration-200"
+                            style={semHumor
+                                ? { background: 'transparent', borderColor: 'rgba(255,255,255,0.3)' }
+                                : { background: currentMoodInfo.trackEnd, borderColor: currentMoodInfo.trackEnd, boxShadow: `0 0 10px ${currentMoodInfo.trackEnd}88` }}
                         />
                         <textarea
                             id="mood-frase"
@@ -244,14 +256,16 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     <button
                         type="button"
                         onClick={() => { void handleRegistrar(); }}
-                        disabled={(!mudou && !frase.trim()) || registrando}
+                        disabled={(semHumor ? !frase.trim() : !mudou && !frase.trim()) || registrando}
                         className="luxe-skin-button w-full rounded-xl py-2.5 text-[11px] font-black uppercase tracking-[0.14em] disabled:cursor-not-allowed disabled:opacity-40"
                     >
                         {registrando
                             ? '...'
-                            : (mudou || frase.trim())
-                                ? `Registrar · ${currentMoodInfo.label} (${currentMoodInfo.level})`
-                                : 'Já registrado'}
+                            : semHumor
+                                ? 'Registrar no diário'
+                                : (mudou || frase.trim())
+                                    ? `Registrar · ${currentMoodInfo.label} (${currentMoodInfo.level})`
+                                    : 'Já registrado'}
                     </button>
                 </div>
 

@@ -22,7 +22,7 @@ export interface EntradaDoDiario {
     texto: string;
 }
 
-export const cabecalhoDaEntrada = (data: string, humor: string, tag: TagDoDiario | null): string =>
+export const cabecalhoDaEntrada = (data: string, humor: string | null, tag: TagDoDiario | null): string =>
     [data, humor, tag].filter(Boolean).join(' · ');
 
 const tagDe = (parte: string): TagDoDiario | null =>

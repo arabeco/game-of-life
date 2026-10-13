@@ -16,6 +16,7 @@ const ler = (c) => readFileSync(new URL(`../${c}`, import.meta.url), 'utf8').rep
 assert.deepEqual(TAGS_DO_DIARIO, ['Insight', 'Ideia', 'Reflexão', 'Desabafo', 'Lembrete']);
 assert.equal(cabecalhoDaEntrada('12/10/2026', 'Coragem', 'Ideia'), '12/10/2026 · Coragem · Ideia');
 assert.equal(cabecalhoDaEntrada('12/10/2026', 'Coragem', null), '12/10/2026 · Coragem');
+assert.equal(cabecalhoDaEntrada('12/10/2026', null, 'Ideia'), '12/10/2026 · Ideia', 'entrada sem humor (bolinha desligada)');
 console.log('ok - a tag vai no cabecalho, depois do humor');
 
 const pagina = [
@@ -56,7 +57,9 @@ console.log('ok - a pagina vira entradas com data, humor, tag e texto');
 const humor = ler('components/MoodModal.tsx');
 assert.match(humor, /TAGS_DO_DIARIO\.map/, 'sem os botoes de tag na aba Humor');
 assert.match(humor, /cabecalhoDaEntrada\(/, 'registrar nao grava a tag no cabecalho');
-assert.match(humor, /aria-label=\{`Humor: \$\{currentMoodInfo\.label\}`\}/, 'sem a bolinha do humor ao lado do campo');
+assert.match(humor, /onClick=\{\(\) => setSemHumor\(/, 'tocar na bolinha nao tira o humor');
+assert.match(humor, /semHumor \? null : currentMoodInfo\.label/, 'sem humor, o cabecalho ainda levava a emocao');
+assert.match(humor, /if \(!semHumor\) \{\s*updateMood/, 'sem humor, registrar ainda marcava o humor');
 const aba = ler('components/JournalTab.tsx');
 assert.match(aba, /lerEntradas\(/, 'a pagina nao virou leitura por entradas');
 assert.match(aba, />\s*Editar\s*</, 'sem o botao de editar o texto cru');

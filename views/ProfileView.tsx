@@ -22,6 +22,7 @@ import { ITEMS_DB, resolveItemDef } from '../constants/items';
 import { resolveCatalogAssetUrl } from '../constants/catalogAssets';
 import { APP_NAVIGATE_EVENT } from '../utils/arenaAttention';
 import { hasPremiumAccess } from '../utils/premiumAccess';
+import { useCoroa } from '../utils/coroas';
 import { PRODUCT_FEATURES } from '../constants/featureFlags';
 import { getMasteryIndexFromAssets } from '../constants/lifeAreas';
 import { ConnectionsModal } from '../components/ConnectionsModal';
@@ -602,6 +603,8 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
     const displayProfile = isOwnProfile
         ? (isEditing ? editableProfile : baseProfile)
         : (fetchedProfile || baseProfile);
+    // A coroa do outro vem do servidor (o cartao publico nao traz a assinatura).
+    const coroaDoOutro = useCoroa(isOwnProfile ? null : displayProfile.id);
     const fallbackViewedLevels = useMemo(() => (
         assets
             .filter(asset => asset.id !== 'geral')
@@ -886,7 +889,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                     >
                                         <h2 className="text-3xl font-bold text-white luxe-title-shadow inline-flex items-center gap-1.5">
                                             {displayProfile.nickname}
-                                            {hasPremiumAccess(displayProfile) && (
+                                            {(isOwnProfile ? hasPremiumAccess(userProfile) : coroaDoOutro) && (
                                                 <CrownIcon className="w-5 h-5 text-yellow-400 drop-shadow-[0_0_4px_rgba(234,179,8,0.6)]" />
                                             )}
                                         </h2>

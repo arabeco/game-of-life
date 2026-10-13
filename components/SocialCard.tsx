@@ -5,6 +5,8 @@ import { ProfileBackgroundSurface } from './ProfileBackgroundSurface';
 import { UserAvatar } from './UserAvatar';
 import { resolveCatalogAssetUrl } from '../constants/catalogAssets';
 import { ClanEmblem } from './ClanEmblem';
+import { CrownIcon } from './Icons';
+import { useCoroa } from '../utils/coroas';
 
 export const SocialCard: React.FC<{
     profile: UserProfile;
@@ -12,7 +14,11 @@ export const SocialCard: React.FC<{
     badges?: React.ReactNode;
     actions?: React.ReactNode;
     onClick?: () => void;
-}> = ({ profile, subtitle, badges, actions, onClick }) => {
+    /** Forca a coroa (ex.: o proprio perfil); sem isso, pergunta ao servidor. */
+    coroa?: boolean;
+}> = ({ profile, subtitle, badges, actions, onClick, coroa }) => {
+    const coroaDoServidor = useCoroa(coroa === undefined ? profile.id : null);
+    const temCoroa = coroa ?? coroaDoServidor;
     return (
         <div
             /* `h-16` fixo com `overflow-hidden` cortava o proprio conteudo. A coluna
@@ -32,7 +38,10 @@ export const SocialCard: React.FC<{
                 <UserAvatar avatarUrl={profile.avatarUrl} nickname={profile.nickname} className="w-12 h-12" isOnline={false} level={profile.level} borderId={profile.border} />
 
                 <div className="flex-1 min-w-0 flex flex-col justify-center -space-y-0.5">
-                    <h3 className="social-card-title font-bold text-lg text-white leading-tight truncate">{profile.nickname}</h3>
+                    <h3 className="social-card-title flex min-w-0 items-center gap-1 font-bold text-lg text-white leading-tight">
+                        <span className="truncate">{profile.nickname}</span>
+                        {temCoroa && <CrownIcon className="h-4 w-4 flex-shrink-0 text-yellow-400 drop-shadow-[0_0_4px_rgba(234,179,8,0.6)]" />}
+                    </h3>
 
                     {badges && (
                         <div className="mt-1 flex flex-wrap gap-1.5">

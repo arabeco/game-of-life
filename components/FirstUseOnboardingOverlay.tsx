@@ -7,6 +7,12 @@ import { loadOnboardingProgress, saveOnboardingProgress, clearOnboardingProgress
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 import { OracleSpeakerMark } from './OracleSpeakerMark';
 import { AVAILABLE_SYSTEM_CHALLENGES } from '../constants/systemChallenges';
+
+/** Nome livre? null quando o servidor nao respondeu (offline): a tela nao trava. */
+const nicknameDisponivel = async (nome: string): Promise<boolean | null> => {
+  const { data, error } = await supabase.rpc('nickname_disponivel', { p_nome: nome });
+  return error || typeof data !== 'boolean' ? null : data;
+};
 import type { OnboardingPurpose } from '../types';
 
 type AppView = 'assets' | 'arenas' | 'planner' | 'social' | 'settings' | 'reports';
@@ -569,7 +575,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
   }, [active, identityReady, handleDismiss, handleNext, step?.hideNext]);
 
   if (!active || !step) return null;
-  if (!identityReady) return <OnboardingIdentity nickname={userProfile.nickname || ''} onExit={() => { void supabase.auth.signOut(); }} onSave={async (nickname, range) => {
+  if (!identityReady) return <OnboardingIdentity nickname={userProfile.nickname || ''} verificarNome={nicknameDisponivel} onExit={() => { void supabase.auth.signOut(); }} onSave={async (nickname, range) => {
     const { data, error } = await supabase.from('user_profiles')
       .update({ nickname, onboarding_age_range: range }).eq('id', userProfile.id).select('id').single();
     if (error || !data) throw error || new Error('Profile not saved');

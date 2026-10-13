@@ -15,6 +15,7 @@ import { OracleSettingsModal } from '../components/OracleSettingsModal';
 import { BillingCheckoutGate } from '../components/Store/BillingCheckoutGate';
 import { Capacitor } from '@capacitor/core';
 import { supabase } from '../supabaseClient';
+import { NICKNAME_MAX, validarNickname } from '../utils/nickname';
 import { SpectatorArenaModal } from '../components/SpectatorArenaModal';
 import { CODEXES, getCatalogItemsByCategory } from '../constants/items';
 import { Portal } from '../components/Portal';
@@ -1752,7 +1753,19 @@ const GeralTab: React.FC = () => {
     const [isDeletingAccount, setIsDeletingAccount] = useState(false);
     const [showMastery, setShowMastery] = useState(false);
 
-    const handleSave = () => { updateUserProfile({ nickname }); showToast('Perfil salvo.', 'success'); };
+    const handleSave = async () => {
+        const nome = nickname.trim();
+        if (nome === (userProfile.nickname || '').trim()) { showToast('Perfil salvo.', 'success'); return; }
+        const problema = validarNickname(nome);
+        if (problema) { showToast(problema === 'vazio' ? 'O nome não pode ficar vazio.' : `Use até ${NICKNAME_MAX} caracteres.`, 'error'); return; }
+        // O nome e unico no app: pergunta antes, para a tela nao mostrar um nome que o banco recusou.
+        const { data: livre, error } = await supabase.rpc('nickname_disponivel', { p_nome: nome });
+        if (error) { showToast('Não consegui conferir o nome. Tente de novo.', 'error'); return; }
+        if (livre === false) { showToast('Esse nome já é de alguém. Tente outro.', 'error'); return; }
+        setNickname(nome);
+        updateUserProfile({ nickname: nome });
+        showToast('Perfil salvo.', 'success');
+    };
 
     const handleLogout = async () => {
         // Clear user-specific local storage
@@ -1910,7 +1923,7 @@ const GeralTab: React.FC = () => {
             <div className="space-y-4">
                 <div className="flex items-center justify-between p-3 bg-black/20 rounded-xl">
                     <label className="text-sm font-semibold">Nickname</label>
-                    <input type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} className="px-3 py-1 bg-black/30 border border-white/20 rounded-lg focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors w-40 text-right" />
+                    <input type="text" value={nickname} maxLength={Math.max(NICKNAME_MAX, (userProfile.nickname || '').length)} onChange={(e) => setNickname(e.target.value)} className="px-3 py-1 bg-black/30 border border-white/20 rounded-lg focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors w-40 text-right" />
                 </div>
                 <div className="flex space-x-2">
                     <button onClick={handleSave} className="w-1/2 py-3 rounded-xl luxe-skin-button transition-transform hover:scale-105">SALVAR PERFIL</button>

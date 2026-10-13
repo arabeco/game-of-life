@@ -7,6 +7,7 @@ import { XIcon } from './Icons';
 import { Portal } from './Portal';
 import JournalTab from './JournalTab';
 import { anexarEntrada, cabecalhoDeHoje } from '../services/JournalService';
+import { TAGS_DO_DIARIO, cabecalhoDaEntrada, type TagDoDiario } from '../utils/diario';
 
 export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const { userProfile, dailyCommitment, updateMood, updateOperationalScratch, recordMoodEntry, fetchMoodHistory } = useGame();
@@ -27,6 +28,8 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
      * frase saem da mesma sentada, e o cabecalho carimba os dois juntos.
      */
     const [frase, setFrase] = useState('');
+    // A tag da entrada: nenhuma marcada = sem tag. Tocar de novo desmarca.
+    const [tag, setTag] = useState<TagDoDiario | null>(null);
     const [localMood, setLocalMood] = useState(userProfile.mood);
 
     const resolveMood = (value: number) => 
@@ -74,10 +77,11 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             if (userProfile?.id) {
                 void anexarEntrada(
                     userProfile.id,
-                    cabecalhoDeHoje() + ' · ' + currentMoodInfo.label,
+                    cabecalhoDaEntrada(cabecalhoDeHoje(), currentMoodInfo.label, tag),
                     frase.trim() || 'Estava me sentindo assim.',
                 );
                 setFrase('');
+                setTag(null);
             }
         } finally {
             setRegistrando(false);
@@ -194,14 +198,42 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         gesto: escolhe o nivel, diz por que, registra os dois. Ele
                         nunca e obrigatorio — quem so quer arrastar a bolinha
                         continua arrastando e pronto. */}
-                    <textarea
-                        id="mood-frase"
-                        value={frase}
-                        onChange={(evento) => setFrase(evento.target.value.slice(0, 600))}
-                        rows={3}
-                        placeholder="Como está se sentindo? O que está pensando?"
-                        className="w-full resize-none rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-[13px] leading-[1.45] text-white/88 placeholder:text-white/30 focus:border-[var(--skin-accent-color)]/45 focus:outline-none"
-                    />
+                    {/* A bolinha ao lado do campo tem a cor do humor da regua, e muda
+                        enquanto a pessoa arrasta: a frase ja nasce com a cor dela. */}
+                    <div className="flex items-start gap-2.5 rounded-xl border border-white/10 bg-black/30 px-3 py-2 focus-within:border-[var(--skin-accent-color)]/45">
+                        <span
+                            role="img"
+                            aria-label={`Humor: ${currentMoodInfo.label}`}
+                            className="mt-[0.3rem] h-3 w-3 flex-shrink-0 rounded-full transition-colors duration-200"
+                            style={{ background: currentMoodInfo.trackEnd, boxShadow: `0 0 10px ${currentMoodInfo.trackEnd}88` }}
+                        />
+                        <textarea
+                            id="mood-frase"
+                            value={frase}
+                            onChange={(evento) => setFrase(evento.target.value.slice(0, 600))}
+                            rows={3}
+                            placeholder="Como está se sentindo? O que está pensando?"
+                            className="w-full resize-none bg-transparent text-[13px] leading-[1.45] text-white/88 placeholder:text-white/30 focus:outline-none"
+                        />
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5" role="group" aria-label="Tag da entrada">
+                        {TAGS_DO_DIARIO.map((opcao) => (
+                            <button
+                                key={opcao}
+                                type="button"
+                                aria-pressed={tag === opcao}
+                                onClick={() => setTag((atual) => (atual === opcao ? null : opcao))}
+                                className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] transition-colors ${
+                                    tag === opcao
+                                        ? 'border-[var(--skin-accent-color)]/60 bg-[var(--skin-accent-color)]/15 text-white'
+                                        : 'border-white/10 text-white/45 hover:border-white/20 hover:text-white/75'
+                                }`}
+                            >
+                                {opcao}
+                            </button>
+                        ))}
+                    </div>
 
                     {/* Registrar tem nome e numero na frente: e a pessoa dizendo
                         "hoje eu estou assim", nao o app anotando o dedo dela.

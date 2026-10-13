@@ -1,4 +1,5 @@
 import { supabase } from '../supabaseClient';
+import { lerEntradas, type TagDoDiario } from '../utils/diario';
 
 /**
  * O DIARIO NAO PASSA PELO GameContext, E ISSO E A FEATURE.
@@ -23,9 +24,19 @@ export interface ResumoDePagina {
   updatedAt: string;
   /** Primeiros caracteres, so para a pessoa reconhecer a pagina na lista. */
   previa: string;
+  /** Os humores das entradas, na ordem: as bolinhas da lista. */
+  humores: string[];
+  /** As tags que a pagina tem, para o filtro. */
+  tags: TagDoDiario[];
 }
 
 const PREVIA = 60;
+
+/** A previa e o texto da ultima entrada, sem a linha de data: e o que a pessoa lembra. */
+const previaDe = (entradas: ReturnType<typeof lerEntradas>, conteudo: string): string => {
+  const ultima = entradas.length ? entradas[entradas.length - 1].texto : '';
+  return String(ultima || conteudo);
+};
 
 /**
  * O indice. Le numero, data e um pedaco curto — nunca o texto inteiro.
@@ -47,11 +58,18 @@ export const listarPaginas = async (userId: string): Promise<ResumoDePagina[]> =
     return [];
   }
 
-  return (data || []).map((linha: any) => ({
-    pageNumber: Number(linha.page_number),
-    updatedAt: String(linha.updated_at || ''),
-    previa: String(linha.content || '').slice(0, PREVIA).replace(/\s+/g, ' ').trim(),
-  }));
+  // O conteudo ja vem para cortar a previa; humores e tags saem dele sem custo a mais.
+  return (data || []).map((linha: any) => {
+    const conteudo = String(linha.content || '');
+    const entradas = lerEntradas(conteudo);
+    return {
+      pageNumber: Number(linha.page_number),
+      updatedAt: String(linha.updated_at || ''),
+      previa: previaDe(entradas, conteudo).slice(0, PREVIA).replace(/\s+/g, ' ').trim(),
+      humores: entradas.map((e) => e.humor).filter((h): h is string => Boolean(h)),
+      tags: Array.from(new Set(entradas.map((e) => e.tag).filter((t): t is TagDoDiario => Boolean(t)))),
+    };
+  });
 };
 
 /** Uma pagina, uma linha. Pagina que nunca foi escrita volta vazia. */
@@ -167,11 +185,5 @@ export const anexarEntrada = async (
  * derivada dela. Quem editar o texto a mao muda a cor junto, que e o
  * comportamento honesto.
  */
-export const humorDaEntrada = (trecho: string): string | null => {
-  const linhas = String(trecho || '').split('\n');
-  for (const linha of linhas) {
-    const achado = linha.match(/^\s*\d{2}\/\d{2}\/\d{4}\s+·\s+(.+?)\s*$/);
-    if (achado) return achado[1];
-  }
-  return null;
-};
+export const humorDaEntrada = (trecho: string): string | null =>
+  lerEntradas(trecho).find((entrada) => entrada.humor)?.humor ?? null;

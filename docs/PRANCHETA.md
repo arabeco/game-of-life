@@ -253,3 +253,10 @@ Afonso confirmou a execução de sql/temporadas-2027-artes.sql e pediu commit, p
 - Arquivo: android/app/build/outputs/bundle/release/Glyph-1.0.111-111.aab (49.714.788 bytes). Pacote life.glyph.app, versão 1.0.111/código 111, targetSdk 36 verificados dentro do AAB.
 - SHA-256: 0D2288FB17C42F0A1BB3B8A8CC04D209370B96403AB8B2E4623767CE4DD406A2. Checkpoint: docs/2026-10-12-checkpoint-aab-111.md. Upload Play pendente; não publicar como já distribuído.
 - SQL das artes confirmado executado por Afonso. Exclusão completa/site/haptics e skins continuam pendentes.
+
+### 12/10 — Push dos dois projetos e site publicado (Codex)
+
+- App: ce54428 enviado para arabeco/game-of-life/main com os 98 commits anteriores, incluindo o trabalho do Claude. AAB 111 permanece o artefato do checkpoint, sem upload no Play.
+- Landing: a294b4b enviado para arabeco/glyph-landing/main. Publicação automática CONFIRMADA: Home, script.js, Novidades e Termos em https://www.glyph.life responderam 200 e conteúdo idêntico ao checkout enviado.
+- Entram no site: prints atualizados, textos de uso livre/estoque, contadores por maestria, 13 anos/7 dias, posts e acessos Em breve. Publicação destes arquivos deixou de ser pendência; versões futuras de prints/conteúdo podem continuar evoluindo.
+- Navegação 390/1440 passou sem erros de JS/imagens quebradas. Posts, contadores agregados (fixture), Termos, exclusão e placeholders também passaram. Confirmação do site publicado não significa execução real de recuperação/exclusão. Pedido de exclusão ainda prepara e-mail; fluxo automatizado e haptics continuam pendentes.

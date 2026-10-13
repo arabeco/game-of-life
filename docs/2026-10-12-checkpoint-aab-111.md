@@ -34,3 +34,7 @@ Afonso informou nesta conversa que executou `sql/temporadas-2027-artes.sql`. Reg
 Nenhuma compra, exclusão de conta, recuperação de senha ou instalação real foi executada nesta rodada. Exclusão pelo site/retentativas, haptics e encaixe das skins continuam pendentes conforme `docs/2026-10-12-temporadas-integracao-e-pontas-soltas.md`. O histórico de LAUNCH_READINESS_REPORT não substitui as verificações desta versão.
 
 Commit e push autorizados por Afonso com as mudanças de ambas as IAs. Não houve upload ao Play Console; o AAB está pronto para o envio ao canal escolhido por Afonso.
+
+## Envio confirmado
+
+Release ce54428 enviado para origin/main com os 98 commits anteriores. Landing a294b4b também enviada; Home, script.js, Novidades e Termos publicados em glyph.life, conferidos por HTTP 200 e igualdade do conteúdo local/remoto. Este registro posterior altera apenas documentação; AAB e SHA-256 acima permanecem os mesmos. Nenhum upload ao Play.

@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { PlusIcon } from './Icons';
+import { ClockIcon, LightbulbIcon, MoonIcon, PlusIcon, SparklesIcon, TrophyIcon } from './Icons';
 import { MOODS_DATA } from '../constants';
 import { cabecalhoDeHoje, JOURNAL_MAX_CARACTERES, JOURNAL_MAX_PAGINAS, lerPagina, listarPaginas, salvarPagina, type ResumoDePagina } from '../services/JournalService';
-import { TAGS_DO_DIARIO, lerEntradas, type TagDoDiario } from '../utils/diario';
+import { TAGS_DO_DIARIO, lerEntradas, periodoDaPagina, type TagDoDiario } from '../utils/diario';
 
 
 /**
@@ -18,8 +18,8 @@ import { TAGS_DO_DIARIO, lerEntradas, type TagDoDiario } from '../utils/diario';
  * grava UMA linha. O teste `journal-egress` guarda essa separacao.
  *
  * A PAGINA SE LE, E SO DEPOIS SE EDITA (12/10/2026). Abrir mostra as entradas
- * em cartoes — a bolinha na cor do humor, a data, a tag e o texto —, a mais nova
- * em cima. "Editar" abre o texto cru, como era. O filtro de tag vale para a
+ * em cartoes — a faixa na cor do humor, o simbolo da tag, a data e o texto —,
+ * a mais nova em cima. "Editar" abre o texto cru, como era. O filtro de tag vale para a
  * lista de paginas e para as entradas da pagina aberta.
  */
 const corDoHumor = (humor: string | null): string | null =>
@@ -36,6 +36,15 @@ const Bolinha: React.FC<{ humor: string | null; tamanho?: number }> = ({ humor, 
             style={{ width: tamanho, height: tamanho, background: cor, boxShadow: `0 0 8px ${cor}77` }}
         />
     );
+};
+
+// O simbolo de cada tag, na cor do humor da entrada.
+const ICONE_DA_TAG: Record<TagDoDiario, React.FC<{ className?: string }>> = {
+    Ideia: LightbulbIcon,
+    'Reflexão': MoonIcon,
+    'Gratidão': SparklesIcon,
+    Conquista: TrophyIcon,
+    Lembrete: ClockIcon,
 };
 
 const JournalTab: React.FC<{ userId: string }> = ({ userId }) => {
@@ -97,6 +106,7 @@ const JournalTab: React.FC<{ userId: string }> = ({ userId }) => {
                 updatedAt: new Date().toISOString(),
                 humores: entradas.map((e) => e.humor).filter((h): h is string => Boolean(h)),
                 tags: Array.from(new Set(entradas.map((e) => e.tag).filter((t): t is TagDoDiario => Boolean(t)))),
+                periodo: periodoDaPagina(texto),
             };
             const existe = anteriores.some((p) => p.pageNumber === aberta);
             const proximas = existe
@@ -152,15 +162,11 @@ const JournalTab: React.FC<{ userId: string }> = ({ userId }) => {
                                 onClick={() => void abrirPagina(pagina.pageNumber)}
                                 className="group relative flex w-full items-stretch gap-3 overflow-hidden rounded-2xl border border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01))] p-3 text-left transition-colors hover:border-[var(--skin-accent-color)]/35"
                             >
-                                <span className="flex w-9 flex-shrink-0 flex-col items-center justify-center border-r border-white/8 pr-3">
-                                    <span className="font-serif text-xl leading-none tabular-nums text-[var(--skin-accent-color)]">{pagina.pageNumber}</span>
-                                    <span className="mt-1 text-[8px] uppercase tracking-[0.18em] text-white/30">pág</span>
-                                </span>
                                 <span className="min-w-0 flex-1 space-y-1">
                                     <span className="block truncate font-serif text-[14px] italic text-white/85">{pagina.previa || 'Página em branco'}</span>
                                     <span className="flex items-center gap-2">
-                                        <span className="text-[10px] uppercase tracking-[0.14em] text-white/35">
-                                            {pagina.updatedAt ? new Date(pagina.updatedAt).toLocaleDateString('pt-BR') : ''}
+                                        <span className="flex-shrink-0 text-[10px] tabular-nums tracking-[0.08em] text-white/35">
+                                            {pagina.periodo || (pagina.updatedAt ? new Date(pagina.updatedAt).toLocaleDateString('pt-BR') : '')}
                                         </span>
                                         {pagina.humores.length > 0 && (
                                             <span className="flex min-w-0 items-center gap-1 overflow-hidden" aria-label={`${pagina.humores.length} humores`}>
@@ -168,6 +174,9 @@ const JournalTab: React.FC<{ userId: string }> = ({ userId }) => {
                                             </span>
                                         )}
                                     </span>
+                                </span>
+                                <span className="flex-shrink-0 self-center text-[10px] tabular-nums tracking-[0.12em] text-white/30" aria-label={`Página ${pagina.pageNumber}`}>
+                                    pág. {pagina.pageNumber}
                                 </span>
                             </button>
                         ))
@@ -250,19 +259,21 @@ const JournalTab: React.FC<{ userId: string }> = ({ userId }) => {
                                         className="relative overflow-hidden rounded-2xl border border-white/8 bg-[linear-gradient(160deg,rgba(255,255,255,0.05),rgba(255,255,255,0.012))] px-4 py-3"
                                         style={cor ? { boxShadow: `inset 3px 0 0 ${cor}` } : undefined}
                                     >
-                                        {(entrada.data || entrada.tag) && (
-                                            <header className="mb-1.5 flex items-center gap-2">
-                                                <Bolinha humor={entrada.humor} />
-                                                <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/45">
-                                                    {[entrada.data, entrada.humor].filter(Boolean).join(' · ')}
-                                                </span>
-                                                {entrada.tag && (
-                                                    <span className="ml-auto rounded-full border border-[var(--skin-accent-color)]/35 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--skin-accent-color)]">
-                                                        {entrada.tag}
+                                        {(entrada.data || entrada.tag) && (() => {
+                                            const Icone = entrada.tag ? ICONE_DA_TAG[entrada.tag] : null;
+                                            return (
+                                                <header className="mb-1.5 flex items-center gap-2">
+                                                    {Icone && (
+                                                        <span role="img" aria-label={entrada.tag || ''} title={entrada.tag || ''} style={{ color: cor || 'rgba(255,255,255,0.6)' }}>
+                                                            <Icone className="h-3.5 w-3.5" />
+                                                        </span>
+                                                    )}
+                                                    <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/45">
+                                                        {[entrada.data, entrada.humor].filter(Boolean).join(' · ')}
                                                     </span>
-                                                )}
-                                            </header>
-                                        )}
+                                                </header>
+                                            );
+                                        })()}
                                         <p className="whitespace-pre-wrap font-serif text-[15px] leading-relaxed text-white/88">{entrada.texto || '…'}</p>
                                     </article>
                                 );

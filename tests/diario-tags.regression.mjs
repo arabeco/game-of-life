@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { TAGS_DO_DIARIO, cabecalhoDaEntrada, lerEntradas, humoresDaPagina } from '../utils/diario.ts';
+import { TAGS_DO_DIARIO, cabecalhoDaEntrada, lerEntradas, humoresDaPagina, periodoDaPagina } from '../utils/diario.ts';
 
 /**
  * O DIARIO COM TAG E COR (12/10/2026, pedido do Afonso).
@@ -54,6 +54,13 @@ assert.deepEqual(lerEntradas(''), []);
 assert.deepEqual(humoresDaPagina(pagina), ['Medo', 'Coragem'], 'a lista de paginas mostra as bolinhas dos humores da pagina');
 console.log('ok - a pagina vira entradas com data, humor, tag e texto');
 
+// A lista mostra o PERIODO da pagina (primeira e ultima data), nao uma data so.
+assert.equal(periodoDaPagina(pagina), '11/10 – 13/10/2026');
+assert.equal(periodoDaPagina('12/10/2026 · Medo\noi'), '12/10/2026', 'um dia so: a data sozinha');
+assert.equal(periodoDaPagina('30/12/2025\na\n\n--------------\n02/01/2026\nb'), '30/12/2025 – 02/01/2026', 'virada de ano: as duas datas inteiras');
+assert.equal(periodoDaPagina('texto sem data'), null);
+console.log('ok - periodo da pagina');
+
 const humor = ler('components/MoodModal.tsx');
 assert.match(humor, /TAGS_DO_DIARIO\.map/, 'sem os botoes de tag na aba Humor');
 assert.match(humor, /cabecalhoDaEntrada\(/, 'registrar nao grava a tag no cabecalho');
@@ -63,4 +70,6 @@ assert.match(humor, /if \(!semHumor\) \{\s*updateMood/, 'sem humor, registrar ai
 const aba = ler('components/JournalTab.tsx');
 assert.match(aba, /lerEntradas\(/, 'a pagina nao virou leitura por entradas');
 assert.match(aba, />\s*Editar\s*</, 'sem o botao de editar o texto cru');
+assert.match(aba, /ICONE_DA_TAG/, 'o cartao da entrada mostra o simbolo da tag, nao a bolinha');
+assert.match(aba, /pagina\.periodo/, 'a lista mostra o periodo da pagina');
 console.log('Diario: cor, tag e paginas como leitura.');

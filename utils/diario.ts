@@ -58,3 +58,20 @@ export function lerEntradas(conteudo: string): EntradaDoDiario[] {
 /** Os humores da pagina, na ordem — as bolinhas da lista de paginas. */
 export const humoresDaPagina = (conteudo: string): string[] =>
     lerEntradas(conteudo).map((entrada) => entrada.humor).filter((humor): humor is string => Boolean(humor));
+
+/**
+ * O periodo da pagina: da primeira a ultima data escrita nela. Uma pagina pode
+ * guardar um dia ou um ano, entao a lista mostra o intervalo, nao uma data so.
+ *   um dia: "12/10/2026"; mesmo ano: "05/10 – 12/10/2026"; anos diferentes: as duas inteiras.
+ */
+export function periodoDaPagina(conteudo: string): string | null {
+    const datas = lerEntradas(conteudo).map((entrada) => entrada.data).filter((data): data is string => Boolean(data));
+    if (!datas.length) return null;
+    const chave = (data: string) => data.split('/').reverse().join('');
+    const ordenadas = [...datas].sort((a, b) => chave(a).localeCompare(chave(b)));
+    const inicio = ordenadas[0];
+    const fim = ordenadas[ordenadas.length - 1];
+    if (inicio === fim) return inicio;
+    if (inicio.slice(6) === fim.slice(6)) return `${inicio.slice(0, 5)} – ${fim}`;
+    return `${inicio} – ${fim}`;
+}

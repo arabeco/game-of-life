@@ -1,5 +1,5 @@
 import { supabase } from '../supabaseClient';
-import { lerEntradas, type TagDoDiario } from '../utils/diario';
+import { lerEntradas, periodoDaPagina, type TagDoDiario } from '../utils/diario';
 
 /**
  * O DIARIO NAO PASSA PELO GameContext, E ISSO E A FEATURE.
@@ -28,6 +28,8 @@ export interface ResumoDePagina {
   humores: string[];
   /** As tags que a pagina tem, para o filtro. */
   tags: TagDoDiario[];
+  /** Da primeira a ultima data escrita ("05/10 – 12/10/2026"); null sem data. */
+  periodo: string | null;
 }
 
 const PREVIA = 60;
@@ -68,6 +70,7 @@ export const listarPaginas = async (userId: string): Promise<ResumoDePagina[]> =
       previa: previaDe(entradas, conteudo).slice(0, PREVIA).replace(/\s+/g, ' ').trim(),
       humores: entradas.map((e) => e.humor).filter((h): h is string => Boolean(h)),
       tags: Array.from(new Set(entradas.map((e) => e.tag).filter((t): t is TagDoDiario => Boolean(t)))),
+      periodo: periodoDaPagina(conteudo),
     };
   });
 };

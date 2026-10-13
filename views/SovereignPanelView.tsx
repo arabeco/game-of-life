@@ -1585,6 +1585,7 @@ const GM_PREMIUM_ACTIVE_BENEFITS = [
 const GM_PLATINUM_ACTIVE_BENEFITS = [
   { label: 'Plano', value: 'Todas as vantagens Premium', tone: 'emerald' as const },
   { label: 'Capacidade', value: 'Até 30 arenas no total (incluindo arquivadas)', tone: 'gold' as const },
+  { label: 'Campanhas', value: 'Campanhas com 20% off', tone: 'gold' as const },
   { label: 'Personalização', value: 'Todos os fundos e aparências premium', tone: 'violet' as const },
   { label: 'Oráculo', value: 'Todos os tons de fala liberados', tone: 'cyan' as const },
   { label: 'Legado', value: 'Cena do legado com 70% de desconto', tone: 'violet' as const },
@@ -1607,7 +1608,7 @@ const buildMembershipRewardMockPayload = (tier: 'premium' | 'platinum'): RewardM
     ],
     rewardHighlightsTitle: 'Itens e créditos entregues',
     rewardHighlights: [
-      ...(isPlatinum ? [{ label: 'Ficha de quiz', value: '1 campanha média', detail: 'Crédito disponível para o próximo quiz.', tone: 'cyan' as const }] : []),
+      ...(isPlatinum ? [{ label: 'Campanhas', value: '20% off', detail: 'Desconto em toda campanha enquanto o plano estiver ativo.', tone: 'cyan' as const }] : []),
     ],
     itemSectionTitle: 'Cosméticos entregues',
     itemIds: [],
@@ -1615,7 +1616,7 @@ const buildMembershipRewardMockPayload = (tier: 'premium' | 'platinum'): RewardM
     activeBenefitsTitle: 'Vantagens ativadas',
     activeBenefits: isPlatinum ? GM_PLATINUM_ACTIVE_BENEFITS : GM_PREMIUM_ACTIVE_BENEFITS,
     campaignQuizFreeCreditsGranted: 0,
-    campaignQuizMediumCreditsGranted: isPlatinum ? 1 : 0,
+    campaignQuizMediumCreditsGranted: 0,
   };
 };
 

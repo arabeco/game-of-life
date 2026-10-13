@@ -52,7 +52,7 @@ export const GOLD_PLATINUM_PRODUCT = {
         'Todas as vantagens do Premium',
         'Até 30 arenas no total (incluindo arquivadas)',
         'Cena do legado com 70% off',
-        '1 campanha média grátis por renovação',
+        'Campanhas com 20% off',
         'Todos os planos de fundo e aparências premium',
     ],
 } as const;

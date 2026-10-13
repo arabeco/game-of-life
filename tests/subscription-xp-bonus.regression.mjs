@@ -87,3 +87,17 @@ console.log('Descontos: Platinum paga menos que Premium em campanha e cena de le
 // exige Premium desde 20260812002000. A trava no app era sobra.
 assert.doesNotMatch(lerFonte('components/ArenaDetailModal.tsx'), /Mentoria exige que o Mentor seja Premium/, 'o app ainda exige Premium para mentoria');
 console.log('Mentoria: preco para todos, sem trava de plano.');
+
+// --- a ficha de campanha saiu do Platinum, e o boost saiu do servidor ------
+// (13/10/2026) A ficha so existia dentro do quiz, no fundo da loja: quem nao
+// abria o quiz nunca sabia que tinha. O Platinum fica com o desconto de 20% em
+// campanha, que vale em toda compra. Fichas ja recebidas continuam valendo.
+const entrega = lerFonte('supabase/migrations/20261013110000_planos_sem_ficha_e_sem_boost.sql');
+assert.doesNotMatch(entrega, /v_medium_quiz_credits := 1/, 'o Platinum ainda ganha ficha por renovacao');
+assert.doesNotMatch(entrega, /\+5% XP|15 arenas/, 'a mensagem de renovacao ainda promete EXP ou 15 arenas');
+assert.match(entrega, /delete from public\.store_prices where kind = 'boost'/, 'o servidor ainda vende boost');
+for (const arquivo of ['constants/goldCatalog.ts', 'constants/economy.ts']) {
+  assert.doesNotMatch(lerFonte(arquivo), /campanha média grátis/, `${arquivo} ainda promete a ficha`);
+  assert.match(lerFonte(arquivo), /Campanhas com 20% off/, `${arquivo} nao mostra o desconto de campanha do Platinum`);
+}
+console.log('Platinum sem ficha: fica o desconto de campanha; boost fora do servidor.');

@@ -543,10 +543,8 @@ export const ArenaDetailModal: React.FC<{
             return;
         }
 
-        if (type === 'mentoria' && !hasPremiumAccess(userProfile) && !hasPremiumAccess(friend)) {
-            setLinkStatus(`Mentoria exige que o Mentor seja Premium.`);
-            return;
-        }
+        // Mentoria nao e vantagem de plano: o servidor cobra o vinculo de todo
+        // mundo (relationship_lifecycle_v3) e nao exige Premium (13/10/2026).
 
         const { error } = await supabase.from('relationship_link_invites').insert({
             sender_id: uid,

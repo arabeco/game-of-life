@@ -81,3 +81,9 @@ assert.ok(getCampaignPriceForProfile(1, platinum) >= 1);
 assert.ok(getLegacyProjectionScenePrice(platinum, 1) >= 0);
 
 console.log('Descontos: Platinum paga menos que Premium em campanha e cena de legado, sempre.');
+
+// --- mentoria nao e vantagem de plano (13/10/2026) -------------------------
+// O servidor cobra o vinculo de todo mundo (75 de ouro, renovacao 40) e nao
+// exige Premium desde 20260812002000. A trava no app era sobra.
+assert.doesNotMatch(lerFonte('components/ArenaDetailModal.tsx'), /Mentoria exige que o Mentor seja Premium/, 'o app ainda exige Premium para mentoria');
+console.log('Mentoria: preco para todos, sem trava de plano.');

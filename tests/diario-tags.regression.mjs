@@ -6,14 +6,14 @@ import { TAGS_DO_DIARIO, cabecalhoDaEntrada, lerEntradas, humoresDaPagina } from
  * O DIARIO COM TAG E COR (12/10/2026, pedido do Afonso).
  *
  * Na aba Humor: a bolinha na cor do humor ao lado do campo, e embaixo as tags
- * Insight, Ideia, Reflexao, Desabafo e Lembrete (nenhuma marcada = sem tag).
+ * Ideia, Reflexao, Gratidao, Conquista e Lembrete (nenhuma marcada = sem tag).
  * A tag vai no cabecalho da entrada, como o humor ja ia — sem coluna nova:
  *     12/10/2026 · Coragem · Ideia
  * Em Paginas: a pagina vira leitura, uma entrada por cartao, com cor e tag.
  */
 const ler = (c) => readFileSync(new URL(`../${c}`, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 
-assert.deepEqual(TAGS_DO_DIARIO, ['Insight', 'Ideia', 'Reflexão', 'Desabafo', 'Lembrete']);
+assert.deepEqual(TAGS_DO_DIARIO, ['Ideia', 'Reflexão', 'Gratidão', 'Conquista', 'Lembrete']);
 assert.equal(cabecalhoDaEntrada('12/10/2026', 'Coragem', 'Ideia'), '12/10/2026 · Coragem · Ideia');
 assert.equal(cabecalhoDaEntrada('12/10/2026', 'Coragem', null), '12/10/2026 · Coragem');
 assert.equal(cabecalhoDaEntrada('12/10/2026', null, 'Ideia'), '12/10/2026 · Ideia', 'entrada sem humor (bolinha desligada)');

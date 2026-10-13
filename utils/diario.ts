@@ -9,7 +9,9 @@
  *
  * Entre uma entrada e outra, a linha de tracinhos (SEPARADOR_DE_ENTRADA).
  */
-export const TAGS_DO_DIARIO = ['Insight', 'Ideia', 'Reflexão', 'Desabafo', 'Lembrete'] as const;
+// Uma tag por tipo de coisa que se escreve, sem duas dizendo o mesmo (12/10/2026:
+// Insight e Ideia se confundiam, e Desabafo nao agradou).
+export const TAGS_DO_DIARIO = ['Ideia', 'Reflexão', 'Gratidão', 'Conquista', 'Lembrete'] as const;
 export type TagDoDiario = (typeof TAGS_DO_DIARIO)[number];
 
 const SEPARADOR = '--------------';

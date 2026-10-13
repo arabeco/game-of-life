@@ -16,11 +16,11 @@ import { supabase } from '../supabaseClient';
 const paginas: Record<number, { content: string; updated_at: string }> = {
     1: {
         updated_at: '2026-10-05T10:00:00Z',
-        content: '05/10/2026 · Medo\nSemana pesada, muita coisa pra entregar.\n\n--------------\n06/10/2026 · Coragem · Reflexão\nFechei a tabela das placas. Dá pra respirar.\n',
+        content: '05/10/2026 · Medo\nSemana pesada, muita coisa pra entregar.\n\n--------------\n06/10/2026 · Coragem · Gratidão\nFechei a tabela das placas. Dá pra respirar.\n',
     },
     2: {
         updated_at: '2026-10-12T21:00:00Z',
-        content: '11/10/2026 · Aceitação · Insight\nO clã precisa de dinâmica, não de mais tela.\n\n--------------\n12/10/2026 · Disposição · Ideia\nDiário com cor e tag. Bolinha do humor do lado do campo.\nE as páginas sem cara de Windows 98.\n\n--------------\n12/10/2026 · Raiva · Desabafo\nO planner tremendo pro lado de novo.\n\n--------------\n13/10/2026 · Coragem · Lembrete\nRodar o SQL do contador do site.\n',
+        content: '11/10/2026 · Aceitação · Reflexão\nO clã precisa de dinâmica, não de mais tela.\n\n--------------\n12/10/2026 · Disposição · Ideia\nDiário com cor e tag. Bolinha do humor do lado do campo.\nE as páginas sem cara de Windows 98.\n\n--------------\n12/10/2026 · Alegria · Conquista\nMissão de clã no ar.\n\n--------------\n13/10/2026 · Coragem · Lembrete\nRodar o SQL do contador do site.\n',
     },
 };
 

@@ -118,14 +118,14 @@ const JournalTab: React.FC<{ userId: string }> = ({ userId }) => {
     const paginasVisiveis = filtro ? paginas.filter((p) => p.tags.includes(filtro)) : paginas;
 
     const filtroDeTags = (
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filtrar por tag">
+        <div className="flex gap-1" role="group" aria-label="Filtrar por tag">
             {TAGS_DO_DIARIO.map((tag) => (
                 <button
                     key={tag}
                     type="button"
                     aria-pressed={filtro === tag}
                     onClick={() => setFiltro((atual) => (atual === tag ? null : tag))}
-                    className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] transition-colors ${
+                    className={`min-w-0 flex-auto truncate rounded-full border px-1.5 py-1 text-center text-[11px] font-semibold transition-colors ${
                         filtro === tag
                             ? 'border-[var(--skin-accent-color)]/60 bg-[var(--skin-accent-color)]/15 text-white'
                             : 'border-white/10 text-white/40 hover:border-white/20 hover:text-white/70'

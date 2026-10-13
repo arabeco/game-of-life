@@ -123,7 +123,10 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
      * 50, 75 e 100, e escreve-se esse. Mudar as faixas passa a corrigir a regua
      * sozinho, em vez de deixar as duas se afastarem em silencio.
      */
-    const marcosDaRegua = [0, 25, 50, 75, 100].map((posicao) => ({
+    // Os marcos ficam nos pontos medios (10, 30, 50, 70 e 90%), e nao nas
+    // pontas: la os nomes compridos colavam no vizinho ("AMORILUMINACAO").
+    // Cada um continua no lugar do humor que mora ali.
+    const marcosDaRegua = [10, 30, 50, 70, 90].map((posicao) => ({
         posicao,
         label: resolveMood(posicao).label.toUpperCase(),
     }));
@@ -195,11 +198,7 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                 className="absolute top-0 whitespace-nowrap text-[10px] font-bold text-gray-400"
                                 style={{
                                     left: posicao + '%',
-                                    transform: posicao === 0
-                                        ? 'translateX(0)'
-                                        : posicao === 100
-                                            ? 'translateX(-100%)'
-                                            : 'translateX(-50%)',
+                                    transform: 'translateX(-50%)',
                                 }}
                             >
                                 {label}
@@ -235,14 +234,14 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         />
                     </div>
 
-                    <div className="flex flex-wrap gap-1.5" role="group" aria-label="Tag da entrada">
+                    <div className="flex gap-1" role="group" aria-label="Tag da entrada">
                         {TAGS_DO_DIARIO.map((opcao) => (
                             <button
                                 key={opcao}
                                 type="button"
                                 aria-pressed={tag === opcao}
                                 onClick={() => setTag((atual) => (atual === opcao ? null : opcao))}
-                                className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] transition-colors ${
+                                className={`min-w-0 flex-auto truncate rounded-full border px-1.5 py-1 text-center text-[11px] font-semibold transition-colors ${
                                     tag === opcao
                                         ? 'border-[var(--skin-accent-color)]/60 bg-[var(--skin-accent-color)]/15 text-white'
                                         : 'border-white/10 text-white/45 hover:border-white/20 hover:text-white/75'

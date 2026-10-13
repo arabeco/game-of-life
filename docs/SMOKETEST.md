@@ -26,6 +26,7 @@ Atualizado em 13/10/2026, para o lançamento. Os itens marcados **[novo]** mudar
 - [ ] **Abrir a aba PLANNER.** Esperado: ele já aparece parado na hora atual — não rola sozinho, não treme para os lados. Se tremer: **grave a tela** e mande o vídeo.
 - [ ] **Zoom.** **[novo]** Toque no botão de zoom até o **1x**. Esperado: o dia inteiro cabe (ou quase) na tela. Os outros zooms (2x a 5x) aumentam os blocos. Fechar e abrir o app mantém o zoom escolhido.
 - [ ] **Quem já usava o app:** depois de atualizar, o planner abre no **mesmo tamanho de antes** (o zoom antigo foi convertido, só mudou de número).
+- [ ] **Gestos** (Codex). **[novo]** Esperado: dá para rolar o planner passando o dedo **por cima** de um cartão; segurar pega o cartão e aí ele arrasta com pouco movimento; perto da borda a agenda rola devagar; soltar fora cancela sem deixar o cartão no lugar errado. Uma fala do Oráculo não aparece no meio do arraste.
 
 ## 3. Widgets
 
@@ -60,12 +61,13 @@ Atualizado em 13/10/2026, para o lançamento. Os itens marcados **[novo]** mudar
 - [ ] **Sair do clã com a missão em andamento.** Esperado: o que você já contou fica no grupo, e você não recebe o baú.
 - [ ] **Humor:** registre um humor no Diário e abra a Sede. Esperado: sua barrinha mostra a cor do humor. Quem nunca registrou aparece com a barrinha vazia ("Sem dados").
 
-## 6. Feitos e feed
+## 6. Feitos, feed e perfil
 
 - [ ] **Publicar nos Feitos** (subir de patente, fechar ciclo, recalibrar a maestria, missão). **[novo]** Esperado: card comprido com **foto e borda** de quem fez, **NOME • AÇÃO** em cima, o título entre linhas douradas, e o fundo dizendo o tipo (patente com o fundo da patente, ciclo com a placa, maestria branca e dourada com "Nível N").
 - [ ] **Tocar no nome ou na foto** de quem postou. Esperado: abre o perfil da pessoa; se não for amigo, tem **Adicionar amigo**.
 - [ ] **Duas abas: Reino e Aliados.** **[novo]** Esperado: **Aliados** = você e seus amigos; **Reino** = todo o resto. Nenhum post aparece nas duas.
 - [ ] **Curtir:** a estrelinha, sem círculo em volta.
+- [ ] **Perfil › Copiar nickname e compartilhar** (Codex). **[novo]** Esperado: "Copiar" embaixo do nome avisa que copiou; o cartão compartilhado leva "Me adicione no Glyph!" e o nickname.
 
 ## 7. Diário
 
@@ -78,7 +80,13 @@ Toque no botão de humor no topo.
 - [ ] **Aba Páginas.** Esperado: cada página mostra a prévia, o **período** (ex.: "05/10 – 12/10/2026"), as bolinhas dos humores e "pág. N" à direita; abrir mostra as entradas em cartões; **Editar** abre o texto cru; o filtro de tag funciona.
 - [ ] **Sem internet:** escreva e registre. Esperado: aviso "Não consegui guardar no diário. O texto continua aqui" e o texto **não** some.
 
-## 8. Loja, planos e campanhas
+## 8. Média de EXP e tags Top (Codex)
+
+- [ ] **Painel Diário.** **[novo]** Esperado: junto da EXP do dia, um textinho com % acima ou abaixo da sua média (ou "Na sua média de EXP"); hoje aparece como parcial. Conta com menos de 7 dias não mostra nada.
+- [ ] **Relatório do ciclo** (com 2 ciclos fechados antes). **[novo]** Esperado: a média de EXP por dia comparada com os ciclos anteriores, no slide de conquistas e na placa compartilhável.
+- [ ] **Tags Top 1/5/10%** (ciclo, maestria, clã). Esperado: **não aparecem** enquanto o app tiver menos de 100 jogadores; nada quebra no lugar delas.
+
+## 9. Loja, planos e campanhas
 
 - [ ] **Loja › Ouro.** **[novo]** Esperado: só os pacotes de ouro; **não** existe mais "Boosts de XP".
 - [ ] **Loja › Planos.** **[novo]** Esperado: nenhum texto fala em "+5% XP" ou "+10% XP"; o Premium diz **até 20 arenas**; o Platinum diz **"Campanhas com 20% off"** e "Legado com 70% off".
@@ -87,7 +95,7 @@ Toque no botão de humor no topo.
 - [ ] **Coroa.** **[novo]** Com a outra conta sendo Premium/Platinum: a **coroa** aparece ao lado do nome dela no seu mini card de amigos e no perfil dela.
 - [ ] **Mentoria** (Arena › vínculos › convidar para mentoria). **[novo]** Esperado: não aparece mais "Mentoria exige que o Mentor seja Premium"; o vínculo cobra o preço normal em ouro.
 
-## 9. Cupons e convite
+## 10. Cupons e convite
 
 Config › Suporte › **Resgatar código**.
 
@@ -99,24 +107,26 @@ Config › Suporte › **Resgatar código**.
 - [ ] **Usar o código da outra pessoa** (na conta nova). Esperado: **+10 de ouro**, "Você e (nome) agora são amigos", os dois na lista um do outro; quem convidou recebe o aviso e **10 fragmentos** na bolinha do 1.
 - [ ] **Conta com mais de 7 dias** tentando usar código. Esperado: "Código de convite vale só para contas criadas há até 7 dias."
 
-## 10. Oráculo e notificações
+## 11. Oráculo, conquistas e notificações
 
 - [ ] ⏳ **Push da manhã** (depois das 7h). Esperado: título **"Seu ciclo hoje"**, texto sobre o ciclo, cor de destaque.
 - [ ] ⏳ **Push da Sabedoria.** Esperado: o título é o do card.
 - [ ] **Tema claro do celular:** a notificação continua legível.
 - [ ] **Concluir uma ação.** Esperado: o Oráculo reage dizendo quanto falta; avanço em verde, meta cumprida em dourado.
+- [ ] **Conquista secreta** (Codex; ex.: Imparável, ao bater a sequência). **[novo]** Esperado: o modal aparece **na hora** em que você faz a ação, não só ao reabrir o app ou fechar o ciclo; não repete na mesma sessão.
+- [ ] **Item repetido** (baú, missão ou segredo que dá algo que você já tem). **[novo]** Esperado: "Você já possui"/"Já está na sua coleção", com os fragmentos da conversão separados do bônus; o aviso não diz que a cópia foi adicionada.
 
-## 11. Abrir rápido (o que o app baixa)
+## 12. Abrir rápido (o que o app baixa)
 
 - [ ] **Abrir o app duas vezes seguidas** com o Wi-Fi ligado. Esperado: a segunda abertura é mais rápida; os relatórios de ciclos fechados aparecem iguais (eles agora ficam guardados no celular).
 - [ ] **Fechar um ciclo** e abrir o relatório. Esperado: o relatório novo aparece, e os antigos continuam lá.
 
-## 12. Visual
+## 13. Visual
 
 - [ ] **Fundos de patente** e **borda Soberano** aparecem no perfil.
 - [ ] **Roupas no avatar** (ex.: Chuva): a roupa assenta no corpo.
 
-## 13. Testes finais — só com o Afonso junto
+## 14. Testes finais — só com o Afonso junto
 
 Estes mexem com dinheiro ou apagam coisas. Faça com uma conta de teste e combine antes.
 

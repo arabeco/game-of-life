@@ -1,6 +1,6 @@
 # Prancheta do Glyph
 
-Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 2026-10-12. 26 abertos de 77.
+Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 2026-10-13. 27 abertos de 78.
 
 **Não edite as listas abaixo** — elas são regravadas a partir da prancheta. Para avisar algo, escreva em "Recados da outra IA", no fim: o Claude lê e passa para a prancheta.
 
@@ -35,6 +35,7 @@ Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 
 - [ ] Clã: mexer antes do lançamento *(Afonso)* — 12/10: FEITO no código (af67b81..92c9f9d, com a revisão final aplicada): missão de clã da temporada com Entrar (na tela do clã e na Temporada), arena por participante com tag de clã, total do grupo contado no servidor (desmarcar baixa), baú Raro só para quem entrou, sair do clã ou abandonar = o que depositou fica no grupo, não leva nada para o clã novo e não recebe o baú (d16e5f3); humor de quem nunca registrou aparece vazio; meta vem do servidor; Aurora II ficou sem missão de clã, vencida sem meta some (arquiva). Teste: Socializar ×20 na Genesis. Na Sede: cartão da missão + barrinha de humor embaixo do nome de cada soberano (só o próprio clã vê). SQL rodado e conferido pelo Afonso em 12/10 (CHECK-missao-de-cla.sql tudo true). Chega no celular com o AAB 111. Próximo: aviso do Oráculo quando o grupo bate a meta. Desenho: docs/superpowers/specs/2026-10-12-missao-de-cla-design.md.
 - [ ] Rankings e interatividade: mexer antes do lançamento *(Afonso)* — 12/10: ideia guardada — ranking de CLÃS, junto da dinâmica dos ciclos: a EXP do clã já vem só de ciclo fechado, e o comparativo diário (15/09) já mostra sua posição entre os jogadores do dia (Top X% / quantos ficaram abaixo; privado, mínimo 10, sem nomes). EM ABERTO: tabela explícita ou só "seu clã está entre os top N"; e se o comparativo está ligado em produção (migrações 20260915120000/130000/190000).
 - [ ] Jardim conquistado: expandir ou limite de peças atrelado ao progresso (depois) *(Afonso)* — 12/10: ideia do Afonso, para depois. O jardim iria sendo conquistado — área que expande, ou limite de coisas que se desbloqueia com o que você faz. Mesma direção do clã: integrado, não à parte.
+- [ ] Tag ou link de perfil para adicionar amigo (depois) *(Afonso)* — 12/10: ideia do Afonso. Um código/link do perfil para alguém adicionar sem buscar o nome. Não é prioridade com poucos usuários; o convite de amigo já cobre parte disso. Junto: nickname único (sem diferenciar maiúsculas), com aviso e sugestão no primeiro acesso quando o nome do Google já existir.
 
 <details><summary>Feitos (24)</summary>
 

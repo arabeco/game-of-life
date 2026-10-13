@@ -14,7 +14,10 @@ import { SovereignVitrineModal } from './SovereignVitrine';
 import { MissaoDoClaCard } from './MissaoDoClaCard';
 import { BarrinhaDeHumor } from './BarrinhaDeHumor';
 
-type ClanOverviewTab = 'headquarters' | 'members';
+// TRES ABAS, CADA UMA SEM ROLAGEM SOBRANDO (13/10/2026): a Sede e so o palco dos
+// soberanos com o humor; a missao tem a aba dela; Pessoas tem a temporada, o
+// legado e o Sair.
+type ClanOverviewTab = 'headquarters' | 'mission' | 'members';
 
 const ClanOverviewShell: React.FC<{
     embedded: boolean;
@@ -58,6 +61,8 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
         loadClanAndMembers,
         leaveClan,
         userProfile,
+        missoesDeClaAtivas,
+        carregarHumorDoCla,
     } = useGame();
     const [activeTab, setActiveTab] = useState<ClanOverviewTab>('headquarters');
     const [isManaging, setIsManaging] = useState(false);
@@ -67,6 +72,11 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
     useEffect(() => {
         if (clan?.id) void loadClanAndMembers(clan.id, true);
     }, [clan?.id, loadClanAndMembers]);
+    // O humor era carregado pelo cartao da missao; com a missao em outra aba, a
+    // Sede (que mostra as barrinhas) carrega sozinha.
+    useEffect(() => {
+        if (clan?.id) void carregarHumorDoCla();
+    }, [clan?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const currentMember = enrichedClanMembers.find(member => member.id === userProfile.id);
     const isLeader = currentMember?.role === 'leader';
@@ -209,13 +219,20 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
                                 </div>
                             </div>
 
-                            <div className="relative z-10 grid grid-cols-2 gap-1 border-b border-white/8 bg-black/35 p-1.5 backdrop-blur-sm">
+                            <div className="relative z-10 grid grid-cols-3 gap-1 border-b border-white/8 bg-black/35 p-1.5 backdrop-blur-sm">
                                 <button
                                     type="button"
                                     onClick={() => setActiveTab('headquarters')}
                                     className={`rounded-lg py-2 text-[11px] font-black uppercase tracking-[0.12em] ${activeTab === 'headquarters' ? 'bg-white/10 text-white' : 'text-white/45'}`}
                                 >
                                     Sede
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('mission')}
+                                    className={`rounded-lg py-2 text-[11px] font-black uppercase tracking-[0.12em] ${activeTab === 'mission' ? 'bg-white/10 text-white' : 'text-white/45'}`}
+                                >
+                                    Missão
                                 </button>
                                 <button
                                     type="button"
@@ -265,31 +282,13 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
                                             </div>
                                         </div>
 
+                                    </div>
+                                ) : activeTab === 'mission' ? (
+                                    <div className="space-y-3">
                                         <MissaoDoClaCard />
-
-                                        <div>
-                                            <div className="mb-2 flex items-center justify-between px-1">
-                                                <h3 className="text-[10px] font-black uppercase tracking-[0.16em] text-white/55">Temporada atual</h3>
-                                                <span className="text-[10px] font-bold text-amber-200/70">{seasonRecordedContribution.toLocaleString('pt-BR')} EXP</span>
-                                            </div>
-                                            <div className="space-y-2">
-                                                {seasonMembers.slice(0, 6).map((member, index) => (
-                                                    <div key={member.id} className="grid grid-cols-[26px_40px_minmax(0,1fr)_auto] items-center gap-2 rounded-lg border border-white/8 bg-white/[0.035] px-3 py-2.5">
-                                                        <span className="text-center text-xs font-black text-white/35">{index + 1}</span>
-                                                        <UserAvatar avatarUrl={member.avatarUrl} nickname={member.nickname} className="h-10 w-10" level={member.level} showBorder={false} />
-                                                        <div className="min-w-0">
-                                                            <p className="truncate text-sm font-bold text-white">{member.nickname}</p>
-                                                            <p className="text-[9px] uppercase text-white/35">{member.role === 'leader' ? 'Liderança' : 'Membro'}</p>
-                                                        </div>
-                                                        <span className="font-mono text-sm font-black text-amber-200">{Number(member.seasonContributionPoints || 0).toLocaleString('pt-BR')}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            <div className="mt-3 flex justify-between border-t border-white/8 px-1 pt-3 text-[9px] font-bold uppercase tracking-[0.08em] text-white/32">
-                                                <span>Legado do grupo (desde sempre)</span>
-                                                <span>{totalRecordedContribution.toLocaleString('pt-BR')} EXP</span>
-                                            </div>
-                                        </div>
+                                        {missoesDeClaAtivas.length === 0 && (
+                                            <p className="px-2 py-10 text-center text-sm text-white/45">Nenhuma missão de clã agora. A próxima chega com a temporada.</p>
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="space-y-2">
@@ -304,8 +303,13 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
                                                 </button>
                                             )}
                                         </div>
-                                        {sortedMembers.map(member => (
+                                        <div className="mb-2 flex justify-between px-1 text-[9px] font-bold uppercase tracking-[0.08em] text-white/40">
+                                            <span>Temporada atual · <span className="text-amber-200/75">{seasonRecordedContribution.toLocaleString('pt-BR')} EXP</span></span>
+                                            <span>Legado · {totalRecordedContribution.toLocaleString('pt-BR')} EXP</span>
+                                        </div>
+                                        {seasonMembers.map((member, index) => (
                                             <div key={member.id} className="flex items-center gap-3 rounded-lg border border-white/8 bg-white/[0.035] p-3">
+                                                <span className="w-4 text-center text-xs font-black text-white/35">{index + 1}</span>
                                                 <UserAvatar avatarUrl={member.avatarUrl} nickname={member.nickname} className="h-11 w-11" level={member.level} showBorder={false} />
                                                 <div className="min-w-0 flex-1">
                                                     <div className="flex items-center gap-2">

@@ -210,6 +210,8 @@ const resolveRecommendation = (answers: QuizAnswers, entries: CampaignEntry[], m
     return ranked[0]?.entry ? { entry: ranked[0].entry, desiredDuration, upgradeNote: null } : null;
 };
 
+import { abrirCampanhaNaLoja } from '../../utils/campanhaNaLoja';
+
 interface CampaignRecommendationQuizModalProps { onClose: () => void }
 
 export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQuizModalProps> = ({ onClose }) => {
@@ -577,10 +579,19 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
                                             </p>
                                         )}
                                         <div className="campaign-quiz-result-actions">
-                                            <button type="button" onClick={() => { void handleInstallRecommendation(result); }} disabled={installingCatalogId !== null || isSyncingLibrary || isResultInstalled} className="luxe-skin-button w-full px-5 py-3 text-[11px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-50">
-                                                {installingCatalogId === result.entry.catalog.id ? 'Instalando...' : isResultInstalled ? 'Campanha instalada' : installLabel}
-                                            </button>
-                                            <button type="button" onClick={onClose} className="campaign-quiz-secondary w-full px-5 py-3 text-[11px] font-black uppercase tracking-[0.16em]">Ver catálogo completo</button>
+                                            {/* A compra e na loja (13/10/2026): antes de gastar, a pessoa quer
+                                                ver as outras. Instalar so fica para o que ja e dela, e o vale
+                                                antigo continua reivindicando aqui. */}
+                                            {(ownedResultCodex || usaVale) ? (
+                                                <button type="button" onClick={() => { void handleInstallRecommendation(result); }} disabled={installingCatalogId !== null || isSyncingLibrary || isResultInstalled} className="luxe-skin-button w-full px-5 py-3 text-[11px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-50">
+                                                    {installingCatalogId === result.entry.catalog.id ? 'Instalando...' : isResultInstalled ? 'Campanha instalada' : installLabel}
+                                                </button>
+                                            ) : (
+                                                <button type="button" onClick={() => { onClose(); abrirCampanhaNaLoja(result.entry.catalog.id); }} className="luxe-skin-button w-full px-5 py-3 text-[11px] font-black uppercase tracking-[0.16em]">
+                                                    Ver na loja
+                                                </button>
+                                            )}
+                                            <button type="button" onClick={() => { onClose(); abrirCampanhaNaLoja(null); }} className="campaign-quiz-secondary w-full px-5 py-3 text-[11px] font-black uppercase tracking-[0.16em]">Ver catálogo completo</button>
                                         </div>
                                     </div>
                                 </div>

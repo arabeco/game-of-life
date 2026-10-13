@@ -744,7 +744,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
         {/* Messages */}
         <div id="oracle-content" role="tabpanel" aria-labelledby={`oracle-tab-${section}`} className="min-h-0 flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-          {section === 'mission' && <OracleMissionPanel onOpenMissions={() => {dispatchAppView({view:'social'}); window.setTimeout(() => window.dispatchEvent(new CustomEvent('mundo-tab-request', {detail:{tab:'temporada'}})),80); onClose();}} onContinue={arenaId => { if (arenaId) openArena(arenaId); else openPlannerView(); onClose(); }} key={`${userProfile.id}:${activeArenaPact?.id || 'none'}`} />}
+          {section === 'mission' && <OracleMissionPanel onFechar={onClose} onOpenMissions={() => {dispatchAppView({view:'social'}); window.setTimeout(() => window.dispatchEvent(new CustomEvent('mundo-tab-request', {detail:{tab:'temporada'}})),80); onClose();}} onContinue={arenaId => { if (arenaId) openArena(arenaId); else openPlannerView(); onClose(); }} key={`${userProfile.id}:${activeArenaPact?.id || 'none'}`} />}
           {section !== 'mission' && visibleMessages.length === 0 && (
             <div className="flex min-h-full flex-col items-center justify-center p-6 text-center">
               <div className="opacity-50">

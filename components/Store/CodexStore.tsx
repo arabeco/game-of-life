@@ -2,6 +2,7 @@
 import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
 import { CheckIcon, FilterIcon } from '../Icons';
+import { EVENTO_CAMPANHA_NA_LOJA, esquecerCampanhaPendente, olharCampanhaPendente } from '../../utils/campanhaNaLoja';
 import { CampaignsCodex } from '../CampaignsCodex';
 import { ConfirmationModal } from '../ConfirmationModal';
 import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../../utils/codexPreview';
@@ -210,6 +211,20 @@ export const CodexStore: React.FC = () => {
     ), [catalogEntries]);
 
     // O quiz saiu da loja (13/10/2026): busca de campanha agora mora no Oraculo, aba Missao.
+    // Quando ele recomenda, "Ver na loja" chega aqui e abre a ficha da campanha.
+    useEffect(() => {
+        const abrirPendente = () => {
+            const catalogId = olharCampanhaPendente();
+            if (!catalogId) return;
+            const entrada = catalogEntries.find((entry) => entry.codex.id === catalogId);
+            if (!entrada) return; // o catalogo ainda vai chegar; tenta de novo quando chegar
+            esquecerCampanhaPendente();
+            setCampaignPreview(entrada.preview);
+        };
+        abrirPendente();
+        window.addEventListener(EVENTO_CAMPANHA_NA_LOJA, abrirPendente);
+        return () => window.removeEventListener(EVENTO_CAMPANHA_NA_LOJA, abrirPendente);
+    }, [catalogEntries]);
 
     const availableAssetFilters = useMemo(() => (
         ASSET_FILTER_ORDER.map((assetId) => ({

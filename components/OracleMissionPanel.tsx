@@ -1,16 +1,23 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { ArenaPactBalloon, ArenaPactProposal } from './ArenaPactBalloon';
 import { OracleSpeakerMark } from './OracleSpeakerMark';
 import { buildOracleMissionBrief } from '../utils/oracleMissionBrief';
 import { CampaignRecommendationQuizModal } from './Store/CampaignRecommendationQuizModal';
+import { EVENTO_CAMPANHA_NA_LOJA } from '../utils/campanhaNaLoja';
 
-export const OracleMissionPanel: React.FC<{onContinue: (arenaId?: string) => void; onOpenMissions: () => void}> = ({onContinue,onOpenMissions}) => {
+export const OracleMissionPanel: React.FC<{onContinue: (arenaId?: string) => void; onOpenMissions: () => void; onFechar?: () => void}> = ({onContinue,onOpenMissions,onFechar}) => {
   const {activeArenaPact: pact, arenaPactProgress: progress, missaoIndividualDisponivel,
     missaoDeSistemaAtiva, oracleMessages} = useGame();
   const [choosing, setChoosing] = useState(false);
   // Buscar campanha: as perguntas que moravam na loja, agora aqui (13/10/2026).
   const [buscandoCampanha, setBuscandoCampanha] = useState(false);
+  // "Ver na loja" leva para a loja: o Oraculo fecha para nao ficar por cima.
+  useEffect(() => {
+    if (!onFechar) return;
+    window.addEventListener(EVENTO_CAMPANHA_NA_LOJA, onFechar);
+    return () => window.removeEventListener(EVENTO_CAMPANHA_NA_LOJA, onFechar);
+  }, [onFechar]);
   const buscarCampanha = <>
     <button type="button" onClick={() => setBuscandoCampanha(true)} className="mt-3 min-h-11 w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 text-xs font-bold text-white/75 transition-colors hover:border-[var(--skin-accent-color)]/35 hover:text-white">Buscar campanha</button>
     {buscandoCampanha && <CampaignRecommendationQuizModal onClose={() => setBuscandoCampanha(false)} />}

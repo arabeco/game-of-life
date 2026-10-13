@@ -24,3 +24,11 @@ const quiz = ler('components/Store/CampaignRecommendationQuizModal.tsx');
 assert.match(quiz, /useState<QuizMode>\('full'\)/, 'o quiz ainda comeca nas campanhas gratuitas');
 assert.match(quiz, /const canPickFreeQuiz = false;/, 'o quiz ainda oferece campanha de graca');
 console.log('Campanha: busca no Oraculo, filtros na loja, nada de graca.');
+
+// O resultado leva para a LOJA, nao compra ali (13/10/2026): antes de gastar, a
+// pessoa quer comparar com as outras. A loja abre na campanha recomendada.
+const quizResultado = ler('components/Store/CampaignRecommendationQuizModal.tsx');
+assert.match(quizResultado, />\s*Ver na loja\s*</, 'o resultado nao tem Ver na loja');
+assert.match(quizResultado, /abrirCampanhaNaLoja\(result\.entry\.catalog\.id\)/, 'Ver na loja nao leva a campanha recomendada');
+assert.match(ler('components/Store/CodexStore.tsx'), /olharCampanhaPendente\(\)/, 'a loja nao abre a campanha que o Oraculo recomendou');
+console.log('ok - o resultado leva para a loja, aberta na campanha recomendada');

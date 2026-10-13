@@ -233,3 +233,23 @@ Afonso aprovou recuperação de senha + confirmação de exclusão; novidades fi
 - Afonso pediu apenas borda, banner e insígnia de Zênite I, Eclipse I, Égide I e Aurora II. As 12 peças foram geradas e salvas em art-delivery/temporadas-2027/. Galeria: galeria.html; instruções e limites: README.md; prompts: prompts.json.
 - PNGs com alpha (500×500; banners 1020×170) e WEBP lossless, cerca de 2 MiB os 12. Alpha 0 no centro das quatro bordas, preview com avatar por baixo, nomes/acento e Aurora II conferidos. Galeria verificada em 390/1280 px e temas claro/escuro.
 - Não integrado ao catálogo/servidor, nenhum arquivo antigo substituído. Não marcar temporadas como lançáveis: três coleções ainda precisam de cadastro/missões. Skins continuam com encaixe pendente; temas/fundos não foram gerados nesta rodada.
+
+### 12/10 — Codex: artes leves integradas e auditoria da sessão
+
+- Atualiza os recados anteriores: 12 bordas/banners/insígnias agora no catálogo local, 675 KiB juntas (menos 67%), alpha preservado; pasta catalog 15,5 MiB dentro de 18. Aurora mantém IDs e resolve URLs antigas.
+- SQL manual pendente: sql/temporadas-2027-artes.sql. Nove peças futuras entram desligadas. Zênite/Eclipse/Égide ainda precisam skin/tema/missões; encaixe das cinco skins permanece com Claude.
+- Passaram TypeScript, build web principal, item-art, egress, reward-routing e pagamento/renovação sem baús. Corrigido teste obsoleto dos planos. Galeria 390/1280, alpha e SQL local idempotente conferidos; nada aplicado ao Supabase nesta rodada.
+- SMOKETEST corrigido: marco 1/5/10, código sem link público e build 111 pendente.
+- Auditoria completa: docs/2026-10-12-temporadas-integracao-e-pontas-soltas.md. Exclusão pelo site ainda mailto; retentativas de exclusão/Storage, publicação do site e haptics seguem pendentes. Testes humanos separados.
+- Afonso reforçou: no próximo commit/push/AAB incluir também as mudanças da outra IA. Não houve commit, push ou AAB nesta rodada; conferir alterações dos dois antes de fechar.
+
+### 12/10 — AAB 111 autorizado (Codex)
+
+Afonso confirmou a execução de sql/temporadas-2027-artes.sql e pediu commit, push e AAB 111, incluindo o trabalho de ambas as IAs. Preparação em andamento; resultado e hash serão registrados no checkpoint 111.
+
+### 12/10 — AAB 111 gerado e verificado (Codex)
+
+- Build do checkout completo, incluindo commits do Claude e alterações do Codex. TypeScript, build completo, 24 regressões, Capacitor sync, Gradle/R8 e assinatura passaram.
+- Arquivo: android/app/build/outputs/bundle/release/Glyph-1.0.111-111.aab (49.714.788 bytes). Pacote life.glyph.app, versão 1.0.111/código 111, targetSdk 36 verificados dentro do AAB.
+- SHA-256: 0D2288FB17C42F0A1BB3B8A8CC04D209370B96403AB8B2E4623767CE4DD406A2. Checkpoint: docs/2026-10-12-checkpoint-aab-111.md. Upload Play pendente; não publicar como já distribuído.
+- SQL das artes confirmado executado por Afonso. Exclusão completa/site/haptics e skins continuam pendentes.

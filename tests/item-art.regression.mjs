@@ -269,8 +269,14 @@ const naPasta = (relativo) => fs.existsSync(path.join(root, 'public', relativo.r
 
     // E quem tem chave de colecao precisa das cinco pecas. A lista abaixo e a
     // espera visivel: quando a arte entrar, tire daqui e o teste passa a cobrar.
-    // Nenhuma colecao incompleta conhecida: a Aurora I fechou as cinco pecas.
-    const incompletasConhecidas = {};
+    // Arte cadastrada em 12/10/2026; ainda sem skin, tema ou quests.
+    // O SQL de cadastro deixa as nove pecas desligadas no servidor.
+    const incompletasConhecidas = { zenite_1_2027: 3, eclipse_1_2027: 3, egide_1_2027: 3 };
+    for (const chave of Object.keys(incompletasConhecidas)) {
+        const temporada = todas.find(season => season.seasonKey === chave);
+        assert.ok(temporada, `${chave} sem calendario`);
+        assert.equal(daColecao(temporada).length, 0, `${chave}: completar colecao antes de ativar quests`);
+    }
     const porChave = {};
     for (const item of ITEMS_DB) {
         // `isLegacyRetired` sao as versoes antigas que foram substituidas — a

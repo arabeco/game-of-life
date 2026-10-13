@@ -6,7 +6,7 @@ Atualizado em 10/10/2026.
 
 ## Antes de começar
 
-- **Versão do app:** os testes de **convite** (seção 5) precisam da versão **110 ou mais nova**. O resto vale na 109.
+- **Versão do app:** os testes de **convite** (seção 5) precisam da versão **111 ou mais nova** (build ainda pendente). O resto vale na 109.
 - **Duas contas:** a sua, novinha (criada no dia do teste), e a de outra pessoa (pode ser a do Afonso). O convite só funciona em conta com até 7 dias de criada.
 - **Notificações ligadas** para o Glyph, e o Oráculo com avisos ativos (Config › Oráculo & Alertas).
 - Alguns itens levam **dias** (marcados com ⏳). Faça o resto no primeiro dia e volte nesses.
@@ -50,15 +50,15 @@ Config › Suporte › **Resgatar código**.
 
 No mesmo modal do cupom, embaixo do OK.
 
-- [ ] **Seu código aparece** (ex.: `SEUNOME-7K2`) com **Copiar** e **Enviar**, e uma barrinha com bolinha no **5** e no **10**.
+- [ ] **Seu código aparece** (ex.: `SEUNOME-7K2`) com **Copiar** e **Enviar**, e uma barrinha com bolinha no **1**, no **5** e no **10**.
 - [ ] **Copiar.** Esperado: aviso "Código copiado."
-- [ ] **Enviar.** Esperado: abre o compartilhar do celular com uma mensagem que tem o link da Play Store e o código escrito.
+- [ ] **Enviar.** Esperado: abre o compartilhar do celular com o código e as instruções. Enquanto a Play pública não estiver liberada, a mensagem não leva link da loja.
 - [ ] **Usar o próprio código.** Esperado: "Esse é o seu código. Mande para um amigo usar."
 - [ ] **Usar o código da outra pessoa** (na sua conta nova). Esperado: **+10 de ouro**, aviso "Você e (nome) agora são amigos", e os dois aparecem na lista de amigos um do outro.
 - [ ] **Usar um segundo código de convite.** Esperado: "Você já usou um código de convite."
 - [ ] **Conta antiga** (mais de 7 dias) tentando usar um código. Esperado: "Código de convite vale só para contas criadas há até 7 dias."
 - [ ] **Barrinha de quem convidou:** o amigo conta assim que usa o código. Esperado: o sino avisa "Um amigo usou seu convite! Agora você tem 1. Prêmio disponível: 10 fragmentos", a bolinha do 1 acende e, ao tocar, entram **10 fragmentos**. Os próximos prêmios: baú Comum no 5 e baú Incomum no 10.
-- [ ] **Convite pelo link (sem digitar):** num celular **sem o Glyph instalado**, abra o link que veio no "Enviar" do outro jogador, instale pela Play Store e crie uma conta nova. Esperado: sem digitar nada, aparece "+10 de ouro. Você e (nome) agora são amigos." Se o app já estava instalado, o link só abre a loja — aí o código é digitado no campo de cupom, como antes.
+- [ ] **Convite pelo link (sem digitar), só após liberar a Play pública:** num celular **sem o Glyph instalado**, abra o link que veio no "Enviar" do outro jogador, instale pela Play Store e crie uma conta nova. Esperado: sem digitar nada, aparece "+10 de ouro. Você e (nome) agora são amigos." Se o app já estava instalado, o link só abre a loja — aí o código é digitado no campo de cupom, como antes.
 
 ## 6. Oráculo e notificações
 

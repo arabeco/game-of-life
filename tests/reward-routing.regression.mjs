@@ -55,13 +55,11 @@ const cycle = read('utils/chestRewardPresentation.ts');
 assert.doesNotMatch(cycle, /metricCards\.push\(\{ label: 'Baú'/, 'bau do ciclo voltou a aparecer duas vezes');
 assert.match(cycle, /imageUrl: getChestArtUrl/, 'bau do ciclo perdeu a propria arte');
 
-// A ativacao de plano separa entregas reais de vantagens. Bau e cosmetico usam
-// o tratamento de item; capacidade, Oraculo e descontos usam faixas de beneficio.
-const membership = body('const buildMembershipRewardPayload = ', '\n\n    const unlockPremiumPack');
-assert.match(membership, /imageUrl: getChestArtUrl\(chestType\)/, 'bau do plano perdeu o PNG real');
-assert.match(membership, /itemIds: grantedItemIds/, 'cosmeticos do plano deixaram de ser itens');
-assert.match(membership, /activeBenefits: isPlatinum/, 'vantagens do plano deixaram de usar faixas proprias');
-assert.doesNotMatch(membership, /Sem ficha|Sem crédito/, 'ausencia de credito voltou a ser exibida como recompensa');
+// Planos sao entregues pelo servidor, sem bau ou cosmetico local.
+// O teste executavel cobre pagamento, renovacao, repeticao e permissoes.
+await import('./memberships-without-chests.regression.mjs');
+assert.doesNotMatch(context, /buildMembershipRewardPayload|unlockPremiumPack|unlockPlatinumPack/,
+  'ativacao local antiga do plano voltou');
 
 const rewardBody = read('components/RewardPackBody.tsx');
 assert.match(rewardBody, /benefitToneRgb/, 'faixas de vantagens perderam sua familia cromatica');

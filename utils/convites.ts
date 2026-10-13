@@ -43,9 +43,11 @@ export const linkDoConvite = (codigo: string) => (
     `https://play.google.com/store/apps/details?id=life.glyph.app&referrer=${encodeURIComponent(`convite=${codigo}`)}`
 );
 
-export const mensagemDoConvite = (codigo: string) => (
-    `Bora usar o Glyph comigo: ${linkDoConvite(codigo)}\nMeu código de convite: ${codigo} (em Ajustes > Resgatar código)`
-);
+// Liberar somente após confirmar a página pública de produção na Play.
+export const ANDROID_PUBLICO_DISPONIVEL = false;
+export const mensagemDoConvite = (codigo: string) => ANDROID_PUBLICO_DISPONIVEL
+    ? `Bora usar o Glyph comigo: ${linkDoConvite(codigo)}\nMeu código de convite: ${codigo} (em Ajustes > Resgatar código)`
+    : `Meu código de convite no Glyph: ${codigo}\nSe você já tem acesso ao app, crie sua conta e use o código em Ajustes > Resgatar código. O download público estará disponível em breve.`;
 
 /** Abre a bandeja de compartilhar do celular; sem ela, copia a mensagem. */
 export const compartilharConvite = async (codigo: string): Promise<'compartilhado' | 'copiado' | 'cancelado'> => {

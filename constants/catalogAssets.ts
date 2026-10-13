@@ -76,6 +76,20 @@ const isFixedCatalogPath = (relativePath: string): boolean => (
 
 export const resolveCatalogAssetUrl = (value?: string | null): string => {
   const normalized = value?.trim() || '';
+  // Perfis existentes podem guardar a URL antiga, em vez do ID do item.
+  const auroraAliases: Record<string, string> = {
+    borda_aurora_i: 'borda-aurora-ii',
+    banner_aurora_i: 'banner-aurora-ii',
+    insignia_season_aurora_1: 'insignia-aurora-ii',
+  };
+  for (const [oldName, newName] of Object.entries(auroraAliases)) {
+    for (const ext of ['png', 'webp']) {
+      if (normalized === `${CATALOG_INTERFACE_ROOT}/${oldName}.${ext}`
+          || normalized === `${LEGACY_CATALOG_ROOT}interface/${oldName}.${ext}`) {
+        return `${CATALOG_INTERFACE_ROOT}/${newName}.webp`;
+      }
+    }
+  }
   if (normalized === `${CATALOG_INTERFACE_ROOT}/borda_soberano.png`
       || normalized === `${LEGACY_CATALOG_ROOT}interface/borda_soberano.png`) {
     return `${CATALOG_INTERFACE_ROOT}/borda_soberano.webp`;

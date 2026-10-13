@@ -1,0 +1,114 @@
+{
+  "files": [
+    {
+      "file": "banner-aurora-ii.webp",
+      "width": 1020,
+      "height": 170,
+      "bytes": 60356,
+      "losslessBytes": 183734,
+      "quality": 90,
+      "alphaUnchanged": true
+    },
+    {
+      "file": "banner-eclipse-i.webp",
+      "width": 1020,
+      "height": 170,
+      "bytes": 53038,
+      "losslessBytes": 163610,
+      "quality": 90,
+      "alphaUnchanged": true
+    },
+    {
+      "file": "banner-egide-i.webp",
+      "width": 1020,
+      "height": 170,
+      "bytes": 45720,
+      "losslessBytes": 149406,
+      "quality": 90,
+      "alphaUnchanged": true
+    },
+    {
+      "file": "banner-zenite-i.webp",
+      "width": 1020,
+      "height": 170,
+      "bytes": 54834,
+      "losslessBytes": 186426,
+      "quality": 90,
+      "alphaUnchanged": true
+    },
+    {
+      "file": "borda-aurora-ii.webp",
+      "width": 500,
+      "height": 500,
+      "bytes": 49104,
+      "losslessBytes": 123374,
+      "quality": 90,
+      "alphaUnchanged": true
+    },
+    {
+      "file": "borda-eclipse-i.webp",
+      "width": 500,
+      "height": 500,
+      "bytes": 47090,
+      "losslessBytes": 122100,
+      "quality": 90,
+      "alphaUnchanged": true
+    },
+    {
+      "file": "borda-egide-i.webp",
+      "width": 500,
+      "height": 500,
+      "bytes": 48922,
+      "losslessBytes": 131476,
+      "quality": 90,
+      "alphaUnchanged": true
+    },
+    {
+      "file": "borda-zenite-i.webp",
+      "width": 500,
+      "height": 500,
+      "bytes": 64206,
+      "losslessBytes": 180490,
+      "quality": 90,
+      "alphaUnchanged": true
+    },
+    {
+      "file": "insignia-aurora-ii.webp",
+      "width": 500,
+      "height": 500,
+      "bytes": 61562,
+      "losslessBytes": 192312,
+      "quality": 90,
+      "alphaUnchanged": true
+    },
+    {
+      "file": "insignia-eclipse-i.webp",
+      "width": 500,
+      "height": 500,
+      "bytes": 80100,
+      "losslessBytes": 237592,
+      "quality": 90,
+      "alphaUnchanged": true
+    },
+    {
+      "file": "insignia-egide-i.webp",
+      "width": 500,
+      "height": 500,
+      "bytes": 57974,
+      "losslessBytes": 196706,
+      "quality": 90,
+      "alphaUnchanged": true
+    },
+    {
+      "file": "insignia-zenite-i.webp",
+      "width": 500,
+      "height": 500,
+      "bytes": 67918,
+      "losslessBytes": 228728,
+      "quality": 90,
+      "alphaUnchanged": true
+    }
+  ],
+  "totalBytes": 690824,
+  "previousBytes": 2095954
+}

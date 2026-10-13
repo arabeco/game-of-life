@@ -257,8 +257,9 @@ export const SEASONS: Record<string, SeasonConfig> = {
   },
   'season-zenite-1-2026': {
     id: 'season-zenite-1-2026',
-    name: 'Zenite I',
-    description: 'Expansão de meio de ano da Primeira Era. Pressão, clareza e conquista no centro do mapa.',
+    seasonKey: 'zenite_1_2027',
+    name: 'Zênite I',
+    description: 'Expansão da Primeira Era. Pressão, clareza e conquista no centro do mapa.',
     backgroundUrl: `${ROOT_IMAGES_URL}/gold.png`,
     startDate: '2027-01-01',
     endDate: '2027-03-20',
@@ -271,6 +272,7 @@ export const SEASONS: Record<string, SeasonConfig> = {
   },
   'season-eclipse-1-2026': {
     id: 'season-eclipse-1-2026',
+    seasonKey: 'eclipse_1_2027',
     name: 'Eclipse I',
     description: 'A travessia mais densa da Primeira Era. Leitura fria, sombra e reposicionamento.',
     backgroundUrl: `${ROOT_IMAGES_URL}/void.png`,
@@ -285,7 +287,8 @@ export const SEASONS: Record<string, SeasonConfig> = {
   },
   'season-egide-1-2026': {
     id: 'season-egide-1-2026',
-    name: 'Egide I',
+    seasonKey: 'egide_1_2027',
+    name: 'Égide I',
     description: 'Fechamento defensivo da Primeira Era. Estrutura, blindagem e passagem para a próxima camada.',
     backgroundUrl: `${ROOT_IMAGES_URL}/frost.png`,
     startDate: '2027-06-21',

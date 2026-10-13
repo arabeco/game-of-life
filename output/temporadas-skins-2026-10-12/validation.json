@@ -1,0 +1,194 @@
+[
+  {
+    "file": "aurora-ii-v1.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "transparentPixels": 1269900,
+    "sourceBounds": {
+      "l": 388,
+      "t": 114,
+      "r": 866,
+      "b": 1156
+    },
+    "outputSize": [
+      500,
+      500
+    ],
+    "status": "candidate, not integrated",
+    "registration": {
+      "top": 112,
+      "height": 358,
+      "width": 164
+    }
+  },
+  {
+    "file": "aurora-ii-v2.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "transparentPixels": 1220374,
+    "sourceBounds": {
+      "l": 374,
+      "t": 109,
+      "r": 881,
+      "b": 1190
+    },
+    "outputSize": [
+      500,
+      500
+    ],
+    "status": "candidate, not integrated",
+    "registration": {
+      "top": 112,
+      "height": 358,
+      "width": 168
+    }
+  },
+  {
+    "file": "aurora-ii-v3.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "transparentPixels": 1328242,
+    "sourceBounds": {
+      "l": 404,
+      "t": 277,
+      "r": 811,
+      "b": 1154
+    },
+    "outputSize": [
+      500,
+      500
+    ],
+    "status": "candidate, not integrated",
+    "registration": {
+      "top": 112,
+      "height": 358,
+      "width": 166
+    }
+  },
+  {
+    "file": "eclipse-i-v1.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "transparentPixels": 1275711,
+    "sourceBounds": {
+      "l": 406,
+      "t": 169,
+      "r": 850,
+      "b": 1146
+    },
+    "outputSize": [
+      500,
+      500
+    ],
+    "status": "candidate, not integrated",
+    "registration": {
+      "top": 112,
+      "height": 358,
+      "width": 163
+    }
+  },
+  {
+    "file": "egide-i-v1.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "transparentPixels": 1240141,
+    "sourceBounds": {
+      "l": 392,
+      "t": 121,
+      "r": 864,
+      "b": 1162
+    },
+    "outputSize": [
+      500,
+      500
+    ],
+    "status": "candidate, not integrated",
+    "registration": {
+      "top": 112,
+      "height": 358,
+      "width": 163
+    }
+  },
+  {
+    "file": "zenite-i-v1.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "transparentPixels": 1195139,
+    "sourceBounds": {
+      "l": 357,
+      "t": 57,
+      "r": 896,
+      "b": 1189
+    },
+    "outputSize": [
+      500,
+      500
+    ],
+    "status": "candidate, not integrated",
+    "registration": {
+      "top": 112,
+      "height": 358,
+      "width": 171
+    }
+  },
+  {
+    "file": "zenite-i-v2.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "transparentPixels": 1301135,
+    "sourceBounds": {
+      "l": 421,
+      "t": 208,
+      "r": 832,
+      "b": 1137
+    },
+    "outputSize": [
+      500,
+      500
+    ],
+    "status": "candidate, not integrated",
+    "registration": {
+      "top": 112,
+      "height": 358,
+      "width": 159
+    }
+  },
+  {
+    "file": "zenite-ii-v1.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "transparentPixels": 1218909,
+    "sourceBounds": {
+      "l": 374,
+      "t": 84,
+      "r": 879,
+      "b": 1174
+    },
+    "outputSize": [
+      500,
+      500
+    ],
+    "status": "candidate, not integrated",
+    "registration": {
+      "top": 112,
+      "height": 358,
+      "width": 166
+    }
+  }
+]

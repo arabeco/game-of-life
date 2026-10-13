@@ -1,11 +1,29 @@
 # Launch Readiness Report
 
-- Generated at: 2026-09-30T01:45:13.791Z
-- Suite: `full`
+- Generated at: 2026-10-05T01:01:29.557Z
+- Suite: `core`
 - Smoke URL: `http://127.0.0.1:3011/`
-- Build: SKIPPED
+- Build: PASS (20.4s)
 
 ## Checks
+
+### PASS - Pendencia esquecida regression (0.1s)
+- Kind: `logic`
+- Simulates: a varredura roda na abertura, nao a cada toque
+- Simulates: mover uma acao para um dia antigo nao a devolve na hora para a Bay
+- Simulates: tarefa de ciclo selado continua intocada
+
+### PASS - Denominador do ciclo regression (0.1s)
+- Kind: `logic`
+- Simulates: o que espera na baia nao conta como compromisso
+- Simulates: o card do ciclo nao infla o denominador por repeticao declarada
+- Simulates: card, fechamento e painel diario usam a mesma regua
+
+### PASS - Loja separada e ganho visivel regression (0.1s)
+- Kind: `logic`
+- Simulates: ouro e plano vivem em abas diferentes
+- Simulates: faltar moeda leva a loja em vez de terminar num toast
+- Simulates: o ganho de ouro e anunciado depois do modal fechar, nao atras dele
 
 ### PASS - Avatar offsets regression (0.2s)
 - Kind: `logic`
@@ -71,7 +89,7 @@
 - Simulates: constancia conta dias e nao acoes
 - Simulates: entrega anterior ao aceite nao conta
 
-### PASS - Cycle scheduling regression (0.2s)
+### PASS - Cycle scheduling regression (0.1s)
 - Kind: `logic`
 - Simulates: renovar uma arena nao expulsa as outras do ciclo
 - Simulates: a virada reagenda as acoes recorrentes
@@ -242,7 +260,7 @@
 - Simulates: a presenca e o corte de relevancia
 - Simulates: sem candidato ele fica quieto
 
-### PASS - Oracle presence policy regression (0.5s)
+### PASS - Oracle presence policy regression (0.6s)
 - Kind: `logic`
 - Simulates: presenca decide o que ele fala
 - Simulates: aviso decide onde chega
@@ -283,6 +301,34 @@
 - Simulates: recalcula o core loop
 - Simulates: valida progresso de campanha/arena
 - Simulates: confere score, atlas e mutacoes utilitarias
+
+### FAIL - Onboarding happy path
+- Kind: `browser`
+- Simulates: entra com conta temporaria
+- Simulates: atravessa onboarding
+- Simulates: cria arena/acao inicial
+- Simulates: chega no fluxo principal sem travar
+- Error: Onboarding happy path failed with exit 1
+
+### PLANNED - Campaign quiz flow
+- Kind: `browser`
+- Simulates: abre loja de campanhas
+- Simulates: roda quiz gratis
+- Simulates: reabre quiz completo
+- Simulates: instala campanha e confirma menu
+
+### PLANNED - Cycle report flow
+- Kind: `browser`
+- Simulates: cria ciclo real
+- Simulates: conclui tarefas
+- Simulates: fecha ciclo
+- Simulates: abre relatorio e reward flow
+
+### PLANNED - UI shell smoke
+- Kind: `browser`
+- Simulates: abre shell principal
+- Simulates: navega views centrais
+- Simulates: garante que a casca da app sobe sem overlay travando
 
 ## Manual QA Still Required
 

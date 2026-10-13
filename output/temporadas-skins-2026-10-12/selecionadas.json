@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Zênite I",
+    "file": "zenite-i-v2.png",
+    "bytes": 137788,
+    "status": "arte candidata; encaixe pendente; não integrada"
+  },
+  {
+    "name": "Eclipse I",
+    "file": "eclipse-i-v1.png",
+    "bytes": 121786,
+    "status": "arte candidata; encaixe pendente; não integrada"
+  },
+  {
+    "name": "Égide I",
+    "file": "egide-i-v1.png",
+    "bytes": 128513,
+    "status": "arte candidata; encaixe pendente; não integrada"
+  },
+  {
+    "name": "Aurora II",
+    "file": "aurora-ii-v3.png",
+    "bytes": 140246,
+    "status": "arte candidata; encaixe pendente; não integrada"
+  },
+  {
+    "name": "Zênite II",
+    "file": "zenite-ii-v1.png",
+    "bytes": 129505,
+    "status": "arte candidata; encaixe pendente; não integrada"
+  }
+]

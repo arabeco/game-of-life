@@ -1,6 +1,6 @@
 {
-  "totalFiles": 217,
-  "totalBytes": 13200317,
+  "totalFiles": 240,
+  "totalBytes": 16215093,
   "assets": [
     {
       "path": "aurora_i.png",
@@ -848,14 +848,29 @@
       "sha256": "ee25854e66b6b9502bf203830653be83a4b4f611ebd9a1802e3952d13bbcfb5e"
     },
     {
+      "path": "interface/banner_t2_sereno.png",
+      "bytes": 156620,
+      "sha256": "a6164afc784487d7633415b2e918fee7ae19fd9e5486fa48c857ae2903b25de7"
+    },
+    {
       "path": "interface/banner_t2_veterano.png",
       "bytes": 43481,
       "sha256": "86a1ffd7dddeb32e5859d6186de51eb1c8443caaccdedb22c2500c0d56f1d052"
     },
     {
+      "path": "interface/banner_t3_alvorada.png",
+      "bytes": 151588,
+      "sha256": "5e9821b8811d434e572507f1e279367cc0b89cea0df9e3208b1a6f2095baeeaa"
+    },
+    {
       "path": "interface/banner_t3_mistico.png",
       "bytes": 40637,
       "sha256": "508b53ae057033c2d4f5b148dd4d8a981d695c071e2ce26380eebb9fc9d64eec"
+    },
+    {
+      "path": "interface/banner_t3_prisma.png",
+      "bytes": 155511,
+      "sha256": "0ecb15c7a87a6bf5fa5254ab39a6b2c91ea97034ef14d1da2b97c5b311950855"
     },
     {
       "path": "interface/banner_t4_celestial.png",
@@ -873,6 +888,11 @@
       "sha256": "658c42d7bd76ed36540462951cad1afa7a81685fae0e89a787bffefade7867ba"
     },
     {
+      "path": "interface/banner_t4_profeta.png",
+      "bytes": 163192,
+      "sha256": "a14ffae3cb3f32587aa42f203eec80d0b6d7c5c628a30ab91276fdefc6d4ac38"
+    },
+    {
       "path": "interface/banner_t4_transcendente.png",
       "bytes": 36202,
       "sha256": "2d1c802d2ac07a01c2400867831a32f03b57991ab39a08dcfe4b30feb33f5224"
@@ -883,9 +903,34 @@
       "sha256": "4d0a38b1f5a2ff40543cf26bf016e26ce8132f0869167fdc5cabd994b57cee98"
     },
     {
+      "path": "interface/banner_t5_pedra_da_lua.png",
+      "bytes": 167130,
+      "sha256": "966f5cebbe8ac47bf65584438f7fbb95bde352649be8234a4af63f1202932d52"
+    },
+    {
       "path": "interface/banner_vanguarda.png",
       "bytes": 31040,
       "sha256": "fe90b499af350d4a00b8f6538d55f43a70a4beac7daed865b8590e6e98c7bd21"
+    },
+    {
+      "path": "interface/banner-aurora-ii.webp",
+      "bytes": 60356,
+      "sha256": "eb1f6297727d2b6e18d79ae912b113844306afadb86dee61b569b6d3b5c8d1c0"
+    },
+    {
+      "path": "interface/banner-eclipse-i.webp",
+      "bytes": 53038,
+      "sha256": "d4e5c7d19f87c7958e81f0c2bee0e6eeeaeda48f5a731fdbb97f9da38c5117dc"
+    },
+    {
+      "path": "interface/banner-egide-i.webp",
+      "bytes": 45720,
+      "sha256": "4c29a720209954d3511a92544ec93fdb4529c849b10f6b294df04b25b60a7355"
+    },
+    {
+      "path": "interface/banner-zenite-i.webp",
+      "bytes": 54834,
+      "sha256": "766ccfc3a64a69309e65a0baf8d52f42a0620d3855a7364765b7deef1e9c0830"
     },
     {
       "path": "interface/bau_comum.webp",
@@ -948,9 +993,19 @@
       "sha256": "32d72ac649970e61baa4f12bd2c08c90f2c54a5be62072b91b9e112ec30d8aa2"
     },
     {
+      "path": "interface/borda_soberano.webp",
+      "bytes": 195960,
+      "sha256": "ea7fca1056e38e44146ea4c5760ad901f4538e243e1f1adec56720e7bbaae336"
+    },
+    {
       "path": "interface/borda_t1_aprendiz.png",
       "bytes": 67646,
       "sha256": "bf45f37fac6d0fb949ed9655f58444cc218840ff47a66a4c29e471e05216df75"
+    },
+    {
+      "path": "interface/borda_t2_sereno.png",
+      "bytes": 253579,
+      "sha256": "b1ec26ba6fd082953b89332da59444e10b26e9234c58658f8b9351847ed632e8"
     },
     {
       "path": "interface/borda_t2_veterano.png",
@@ -958,9 +1013,19 @@
       "sha256": "fa3ada91f6e60a7914d9696b38996ba8a0cbd822b72a3b72272b756639491373"
     },
     {
+      "path": "interface/borda_t3_alvorada.png",
+      "bytes": 227398,
+      "sha256": "59d9bd40d751729f7cba01625b5bd0f7cc0953eecb685f9573506e94fb05b1b0"
+    },
+    {
       "path": "interface/borda_t3_mistico.png",
       "bytes": 79671,
       "sha256": "7cee748e6013966290f5336e9bbad8738e5d011ee35e24d8dba34ab82cdf6c0f"
+    },
+    {
+      "path": "interface/borda_t3_prisma.png",
+      "bytes": 265196,
+      "sha256": "80dc93d923c20dc7f12610a7391664221c4b39498e4ec0c70425e5de94aa1c43"
     },
     {
       "path": "interface/borda_t3_transcendente.png",
@@ -983,14 +1048,44 @@
       "sha256": "49312dafb26aed04d865cfc854717fbb99308e720e48eb3cbe09d0179eb836da"
     },
     {
+      "path": "interface/borda_t4_profeta.png",
+      "bytes": 298378,
+      "sha256": "10cc9df6f93230a547d994774e1ecb0cb8d3ebb9af7a219bdff6f8f5d69ee226"
+    },
+    {
       "path": "interface/borda_t5_genesis.png",
       "bytes": 61839,
       "sha256": "0846877eacd8c600c19bdd0059f9fe0268ba7586bb9946583161619a149f1949"
     },
     {
+      "path": "interface/borda_t5_pedra_da_lua.png",
+      "bytes": 289400,
+      "sha256": "2f54c07e38a5520e468b50c291c3d6627f3aa392a838d19d19df1ed97923ad6d"
+    },
+    {
       "path": "interface/borda_vanguarda.png",
       "bytes": 75426,
       "sha256": "fdf528a391335e356cd2c6fe37fa0a1c7e1e4a1dab22a1ef766cf257c454641d"
+    },
+    {
+      "path": "interface/borda-aurora-ii.webp",
+      "bytes": 49104,
+      "sha256": "860512b1923d738e44113ac8d0c1671498edada82da536776796d6cbc397192b"
+    },
+    {
+      "path": "interface/borda-eclipse-i.webp",
+      "bytes": 47090,
+      "sha256": "c1c55985168157d3590784b9aa9907f4688ec03ad15355b0f771e2186e8dc2f2"
+    },
+    {
+      "path": "interface/borda-egide-i.webp",
+      "bytes": 48922,
+      "sha256": "7f3edea0ff6da4d495edb644aeeba09a9492d754e2896d7e69236c7d0d1436f9"
+    },
+    {
+      "path": "interface/borda-zenite-i.webp",
+      "bytes": 64206,
+      "sha256": "65f70f5318ffce2d33f5d2ebd4af05a8e798b5613a04e20efcfb613b9d8826ce"
     },
     {
       "path": "interface/insignia_ciclo_bronze.webp",
@@ -1066,6 +1161,26 @@
       "path": "interface/insignia_season_genesis.webp",
       "bytes": 91482,
       "sha256": "d4f02ec64b180ab459462db01a9bced86f28ea83cc3cbe7f830af1ce1ea21461"
+    },
+    {
+      "path": "interface/insignia-aurora-ii.webp",
+      "bytes": 61562,
+      "sha256": "aebb0cc39ce139349476aa1d0e6718e129251aceb76dcd4426a86bd028c31f8b"
+    },
+    {
+      "path": "interface/insignia-eclipse-i.webp",
+      "bytes": 80100,
+      "sha256": "2f75ca40b43d0bd79b2ad4e94c2b10669c20001bef2fd94ba4bb07841f74ce42"
+    },
+    {
+      "path": "interface/insignia-egide-i.webp",
+      "bytes": 57974,
+      "sha256": "f26ff093d8c990f269b337603834c1bd3040ee7fa064446a1582f1360f9b84f5"
+    },
+    {
+      "path": "interface/insignia-zenite-i.webp",
+      "bytes": 67918,
+      "sha256": "5e804629a01cba29900c7c335c9cc67d6b6589e8e4d30bd48af2bec855f5b1f8"
     },
     {
       "path": "interface/recompensa_geral.webp",

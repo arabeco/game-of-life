@@ -308,7 +308,10 @@ export const ITEMS_DB: ItemDef[] = [
     // T5
     { id: 'item_border_5_001', name: 'GM - Grande Mestre', category: 'border', tier: 5, rarity: 'legendary', icon: '🏛️', imageUrl: `${INTERFACE_BASE_URL}/borda_gm.png`, isGmExclusive: true },
     // Novos T5
-    { id: 'item_border_aurora_1_2026', name: 'Aurora II', category: 'border', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'border', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/borda_aurora_i.webp` },
+    { id: 'item_border_aurora_1_2026', name: 'Aurora II', category: 'border', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'border', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/borda-aurora-ii.webp` },
+    { id: 'item_border_zenite_1_2027', name: 'Zênite I', category: 'border', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'zenite_1_2027', seasonSlot: 'border', icon: '☀️', imageUrl: `${INTERFACE_BASE_URL}/borda-zenite-i.webp` },
+    { id: 'item_border_eclipse_1_2027', name: 'Eclipse I', category: 'border', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'eclipse_1_2027', seasonSlot: 'border', icon: '🌘', imageUrl: `${INTERFACE_BASE_URL}/borda-eclipse-i.webp` },
+    { id: 'item_border_egide_1_2027', name: 'Égide I', category: 'border', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'egide_1_2027', seasonSlot: 'border', icon: '🛡️', imageUrl: `${INTERFACE_BASE_URL}/borda-egide-i.webp` },
     { id: 'item_border_t5_genesis', name: 'Gênesis', category: 'border', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'border', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/borda_t5_genesis.png` },
 
     // --- BANNERS ---
@@ -334,7 +337,10 @@ export const ITEMS_DB: ItemDef[] = [
 
     // T5
     { id: 'item_banner_gm', name: 'Grão Mestre', category: 'banner', tier: 5, rarity: 'legendary', icon: '🏛️', imageUrl: `${INTERFACE_BASE_URL}/banner_gm.png`, isGmExclusive: true },
-    { id: 'item_banner_aurora_1_2026', name: 'Aurora II', category: 'banner', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'banner', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/banner_aurora_i.webp` },
+    { id: 'item_banner_aurora_1_2026', name: 'Aurora II', category: 'banner', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'banner', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/banner-aurora-ii.webp` },
+    { id: 'item_banner_zenite_1_2027', name: 'Zênite I', category: 'banner', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'zenite_1_2027', seasonSlot: 'banner', icon: '☀️', imageUrl: `${INTERFACE_BASE_URL}/banner-zenite-i.webp` },
+    { id: 'item_banner_eclipse_1_2027', name: 'Eclipse I', category: 'banner', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'eclipse_1_2027', seasonSlot: 'banner', icon: '🌘', imageUrl: `${INTERFACE_BASE_URL}/banner-eclipse-i.webp` },
+    { id: 'item_banner_egide_1_2027', name: 'Égide I', category: 'banner', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'egide_1_2027', seasonSlot: 'banner', icon: '🛡️', imageUrl: `${INTERFACE_BASE_URL}/banner-egide-i.webp` },
     { id: 'item_banner_t5_genesis', name: 'Gênesis', category: 'banner', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'banner', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/banner_t5_genesis.png` },
 
     // --- PREMIOS DAS REGRAS SECRETAS DE 06/10/2026 ---
@@ -447,7 +453,10 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'insignia_quest_incomum', name: 'Insígnia de Missão', category: 'insignia', tier: 2, rarity: 'uncommon', icon: '🎖️', description: "Marca de prata acumulável, concedida ao concluir uma missão individual, inicial ou de arena.", isQuestExclusive: true, imageUrl: `${INTERFACE_BASE_URL}/insignia_missao_prata.webp` },
     { id: 'insignia_levelup_rara', name: 'Insígnia de Patente Rara', category: 'insignia', tier: 3, rarity: 'rare', icon: '⭐', description: "Patente de Ouro: Concedida ao atingir um novo nível de excelência.", isRankExclusive: true, imageUrl: `${INTERFACE_BASE_URL}/insignia_rank_7_duque.webp` },
     { id: 'insignia_season_genesis', name: 'Gênesis', category: 'insignia', tier: 6, rarity: 'mythic', icon: '🌌', description: "Marca de quem esteve na Temporada Zero, antes da Primeira Era começar.", isSeasonExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'insignia', imageUrl: `${INTERFACE_BASE_URL}/insignia_season_genesis.webp` },
-    { id: 'insignia_season_aurora_1', name: 'Aurora II', category: 'insignia', tier: 6, rarity: 'mythic', icon: '🌌', description: "Marca roxa da primeira Temporada oficial da Primeira Era.", isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'insignia', imageUrl: `${INTERFACE_BASE_URL}/insignia_season_aurora_1.webp` },
+    { id: 'insignia_season_aurora_1', name: 'Aurora II', category: 'insignia', tier: 6, rarity: 'mythic', icon: '🌌', description: "Marca de jade e prata da abertura da Segunda Era.", isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'insignia', imageUrl: `${INTERFACE_BASE_URL}/insignia-aurora-ii.webp` },
+    { id: 'insignia_season_zenite_1_2027', name: 'Zênite I', category: 'insignia', tier: 6, rarity: 'mythic', icon: '☀️', isSeasonExclusive: true, seasonKey: 'zenite_1_2027', seasonSlot: 'insignia', imageUrl: `${INTERFACE_BASE_URL}/insignia-zenite-i.webp` },
+    { id: 'insignia_season_eclipse_1_2027', name: 'Eclipse I', category: 'insignia', tier: 6, rarity: 'mythic', icon: '🌘', isSeasonExclusive: true, seasonKey: 'eclipse_1_2027', seasonSlot: 'insignia', imageUrl: `${INTERFACE_BASE_URL}/insignia-eclipse-i.webp` },
+    { id: 'insignia_season_egide_1_2027', name: 'Égide I', category: 'insignia', tier: 6, rarity: 'mythic', icon: '🛡️', isSeasonExclusive: true, seasonKey: 'egide_1_2027', seasonSlot: 'insignia', imageUrl: `${INTERFACE_BASE_URL}/insignia-egide-i.webp` },
 ];
 
 const LEGACY_ITEM_ID_ALIASES: Record<string, string> = {
@@ -542,6 +551,19 @@ export const RANK_UP_INSIGNIA_ID = 'insignia_levelup_rara';
 
 export const SEASON_COLLECTION_SLOTS: ItemSeasonSlot[] = ['skin', 'border', 'banner', 'insignia', 'ui_skin'];
 export const SEASON_COLLECTIONS: Record<string, SeasonCollectionDef> = {
+    // Arte cadastrada; skin e tema aguardam conclusão. Não inventar substitutos.
+    zenite_1_2027: {
+        id: 'zenite_1_2027', name: 'Zênite I',
+        slots: { skin: null, border: 'item_border_zenite_1_2027', banner: 'item_banner_zenite_1_2027', insignia: 'insignia_season_zenite_1_2027', ui_skin: null },
+    },
+    eclipse_1_2027: {
+        id: 'eclipse_1_2027', name: 'Eclipse I',
+        slots: { skin: null, border: 'item_border_eclipse_1_2027', banner: 'item_banner_eclipse_1_2027', insignia: 'insignia_season_eclipse_1_2027', ui_skin: null },
+    },
+    egide_1_2027: {
+        id: 'egide_1_2027', name: 'Égide I',
+        slots: { skin: null, border: 'item_border_egide_1_2027', banner: 'item_banner_egide_1_2027', insignia: 'insignia_season_egide_1_2027', ui_skin: null },
+    },
     aurora_1_2026: {
         id: 'aurora_1_2026',
         name: 'Aurora II',

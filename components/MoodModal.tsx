@@ -287,7 +287,7 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         <svg viewBox="0 0 100 32" preserveAspectRatio="none" className="h-16 w-full" role="img" aria-label="Histórico de humor">
                             <polyline
                                 fill="none"
-                                stroke="var(--skin-accent-color)"
+                                stroke="rgba(255,255,255,0.7)"
                                 strokeWidth="1"
                                 strokeLinejoin="round"
                                 strokeLinecap="round"
@@ -300,8 +300,8 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     })
                                     .join(' ')}
                             />
-                            {/* A LINHA usa a cor da skin — identidade da pessoa, e o que
-                                da continuidade ao tracado. Os PONTOS usam a cor do proprio
+                            {/* A LINHA e branca (12/10/2026: a cor da skin brigava com
+                                os pontos), e e o que da continuidade ao tracado. Os PONTOS usam a cor do proprio
                                 estado: as dezessete ja existem no espectro, e um grafico de
                                 humor todo de uma cor so joga fora a unica informacao que ele
                                 tinha de graca. */}

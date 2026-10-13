@@ -20,8 +20,8 @@ import { getMoneyCheckoutSalesCopy } from '../../utils/billingRuntime';
  *   aterrissar ao lado de um pitch de assinatura — quem veio comprar moeda le
  *   isso como isca.
  *
- * Os boosts ficaram com o ouro, e nao aqui: eles sao pagos EM ouro, entao quem
- * esta nessa aba ja tem a moeda na mao.
+ * Boost de EXP nao existe mais (13/10/2026): nem aqui nem no ouro. Plano vende
+ * conforto, visual e leitura; progressao e so do que a pessoa faz.
  */
 
 type MembershipCheckoutState = {
@@ -99,14 +99,14 @@ export const MembershipStore: React.FC<{ scrollRequest?: { section: string; nonc
                         <div className="mt-3">
                             <h2 className="text-xl font-black uppercase tracking-[0.06em] text-[color:var(--ui-card-text)]">Premium 30 dias</h2>
                             <p className="mt-1 max-w-[26rem] text-sm leading-relaxed text-[color:var(--ui-card-text-soft)]">
-                                30 dias de acesso, mais alcance no Oráculo, mais fôlego nas arenas e bônus real de legado.
+                                30 dias de acesso, mais alcance no Oráculo e mais fôlego nas arenas.
                             </p>
                             <div className="mt-3 flex flex-wrap gap-2">
                                 <span className="rounded-full border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--ui-card-text-soft)]">
                                     {isStaffAccess ? 'Acesso GM' : isPlatinum ? 'Platinum 30 dias ativo' : premiumBadgeLabel}
                                 </span>
                                 <span className="rounded-full border border-[var(--skin-accent-color)]/18 bg-[var(--skin-accent-color)]/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--ui-text-accent)]">
-                                    +5% XP legado
+                                    Até 20 arenas
                                 </span>
                             </div>
                         </div>
@@ -171,7 +171,7 @@ export const MembershipStore: React.FC<{ scrollRequest?: { section: string; nonc
                                     {isPlatinum ? premiumBadgeLabel : '30 dias'}
                                 </span>
                                 <span className="rounded-full border border-amber-200/18 bg-amber-200/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-amber-100">
-                                    1 legado grátis por ativação
+                                    Legado com 70% off
                                 </span>
                             </div>
                         </div>

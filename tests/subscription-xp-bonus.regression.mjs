@@ -37,8 +37,8 @@ assert.equal(hasPlatinumAccess(premium), false);
 
 // --- e nenhum texto de plano promete EXP -----------------------------------
 const lerFonte = (c) => readFileSync(new URL(`../${c}`, import.meta.url), 'utf8');
-for (const arquivo of ['constants/goldCatalog.ts', 'constants/economy.ts', 'views/SovereignPanelView.tsx']) {
-  assert.doesNotMatch(lerFonte(arquivo), /\+\s?(5|10)%\s?(de\s)?(XP|EXP)|bônus de XP|Bônus de legado/i, `${arquivo} ainda vende EXP no plano`);
+for (const arquivo of ['constants/goldCatalog.ts', 'constants/economy.ts', 'views/SovereignPanelView.tsx', 'components/Store/MembershipStore.tsx']) {
+  assert.doesNotMatch(lerFonte(arquivo), /\+\s?(5|10)%\s?(de\s)?(XP|EXP)|\d+% XP legado|bônus de XP|Bônus de legado/i, `${arquivo} ainda vende EXP no plano`);
 }
 
 console.log('Sem pay-to-win: nenhum plano da EXP extra, e nenhum texto promete.');

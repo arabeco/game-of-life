@@ -135,9 +135,9 @@ const JournalTab: React.FC<{ userId: string }> = ({ userId }) => {
                     type="button"
                     aria-pressed={filtro === tag}
                     onClick={() => setFiltro((atual) => (atual === tag ? null : tag))}
-                    className={`min-w-0 flex-auto truncate rounded-full border px-1.5 py-1 text-center text-[11px] font-semibold transition-colors ${
+                    className={`min-w-0 flex-auto truncate border px-1.5 py-1 text-center text-[11px] font-semibold transition-colors ${
                         filtro === tag
-                            ? 'border-[var(--skin-accent-color)]/60 bg-[var(--skin-accent-color)]/15 text-white'
+                            ? 'border-[#b89252]/70 bg-[#b89252]/15 text-[#f1d595]'
                             : 'border-white/10 text-white/40 hover:border-white/20 hover:text-white/70'
                     }`}
                 >
@@ -160,7 +160,7 @@ const JournalTab: React.FC<{ userId: string }> = ({ userId }) => {
                                 key={pagina.pageNumber}
                                 type="button"
                                 onClick={() => void abrirPagina(pagina.pageNumber)}
-                                className="group relative flex w-full items-stretch gap-3 overflow-hidden rounded-2xl border border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01))] p-3 text-left transition-colors hover:border-[var(--skin-accent-color)]/35"
+                                className="group relative flex w-full items-stretch gap-3 overflow-hidden border border-[#b89252]/20 bg-[linear-gradient(155deg,rgba(184,146,82,0.07),#0d0e11_58%,#08090b)] p-3 text-left transition-colors hover:border-[#b89252]/50"
                             >
                                 <span className="min-w-0 flex-1 space-y-1">
                                     <span className="block truncate font-serif text-[14px] italic text-white/85">{pagina.previa || 'Página em branco'}</span>
@@ -181,7 +181,7 @@ const JournalTab: React.FC<{ userId: string }> = ({ userId }) => {
                             </button>
                         ))
                     ) : (
-                        <div className="rounded-2xl border border-dashed border-white/10 px-4 py-8 text-center font-serif text-sm italic text-white/40">
+                        <div className="border border-dashed border-white/10 px-4 py-8 text-center font-serif text-sm italic text-white/40">
                             {filtro ? `Nenhuma página com ${filtro}.` : 'Nenhuma página ainda. O diário é seu: escreva como quiser.'}
                         </div>
                     )}
@@ -191,7 +191,7 @@ const JournalTab: React.FC<{ userId: string }> = ({ userId }) => {
                     type="button"
                     disabled={proximoNumero === null}
                     onClick={() => proximoNumero !== null && void abrirPagina(proximoNumero)}
-                    className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[var(--skin-accent-color)]/25 bg-[var(--skin-accent-color)]/8 px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white/80 transition-colors hover:bg-[var(--skin-accent-color)]/15 hover:text-white disabled:opacity-40"
+                    className="flex w-full items-center justify-center gap-2 border border-[#b89252]/40 bg-[#b89252]/10 px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-[#f1d595] transition-colors hover:bg-[#b89252]/20 hover:text-white disabled:opacity-40"
                 >
                     <PlusIcon className="h-4 w-4" />
                     {proximoNumero === null ? 'Limite de páginas atingido' : 'Nova página (' + proximoNumero + ')'}
@@ -201,7 +201,7 @@ const JournalTab: React.FC<{ userId: string }> = ({ userId }) => {
     }
 
     const mudou = texto !== textoOriginalRef.current;
-    const botaoPequeno = 'rounded-full border border-white/10 bg-black/25 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/65 transition-colors hover:text-white';
+    const botaoPequeno = 'border border-white/10 bg-black/25 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/65 transition-colors hover:border-[#b89252]/50 hover:text-[#f1d595]';
 
     return (
         <div className="space-y-3">
@@ -233,7 +233,7 @@ const JournalTab: React.FC<{ userId: string }> = ({ userId }) => {
                         placeholder={carregandoPagina ? 'Abrindo...' : 'Escreva o que quiser.'}
                         disabled={carregandoPagina}
                         rows={12}
-                        className="w-full resize-none rounded-2xl border border-white/10 bg-black/25 px-4 py-3 font-serif text-[15px] leading-relaxed text-white/90 focus:border-[var(--skin-accent-color)]/40 focus:outline-none"
+                        className="w-full resize-none border border-white/10 bg-black/25 px-4 py-3 font-serif text-[15px] leading-relaxed text-white/90 focus:border-[#b89252]/50 focus:outline-none"
                     />
                     <div className="flex items-center justify-between gap-2">
                         <button type="button" onClick={inserirDataDeHoje} className={botaoPequeno}>
@@ -256,7 +256,7 @@ const JournalTab: React.FC<{ userId: string }> = ({ userId }) => {
                                 return (
                                     <article
                                         key={indice}
-                                        className="relative overflow-hidden rounded-2xl border border-white/8 bg-[linear-gradient(160deg,rgba(255,255,255,0.05),rgba(255,255,255,0.012))] px-4 py-3"
+                                        className="relative overflow-hidden border border-white/8 bg-[linear-gradient(90deg,rgba(255,255,255,0.045),#0f1013e0_44%)] px-4 py-3"
                                         style={cor ? { boxShadow: `inset 3px 0 0 ${cor}` } : undefined}
                                     >
                                         {(entrada.data || entrada.tag) && (() => {
@@ -264,7 +264,7 @@ const JournalTab: React.FC<{ userId: string }> = ({ userId }) => {
                                             return (
                                                 <header className="mb-1.5 flex items-center gap-2">
                                                     {Icone && (
-                                                        <span role="img" aria-label={entrada.tag || ''} title={entrada.tag || ''} style={{ color: cor || 'rgba(255,255,255,0.6)' }}>
+                                                        <span role="img" aria-label={entrada.tag || ''} title={entrada.tag || ''} className="text-[#d4b062]">
                                                             <Icone className="h-3.5 w-3.5" />
                                                         </span>
                                                     )}

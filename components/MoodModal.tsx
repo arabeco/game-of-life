@@ -137,12 +137,15 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] pointer-events-auto" onClick={onClose} />
             <GlassCard 
                 variant="neutral" 
-                className="w-full max-w-sm pointer-events-auto space-y-4 rounded-3xl shadow-2xl border border-white/10 relative !bg-[linear-gradient(180deg,rgba(11,13,18,0.94),rgba(7,8,12,0.92))] backdrop-blur-xl" 
+                className="w-full max-w-sm pointer-events-auto space-y-4 !rounded-none shadow-2xl border !border-[#b89252]/30 relative !bg-[radial-gradient(ellipse_at_50%_0%,rgba(184,146,82,0.14),transparent_55%),linear-gradient(160deg,#121316,#08090b)] backdrop-blur-xl" 
                 onClick={e => e.stopPropagation()}
             >
+                {/* O ESTILO NOVO (12/10/2026), o mesmo do Painel Diario e do modal de
+                    conquista: canto reto, filete dourado, fundo escuro com brilho em cima. */}
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#b89252]/70 to-transparent" />
                 <div className="flex justify-between items-center">
                     <h2 className="text-[13px] font-semibold uppercase tracking-[0.2em] text-white/70">Diário</h2>
-                    <button aria-label="Fechar" onClick={onClose} className="p-1 rounded-full bg-white/5 hover:bg-white/10 transition-colors">
+                    <button aria-label="Fechar" onClick={onClose} className="border border-white/10 p-1 transition-colors hover:border-[#b89252]/50 hover:bg-white/5">
                         <XIcon className="w-5 h-5 text-gray-400"/>
                     </button>
                 </div>
@@ -150,18 +153,18 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 {/* DUAS ABAS, E O DIARIO E A QUE DA NOME AO BOTAO.
                     "Como estou" e "por que" sao a mesma frase partida ao meio;
                     o diario estava no modal de Checklist so por vizinhanca. */}
-                <div className="grid grid-cols-2 gap-2 rounded-2xl border border-white/8 bg-black/25 p-1">
+                <div className="grid grid-cols-2 border border-[#b89252]/20 bg-black/30">
                     <button
                         type="button"
                         onClick={() => setAba('humor')}
-                        className={`rounded-[0.9rem] px-3 py-2 text-[11px] font-black uppercase tracking-[0.12em] transition-colors ${aba === 'humor' ? 'bg-white/10 text-white' : 'text-white/45 hover:text-white/75'}`}
+                        className={`border-b-2 px-3 py-2 text-[11px] font-black uppercase tracking-[0.16em] transition-colors ${aba === 'humor' ? 'border-[#b89252] bg-[#b89252]/10 text-[#f1d595]' : 'border-transparent text-white/45 hover:text-white/75'}`}
                     >
                         Humor
                     </button>
                     <button
                         type="button"
                         onClick={() => setAba('diario')}
-                        className={`rounded-[0.9rem] px-3 py-2 text-[11px] font-black uppercase tracking-[0.12em] transition-colors ${aba === 'diario' ? 'bg-white/10 text-white' : 'text-white/45 hover:text-white/75'}`}
+                        className={`border-b-2 px-3 py-2 text-[11px] font-black uppercase tracking-[0.16em] transition-colors ${aba === 'diario' ? 'border-[#b89252] bg-[#b89252]/10 text-[#f1d595]' : 'border-transparent text-white/45 hover:text-white/75'}`}
                     >
                         Páginas
                     </button>
@@ -212,7 +215,7 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         continua arrastando e pronto. */}
                     {/* A bolinha ao lado do campo tem a cor do humor da regua, e muda
                         enquanto a pessoa arrasta: a frase ja nasce com a cor dela. */}
-                    <div className="flex items-start gap-2.5 rounded-xl border border-white/10 bg-black/30 px-3 py-2 focus-within:border-[var(--skin-accent-color)]/45">
+                    <div className="flex items-start gap-2.5 border border-white/10 bg-black/30 px-3 py-2 focus-within:border-[#b89252]/50">
                         <button
                             type="button"
                             onClick={() => setSemHumor((atual) => !atual)}
@@ -241,9 +244,9 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                 type="button"
                                 aria-pressed={tag === opcao}
                                 onClick={() => setTag((atual) => (atual === opcao ? null : opcao))}
-                                className={`min-w-0 flex-auto truncate rounded-full border px-1.5 py-1 text-center text-[11px] font-semibold transition-colors ${
+                                className={`min-w-0 flex-auto truncate border px-1.5 py-1 text-center text-[11px] font-semibold transition-colors ${
                                     tag === opcao
-                                        ? 'border-[var(--skin-accent-color)]/60 bg-[var(--skin-accent-color)]/15 text-white'
+                                        ? 'border-[#b89252]/70 bg-[#b89252]/15 text-[#f1d595]'
                                         : 'border-white/10 text-white/45 hover:border-white/20 hover:text-white/75'
                                 }`}
                             >
@@ -262,7 +265,7 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         type="button"
                         onClick={() => { void handleRegistrar(); }}
                         disabled={(semHumor ? !frase.trim() : !mudou && !frase.trim()) || registrando}
-                        className="luxe-skin-button w-full rounded-xl py-2.5 text-[11px] font-black uppercase tracking-[0.14em] disabled:cursor-not-allowed disabled:opacity-40"
+                        className="luxe-skin-button w-full !rounded-none py-2.5 text-[11px] font-black uppercase tracking-[0.14em] disabled:cursor-not-allowed disabled:opacity-40"
                     >
                         {registrando
                             ? '...'

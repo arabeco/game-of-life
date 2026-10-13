@@ -71,3 +71,20 @@ const contexto = ler('contexts/GameContext.tsx');
 assert.match(contexto, /autoresDoFeed/, 'o feed nao sabe o nome atual de quem nao e amigo');
 assert.match(card, /autor\?\.nickname \|\| event\.authorNickname/, 'o card mostra o nome guardado no post em vez do atual');
 console.log('Feitos: o fundo diz o tipo, a foto e o nome sao da pessoa, e o nome e o de hoje.');
+
+// ============================== 6. a moldura da maestria sobe com o nivel (a regra do pentagono)
+const faixa = (nivel) => getFeedAppearance(evento('LEVEL_UP', { level: nivel }));
+assert.equal(faixa(40)['--feat-borda'], '1px');
+assert.equal(faixa(55)['--feat-borda'], '2px', 'nos 50 a moldura tinha de engrossar, como no pentagono');
+assert.equal(faixa(95)['--feat-borda'], '3px');
+assert.ok(Number(faixa(85)['--feat-brilho']) > Number(faixa(55)['--feat-brilho']), 'o brilho tinha de subir com a faixa');
+assert.equal(faixa(100)['--feat-coroa'], '1', 'os 100 ganham a coroa');
+assert.match(ler('utils/feedAppearance.ts'), /getMasteryBadgeTier\(/, 'a faixa tinha de vir da mesma regra do pentagono');
+assert.match(ler('components/feed-cards.css'), /var\(--feat-borda/);
+console.log('ok - a moldura do card da maestria sobe nas mesmas faixas do pentagono (25, 50, 75, 90, 100)');
+
+// ============================== 7. adicionar amigo pelo perfil
+const perfil = ler('views/ProfileView.tsx');
+assert.match(perfil, /!isOwnProfile && !isFriendProfile[\s\S]{0,1400}sendFriendRequest\(displayProfile\.id\)/, 'o perfil de quem nao e amigo nao tem como adicionar');
+assert.match(perfil, /Pedido enviado/);
+console.log('ok - o perfil de quem nao e amigo tem Adicionar amigo (e mostra pedido enviado)');

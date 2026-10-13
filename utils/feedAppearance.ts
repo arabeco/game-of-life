@@ -3,6 +3,7 @@ import type { FeedEvent } from '../types';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals.ts';
 import { SEASONS } from '../constants/seasonContent.ts';
 import { LIFE_AREAS } from '../constants/lifeAreas.ts';
+import { getMasteryBadgeTier } from '../constants/masteryBadgeTiers.ts';
 import { PROFILE_BACKGROUND_LOCAL_ROOT, getProfileBackgroundBasename, getRankBackgroundToken } from './profileBackgrounds.ts';
 
 /**
@@ -50,6 +51,7 @@ export function getFeedAppearance(event: FeedEvent): CSSProperties {
     let accent = '#e9c981';
     let rgb = '233, 201, 129';
     let background: string | undefined;
+    let moldura: Record<string, string> = {};
 
     if (event.type === 'ARENA_COMPLETED' || event.type === 'MILESTONE_COMPLETED') {
         primary = ASSET_ACCENT_COLORS[event.content.assetId || ''] || '#687380';
@@ -65,6 +67,18 @@ export function getFeedAppearance(event: FeedEvent): CSSProperties {
         secondary = '#c9a24f';
         accent = '#f3dfa6';
         rgb = '243, 223, 166';
+        // A MOLDURA SOBE COM O NIVEL, na mesma regra do pentagono da maestria
+        // (25, 50, 75, 90 e 100): borda mais grossa, brilho, e a coroa nos 100.
+        const nivel = Number((event.content as { level?: number }).level);
+        if (Number.isFinite(nivel)) {
+            const tier = getMasteryBadgeTier(nivel);
+            moldura = {
+                '--feat-borda': `${tier.borda}px`,
+                '--feat-brilho': String(tier.brilho),
+                '--feat-anel': tier.anelDuplo ? '1' : '0',
+                '--feat-coroa': tier.coroado ? '1' : '0',
+            };
+        }
     } else if (event.type === 'PLAYER_RANK_UP') {
         const patente = patenteDoFeito(event);
         const basename = patente ? getProfileBackgroundBasename(getRankBackgroundToken(patente)) : null;
@@ -88,6 +102,7 @@ export function getFeedAppearance(event: FeedEvent): CSSProperties {
         '--feat-accent': accent,
         '--feat-rgb': rgb,
         ...(background ? { background } : {}),
+        ...moldura,
     } as CSSProperties;
 }
 

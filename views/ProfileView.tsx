@@ -458,7 +458,8 @@ export const ShareableProfileCard: React.FC<{
 }
 
 export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile }> = ({ onClose, profile }) => {
-    const { userProfile, assets, friends, inventory, updateUserProfile, clan, clanRanks, getUserPublicData, cycleProgress, showToast, fetchLikesReceived } = useGame();
+    const { userProfile, assets, friends, inventory, updateUserProfile, clan, clanRanks, getUserPublicData, cycleProgress, showToast, fetchLikesReceived, sendFriendRequest, friendRequestsOutgoing } = useGame();
+    const [enviandoPedido, setEnviandoPedido] = useState(false);
     /**
      * `undefined` = ainda buscando; `null` = a base nao conta curtidas; numero =
      * numero. Os tres estados sao diferentes e a tela trata os dois primeiros do
@@ -894,6 +895,23 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                         <span className="text-sm font-bold text-white">{clanName}</span>
                                         <span className="text-xs text-gray-400">{currentClanRank?.name || 'N/A'}</span>
                                     </button>
+                                    {/* Viu o perfil nos Feitos e quer adicionar: sem fechar e buscar o nome. */}
+                                    {!isOwnProfile && !isFriendProfile && (() => {
+                                        const pedidoPendente = friendRequestsOutgoing.some((pedido) => pedido.recipientId === displayProfile.id && pedido.status === 'pending');
+                                        return (
+                                            <button
+                                                type="button"
+                                                disabled={pedidoPendente || enviandoPedido}
+                                                onClick={async () => {
+                                                    setEnviandoPedido(true);
+                                                    try { await sendFriendRequest(displayProfile.id); } finally { setEnviandoPedido(false); }
+                                                }}
+                                                className="mt-2 rounded-md border border-[var(--skin-accent-color)]/40 bg-black/55 px-4 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-[var(--skin-accent-color)] backdrop-blur-sm disabled:opacity-60"
+                                            >
+                                                {pedidoPendente ? 'Pedido enviado' : enviandoPedido ? 'Enviando…' : 'Adicionar amigo'}
+                                            </button>
+                                        );
+                                    })()}
                                     {isFriendProfile && (
                                         <div className="mt-2 flex items-center gap-2">
                                             <button type="button" onClick={() => setConnectionType('mentoria')} className="rounded-md border border-amber-300/20 bg-black/55 px-3 py-2 text-[10px] font-black uppercase tracking-[0.1em] text-amber-100 backdrop-blur-sm">

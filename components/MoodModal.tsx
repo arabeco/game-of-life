@@ -9,6 +9,11 @@ import JournalTab from './JournalTab';
 import { anexarEntrada, cabecalhoDeHoje } from '../services/JournalService';
 import { TAGS_DO_DIARIO, cabecalhoDaEntrada, type TagDoDiario } from '../utils/diario';
 
+const ESPECTRO_DO_HUMOR = `linear-gradient(90deg, ${MOODS_DATA.flatMap((mood) => [
+    `${mood.trackStart} ${mood.min}%`,
+    `${mood.trackEnd} ${Math.min(mood.max, 100)}%`,
+]).join(', ')})`;
+
 export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const { userProfile, dailyCommitment, updateMood, updateOperationalScratch, recordMoodEntry, fetchMoodHistory } = useGame();
     const [historico, setHistorico] = React.useState<Array<{ value: number; recordedAt: string }>>([]);
@@ -39,12 +44,13 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         MOODS_DATA.find(m => value >= m.min && value < m.max) || MOODS_DATA[MOODS_DATA.length - 1];
 
     const currentMoodInfo = resolveMood(localMood);
-    const sliderTrackStyle = useMemo(() => {
-        const clamped = Math.max(0, Math.min(100, localMood));
-        return {
-            background: `linear-gradient(90deg, ${currentMoodInfo.trackStart} 0%, ${currentMoodInfo.trackEnd} ${clamped}%, rgba(255, 255, 255, 0.12) ${clamped}%, rgba(255, 255, 255, 0.12) 100%)`,
-        } satisfies React.CSSProperties;
-    }, [currentMoodInfo.trackEnd, currentMoodInfo.trackStart, localMood]);
+    // A BARRA E O ESPECTRO INTEIRO, FIXO (12/10/2026): cada humor pinta a sua
+    // faixa, do vermelho da Vergonha ao rosa da Iluminacao. Quem muda e a
+    // bolinha, que pega a cor do humor onde esta, junto com o nome em cima.
+    const sliderTrackStyle = useMemo(() => ({
+        background: ESPECTRO_DO_HUMOR,
+        '--mood-thumb': currentMoodInfo.trackEnd,
+    }) as React.CSSProperties, [currentMoodInfo.trackEnd]);
 
     /**
      * Arrastar nao registra nada.

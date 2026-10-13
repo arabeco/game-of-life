@@ -32,15 +32,15 @@ const formatFeedDate = (timestamp: string): string => {
 };
 
 export const HallOfFameView: React.FC = () => {
-    const { feed, userProfile, friends, clan } = useGame();
+    const { feed, userProfile, friends } = useGame();
     const [filter, setFilter] = useState<FeedFilter>('Reino');
     // Tocar no nome ou na foto de quem publicou abre o perfil dele.
     const [perfilAberto, setPerfilAberto] = useState<UserProfile | null>(null);
 
-    // As abas nao se repetem: o Reino e so de quem nao e amigo, nem do cla, nem voce.
+    // Duas abas sem repeticao: Aliados (voce e amigos) e Reino (o resto).
     const filteredFeed = useMemo(
-        () => filtrarFeed(feed, filter, { meuId: userProfile.id, amigos: friends, meuCla: clan?.name }),
-        [clan?.name, feed, filter, friends, userProfile.id]
+        () => filtrarFeed(feed, filter, { meuId: userProfile.id, amigos: friends }),
+        [feed, filter, friends, userProfile.id]
     );
 
     const groupedFeed = useMemo(() => {
@@ -65,7 +65,7 @@ export const HallOfFameView: React.FC = () => {
                 numero que a propria lista mostra. Juntos ocupavam a primeira dobra
                 da tela sem entregar nada: o conteudo comecava so depois deles. */}
             <div className="flex items-center justify-center rounded-2xl bg-black/20 p-1">
-                {(['Reino', 'Grupo', 'Aliados'] as FeedFilter[]).map((entry) => (
+                {(['Reino', 'Aliados'] as FeedFilter[]).map((entry) => (
                     <button
                         key={entry}
                         onClick={() => setFilter(entry)}

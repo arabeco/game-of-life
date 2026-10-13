@@ -15517,12 +15517,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             void publishGlyphAndroidWidgetSnapshot({
                 updatedAt: new Date().toISOString(),
                 ...snapshot,
-                auth: {
-                    supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
-                    anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-                    accessToken: session?.access_token || '',
-                    refreshToken: session?.refresh_token || '',
-                },
             });
         }, 700);
 
@@ -15536,8 +15530,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         isProfileLoaded,
         oracleMessages,
         oraclePreferences,
-        session?.access_token,
-        session?.refresh_token,
         taskPool,
         tasks,
         cycleOperationalDate,

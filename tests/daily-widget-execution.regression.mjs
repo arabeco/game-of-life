@@ -13,19 +13,11 @@ const edgeFunctionSource = readFileSync(
   new URL('../supabase/functions/widget-action/index.ts', import.meta.url),
   'utf8',
 );
-// O botao de concluir saiu do provider em 194adb8, quando a acao passou a ser
-// escolher na lista e agir na barra de baixo. Ele nao sumiu: virou rotulo de
-// layout e rotulo de linha. Como o teste so lia o provider, ficou cobrando um
-// texto que mudou de arquivo — vermelho sem defeito nenhum.
-const widgetLayout = readFileSync(
-  new URL('../android/app/src/main/res/layout/glyph_day_widget.xml', import.meta.url),
-  'utf8',
-);
-const bayServiceSource = readFileSync(
-  new URL('../android/app/src/main/java/life/glyph/app/GlyphBayWidgetService.java', import.meta.url),
-  'utf8',
-);
-
+// A ABA FAZER SAIU (13/10/2026). O widget do dia virou vitrine: Resumo e
+// Planner, tocar abre o app (tests/widget-planner-do-dia.regression.mjs cobre o
+// desenho novo). As cobrancas da lista de concluir, da barra CONCLUIR/CANCELAR e
+// da chamada autenticada saem daqui. A funcao widget-action continua no servidor,
+// so que ninguem mais chama.
 assert.match(widgetSnapshotSource, /if \(!activeCycle\) \{/);
 assert.match(widgetSnapshotSource, /const todaysTasks = cycleTasks\.filter/);
 assert.match(widgetSnapshotSource, /earnedExp/);
@@ -41,30 +33,10 @@ assert.match(widgetSnapshotSource, /completionRateForGrade/);
 assert.match(widgetSnapshotSource, /grade: notaDoWidget/);
 assert.doesNotMatch(widgetSnapshotSource, /getScoreGrade\(currentScore\)/);
 assert.doesNotMatch(widgetSnapshotSource, /if \(!activeCycle \|\| !dailyCommitment\)/);
-assert.match(widgetProvider, /HOJE NO GLYPH/);
-assert.match(widgetProvider, /ACTION_TAB_TODAY/);
-assert.match(widgetProvider, /ACTION_TAB_DO/);
-assert.match(widgetProvider, /"FAZER"/);
-// Concluir mora na barra de baixo; a linha so escolhe. Os dois rotulos juntos sao
-// a prova de que ha um caminho unico: a linha marca "ESCOLHIDA", a barra "CONCLUIR".
-assert.match(widgetLayout, /android:text="CONCLUIR"/);
-assert.match(widgetLayout, /android:text="CANCELAR"/);
-assert.match(bayServiceSource, /isSelected \? "ESCOLHIDA" : "ESCOLHER"/);
-assert.match(bayServiceSource, /!item\.isUnlimited && item\.count > 1/);
-assert.match(bayServiceSource, /MODE_TODAY/);
-assert.match(widgetProvider, /ACTION_CANCEL/);
-assert.match(widgetProvider, /MODE_TODAY/);
-assert.doesNotMatch(widgetProvider, /Math\.min\(3, items\.length\(\)\)/);
-assert.match(widgetProvider, /ACTIONS_IN_FLIGHT\.add/);
-assert.match(widgetProvider, /\/functions\/v1\/widget-action/);
-assert.match(widgetProvider, /refreshSession/);
 assert.match(widgetProvider, /life\.glyph\.app:\/\/widget\/planner/);
 assert.doesNotMatch(widgetProvider, /programadas|estoque|Planejando/);
+assert.doesNotMatch(widgetProvider, /\/functions\/v1\/widget-action|refreshSession|ACTION_COMPLETE/);
 assert.match(edgeFunctionSource, /auth\.getUser/);
 assert.match(edgeFunctionSource, /\.eq\("user_id", user\.id\)/);
-assert.match(edgeFunctionSource, /update\(\{ completed: true, start_time: safeStartTime, duration: safeDuration \}\)/);
-assert.match(edgeFunctionSource, /from\("scheduled_tasks"\)\.insert/);
-assert.match(edgeFunctionSource, /repeatedTasks/);
-assert.match(edgeFunctionSource, /daily_proof_streak/);
 
-console.log('Daily widget regression: tabs, authenticated quick completion and duplicate protection are wired.');
+console.log('Daily widget regression: o snapshot do dia segue certo, e o widget nao conclui mais nada.');

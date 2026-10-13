@@ -11,12 +11,8 @@ export type GlyphAndroidWidgetSnapshot = {
   updatedAt: string;
   daily: DailyWidgetSnapshot;
   oracle: OracleWidgetSnapshot;
-  auth?: {
-    supabaseUrl: string;
-    anonKey: string;
-    accessToken: string;
-    refreshToken: string;
-  };
+  // Sem login (13/10/2026): o widget so mostra o dia e abre o app. Quem conclui
+  // e o app, entao o widget nao precisa mais guardar sessao no celular.
 };
 
 export const publishGlyphAndroidWidgetSnapshot = async (

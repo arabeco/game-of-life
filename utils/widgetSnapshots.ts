@@ -16,6 +16,7 @@ import { buildActionPoolByDate, buildCyclePaceMetrics, buildDailyArenaFocus, fil
 import { buildFairScoreFromTasks } from './fairScoreUtils.js';
 import { getOperationalDateString, taskMatchesOperationalDate } from './operationalDay.js';
 import { hasScheduledTime } from './taskDomain.js';
+import { montarPlannerDoWidget, type BlocoDoWidget } from './widgetPlanner';
 import type { RestScreenActionSessionDetail } from './restScreenActionSession';
 
 type CommitmentTaskStatus = {
@@ -112,6 +113,12 @@ export interface DailyWidgetSnapshot {
     scheduledToday?: boolean;
   }>;
   commitmentStats: CommitmentStatsSnapshot | null;
+  /** O planner do dia, pronto para o widget desenhar (13/10/2026). */
+  plannerDoDia: BlocoDoWidget[];
+  /** Minutos do que foi feito hoje: o "tempo registrado" do Resumo. */
+  tempoRegistradoMin: number;
+  /** Em que minuto do relogio o dia do planner comeca (04:00 = 240). */
+  diaComecaEm: number;
 }
 
 export interface OracleWidgetSnapshot {
@@ -337,6 +344,10 @@ export const buildDailyWidgetSnapshot = ({
   const stage = dailyCommitment?.stage || 'planning';
   const checklistCompleted = checklistItems.filter((item) => item.completed).length;
   const checklistTotal = checklistItems.length;
+  // O planner do dia e o mesmo com ou sem ciclo: o que esta no planner hoje.
+  const { blocos: plannerDoDia, tempoRegistradoMin, diaComecaEm } = montarPlannerDoWidget({
+    tasks, actions, arenas, dataOperacional: operationalDate,
+  });
 
   if (!activeCycle) {
     const todaysTasks = tasks.filter(
@@ -405,6 +416,9 @@ export const buildDailyWidgetSnapshot = ({
         }),
       quickActions: [],
       commitmentStats: null,
+      plannerDoDia,
+      tempoRegistradoMin,
+      diaComecaEm,
     };
   }
 
@@ -526,6 +540,9 @@ export const buildDailyWidgetSnapshot = ({
         scheduledToday: todaysTasks.some((task) => task.actionId === group.action.id),
       })),
     commitmentStats,
+    plannerDoDia,
+    tempoRegistradoMin,
+    diaComecaEm,
   };
 };
 

@@ -7,5 +7,5 @@
     <string name="glyph_widget_description">Card de ciclo do GLYPH</string>
     <string name="glyph_cycle_widget_name">GLYPH Ciclo</string>
     <string name="glyph_day_widget_name">GLYPH Hoje</string>
-    <string name="glyph_day_widget_description">Execução de hoje no GLYPH</string>
+    <string name="glyph_day_widget_description">Seu dia no GLYPH: resumo e planner</string>
 </resources>

@@ -1,0 +1,324 @@
+package life.glyph.app;
+
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.DashPathEffect;
+import android.graphics.LinearGradient;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.RadialGradient;
+import android.graphics.RectF;
+import android.graphics.Shader;
+import android.graphics.Typeface;
+import android.text.TextPaint;
+import android.text.TextUtils;
+
+import java.util.List;
+
+/**
+ * O PINCEL DO WIDGET DO DIA (13/10/2026).
+ *
+ * Duas telas desenhadas como imagem, igual ao widget do ciclo (GlyphWidgetPaint):
+ *
+ *   - RESUMO: quatro quadradinhos (feitas/planejadas, %, tempo, EXP), no estilo
+ *     do cartao do Painel Diario — canto reto, filete dourado, numero em serifa
+ *     com degrade de ouro. Numa fileira quando o widget e largo e baixo, em 2x2
+ *     quando e mais alto.
+ *
+ *   - PLANNER: o planner do app, igualzinho, na escala do zoom 1 novo do app
+ *     (0,35 px por minuto, utils/plannerZoom.ts). A escala e fixa: o tamanho do
+ *     widget decide quantas horas aparecem. Quando nao cabe o dia, a janela
+ *     comeca uma hora antes de agora. Horario vazio aparece vazio.
+ *
+ * Os blocos copiam o PlannerView: degrade da area, pelicula escura, borda
+ * tracejada cinza no que falta e branca no que foi feito, icone e nome, e o
+ * check verde. Marco e o losango dourado.
+ */
+final class GlyphDayPaint {
+    /** A mesma escala do zoom 1 do app (PLANNER_ZOOM_FACTORS[1], em dp por minuto). */
+    static final float PX_POR_MINUTO = 0.35f;
+    private static final int MINUTOS_DO_DIA = 24 * 60;
+
+    private static final int OURO = Color.parseColor("#b89252");
+    private static final int OURO_CLARO = Color.parseColor("#f1d595");
+    private static final int TEXTO_SUAVE = Color.parseColor("#d3c6a8");
+
+    static final class Bloco {
+        final String nome;
+        final String icone;
+        final int inicio;
+        final int duracao;
+        final boolean feita;
+        final boolean marco;
+        final int corA;
+        final int corB;
+
+        Bloco(String nome, String icone, int inicio, int duracao, boolean feita, boolean marco, int corA, int corB) {
+            this.nome = nome;
+            this.icone = icone;
+            this.inicio = inicio;
+            this.duracao = duracao;
+            this.feita = feita;
+            this.marco = marco;
+            this.corA = corA;
+            this.corB = corB;
+        }
+    }
+
+    private GlyphDayPaint() {}
+
+    private static int comAlfa(int cor, int alfa) {
+        return Color.argb(alfa, Color.red(cor), Color.green(cor), Color.blue(cor));
+    }
+
+    // ------------------------------------------------------------------ RESUMO
+
+    static Bitmap resumo(float d, int largura, int altura, int feitas, int planejadas, int tempoMin, int exp) {
+        Bitmap bitmap = Bitmap.createBitmap(Math.max(1, largura), Math.max(1, altura), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+
+        int porcento = planejadas > 0 ? Math.round(feitas * 100f / planejadas) : 0;
+        String[] valores = { feitas + "/" + planejadas, porcento + "%", tempo(tempoMin), "+" + exp };
+        String[] rotulos = { "FEITAS", "DO DIA", "TEMPO", "EXP" };
+
+        boolean fileira = largura >= altura * 2.4f;
+        int colunas = fileira ? 4 : 2;
+        int linhas = fileira ? 1 : 2;
+        float vao = 6 * d;
+        float w = (largura - vao * (colunas - 1)) / colunas;
+        float h = (altura - vao * (linhas - 1)) / linhas;
+
+        for (int i = 0; i < 4; i++) {
+            float x = (i % colunas) * (w + vao);
+            float y = (i / colunas) * (h + vao);
+            quadradinho(canvas, d, new RectF(x, y, x + w, y + h), valores[i], rotulos[i]);
+        }
+        return bitmap;
+    }
+
+    private static String tempo(int minutos) {
+        if (minutos < 60) return minutos + "min";
+        int horas = minutos / 60;
+        int resto = minutos % 60;
+        return resto == 0 ? horas + "h" : horas + "h" + (resto < 10 ? "0" : "") + resto;
+    }
+
+    private static void quadradinho(Canvas canvas, float d, RectF caixa, String valor, String rotulo) {
+        Paint fundo = new Paint(Paint.ANTI_ALIAS_FLAG);
+        fundo.setShader(new LinearGradient(caixa.left, caixa.top, caixa.right, caixa.bottom,
+                new int[] { comAlfa(OURO, 0x11), Color.parseColor("#0d0e11"), Color.parseColor("#08090b") },
+                new float[] { 0f, 0.58f, 1f }, Shader.TileMode.CLAMP));
+        canvas.drawRect(caixa, fundo);
+
+        Paint brilho = new Paint(Paint.ANTI_ALIAS_FLAG);
+        float raio = Math.max(caixa.width(), caixa.height()) * 0.6f;
+        brilho.setShader(new RadialGradient(caixa.centerX(), caixa.top, raio,
+                new int[] { comAlfa(OURO, 0x29), comAlfa(OURO, 0) }, null, Shader.TileMode.CLAMP));
+        canvas.drawRect(caixa, brilho);
+
+        Paint borda = new Paint(Paint.ANTI_ALIAS_FLAG);
+        borda.setStyle(Paint.Style.STROKE);
+        borda.setStrokeWidth(Math.max(1f, d));
+        borda.setColor(comAlfa(OURO, 0x47));
+        canvas.drawRect(caixa.left + 0.5f * d, caixa.top + 0.5f * d, caixa.right - 0.5f * d, caixa.bottom - 0.5f * d, borda);
+
+        TextPaint rotuloTinta = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        rotuloTinta.setColor(TEXTO_SUAVE);
+        rotuloTinta.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
+        rotuloTinta.setTextSize(Math.min(9 * d, caixa.height() * 0.16f));
+        rotuloTinta.setLetterSpacing(0.2f);
+        rotuloTinta.setTextAlign(Paint.Align.CENTER);
+
+        TextPaint numero = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        numero.setTypeface(Typeface.create(Typeface.SERIF, Typeface.BOLD));
+        float tamanho = Math.min(caixa.height() * 0.42f, caixa.width() * 0.3f);
+        numero.setTextSize(tamanho);
+        while (numero.measureText(valor) > caixa.width() * 0.86f && tamanho > 8 * d) {
+            tamanho -= d;
+            numero.setTextSize(tamanho);
+        }
+        numero.setTextAlign(Paint.Align.CENTER);
+        float baseNumero = caixa.centerY() + tamanho * 0.22f;
+        numero.setShader(new LinearGradient(0, baseNumero - tamanho, 0, baseNumero,
+                new int[] { Color.parseColor("#fffdf6"), Color.parseColor("#e7dcc5"), Color.parseColor("#aa8748"), Color.parseColor("#f1eadb") },
+                new float[] { 0f, 0.38f, 0.72f, 1f }, Shader.TileMode.CLAMP));
+        numero.setShadowLayer(2 * d, 0, d, Color.parseColor("#dd000000"));
+        canvas.drawText(valor, caixa.centerX(), baseNumero, numero);
+
+        canvas.drawText(rotulo, caixa.centerX(), Math.min(caixa.bottom - 6 * d, baseNumero + rotuloTinta.getTextSize() * 1.9f), rotuloTinta);
+    }
+
+    // ------------------------------------------------------------------ PLANNER
+
+    /**
+     * @param agora minutos desde o comeco do dia do planner (04:00 = 0).
+     * @param diaComecaEm minuto do relogio em que o dia comeca (240).
+     */
+    static Bitmap planner(float d, int largura, int altura, List<Bloco> blocos, int agora, int diaComecaEm) {
+        Bitmap bitmap = Bitmap.createBitmap(Math.max(1, largura), Math.max(1, altura), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        float porMinuto = PX_POR_MINUTO * d;
+        float calha = 34 * d;
+
+        // A janela: tudo se couber; senao, uma hora antes de agora, sem passar do fim do dia.
+        float minutosVisiveis = altura / porMinuto;
+        float inicio = Math.max(0, Math.min(agora - 60, MINUTOS_DO_DIA - minutosVisiveis));
+        if (minutosVisiveis >= MINUTOS_DO_DIA) inicio = 0;
+
+        // As horas e as linhas.
+        Paint linha = new Paint(Paint.ANTI_ALIAS_FLAG);
+        linha.setColor(Color.argb(0x18, 255, 255, 255));
+        linha.setStrokeWidth(Math.max(1f, d * 0.75f));
+        TextPaint hora = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        hora.setColor(Color.argb(0x73, 255, 255, 255));
+        hora.setTextSize(9 * d);
+        hora.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
+        for (int m = 0; m <= MINUTOS_DO_DIA; m += 60) {
+            float y = (m - inicio) * porMinuto;
+            if (y < -1 || y > altura + 1) continue;
+            canvas.drawLine(calha, y, largura, y, linha);
+            int relogio = ((diaComecaEm + m) / 60) % 24;
+            String rotulo = (relogio < 10 ? "0" : "") + relogio + ":00";
+            float base = Math.max(hora.getTextSize(), Math.min(altura - 2 * d, y + hora.getTextSize() * 0.35f));
+            canvas.drawText(rotulo, 2 * d, base, hora);
+        }
+
+        if (blocos.isEmpty()) {
+            TextPaint vazio = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+            vazio.setColor(TEXTO_SUAVE);
+            vazio.setTextSize(11 * d);
+            vazio.setTypeface(Typeface.create(Typeface.SERIF, Typeface.ITALIC));
+            vazio.setTextAlign(Paint.Align.CENTER);
+            canvas.drawText("Nada no planner hoje.", calha + (largura - calha) / 2f, altura / 2f, vazio);
+        }
+
+        float x0 = calha + 4 * d;
+        float x1 = largura - 2 * d;
+        for (Bloco bloco : blocos) {
+            float topo = (bloco.inicio - inicio) * porMinuto;
+            if (bloco.marco) {
+                float alto = Math.max(15 * porMinuto, bloco.duracao * porMinuto);
+                if (topo + alto < 0 || topo > altura) continue;
+                marco(canvas, d, new RectF(x0, topo, x1, topo + alto), bloco);
+            } else {
+                float alto = Math.max(30 * porMinuto, bloco.duracao * porMinuto);
+                if (topo + alto < 0 || topo > altura) continue;
+                tarefa(canvas, d, new RectF(x0, topo, x1, topo + alto), bloco);
+            }
+        }
+
+        // A linha de agora.
+        float yAgora = (agora - inicio) * porMinuto;
+        if (yAgora >= 0 && yAgora <= altura) {
+            Paint agoraTinta = new Paint(Paint.ANTI_ALIAS_FLAG);
+            agoraTinta.setColor(OURO_CLARO);
+            agoraTinta.setStrokeWidth(1.5f * d);
+            canvas.drawLine(calha, yAgora, largura, yAgora, agoraTinta);
+            canvas.drawCircle(calha, yAgora, 3 * d, agoraTinta);
+        }
+        return bitmap;
+    }
+
+    private static void tarefa(Canvas canvas, float d, RectF caixa, Bloco bloco) {
+        float raio = Math.min(16 * d, caixa.height() / 2f);
+        RectF dentro = new RectF(caixa.left + 2 * d, caixa.top + 2 * d, caixa.right - 2 * d, caixa.bottom - 2 * d);
+        if (dentro.height() <= 0) dentro = new RectF(caixa);
+        float raioDentro = Math.min(14 * d, dentro.height() / 2f);
+
+        Paint cor = new Paint(Paint.ANTI_ALIAS_FLAG);
+        cor.setShader(new LinearGradient(dentro.left, dentro.top, dentro.right, dentro.bottom, bloco.corA, bloco.corB, Shader.TileMode.CLAMP));
+        canvas.drawRoundRect(dentro, raioDentro, raioDentro, cor);
+
+        Paint pelicula = new Paint(Paint.ANTI_ALIAS_FLAG);
+        pelicula.setShader(new LinearGradient(dentro.left, dentro.top, dentro.right, dentro.bottom,
+                new int[] { Color.argb(0x1a, 2, 6, 23), Color.argb(0x47, 2, 6, 23) }, new float[] { 0f, 0.74f }, Shader.TileMode.CLAMP));
+        canvas.drawRoundRect(dentro, raioDentro, raioDentro, pelicula);
+
+        if (bloco.feita) {
+            Paint feita = new Paint(Paint.ANTI_ALIAS_FLAG);
+            feita.setShader(new LinearGradient(dentro.left, dentro.top, dentro.right, dentro.bottom,
+                    new int[] { Color.argb(0x2e, 255, 255, 255), Color.argb(0x0d, 255, 255, 255), Color.argb(0x29, 0, 0, 0) },
+                    new float[] { 0f, 0.62f, 1f }, Shader.TileMode.CLAMP));
+            canvas.drawRoundRect(dentro, raioDentro, raioDentro, feita);
+        }
+
+        Paint borda = new Paint(Paint.ANTI_ALIAS_FLAG);
+        borda.setStyle(Paint.Style.STROKE);
+        borda.setStrokeWidth(2 * d);
+        if (bloco.feita) {
+            borda.setColor(Color.argb(0x40, 255, 255, 255));
+        } else {
+            borda.setColor(Color.parseColor("#4b5563"));
+            borda.setPathEffect(new DashPathEffect(new float[] { 4 * d, 3 * d }, 0));
+        }
+        RectF bordaCaixa = new RectF(caixa.left + d, caixa.top + d, caixa.right - d, caixa.bottom - d);
+        canvas.drawRoundRect(bordaCaixa, raio, raio, borda);
+
+        if (caixa.height() < 12 * d) return;
+        canvas.save();
+        canvas.clipRect(dentro);
+        float meio = caixa.centerY();
+        TextPaint icone = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        icone.setTextSize(Math.min(16 * d, caixa.height() * 0.62f));
+        float xTexto = dentro.left + 6 * d;
+        canvas.drawText(bloco.icone, xTexto, meio + icone.getTextSize() * 0.35f, icone);
+        xTexto += icone.measureText(bloco.icone) + 6 * d;
+
+        float direita = dentro.right - 6 * d;
+        if (bloco.feita && caixa.height() >= 16 * d) {
+            float r = Math.min(9 * d, caixa.height() / 2f - 2 * d);
+            float cx = dentro.right - 4 * d - r;
+            Paint circulo = new Paint(Paint.ANTI_ALIAS_FLAG);
+            circulo.setColor(Color.argb(0x47, 0, 0, 0));
+            canvas.drawCircle(cx, meio, r, circulo);
+            TextPaint check = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+            check.setColor(Color.parseColor("#6ee7b7"));
+            check.setTextSize(r * 1.3f);
+            check.setTypeface(Typeface.DEFAULT_BOLD);
+            check.setTextAlign(Paint.Align.CENTER);
+            canvas.drawText("✓", cx, meio + check.getTextSize() * 0.36f, check);
+            direita = cx - r - 4 * d;
+        }
+
+        TextPaint nome = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        nome.setColor(Color.WHITE);
+        nome.setTextSize(Math.min(13 * d, caixa.height() * 0.5f));
+        nome.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
+        nome.setShadowLayer(3 * d, 0, d, Color.argb(0xd1, 2, 6, 23));
+        CharSequence cabe = TextUtils.ellipsize(bloco.nome, nome, Math.max(0, direita - xTexto), TextUtils.TruncateAt.END);
+        canvas.drawText(cabe, 0, cabe.length(), xTexto, meio + nome.getTextSize() * 0.35f, nome);
+        canvas.restore();
+    }
+
+    private static void marco(Canvas canvas, float d, RectF caixa, Bloco bloco) {
+        Path losango = new Path();
+        losango.moveTo(caixa.centerX(), caixa.top);
+        losango.lineTo(caixa.right, caixa.centerY());
+        losango.lineTo(caixa.centerX(), caixa.bottom);
+        losango.lineTo(caixa.left, caixa.centerY());
+        losango.close();
+
+        Paint ouro = new Paint(Paint.ANTI_ALIAS_FLAG);
+        ouro.setShader(new LinearGradient(caixa.left, caixa.top, caixa.right, caixa.bottom,
+                new int[] { Color.parseColor("#fbe7a6"), Color.parseColor("#d9b45a"), Color.parseColor("#a77d2c") },
+                new float[] { 0f, 0.5f, 1f }, Shader.TileMode.CLAMP));
+        ouro.setShadowLayer(6 * d, 0, 0, comAlfa(OURO, 0x99));
+        canvas.drawPath(losango, ouro);
+        if (bloco.feita) {
+            Paint feita = new Paint(Paint.ANTI_ALIAS_FLAG);
+            feita.setColor(Color.argb(0x45, 255, 255, 255));
+            canvas.drawPath(losango, feita);
+        }
+
+        if (caixa.height() < 14 * d) return;
+        TextPaint nome = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        nome.setColor(Color.parseColor("#241a07"));
+        nome.setTextSize(Math.min(11 * d, caixa.height() * 0.4f));
+        nome.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
+        nome.setTextAlign(Paint.Align.CENTER);
+        String texto = bloco.icone + " " + bloco.nome;
+        CharSequence cabe = TextUtils.ellipsize(texto, nome, caixa.width() * 0.5f, TextUtils.TruncateAt.END);
+        canvas.drawText(cabe, 0, cabe.length(), caixa.centerX(), caixa.centerY() + nome.getTextSize() * 0.35f, nome);
+    }
+}

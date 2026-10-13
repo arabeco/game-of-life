@@ -1,15 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  O WIDGET DO DIA (13/10/2026): vitrine, nao controle remoto.
+  Duas abas desenhadas como imagem (GlyphDayPaint): RESUMO e PLANNER.
+  Tocar em qualquer lugar abre o planner no app; as abas so trocam a tela.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/glyph_day_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/glyph_day_widget_background"
     android:orientation="vertical"
-    android:padding="9dp">
+    android:padding="8dp">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="20dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
@@ -19,158 +24,59 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:ellipsize="end"
+            android:letterSpacing="0.18"
             android:maxLines="1"
-            android:text="HOJE NO GLYPH"
-            android:textColor="#F2E7C4"
-            android:textSize="12sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/glyph_day_open_planner"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/glyph_widget_pill_dark"
-            android:paddingLeft="9dp"
-            android:paddingTop="4dp"
-            android:paddingRight="9dp"
-            android:paddingBottom="4dp"
-            android:text="PLANNER"
-            android:textColor="#D9C87A"
-            android:textSize="8sp"
-            android:textStyle="bold" />
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/glyph_day_subtitle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:text="Ciclo atual"
-        android:textColor="#AFA792"
-        android:textSize="8sp" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:background="@drawable/glyph_widget_pill_dark"
-        android:orientation="horizontal"
-        android:padding="2dp">
-
-        <TextView
-            android:id="@+id/glyph_day_tab_do"
-            android:layout_width="0dp"
-            android:layout_height="26dp"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="FAZER"
-            android:textColor="#8E8878"
-            android:textSize="9sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/glyph_day_tab_today"
-            android:layout_width="0dp"
-            android:layout_height="26dp"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="HOJE"
-            android:textColor="#F6D65B"
-            android:textSize="9sp"
-            android:textStyle="bold" />
-    </LinearLayout>
-
-        <!-- A baia inteira, rolavel. Antes eram quatro linhas fixas: quem tem baia
-         cheia via uma fracao e nem sabia que havia mais. -->
-    <ListView
-        android:id="@+id/glyph_day_list"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginTop="4dp"
-        android:divider="@null"
-        android:dividerHeight="0dp"
-        android:scrollbars="none" />
-
-    <!-- Barra de acao da selecao. Fica FORA da lista de proposito: item de colecao
-         nao carrega PendingIntent proprio, mas botao aqui carrega. E o que
-         permite dois comandos por acao sem depender de gesto que widget nao tem. -->
-    <LinearLayout
-        android:id="@+id/glyph_day_selection_bar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:background="@drawable/glyph_widget_pill_dark"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:padding="4dp"
-        android:visibility="gone">
-
-        <TextView
-            android:id="@+id/glyph_day_selection_name"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:paddingLeft="8dp"
-            android:paddingRight="6dp"
-            android:textColor="#E8E2D4"
+            android:text="MEU DIA"
+            android:textColor="#F1D595"
             android:textSize="10sp"
             android:textStyle="bold" />
 
         <TextView
-            android:id="@+id/glyph_day_selection_schedule"
+            android:id="@+id/glyph_day_tab_resumo"
             android:layout_width="wrap_content"
-            android:layout_height="28dp"
-            android:layout_marginEnd="4dp"
-            android:background="@drawable/glyph_widget_pill_dark"
+            android:layout_height="match_parent"
             android:gravity="center"
-            android:minWidth="60dp"
+            android:letterSpacing="0.14"
             android:paddingLeft="8dp"
             android:paddingRight="8dp"
-            android:text="CANCELAR"
-            android:textColor="#E8E2D4"
+            android:text="RESUMO"
+            android:textColor="#8E8878"
             android:textSize="8sp"
             android:textStyle="bold" />
 
         <TextView
-            android:id="@+id/glyph_day_selection_complete"
+            android:id="@+id/glyph_day_tab_planner"
             android:layout_width="wrap_content"
-            android:layout_height="28dp"
-            android:background="@drawable/glyph_widget_pill_gold"
+            android:layout_height="match_parent"
             android:gravity="center"
-            android:minWidth="60dp"
+            android:letterSpacing="0.14"
             android:paddingLeft="8dp"
-            android:paddingRight="8dp"
-            android:text="CONCLUIR"
-            android:textColor="#211B0A"
+            android:paddingRight="4dp"
+            android:text="PLANNER"
+            android:textColor="#F1D595"
             android:textSize="8sp"
             android:textStyle="bold" />
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/glyph_day_empty"
+    <ImageView
+        android:id="@+id/glyph_day_body"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:gravity="center"
-        android:textColor="#8E8878"
-        android:textSize="10sp"
-        android:visibility="gone" />
+        android:layout_height="0dp"
+        android:layout_marginTop="4dp"
+        android:layout_weight="1"
+        android:contentDescription="Meu dia no Glyph"
+        android:scaleType="fitXY" />
 
     <TextView
         android:id="@+id/glyph_day_footer"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
+        android:layout_height="12dp"
+        android:layout_marginTop="3dp"
         android:ellipsize="end"
-        android:gravity="center"
+        android:gravity="end|center_vertical"
+        android:letterSpacing="0.12"
         android:maxLines="1"
-        android:text="0 ações · 0 arenas · +0 XP"
-        android:textColor="#AFA792"
-        android:textSize="8sp"
-        android:textStyle="bold" />
+        android:text="ABRA O GLYPH PARA SINCRONIZAR"
+        android:textColor="#7F7868"
+        android:textSize="7sp" />
 </LinearLayout>

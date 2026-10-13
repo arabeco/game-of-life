@@ -3,8 +3,7 @@ import { useGame } from '../contexts/GameContext';
 import { FeedEventCard } from '../components/FeedEventCard';
 import { FeedEvent, FeedEventType, UserProfile } from '../types';
 import { ProfileView } from './ProfileView';
-
-type FeedFilter = 'Reino' | 'Grupo' | 'Aliados';
+import { filtrarFeed, type AbaDoFeed as FeedFilter } from '../utils/feedAbas';
 
 const sectionLabelByType: Partial<Record<FeedEventType, string>> = {
     MILESTONE_COMPLETED: 'Marcos',
@@ -38,34 +37,11 @@ export const HallOfFameView: React.FC = () => {
     // Tocar no nome ou na foto de quem publicou abre o perfil dele.
     const [perfilAberto, setPerfilAberto] = useState<UserProfile | null>(null);
 
-    const friendIds = useMemo(() => new Set(friends.map((friend) => friend.id)), [friends]);
-
-    const filteredFeed = useMemo(() => {
-        return [...feed]
-            .filter((event: FeedEvent) => {
-                if (filter === 'Reino') return true;
-                if (filter === 'Aliados') {
-                    return friendIds.has(event.userId) || event.userId === userProfile.id;
-                }
-                if (filter === 'Grupo') {
-                    // O CLA VEM DO CONTEXTO, e nao do perfil.
-                    //
-                    // Aqui se lia userProfile.clan, que nao existe em UserProfile:
-                    // o cla mora no proprio contexto. Como a leitura devolvia
-                    // undefined, o Boolean dava false para todo evento e a aba
-                    // Grupo mostrava so os posts da propria pessoa. Nao quebrava
-                    // nada — apenas nao filtrava.
-                    const isSameClan = Boolean(
-                        clan &&
-                            (event.authorClanName === clan.name ||
-                                friends.some((friend) => friend.id === event.userId && friend.clanName === clan.name))
-                    );
-                    return isSameClan || event.userId === userProfile.id;
-                }
-                return true;
-            })
-            .sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime());
-    }, [clan, feed, filter, friendIds, friends, userProfile.id]);
+    // As abas nao se repetem: o Reino e so de quem nao e amigo, nem do cla, nem voce.
+    const filteredFeed = useMemo(
+        () => filtrarFeed(feed, filter, { meuId: userProfile.id, amigos: friends, meuCla: clan?.name }),
+        [clan?.name, feed, filter, friends, userProfile.id]
+    );
 
     const groupedFeed = useMemo(() => {
         const groups = new Map<string, FeedEvent[]>();

@@ -1,7 +1,7 @@
 ﻿import React, { useEffect, useMemo, useState } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
-import { CheckIcon, FilterIcon, LightbulbIcon } from '../Icons';
+import { CheckIcon, FilterIcon } from '../Icons';
 import { CampaignsCodex } from '../CampaignsCodex';
 import { ConfirmationModal } from '../ConfirmationModal';
 import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../../utils/codexPreview';
@@ -9,14 +9,12 @@ import { getCampaignPriceForProfile } from '../../utils/premiumAccess';
 import { CampaignArenaStack } from '../CampaignArenaStack';
 import { CodexCoverArt as SharedCodexCoverArt } from '../CodexCoverArt';
 import { ASSET_ACCENT_COLORS } from '../../constants/assetVisuals';
-import { CampaignRecommendationQuizModal } from './CampaignRecommendationQuizModal';
 
 /* O mesmo chanfro de oito cantos da placa de ciclo e da placa do legado. */
 const CANTO_DO_CARD = 14;
 const recorteDoCard = {
     clipPath: `polygon(${CANTO_DO_CARD}px 0, calc(100% - ${CANTO_DO_CARD}px) 0, 100% ${CANTO_DO_CARD}px, 100% calc(100% - ${CANTO_DO_CARD}px), calc(100% - ${CANTO_DO_CARD}px) 100%, ${CANTO_DO_CARD}px 100%, 0 calc(100% - ${CANTO_DO_CARD}px), 0 ${CANTO_DO_CARD}px)`,
 };
-import { hasCompletedFreeCampaignQuiz } from '../../utils/campaignQuiz';
 import {
     CATEGORY_LABELS,
     THEME_CATEGORY_ORDER,
@@ -121,15 +119,11 @@ export const CodexStore: React.FC = () => {
     const [purchasing, setPurchasing] = useState<string | null>(null);
     const [campaignPreview, setCampaignPreview] = useState<CodexCampaignPreview | null>(null);
     const [pendingPurchase, setPendingPurchase] = useState<{ id: string; title: string; goldPrice: number } | null>(null);
-    const [isRecommendationQuizOpen, setRecommendationQuizOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedAssetId, setSelectedAssetId] = useState<string>('all');
     const [selectedCategory, setSelectedCategory] = useState<'all' | CampaignCategoryId>('all');
     const [areFiltersOpen, setFiltersOpen] = useState(false);
 
-    const handleQuizTeaser = () => {
-        setRecommendationQuizOpen(true);
-    };
 
     const handlePurchase = async (catalogId: string) => {
         const catalogItem = codexCatalog.find((codex) => codex.id === catalogId);
@@ -215,26 +209,7 @@ export const CodexStore: React.FC = () => {
         catalogEntries.filter((entry) => !entry.isFree)
     ), [catalogEntries]);
 
-    const hasOwnedFreeCampaign = useMemo(() => userCodexes.some((userCodex) => {
-        if (!userCodex.catalog_id) return false;
-        const catalogEntry = catalogEntries.find((entry) => entry.codex.id === userCodex.catalog_id);
-        return Boolean(catalogEntry?.isFree);
-    }), [catalogEntries, userCodexes]);
-
-    const hasPendingFreeQuiz = !hasCompletedFreeCampaignQuiz() && !hasOwnedFreeCampaign;
-    const campaignQuizFreeCredits = Math.max(0, Number(userProfile.campaignQuizFreeCredits || 0));
-    const campaignQuizMediumCredits = Math.max(0, Number(userProfile.campaignQuizMediumCredits || 0));
-    const totalQuizCredits = campaignQuizFreeCredits + campaignQuizMediumCredits;
-    const quizButtonLabel = hasPendingFreeQuiz
-        ? 'Fazer quiz grátis'
-        : totalQuizCredits > 0
-            ? 'Usar quiz disponível'
-            : 'Encontrar minha campanha';
-    const quizStatusLabel = hasPendingFreeQuiz
-        ? 'Grátis'
-        : totalQuizCredits > 0
-            ? `${totalQuizCredits} ${totalQuizCredits === 1 ? 'ficha' : 'fichas'}`
-            : 'Personalizado';
+    // O quiz saiu da loja (13/10/2026): busca de campanha agora mora no Oraculo, aba Missao.
 
     const availableAssetFilters = useMemo(() => (
         ASSET_FILTER_ORDER.map((assetId) => ({
@@ -311,15 +286,6 @@ export const CodexStore: React.FC = () => {
                             <div className="rounded-full border border-white/10 bg-black/25 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/75">
                                 {filteredEntries.length}
                             </div>
-                            <button
-                                type="button"
-                                onClick={handleQuizTeaser}
-                                className="luxe-skin-button relative inline-flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl"
-                                aria-label={quizButtonLabel}
-                                title={quizButtonLabel}
-                            >
-                                <LightbulbIcon className="h-5 w-5" />
-                            </button>
                             <button
                                 type="button"
                                 onClick={() => setFiltersOpen((current) => !current)}
@@ -701,9 +667,6 @@ export const CodexStore: React.FC = () => {
                     onConfirm={() => { void handleConfirmPurchase(); }}
                     onCancel={() => setPendingPurchase(null)}
                 />
-            )}
-            {isRecommendationQuizOpen && (
-                <CampaignRecommendationQuizModal onClose={() => setRecommendationQuizOpen(false)} />
             )}
         </>
     );

@@ -215,7 +215,8 @@ interface CampaignRecommendationQuizModalProps { onClose: () => void }
 export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQuizModalProps> = ({ onClose }) => {
     const { codexCatalog, refreshCodexes, userCodexes, userProfile, getArenas, buyCodex, installCodex, showToast } = useGame();
     useEffect(() => { void refreshCodexes(); }, [refreshCodexes]);
-    const [quizMode, setQuizMode] = useState<QuizMode>('free');
+    // Comeca no catalogo pago: o quiz recomenda, nao da campanha (13/10/2026).
+    const [quizMode, setQuizMode] = useState<QuizMode>('full');
     const [questionIndex, setQuestionIndex] = useState(0);
     const [answers, setAnswers] = useState<QuizAnswers>({});
     const [selectedOption, setSelectedOption] = useState<QuizAnswerKey | null>(null);
@@ -250,7 +251,9 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
     // substitui o ouro na hora de ADQUIRIR (buyCodex/useCampaignQuizFreeCredit).
     // Sem ficha, a aquisicao volta ao caminho do ouro e a carteira e checada
     // aqui e no servidor. Soltar a recomendacao nao libera nada de graca.
-    const canPickFreeQuiz = true;
+    // NADA DE CAMPANHA DE GRACA (13/10/2026, decisao do Afonso): campanha e coisa
+    // avancada e e o que se vende. O modo "gratuitas" saiu; ficha antiga ainda vale.
+    const canPickFreeQuiz = false;
     const shouldConsumeFreeQuizCredit = quizMode === 'free' && !hasStarterFreeQuiz && hasFreeQuizCredit;
 
     // O modo inicial ja e 'free' no useState, e agora o gratuito esta sempre

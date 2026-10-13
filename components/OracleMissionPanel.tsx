@@ -3,11 +3,18 @@ import { useGame } from '../contexts/GameContext';
 import { ArenaPactBalloon, ArenaPactProposal } from './ArenaPactBalloon';
 import { OracleSpeakerMark } from './OracleSpeakerMark';
 import { buildOracleMissionBrief } from '../utils/oracleMissionBrief';
+import { CampaignRecommendationQuizModal } from './Store/CampaignRecommendationQuizModal';
 
 export const OracleMissionPanel: React.FC<{onContinue: (arenaId?: string) => void; onOpenMissions: () => void}> = ({onContinue,onOpenMissions}) => {
   const {activeArenaPact: pact, arenaPactProgress: progress, missaoIndividualDisponivel,
     missaoDeSistemaAtiva, oracleMessages} = useGame();
   const [choosing, setChoosing] = useState(false);
+  // Buscar campanha: as perguntas que moravam na loja, agora aqui (13/10/2026).
+  const [buscandoCampanha, setBuscandoCampanha] = useState(false);
+  const buscarCampanha = <>
+    <button type="button" onClick={() => setBuscandoCampanha(true)} className="mt-3 min-h-11 w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 text-xs font-bold text-white/75 transition-colors hover:border-[var(--skin-accent-color)]/35 hover:text-white">Buscar campanha</button>
+    {buscandoCampanha && <CampaignRecommendationQuizModal onClose={() => setBuscandoCampanha(false)} />}
+  </>;
   // Stored messages belong here only with an explicit mission identity, never by keywords.
   const related = (oracleMessages || []).filter(message => pact
     && message.contextSnapshot?.purpose === 'individual_mission'
@@ -27,11 +34,13 @@ export const OracleMissionPanel: React.FC<{onContinue: (arenaId?: string) => voi
     {missaoDeSistemaAtiva && <button type="button" onClick={onOpenMissions} className="luxe-skin-button mt-5 min-h-11 w-full px-4 text-xs font-bold">Ver minha missão</button>}
     {!missaoDeSistemaAtiva && !missaoIndividualDisponivel && <button type="button" onClick={() => onContinue()} className="luxe-skin-button mt-5 min-h-11 w-full px-4 text-xs font-bold">Ir para minhas ações</button>}
     {!missaoDeSistemaAtiva && missaoIndividualDisponivel && <button type="button" onClick={() => setChoosing(true)} className="luxe-skin-button mt-5 min-h-11 w-full px-4 text-xs font-bold">Escolher missão</button>}
+    {buscarCampanha}
   </div>;
   return <div className="space-y-5">
     <div>
       <ArenaPactBalloon />
       {!progress.completed && !progress.windowEnded && <button type="button" onClick={() => onContinue(pact.arenaId || undefined)} className="luxe-skin-button mt-3 min-h-11 w-full px-4 text-xs font-bold">{progress.current === 0 ? 'Começar pelas minhas ações' : 'Continuar missão'}</button>}
+      {buscarCampanha}
     </div>
     <section aria-label="Acompanhamento da missão" className="space-y-3">
       <h3 className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/45">Acompanhamento</h3>

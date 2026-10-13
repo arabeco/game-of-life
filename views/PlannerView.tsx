@@ -26,6 +26,7 @@ import {
     loadPersistedRestScreenActionSession,
 } from '../utils/restScreenActionSession';
 import '../components/core-ui.css';
+import { PLANNER_ZOOMS, PLANNER_ZOOM_FACTORS, lerZoomSalvo, type PlannerZoom } from '../utils/plannerZoom';
 import { EmojiGlyph } from '../components/EmojiGlyph';
 
 /**
@@ -36,9 +37,7 @@ import { EmojiGlyph } from '../components/EmojiGlyph';
  * dia. Agora a lupa avanca uma parada por toque e volta ao inicio depois da
  * ultima — mesma amplitude, um terco do espaco.
  */
-const PLANNER_ZOOMS = [1, 2, 3, 4] as const;
-type PlannerZoom = typeof PLANNER_ZOOMS[number];
-const PLANNER_ZOOM_FACTORS: Record<PlannerZoom, number> = { 1: 0.5, 2: 0.75, 3: 1, 4: 1.4 };
+// A regua de zoom mora em utils/plannerZoom (o 1x mostra o dia inteiro, 13/10/2026).
 
 type BayEntryPayload = { count: number; isUnlimited: boolean; taskIds?: string[]; displayCount?: number };
 type ExecutionDropTarget = { date: string; index: number } | null;
@@ -1134,19 +1133,11 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const [currentTime, setCurrentTime] = useState(new Date());
     const dailyTimeIndicatorRef = useRef<HTMLDivElement>(null);
     const weeklyTimeIndicatorRef = useRef<HTMLDivElement>(null);
-    const [zoomLevel, setZoomLevel] = useState<PlannerZoom>(() => {
-        if (typeof window === 'undefined') return 2;
-        try {
-            const saved = localStorage.getItem('planner_zoom_v3');
-            const parsed = Number(saved);
-            return PLANNER_ZOOMS.includes(parsed as PlannerZoom) ? (parsed as PlannerZoom) : 2;
-        } catch {
-            return 2;
-        }
-    });
+    const [zoomLevel, setZoomLevel] = useState<PlannerZoom>(() =>
+        lerZoomSalvo(typeof window === 'undefined' ? undefined : window.localStorage));
 
     useEffect(() => {
-        localStorage.setItem('planner_zoom_v3', String(zoomLevel));
+        try { localStorage.setItem('planner_zoom_v4', String(zoomLevel)); } catch { /* sem armazenamento */ }
     }, [zoomLevel]);
     const [isActionModalOpen, setIsActionModalOpen] = useState(false);
     const [modalData, setModalData] = useState<{ action: Action, taskId?: string } | null>(null);

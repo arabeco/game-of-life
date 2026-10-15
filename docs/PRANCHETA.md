@@ -1,6 +1,6 @@
 # Prancheta do Glyph
 
-Cópia da prancheta do Afonso (artefato no claude.ai: https://claude.ai/artifact/99dQUHcbX6dy4dcAuu2Dx6), regravada pelo Claude em **15/10/2026**, já com a consolidação do Codex de 13 e 14/10. **23 abertos de 97** (74 feitos).
+Cópia da prancheta do Afonso (artefato no claude.ai: https://claude.ai/artifact/99dQUHcbX6dy4dcAuu2Dx6), regravada pelo Claude em **15/10/2026**, já com a consolidação do Codex de 13 e 14/10. **17 abertos de 91** (74 feitos).
 
 **Uma lista só:** a fonte é a prancheta online, e este arquivo é regravado a partir dela. Não edite as listas abaixo; para avisar algo, escreva em "Recados da outra IA", no fim: o Claude lê e passa para a prancheta.
 
@@ -10,7 +10,8 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 
 ## Lançamento
 
-- [ ] Teste de fumaça do lançamento (docs/SMOKETEST.md) *(Afonso)* — 13/10: atualizado com tudo que mudou desde 10/10 (a7acf1f); os itens [novo] são os que mais podem quebrar. Precisa do AAB 112. A seção 13 cobre os testes finais com dinheiro e exclusão (recibo, reembolso, recuperar senha, excluir conta) que já estão na prancheta, mais assinar Premium e conferir a EXP.
+- [ ] Teste do Glyph com um amigo (planilha no claude.ai) *(Afonso)* — 15/10: https://claude.ai/artifact/DG8g73vkemJE832jUg4bJc — 58 testes em Fácil, Médio e Difícil, com deu certo / deu errado e nota; os testes no aparelho (push, tema claro, vibração, widget, compra, reembolso, recuperar senha, excluir conta) moram lá agora, e não mais na prancheta. Precisa do AAB 112. O amigo precisa do link compartilhado (Share) para abrir. Versão em texto: docs/SMOKETEST.md.
+- [ ] Subir o AAB 111 na Play (ou pular direto para o 112) *(Afonso)* — 13/10: o 111 está pronto (ce54428) e não há registro de upload. O 112 terá o trabalho de 13/10 do Claude e do Codex.
 - [ ] Exclusão: finalizar o pedido pelo site e a retomada da limpeza parcial *(outra IA (Codex))* — 13/10 (Codex): e-mails, permissões e tratamento de erro prontos. O que falta e o que o Claude pensa: (1) O pedido pelo site abre um e-mail para glyph.life.app@gmail.com, sem pedido guardado no banco. A Play exige uma página na web para pedir exclusão sem o app, e página explicando o processo com e-mail de contato costuma ser aceita: dá para lançar assim, desde que a página diga o que é apagado e em quanto tempo. O formulário com pedido guardado fica para depois. (2) Se algum arquivo da pessoa falhar ao ser apagado, o pedido fica 'cleanup_pending' e nada tenta de novo: a conta some, mas pode sobrar arquivo órfão. Por enquanto, rodar de vez em quando supabase/CHECK-limpeza-de-conta-pendente.sql (cf46cb2); a rotina automática de nova tentativa fica para quando tiver gente.
 
 <details><summary>Feitos (8)</summary>
@@ -134,22 +135,10 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 
 </details>
 
-## Conferir no celular — sem cobrança agora
-
-Testes no aparelho, com conta ou na Play. O Afonso pediu para não cobrar agora; caixa aberta aqui quer dizer só que não há confirmação registrada.
-
-- [ ] Recibo do Google Play: fazer uma compra real de teste *(Afonso)* — O código já valida na API do Google (google-play-purchase) e as credenciais estão no Supabase. Falta uma compra real para confirmar, e a conta de serviço ter acesso no Play Console.
-- [ ] Subir o AAB 111 na Play (ou pular direto para o 112) *(Afonso)* — 13/10: o 111 está pronto (ce54428) e não há registro de upload. O 112 terá o trabalho de 13/10 do Claude e do Codex.
-- [ ] Teste final: excluir conta *(Afonso)* — 12/10: permissões das sete funções de exclusão corrigidas (Afonso rodou 20261012120000). O fluxo completo, no app e no site, está com o Codex; o teste final vem depois.
-- [ ] Teste final: pedir reembolso *(Afonso)*
-- [ ] Sentir no aparelho: vibração do planner e o widget novo *(Afonso)* — Depois de instalar o AAB 112: vibração nativa ao pegar, mudar de horário, soltar e concluir; widget Resumo/Planner. O 111 não tem nada disso.
-- [ ] Testar no celular o push com título e cor *(Afonso)*
-- [ ] Teste final: recuperar senha numa conta com e-mail e senha *(Afonso)* — Do doc do Codex (docs/2026-10-12-emails-essenciais.md): a sua conta é Google, então precisa de uma conta de teste com senha. Confere se o e-mail chega pelo Resend e se o link funciona.
-- [ ] Conferir no celular a cor neutra do push (branco some no tema claro do Android) *(Afonso)* — O neutro do push foi para cinza-prata #6F7A8A. Conferir no tema claro e no escuro.
-
 ## Opcionais e expansão
 
 - [ ] Site: banner de cookie (opcional) *(outra IA (Codex))* — 13/10: o site não tem rastreador (nem Analytics, nem pixel); só guarda o que é do funcionamento. Pela LGPD isso não pede banner, só menção na Política de Privacidade. Volta se entrar analytics no site.
+- [ ] Criar campanha para outra pessoa (como era o Codex) *(Afonso)* — 15/10: ideia do Afonso. Alguém monta uma campanha (arenas, ações, plano de dias) e manda para outro jogador, como os manuscritos do Codex por @nickname. O código do Codex está guardado (migração 20260313_add_codex_forge_library.sql); dá para reaproveitar.
 - [ ] Jardim conquistado: expandir ou limite de peças atrelado ao progresso (depois) *(Afonso)* — 12/10: ideia do Afonso, para depois. O jardim iria sendo conquistado — área que expande, ou limite de coisas que se desbloqueia com o que você faz. Mesma direção do clã: integrado, não à parte.
 - [ ] Tag ou link de perfil para adicionar amigo (depois) *(Afonso)* — 12/10: código/link do perfil para adicionar sem buscar o nome. 13/10: o Codex já fez Copiar nickname e o cartão compartilhado com “Me adicione no Glyph!”; o link direto segue como expansão.
 - [ ] Feed: ordem do Reino (depois) *(Afonso)* — 12/10: o feed tem duas abas sem repetição (Aliados = você e amigos; Reino = o resto), commit 8ce20b6. Depois: quem é do seu clã e não é amigo ganha preferência no Reino, e um filtro para não floodar quando houver gente. Atenção: o app baixa só os 80 posts mais novos de todos; com muita gente pública, posts de amigos podem sumir do Aliados.
@@ -358,3 +347,4 @@ Afonso confirmou a execução de sql/temporadas-2027-artes.sql e pediu commit, p
 - Entraram na online os feitos que só estavam aqui (nickname, segredos por evento, itens repetidos, zoom e widget, planos e campanhas, dicas do Oráculo, aviso do clã retirado). Os testes no aparelho foram para "Conferir no celular", e as ideias para depois para "Opcionais e expansão".
 - Abertos do Codex desta manhã: terminar campanhas (o app não compila enquanto isso: import duplicado de buildCodexTemplateFromDraft no GameContext, e dois testes falham) e escolher a proposta do modal de arena e ação.
 - Vibração nativa no app e no arraste do planner: commit 06a24f7, plugin @capacitor/haptics novo — o 112 precisa sair com ele.
+- Os testes no aparelho saíram da prancheta e foram para a planilha "Teste do Glyph" (https://claude.ai/artifact/DG8g73vkemJE832jUg4bJc), feita para um amigo testar: Fácil, Médio e Difícil, com deu certo / deu errado. Nos opcionais entrou "Criar campanha para outra pessoa (como era o Codex)".

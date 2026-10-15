@@ -2,6 +2,8 @@
 
 O que ainda não foi testado do começo ao fim num celular de verdade. Cada item diz **o que fazer** e **o que tem de acontecer**. Se acontecer outra coisa, tire um print e anote o horário — o horário ajuda a achar o que deu errado.
 
+Para marcar no celular, com um amigo, use a planilha **Teste do Glyph**: https://claude.ai/artifact/DG8g73vkemJE832jUg4bJc (os mesmos testes, em Fácil, Médio e Difícil).
+
 Atualizado em 13/10/2026, para o lançamento. Os itens marcados **[novo]** mudaram depois de 10/10 e são os que mais podem quebrar.
 
 ## Antes de começar

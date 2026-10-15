@@ -27,6 +27,7 @@ import {
 } from '../utils/restScreenActionSession';
 import '../components/core-ui.css';
 import { PLANNER_ZOOMS, PLANNER_ZOOM_FACTORS, lerZoomSalvo, type PlannerZoom } from '../utils/plannerZoom';
+import { useVibracaoDoArraste } from '../hooks/useVibracaoDoArraste';
 import { EmojiGlyph } from '../components/EmojiGlyph';
 
 /**
@@ -1180,6 +1181,17 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     });
 
     const scaleFactor = PLANNER_ZOOM_FACTORS[zoomLevel];
+
+    // Vibracao do arraste (15/10/2026): um tique a cada horario, dia ou quadrante
+    // novo; toque medio ao soltar num lugar, leve ao soltar fora. Pegar ja vibra
+    // pelo onArm de usePlannerDragHold.
+    const alvoDoArraste = !dragState.item ? null
+        : dailyDropIndicator ? `d${dailyDropIndicator.top}`
+        : weeklyDropIndicator ? `w${weeklyDropIndicator.dayIndex}:${weeklyDropIndicator.top}`
+        : executionDropTarget ? `e${executionDropTarget.date}:${executionDropTarget.index}`
+        : isOverBayArea ? `b${hoveredBayQuadrant || ''}`
+        : null;
+    useVibracaoDoArraste(Boolean(dragState.item), alvoDoArraste);
 
     const refreshDragTargets = useCallback(() => {
         bayAreaElRef.current = document.querySelector('[data-testid="bay-area"]') as HTMLElement | null;

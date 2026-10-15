@@ -1,21 +1,12 @@
 import { useCallback, useRef } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { safeVibrate } from '../utils/safeVibrate';
+import { vibrarNativo } from '../utils/haptics';
+import { TOQUE_DO_SINAL, type SinalDeFeedback } from '../utils/hapticsMapa';
 
-type FeedbackType =
-    | 'streak_milestone'
-    | 'click'
-    | 'click_soft'
-    | 'click_crisp'
-    | 'click_metal'
-    | 'success'
-    | 'error'
-    | 'warning'
-    | 'impact'
-    | 'whoosh'
-    | 'fanfare'
-    | 'notification'
-    | 'level_up';
+// Os sinais moram em utils/hapticsMapa (com os do arraste: drag_step, drop e
+// drag_cancel, que vibram mas nao tocam som).
+type FeedbackType = SinalDeFeedback;
 
 export const useSensoryFeedback = () => {
     const { oraclePreferences } = useGame();
@@ -113,8 +104,23 @@ export const useSensoryFeedback = () => {
     }, [loadMetalReference, playMetalSlice]);
 
     const trigger = useCallback((type: FeedbackType) => {
-        if (getHapticsEnabled()) {
+        // NO CELULAR, O TOQUE E NATIVO (15/10/2026): o @capacitor/haptics da
+        // toques curtos e definidos que o navigator.vibrate nao da. Fora do app
+        // nativo, ou nos dois marcos raros (desenho proprio), segue o padrao abaixo.
+        const toqueNativo = TOQUE_DO_SINAL[type];
+        const vibrouNativo = getHapticsEnabled() && toqueNativo !== null && vibrarNativo(toqueNativo);
+        if (getHapticsEnabled() && !vibrouNativo) {
             switch (type) {
+                case 'drag_step':
+                    // Um tique por horario no navigator.vibrate e curto demais para
+                    // sentir e longo demais para repetir: fica so no nativo.
+                    break;
+                case 'drop':
+                    safeVibrate(14);
+                    break;
+                case 'drag_cancel':
+                    safeVibrate(8);
+                    break;
                 case 'click':
                 case 'click_soft':
                 case 'click_crisp':

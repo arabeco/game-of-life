@@ -27,6 +27,7 @@ Atualizado em 13/10/2026, para o lançamento. Os itens marcados **[novo]** mudar
 - [ ] **Zoom.** **[novo]** Toque no botão de zoom até o **1x**. Esperado: o dia inteiro cabe (ou quase) na tela. Os outros zooms (2x a 5x) aumentam os blocos. Fechar e abrir o app mantém o zoom escolhido.
 - [ ] **Quem já usava o app:** depois de atualizar, o planner abre no **mesmo tamanho de antes** (o zoom antigo foi convertido, só mudou de número).
 - [ ] **Gestos** (Codex). **[novo]** Esperado: dá para rolar o planner passando o dedo **por cima** de um cartão; segurar pega o cartão e aí ele arrasta com pouco movimento; perto da borda a agenda rola devagar; soltar fora cancela sem deixar o cartão no lugar errado. Uma fala do Oráculo não aparece no meio do arraste.
+- [ ] **Vibração ao arrastar** (com a vibração ligada em Config). **[novo]** Esperado: um toque leve ao **pegar**; um **tique** curto a cada horário novo enquanto arrasta (passando rápido não vira zumbido); um toque mais firme ao **soltar** num horário; um toque leve ao soltar **fora**. Concluir uma ação dá a vibração de sucesso. Com a vibração desligada em Config, nada vibra.
 
 ## 3. Widgets
 

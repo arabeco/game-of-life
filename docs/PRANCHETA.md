@@ -1,45 +1,39 @@
 # Prancheta do Glyph
 
-Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 2026-10-13. 27 abertos de 78.
+Cópia da prancheta do Afonso (artefato no claude.ai: https://claude.ai/artifact/99dQUHcbX6dy4dcAuu2Dx6), regravada pelo Claude em **15/10/2026**, já com a consolidação do Codex de 13 e 14/10. **23 abertos de 97** (74 feitos).
 
-**Não edite as listas abaixo** — elas são regravadas a partir da prancheta. Para avisar algo, escreva em "Recados da outra IA", no fim: o Claude lê e passa para a prancheta.
+**Uma lista só:** a fonte é a prancheta online, e este arquivo é regravado a partir dela. Não edite as listas abaixo; para avisar algo, escreva em "Recados da outra IA", no fim: o Claude lê e passa para a prancheta.
+
+**Pronto no código não é distribuído:** o AAB 111 tem o checkpoint ce54428 (12/10). Tudo de 13/10 em diante, do Claude e do Codex, vai no 112.
+
+Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 
 ## Lançamento
 
-- [ ] Idade mínima nos Termos *(outra IA)* — 11/10 (Codex): Termos com 13 anos preparados no site local; faixa etária no onboarding do app (AAB 110). Falta publicar o site.
-- [ ] Reembolso nos Termos (7 dias) *(outra IA)* — 11/10 (Codex): reembolso de 7 dias nos Termos preparado no site local. Falta publicar.
-- [ ] Recibo do Google Play: fazer uma compra real de teste *(Afonso)* — O código já valida na API do Google (google-play-purchase) e as credenciais estão no Supabase. Falta uma compra real para confirmar, e a conta de serviço ter acesso no Play Console.
-- [ ] Site: banner de cookie *(outra IA)* — 12/10: fora desta rodada, por decisão do Afonso. Continua aberto.
-- [ ] Site: contador "guerreiros na fila" quebrado *(outra IA)* — 11/10 (Codex): corrigido no site local — usa get_waitlist_count() (deu 12) e o rótulo virou “inscrições recebidas”. Ainda não publicado.
-- [ ] Teste final: excluir conta *(Afonso)* — 12/10: permissões das sete funções de exclusão corrigidas (Afonso rodou 20261012120000). O fluxo completo, no app e no site, está com o Codex; o teste final vem depois.
-- [ ] Exclusão de conta e pedido de exclusão completos, no app e no site *(outra IA)* — 12/10 (Codex): e-mails essenciais (recuperação de senha + confirmação de exclusão) prontos; SQL 20261012180000_email_dispatch_state rodado pelo Afonso; resend v18 e account-delete v29 publicados. Falta: entrega real, conta de teste com senha, fluxo completo de exclusão, pedido pelo site; a tela nova entra no próximo AAB.
-- [ ] Teste final: pedir reembolso *(Afonso)*
-- [ ] Resend: e-mails da exclusão, plano e limites, e a cobrança de US$ 10 *(outra IA)* — 12/10 (Codex): painel conferido — planos gratuitos, sem método de pagamento nem fatura; o adicional cobrado no passado o Afonso já removeu. SMTP do Supabase confirmado no Resend (smtp.resend.com:465). Falta só um envio real de teste (recuperação de senha numa conta própria).
-- [ ] Site: revisar contadores, Termos, prints e posts e publicar *(outra IA)* — Codex, prioridade 3. O site é outro repositório (Desktop/glyph-landing); post de lançamento ainda em rascunho, sem link do Play.
-- [x] Rodar a migração 20261012160000_landing_stats_include_gm.sql (contadores do site contam os perfis gm) *(Afonso)* — 12/10 (Codex): o filtro role='user' deixava de fora 2 perfis gm, 32 arenas e 332 ações concluídas. Esperado depois: 5 perfis, 38 arenas, 336 ações. Não precisa de AAB.
-- [ ] Teste final: recuperar senha numa conta com e-mail e senha *(Afonso)* — Do doc do Codex (docs/2026-10-12-emails-essenciais.md): a sua conta é Google, então precisa de uma conta de teste com senha. Confere se o e-mail chega pelo Resend e se o link funciona.
+- [ ] Teste de fumaça do lançamento (docs/SMOKETEST.md) *(Afonso)* — 13/10: atualizado com tudo que mudou desde 10/10 (a7acf1f); os itens [novo] são os que mais podem quebrar. Precisa do AAB 112. A seção 13 cobre os testes finais com dinheiro e exclusão (recibo, reembolso, recuperar senha, excluir conta) que já estão na prancheta, mais assinar Premium e conferir a EXP.
+- [ ] Exclusão: finalizar o pedido pelo site e a retomada da limpeza parcial *(outra IA (Codex))* — 13/10 (Codex): e-mails, permissões e tratamento de erro prontos. O que falta e o que o Claude pensa: (1) O pedido pelo site abre um e-mail para glyph.life.app@gmail.com, sem pedido guardado no banco. A Play exige uma página na web para pedir exclusão sem o app, e página explicando o processo com e-mail de contato costuma ser aceita: dá para lançar assim, desde que a página diga o que é apagado e em quanto tempo. O formulário com pedido guardado fica para depois. (2) Se algum arquivo da pessoa falhar ao ser apagado, o pedido fica 'cleanup_pending' e nada tenta de novo: a conta some, mas pode sobrar arquivo órfão. Por enquanto, rodar de vez em quando supabase/CHECK-limpeza-de-conta-pendente.sql (cf46cb2); a rotina automática de nova tentativa fica para quando tiver gente.
 
-<details><summary>Feitos (2)</summary>
+<details><summary>Feitos (8)</summary>
 
+- [x] Idade mínima nos Termos *(outra IA (Codex))* — Publicado (Codex). Reconferido em 13/10 no HTML público: 13 anos, com autorização do responsável para menores de 18.
+- [x] Reembolso nos Termos (7 dias) *(outra IA (Codex))* — Publicado (Codex). Texto de 7 dias e encaminhamento ao Google Play no HTML público em 13/10.
 - [x] Conferir se o código VANGUARDA25 existe *(Afonso)* — 10/10: VANGUARDA10 apagado; VANGUARDA25 valendo, 25 vagas, 1 por pessoa, agora 25 de ouro e sem o programa de 14 dias (sql/vanguarda25-sem-programa.sql rodado).
+- [x] Site: contador "guerreiros na fila" quebrado *(outra IA (Codex))* — Corrigido e publicado (Codex): chama get_waitlist_count(), rótulo “inscrições recebidas”. Reconferido em 13/10.
+- [x] Resend: e-mails da exclusão, plano e limites, e a cobrança de US$ 10 *(outra IA (Codex))* — Painel e SMTP conferidos em 12/10 (Codex); o adicional antigo o Afonso já removeu; resend v18 e account-delete v29 publicados.
+- [x] Site: revisar contadores, Termos, prints e posts e publicar *(outra IA (Codex))* — Landing a294b4b publicada (Codex). Reconferido em 13/10: Home, Termos, script.js, Novidades e exclusao.html no ar. O pedido de exclusão pelo site segue à parte.
 - [x] Rodar a migração 20261002140000_public_landing_stats_v2.sql (totais do site) *(Afonso)* — 12/10: já estava rodada (Afonso); o Codex reconferiu: get_landing_stats_v2 responde 200.
+- [x] Rodar a migração 20261012160000_landing_stats_include_gm.sql (contadores do site contam os perfis gm) *(Afonso)* — 12/10 (Codex): o filtro role='user' deixava de fora 2 perfis gm, 32 arenas e 332 ações concluídas. Esperado depois: 5 perfis, 38 arenas, 336 ações. Não precisa de AAB.
 
 </details>
 
 ## App
 
-- [ ] Planner treme para o lado ao abrir, como se quisesse mudar de página *(Afonso)* — Gravar a tela abrindo o planner e pôr o vídeo na pasta (output/). O Claude tira os quadros e acha o que mexe.
-- [x] Egress de abertura: baixar cada vez menos a cada vez que o app abre *(Claude)* — Passo 0 FEITO em 11/10 (eb14cbf): o app mede quanto baixa em cada abertura (ler com supabase/CHECK-peso-das-aberturas.sql). Medido em 12/10 (CHECK-o-que-a-abertura-baixa.sql): 325 KB por abertura — relatórios fechados 131 (atlas semanal 111), tarefas 99, inventário 43, perfil 25 (garden_state 19). Passo 1 FEITO (35da095): relatórios fechados guardados no celular, só desce o novo ou mudado (−130 KB). Passo 2 FEITO (bb107b6): tarefas e inventário sem user_id, perfil sem garden_state (−46 KB). Os dois SQLs rodados pelo Afonso em 12/10, CHECK-egress-de-abertura.sql deu tudo true. O ganho chega no celular com o AAB 111. Próximo: janela de 3 meses de tarefas (99 KB) e cópia no celular com delta.
-- [ ] Planner: vibração e fluidez ao arrastar, segurar e concluir *(outra IA)* — Codex, prioridade 4. A sensação tátil só se confere no aparelho.
-- [ ] AAB 111 (só quando o Afonso pedir) *(Afonso)* — Entra: convite com prêmios baratos, “Cinco dias no Glyph”, widget e cartão do ciclo iguais, egress de abertura passos 1 e 2, a tela nova dos e-mails/exclusão do Codex, a missão de clã com a barrinha de humor, e a arena compartilhada sem % e sem oscilar. Também (12/10): cards novos dos Feitos, adicionar amigo pelo perfil, nickname único no primeiro acesso, feed com duas abas (Aliados/Reino) e o Diário novo (Escrever com tags e seletor de página, Páginas como leitura, estilo reto dourado). Também (13/10): zoom 1x do planner que mostra o dia inteiro, e o widget do dia novo (abas Resumo e Planner, toque abre o planner, sem concluir pelo widget e sem login no celular) — conferir o widget no celular, não foi visto no emulador. O 110 ainda mostra os prêmios antigos e a missão de 7 dias.
-- [ ] Clã: mexer antes do lançamento *(Afonso)* — 12/10: FEITO no código (af67b81..92c9f9d, com a revisão final aplicada): missão de clã da temporada com Entrar (na tela do clã e na Temporada), arena por participante com tag de clã, total do grupo contado no servidor (desmarcar baixa), baú Raro só para quem entrou, sair do clã ou abandonar = o que depositou fica no grupo, não leva nada para o clã novo e não recebe o baú (d16e5f3); humor de quem nunca registrou aparece vazio; meta vem do servidor; Aurora II ficou sem missão de clã, vencida sem meta some (arquiva). Teste: Socializar ×20 na Genesis. Na Sede: cartão da missão + barrinha de humor embaixo do nome de cada soberano (só o próprio clã vê). SQL rodado e conferido pelo Afonso em 12/10 (CHECK-missao-de-cla.sql tudo true). Chega no celular com o AAB 111. Próximo: aviso do Oráculo quando o grupo bate a meta. Desenho: docs/superpowers/specs/2026-10-12-missao-de-cla-design.md.
-- [ ] Rankings e interatividade: mexer antes do lançamento *(Afonso)* — 12/10: o Afonso vai pensar (ranking, clã e interações sociais); o Claude conduz quando ele voltar, não depende de outra IA. Recusada: Todos com botão "fazer também". Ideia guardada — ranking de CLÃS, junto da dinâmica dos ciclos: a EXP do clã já vem só de ciclo fechado, e o comparativo diário (15/09) já mostra sua posição entre os jogadores do dia (Top X% / quantos ficaram abaixo; privado, mínimo 10, sem nomes). EM ABERTO: tabela explícita ou só "seu clã está entre os top N"; e se o comparativo está ligado em produção (migrações 20260915120000/130000/190000).
-- [ ] Jardim conquistado: expandir ou limite de peças atrelado ao progresso (depois) *(Afonso)* — 12/10: ideia do Afonso, para depois. O jardim iria sendo conquistado — área que expande, ou limite de coisas que se desbloqueia com o que você faz. Mesma direção do clã: integrado, não à parte.
-- [x] Rodar `20261012210000_nickname_unico.sql` *(Afonso)* — 12/10, rodado: nome único sem diferenciar maiúsculas, até 20 caracteres; o primeiro acesso já vem só com o primeiro nome e trava com aviso vermelho se o nome for de alguém; Configurações pergunta antes de trocar. Antes, `CHECK-nicknames-repetidos.sql` tem de vir vazio.
-- [ ] Feed: ordem do Reino (depois) *(Afonso)* — 12/10: duas abas sem repetição (Aliados = você e amigos; Reino = o resto), commit 8ce20b6. Depois: quem é do seu clã e não é amigo ganha preferência no Reino, e um filtro para não floodar. Atenção: o app baixa só os 80 posts mais novos; com muita gente pública, posts de amigos podem sumir do Aliados.
-- [ ] Tag ou link de perfil para adicionar amigo (depois) *(Afonso)* — 12/10: ideia do Afonso. Um código/link do perfil para alguém adicionar sem buscar o nome. Não é prioridade com poucos usuários; o convite de amigo já cobre parte disso. O nickname único já foi feito à parte (12/10, ver abaixo).
+- [ ] AAB 112 (só quando o Afonso pedir) *(Afonso)* — Feito em 13/10, depois do 111: zoom 1x do planner com o dia inteiro; widget do dia novo (Resumo e Planner, sem concluir e sem login); sem pay-to-win (planos e loja sem EXP extra, Premium com 20 arenas); coroa no mini card e no perfil dos outros; mentoria sem trava de Premium; Platinum sem ficha (fica 20% em campanha); Buscar campanha no Oráculo, que abre a campanha na loja. 15/10: vibração nativa (@capacitor/haptics) no app inteiro e no arraste do planner (06a24f7) — plugin novo, o 112 precisa sair com ele. Do Codex (local, ainda sem commit): tags Top 1/5/10% e média de EXP, conquistas por evento, itens repetidos, gestos do planner, nickname, dicas do Oráculo e campanhas (pela metade em 15/10: o app não compila até ele terminar). Conferir o widget no celular.
+- [ ] Campanhas: terminar a biblioteca e as execuções (Codex, pela metade) *(outra IA (Codex))* — 15/10: o Codex parou no meio (tokens). Auditoria em docs/2026-10-15-auditoria-campanhas.md; SQL 20261015120000_campaign_library_runs já rodado pelo Afonso. Enquanto não terminar, o app não compila (import duplicado no GameContext) e dois testes falham (a-mao-ganha-do-oraculo, arena-progress-presentation). Ele retoma às 14h.
+- [ ] Modal de arena e de ação: escolher a proposta (Codex) *(outra IA (Codex))* — 15/10: só propostas, ainda não ligadas ao app: docs/drafts/arena-acao-cinco-propostas.html e as versões de miniaturas, agendamento e checklist.
+- [ ] Planner treme para o lado ao abrir, como se quisesse mudar de página *(Afonso)* — 12/10: o Afonso acha que está parando; em observação. Suspeita do Claude, se voltar: a entrada de toda aba desliza 22px de lado com filtro de cor por 260ms (auth-view-enter-forward em components/auth-shell.css); a correção de 05/10 tirou a rolagem vertical, mas o deslize ficou. Correção proposta: só esmaecer, sem andar de lado e sem filtro (vale para todas as abas).
 
-<details><summary>Feitos (24)</summary>
+<details><summary>Feitos (38)</summary>
 
 - [x] Onboarding novo: fechar e commitar *(Claude)* — Commitado em 09/10 (fb05e4e).
 - [x] Planner sem tremer: commitar *(Claude)* — Commitado em 09/10 (fb05e4e).
@@ -60,46 +54,59 @@ Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 
 - [x] Convide um amigo: código no modal de cupom, barrinha com baú Raro no 5 e 25 de ouro no 10 *(Claude)* — 12/10 (4fb0571): o amigo conta assim que põe o código, e os prêmios ficaram baratos para conta falsa não render nada: 1 = 10 fragmentos, 5 = baú Comum, 10 = baú Incomum. Precisa da migração 20261012150000 e do AAB 111.
 - [x] Rodar a migração 20261010150000_convite_de_amigo.sql *(Afonso)* — Rodado pelo Afonso em 10/10.
 - [x] Convite, etapa 2: o app aplica o código sozinho quando a pessoa instala pelo link *(Claude)* — Commitado em 10/10 (0ece185). Plugin provado no emulador com R8. 12/10 (Codex): enquanto ANDROID_PUBLICO_DISPONIVEL = false, o Enviar compartilha só o código e a instrução, sem o link da Play; o link com o código volta quando a página pública na Play estiver confirmada. Muda no próximo AAB. O SMOKETEST (seção 5, Enviar e convite pelo link) precisa acompanhar.
-- [x] Ciclo: a barra de tempo inclui o dia atual *(outra IA)* — Commit 993064d. Vai no AAB 109.
-- [x] Ciclo e resumos alinhados à virada das 4h *(outra IA)* — Commit 5749288. Vai no AAB 109.
-- [x] Onboarding: nome já preenchido e faixa etária antes do propósito *(outra IA)* — Codex, 11/10. Vai no AAB 110. A faixa declarada não comprova idade.
-- [x] Planos sem baús, e renovação com ouro sem pagar duas vezes *(outra IA)* — Codex. Afonso rodou 20261011010000 (dez verificações OK). Vai no AAB 110. O teste reward-routing ainda espera o baú antigo do plano e falha.
+- [x] Vibração nativa ao arrastar no planner *(Claude)* — 15/10 (Claude, 06a24f7): @capacitor/haptics 8.0.2; o motor de feedback usa toque nativo (leve, médio, sucesso, aviso, erro). No arraste: leve ao pegar (onArm do Codex), tique a cada horário novo (mínimo 55 ms entre tiques), médio ao soltar, leve ao cancelar. Respeita a vibração ligada/desligada em Config. Conferir no aparelho com o AAB 112.
+- [x] Ciclo: a barra de tempo inclui o dia atual *(outra IA (Codex))* — Commit 993064d. Vai no AAB 109.
+- [x] Ciclo e resumos alinhados à virada das 4h *(outra IA (Codex))* — Commit 5749288. Vai no AAB 109.
+- [x] Egress de abertura: baixar cada vez menos a cada vez que o app abre *(Claude)* — Passo 0 FEITO em 11/10 (eb14cbf): o app mede quanto baixa em cada abertura (ler com supabase/CHECK-peso-das-aberturas.sql). Medido em 12/10 (CHECK-o-que-a-abertura-baixa.sql): 325 KB por abertura — relatórios fechados 131 (atlas semanal 111), tarefas 99, inventário 43, perfil 25 (garden_state 19). Passo 1 FEITO (35da095): relatórios fechados guardados no celular, só desce o novo ou mudado (−130 KB). Passo 2 FEITO (bb107b6): tarefas e inventário sem user_id, perfil sem garden_state (−46 KB). Os dois SQLs rodados pelo Afonso em 12/10, CHECK-egress-de-abertura.sql deu tudo true. O ganho chega no celular com o AAB 111. Próximo: janela de 3 meses de tarefas (99 KB) e cópia no celular com delta.
+- [x] Planner: vibração e fluidez ao arrastar, segurar e concluir *(outra IA (Codex))* — 13/10 (Codex), local e sem commit: rolar antes de pegar, limiar menor depois de pegar, cancelamentos limpos, borda gradual; Oráculo espera 650 ms de pausa. A sensação tátil só se confere no aparelho (AAB 112).
+- [x] Onboarding: nome já preenchido e faixa etária antes do propósito *(outra IA (Codex))* — Codex, 11/10. Vai no AAB 110. A faixa declarada não comprova idade.
+- [x] Planos sem baús, e renovação com ouro sem pagar duas vezes *(outra IA (Codex))* — Codex. Afonso rodou 20261011010000 (dez verificações OK). Vai no AAB 110. O teste reward-routing ainda espera o baú antigo do plano e falha.
 - [x] Rodar a migração 20261012150000_convite_e_missao_com_5_dias.sql *(Afonso)* — 12/10: rodada a versão final pelo Afonso (antes tinha rodado a anterior, de 5 dias no convite).
+- [x] AAB 111 (só quando o Afonso pedir) *(Afonso)* — Gerado em 12/10 às 23:33 (ce54428): convites, Cinco dias, widget do ciclo, egress passos 1 e 2, missão de clã, cards dos Feitos, nickname, feed em duas abas e o Diário novo. O que foi feito em 13/10 vai no 112.
+- [x] Clã: mexer antes do lançamento *(Afonso)* — 12/10: FEITO no código (af67b81..92c9f9d, com a revisão final aplicada): missão de clã da temporada com Entrar (na tela do clã e na Temporada), arena por participante com tag de clã, total do grupo contado no servidor (desmarcar baixa), baú Raro só para quem entrou, sair do clã ou abandonar = o que depositou fica no grupo, não leva nada para o clã novo e não recebe o baú (d16e5f3); humor de quem nunca registrou aparece vazio; meta vem do servidor; Aurora II ficou sem missão de clã, vencida sem meta some (arquiva). Teste: Socializar ×20 na Genesis. Na Sede: cartão da missão + barrinha de humor embaixo do nome de cada soberano (só o próprio clã vê). SQL rodado e conferido pelo Afonso em 12/10 (CHECK-missao-de-cla.sql tudo true). Chega no celular com o AAB 111. Próximo: aviso do Oráculo quando o grupo bate a meta. Desenho: docs/superpowers/specs/2026-10-12-missao-de-cla-design.md.
+- [x] Rankings e interatividade: mexer antes do lançamento *(Afonso)* — 13/10: a parte de ranking virou as tags Top 1/5/10% (Codex, com o Afonso). Ver ap-media-exp-diaria e docs/2026-10-13-ranking-e-media-exp.md.
+- [x] Rodar o SQL do nickname único *(Afonso)* — 12/10: rodado pelo Afonso (check vazio + migração 20261012210000). Nome único sem diferenciar maiúsculas, até 20 caracteres; primeiro acesso com o primeiro nome e aviso vermelho; Configurações pergunta antes. Tela chega no próximo AAB. Commit 6db20b8.
+- [x] Média de EXP diária da conta no relatório do ciclo e no Painel Diário (depois) *(Afonso)* — 13/10: feito pelo Codex com o Afonso, junto com as tags Top 1/5/10% (ciclo, maestria e clã). SQL 20261013200000_progress_recognition rodado. Código local, ainda sem commit; vai no AAB 112. Regras: docs/2026-10-13-ranking-e-media-exp.md. Tags só aparecem com 100+ jogadores elegíveis.
+- [x] Quiz de campanha: saiu da loja, virou Buscar campanha no Oráculo *(Afonso)* — 13/10: decidido. Quiz fora da loja (lá ficam busca e filtros), botão Buscar campanha na aba Missão do Oráculo, só catálogo pago, nada de campanha grátis nem para iniciante (0e6049e). Fichas antigas ainda valem.
+- [x] Perfil: compartilhar e copiar nickname *(outra IA (Codex))* — 13/10 (Codex), local e sem commit: cartão compartilhado com “Me adicione no Glyph!” e o nickname; botão Copiar nickname embaixo do nome. Vai no AAB 112.
+- [x] Conquistas secretas na hora do evento *(outra IA (Codex))* — 13/10 (Codex), local e sem commit: Imperável e os outros grupos reagem ao evento confirmado, com fila e isolamento de conta. docs/2026-10-13-segredos-por-evento.md. Vai no AAB 112.
+- [x] Itens repetidos: posse e conversão em fragmentos *(outra IA (Codex))* — 13/10 (Codex), local e sem commit: baú, missão e segredo mostram “Você já possui”, bônus separado da conversão, tier 6 com 3.000 fragmentos. Vai no AAB 112.
+- [x] Zoom do dia inteiro e widget Resumo/Planner *(Claude)* — 13/10 (Claude, 185428e/0c157c0). O widget abre o planner e não conclui ações. Depois do AAB 111: vai no 112.
+- [x] Sem pay-to-win, coroa, mentoria e Buscar campanha *(Claude)* — 13/10 (Claude, 19e714e..4e26d07): planos e loja sem EXP extra, Premium com 20 arenas, coroa no mini card e no perfil dos outros, mentoria sem trava, Platinum sem ficha, Buscar campanha no Oráculo levando à loja. SQLs rodados. Vai no 112.
 
 </details>
 
 ## Oráculo
 
-- [ ] Testar no celular o push com título e cor *(Afonso)*
-- [ ] Conferir no celular a cor neutra do push (branco some no tema claro do Android) *(Afonso)* — O neutro do push foi para cinza-prata #6F7A8A. Conferir no tema claro e no escuro.
-
-<details><summary>Feitos (16)</summary>
+<details><summary>Feitos (18)</summary>
 
 - [x] Motor V2 do servidor publicado (push da manhã sem cobrança) *(Claude)*
 - [x] Leitura do ciclo não depende mais dos temas de Sabedoria *(Claude)*
-- [x] Motor V2 no app: commitar a ligação nas telas e a prévia *(outra IA)* — Commit 815d2ba (08/10). Chega no celular no próximo AAB.
+- [x] Motor V2 no app: commitar a ligação nas telas e a prévia *(outra IA (Codex))* — Commit 815d2ba (08/10). Chega no celular no próximo AAB.
 - [x] Arrumar o teste oracle-automation-cost (lê a ordem pelo texto) *(Claude)* — Commit caaa945.
 - [x] Reescrever os cards de Sabedoria no estilo título + texto *(Claude)* — Os 146 reescritos em título + texto (commit 16133be). Vale após publicar a função oracle.
 - [x] Card ganha campo de título, e o push usa esse título *(Claude)* — O push usa o título do card; a leitura chega como "Seu ciclo hoje" (16133be). Vale após publicar web-push.
 - [x] Títulos do push com acento ("O Oraculo deixou um card") *(Claude)* — Títulos do push com acento (16133be).
-- [x] Cor de destaque por push (tons: verde, azul, dourado) *(outra IA)* — Dourado: leitura geral e Sabedoria. Azul: orientação e retorno. Verde: progresso confirmado. Commit d46a109.
-- [x] Imagens da marca do Oráculo, uma por cor *(outra IA)* — Cancelado em 09/10: sem imagem no push, só a cor.
+- [x] Cor de destaque por push (tons: verde, azul, dourado) *(outra IA (Codex))* — Dourado: leitura geral e Sabedoria. Azul: orientação e retorno. Verde: progresso confirmado. Commit d46a109.
+- [x] Imagens da marca do Oráculo, uma por cor *(outra IA (Codex))* — Cancelado em 09/10: sem imagem no push, só a cor.
 - [x] Endereço público para as imagens (bucket, ou site publicado) *(Afonso)* — Não precisa mais: o push não vai ter imagem.
 - [x] Publicar as funções oracle e web-push (cards com título + cores) *(Claude)* — Publicadas em 09/10: cards com título no push e cores da régua antiga.
 - [x] Bolinha de não lido nas sub-abas (Dia e ciclo, Missão, Sabedoria) *(Claude)* — Commit 3dcf6ea. Chega no celular no próximo AAB.
-- [x] Outra IA: consertar os acentos corrompidos ("OrÃ¡culo", "aÃ§Ã£o") antes de commitar *(outra IA)* — A outra IA corrigiu; conferido 0 linhas corrompidas antes do commit.
+- [x] Outra IA: consertar os acentos corrompidos ("OrÃ¡culo", "aÃ§Ã£o") antes de commitar *(outra IA (Codex))* — A outra IA corrigiu; conferido 0 linhas corrompidas antes do commit.
 - [x] Padrão das missões: terminam sozinhas, menos a individual *(Claude)* — A individual espera na aba Missão, com aviso e bolinha, e puxa a próxima (commit b3f19de).
 - [x] Aplicar a régua nova de cores: branco neutro, azul orientação, verde avanço, dourado conquista *(Claude)* — Commit c85b4c6, funções publicadas em 09/10. No app chega no próximo AAB.
 - [x] Símbolo do Oráculo sem bolinha central, aceso na cor do tom *(Claude)* — Commit c85b4c6. Chega no celular no próximo AAB.
+- [x] Aviso do Oráculo quando o clã bate a meta *(Claude)* — Retirado por decisão do Afonso (13/10): o modal de recompensa já cobre esse momento. Fica o aviso da missão individual, que é resgatada à mão.
+- [x] Dicas do Oráculo (o “garoto-propaganda” dos recursos) *(outra IA (Codex))* — 14/10 (Codex), local e sem commit: Maestria, Diário, Vínculos, Campanhas, Arsenal/Soberano, Jardim e Sabedoria, no balão de abertura com botão; ritmo por conta e aparelho; sem push, sem clã. Sem SQL novo. docs/2026-10-13-handoff-dicas-do-oraculo.md. Vai no 112.
 
 </details>
 
 ## Arte
 
-- [ ] Gerar as artes das próximas temporadas *(outra IA)* — 12/10: o Codex está fazendo. Não depende do AAB.
 - [ ] Arrumar as skins das temporadas futuras: detalhe de sobreposição *(Claude)* — 12/10: pedido do Afonso. Ajustar o encaixe/sobreposição das roupas no corpo nas skins das próximas temporadas. Claude ajuda, mas não hoje nem amanhã (depois de 13/10).
+- [ ] Completar o conteúdo das temporadas futuras antes de ativá-las *(Afonso)* — 13/10 (Codex): Zênite I, Eclipse I e Égide I ainda precisam de skin, tema e jornadas; Zênite II segue em proposta.
 
-<details><summary>Feitos (7)</summary>
+<details><summary>Feitos (8)</summary>
 
 - [x] Borda Soberano no app e no banco (SQL rodado) *(Claude)*
 - [x] Commitar a conversão para WEBP (borda e catálogo) *(Claude)* — Commitado em 09/10 (d1c53b3).
@@ -108,6 +115,7 @@ Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 
 - [x] Conferir os 7 fundos de clã nas telas reais *(Afonso)* — Conferido pelo Afonso em 10/10.
 - [x] Catálogo acima do teto de tamanho (14,8 MB de 12) *(Claude)* — 10/10: teto subiu de 12 para 18 MB de propósito (03f61f7); a pasta está com 14,8 MB. Teste egress-estatico passa.
 - [x] Skin Chuva mudou de arquivo e o teste do catálogo acusa *(Claude)* — Fica. O teste acusava só a lista de tamanhos, desatualizada desde a arte das mãos de 23/09 (15 roupas). Lista atualizada em 10/10 (52d3592); encaixe conferido nos 4 corpos.
+- [x] Gerar as artes das próximas temporadas *(outra IA (Codex))* — 12 peças de Zênite I, Eclipse I, Égide I e Aurora II integradas (Codex), no AAB 111. Falta o conteúdo das temporadas (skin, tema e jornadas) antes de ativá-las.
 
 </details>
 
@@ -122,11 +130,34 @@ Cópia da prancheta do Afonso (artefato no claude.ai), regravada pelo Claude em 
 <details><summary>Feitos (2)</summary>
 
 - [x] Subir os commits para o GitHub *(Claude)* — 46 commits no GitHub em 09/10.
-- [x] Limpeza restrita do banco (backups vazios, user_assets, handle_new_user) *(outra IA)* — 12/10: Afonso rodou 20261011180000. Pentágono e slots preservados. Não ampliar sem comprovar desuso.
+- [x] Limpeza restrita do banco (backups vazios, user_assets, handle_new_user) *(outra IA (Codex))* — 12/10: Afonso rodou 20261011180000. Pentágono e slots preservados. Não ampliar sem comprovar desuso.
 
 </details>
 
+## Conferir no celular — sem cobrança agora
+
+Testes no aparelho, com conta ou na Play. O Afonso pediu para não cobrar agora; caixa aberta aqui quer dizer só que não há confirmação registrada.
+
+- [ ] Recibo do Google Play: fazer uma compra real de teste *(Afonso)* — O código já valida na API do Google (google-play-purchase) e as credenciais estão no Supabase. Falta uma compra real para confirmar, e a conta de serviço ter acesso no Play Console.
+- [ ] Subir o AAB 111 na Play (ou pular direto para o 112) *(Afonso)* — 13/10: o 111 está pronto (ce54428) e não há registro de upload. O 112 terá o trabalho de 13/10 do Claude e do Codex.
+- [ ] Teste final: excluir conta *(Afonso)* — 12/10: permissões das sete funções de exclusão corrigidas (Afonso rodou 20261012120000). O fluxo completo, no app e no site, está com o Codex; o teste final vem depois.
+- [ ] Teste final: pedir reembolso *(Afonso)*
+- [ ] Sentir no aparelho: vibração do planner e o widget novo *(Afonso)* — Depois de instalar o AAB 112: vibração nativa ao pegar, mudar de horário, soltar e concluir; widget Resumo/Planner. O 111 não tem nada disso.
+- [ ] Testar no celular o push com título e cor *(Afonso)*
+- [ ] Teste final: recuperar senha numa conta com e-mail e senha *(Afonso)* — Do doc do Codex (docs/2026-10-12-emails-essenciais.md): a sua conta é Google, então precisa de uma conta de teste com senha. Confere se o e-mail chega pelo Resend e se o link funciona.
+- [ ] Conferir no celular a cor neutra do push (branco some no tema claro do Android) *(Afonso)* — O neutro do push foi para cinza-prata #6F7A8A. Conferir no tema claro e no escuro.
+
+## Opcionais e expansão
+
+- [ ] Site: banner de cookie (opcional) *(outra IA (Codex))* — 13/10: o site não tem rastreador (nem Analytics, nem pixel); só guarda o que é do funcionamento. Pela LGPD isso não pede banner, só menção na Política de Privacidade. Volta se entrar analytics no site.
+- [ ] Jardim conquistado: expandir ou limite de peças atrelado ao progresso (depois) *(Afonso)* — 12/10: ideia do Afonso, para depois. O jardim iria sendo conquistado — área que expande, ou limite de coisas que se desbloqueia com o que você faz. Mesma direção do clã: integrado, não à parte.
+- [ ] Tag ou link de perfil para adicionar amigo (depois) *(Afonso)* — 12/10: código/link do perfil para adicionar sem buscar o nome. 13/10: o Codex já fez Copiar nickname e o cartão compartilhado com “Me adicione no Glyph!”; o link direto segue como expansão.
+- [ ] Feed: ordem do Reino (depois) *(Afonso)* — 12/10: o feed tem duas abas sem repetição (Aliados = você e amigos; Reino = o resto), commit 8ce20b6. Depois: quem é do seu clã e não é amigo ganha preferência no Reino, e um filtro para não floodar quando houver gente. Atenção: o app baixa só os 80 posts mais novos de todos; com muita gente pública, posts de amigos podem sumir do Aliados.
+
 ## Recados da outra IA
+
+> Histórico preservado. As listas acima foram reconciliadas em 13/10; “pendente” em um recado antigo pode ter sido superado por outro posterior.
+
 
 <!-- Escreva aqui: data, o que foi feito ou o que precisa. Ex.: "10/10 — banner de cookie do site pronto, commit abc123". -->
 
@@ -260,3 +291,70 @@ Afonso confirmou a execução de sql/temporadas-2027-artes.sql e pediu commit, p
 - Landing: a294b4b enviado para arabeco/glyph-landing/main. Publicação automática CONFIRMADA: Home, script.js, Novidades e Termos em https://www.glyph.life responderam 200 e conteúdo idêntico ao checkout enviado.
 - Entram no site: prints atualizados, textos de uso livre/estoque, contadores por maestria, 13 anos/7 dias, posts e acessos Em breve. Publicação destes arquivos deixou de ser pendência; versões futuras de prints/conteúdo podem continuar evoluindo.
 - Navegação 390/1440 passou sem erros de JS/imagens quebradas. Posts, contadores agregados (fixture), Termos, exclusão e placeholders também passaram. Confirmação do site publicado não significa execução real de recuperação/exclusão. Pedido de exclusão ainda prepara e-mail; fluxo automatizado e haptics continuam pendentes.
+
+### 13/10 — Codex: conquistas secretas por evento
+
+- Corrigido localmente o atraso do Imparável: antes só conferia no carregamento do perfil/fecho do ciclo. Agora cada grupo reage ao evento confirmado (ações no Planner/estoque/horário/marco, diário, humor, amizade, missão, competição, ciclo). Mentoria tem timer para o próximo prazo; abertura/retomada recupera pendências.
+- Fila conserva eventos durante consultas, evita repetição na sessão e mantém o modal na fila de celebrações, sem esperar para entregar. Sem novo SQL; agregado do RPC existente preservado.
+- TypeScript, build web, quatro regressões e teste React no navegador passaram, incluindo dia 30 sem reabrir, concorrência e gravações falhas/undo sem gatilho. Relatório: docs/2026-10-13-segredos-por-evento.md.
+- NÃO está no AAB 111 já entregue. Precisa próximo build; sem commit/push ou prêmio real nesta rodada.
+
+### 13/10 — Codex: apresentação de itens repetidos
+
+- Baú: título Você já possui, arte preservada, fragmentos de conversão separados do bônus; corrigido identificador bau- para ativar o modo de revelação.
+- Missão: somente itens efetivamente entregues na grade; conversões aparecem com nome/arte e fragmentos. Fragmentos próprios da missão também aparecem. Toast de fechamento acompanha o resultado, sem dizer que a cópia foi adicionada.
+- Segredo: preservada a regra de não compensar item já possuído; modal identifica Já está na sua coleção, sem anunciá-lo como novo. Eventual conversão retornada pela entrega também é apresentada.
+- Conversão genérica aceita tier 6 (3.000); soma sobre saldo vivo em entregas consecutivas; silent evita toast concorrente. Falha ao consultar inventário interrompe a entrega em vez de inserir às cegas.
+- Validação: TypeScript, build Vite, duplicate-rewards, reward-modal, mission-reward-unification, medidor-de-segredos e segredos-por-evento.browser passaram. Testes usam dados controlados, não resgate real.
+- Sem SQL novo, commit, push ou AAB nesta rodada. A persistência de concessões genéricas continua no fluxo existente do cliente; não foi criada transação atômica/idempotência entre dispositivos. AAB 111 não inclui estas mudanças.
+
+### 13/10 — Codex: gestos do Planner e Oráculo sem interromper
+
+- Cartões do dia/semana/lista permitem rolar antes de pegar; depois de pegar, movimento menor inicia arraste e bloqueia scroll nativo. Mantidos pegar 240ms e tempos de concluir/desfazer; feedback curto ao pegar respeita preferências existentes.
+- useLongPress limpa touchcancel/blur, evita mouse sintético abrir a ação novamente e não interpreta como toque uma soltura tardia quando o timer atrasou.
+- Arraste mantém a trava do Oráculo até soltar; cancelamento, blur, Escape e desmontagem liberam. Falas já visíveis saem ao começar outro gesto; novas falas aguardam 650ms de pausa e só a última fica pendente. Respostas assíncronas que chegam após soltar também respeitam a pausa. Reações aparecem inteiras, sem digitação por letra; tons e regras de frequência preservados.
+- Rolagem automática só nas bordas visíveis, progressiva, proporcional ao tempo do quadro (60/120Hz); removida zona global de 200px que puxava a agenda cedo demais.
+- Teste tests/planner-gestures.browser.mjs usa React/hooks reais, Edge e toque nativo CDP: toque único, arraste vertical após hold, limiar do mouse, cancelamento, scroll sobre cartão, espera do Oráculo entre gestos e velocidade de borda. Feedback físico não é verificável no desktop. Sem contas reais, SQL ou AAB nesta rodada.
+- Validação final desta rodada: TypeScript, build Vite, planner-gestures.browser (toque nativo CDP), oracle-transient-speech, planner-simple-list, planner-chega-na-hora e planner-zoom passaram. Ainda sem commit/push e fora do AAB 111.
+
+### 13/10 — Codex: prancheta reconciliada por pedido de Afonso
+
+- Listas principais atualizadas diretamente com autorização de Afonso; não apenas recado adicional. Termos, contador, publicação do site, AAB 111, 12 artes e configuração Resend saíram da fila antiga. Planner/clã têm implementação concluída separada do restante específico.
+- Reconferidos arquivos públicos por HTTP; correspondem ao checkout local, com normalização de quebras de linha. Exclusão continua mailto. Hash do AAB 111 corresponde ao checkpoint.
+- Corrigido erro de escopo: zoom/widget de 13/10 são posteriores ao AAB 111, assim como demais mudanças recentes listadas para próximo pacote. AAB não foi reconstruído nesta revisão.
+- Conquistas por evento e itens repetidos promovidos à lista principal. Incluídos o handoff de dicas do Oráculo e conteúdo restante das temporadas.
+- Testes de conta/aparelho e situação de Play ficam separados, sem cobrança agora conforme resposta de Afonso. Nenhuma conta, envio, SQL, publicação ou fonte do app alterada.
+- Evidências e limites: docs/2026-10-13-auditoria-prancheta.md. Ao sincronizar a cópia do Claude, preservar esta consolidação.
+
+### 13/10 — Afonso: agrupamento das próximas mudanças e perfil
+
+- Rankings/interatividade e média de EXP diária devem ser feitos **na mesma rodada de código**. Item único na lista principal.
+- Feed atual confirmado pronto por Afonso; novas ideias ficam para o futuro, sem marcar o feed existente como incompleto.
+- Perfil: conferidos views/ProfileView.tsx, components/Share.tsx, views/MundoView.tsx, searchPlayers e a migração de search_public_profiles. Já existe compartilhamento de imagem/nickname; busca é por nickname, não por ID. Não foi encontrada necessidade de criar outro identificador para o fluxo atual; link direto permanece possibilidade futura. Nenhuma mensagem enviada.
+- Cookies e partes restantes da exclusão mantidos com o estado verificado; a citação desses itens não foi interpretada como confirmação de conclusão ou autorização para implementar o site nesta revisão.
+
+### 13/10 — Codex: compartilhar perfil com nickname
+
+- Pedido de Afonso implementado: mensagem junto do cartão com convite para adicionar e nickname; botão Copiar nickname abaixo do nome. Perfil alheio usa o nome da pessoa, sem se apresentar como perfil próprio.
+- Reutilizado copiarTexto; fallback agora verifica sucesso e remove o campo temporário mesmo em erro, evitando confirmação falsa. Compartilhamento continua pelo menu nativo existente, sem inventar link de perfil.
+- Fora do AAB 111; sem envio ao WhatsApp, commit ou push.
+
+### 13/10 — Codex: tags Top e média de EXP na mesma rodada
+
+- Implementados comparativo pessoal junto da EXP diária e no relatório/placa do ciclo, além de tags oficiais Top 1/5/10% para ciclo, Maestria e clã. Afonso escolheu EXP total para a tag do ciclo; média pessoal normaliza por dia. Atualiza ao abrir, voltar, mudar valor local e a cada cinco minutos visíveis. Imagens compartilhadas não mudam depois.
+- Migração 20261013200000_progress_recognition.sql preparada, **não aplicada**. RPC retorna apenas dados próprios/agregados; sem posição inventada quando falta população ou histórico.
+- Painel/Planner passam a usar a taxa de bônus vigente explicitamente, removendo os 10% padrão indevidos da exibição. Preservadas alterações de gestos e demais trabalhos pendentes.
+- Documento: docs/2026-10-13-ranking-e-media-exp.md. Sem commit, push, AAB, SQL remoto ou envio de mensagem.
+- Validação final: TypeScript, build Vite, 30 cenários core-loop, regressão SQL/PGlite e teste React/Edge passaram. Preview móvel com texturas reais conferido. Falta aplicação do SQL e distribuição; não houve teste em conta real.
+
+### 13/10 — SQL das tags Top e média de EXP executado
+
+- Afonso confirmou “rodei” para 20261013200000_progress_recognition.sql. Confirmação do usuário, sem consulta remota adicional nesta rodada. Supera os registros anteriores de migração não aplicada.
+- Resta distribuir o código novo; AAB 111 existente não contém essa implementação.
+
+### 15/10 — Claude: prancheta unificada
+
+- A online virou a fonte de novo, e este MD foi regravado a partir dela, já com a consolidação do Codex de 13 e 14/10. Os recados acima ficaram como estavam.
+- Entraram na online os feitos que só estavam aqui (nickname, segredos por evento, itens repetidos, zoom e widget, planos e campanhas, dicas do Oráculo, aviso do clã retirado). Os testes no aparelho foram para "Conferir no celular", e as ideias para depois para "Opcionais e expansão".
+- Abertos do Codex desta manhã: terminar campanhas (o app não compila enquanto isso: import duplicado de buildCodexTemplateFromDraft no GameContext, e dois testes falham) e escolher a proposta do modal de arena e ação.
+- Vibração nativa no app e no arraste do planner: commit 06a24f7, plugin @capacitor/haptics novo — o 112 precisa sair com ele.

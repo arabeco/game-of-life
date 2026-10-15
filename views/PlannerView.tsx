@@ -1679,6 +1679,27 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         }
     }, []);
 
+    /*
+     * O PLANNER NAO ANDA DE LADO (15/10/2026, prints do Afonso).
+     *
+     * A grade inteira aparecia ~17 px deslocada de um momento para o outro (ao
+     * abrir, ao pegar um cartao): a area de rolagem estava rolada de lado.
+     * `overflow-x: hidden` impede o dedo, nao o navegador, que rola por codigo ao
+     * focar ou mostrar algo que passa da largura. O conteudo agora e cortado na
+     * largura (overflow-x-clip, logo abaixo) e, de garantia, se algo rolar de
+     * lado, a area volta para o lugar.
+     */
+    useEffect(() => {
+        const scroller = scrollContainerRef.current;
+        if (!scroller) return;
+        const voltarParaOLugar = () => {
+            if (scroller.scrollLeft !== 0) scroller.scrollLeft = 0;
+        };
+        voltarParaOLugar();
+        scroller.addEventListener('scroll', voltarParaOLugar, { passive: true });
+        return () => scroller.removeEventListener('scroll', voltarParaOLugar);
+    }, []);
+
     const scrollPlannerToIndicator = useCallback((indicatorEl: HTMLDivElement | null, suave = true) => {
         const scroller = scrollContainerRef.current;
         if (!scroller || !indicatorEl) return;
@@ -2297,7 +2318,9 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 className="planner-scroll-surface scrollbar-hide flex-grow w-full min-w-0 max-w-full min-h-0 overflow-y-auto overflow-x-hidden relative bg-[#111111]"
                 style={{ scrollBehavior: 'smooth', overscrollBehaviorY: 'contain', overscrollBehaviorX: 'none' }}
             >
-                <div className={dragState.isDragging ?'pointer-events-auto' : ''}>
+                {/* overflow-x-clip: o conteudo nunca passa da largura, entao nao sobra nada
+                    para o navegador rolar de lado (o "tremer" dos prints de 15/10). */}
+                <div className={`overflow-x-clip${dragState.isDragging ? ' pointer-events-auto' : ''}`}>
                     {plannerArenaOptions.length === 0 ? (
                         <div className="flex min-h-[48vh] items-center justify-center px-6">
                             <div className="max-w-[18rem] rounded-[24px] border border-white/8 bg-black/20 px-5 py-5 text-center shadow-[0_14px_34px_rgba(0,0,0,0.18)]">

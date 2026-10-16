@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLongPress } from './useLongPress';
+import { useSensoryFeedback } from './useSensoryFeedback';
 
 /*
  * PEGAR E SEGURAR NO PLANNER: UM GESTO SO, COM DOIS TEMPOS.
@@ -71,10 +72,11 @@ export const usePlannerDragHold = ({
     dragThreshold = 12,
 }: PlannerDragHoldOptions) => {
     const [erguido, setErguido] = useState(false);
+    const { trigger } = useSensoryFeedback();
 
     const events = useLongPress({
         armDelay: onDrag ? PLANNER_PEGAR_MS : undefined,
-        onArm: () => setErguido(true),
+        onArm: () => { setErguido(true); trigger('click_soft'); },
         onArmCancel: () => setErguido(false),
         delay: PLANNER_SEGURAR_MS,
         onLongPress: onHoldStart
@@ -90,6 +92,7 @@ export const usePlannerDragHold = ({
         onClick: onTap,
         onDragStart: onDrag,
         dragThreshold,
+        armedDragThreshold: 6,
         preventDefaultOnTouch: false,
         touchDragRequiresLongPress: true,
     });

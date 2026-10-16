@@ -12,6 +12,7 @@ interface LongPressOptions {
     onDragStart?: (event: MouseEvent | TouchEvent) => void;
     delay?: number;
     dragThreshold?: number;
+    armedDragThreshold?: number;
     preventDefaultOnTouch?: boolean;
     touchDragRequiresLongPress?: boolean;
     dragIntent?: 'any' | 'vertical' | 'horizontal';
@@ -46,6 +47,7 @@ export const useLongPress = (options: LongPressOptions) => {
     const armTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const state = useRef<'idle' | 'pending' | 'armed' | 'longpress' | 'drag'>('idle');
     const downAt = useRef(0);
+    const lastTouchAt = useRef(-Infinity);
     const startPos = useRef({ x: 0, y: 0 });
     const releaseSelectionLockRef = useRef<(() => void) | null>(null);
 
@@ -57,6 +59,7 @@ export const useLongPress = (options: LongPressOptions) => {
     
     let handleMove: (e: MouseEvent | TouchEvent) => void;
     let handleUp: (e: MouseEvent | TouchEvent | React.MouseEvent | React.TouchEvent) => void;
+    let handleCancel: () => void;
 
     const maoNaTelaRef = useRef(false);
 
@@ -81,6 +84,8 @@ export const useLongPress = (options: LongPressOptions) => {
         window.removeEventListener('touchmove', handleMove);
         window.removeEventListener('mouseup', handleUp);
         window.removeEventListener('touchend', handleUp);
+        window.removeEventListener('touchcancel', handleCancel);
+        window.removeEventListener('blur', handleCancel);
     }, []);
 
     handleMove = useCallback((e: MouseEvent | TouchEvent) => {
@@ -94,11 +99,15 @@ export const useLongPress = (options: LongPressOptions) => {
         if (shouldPreventTouchDefault() && isTouchEvent(e) && e.cancelable) {
             e.preventDefault();
         }
+        // Com a peça pega, o navegador não deve assumir a rolagem.
+        const armedByTime = state.current === 'pending' && armDelay !== undefined && performance.now() - downAt.current >= armDelay;
+        if (isTouchEvent(e) && e.cancelable && (state.current !== 'pending' || armedByTime)) e.preventDefault();
         const currentPos = getCoords(e);
         const dx = currentPos.x - startPos.current.x;
         const dy = currentPos.y - startPos.current.y;
 
-        if (Math.sqrt(dx * dx + dy * dy) > dragThreshold) {
+        const threshold = state.current === 'pending' && !armedByTime ? dragThreshold : (optionsRef.current.armedDragThreshold ?? dragThreshold);
+        if (Math.sqrt(dx * dx + dy * dy) > threshold) {
             const isHorizontalIntent = Math.abs(dx) >= Math.abs(dy);
             const matchesDragIntent =
                 dragIntent === 'any'
@@ -149,16 +158,24 @@ export const useLongPress = (options: LongPressOptions) => {
                 onArmCancel?.();
             }
             state.current = 'drag';
-            cleanup();
             if (onDragStart) {
                 onDragStart(e);
             }
+            cleanup();
         }
     }, [cleanup]);
 
+    handleCancel = useCallback(() => {
+        optionsRef.current.onArmCancel?.();
+        optionsRef.current.onLongPressCancel?.();
+        state.current = 'idle';
+        cleanup();
+    }, [cleanup]);
+
     handleUp = useCallback((e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
+        if (isTouchEvent(e)) lastTouchAt.current = performance.now();
         const { onClick, onLongPressRelease, onArmCancel } = optionsRef.current;
-        if (state.current === 'pending') {
+        if (state.current === 'pending' && !(optionsRef.current.armDelay !== undefined && performance.now() - downAt.current >= optionsRef.current.armDelay)) {
             if (onClick) {
                 onClick(e as any);
             }
@@ -175,6 +192,7 @@ export const useLongPress = (options: LongPressOptions) => {
     }, [cleanup]);
     
     const handleDown = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+        if (isTouchEvent(e) && e.touches.length !== 1) { handleCancel(); return; }
         cleanup();
 
         /* ENQUANTO A MAO ESTIVER AQUI, O ORACULO ESPERA.
@@ -207,6 +225,8 @@ export const useLongPress = (options: LongPressOptions) => {
         window.addEventListener('touchmove', handleMove, { passive: false });
         window.addEventListener('mouseup', handleUp);
         window.addEventListener('touchend', handleUp);
+        window.addEventListener('touchcancel', handleCancel);
+        window.addEventListener('blur', handleCancel);
 
         if (armDelay !== undefined) {
             armTimeout.current = setTimeout(() => {
@@ -240,9 +260,14 @@ export const useLongPress = (options: LongPressOptions) => {
 
     return {
         onMouseDown: (e: React.MouseEvent) => {
-            if (e.button === 0) handleDown(e);
+            // O navegador emite mouse depois do toque; não abrir a ação duas vezes.
+            if (e.button === 0 && performance.now() - lastTouchAt.current > 800) handleDown(e);
         },
-        onTouchStart: handleDown,
+        onTouchStart: (e: React.TouchEvent) => {
+            lastTouchAt.current = performance.now();
+            handleDown(e);
+        },
+        onTouchEnd: () => { lastTouchAt.current = performance.now(); },
         onContextMenu: (e: React.MouseEvent) => {
             // Prevent context menu on mobile long press if it's a game action
             if (shouldPreventTouchDefault() || state.current === 'longpress' || state.current === 'drag') {

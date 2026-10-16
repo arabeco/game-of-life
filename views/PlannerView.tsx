@@ -1,3 +1,6 @@
+import { getCycleXpBonusRate } from '../utils/premiumAccess';
+import { plannerEdgeScroll } from '../utils/plannerGesture';
+import { maoEntrouNaTela, maoSaiuDaTela } from '../utils/oracleSpeech';
 import { FloatingActionDock } from '../components/FloatingActionDock';
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon, PlusIcon, SquareCheckIcon, PanelIcon, ZapIcon } from '../components/Icons';
@@ -334,7 +337,7 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
                 ref={taskRef}
                 {...longPressEvents}
                 className={`absolute left-0 right-1 cursor-pointer select-none flex items-center justify-center${erguido ? ' planner-erguido' : ''}`}
-                style={{ top: `${top}px`, height: `${height}px`, touchAction: 'none' }}
+                style={{ top: `${top}px`, height: `${height}px`, touchAction: 'pan-y' }}
             >
                 {/*
                   * O losango vestia o gradiente do ativo e uma borda cinza
@@ -368,7 +371,7 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
             ref={taskRef}
             {...longPressEvents}
             className={`absolute left-0 right-1 cursor-pointer select-none overflow-hidden rounded-2xl${erguido ? ' planner-erguido' : ''}`}
-            style={{ top: `${top}px`, height: `${height}px`, minHeight: `${30 * scaleFactor}px`, touchAction: 'none' }}
+            style={{ top: `${top}px`, height: `${height}px`, minHeight: `${30 * scaleFactor}px`, touchAction: 'pan-y' }}
         >
             <div
                 className={`h-full w-full rounded-2xl text-left relative overflow-hidden transition-all ${task.completed ?'font-bold' : ''}`}
@@ -467,7 +470,7 @@ const UnscheduledTaskCard: React.FC<{
 
     const shouldUseActionSkin = Boolean(executionCard && action);
     const cardStyle = {
-        touchAction: draggable ?'none' : 'auto',
+        touchAction: 'pan-y',
         ...(shouldUseActionSkin ?backgroundStyle : {}),
     } as React.CSSProperties;
 
@@ -1215,7 +1218,14 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         return 'nuni';
     }, [canUseAdvancedPlannerMatrix, isAdvancedPlannerMatrixEnabled]);
 
+    const dragSpeechLock = useRef(false);
+    const releaseDragSpeech = useCallback(() => {
+        if (dragSpeechLock.current) { dragSpeechLock.current = false; maoSaiuDaTela(); }
+    }, []);
+    useEffect(() => () => releaseDragSpeech(), [releaseDragSpeech]);
+
     const handleCustomDragStart = (event: MouseEvent | TouchEvent, item: { type: string; payload: any; duration: number; source?: string; }, ghostElement: React.ReactNode, draggedElementRef: React.RefObject<HTMLDivElement>) => {
+        if (!dragSpeechLock.current) { dragSpeechLock.current = true; maoEntrouNaTela(); }
         const isTouchEvent = 'touches' in event;
         const pos = isTouchEvent ?{ x: event.touches[0].clientX, y: event.touches[0].clientY } : { x: event.clientX, y: event.clientY };
         const elemRect = draggedElementRef.current?.getBoundingClientRect();
@@ -1331,44 +1341,14 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             wheelHandler = (ev: WheelEvent) => { ev.preventDefault(); };
             scroller?.addEventListener('wheel', wheelHandler, { passive: false });
 
-            const maxSpeed = 18;
-            const step = () => {
+            let lastFrame = 0;
+            const step = (now: number) => {
+                const elapsed = lastFrame ? Math.min(32, now - lastFrame) : 16;
+                lastFrame = now;
                 if (scrollContainerRef.current && lastPointerPosRef.current) {
                     const p = lastPointerPosRef.current;
                     const rect = scrollContainerRef.current.getBoundingClientRect();
-                    let dy = 0;
-
-                    // Zonas de Trigger
-                    const containerTop = rect.top;
-                    const containerBottom = rect.bottom;
-                    const draggedElementTop = p.y - dragOffsetRef.current.y;
-
-                    // Logica dupla para subir:
-                    // 1. Se o topo do elemento tocar o topo do container (precisao)
-                    // 2. OU se o ponteiro estiver nos primeiros 200px da tela (fallback de seguranca)
-                    const isTopZone = draggedElementTop < (containerTop + 80) || p.y < 200;
-
-                    // Logica para descer:
-                    // 1. Ponteiro nos ultimos 150px do container ou da tela
-                    const isBottomZone = p.y > (containerBottom - 100) || p.y > (window.innerHeight - 150);
-
-                    if (isTopZone) {
-                        // Calcula intensidade baseada no quanto "pra cima" esta
-                        const distElement = (containerTop + 80) - draggedElementTop;
-                        const distPointer = 200 - p.y;
-                        const dist = Math.max(distElement, distPointer);
-
-                        const intensity = Math.min(2.0, dist / 120);
-                        dy = -Math.max(5, intensity * maxSpeed);
-                    }
-                    else if (isBottomZone) {
-                        const distPointer = p.y - (containerBottom - 100);
-                        const distScreen = p.y - (window.innerHeight - 150);
-                        const dist = Math.max(distPointer, distScreen);
-
-                        const intensity = Math.min(2.0, dist / 120);
-                        dy = Math.max(5, intensity * maxSpeed);
-                    }
+                    const dy = plannerEdgeScroll(p.y, rect.top, rect.bottom, elapsed);
 
                     if (dy !== 0) {
                         scrollContainerRef.current.style.scrollBehavior = 'auto';
@@ -1518,6 +1498,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         };
 
         const handleDragEnd = (e: MouseEvent | TouchEvent) => {
+            if (e.type === 'touchend' && e.cancelable) e.preventDefault();
             if (!dragState.item) return;
 
             // Get final pointer position directly from the event to avoid state update lag
@@ -1629,6 +1610,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 scrollContainerRef.current.style.overflow = '';
             }
 
+            releaseDragSpeech();
             setDragState({ isDragging: false, item: null, ghostElement: null, pointerOffset: { x: 0, y: 0 }, currentPosition: { x: 0, y: 0 } });
             setDailyDropIndicator(null);
             setWeeklyDropIndicator(null);
@@ -1637,6 +1619,17 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             setHoveredBayQuadrant(null);
         };
 
+        const cancelDrag = () => {
+            releaseDragSpeech();
+            setDragState({ isDragging: false, item: null, ghostElement: null, pointerOffset: { x: 0, y: 0 }, currentPosition: { x: 0, y: 0 } });
+            setDailyDropIndicator(null);
+            setWeeklyDropIndicator(null);
+            setExecutionDropTarget(null);
+            setIsOverBayArea(false);
+            setHoveredBayQuadrant(null);
+            if (scrollContainerRef.current) scrollContainerRef.current.style.overflow = '';
+        };
+        const escapeDrag = (event: KeyboardEvent) => { if (event.key === 'Escape') cancelDrag(); };
         if (dragState.isDragging) {
             document.body.style.userSelect = 'none';
             document.body.style.webkitUserSelect = 'none';
@@ -1645,6 +1638,9 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             window.addEventListener('mouseup', handleDragEnd);
             window.addEventListener('touchmove', handleDragMove, { passive: false });
             window.addEventListener('touchend', handleDragEnd);
+            window.addEventListener('touchcancel', cancelDrag);
+            window.addEventListener('blur', cancelDrag);
+            window.addEventListener('keydown', escapeDrag);
         }
         return () => {
             document.body.style.userSelect = '';
@@ -1654,6 +1650,9 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             window.removeEventListener('mouseup', handleDragEnd);
             window.removeEventListener('touchmove', handleDragMove);
             window.removeEventListener('touchend', handleDragEnd);
+            window.removeEventListener('touchcancel', cancelDrag);
+            window.removeEventListener('blur', cancelDrag);
+            window.removeEventListener('keydown', escapeDrag);
 
             // Restaurar pointer-events
             const gridDays = document.querySelectorAll('.grid-day-container');
@@ -1976,6 +1975,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             operationalDate: selectedDate,
             taskIds: fallbackTaskIds,
             includePremium: hasPremiumAccess(userProfile as any),
+            premiumRate: getCycleXpBonusRate(userProfile),
         });
 
         return {

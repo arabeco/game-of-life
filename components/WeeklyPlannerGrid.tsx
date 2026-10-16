@@ -135,7 +135,7 @@ const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: 
             key={task.id} 
             ref={taskRef}
             className={`absolute w-full px-1 cursor-pointer select-none${erguido ? ' planner-erguido' : ''}`}
-            style={{ top: `${top}px`, height: `${height}px`, minHeight: `${30 * scaleFactor}px`, touchAction: 'none' }}
+            style={{ top: `${top}px`, height: `${height}px`, minHeight: `${30 * scaleFactor}px`, touchAction: 'pan-y' }}
             {...longPressEvents}
         >
             <div 

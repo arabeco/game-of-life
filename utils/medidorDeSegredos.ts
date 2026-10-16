@@ -130,8 +130,8 @@ const CATEGORIA_DE_DESBLOQUEIO: Record<string, string> = { border: 'borders', ba
  * empilha relatorio, bau e as vezes patente; segredo nao entra nessa pilha um
  * por um.
  */
-export const montarModalDeSegredos = (regras: RegraDeDesbloqueio[]) => {
-    const itens = regras.flatMap((regra) => regra.itens);
+export const montarModalDeSegredos = (regras: RegraDeDesbloqueio[], entrega?: { items: string[]; ownedItems: string[]; convertedItems: Array<{ itemId: string; fragments: number }> }) => {
+    const itens = entrega?.items ?? regras.flatMap((regra) => regra.itens);
     return {
         id: MARCA_DE_SEGREDO + regras.map((regra) => regra.id).join('+'),
         secreta: true,
@@ -146,6 +146,8 @@ export const montarModalDeSegredos = (regras: RegraDeDesbloqueio[]) => {
         reward: {
             exp: 0,
             items: itens,
+            ownedItems: entrega?.ownedItems || [],
+            convertedItems: entrega?.convertedItems || [],
             rewardDetails: itens.map((itemId) => {
                 const def = resolveItemDef(itemId);
                 return {

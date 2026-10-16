@@ -243,7 +243,11 @@ export const Inventory: React.FC = () => {
         if (recebido) {
             const extras: Array<{ label: string; value: string; simbolo?: 'ouro' | 'fragmento' }> = [];
             if (Number(result.fragmentsGained || 0) > 0) {
-                extras.push({ label: 'Fragmentos', value: `+${result.fragmentsGained}`, simbolo: 'fragmento' });
+                const bonus = result.bonusFragments || 0;
+                const converted = Math.max(0, result.fragmentsGained - bonus);
+                if (result.isDuplicate && converted > 0) extras.push({ label: 'Pela conversão', value: `+${converted}`, simbolo: 'fragmento' });
+                if (bonus > 0) extras.push({ label: 'Bônus do baú', value: `+${bonus}`, simbolo: 'fragmento' });
+                if (!result.isDuplicate && !bonus) extras.push({ label: 'Fragmentos', value: `+${result.fragmentsGained}`, simbolo: 'fragmento' });
             }
             if (Number(result.goldGained || 0) > 0) {
                 extras.push({ label: 'Ouro', value: `+${result.goldGained}`, simbolo: 'ouro' });
@@ -251,9 +255,9 @@ export const Inventory: React.FC = () => {
             setExtrasDoBau(extras);
             trigger(result.isDuplicate ? 'success' : 'fanfare');
             setAvisoDoItem(result.isDuplicate
-                ? `Você já tinha este item. Convertido em +${result.fragmentsGained || 0} fragmentos.`
+                ? 'Você já possui este item. A cópia foi convertida em fragmentos.'
                 : null);
-            setSelectedItem({ def: recebido, instanceId: `baú-${result.itemId}` });
+            setSelectedItem({ def: recebido, instanceId: `bau-${result.itemId}` });
             return;
         }
 

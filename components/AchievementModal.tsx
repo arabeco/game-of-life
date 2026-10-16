@@ -344,6 +344,10 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
         if (achievement.data.rewards || achievement.data.reward) {
             const rewards = achievement.data.rewards || achievement.data.reward;
             const messages: string[] = [];
+            for (const converted of rewards.convertedItems || []) {
+                messages.push(`${resolveItemDef(converted.itemId)?.name || converted.itemId}: +${converted.fragments} fragmentos pela conversão`);
+            }
+            if (Number(rewards.fragments) > 0) messages.push(`+${rewards.fragments} fragmentos`);
             const items = rewards.items || (rewards.item ?[rewards.item] : []);
 
             if (items.length > 0) {

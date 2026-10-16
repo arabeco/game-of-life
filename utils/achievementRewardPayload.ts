@@ -1,6 +1,7 @@
 import { getChestDisplayName, getChestVisual } from '../constants/rarityVisuals';
 import { getChestArtUrl } from '../constants/catalogAssets';
 import type { RewardMetricCard, RewardModalPayload } from '../types';
+import { resolveItemDef } from '../constants/items';
 
 /**
  * Traduz o premio de um feito para o mesmo payload que o modal de recompensa
@@ -20,6 +21,9 @@ import type { RewardMetricCard, RewardModalPayload } from '../types';
 type PremioDeFeito = {
     exp?: number;
     gold?: number;
+    fragments?: number;
+    convertedItems?: Array<{ itemId: string; fragments: number }>;
+    ownedItems?: string[];
     chest?: string | null;
     ornament?: string | null;
     item?: string;
@@ -37,6 +41,19 @@ export const buildAchievementRewardPayload = (
 
     const metricCards: RewardMetricCard[] = [];
     const rewardHighlights: NonNullable<RewardModalPayload['rewardHighlights']> = [];
+    if (Number(recompensa.fragments) > 0) {
+        metricCards.push({ label: 'Fragmentos', simbolo: 'fragmento', value: `+${recompensa.fragments}` });
+    }
+    for (const converted of recompensa.convertedItems || []) {
+        const item = resolveItemDef(converted.itemId);
+        rewardHighlights.push({ label: 'Você já possui', value: item?.name || converted.itemId,
+            detail: `+${converted.fragments} fragmentos pela conversão.`, imageUrl: item?.imageUrl });
+    }
+    for (const itemId of recompensa.ownedItems || []) {
+        const item = resolveItemDef(itemId);
+        rewardHighlights.push({ label: 'Já está na sua coleção', value: item?.name || itemId,
+            detail: 'Conquista registrada. Nenhuma nova cópia foi entregue.', imageUrl: item?.imageUrl });
+    }
     if (Number(recompensa.exp) > 0) {
         metricCards.push({ label: 'EXP', simbolo: 'exp', value: `+${Number(recompensa.exp).toLocaleString('pt-BR')}` });
     }

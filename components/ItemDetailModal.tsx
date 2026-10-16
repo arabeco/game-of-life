@@ -315,7 +315,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                 {focusMode && (
                     <div className="z-10 w-full text-center">
                         <h2 className="reward-title-metal text-[25px] font-black uppercase leading-none tracking-[0.17em] drop-shadow-lg">
-                            Item recebido!
+                            {duplicataDeBau ? 'Você já possui' : 'Item recebido!'}
                         </h2>
                     </div>
                 )}

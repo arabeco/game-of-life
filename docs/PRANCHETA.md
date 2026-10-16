@@ -1,6 +1,6 @@
 # Prancheta do Glyph
 
-Cópia da prancheta do Afonso (artefato no claude.ai: https://claude.ai/artifact/99dQUHcbX6dy4dcAuu2Dx6), regravada pelo Claude em **15/10/2026**, já com a consolidação do Codex de 13 e 14/10. **17 abertos de 91** (74 feitos).
+Cópia da prancheta do Afonso (artefato no claude.ai: https://claude.ai/artifact/99dQUHcbX6dy4dcAuu2Dx6), regravada pelo Claude em **16/10/2026**, já com a consolidação do Codex de 13 e 14/10. **16 abertos de 91** (75 feitos).
 
 **Uma lista só:** a fonte é a prancheta online, e este arquivo é regravado a partir dela. Não edite as listas abaixo; para avisar algo, escreva em "Recados da outra IA", no fim: o Claude lê e passa para a prancheta.
 
@@ -10,7 +10,7 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 
 ## Lançamento
 
-- [ ] Teste do Glyph com um amigo (planilha no claude.ai) *(Afonso)* — 15/10: https://claude.ai/artifact/DG8g73vkemJE832jUg4bJc — 58 testes em Fácil, Médio e Difícil, com deu certo / deu errado e nota; os testes no aparelho (push, tema claro, vibração, widget, compra, reembolso, recuperar senha, excluir conta) moram lá agora, e não mais na prancheta. Precisa do AAB 112. O amigo precisa do link compartilhado (Share) para abrir. Versão em texto: docs/SMOKETEST.md.
+- [ ] Teste do Glyph com um amigo (planilha no claude.ai) *(Afonso)* — 15/10: https://claude.ai/artifact/DG8g73vkemJE832jUg4bJc — 26 testes (por caminho, sem item bobo) em Fácil, Médio e Difícil, com deu certo / deu errado e nota; os testes no aparelho (push, tema claro, vibração, widget, compra, reembolso, recuperar senha, excluir conta) moram lá agora, e não mais na prancheta. Precisa do AAB 112. O amigo precisa do link compartilhado (Share) para abrir. Versão em texto: docs/SMOKETEST.md.
 - [ ] Subir o AAB 111 na Play (ou pular direto para o 112) *(Afonso)* — 13/10: o 111 está pronto (ce54428) e não há registro de upload. O 112 terá o trabalho de 13/10 do Claude e do Codex.
 - [ ] Exclusão: finalizar o pedido pelo site e a retomada da limpeza parcial *(outra IA (Codex))* — 13/10 (Codex): e-mails, permissões e tratamento de erro prontos. O que falta e o que o Claude pensa: (1) O pedido pelo site abre um e-mail para glyph.life.app@gmail.com, sem pedido guardado no banco. A Play exige uma página na web para pedir exclusão sem o app, e página explicando o processo com e-mail de contato costuma ser aceita: dá para lançar assim, desde que a página diga o que é apagado e em quanto tempo. O formulário com pedido guardado fica para depois. (2) Se algum arquivo da pessoa falhar ao ser apagado, o pedido fica 'cleanup_pending' e nada tenta de novo: a conta some, mas pode sobrar arquivo órfão. Por enquanto, rodar de vez em quando supabase/CHECK-limpeza-de-conta-pendente.sql (cf46cb2); a rotina automática de nova tentativa fica para quando tiver gente.
 
@@ -30,11 +30,10 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 ## App
 
 - [ ] AAB 112 (só quando o Afonso pedir) *(Afonso)* — Feito em 13/10, depois do 111: zoom 1x do planner com o dia inteiro; widget do dia novo (Resumo e Planner, sem concluir e sem login); sem pay-to-win (planos e loja sem EXP extra, Premium com 20 arenas); coroa no mini card e no perfil dos outros; mentoria sem trava de Premium; Platinum sem ficha (fica 20% em campanha); Buscar campanha no Oráculo, que abre a campanha na loja. 15/10: vibração nativa (@capacitor/haptics) no app inteiro e no arraste do planner (06a24f7) — plugin novo, o 112 precisa sair com ele. Do Codex (local, ainda sem commit): tags Top 1/5/10% e média de EXP, conquistas por evento, itens repetidos, gestos do planner, nickname, dicas do Oráculo e campanhas (pela metade em 15/10: o app não compila até ele terminar). Conferir o widget no celular.
-- [ ] Campanhas: terminar a biblioteca e as execuções (Codex, pela metade) *(outra IA (Codex))* — 15/10: o Codex parou no meio (tokens). Auditoria em docs/2026-10-15-auditoria-campanhas.md; SQL 20261015120000_campaign_library_runs já rodado pelo Afonso. Enquanto não terminar, o app não compila (import duplicado no GameContext) e dois testes falham (a-mao-ganha-do-oraculo, arena-progress-presentation). Ele retoma às 14h.
+- [ ] Campanhas: biblioteca, progresso entre ciclos e correções (Codex, em andamento) *(outra IA (Codex))* — 15/10, combinado com o Afonso: (1) card com “2 arenas · 5 ações” e duração separada; (2) instalar do catálogo preserva a área de cada arena; (3) progresso da campanha acumula entre ciclos, sem cobrar repetições futuras; (4) fase não volta a travar na virada, excesso de uma ação não compensa outra, rascunho próprio cria o grupo, e “Próxima arena liberada — Abrir”; (5) biblioteca: comprar libera, Instalar quando quiser, “Concluir e guardar”/“Arquivar” devolve à biblioteca para recomeçar do zero com histórico. SQL 20261015120000 já rodado. Auditoria: docs/2026-10-15-auditoria-campanhas.md. Parou no limite de uso; enquanto não terminar, o app não compila. Testes já na planilha (M11, M12, D10–D12) — o Claude confere no código quando ele terminar.
 - [ ] Modal de arena e de ação: escolher a proposta (Codex) *(outra IA (Codex))* — 15/10: só propostas, ainda não ligadas ao app: docs/drafts/arena-acao-cinco-propostas.html e as versões de miniaturas, agendamento e checklist.
-- [ ] Planner treme para o lado ao abrir, como se quisesse mudar de página *(Afonso)* — 12/10: o Afonso acha que está parando; em observação. Suspeita do Claude, se voltar: a entrada de toda aba desliza 22px de lado com filtro de cor por 260ms (auth-view-enter-forward em components/auth-shell.css); a correção de 05/10 tirou a rolagem vertical, mas o deslize ficou. Correção proposta: só esmaecer, sem andar de lado e sem filtro (vale para todas as abas).
 
-<details><summary>Feitos (38)</summary>
+<details><summary>Feitos (39)</summary>
 
 - [x] Onboarding novo: fechar e commitar *(Claude)* — Commitado em 09/10 (fb05e4e).
 - [x] Planner sem tremer: commitar *(Claude)* — Commitado em 09/10 (fb05e4e).
@@ -49,6 +48,7 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 - [x] Missão individual: botão pequeno para sair *(Claude)* — Já existia: o botão pequeno "Encerrar" no balão da missão.
 - [x] Missão mostra 12/10: travar a contagem ao concluir *(Claude)* — Commit 8763253. Trava no alvo; o que vem depois é da arena.
 - [x] Mundo > Temporadas: faixa de quest bem fina, um estilo só, e o clique abre o modal com as recompensas *(Claude)* — Commit 38cb74b. Faixa de uma linha; imagem, descrição e recompensa no modal. Bancada: tools/as-faixas.html.
+- [x] Planner treme para o lado ao abrir, como se quisesse mudar de página *(Claude)* — 15/10: achado pelos prints do Afonso (cortado na esquerda num, na direita no outro). A grade inteira andava ~17 px de lado porque a área de rolagem ficava rolada na horizontal: o conteúdo passava da largura e o navegador rola ‘overflow-x: hidden’ por código. Correção: conteúdo cortado na largura (overflow-x-clip) e, se algo rolar de lado, volta a zero. Vai no AAB 112; conferir no celular (abrir o planner e arrastar do estoque).
 - [x] Modais de missão: tipo em cima e a descrição igual ao cartão (inicial, Oráculo e conquista secreta) *(Claude)* — Commitado em 10/10 (f418e4b). Chega no próximo AAB.
 - [x] Missão inicial "Cinco dias no Glyph": abrir o app em 5 dias (não precisam ser seguidos) paga 10 de ouro *(Claude)* — Era de 7 dias; caiu para 5 em 12/10, sem precisar ser seguidos. Precisa da migração 20261012150000 e do AAB 111.
 - [x] Rodar a migração 20261010120000_sete_dias_no_app.sql *(Afonso)* — Rodado pelo Afonso em 10/10.
@@ -104,7 +104,7 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 
 ## Arte
 
-- [ ] Arrumar as skins das temporadas futuras: detalhe de sobreposição *(Claude)* — 12/10: pedido do Afonso. Ajustar o encaixe/sobreposição das roupas no corpo nas skins das próximas temporadas. Claude ajuda, mas não hoje nem amanhã (depois de 13/10).
+- [ ] Gerar de novo as 5 skins das temporadas (Zênite I, Eclipse I, Égide I, Aurora II, Zênite II) *(Afonso)* — 16/10: Afonso conferiu as 5 da leva de 12/10 e reprovou — manga e pedacinho de couro/pele aparecendo (vão entre manga e tronco, calcanhar de fora). Vão ser pedidas de novo. O pedido novo tem que: vestir em cima do body_masc_1 na mesma posição e escala; manga fechada até o pulso, colada no braço, manopla emendada; bota cobrindo o pé inteiro, calcanhar incluso; só depois tirar o corpo (fundo transparente, sem cabeça nem mão). A leva antiga fica em output/temporadas-skins-2026-10-12/ como referência; nada foi para o catálogo. Encaixe fino depois na tools/avatar-align.html.
 - [ ] Completar o conteúdo das temporadas futuras antes de ativá-las *(Afonso)* — 13/10 (Codex): Zênite I, Eclipse I e Égide I ainda precisam de skin, tema e jornadas; Zênite II segue em proposta.
 
 <details><summary>Feitos (8)</summary>

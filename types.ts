@@ -1,4 +1,9 @@
 ﻿export interface CodexLevel {
+  prerequisiteLevels?: number[];
+  phase?: number;
+  isHidden?: boolean;
+  assetId?: string;
+  icon?: string;
   level: number;
   title: string;
   description: string;
@@ -6,6 +11,7 @@
 }
 
 export interface CodexTemplate {
+  executionType?: 'sequential' | 'parallel';
   id: string;
   title: string;
   description: string;
@@ -161,6 +167,8 @@ export interface Action {
     timeOfDay?: 'morning' | 'afternoon' | 'evening' | 'night';
     plannerQuadrant?: PlannerMatrixQuadrant;
     schedule?: {
+      startsOn?: string;
+      limitToRepetitions?: boolean;
       days?: DayOfWeek[];
       startTime?: number;
       notifyBeforeMinutes?: number;
@@ -217,6 +225,8 @@ export interface ArenaFolder {
 
 // Alias for backward compatibility if needed, but prefer ArenaFolder
 export interface Campaign {
+  sourceCodexId?: string;
+  resultSnapshot?: Record<string, unknown>;
   id: string;
   userId: string; // Add userId explicitly if missing in interface but present in DB
   title: string;
@@ -455,6 +465,7 @@ export interface ChestOpenResult {
   tier?: number;
   rarity?: ItemRarity;
   fragmentsGained: number;
+  bonusFragments?: number;
   goldGained?: number;
   isDuplicate?: boolean;
 }

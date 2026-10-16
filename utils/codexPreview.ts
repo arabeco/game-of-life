@@ -18,6 +18,11 @@ type CodexTemplateLevelAction = {
 };
 
 type CodexTemplateLevel = {
+  prerequisiteLevels?: number[];
+  phase?: number;
+  isHidden?: boolean;
+  assetId?: string;
+  icon?: string;
   level?: number;
   title?: string;
   description?: string;
@@ -25,6 +30,7 @@ type CodexTemplateLevel = {
 };
 
 type CodexTemplateLike = {
+  executionType?: 'sequential' | 'parallel';
   title?: string;
   description?: string;
   primaryAssetId?: string;
@@ -38,10 +44,16 @@ export type CodexCampaignPreview = {
 };
 
 export type CodexTemplatePayload = {
+  executionType?: 'sequential' | 'parallel';
   title: string;
   description: string;
   coverImage?: string;
   levels: Array<{
+    prerequisiteLevels?: number[];
+    phase?: number;
+    isHidden?: boolean;
+    assetId?: string;
+    icon?: string;
     level: number;
     title: string;
     description?: string;
@@ -105,10 +117,10 @@ export const buildCodexCampaignPreview = (
 
     const arena: Arena = {
       id: arenaId,
-      assetId: primaryAssetId,
+      assetId: level.assetId || primaryAssetId,
       name: levelTitle,
       description: level?.description || '',
-      icon: suggestEmojiForLabel(level?.title, 'arena', {
+      icon: level.icon || suggestEmojiForLabel(level?.title, 'arena', {
         fallback: arenaActions[0]?.icon || '\u{1F3DB}\uFE0F',
       }),
       actionIds: [],
@@ -120,9 +132,10 @@ export const buildCodexCampaignPreview = (
     arenaIds.push(arenaId);
     arenas.push(arena);
     arenaConfig[arenaId] = {
-      isLocked: levelNumber > 1,
-      isHidden: false,
-      prerequisiteArenaIds: levelNumber > 1 && previousArenaId ? [previousArenaId] : [],
+      isLocked: Array.isArray(level.prerequisiteLevels) ? level.prerequisiteLevels.length > 0 : template.executionType !== 'parallel' && levelNumber > 1,
+      isHidden: level.isHidden || false,
+      phase: level.phase,
+      prerequisiteArenaIds: Array.isArray(level.prerequisiteLevels) ? level.prerequisiteLevels.map(n => `codex-preview-arena-${codexId}-${n}`) : template.executionType !== 'parallel' && levelNumber > 1 && previousArenaId ? [previousArenaId] : [],
     };
 
     arena.actionIds = arenaActions.map((_, actionIndex) => `codex-preview-action-${codexId}-${levelNumber}-${actionIndex}`);
@@ -162,7 +175,7 @@ export const buildCodexCampaignPreview = (
       createdAt: new Date().toISOString(),
       arenaIds,
       arenaConfig,
-      type: 'sequential',
+      type: template.executionType || 'sequential',
       priority: 'media',
       order: -1,
       priorityOrder: -1,
@@ -177,18 +190,23 @@ export const buildCodexTemplateFromDraft = (draft: {
   description?: string;
   arenas?: Arena[];
   actions?: Action[];
+  campaign?: Campaign;
 }): CodexTemplatePayload => {
   const arenas = Array.isArray(draft.arenas) ? draft.arenas : [];
   const actions = Array.isArray(draft.actions) ? draft.actions : [];
 
   return {
     title: draft.name?.trim() || 'Nova Campanha',
+    executionType: draft.campaign?.type || 'sequential',
     description: draft.description?.trim() || '',
     coverImage: suggestEmojiForLabel(draft.name, 'codex', {
       fallback: arenas[0]?.icon || '\u{1F4DC}',
     }),
     levels: arenas.map((arena, index) => ({
       level: index + 1,
+      ...(draft.campaign ? { prerequisiteLevels: (draft.campaign.arenaConfig?.[arena.id]?.prerequisiteArenaIds || []).map(id => arenas.findIndex(a => a.id === id) + 1).filter(n => n > 0), phase: draft.campaign.arenaConfig?.[arena.id]?.phase, isHidden: draft.campaign.arenaConfig?.[arena.id]?.isHidden } : {}),
+      assetId: arena.assetId,
+      icon: arena.icon,
       title: getCodexLevelDisplayTitle(arena.name, index + 1),
       description: arena.description || '',
       actions: actions

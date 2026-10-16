@@ -210,11 +210,21 @@ export const buildCycleRegenerationPlan = (params: {
         if (!daysOfWeek || daysOfWeek.length === 0) continue;
         if (typeof startTime !== 'number') continue;
 
-        for (const date of buildRecurringDates({ from, through: cycle.endDate, daysOfWeek })) {
+        const requestedStart = action.context?.schedule?.startsOn;
+        const actionFrom = requestedStart && requestedStart > from ? requestedStart : from;
+        const occupied = new Set(existingTasks.filter(task => task.actionId === action.id &&
+            task.date >= cycle.startDate && task.date <= cycle.endDate)
+            .map(task => taskKey(task.actionId, task.date, task.startTime))).size;
+        const budget = action.context?.schedule?.limitToRepetitions
+            ? Math.max(0, (action.repetitions || 1) - occupied) : Infinity;
+        let added = 0;
+        for (const date of buildRecurringDates({ from: actionFrom, through: cycle.endDate, daysOfWeek })) {
+            if (added >= budget) break;
             const key = taskKey(action.id, date, startTime);
             if (taken.has(key)) continue;
             taken.add(key);
             planned.push({ actionId: action.id, date, startTime, duration: action.duration });
+            added += 1;
         }
     }
 

@@ -264,7 +264,7 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
     // do jogador no meio do quiz. Quem quiser outro modo usa os botoes.
 
     const allArenas = getArenas();
-    const installedCodexIds = useMemo(() => new Set(allArenas.map((arena) => arena.originCodexId).filter(Boolean)), [allArenas]);
+    const installedCodexIds = useMemo(() => new Set(allArenas.filter(arena => !arena.isArchived).map((arena) => arena.originCodexId).filter(Boolean)), [allArenas]);
     const findOwnedCodex = useCallback((catalogId: string): UserCodex | null => {
         const catalogEntry = codexCatalog.find((item) => item.id === catalogId);
         const normalizedTitle = normalizeToken(catalogEntry?.title || '');
@@ -389,6 +389,7 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
         const closeOnSuccess = options.closeOnSuccess ?? true;
         setInstallingCatalogId(recommendation.entry.catalog.id);
         try {
+            const alreadyOwned = findOwnedCodex(recommendation.entry.catalog.id);
             const ownedCodex = await ensureCampaignInLibrary(recommendation, {
                 autoAcquire: true,
                 useCampaignQuizFreeCredit: quizMode === 'free' && shouldConsumeFreeQuizCredit,
@@ -404,7 +405,8 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
                 if (closeOnSuccess) onClose();
                 return;
             }
-            await installCodex(resolved.id);
+            if (alreadyOwned) await installCodex(resolved.id);
+            else showToast('Campanha guardada na biblioteca. Instale quando quiser.', 'success');
             if (closeOnSuccess) onClose();
         } finally {
             setInstallingCatalogId(null);
@@ -432,7 +434,7 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
     // Quem tem vale precisa VER que esta gastando um. "Liberar e instalar" nao
     // dizia isso: a pessoa terminava o quiz achando que nao tinha ganhado nada.
     const usaVale = quizMode === 'medium' || shouldConsumeFreeQuizCredit;
-    const installLabel = usaVale ? 'Reivindicar campanha' : 'Instalar campanha';
+    const installLabel = result && findOwnedCodex(result.entry.catalog.id) ? 'Instalar campanha' : usaVale ? 'Reivindicar campanha' : 'Adicionar à biblioteca';
 
     return (
         <Portal>
@@ -568,7 +570,7 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
                                                                 ? 'Campanha instalada'
                                                                 : ownedSecondaryCodex
                                                                     ? 'Instalar esta'
-                                                                    : `Comprar e instalar (${secondaryPriceLabel})`}
+                                                                    : `Comprar (${secondaryPriceLabel})`}
                                                     </button>
                                                 </div>
                                             </div>

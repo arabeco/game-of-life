@@ -190,3 +190,16 @@ const HOJE = '2026-09-06';
 }
 
 console.log('Ciclo como janela: horizonte, datas geradas, arenas do ciclo novo e a virada que reagenda.');
+
+// A bounded recurring action keeps its quantity when the cycle regenerates.
+{
+  const cycle = {startDate:'2026-10-01',endDate:'2026-10-31',arenaIds:['bounded']};
+  const action = {id:'bounded-action',arenaId:'bounded',actionType:'Ação Recorrente',duration:30,repetitions:3,
+    scheduledDays:['SEG','QUA','SEX'],scheduledStartTime:600,
+    context:{schedule:{startsOn:'2026-10-19',limitToRepetitions:true}}};
+  const existingTasks = [{actionId:action.id,date:'2026-10-02',startTime:600}];
+  const plan = buildCycleRegenerationPlan({cycle,today:'2026-10-16',actions:[action],existingTasks});
+  assert.deepEqual(plan.map(t=>t.date),['2026-10-19','2026-10-21']);
+  assert.deepEqual(buildCycleRegenerationPlan({cycle,today:'2026-10-16',actions:[action],existingTasks:[...existingTasks,...plan]}),[]);
+  assert.deepEqual(buildCycleRegenerationPlan({cycle,today:'2026-10-16',actions:[{...action,context:{schedule:{startsOn:'2026-11-01',limitToRepetitions:true}}}],existingTasks:[]}),[]);
+}

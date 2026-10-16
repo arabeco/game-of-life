@@ -172,9 +172,10 @@ const CodexCard: React.FC<{
   kind: 'created' | 'imported';
   onPreview: () => void;
   onInstall: () => void;
+  installed?: boolean;
   onShare?: () => void;
   onDelete?: () => void;
-}> = ({ codex, kind, onPreview, onInstall, onShare, onDelete }) => {
+}> = ({ codex, kind, onPreview, onInstall, onShare, onDelete, installed = false }) => {
   const levels = Array.isArray(codex.template?.levels) ? codex.template.levels : [];
   const shareable = isShareableCodex(codex);
   const sourceLabel = kind === 'created' ? 'Criado' : codex.source_type === 'catalog' ? 'Loja' : 'Recebido';
@@ -246,8 +247,8 @@ const CodexCard: React.FC<{
         <button onClick={onPreview} className="py-2.5 rounded-xl luxe-button-secondary text-[11px] font-bold uppercase tracking-[0.14em] inline-flex items-center justify-center gap-2">
           <EyeIcon className="w-4 h-4" /> Ver
         </button>
-        <button onClick={onInstall} disabled={!shareable} className="py-2.5 luxe-bico luxe-skin-button disabled:opacity-50 disabled:cursor-not-allowed text-[11px] font-bold uppercase tracking-[0.14em] inline-flex items-center justify-center gap-2">
-          <CheckIcon className="w-4 h-4" /> Instalar
+        <button onClick={onInstall} disabled={!shareable || installed} className="py-2.5 luxe-bico luxe-skin-button disabled:opacity-50 disabled:cursor-not-allowed text-[11px] font-bold uppercase tracking-[0.14em] inline-flex items-center justify-center gap-2">
+          <CheckIcon className="w-4 h-4" /> {installed ? 'Em andamento' : 'Instalar'}
         </button>
         {onShare && (
           <button onClick={onShare} disabled={!shareable} className="py-2.5 rounded-xl bg-black/30 border border-white/10 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed text-[11px] font-bold uppercase tracking-[0.14em] text-white inline-flex items-center justify-center gap-2 transition-colors">
@@ -267,6 +268,7 @@ const CodexCard: React.FC<{
 export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClose }) => {
   const {
     userCodexes,
+    getArenas,
     installCodex,
     deleteUserCodex,
     showToast,
@@ -337,6 +339,7 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
           kind={activeTab === 'created' ? 'created' : 'imported'}
           onPreview={() => openPreview(codex)}
           onInstall={() => handleInstall(codex)}
+          installed={getArenas().some(a => !a.isArchived && a.originCodexId === codex.id)}
           onShare={activeTab === 'created' ? () => setShareTarget(codex) : undefined}
           onDelete={activeTab === 'created' ? () => handleDelete(codex) : undefined}
         />

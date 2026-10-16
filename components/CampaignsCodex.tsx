@@ -1,3 +1,4 @@
+import { campaignAwareTasks } from '../utils/campaignScope';
 ﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { useConfirmation } from '../hooks/useConfirmation';
@@ -96,7 +97,7 @@ const CompactCampaignFolderTile: React.FC<{
     <button
         type="button"
         onClick={onClick}
-        className="group relative aspect-[4/3] w-full overflow-hidden rounded-[1.2rem] border text-left transition-all duration-200 hover:-translate-y-0.5"
+        className="group relative min-h-[180px] w-full overflow-hidden rounded-lg border text-left transition-all duration-200 hover:-translate-y-0.5"
         style={{
             borderColor: visualPalette.border,
             background: visualPalette.listBackground,
@@ -105,7 +106,7 @@ const CompactCampaignFolderTile: React.FC<{
     >
         <div className="absolute left-0 top-0 h-1 w-[38%]" style={{ background: visualPalette.accent }} />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_48%)]" />
-        <div className="relative flex h-full flex-col">
+        <div className="relative flex flex-col">
             <div className="flex items-start justify-between gap-2 px-3 pb-1 pt-3">
                 <div className="min-w-0 flex items-start gap-2">
                     <span
@@ -197,8 +198,9 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
     onUpdatePreviewCampaign = null,
     previewMeta,
 }) => {
-    const { campaigns, getArenas, actions, tasks, activeCycle, freeProgressResetAt, updateCampaign, deleteCampaign, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress, userCodexes, installCodex, showToast } = useGame();
+    const { campaigns, getArenas, actions, tasks, activeCycle, freeProgressResetAt, updateCampaign, deleteCampaign, finishCampaign, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress, userCodexes, installCodex, showToast } = useGame();
     const { confirm, confirmationElement } = useConfirmation();
+    const [hubTab, setHubTab] = useState<'active' | 'library' | 'history'>('active');
     const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(initialCampaignId || null);
     const [isCreatingArena, setIsCreatingArena] = useState(false);
     const [isCreateCampaignModalOpen, setIsCreateCampaignModalOpen] = useState(false);
@@ -242,7 +244,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
         [userCodexes],
     );
     const installedCodexIds = useMemo(
-        () => new Set(allArenas.map((arena) => arena.originCodexId).filter(Boolean)),
+        () => new Set(allArenas.filter(arena => !arena.isArchived).map((arena) => arena.originCodexId).filter(Boolean)),
         [allArenas],
     );
     const libraryEntries = useMemo(() => (
@@ -300,7 +302,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
             priorityOrder: localPreviewCampaign.priorityOrder ?? -1,
         }
         : null;
-    const validCampaigns = campaigns.filter(Boolean);
+    const validCampaigns = campaigns.filter(c => c && c.status === 'active');
     const allCampaignArenaIds = useMemo(
         () => validCampaigns.flatMap((campaign) => campaign.arenaIds),
         [validCampaigns],
@@ -318,9 +320,9 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
     const campaignActionsSource = isPreviewCampaign ? localPreviewActions : actions;
     const cycleScopedTasks = useMemo(() => {
         if (isPreviewCampaign) return [] as typeof tasks;
-        if (!activeCycle) return filterTasksAfterFreeProgressReset(tasks, freeProgressResetAt);
-        return tasks.filter(task => task.date >= activeCycle.startDate && task.date <= activeCycle.endDate);
-    }, [activeCycle, freeProgressResetAt, isPreviewCampaign, tasks]);
+        if (!activeCycle) return campaignAwareTasks(tasks, filterTasksAfterFreeProgressReset(tasks, freeProgressResetAt), actions);
+        return campaignAwareTasks(tasks, tasks.filter(task => task.date >= activeCycle.startDate && task.date <= activeCycle.endDate), actions);
+    }, [activeCycle, freeProgressResetAt, isPreviewCampaign, tasks, actions]);
     
     // Reset selection if campaign is deleted
     useEffect(() => {
@@ -417,6 +419,14 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
         }
     };
 
+    const [finishingRun, setFinishingRun] = useState(false);
+    const handleFinishRun = async (status: 'completed' | 'archived') => {
+        if (!selectedCampaign || isPreviewCampaign || finishingRun) return;
+        if (status === 'archived' && !(await confirm({ title: 'Arquivar tentativa?', message: 'O histórico fica guardado. Ao instalar novamente, você começa do zero.', confirmLabel: 'ARQUIVAR' }))) return;
+        setFinishingRun(true);
+        try { if (await finishCampaign(selectedCampaign.id, status)) { setSelectedCampaignId(null); setHubTab('library'); } }
+        finally { setFinishingRun(false); }
+    };
     const handleDeleteCampaign = async () => {
         if (!selectedCampaign) return;
 
@@ -760,6 +770,30 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
         (_, phase) => ({ phase, arenas: arenaPhaseRows.find((row) => row.phase === phase)?.arenas || [] })
     );
     // RENDER: LIST VIEW (Grid of Campaigns)
+    const libraryPreviewModal = libraryPreview && (
+                        <CampaignsCodex
+                            onClose={() => {
+                                setLibraryPreview(null);
+                                setLibraryPreviewCodex(null);
+                            }}
+                            initialCampaignId={libraryPreview.campaign.id}
+                            previewCampaign={libraryPreview.campaign}
+                            previewArenas={libraryPreview.arenas}
+                            previewActions={libraryPreview.actions}
+                            previewMeta={{
+                                coverImage: libraryPreviewCodex?.template?.coverImage,
+                                badgeLabel: 'Guardada',
+                                author: libraryPreviewCodex?.author || 'Autor desconhecido',
+                                note: 'Essa campanha já e sua e pode ser iniciada a qualquer momento.',
+                                installLabel: installedCodexIds.has(libraryPreviewCodex?.id || '') ? 'Em andamento' : 'Instalar',
+                                installDisabled: installedCodexIds.has(libraryPreviewCodex?.id || ''),
+                                onInstall: libraryPreviewCodex
+                                    ? () => handleInstallLibraryCampaign(libraryPreviewCodex)
+                                    : null,
+                            }}
+                        />
+                    );
+
     if (!selectedCampaign) {
         return (
             <Portal>
@@ -787,12 +821,14 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                     <LightbulbIcon className="h-3.5 w-3.5" /> Descobrir campanhas
                                 </button>
                             </div>
-                            <div className="mt-2 text-center text-[10px] text-white/48">Escolha uma pronta ou acompanhe as que já estão em uso.</div>
+                            <div className="mt-3 flex justify-center gap-2" role="tablist" aria-label="Campanhas">
+                                {([['active', 'Em andamento'], ['library', 'Biblioteca'], ['history', 'Histórico']] as const).map(([tab,label]) => <button key={tab} role="tab" aria-selected={hubTab === tab} onClick={() => setHubTab(tab)} className={`px-3 py-2 rounded text-xs ${hubTab === tab ? 'bg-white/15 text-white' : 'text-white/50'}`}>{label}</button>)}
+                            </div>
                         </div>
                         
                         <div className="overflow-y-auto p-4">
                             <div className="space-y-5">
-                                <div className="space-y-3">
+                                <div className={`space-y-3 ${hubTab !== 'active' ? 'hidden' : ''}`}>
                                     <div className="flex items-end justify-between gap-3">
                                         <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Ativas</div>
                                         <div className="flex items-center gap-2">
@@ -801,7 +837,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                         {visibleCampaigns.map((campaign) => {
                                             const campaignArenas = campaign.arenaIds
                                                 .map((arenaId) => (campaignArenasSource === allArenas ? arenaById.get(arenaId) : campaignArenasSource.find((arena) => arena.id === arenaId)))
@@ -833,7 +869,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                     </div>
                                 </div>
 
-                                {libraryEntries.length > 0 && (
+                                {hubTab === 'library' && libraryEntries.length > 0 && (
                                     <div className="space-y-3 border-t border-white/8 pt-4">
                                         <div className="flex items-end justify-between gap-3">
                                             <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Guardadas</div>
@@ -842,7 +878,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                             {libraryEntries.map(({ codex, preview, arenaCount, sourceLabel, isInstalled, visualPalette }) => (
                                                 <CompactCampaignFolderTile
                                                     key={`library-${codex.id}`}
@@ -860,6 +896,15 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                         </div>
                                     </div>
                                 )}
+                                {hubTab === 'library' && libraryEntries.length === 0 && <p className="text-sm text-white/50">Suas campanhas adquiridas ficam aqui para instalar quando quiser.</p>}
+                                {hubTab === 'history' && <div className="space-y-2">
+                                    {campaigns.filter(c => c.status !== 'active').map(c => <details key={c.id} className="rounded-lg border border-white/10 p-3">
+                                        <summary className="cursor-pointer text-sm">{c.title} · {c.status === 'completed' ? 'Concluída' : 'Arquivada'}</summary>
+                                        <p className="text-xs text-white/50">{c.completedAt ? new Date(c.completedAt).toLocaleDateString('pt-BR') : ''} · {Number(c.resultSnapshot?.completedRepetitions ?? 0)} repetições registradas</p>
+                                        <button className="text-xs text-[var(--skin-accent-color)]" onClick={() => setHubTab('library')}>Ver na biblioteca</button>
+                                    </details>)}
+                                    {!campaigns.some(c => c.status !== 'active') && <p className="text-sm text-white/50">As tentativas concluídas ou arquivadas aparecerão aqui.</p>}
+                                </div>}
                             </div>
                         </div>
                     </GlassCard>
@@ -875,6 +920,8 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                         />
                     )}
                 </div>
+                {libraryPreviewModal}
+                {confirmationElement}
             </Portal>
         );
     }
@@ -1344,9 +1391,17 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                 ))}
                                 </div>
                             </div>
+                            {!isPreviewCampaign && <div className="flex items-center justify-between gap-2 pt-3">
+                                {selectedCampaignProgressSummary.totalArenaCount > 0 && selectedCampaignProgressSummary.clearedArenaCount === selectedCampaignProgressSummary.totalArenaCount ? (
+                                    <button disabled={finishingRun} className="luxe-skin-button px-4 py-2 text-xs" onClick={() => void handleFinishRun('completed')}>Concluir e guardar</button>
+                                ) : (() => { const next = sortedArenas.find(a => !campaignArenaStates[a.id]?.isLocked && !campaignArenaStates[a.id]?.isCleared); return next ? (
+                                    <div>{(campaignArenaStates[next.id]?.prerequisiteArenaIds.length || 0) > 0 && <div className="mb-1 text-xs text-emerald-200">Arena liberada</div>}<button className="luxe-button-secondary px-3 py-2 text-xs" onClick={() => setSelectedArenaId(next.id)}>Abrir {next.name}</button></div>
+                                ) : null; })()}
+                                <button disabled={finishingRun} className="px-3 py-2 text-xs text-white/60" onClick={() => void handleFinishRun('archived')}>Arquivar</button>
+                            </div>}
                             <div className="px-1 pt-3">
                                 <div className="mb-1 flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--skin-accent-color)]">
-                                    <span>{selectedCampaignProgressSummary.totalCompleted}/{selectedCampaignProgressSummary.totalPlanned} acoes</span>
+                                    <span>{selectedCampaignProgressSummary.totalCompleted}/{selectedCampaignProgressSummary.totalPlanned} repetições</span>
                                     <span>{selectedCampaignProgress}%</span>
                                 </div>
                                 <div className="h-[5px] w-full overflow-hidden rounded-full border border-white/10 bg-white/10">
@@ -1394,29 +1449,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                         />
                     )}
 
-                    {libraryPreview && (
-                        <CampaignsCodex
-                            onClose={() => {
-                                setLibraryPreview(null);
-                                setLibraryPreviewCodex(null);
-                            }}
-                            initialCampaignId={libraryPreview.campaign.id}
-                            previewCampaign={libraryPreview.campaign}
-                            previewArenas={libraryPreview.arenas}
-                            previewActions={libraryPreview.actions}
-                            previewMeta={{
-                                coverImage: libraryPreviewCodex?.template?.coverImage,
-                                badgeLabel: 'Guardada',
-                                author: libraryPreviewCodex?.author || 'Autor desconhecido',
-                                note: 'Essa campanha já e sua e pode ser iniciada a qualquer momento.',
-                                installLabel: installedCodexIds.has(libraryPreviewCodex?.id || '') ? 'Em uso' : 'Iniciar',
-                                installDisabled: installedCodexIds.has(libraryPreviewCodex?.id || ''),
-                                onInstall: libraryPreviewCodex
-                                    ? () => handleInstallLibraryCampaign(libraryPreviewCodex)
-                                    : null,
-                            }}
-                        />
-                    )}
+                    {libraryPreviewModal}
                 </GlassCard>
             </div>
             {confirmationElement}

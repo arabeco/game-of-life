@@ -4,7 +4,7 @@ import { useConfirmation } from '../hooks/useConfirmation';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
 import { XIcon, EyeIcon, PlusIcon, ChevronRightIcon, CheckIcon, Trash2Icon } from './Icons';
-import { Action, ActionType, Arena, Campaign } from '../types';
+import { Action, ActionType, Arena, Campaign, UserCodex } from '../types';
 import { ArenaCard } from './ArenaCard';
 import { IconPickerModal } from './IconPickerModal';
 import { SelectionModal } from './SelectionModal';
@@ -78,7 +78,7 @@ export const CodexModal: React.FC<{
   relationshipLinkId?: string | null;
   onDelivered?: () => void;
 }> = ({ onClose, recipientId, recipientName, relationshipLinkId = null, onDelivered }) => {
-  const { assets, addArena, addAction, scheduleMultipleTasks, createMentorCodexForRecipient, userProfile } = useGame();
+  const { installCodex, refreshCodexes, assets, addArena, addAction, scheduleMultipleTasks, createMentorCodexForRecipient, userProfile } = useGame();
   const { confirm, confirmationElement } = useConfirmation();
   const isMentorDraftMode = Boolean(recipientId);
   const draftStorageKey = isMentorDraftMode
@@ -496,8 +496,9 @@ export const CodexModal: React.FC<{
     }
   };
 
+  const [installingDraft, setInstallingDraft] = useState(false);
   const handleApplyCodex = async () => {
-    if (!activeCodex) return;
+    if (!activeCodex || installingDraft) return;
     if (!(await confirm({
       title: 'Instalar campanha?',
       message: 'Todas as arenas e ações desta campanha entram no seu jogo.',
@@ -510,58 +511,23 @@ export const CodexModal: React.FC<{
       return;
     }
 
-    const arenaIdMap: Record<string, string> = {};
-
+    setInstallingDraft(true);
     try {
-        // Create arenas first
-        for (const arena of activeCodex.arenas) {
-            // Tenta encontrar o asset correspondente ou usa 'geral' como fallback
-            const targetAssetId = assets.find(a => a.id === arena.assetId)?.id || 'geral';
-            
-            const newArena = await addArena(targetAssetId, {
-                name: arena.name,
-                description: arena.description,
-                icon: arena.icon
-            });
-            arenaIdMap[arena.id] = newArena.id;
-        }
-
-        // Create actions
-        const actionPromises = activeCodex.actions.map(async (action) => {
-            const realArenaId = arenaIdMap[action.arenaId];
-            if (realArenaId) {
-                 const newAction = await addAction({
-                    arenaId: realArenaId,
-                    name: action.name,
-                    description: action.description,
-                    icon: action.icon,
-                    duration: action.duration,
-                    repetitions: action.repetitions,
-                    actionType: action.actionType,
-                    difficulty: action.difficulty,
-                    scheduledDays: action.scheduledDays,
-                    scheduledStartTime: action.scheduledStartTime,
-                    briefing: action.briefing,
-                    assets: action.assets,
-                    preFlight: action.preFlight,
-                    context: action.context,
-                    originCodexId: activeCodex.id
-                });
-
-                if (newAction.actionType === 'Ação Recorrente' && newAction.scheduledDays && newAction.scheduledDays.length > 0 && newAction.scheduledStartTime !== undefined) {
-                    await scheduleMultipleTasks(newAction.id, newAction.scheduledDays, newAction.scheduledStartTime);
-                }
-            }
-        });
-
-        await Promise.all(actionPromises);
-        setStatus('Campanha instalada com sucesso!');
-        setTimeout(() => setStatus(null), 2000);
-        onClose();
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth.user) return;
+      const template = buildCodexTemplateFromDraft(activeCodex);
+      const { data, error } = await supabase.from('codex').insert({
+        owner_id: auth.user.id, name: activeCodex.name, description: activeCodex.description,
+        template, schema_version: 'v2', source_type: 'created',
+      }).select('*').single();
+      if (error) throw error;
+      await refreshCodexes();
+      await installCodex(data.id, data as UserCodex);
+      onClose();
     } catch (error) {
-        console.error("Error applying campaign:", error);
-        setStatus('Erro ao instalar campanha.');
-    }
+      console.error('Error installing campaign draft', error);
+      setStatus('Não foi possível instalar a campanha. O rascunho foi preservado.');
+    } finally { setInstallingDraft(false); }
   };
 
   const handleDeliverCodex = async () => {
@@ -686,7 +652,7 @@ export const CodexModal: React.FC<{
                     FORJAR PARA {recipientName?.toUpperCase() || 'PUPILO'} · {MENTOR_CAMPAIGN_FORGE_GOLD_COST} OURO
                   </button>
                 ) : (
-                  <button onClick={handleApplyCodex} className="w-full py-2 luxe-bico luxe-skin-button col-span-2 font-bold tracking-wider">INSTALAR NO JOGO</button>
+                  <button onClick={handleApplyCodex} disabled={installingDraft} className="w-full py-2 luxe-bico luxe-skin-button col-span-2 font-bold tracking-wider">INSTALAR NO JOGO</button>
                 )}
                 <button onClick={handleCopyJson} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">COPIAR MODELO</button>
                 <button onClick={handleCopyLink} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">COPIAR LINK</button>

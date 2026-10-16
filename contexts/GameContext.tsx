@@ -1,3 +1,6 @@
+import { campaignAwareTasks } from '../utils/campaignScope';
+import { unavailableCampaignArenas } from '../utils/campaignScheduling';
+import { avisarSegredoConfirmado } from '../utils/eventosDeSegredos';
 import { getChestArtUrl } from '../constants/catalogAssets';
 import { getChestVisual } from '../constants/rarityVisuals';
 import { beginMembershipPurchase, finishMembershipPurchase, getPendingMembershipPurchase } from '../utils/membershipPurchase';
@@ -1113,7 +1116,7 @@ export interface GameContextType {
     transferUserCodex: (codexId: string, recipientId: string) => Promise<void>;
     getCodexSharePreview: (input: { token?: string; shareId?: string }) => Promise<CodexSharePreview | null>;
     claimCodexShare: (input: { token?: string; shareId?: string }) => Promise<boolean>;
-    installCodex: (userCodexId: string) => Promise<void>;
+    installCodex: (userCodexId: string, source?: UserCodex) => Promise<void>;
     duplicateUserCodexToRecipient: (codexId: string, recipientId: string, relationshipLinkId?: string | null) => Promise<boolean>;
     createMentorCodexForRecipient: (recipientId: string, codex: { name: string; description?: string; template: any }, relationshipLinkId?: string | null) => Promise<boolean>;
 
@@ -1126,6 +1129,7 @@ export interface GameContextType {
     addCampaign: (campaign: Omit<Campaign, 'id' | 'createdAt' | 'status' | 'userId'>) => Promise<Campaign>;
     updateCampaign: (id: string, updates: Partial<Campaign>) => Promise<boolean>;
     deleteCampaign: (id: string) => Promise<void>;
+    finishCampaign: (id: string, status: 'completed' | 'archived') => Promise<boolean>;
 
     // App Mode & Theme
     isProfileLoaded: boolean;
@@ -1292,7 +1296,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const seenNotificationIdsRef = useRef<Set<string>>(new Set());
     const notificationsHydratedRef = useRef(false);
     const seenCodexGiftNotificationIdsRef = useRef<Set<string>>(new Set());
-    const autoInstallingMentorCodexIdsRef = useRef<Set<string>>(new Set());
+    const installingCodexIdsRef = useRef<Set<string>>(new Set());
     const seenOracleMessageIdsRef = useRef<Set<string>>(new Set());
     const oracleMessagesHydratedRef = useRef(false);
     const dailyCommitmentPersistTimeoutRef = useRef<number | null>(null);
@@ -1449,6 +1453,24 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const persistedCampaign = mapToCamelCase(data) as Campaign;
         setCampaigns(prev => prev.map(c => c.id === id ? { ...c, ...persistedCampaign } : c));
+        return true;
+    };
+
+    const finishCampaign = async (id: string, status: 'completed' | 'archived'): Promise<boolean> => {
+        const campaign = campaigns.find(c => c.id === id);
+        if (!campaign || campaign.status !== 'active') return false;
+        const arenaIds = new Set(campaign.arenaIds);
+        const template = buildCodexTemplateFromDraft({ name: campaign.title, description: campaign.description, campaign,
+            arenas: campaign.arenaIds.map(id => allArenas.find(a => a.id === id)).filter(Boolean) as Arena[],
+            actions: actions.filter(a => arenaIds.has(a.arenaId)) });
+        const { data, error } = await supabase.rpc('finish_campaign_run', { p_campaign_id: id, p_status: status, p_template: template });
+        if (error) { showToast('Não foi possível guardar a campanha. Sua tentativa foi mantida.', 'error'); return false; }
+        setCampaigns(prev => prev.map(c => c.id === id ? { ...c, status, completedAt: new Date().toISOString(), sourceCodexId: data?.sourceCodexId, resultSnapshot: { completedRepetitions: tasks.filter(t => t.completed && actions.some(a => a.id === t.actionId && arenaIds.has(a.arenaId))).length } } : c));
+        setAssets(prev => prev.map(asset => ({ ...asset, arenas: asset.arenas.map(a => arenaIds.has(a.id) ? { ...a, isArchived: true } : a) })));
+        const actionIds = new Set(actions.filter(a => arenaIds.has(a.arenaId)).map(a => a.id));
+        setTasks(prev => prev.filter(t => !actionIds.has(t.actionId) || t.completed || t.date < getTodayString()));
+        await refreshCodexes();
+        showToast('Tentativa guardada. A campanha está disponível na biblioteca.', 'success');
         return true;
     };
 
@@ -5767,6 +5789,20 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 }
             };
 
+            const contentActionIds = loadedActions.filter(action => action.originCodexId).map(action => action.id);
+            const history = new Map(loadedTasks.map(task => [task.id, task]));
+            for (let offset = 0; offset < contentActionIds.length; offset += 100) {
+                const ids = contentActionIds.slice(offset, offset + 100);
+                for (let page = 0; ; page++) {
+                    const { data, error } = await supabase.from('scheduled_tasks').select('*')
+                        .eq('user_id', userId).in('action_id', ids).eq('completed', true)
+                        .lt('date', minDate).order('id').range(page * 500, page * 500 + 499);
+                    if (error) throw error;
+                    for (const task of mapToCamelCase(data || []) as ScheduledTask[]) history.set(task.id, task);
+                    if (!data || data.length < 500) break;
+                }
+            }
+            loadedTasks = [...history.values()];
             applyOperationalState(camelArenas, loadedActions, loadedTasks);
 
             const retiredArenaIds = Array.from(new Set<string>(
@@ -7887,13 +7923,17 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return true;
     };
 
-    const installCodex = async (userCodexId: string) => {
+    const installCodex = async (userCodexId: string, source?: UserCodex) => {
         const userId = getSupabaseUserId();
         if (!userId) return;
 
-        const codex = userCodexes.find(c => c.id === userCodexId);
+        const codex = userCodexes.find(c => c.id === userCodexId) || (source?.id === userCodexId && source.owner_id === userId ? source : undefined);
         if (!codex || !codex.template || !Array.isArray(codex.template.levels)) return;
 
+        if (installingCodexIdsRef.current.has(codex.id) || getArenas().some(a => !a.isArchived && a.originCodexId === codex.id)) {
+            showToast('Essa campanha já está em andamento.', 'info');
+            return;
+        }
         const template = codex.template;
         const catalogRefId = codex.catalog_id || codex.origin_codex_id || codex.id;
         const templateMeta = resolveTemplateCampaignMeta(catalogRefId, template);
@@ -7977,13 +8017,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
         };
 
+        installingCodexIdsRef.current.add(codex.id);
         try {
             for (const [index, level] of template.levels.entries()) {
                 const levelNumber = typeof level?.level === 'number' ? level.level : index + 1;
-                const createdArena = await addArena(assetId, {
+                const levelAssetId = normalizeLifeAreaId(level.assetId || assetId);
+                const createdArena = await addArena(assets.some(a => a.id === levelAssetId) ? levelAssetId : assetId, {
                     name: getCodexLevelDisplayTitle(level.title, levelNumber),
                     description: level.description || '',
-                    icon: level.actions?.[0]?.icon || '?',
+                    icon: level.icon || level.actions?.[0]?.icon || '📚',
                     originCodexId: codex.id,
                     codexLevel: level.level,
                     priority: 'media',
@@ -8031,23 +8073,23 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
                     createdActionIds.push(createdAction.id);
 
-                    if (
-                        createdAction.actionType === 'A\u00E7\u00E3o Recorrente' &&
-                        createdAction.scheduledDays &&
-                        createdAction.scheduledDays.length > 0 &&
-                        typeof createdAction.scheduledStartTime === 'number'
-                    ) {
-                        await scheduleMultipleTasks(createdAction, createdAction.scheduledDays, createdAction.scheduledStartTime);
-                    }
                 }
             }
 
+            template.levels.forEach((level, index) => {
+                const prerequisites = Array.isArray(level.prerequisiteLevels)
+                    ? level.prerequisiteLevels.map(number => arenaIds[template.levels.findIndex((l, i) => (l.level || i + 1) === number)]).filter(Boolean)
+                    : template.executionType === 'parallel' || index === 0 ? [] : [arenaIds[index - 1]];
+                arenaConfig[arenaIds[index]] = { isLocked: prerequisites.length > 0, isHidden: level.isHidden || false, phase: level.phase, prerequisiteArenaIds: prerequisites };
+            });
+
             const createdCampaign = await addCampaign({
                 title: template.title,
+                sourceCodexId: codex.id,
                 description: template.description,
                 arenaIds,
                 arenaConfig,
-                type: 'sequential',
+                type: template.executionType || 'sequential',
                 priority: 'media',
                 order: baseCampaignOrder,
                 priorityOrder: baseCampaignPriorityOrder
@@ -8067,50 +8109,26 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             await rollbackInstalledCodex();
             console.error("Error creating campaign from codex:", error);
             showToast("Erro ao instalar campanha: " + (error?.message || 'falha desconhecida'), 'error');
+        } finally {
+            installingCodexIdsRef.current.delete(codex.id);
         }
     };
 
+    const campaignSchedulingInFlight = useRef(new Set<string>());
     useEffect(() => {
-        const sessionUserId = session?.user.id;
-        if (!sessionUserId || !isUuid(sessionUserId) || !isProfileLoaded || !hasHydratedFromSupabase) {
-            autoInstallingMentorCodexIdsRef.current.clear();
-            return;
+        if (!hasHydratedFromSupabase) return;
+        const blocked = unavailableCampaignArenas(campaigns, allArenas, actions, tasks, activeCycle);
+        const ownedCampaignArenas = new Set(campaigns.filter(c => c.status === 'active').flatMap(c => c.arenaIds));
+        for (const action of actions) {
+            if (!action.originCodexId || !ownedCampaignArenas.has(action.arenaId) || blocked.has(action.arenaId) || action.actionType !== 'Ação Recorrente' || !action.scheduledDays?.length || typeof action.scheduledStartTime !== 'number') continue;
+            if (tasks.filter(t => t.actionId === action.id && t.completed).length >= (action.repetitions || 1)) continue;
+            if (campaignSchedulingInFlight.current.has(action.id)) continue;
+            campaignSchedulingInFlight.current.add(action.id);
+            void scheduleMultipleTasks(action, action.scheduledDays, action.scheduledStartTime)
+                .catch(error => console.error('Campaign scheduling failed', error))
+                .finally(() => campaignSchedulingInFlight.current.delete(action.id));
         }
-
-        const installedOriginCodexIds = new Set(
-            assets.flatMap((asset) => asset.arenas.map((arena) => arena.originCodexId).filter(Boolean))
-        );
-        const pendingMentorCodexes = userCodexes.filter((codex) =>
-            Boolean(codex.mentor_relationship_link_id)
-            && Array.isArray(codex.template?.levels)
-            && codex.template.levels.length > 0
-            && !installedOriginCodexIds.has(codex.id)
-            && !autoInstallingMentorCodexIdsRef.current.has(codex.id)
-        );
-
-        if (pendingMentorCodexes.length === 0) return;
-
-        let cancelled = false;
-
-        const autoInstallMentorCodexes = async () => {
-            for (const codex of pendingMentorCodexes) {
-                if (cancelled) return;
-
-                autoInstallingMentorCodexIdsRef.current.add(codex.id);
-                try {
-                    await installCodex(codex.id);
-                } finally {
-                    autoInstallingMentorCodexIdsRef.current.delete(codex.id);
-                }
-            }
-        };
-
-        void autoInstallMentorCodexes();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [assets, hasHydratedFromSupabase, isProfileLoaded, session?.user.id, userCodexes]);
+    }, [campaigns, actions, tasks, activeCycle?.id, hasHydratedFromSupabase]);
 
     const feedPublicationsInFlight = useRef(new Set<string>());
     const addFeedEvent = async (eventData: Pick<FeedEvent, 'type' | 'content'>): Promise<boolean> => {
@@ -8287,13 +8305,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             tier: data.tier || resolvedItem?.tier,
             rarity: resolvedItem?.rarity || 'common',
             fragmentsGained: Number(data.fragments_gained || 0),
+            bonusFragments: Number(data.bonus_fragments || 0),
             isDuplicate: !!data.is_duplicate,
         };
         if (!userId) return result;
 
         // Show reward clearly, especially when duplicate conversion happens.
         const rewardMsg = data.is_duplicate
-            ? `\u{1F381} ${data.item_name} repetido. Convertido em +${data.fragments_gained} \u{1F48E} fragmentos.`
+            ? `${data.item_name}: você já possui. +${Math.max(0, result.fragmentsGained - (result.bonusFragments || 0))} fragmentos pela conversão${result.bonusFragments ? ` e +${result.bonusFragments} de bônus do baú` : ''}.`
             : `\u{1F381} ${data.item_name} recebido. +${data.fragments_gained} \u{1F48E} fragmentos do baú.`;
         showToast(rewardMsg, data.is_duplicate ? 'info' : 'success');
 
@@ -9284,6 +9303,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             .from('mood_entries')
             .insert({ user_id: userId, value: seguro });
         if (error) console.error('Failed to record mood:', error.message);
+        else avisarSegredoConfirmado(userId, 'humor');
     };
 
     /**
@@ -9347,7 +9367,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const getDuplicateItemFragmentReward = (itemId: string): number => {
         const itemDef = resolveItemDef(itemId);
-        const normalizedTier = Math.min(5, Math.max(1, Number(itemDef?.tier || 1)));
+        const normalizedTier = Math.min(6, Math.max(1, Number(itemDef?.tier || 1)));
         const recycleKey = `tier_${normalizedTier}` as keyof typeof ECONOMY.recycle_values;
         return Number(ECONOMY.recycle_values[recycleKey] || ECONOMY.recycle_values.tier_1 || 0);
     };
@@ -9379,9 +9399,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const localExisting = inventory.find((inventoryItem) => inventoryItem.id === itemId);
             if (localExisting) {
                 const duplicateFragments = getDuplicateItemFragmentReward(itemId);
-                const nextFragments = (userProfile.wallet?.fragments || 0) + duplicateFragments;
-                updateUserProfile({ wallet: { ...userProfile.wallet, fragments: nextFragments } });
-                showToast(`Item repetido: ${itemDef?.name || itemId}. Convertido em +${duplicateFragments} \u{1F48E} fragmentos.`, 'info');
+                const wallet = { ...userProfileRef.current.wallet, fragments: (userProfileRef.current.wallet?.fragments || 0) + duplicateFragments };
+                userProfileRef.current = { ...userProfileRef.current, wallet };
+                updateUserProfile({ wallet });
+                if (!silent) showToast(`Item repetido: ${itemDef?.name || itemId}. Convertido em +${duplicateFragments} \u{1F48E} fragmentos.`, 'info');
                 return { item: localExisting, granted: false, duplicateConverted: true, fragmentsGranted: duplicateFragments };
             }
 
@@ -9394,6 +9415,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             if (existingLookupError) {
                 console.error('Error checking existing inventory item:', existingLookupError);
+                throw existingLookupError;
             } else if (existingRows && existingRows.length > 0) {
                 const existingRow = existingRows[0];
                 const existingItem: InventoryItem = {
@@ -9405,9 +9427,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
                 setInventory((prev) => prev.some((inventoryItem) => inventoryItem.instanceId === existingItem.instanceId) ? prev : [...prev, existingItem]);
                 const duplicateFragments = getDuplicateItemFragmentReward(itemId);
-                const nextFragments = (userProfile.wallet?.fragments || 0) + duplicateFragments;
-                updateUserProfile({ wallet: { ...userProfile.wallet, fragments: nextFragments } });
-                showToast(`Item repetido: ${itemDef?.name || itemId}. Convertido em +${duplicateFragments} fragmentos.`, 'info');
+                const wallet = { ...userProfileRef.current.wallet, fragments: (userProfileRef.current.wallet?.fragments || 0) + duplicateFragments };
+                userProfileRef.current = { ...userProfileRef.current, wallet };
+                updateUserProfile({ wallet });
+                if (!silent) showToast(`Item repetido: ${itemDef?.name || itemId}. Convertido em +${duplicateFragments} fragmentos.`, 'info');
                 return { item: existingItem, granted: false, duplicateConverted: true, fragmentsGranted: duplicateFragments };
             }
         }
@@ -10780,7 +10803,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             .from('scheduled_tasks')
             .select('action_id, date, start_time')
             .eq('user_id', userId)
-            .gte('date', from)
+            .gte('date', cycle.startDate)
             .lte('date', cycle.endDate);
 
         if (readError) {
@@ -10792,7 +10815,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const planned = buildCycleRegenerationPlan({
             cycle,
             today,
-            actions,
+            actions: actions.filter(a => !a.originCodexId && !unavailableCampaignArenas(campaigns, allArenas, actions, tasks, cycle).has(a.arenaId)),
             existingTasks: (existingRows || []).map((row: any) => ({
                 actionId: row.action_id,
                 date: row.date,
@@ -11243,7 +11266,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const addArena = async (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb: boolean = false): Promise<Arena> => {
         const willStartArchived = arenaData.isArchived ?? false;
         const capacity = getArenaCapacitySummary(assetsRef.current, userProfile);
-        if (capacity.isAtLimit) {
+        if (!willStartArchived && capacity.isAtLimit) {
             const message = buildArenaLimitMessage(capacity);
             showToast(message, 'warning');
             throw new Error(message);
@@ -11287,6 +11310,21 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const updateArena = (arenaId: string, arenaData: Partial<Pick<Arena, 'assetId' | 'name' | 'description' | 'icon' | 'folderId' | 'isArchived' | 'priority'>>) => {
+        const currentArena = assetsRef.current.flatMap(asset => asset.arenas).find(arena => arena.id === arenaId);
+        if (currentArena?.isArchived && arenaData.isArchived === false) {
+            const capacity = getArenaCapacitySummary(assetsRef.current, userProfile);
+            if (capacity.isAtLimit) {
+                showToast(buildArenaLimitMessage(capacity), 'warning');
+                return;
+            }
+        }
+        // Reserve/release capacity immediately, including consecutive updates in one event.
+        if (arenaData.isArchived !== undefined) {
+            assetsRef.current = assetsRef.current.map(asset => ({
+                ...asset,
+                arenas: asset.arenas.map(arena => arena.id === arenaId ? { ...arena, isArchived: arenaData.isArchived } : arena),
+            }));
+        }
         setAssets(prevAssets => {
             const sourceAsset = prevAssets.find(asset => asset.arenas.some(arena => arena.id === arenaId));
             if (!sourceAsset) return prevAssets;
@@ -12854,11 +12892,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             : [...new Set([...(grant.itemIds || []), missionInsigniaId])];
 
         const earnedItemIds: string[] = [];
+        const convertedItems: Array<{ itemId: string; fragments: number }> = [];
         for (const itemId of grantedItemIds) {
             const def = resolveItemDef(itemId);
             if (def?.category === 'insignia') grantUserUnlock('insignias', itemId);
-            await grantInventoryItem(itemId, true);
-            earnedItemIds.push(itemId);
+            const result = await grantInventoryItem(itemId, true);
+            if (!result.item) throw new Error(`Não foi possível entregar ${itemId}`);
+            if (result.duplicateConverted) convertedItems.push({ itemId, fragments: result.fragmentsGranted });
+            else if (result.granted) earnedItemIds.push(itemId);
         }
 
         const addedFragments = Math.max(0, Math.round(grant.fragments || 0));
@@ -12905,6 +12946,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     gold: grant.goldGranted || 0,
                     fragments: addedFragments,
                     items: allEarnedItems,
+                    convertedItems,
                     chest: chestForModal,
                 },
             },
@@ -15182,7 +15224,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 campaign,
                 arenasById,
                 actionsByArena,
-                tasks: cycleScopedTasks,
+                tasks: campaignAwareTasks(tasks, cycleScopedTasks, actions),
                 getClanQuestsForArena,
                 getClanQuestProgress,
             });
@@ -15192,7 +15234,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         });
 
         return locked;
-    }, [actions, allArenas, campaigns, cycleScopedTasks, getClanQuestProgress, getClanQuestsForArena]);
+    }, [actions, allArenas, campaigns, cycleScopedTasks, tasks, getClanQuestProgress, getClanQuestsForArena]);
 
     // --- Pacto de arena -------------------------------------------------
     // As missoes do Oraculo amarradas a uma arena que a pessoa ja tem. Uma de
@@ -15464,6 +15506,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             wallet: { ...userProfile.wallet, gold: nextGold },
         });
 
+        avisarSegredoConfirmado(userProfile.id, 'missao');
         if (data?.already_claimed) return;
         await grantMissionReward({
             completionId: pact.id,
@@ -15543,7 +15586,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             missoesDoCla, missoesDeClaAtivas, atualizarMissaoDoCla, entrarNaMissaoDoCla, receberPremioDaMissaoDoCla, humorDoCla, carregarHumorDoCla, autoresDoFeed,
             roundExpBonus, addProfileFlag, feed, addFeedEvent, deleteFeedEvent, toggleFeedLike, fetchLikesReceived, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, ensureTasksLoadedThrough, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, addSequenceItem, updateSequenceItem, markSequenceItemToday, adjustSequenceItemDays, resetSequenceItem, deleteSequenceItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, recordMoodEntry, fetchMoodHistory, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, respondToClanInvite, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
             directMessages, dmConversations, blockedUsers, blockedUserIds, sendDirectMessage, markDMAsRead, fetchDMs, blockUser, unblockUser, submitModerationReport,
-            addSeason, updateSeason, addSeasonMission, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, isProfileLoaded, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, donateItem, craftItem, buyChestWithFragments, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, createCompetitionInvite, respondToRelationshipInvite, endRelationshipLink, renewRelationshipLink, offerMentorshipArena, respondMentorshipOffer, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, respondCompetitionChallenge, cancelCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
+            addSeason, updateSeason, addSeasonMission, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, isProfileLoaded, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, donateItem, craftItem, buyChestWithFragments, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, finishCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, createCompetitionInvite, respondToRelationshipInvite, endRelationshipLink, renewRelationshipLink, offerMentorshipArena, respondMentorshipOffer, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, respondCompetitionChallenge, cancelCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,
             aldeiaSlots, aldeiaPresence, loadAldeiaData, setAldeiaSlots, setAldeiaPresence,
             activeArenaPact, arenaPactProgress, arenaPactCandidates, missaoIndividualDisponivel, getArenaPactOptionsForArena, acceptArenaPact, abandonArenaPact, claimArenaPact, missaoDeSistemaAtiva, diasNoApp,

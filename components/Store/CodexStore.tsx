@@ -147,7 +147,7 @@ export const CodexStore: React.FC = () => {
         try {
             const acquiredCodex = await buyCodex(pendingPurchase.id, { silentSuccess: true });
             if (acquiredCodex) {
-                await installCodex(acquiredCodex.id);
+                showToast('Campanha adicionada à biblioteca. Instale quando quiser.', 'success');
             }
         } catch (error) {
             console.error('Failed to purchase campaign', error);
@@ -272,7 +272,7 @@ export const CodexStore: React.FC = () => {
 
     const allArenas = getArenas();
     const installedCodexIds = useMemo(
-        () => new Set(allArenas.map((arena) => arena.originCodexId).filter(Boolean)),
+        () => new Set(allArenas.filter(arena => !arena.isArchived).map((arena) => arena.originCodexId).filter(Boolean)),
         [allArenas],
     );
 
@@ -520,15 +520,9 @@ export const CodexStore: React.FC = () => {
                                                     <span className="text-[11px] leading-none text-white/80">{codex.duration_days}</span>
                                                     <span>dias</span>
                                                     <span className="px-1 text-white/20">·</span>
-                                                    {/* "2 acoes" num plano de 14 dias se le como o TOTAL da
-                                                        campanha, e vende ela por um quatorze avos do que ela
-                                                        e: sao 2 acoes que voltam todo dia. O numero aqui e
-                                                        `preview.actions.length`, que conta acao distinta e
-                                                        nao ocorrencia — a palavra e que estava mentindo pelo
-                                                        numero. "Por dia" diz o que ele significa sem
-                                                        inventar um total que o preview nao carrega. */}
                                                     <span className="text-[11px] leading-none text-white/80">{actionCount}</span>
-                                                    <span>{actionCount === 1 ? 'ação por dia' : 'ações por dia'}</span>
+                                                    <span>{actionCount === 1 ? 'ação' : 'ações'}</span>
+                                                    <span> · {preview.arenas.length} {preview.arenas.length === 1 ? 'arena' : 'arenas'}</span>
                                                 </div>
                                             </div>
                                         </button>
@@ -667,7 +661,7 @@ export const CodexStore: React.FC = () => {
                         badgeLabel: activePreviewEntry?.isFree ? 'Campanha grátis' : 'Campanha premium',
                         note: activePreviewEntry?.isFree
                             ? 'Disponível para instalar agora sem custo.'
-                            : 'Ao adquirir, entra nas suas campanhas e tenta instalar na hora.',
+                            : 'Ao adquirir, fica na biblioteca para instalar quando quiser.',
                         hideArenaDetails: true,
                     }}
                 />
@@ -676,8 +670,8 @@ export const CodexStore: React.FC = () => {
                 <ConfirmationModal
                     title="Confirmar campanha"
                     message={pendingPurchase.goldPrice <= 0
-                        ? `${pendingPurchase.title} vai entrar nas suas campanhas sem custo e tentar instalar no app agora. Deseja continuar?`
-                        : `${pendingPurchase.title} vai debitar ${pendingPurchase.goldPrice} ouro, entrar nas suas campanhas e tentar instalar no app agora. Deseja continuar?`}
+                        ? `${pendingPurchase.title} vai entrar nas suas campanhas sem custo para instalar quando quiser. Deseja continuar?`
+                        : `${pendingPurchase.title} vai debitar ${pendingPurchase.goldPrice} ouro, entrar nas suas campanhas para instalar quando quiser. Deseja continuar?`}
                     confirmLabel={pendingPurchase.goldPrice <= 0 ? 'ADICIONAR' : `COMPRAR - ${pendingPurchase.goldPrice} OURO`}
                     onConfirm={() => { void handleConfirmPurchase(); }}
                     onCancel={() => setPendingPurchase(null)}

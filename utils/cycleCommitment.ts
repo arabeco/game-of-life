@@ -16,12 +16,12 @@ export const buildCycleCommitment = ({ actions, arenas, tasks, startDate, endDat
   endDate: string;
 }) => {
   const activeArenaIds = new Set(arenas.filter(arena => !arena.isArchived).map(arena => arena.id));
-  const activeActions = actions.filter(action => activeArenaIds.has(action.arenaId));
+  const activeActions = actions.filter(action => activeArenaIds.has(action.arenaId) || Boolean(action.originCodexId));
   const activeActionIds = new Set(activeActions.map(action => action.id));
   const cycleTasks = [...new Map(tasks.filter(task => activeActionIds.has(task.actionId)
     && task.date >= startDate && task.date <= endDate).map(task => [task.id, task])).values()];
   const questIds = new Set(activeActions.filter(action => isCycleQuestAction(action, arenas)).map(action => action.id));
-  const plannedActions = activeActions.filter(action => action.actionType !== 'Livre' && !questIds.has(action.id));
+  const plannedActions = activeActions.filter(action => action.actionType !== 'Livre' && !questIds.has(action.id) && !action.originCodexId);
   const completedByAction = new Map<string, number>();
   for (const task of cycleTasks) {
     if (task.completed === true) completedByAction.set(task.actionId, (completedByAction.get(task.actionId) || 0) + 1);

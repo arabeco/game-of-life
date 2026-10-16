@@ -1,3 +1,5 @@
+import { unavailableCampaignArenas } from '../../utils/campaignScheduling';
+import { avisarSegredoConfirmado } from '../../utils/eventosDeSegredos';
 import { speechVisualTone } from '../../supabase/functions/_shared/oracle-visual-tone.ts';
 import { ORACLE_ENGINE_V2, chooseReaction, rememberEngineSpeech } from '../../utils/oracleEngineV2';
 import type { Dispatch, SetStateAction } from 'react';
@@ -340,8 +342,8 @@ export const createTaskDomain = ({
         // acao de uma arena a esvazia, e nao a fecha.
         if (arenaActions.length === 0) return null;
 
-        const previousCycleTasks = getTasksInsideActiveCycle(previousTasks);
-        const nextCycleTasks = getTasksInsideActiveCycle(nextTasks);
+        const previousCycleTasks = action.originCodexId ? previousTasks : getTasksInsideActiveCycle(previousTasks);
+        const nextCycleTasks = action.originCodexId ? nextTasks : getTasksInsideActiveCycle(nextTasks);
 
         const previousProgress = calculateArenaProgress({
             arena,
@@ -738,9 +740,15 @@ export const createTaskDomain = ({
         void action;
     };
 
+    const canUseCampaignAction = (action: Action) => {
+        if (!unavailableCampaignArenas(campaigns, getArenas(), getArenas().flatMap(a => getActionsForArena(a.id)), tasks, activeCycle).has(action.arenaId)) return true;
+        showToast('Abra a campanha para ver a próxima arena disponível.', 'info');
+        return false;
+    };
+
     const scheduleMultipleTasks = async (actionOrId: string | Action, daysOfWeek: DayOfWeek[], startTimeInMinutes: number) => {
         const action = typeof actionOrId === 'string' ? getActionById(actionOrId) : actionOrId;
-        if (!action) return;
+        if (!action || !canUseCampaignAction(action)) return;
         const actionId = action.id;
 
         // ATE ONDE AGENDAR: O CICLO.
@@ -760,6 +768,12 @@ export const createTaskDomain = ({
         // dele no banco. Corrigida a corrida, o par voltou.)
         const todayString = getLocalDateString();
         const scheduleThrough = resolveScheduleHorizon(todayString, activeCycle);
+        const requestedStart = action.context?.schedule?.startsOn;
+        const scheduleFrom = requestedStart && requestedStart > todayString ? requestedStart : todayString;
+        const boundedRepetitions = Boolean(action.originCodexId || action.context?.schedule?.limitToRepetitions);
+        let completedCount = tasks.filter(t => t.actionId === actionId && t.completed &&
+            (action.originCodexId || !activeCycle?.startDate || t.date >= activeCycle.startDate) &&
+            (action.originCodexId || !activeCycle?.endDate || t.date <= activeCycle.endDate)).length;
 
         // A CONFERENCIA DE DUPLICATA PRECISA VIR DO BANCO.
         //
@@ -772,28 +786,41 @@ export const createTaskDomain = ({
         // Uma consulta a mais no clique de agendar e barato; ela acontece uma vez
         // por acao, nao por abertura do app.
         const existingKeys = new Set(tasks.map(task => `${task.actionId}_${task.date}_${task.startTime}`));
+        let pendingCount = tasks.filter(t => t.actionId === actionId && !t.completed && t.date >= todayString && t.date <= scheduleThrough).length;
         const scheduleUserId = getSupabaseUserId();
         if (scheduleUserId) {
             const { data: jaGravadas, error: leituraErro } = await supabase
                 .from('scheduled_tasks')
-                .select('action_id, date, start_time')
+                .select('action_id, date, start_time, completed')
                 .eq('user_id', scheduleUserId)
                 .eq('action_id', actionId)
                 .gte('date', todayString)
                 .lte('date', scheduleThrough);
 
             if (leituraErro) {
-                console.error('Failed to read existing tasks before scheduling:', leituraErro.message);
+                throw new Error('Não foi possível conferir a agenda existente. Tente novamente.');
             } else {
+                pendingCount = (jaGravadas || []).filter((row: any) => !row.completed).length;
                 for (const row of jaGravadas || []) {
                     existingKeys.add(`${(row as any).action_id}_${(row as any).date}_${(row as any).start_time}`);
                 }
             }
+            if (boundedRepetitions) {
+                let completedQuery = supabase.from('scheduled_tasks').select('id', { count: 'exact', head: true })
+                    .eq('user_id', scheduleUserId).eq('action_id', actionId).eq('completed', true);
+                if (!action.originCodexId && activeCycle?.startDate) completedQuery = completedQuery.gte('date', activeCycle.startDate);
+                if (!action.originCodexId && activeCycle?.endDate) completedQuery = completedQuery.lte('date', activeCycle.endDate);
+                const completedResult = await completedQuery;
+                if (completedResult.error) throw new Error('Não foi possível conferir as repetições concluídas.');
+                completedCount = completedResult.count || 0;
+            }
         }
 
         const newTasks: ScheduledTask[] = [];
+        const budget = boundedRepetitions ? Math.max(0, (action.repetitions || 1) - completedCount - pendingCount) : Infinity;
 
-        for (const dateString of buildRecurringDates({ from: todayString, through: scheduleThrough, daysOfWeek })) {
+        for (const dateString of buildRecurringDates({ from: scheduleFrom, through: scheduleThrough, daysOfWeek })) {
+            if (newTasks.length >= budget) break;
             const key = `${actionId}_${dateString}_${startTimeInMinutes}`;
             if (existingKeys.has(key)) continue;
             existingKeys.add(key);
@@ -852,7 +879,7 @@ export const createTaskDomain = ({
 
     const scheduleTask = async (actionOrId: string | Action, date: string, startTime: number): Promise<ScheduledTask | undefined> => {
         const action = typeof actionOrId === 'string' ? getActionById(actionOrId) : actionOrId;
-        if (!action) return undefined;
+        if (!action || !canUseCampaignAction(action)) return undefined;
         const actionId = action.id;
 
         const newTask: ScheduledTask = {
@@ -917,6 +944,7 @@ export const createTaskDomain = ({
         if (error) {
             throw error;
         }
+        if (task.completed) avisarSegredoConfirmado(userId, 'acao');
     };
 
     const syncSharedCompletionForTask = async (action: Action, arena: Arena, userId: string, shouldMarkComplete: boolean) => {
@@ -1026,6 +1054,7 @@ export const createTaskDomain = ({
         const previousRetroactiveOperationalDate = getEditableLockedOperationalDate(taskToCheck);
 
         const action = getActionById(taskToCheck.actionId);
+        if (action && !taskToCheck.completed && !canUseCampaignAction(action)) return;
         const now = new Date();
         const nowInMinutes = now.getHours() * 60 + now.getMinutes();
         const operationalToday = getOperationalDateString(now);
@@ -1093,7 +1122,7 @@ export const createTaskDomain = ({
         }
 
         const action = getActionById(actionId);
-        if (!action || action.actionType === 'Marco') return;
+        if (!action || action.actionType === 'Marco' || !canUseCampaignAction(action)) return;
 
         const now = new Date();
         const operationalDate = getOperationalDateString(now);
@@ -1142,6 +1171,7 @@ export const createTaskDomain = ({
                 const payload = { ...mapToSnakeCase(newTask), user_id: userId };
                 const { error } = await supabase.from('scheduled_tasks').insert(payload);
                 if (error) throw error;
+                avisarSegredoConfirmado(userId, 'acao');
                 await maybeReconcileRetroactiveMutations(
                     [getEditableLockedOperationalDate(newTask)],
                     tasks,
@@ -1182,7 +1212,7 @@ export const createTaskDomain = ({
 
     const scheduleAndCompleteAt = async (actionId: string, date: string, startTime: number, taskId?: string) => {
         const action = getActionById(actionId);
-        if (!action || action.actionType === 'Marco') return;
+        if (!action || action.actionType === 'Marco' || !canUseCampaignAction(action)) return;
 
         const existingTask = taskId
             ? tasks.find(task => task.id === taskId)
@@ -1272,6 +1302,7 @@ export const createTaskDomain = ({
                 const payload = { ...mapToSnakeCase(newTask), user_id: userId };
                 const { error } = await supabase.from('scheduled_tasks').insert(payload);
                 if (error) throw error;
+                avisarSegredoConfirmado(userId, 'acao');
                 await maybeReconcileRetroactiveMutations(
                     [getEditableLockedOperationalDate(newTask)],
                     tasks,
@@ -1296,9 +1327,9 @@ export const createTaskDomain = ({
 
     const scheduleAndCompleteMilestoneNow = async (actionId: string) => {
         const action = getActionById(actionId);
-        if (!action || action.actionType !== 'Marco') return;
+        if (!action || action.actionType !== 'Marco' || !canUseCampaignAction(action)) return;
 
-        const existingTask = tasks.find(task => task.actionId === actionId && isTaskInsideActiveCycle(task));
+        const existingTask = tasks.find(task => task.actionId === actionId && (action.originCodexId ? true : isTaskInsideActiveCycle(task)));
         if (existingTask) {
             if (!existingTask.completed) {
                 await toggleTaskCompletion(existingTask.id);
@@ -1341,6 +1372,7 @@ export const createTaskDomain = ({
                 const payload = { ...mapToSnakeCase(newTask), user_id: userId };
                 const { error } = await supabase.from('scheduled_tasks').insert(payload);
                 if (error) throw error;
+                avisarSegredoConfirmado(userId, 'acao');
                 await maybeReconcileRetroactiveMutations(
                     [getEditableLockedOperationalDate(newTask)],
                     tasks,

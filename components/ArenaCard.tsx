@@ -247,9 +247,9 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     const { tasks: contextTasks, activeCycle, activeArenaPact, freeProgressResetAt, getActionBackgroundStyle, getClanQuestProgress, getArenas, clanQuestParticipants, fetchClanQuestParticipants, getClanQuestsForArena, getSharedActionPoolProgress, oraclePreferences, reorderAction, userCodexes } = useGame();
     const tasks = (propTasks || contextTasks) as any[];
     const tasksForCounts = useMemo(() => {
-        if (propTasks) return tasks;
+        if (propTasks || arena.originCodexId) return tasks;
         return getArenaPresentationTasks(tasks, activeCycle, freeProgressResetAt, getLocalDateString());
-    }, [activeCycle, freeProgressResetAt, propTasks, tasks]);
+    }, [activeCycle, freeProgressResetAt, propTasks, tasks, arena.originCodexId]);
     const [dragOverActionId, setDragOverActionId] = useState<string | null>(null);
     // O vinculo so tem tres formas, e o estado estava como string solta.
     // Solto, ele contaminava tudo que recebia effectiveLinkType — tres
@@ -462,7 +462,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
         : highlightPhase === 'celebrate'
             ? 'arena-card-highlight arena-card-highlight--celebrate'
             : '';
-    const baseClasses = `arena-plate rounded-lg border-[0.75px] flex flex-col relative overflow-hidden transition-all duration-300 select-none ${isCompactThumbnail ? 'justify-start px-[0.28rem] pt-[0.08rem] pb-[0.1rem]' : 'justify-between px-1 py-[0.34rem]'} ${highlightClass}`;
+    const baseClasses = `arena-plate rounded-[4px] border-[0.75px] flex flex-col relative overflow-hidden transition-all duration-300 select-none ${isCompactThumbnail ? 'justify-start px-[0.28rem] pt-[0.08rem] pb-[0.1rem]' : 'justify-between px-1 py-[0.34rem]'} ${highlightClass}`;
     const styleClasses = isOverview 
         ? 'h-[4.75rem] w-full' 
         : variant === 'dossier' ? 'h-full w-full' : 'h-[4.95rem]';
@@ -544,7 +544,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                                     {getIcon()}
                                 </span>
                             </span>
-                            <div className="ml-[0.38rem] flex h-[1.56rem] w-[calc(100%-0.38rem)] items-center justify-center overflow-hidden rounded-[0.58rem] border border-white/6 bg-black/12 px-[0.16rem] py-[0.04rem] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                            <div className="ml-[0.38rem] flex h-[1.56rem] w-[calc(100%-0.38rem)] items-center justify-center overflow-hidden rounded-[4px] border border-white/6 bg-black/12 px-[0.16rem] py-[0.04rem] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
                                 <div className="flex h-full w-full items-center justify-center overflow-hidden py-[0.08rem]">
                                     <h3 className={`arena-title arena-title-text arena-title-readable arena-thumb-title arena-thumb-title--plain w-full break-normal [overflow-wrap:normal] text-white text-center leading-[0.98] tracking-[0.06em] line-clamp-2 ${arena.name.length > 18 ? 'text-[5.9px]' : arena.name.length > 14 ? 'text-[6.1px]' : arena.name.length > 10 ? 'text-[6.35px]' : arena.name.length > 8 ? 'text-[6.65px]' : 'text-[6.95px]'}`}>{arena.name}</h3>
                                 </div>
@@ -589,7 +589,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
             
             <div className={`flex flex-col items-center flex-shrink-0 relative z-10 pointer-events-auto ${isCompactThumbnail ? 'w-full gap-[0.08rem] mt-auto' : 'space-y-2'}`}>
                 {isCompactThumbnail ? (
-                    <div className="w-full overflow-x-auto hide-scrollbar rounded-[0.48rem] border border-white/6 bg-black/10 px-[0.08rem] py-[0.08rem] shadow-[inset_0_1px_0_rgba(255,255,255,0.045)]">
+                    <div className="arena-thumbnail-actions w-full overflow-x-auto overscroll-x-contain hide-scrollbar rounded-[4px] border border-white/6 bg-black/10 px-[0.08rem] py-[0.08rem] shadow-[inset_0_1px_0_rgba(255,255,255,0.045)]">
                         <div className="flex min-w-max items-center gap-[0.18rem]">
                             {orderedCompactActions.map(action => {
                                 const backgroundStyle = getActionBackgroundStyle(action.id);

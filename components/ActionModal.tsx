@@ -1,7 +1,7 @@
 import { useScreenIntroTip } from '../hooks/useScreenIntroTip';
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
-import { countRecurringOccurrences } from '../utils/cycleScheduling';
+import { buildRecurringDates, countRecurringOccurrences, resolveScheduleHorizon } from '../utils/cycleScheduling';
 import { Action, DayOfWeek, ActionType, PlannerMatrixQuadrant, ScheduledTask } from '../types';
 import { GlassCard } from './GlassCard';
 import { ChevronLeftIcon, ChevronRightIcon, EditIcon, XIcon, CalendarIcon, Trash2Icon, ClockIcon, PlayIcon, CheckCircleIcon } from './Icons';
@@ -25,6 +25,7 @@ import { PRODUCT_FEATURES } from '../constants/featureFlags';
 import { Portal } from './Portal';
 import { EmojiGlyph } from './EmojiGlyph';
 import './core-ui.css';
+import './action-layout.css';
 
 const hexToRgb = (hex: string) => {
     const trimmed = hex.trim();
@@ -144,7 +145,7 @@ const formatDurationLabel = (value: number) => {
 
     if (hours === 0) return `${minutes} min`;
     if (minutes === 0) return `${hours}h`;
-    return `${hours}h ${minutes}m`;
+    return `${hours}h ${minutes}min`;
 };
 
 const normalizeActionDifficulty = (value?: number | null): 0 | 1 | 2 | 3 => {
@@ -162,12 +163,35 @@ const getClosestSnapIndex = (value: number, snapValues: number[]) => {
     ), 0);
 };
 
-const StyledRangeInput: React.FC<{ label: string, value: number, min: number, max: number, step: number, unit: string, onChange: (val: number) => void, inputRef?: React.Ref<HTMLDivElement>, containerId?: string, snapValues?: number[], formatValue?: (val: number) => string }> =
-    ({ label, value, min, max, step, unit, onChange, inputRef, containerId, snapValues, formatValue }) => (
+const ActionNumberInput: React.FC<{label: string; value: number; min: number; max: number; step: number; onChange: (value: number) => void}> = ({label, value, min, max, step, onChange}) => {
+    const [draft, setDraft] = useState(String(value));
+    useEffect(() => setDraft(String(value)), [value]);
+    return <input aria-label={label} type="number" inputMode="numeric" min={min} max={max} step={step} value={draft}
+        onChange={event => {
+            const next = event.target.value;
+            setDraft(next);
+            const number = Number(next);
+            if (next !== '' && Number.isInteger(number) && number >= min && number <= max) onChange(number);
+        }}
+        onBlur={() => {
+            const number = draft.trim() === '' ? value : Number(draft);
+            const next = Number.isFinite(number) ? Math.max(min, Math.min(max, Math.round(number))) : value;
+            setDraft(String(next)); onChange(next);
+        }} />;
+};
+
+const StyledRangeInput: React.FC<{ label: string, value: number, min: number, max: number, step: number, unit: string, onChange: (val: number) => void, inputRef?: React.Ref<HTMLDivElement>, containerId?: string, snapValues?: number[], formatValue?: (val: number) => string, comBotoes?: boolean }> =
+    ({ label, value, min, max, step, unit, onChange, inputRef, containerId, snapValues, formatValue, comBotoes }) => (
         <div id={containerId} ref={inputRef} className="action-range p-2.5 core-surface rounded-xl space-y-1.5">
             <div className="flex justify-between items-center">
                 <label className="core-label">{label}</label>
-                <span className="text-sm font-semibold text-white">{formatValue ? formatValue(value) : `${value} ${unit}`}</span>
+                {/* `comBotoes`: - e + de um em um (16/10, repeticoes). Ir de 5 para 6
+                    pedia acertar o slider no ponto ou apagar e digitar. */}
+                <div className="action-number">
+                    {comBotoes && <button type="button" className="action-step" aria-label={`Menos ${label.toLowerCase()}`} disabled={value <= min} onClick={() => onChange(Math.max(min, value - step))}>−</button>}
+                    <label className="action-number"><ActionNumberInput label={`${label} em ${unit}`} value={value} min={min} max={max} step={step} onChange={onChange} /><span>{unit}</span></label>
+                    {comBotoes && <button type="button" className="action-step" aria-label={`Mais ${label.toLowerCase()}`} disabled={value >= max} onClick={() => onChange(Math.min(max, value + step))}>+</button>}
+                </div>
             </div>
             <input
                 type="range"
@@ -180,8 +204,10 @@ const StyledRangeInput: React.FC<{ label: string, value: number, min: number, ma
                     const nextValue = Number(e.target.value);
                     onChange(snapValues ? snapValues[nextValue] ?? value : nextValue);
                 }}
+                aria-valuetext={formatValue ? formatValue(value) : `${value} ${unit}`}
                 className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg accent-[var(--skin-accent-color)]"
             />
+            {formatValue && <output className="action-duration-equivalent">{formatValue(value)}</output>}
         </div>
     );
 
@@ -298,7 +324,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
     // New View Mode State
     const [activeTab, setActiveTab] = useState<'basic' | 'advanced'>('basic');
-    const [advancedSubTab, setAdvancedSubTab] = useState<'schedule' | 'media' | 'note' | 'checklist' | 'context'>('schedule');
+    const [advancedSubTab, setAdvancedSubTab] = useState<'schedule' | 'media' | 'note' | 'checklist' | 'context'>('context');
+    const [schedulePanelOpen, setSchedulePanelOpen] = useState(false);
     const [isBriefingReaderOpen, setIsBriefingReaderOpen] = useState(false);
     const [briefingPageIndex, setBriefingPageIndex] = useState(0);
     const [briefingPageStage, setBriefingPageStage] = useState<'idle' | 'out-next' | 'out-prev' | 'in-next' | 'in-prev'>('idle');
@@ -429,6 +456,20 @@ export const ActionModal: React.FC<ActionModalProps> = ({
             return;
         }
 
+        if (!isEditingTaskInstance && (selectedDays.length > 0 || editableAction.actionType === 'Compromisso') && scheduledStartTime === undefined) {
+            refuseSave('Escolha o horário do agendamento.'); setActiveTab('advanced'); setAdvancedSubTab('context'); setSchedulePanelOpen(true); return;
+        }
+        if (!isEditingTaskInstance && editableAction.actionType === 'Compromisso' && !selectedDate) {
+            refuseSave('Escolha a data do compromisso.'); setActiveTab('advanced'); setAdvancedSubTab('context'); setSchedulePanelOpen(true); return;
+        }
+        if (!isEditingTaskInstance && editableAction.actionType === 'Ação Recorrente' && selectedDays.length > 0) {
+            const from = editableAction.context?.schedule?.startsOn || getLocalDateString();
+            const parsed = getTaskDateValue(from);
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !Number.isFinite(parsed.getTime()) || getLocalDateString(parsed) !== from || from > resolveScheduleHorizon(getLocalDateString(), activeCycle)) {
+                refuseSave('Escolha uma data de início dentro da agenda atual.');
+                setActiveTab('advanced'); setAdvancedSubTab('context'); setSchedulePanelOpen(true); return;
+            }
+        }
         const nextRepetitions = editableAction.actionType === 'Ação Recorrente'
             ?Math.min(50, Math.max(1, Math.floor(editableAction.repetitions || 1)))
             : 1;
@@ -527,19 +568,25 @@ export const ActionModal: React.FC<ActionModalProps> = ({
             );
 
             const pendingTasks: ScheduledTask[] = [];
-            const currentDate = new Date();
+            const today = getLocalDateString();
+            const horizon = resolveScheduleHorizon(today, activeCycle);
 
             if (editableAction.actionType === 'Ação Recorrente' && selectedDays.length > 0 && startTime && startTime !== 'Sem Horário') {
                 const [hour, minute] = startTime.split(':').map(Number);
                 const startTimeInMinutes = hour * 60 + minute;
 
-                for (let i = 0; i < 365; i += 1) {
-                    const date = new Date(currentDate);
-                    date.setDate(currentDate.getDate() + i);
-                    const dayOfWeek = week[(date.getDay() + 6) % 7];
-                    if (!selectedDays.includes(dayOfWeek)) continue;
-
-                    const dateString = getLocalDateString(date);
+                const { data: stored, error } = await supabase.from('scheduled_tasks')
+                    .select('action_id,date,start_time,completed').eq('user_id', userId).eq('action_id', actionToSchedule.id);
+                if (error) throw new Error('Não foi possível conferir a agenda existente.');
+                const scoped = (stored || []).filter(row => actionToSchedule.originCodexId ||
+                    ((!activeCycle?.startDate || row.date >= activeCycle.startDate) && row.date <= horizon));
+                for (const row of stored || []) existingKeys.add(`${row.action_id}_${row.date}_${row.start_time}`);
+                const used = scoped.filter(row => row.completed || row.date >= today).length;
+                const budget = actionToSchedule.context?.schedule?.limitToRepetitions || actionToSchedule.originCodexId
+                    ? Math.max(0, (actionToSchedule.repetitions || 1) - used) : Infinity;
+                const from = actionToSchedule.context?.schedule?.startsOn || today;
+                for (const dateString of buildRecurringDates({from: from > today ? from : today, through: horizon, daysOfWeek: selectedDays})) {
+                    if (pendingTasks.length >= budget) break;
                     const key = `${actionToSchedule.id}_${dateString}_${startTimeInMinutes}`;
                     if (existingKeys.has(key)) continue;
 
@@ -724,6 +771,9 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                         action.actionType !== actionData.actionType
                         || (action.scheduledStartTime ?? null) !== (scheduledStartTime ?? null)
                         || prevDaysKey !== nextDaysKey
+                        || action.context?.schedule?.startsOn !== actionData.context?.schedule?.startsOn
+                        || action.context?.schedule?.limitToRepetitions !== actionData.context?.schedule?.limitToRepetitions
+                        || (actionData.context?.schedule?.limitToRepetitions && action.repetitions !== nextRepetitions)
                         || (action.duration || 60) !== validDuration
                         || prevCommitmentDate !== nextCommitmentDate
                     );
@@ -1078,6 +1128,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
             ? { ...nextAction, difficulty: normalizeActionDifficulty(nextAction.difficulty) }
             : { arenaId: arenaId, name: '', description: '', icon: '📝', duration: 60, repetitions: 1, actionType: 'Ação Recorrente' as const, difficulty: 2 };
         setEditableAction(baseAction);
+        setSchedulePanelOpen(false);
         setSelectedDays(nextAction?.scheduledDays || []);
         setEditScope(nextScope);
         syncTemporalStateForScope(nextScope, nextAction);
@@ -1132,35 +1183,25 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
     const difficultyLabels = ['LAZER', 'LEVE', 'MÉDIA', 'ALTA'];
     const week: DayOfWeek[] = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB', 'DOM'];
-    // Dia da semana so existe com horario: sem ele nao ha o que agendar, e a acao
-    // fica na baia para ser concluida quando der. Por isso o seletor SOME em vez
-    // de avisar — mostrar um controle que nao faz nada e pior que nao mostrar.
     const temHorario = Boolean(startTime && startTime !== 'Sem Horário');
 
-    // QUANTAS VEZES ISSO VAI ACONTECER.
-    //
-    // A pessoa marca os dias e o horario, mas nunca disse "quantas". Ate agora a
-    // meta era sobra do calendario: o ciclo decidia sozinho se era 30 ou 60, e
-    // ninguem via o numero antes de confirmar. Aqui ele aparece — derivado, nao
-    // perguntado, porque "quantas vezes voce vai tomar remedio" nao e uma
-    // pergunta que alguem sabe responder.
+    // Preview follows the same horizon and repetition budget as persistence.
     const agendaPrevista = React.useMemo(() => {
         if (editableAction.actionType !== 'Ação Recorrente') return null;
         if (!temHorario || selectedDays.length === 0) return null;
 
-        // So mostramos o numero quando existe ciclo. O app grava um ano de
-        // tarefas a frente (taskDomain), mas quem conta e a janela do ciclo: e ela
-        // que define o total da barra da arena. Sem ciclo nao existe janela, e
-        // inventar um numero aqui seria prometer uma meta que ninguem mede.
-        if (!activeCycle?.endDate || activeCycle.endDate < getLocalDateString()) return null;
-        const hoje = getLocalDateString();
-        const ate = activeCycle.endDate;
-        const vezes = countRecurringOccurrences({ from: hoje, through: ate, daysOfWeek: selectedDays });
+        const hoje = editableAction.context?.schedule?.startsOn && editableAction.context.schedule.startsOn > getLocalDateString() ? editableAction.context.schedule.startsOn : getLocalDateString();
+        const ate = resolveScheduleHorizon(getLocalDateString(), activeCycle);
+        const available = countRecurringOccurrences({ from: hoje, through: ate, daysOfWeek: selectedDays });
+        const completed = effectiveTaskPool.filter(task => task.actionId === action?.id && task.completed &&
+            (action?.originCodexId || ((!activeCycle?.startDate || task.date >= activeCycle.startDate) && task.date <= ate))).length;
+        const vezes = editableAction.context?.schedule?.limitToRepetitions || action?.originCodexId
+            ? Math.min(available, Math.max(0, (editableAction.repetitions || 1) - completed)) : available;
         if (vezes === 0) return null;
 
         const [, mes, dia] = ate.split('-');
         return { vezes, ateLabel: `${dia}/${mes}` };
-    }, [activeCycle, editableAction.actionType, selectedDays, temHorario]);
+    }, [activeCycle, effectiveTaskPool, action, editableAction.actionType, editableAction.context?.schedule?.startsOn, editableAction.context?.schedule?.limitToRepetitions, editableAction.repetitions, selectedDays, temHorario]);
     const timeOptions = ['Sem Horário', ...Array.from({ length: 24 * 4 }, (_, i) => { const h = Math.floor(i / 4); const m = (i % 4) * 15; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; })];
     useEffect(() => {
         if (advancedSubTab !== 'note' || mode !== 'view') {
@@ -1314,7 +1355,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
         : undefined;
     const accentColor = customThemeColor || arenaAccentColor || '#F0C843';
     // Omit the override to inherit the skin. A self-reference invalidates the token.
-    const modalStyle = { ...(customThemeColor ? { '--skin-accent-color': customThemeColor } : {}), '--accent-bronze': accentColor } as React.CSSProperties;
+    const modalStyle = { ...(customThemeColor ? { '--skin-accent-color': customThemeColor } : {}), '--action-accent': accentColor, '--accent-bronze': accentColor } as React.CSSProperties;
     const headerTitle = mode === 'view'
         ?(displayAction?.name || (isPreview ?'Preview de Ação' : 'Detalhe da Ação'))
         : (isEditingTaskInstance
@@ -1365,7 +1406,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
             <div className="ui-modal-backdrop z-[100]" onClick={handleBackdropClick} style={modalStyle}>
                 <GlassCard
                     variant="neutral"
-                    className="ui-modal-panel action-dialog w-full max-w-[24rem] m-0 flex flex-col max-h-[88dvh] h-auto p-0 relative overflow-hidden border-white/14 shadow-[0_24px_70px_rgba(0,0,0,0.45)]"
+                    className="ui-modal-panel action-dialog action-dialog-v2 w-full max-w-[24rem] m-0 flex flex-col max-h-[88dvh] h-auto p-0 relative overflow-hidden border-white/14 shadow-[0_24px_70px_rgba(0,0,0,0.45)]"
                 >
                     {/* Header Fixed */}
                     {/* Controls and title occupy separate rows, including long action names. */}
@@ -1407,14 +1448,14 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                         </div>
                         <div className="min-w-0 col-span-2 row-start-2 px-1 text-center">
                             <div className="ui-modal-eyebrow text-white/54">{headerEyebrow}</div>
-                            <h2 className="ui-modal-title mt-1 break-words" title={headerTitle}>
+                            <h2 className="ui-modal-title mt-1 line-clamp-2 break-words" title={headerTitle}>
                                 {headerTitle}
                             </h2>
                             <p className="mt-1 truncate text-[10px] font-medium uppercase tracking-[0.22em] text-white/58">
                                 {hasTaskInstanceContext && plannerOccurrenceLabel ?`${plannerOccurrenceLabel} • ${currentArena?.name || 'Arena'}` : (currentArena?.name || 'Arena')}
                             </p>
                         </div>
-                        <button id="onboarding-action-save-button" onClick={handleHeaderOk} className="ui-modal-button luxe-skin-button col-start-2 row-start-1 justify-self-end shrink-0 min-w-[4.5rem]">
+                        <button id="onboarding-action-save-button" onClick={handleHeaderOk} className="ui-modal-button luxe-skin-button luxe-reward-gold luxe-brilho col-start-2 row-start-1 justify-self-end shrink-0 min-w-[4.5rem]">
                             {mode === 'edit' ? 'Salvar' : 'OK'}
                         </button>
                     </div>
@@ -1453,44 +1494,33 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                         </div>
                     )}
 
-                    {/* Tabs Fixed */}
-                    <div className="flex-none px-4 pb-4 bg-black/[0.26] backdrop-blur-md border-b border-white/[0.06] z-20 relative">
-                        <div className="flex bg-black/[0.26] p-1 rounded-xl border border-white/[0.06]">
-                            <button
-                                onClick={() => setActiveTab('basic')}
-                                className={`flex-1 py-2 text-[11px] font-semibold tracking-[0.08em] rounded-lg transition-all duration-300 ${activeTab === 'basic'
-                                    ?'bg-white/[0.09] text-white shadow-[0_8px_18px_rgba(0,0,0,0.22)] border border-white/[0.08]'
-                                    : 'text-gray-500 hover:text-gray-300'
-                                    }`}
-                            >
-                                Básico
+                    <nav className="action-main-tabs" aria-label="Abas da ação">
+                        {([
+                            ['basic', 'Geral', true],
+                            ['context', 'Contexto', mode === 'edit' || !!displayAction?.description || !!displayAction?.context || displayAction?.scheduledStartTime != null],
+                            ['note', 'Checklist', mode === 'edit' || !!displayAction?.briefing || !!displayAction?.preFlight?.length],
+                            ['media', 'Mídia', mode === 'edit' || !!displayAction?.assets?.length],
+                        ] as const).filter(([key, , visible]) => visible && (!isEditingTaskInstance || key === 'basic')).map(([key, title]) => (
+                            <button key={key} aria-pressed={key === 'basic' ? activeTab === 'basic' : activeTab === 'advanced' && advancedSubTab === key}
+                                onClick={() => { setActiveTab(key === 'basic' ? 'basic' : 'advanced'); if (key !== 'basic') setAdvancedSubTab(key); setSchedulePanelOpen(false); }}>
+                                {title}
                             </button>
-                            <button
-                                onClick={() => setActiveTab('advanced')}
-                                disabled={isEditingTaskInstance}
-                                className={`flex-1 py-2 text-[11px] font-semibold tracking-[0.08em] rounded-lg transition-all duration-300 ${activeTab === 'advanced'
-                                    ?'bg-white/[0.09] text-white shadow-[0_8px_18px_rgba(0,0,0,0.22)] border border-white/[0.08]'
-                                    : isEditingTaskInstance ?'text-gray-600 opacity-40 cursor-not-allowed' : 'text-gray-500 hover:text-gray-300'
-                                    }`}
-                            >
-                                {isEditingTaskInstance ? 'Avançado (Base)' : 'Avançado'}
-                            </button>
-                        </div>
-                    </div>
+                        ))}
+                    </nav>
 
                     {/* Content Scrollable */}
-                    <div className="flex-1 overflow-y-auto custom-scrollbar relative bg-gradient-to-b from-black/40 to-transparent">
+                    <div className="action-tab-body">
 
                         {/* BASIC TAB */}
                         {activeTab === 'basic' && (
-                            <div className="p-4 space-y-3 flex flex-col items-center animate-fade-in pb-16">
+                            <div className="action-general p-4 space-y-3 flex flex-col items-center animate-fade-in">
                                 {mode === 'view' && displayAction ?(
                                     // VIEW MODE CONTENT
                                     <>
                                         {/* Icon - Centralized */}
                                         <div className="relative group mt-0 mb-1 flex justify-center">
                                             <div className="absolute inset-0 bg-[var(--skin-accent-color)]/20 blur-xl rounded-full group-hover:bg-[var(--skin-accent-color)]/30 transition-all duration-500" />
-                                            <div className="relative w-24 h-24 rounded-3xl bg-gradient-to-br from-[#2a211c] to-black border border-[var(--skin-accent-color)]/30 flex items-center justify-center shadow-2xl transform group-hover:scale-105 transition-all duration-500">
+                                            <div className="action-view-icon relative w-24 h-24 rounded-3xl bg-gradient-to-br from-[#2a211c] to-black border border-[var(--skin-accent-color)]/30 flex items-center justify-center shadow-2xl transform group-hover:scale-105 transition-all duration-500">
                                                 <EmojiGlyph symbol={displayAction.icon || '📝'} size="picker" className="scale-[1.55] text-white drop-shadow-[0_0_15px_var(--sephirot-glow-color)]" />
                                             </div>
                                             {displaySurfaceBadge && (
@@ -1504,7 +1534,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                         <div className="space-y-2 w-full text-center mb-4 px-2">
                                             <div className="relative">
                                                 <input type="checkbox" id="desc-expand" className="peer hidden" />
-                                                <p className="text-[10px] text-gray-400 leading-snug font-medium max-w-[280px] mx-auto line-clamp-3 peer-checked:line-clamp-none transition-all">
+                                                <p className="text-[10px] text-gray-400 leading-snug font-medium max-w-[280px] mx-auto line-clamp-3 peer-checked:line-clamp-none peer-checked:max-h-[72px] peer-checked:overflow-y-auto transition-all">
                                                     {displayAction.description || "Sem descrição definida."}
                                                 </p>
                                                 {displayAction.description && displayAction.description.length > 80 && (
@@ -1551,7 +1581,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                     </>
                                 ) : (
                                     // EDIT MODE CONTENT (Form)
-                                    <div className="w-full space-y-3">
+                                    <div className={`action-edit-form w-full space-y-3 ${hasTaskInstanceContext ? "action-occurrence-form" : ""}`}>
                                         {hasTaskInstanceContext && (
                                             <div className="rounded-[22px] border border-[var(--skin-accent-color)]/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(0,0,0,0.18))] p-3 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
                                                 <div className="flex gap-2">
@@ -1693,6 +1723,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                     ref={nameInputRef}
                                                     type="text"
                                                     aria-label="Nome da ação"
+                                                    maxLength={80}
                                                     placeholder="Nome da ação"
                                                     value={editableAction.name || ''}
                                                     onBlur={(event) => {
@@ -1731,8 +1762,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                         <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/42">Tipo da ação</span>
                                                         <span className="text-[10px] font-semibold text-white/36">Livre = sem contador</span>
                                                     </div>
-                                                    <div className="grid grid-cols-2 gap-2" role="group" aria-label="Tipo da ação">
-                                                        {ACTION_TYPE_CHOICES.map(choice => {
+                                                    <div className="action-type-options" role="group" aria-label="Tipo da ação">
+                                                        {[...ACTION_TYPE_CHOICES].sort((a, b) => ['Ação Recorrente', 'Livre', 'Marco', 'Compromisso'].indexOf(a.value) - ['Ação Recorrente', 'Livre', 'Marco', 'Compromisso'].indexOf(b.value)).map(choice => {
                                                             const selected = (editableAction.actionType || 'Ação Recorrente') === choice.value;
                                                             return (
                                                                 <button
@@ -1764,13 +1795,13 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                 )}
 
 
-                                                <div className={`action-measures grid gap-2 ${editableAction.actionType === 'Ação Recorrente' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                                                <div className="action-measures grid grid-cols-1 gap-2">
                                                 <StyledRangeInput
                                                     containerId="onboarding-action-duration"
                                                     inputRef={durationInputRef}
                                                     label="Duração"
                                                     value={editableAction.duration || 60}
-                                                    min={15} max={480} step={1} unit="min"
+                                                    min={5} max={480} step={1} unit="min"
                                                     snapValues={ACTION_DURATION_OPTIONS}
                                                     formatValue={formatDurationLabel}
                                                     onChange={val => {
@@ -1784,6 +1815,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                         containerId="onboarding-action-repetitions"
                                                         inputRef={repsInputRef}
                                                         label="Repetições"
+                                                        comBotoes
                                                         value={editableAction.repetitions || 1}
                                                         min={1}
                                                         max={50}
@@ -1798,105 +1830,6 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
                                                 </div>
 
-                                                {/* QUANDO VEM DEPOIS DE O QUE.
-
-                                                    Este bloco ficava entre o NOME e a DURACAO, e sozinho
-                                                    empurrava o tamanho da acao para fora da tela: eram 176
-                                                    linhas de formulario entre "Nome da acao" e "Repeticoes",
-                                                    com dias da semana, data, horario e lembrete no meio.
-                                                    Criar uma acao exigia rolar para achar de que tamanho ela e.
-
-                                                    Criar responde O QUE a acao e. QUANDO ela acontece e
-                                                    pergunta do planner, que e onde se arrasta da bay para o
-                                                    dia — so o Compromisso precisa responder as duas de uma
-                                                    vez, porque ele nasce ja marcado numa data. */}
-                                                {(editableAction.actionType === 'Ação Recorrente' || editableAction.actionType === 'Compromisso') && (
-                                                    <div className="rounded-[18px] border border-white/8 bg-black/18 px-3 py-3 space-y-3">
-                                                        <div className="flex items-center justify-between px-1">
-                                                            <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/42">
-                                                                {editableAction.actionType === 'Compromisso' ? 'Quando acontece' : 'Ritmo da ação'}
-                                                            </span>
-                                                            <span className="text-[10px] font-semibold text-white/36">
-                                                                {editableAction.actionType === 'Compromisso' ? 'cria 1 ocorrência' : 'opcional'}
-                                                            </span>
-                                                        </div>
-
-                                                        {editableAction.actionType === 'Ação Recorrente' && temHorario && (
-                                                            <div>
-                                                                <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Dias da semana</label>
-                                                                <div className="grid grid-cols-7 gap-1 mt-1">
-                                                                    {week.map(day => (
-                                                                        <DayToggle
-                                                                            key={day}
-                                                                            day={day}
-                                                                            selected={selectedDays.includes(day)}
-                                                                            onClick={() => handleDayToggle(day)}
-                                                                        />
-                                                                    ))}
-                                                                </div>
-                                                                {agendaPrevista && (
-                                                                    <p className="mt-2 px-1 text-[10px] leading-relaxed text-white/56">
-                                                                        <span className="font-bold text-white/80">{agendaPrevista.vezes} {agendaPrevista.vezes === 1 ? 'vez' : 'vezes'}</span>
-                                                                        {' neste ciclo, até '}
-                                                                        {agendaPrevista.ateLabel}.
-                                                                    </p>
-                                                                )}
-                                                            </div>
-                                                        )}
-
-                                                        {editableAction.actionType === 'Compromisso' && (
-                                                            <div>
-                                                                <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Data</label>
-                                                                <button onClick={() => setIsDatePickerOpen(true)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/8">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <CalendarIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
-                                                                        <span className="text-sm">{selectedDate ? selectedDate.toLocaleDateString('pt-BR') : 'Selecionar data'}</span>
-                                                                    </div>
-                                                                    <ChevronRightIcon className="w-4 h-4 text-gray-500" />
-                                                                </button>
-                                                            </div>
-                                                        )}
-
-                                                        <div>
-                                                            <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Horário</label>
-                                                            <button onClick={() => setIsTimePickerOpen(!isTimePickerOpen)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/8">
-                                                                <span className="text-sm">{startTime || 'Sem horário'}</span>
-                                                                <ChevronRightIcon className={`w-4 h-4 text-gray-500 transition-transform ${isTimePickerOpen ? 'rotate-90' : ''}`} />
-                                                            </button>
-                                                            {isTimePickerOpen && (
-                                                                <div className="relative mt-2 h-48">
-                                                                    <WheelPicker options={timeOptions} value={startTime || 'Sem Horário'} onSelect={handleTimeSelect} />
-                                                                </div>
-                                                            )}
-                                                        </div>
-
-                                                        {canUseReminderToggle && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => { void handleReminderToggle(); }}
-                                                                className="flex items-center justify-between rounded-2xl border border-white/8 bg-black/20 px-4 py-3 text-left transition-colors hover:bg-black/30"
-                                                            >
-                                                                <div>
-                                                                    <div className="text-[10px] font-black uppercase tracking-[0.16em] text-white/52">Lembrete</div>
-                                                                    <div className="mt-1 text-sm font-semibold text-white">Notificar 15 min antes</div>
-                                                                </div>
-                                                                <div className={`relative h-6 w-11 rounded-full border transition-colors ${editableAction.context?.schedule?.notifyBeforeMinutes === 15
-                                                                    ? 'border-emerald-400/70 bg-emerald-400/30'
-                                                                    : 'border-white/14 bg-white/5'
-                                                                    }`}>
-                                                                    <div className={`absolute top-0.5 h-[1.125rem] w-[1.125rem] rounded-full bg-white transition-all ${editableAction.context?.schedule?.notifyBeforeMinutes === 15 ? 'left-[1.35rem]' : 'left-0.5'}`} />
-                                                                </div>
-                                                            </button>
-                                                        )}
-
-                                                        {editableAction.actionType === 'Ação Recorrente' && startTime && startTime !== 'Sem Horário' && selectedDays.length === 0 && (
-                                                            <p className="px-1 text-[10px] leading-relaxed text-white/46">
-                                                                Escolha pelo menos um dia da semana para essa ação gerar tarefas e poder usar lembrete.
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                )}
-
                                                 {/* O "Excluir Ação" de largura inteira que ficava aqui
                                                     subiu para o cabecalho, ao lado do botao de editar.
                                                     Ver o comentario la em cima: apagar nao e a ultima
@@ -1908,352 +1841,15 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                             </div>
                         )}
 
-                        {/* ADVANCED TAB */}
-                        {activeTab === 'advanced' && (
-                            <div className="flex flex-col h-full animate-fade-in pb-20">
-                                <ActionSectionCard title="Avançado" className="mx-4 mt-4 mb-2">
-                                    <StyledRangeInput
-                                        label="Dificuldade"
-                                        value={normalizeActionDifficulty(editableAction.difficulty)}
-                                        min={0}
-                                        max={3}
-                                        step={1}
-                                        unit={difficultyLabels[normalizeActionDifficulty(editableAction.difficulty)]}
-                                        onChange={val => setEditableAction(p => ({ ...p, difficulty: normalizeActionDifficulty(val) }))}
-                                    />
-                                    {normalizeActionDifficulty(editableAction.difficulty) === 0 && (
-                                        <p className="px-1 text-[11px] leading-relaxed text-white/60">
-                                            Lazer registra essa ação, mas não rende EXP. Ele não muda o tipo da ação: para tirar contador, selecione Livre no básico.
-                                        </p>
-                                    )}
-
-                                    <div>
-                                        <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Descrição curta</label>
-                                        <textarea
-                                            placeholder="Descrição opcional"
-                                            value={editableAction.description || ''}
-                                            onChange={e => setEditableAction(p => ({ ...p, description: e.target.value }))}
-                                            disabled={!canEditAuthorialContent}
-                                            rows={3}
-                                            className={`w-full rounded-[18px] px-4 py-3 mt-1 text-sm text-white/90 border placeholder:text-gray-600 resize-none ${canEditAuthorialContent ?'bg-black/20 border-white/8 focus:outline-none focus:border-[var(--accent-bronze)]/50' : 'bg-black/12 border-white/8 opacity-65 cursor-not-allowed'}`}
-                                        />
-                                    </div>
-                                </ActionSectionCard>
-
-                                {/* Sub-Tabs */}
-                                <div className="action-detail-tabs flex gap-1 overflow-x-auto p-1.5 rounded-xl border border-white/8 mx-4 mt-0 mb-2 shrink-0 z-20 sticky top-0" role="group" aria-label="Detalhes da ação">
-                                    {(['AGENDA', 'MÍDIA', 'ANOTAÇÃO', 'CHECKLIST', 'CONTEXTO'] as const).map((tab) => {
-                                        const tabKey = tab === 'AGENDA' ? 'schedule' : tab === 'MÍDIA' ?'media' : tab === 'ANOTAÇÃO' ?'note' : tab === 'CHECKLIST' ?'checklist' : 'context';
-                                        const isActive = advancedSubTab === tabKey;
-                                        return (
-                                            <button
-                                                key={tab}
-                                                aria-pressed={isActive}
-                                                onClick={() => setAdvancedSubTab(tabKey)}
-                                                className={`shrink-0 whitespace-nowrap px-3 py-2 text-[11px] font-bold rounded-lg transition-all duration-300 ${isActive
-                                                    ?'bg-white/10 text-white shadow-lg border border-white/8'
-                                                    : 'text-gray-600 hover:text-gray-400'
-                                                    }`}
-                                            >
-                                                {tab}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-
-                                {/* Content */}
-                                <div className="flex-1 p-0">
-                                    {advancedSubTab === 'schedule' && (
-                                        <div className="p-4">
-                                            <ActionSectionCard title="Agenda">
-                                                {(editableAction.actionType === 'Ação Recorrente' || editableAction.actionType === 'Compromisso') ? (
-                                                    <>
-                                                        {editableAction.actionType === 'Ação Recorrente' && temHorario && (
-                                                            <div>
-                                                                <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Dias da semana</label>
-                                                                <div className="grid grid-cols-7 gap-1 mt-1">
-                                                                    {week.map(day => <DayToggle key={day} day={day} selected={selectedDays.includes(day)} onClick={() => handleDayToggle(day)} />)}
-                                                                </div>
-                                                                {agendaPrevista && (
-                                                                    <p className="mt-2 px-1 text-[10px] leading-relaxed text-white/56">
-                                                                        <span className="font-bold text-white/80">{agendaPrevista.vezes} {agendaPrevista.vezes === 1 ? 'vez' : 'vezes'}</span>
-                                                                        {' neste ciclo, até '}
-                                                                        {agendaPrevista.ateLabel}.
-                                                                    </p>
-                                                                )}
-                                                            </div>
-                                                        )}
-
-                                                        {editableAction.actionType === 'Compromisso' && (
-                                                            <div>
-                                                                <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Data</label>
-                                                                <button onClick={() => setIsDatePickerOpen(true)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/8">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <CalendarIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
-                                                                        <span className="text-sm">{selectedDate ?selectedDate.toLocaleDateString('pt-BR') : 'Selecionar data'}</span>
-                                                                    </div>
-                                                                    <ChevronRightIcon className="w-4 h-4 text-gray-500" />
-                                                                </button>
-                                                            </div>
-                                                        )}
-
-                                                        <div>
-                                                            <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Horário</label>
-                                                            <button onClick={() => setIsTimePickerOpen(!isTimePickerOpen)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/8">
-                                                                <span className="text-sm">{startTime || 'Sem horário'}</span>
-                                                                <ChevronRightIcon className={`w-4 h-4 text-gray-500 transition-transform ${isTimePickerOpen ?'rotate-90' : ''}`} />
-                                                            </button>
-                                                            {isTimePickerOpen && (
-                                                                <div className="relative mt-2 h-48">
-                                                                    <WheelPicker options={timeOptions} value={startTime || 'Sem Horário'} onSelect={handleTimeSelect} />
-                                                                </div>
-                                                            )}
-                                                        </div>
-
-                                                        {canUseReminderToggle && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => { void handleReminderToggle(); }}
-                                                                className="flex items-center justify-between rounded-2xl border border-white/8 bg-black/20 px-4 py-3 text-left transition-colors hover:bg-black/30"
-                                                            >
-                                                                <div>
-                                                                    <div className="text-[10px] font-black uppercase tracking-[0.16em] text-white/52">Lembrete</div>
-                                                                    <div className="mt-1 text-sm font-semibold text-white">Notificar 15 min antes</div>
-                                                                </div>
-                                                                <div className={`relative h-6 w-11 rounded-full border transition-colors ${editableAction.context?.schedule?.notifyBeforeMinutes === 15
-                                                                    ? 'border-emerald-400/70 bg-emerald-400/30'
-                                                                    : 'border-white/14 bg-white/5'
-                                                                    }`}>
-                                                                    <div className={`absolute top-0.5 h-[1.125rem] w-[1.125rem] rounded-full bg-white transition-all ${editableAction.context?.schedule?.notifyBeforeMinutes === 15 ? 'left-[1.35rem]' : 'left-0.5'}`} />
-                                                                </div>
-                                                            </button>
-                                                        )}
-
-                                                        {!isEditingTaskInstance && editableAction.actionType === 'Ação Recorrente' && startTime && startTime !== 'Sem Horário' && selectedDays.length === 0 && (
-                                                            <p className="px-1 text-[10px] leading-relaxed text-white/46">
-                                                                Escolha pelo menos um dia da semana para essa ação gerar tarefas e poder usar lembrete.
-                                                            </p>
-                                                        )}
-
-                                                        {isEditingTaskInstance && (
-                                                            <p className="px-1 text-[10px] leading-relaxed text-white/46">
-                                                                O lembrete segue a configuração da ação base.
-                                                            </p>
-                                                        )}
-                                                    </>
-                                                ) : (
-                                                    <div className="rounded-[18px] border border-white/8 bg-black/20 px-4 py-4 text-sm text-white/62">
-                                                        Esta ação não usa agenda fixa.
-                                                    </div>
-                                                )}
-                                            </ActionSectionCard>
-                                        </div>
-                                    )}
-
-                                    {advancedSubTab === 'media' && (
-                                        <div className="h-full flex flex-col p-4">
-                                            {mediaPreviewUrl ?(
-                                                <div className="w-full aspect-video bg-black/40 rounded-xl overflow-hidden border border-white/8 relative group mb-4">
-                                                    <img
-                                                        src={mediaPreviewUrl}
-                                                        className="w-full h-full object-cover"
-                                                        alt="Mídia"
-                                                        onError={(e) => (e.currentTarget.style.display = 'none')}
-                                                    />
-                                                    {mode === 'edit' && (
-                                                        <button aria-label="Remover mídia"
-                                                            onClick={() => { setNewAssetUrl(''); setMediaSlot({ imageUrl: '', caption: '' }); setEditableAction(p => ({ ...p, assets: [] })); }}
-                                                            className="absolute top-2 right-2 p-1.5 bg-red-500/80 rounded-full text-white hover:bg-red-500 transition-colors"
-                                                        >
-                                                            <XIcon className="w-3 h-3" />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                <div className="w-full aspect-video bg-white/5 rounded-xl border border-dashed border-white/8 flex flex-col items-center justify-center gap-2 mb-4">
-                                                    <span className="text-4xl opacity-20">📋</span>
-                                                    <span className="text-xs text-gray-500 font-medium">Sem mídia vinculada</span>
-                                                </div>
-                                            )}
-
-                                            {mode === 'edit' && canEditAuthorialContent && (
-                                                <div className="space-y-4">
-                                                    <div className="text-xs font-bold text-gray-400 uppercase">Upload de Foto (Anexo)</div>
-                                                    <ImageUploadSlot
-                                                        value={mediaSlot}
-                                                        onChange={(value) => {
-                                                            setMediaSlot(value);
-                                                            if (value.imageUrl) {
-                                                                const title = value.caption?.trim() || 'Mídia Principal';
-                                                                setNewAssetUrl(value.imageUrl);
-                                                                setEditableAction(prev => ({ ...prev, assets: [{ type: 'image', url: value.imageUrl, title }] }));
-                                                            } else {
-                                                                setNewAssetUrl('');
-                                                                setEditableAction(prev => ({ ...prev, assets: [] }));
-                                                            }
-                                                        }}
-                                                    />
-                                                    <div className="space-y-2">
-                                                        <label className="text-xs font-bold text-gray-400 uppercase">URL da Imagem/Vídeo</label>
-                                                        <input
-                                                            type="text"
-                                                            value={newAssetUrl || displayAction?.assets?.find(a => a.type === 'image' || a.type === 'video')?.url || ''}
-                                                            onChange={(e) => {
-                                                                const url = e.target.value;
-                                                                setNewAssetUrl(url);
-                                                                if (url) {
-                                                                    setMediaSlot(prev => ({ ...prev, imageUrl: url }));
-                                                                    const title = mediaSlot.caption?.trim() || 'Mídia Principal';
-                                                                    setEditableAction(prev => ({ ...prev, assets: [{ type: 'image', url, title }] }));
-                                                                } else {
-                                                                    setEditableAction(prev => ({ ...prev, assets: [] }));
-                                                                }
-                                                            }}
-                                                            placeholder="https://..."
-                                                            className="w-full p-3 bg-black/30 border border-white/8 rounded-xl text-xs focus:outline-none focus:border-[var(--skin-accent-color)] text-gray-300 placeholder:text-gray-600"
-                                                        />
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {advancedSubTab === 'note' && (
-                                        <div className="p-4 h-full flex flex-col">
-                                            {mode === 'edit' && canEditAuthorialContent ?(
-                                                <div className="flex flex-1 flex-col gap-3">
-                                                    <div className="flex items-center justify-between gap-3">
-                                                        <div className="text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500">
-                                                            Escreva a aula ou anotação
-                                                        </div>
-                                                        <button
-                                                            type="button"
-                                                            onClick={insertBriefingPageBreak}
-                                                            className="px-3 py-2 rounded-xl border border-[var(--skin-line-color)]/60 bg-white/5 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ui-text-accent)] hover:bg-white/10 transition-colors"
-                                                        >
-                                                            Nova página
-                                                        </button>
-                                                    </div>
-                                                    <textarea
-                                                        value={editableAction.briefing || ''}
-                                                        onChange={e => setEditableAction(prev => ({ ...prev, briefing: e.target.value }))}
-                                                        className="w-full flex-1 p-4 bg-black/30 border border-white/8 rounded-xl text-sm focus:outline-none focus:border-[var(--skin-accent-color)] text-gray-200 resize-none min-h-[300px]"
-                                                        placeholder="Digite suas anotações aqui..."
-                                                    />
-                                                    <div className="text-[11px] text-gray-500 leading-relaxed">
-                                                        Use <span className="font-black text-gray-300">Nova página</span> para separar trechos manuais. O leitor em tela cheia também continua paginando sozinho quando o texto crescer demais.
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="flex flex-1 flex-col gap-3">
-                                                    <div className="text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500">
-                                                        Leitura
-                                                    </div>
-                                                    <div className="flex min-h-[300px] flex-1 flex-col overflow-hidden rounded-xl border border-white/8 bg-[#1a1512] p-4 shadow-inner">
-                                                        <button
-                                                            type="button"
-                                                            onClick={briefingPages.length > 0 ? openBriefingReader : undefined}
-                                                            disabled={briefingPages.length === 0}
-                                                            className="rounded-[18px] border border-white/8 bg-black/22 px-4 py-4 text-left transition-colors disabled:cursor-default disabled:opacity-90 hover:border-[var(--skin-accent-color)]/28 hover:bg-black/28"
-                                                        >
-                                                            <p
-                                                                className="text-[15px] leading-relaxed whitespace-pre-wrap font-mono text-white/92"
-                                                                style={{
-                                                                    display: '-webkit-box',
-                                                                    WebkitLineClamp: 8,
-                                                                    WebkitBoxOrient: 'vertical',
-                                                                    overflow: 'hidden',
-                                                                }}
-                                                            >
-                                                                {briefingPreviewText || "Nenhuma anotação disponível."}
-                                                            </p>
-                                                        </button>
-                                                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-white/8 pt-3 text-[10px] font-black uppercase tracking-[0.18em] text-[var(--ui-text-accent)]/92">
-                                                            <span>
-                                                                {briefingPages.length > 1
-                                                                    ? `${briefingPages.length} páginas`
-                                                                    : briefingPages.length === 1
-                                                                        ? '1 página'
-                                                                        : 'Sem páginas'}
-                                                            </span>
-                                                            <span className="text-white/62">
-                                                                {briefingPages.length > 0 ? 'Abrir leitura' : 'Adicione texto para liberar o leitor'}
-                                                            </span>
-                                                        </div>
-                                                        {briefingPages.length > 0 && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={openBriefingReader}
-                                                                className="reader-cta-button mt-3 inline-flex items-center justify-center rounded-2xl border px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em]"
-                                                            >
-                                                                Iniciar leitura
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {advancedSubTab === 'checklist' && (
-                                        <div className="p-4 space-y-3">
-                                            <div className="text-xs font-bold text-gray-400 uppercase">Preparar Ações</div>
-                                            {/* Checklist Items */}
-                                            {(displayAction?.preFlight || []).length > 0 ?(
-                                                displayAction?.preFlight?.map((item, i) => (
-                                                    <div key={i} className="flex items-start gap-4 p-4 bg-white/5 rounded-xl border border-white/8 hover:bg-white/10 transition-colors group">
-                                                        <div className="mt-1 w-2 h-2 rounded-full bg-[var(--skin-accent-color)]/50 group-hover:bg-[var(--skin-accent-color)] group-hover:shadow-[0_0_8px_var(--sephirot-glow-color)] transition-all" />
-                                                        <span className="text-sm text-gray-300 font-medium leading-snug flex-1">{item}</span>
-                                                        {mode === 'edit' && canEditAuthorialContent && (
-                                                            <button aria-label="Remover item do checklist"
-                                                                onClick={() => setEditableAction(prev => ({ ...prev, preFlight: prev.preFlight?.filter((_, idx) => idx !== i) }))}
-                                                                className="text-gray-500 hover:text-red-400 opacity-50 hover:opacity-100 transition-opacity"
-                                                            >
-                                                                <XIcon className="w-4 h-4" />
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <div className="flex flex-col items-center justify-center py-10 opacity-30 space-y-2 border border-dashed border-white/8 rounded-xl">
-                                                    <span className="text-4xl">?</span>
-                                                    <span className="text-[10px] uppercase font-black tracking-widest">Lista Vazia</span>
-                                                </div>
-                                            )}
-
-                                            {/* Add Item Input (Edit Mode) */}
-                                            {mode === 'edit' && canEditAuthorialContent && (
-                                                <div className="flex gap-2 mt-4">
-                                                    <input
-                                                        type="text"
-                                                        value={newChecklistItem}
-                                                        onChange={(e) => setNewChecklistItem(e.target.value)}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'Enter' && newChecklistItem.trim()) {
-                                                                setEditableAction(prev => ({ ...prev, preFlight: [...(prev.preFlight || []), newChecklistItem.trim()] }));
-                                                                setNewChecklistItem('');
-                                                            }
-                                                        }}
-                                                        placeholder="Adicionar item..."
-                                                        className="flex-1 p-3 bg-black/30 border border-white/8 rounded-xl text-xs focus:outline-none focus:border-[var(--skin-accent-color)]"
-                                                    />
-                                                    <button aria-label="Adicionar item ao checklist"
-                                                        onClick={() => {
-                                                            if (newChecklistItem.trim()) {
-                                                                setEditableAction(prev => ({ ...prev, preFlight: [...(prev.preFlight || []), newChecklistItem.trim()] }));
-                                                                setNewChecklistItem('');
-                                                            }
-                                                        }}
-                                                        className="p-3 bg-white/10 hover:bg-white/20 rounded-xl text-white transition-colors"
-                                                    >
-                                                        +
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {advancedSubTab === 'context' && (
+                        {activeTab === 'advanced' && <div className={`action-section action-section-${advancedSubTab}`}>
+                            {advancedSubTab === 'context' && <>
+                                {!schedulePanelOpen ? <>
+                                    {mode === 'edit' && canEditExecutionSettings && <StyledRangeInput label="Dificuldade" value={normalizeActionDifficulty(editableAction.difficulty)} min={0} max={3} step={1} unit={difficultyLabels[normalizeActionDifficulty(editableAction.difficulty)]} onChange={value => setEditableAction(p => ({...p, difficulty: value}))} />}
+                                    {(mode === 'edit' || displayAction?.description) && <label className="action-context-note"><span>Contexto</span>
+                                        {mode === 'edit' ? <textarea aria-label="Contexto da ação" maxLength={1000} value={editableAction.description || ''} disabled={!canEditAuthorialContent} onChange={e => setEditableAction(p => ({...p, description:e.target.value}))} placeholder="Onde ou em que situação?" /> : <p>{displayAction?.description}</p>}
+                                    </label>}
+                                    {(displayAction?.actionType === 'Ação Recorrente' || displayAction?.actionType === 'Compromisso') && <button className="action-schedule-entry" onClick={() => setSchedulePanelOpen(true)}><span>Agendamento<small>{temHorario ? `${startTime}${selectedDays.length ? ' · '+selectedDays.map(d=>d.slice(0,3)).join(', ') : ''}` : 'Não definido'}</small></span><ChevronRightIcon className="w-4 h-4" /></button>}
+                                    <details className="action-extra-context"><summary>Energia e prioridade</summary><div className="action-inner-scroll">                                    {(mode === 'edit' || displayAction?.context?.energyLevel || displayAction?.context?.plannerQuadrant) && (
                                         <div className="p-4 space-y-6">
                                             {/* Energy Level */}
                                             <div className="space-y-3">
@@ -2341,10 +1937,96 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                             )}
                                         </div>
                                     )}
-                                </div>
-                            </div>
-                        )}
+</div></details>
+                                </> : <div className="action-schedule-panel">
+                                    <button className="action-back" onClick={() => setSchedulePanelOpen(false)}>← Contexto</button>
+                                    <div className="action-schedule-fields">
+                                        <label>{editableAction.actionType === 'Compromisso' ? 'Data' : 'A partir de'}<input aria-label="Data de início" type="date" disabled={mode !== 'edit' || !canEditExecutionSettings} value={editableAction.actionType === 'Compromisso' ? (selectedDate ? getLocalDateString(selectedDate) : '') : (editableAction.context?.schedule?.startsOn || getLocalDateString())} onChange={e => { if (editableAction.actionType === 'Compromisso') setSelectedDate(e.target.value ? getTaskDateValue(e.target.value) : null); else updateScheduleContext(schedule=>({...schedule, startsOn:e.target.value, limitToRepetitions:true})); }} /></label>
+                                        <label>Horário<input aria-label="Horário obrigatório" type="time" required disabled={mode !== 'edit' || !canEditExecutionSettings} value={temHorario ? startTime! : ''} onChange={e => { setStartTime(e.target.value || null); if (editableAction.actionType === 'Ação Recorrente') updateScheduleContext(schedule=>({...schedule, startsOn:schedule.startsOn || getLocalDateString(), limitToRepetitions:true})); }} /></label>
+                                    </div>
+                                    {editableAction.actionType === 'Ação Recorrente' && <div className="action-weekdays">{week.map(day => <button key={day} aria-pressed={selectedDays.includes(day)} disabled={mode !== 'edit' || !canEditExecutionSettings} onClick={()=>{handleDayToggle(day);updateScheduleContext(schedule=>({...schedule, startsOn:schedule.startsOn || getLocalDateString(),limitToRepetitions:true}));}}>{day.slice(0,3)}</button>)}</div>}
+                                    {agendaPrevista && <p className="action-schedule-summary">{agendaPrevista.vezes} de {editableAction.repetitions || 1} repetições neste ciclo · até {agendaPrevista.ateLabel}</p>}
+                                    {canUseReminderToggle && <button className="action-schedule-entry" disabled={mode !== 'edit'} aria-pressed={editableAction.context?.schedule?.notifyBeforeMinutes === 15} onClick={()=>{void handleReminderToggle();}}><span>Lembrar 15 min antes</span><span>{editableAction.context?.schedule?.notifyBeforeMinutes === 15 ? 'Ligado' : 'Desligado'}</span></button>}
+                                    {mode === 'edit' && canEditExecutionSettings && <button className="action-back" onClick={()=>{setStartTime(null);setSelectedDays([]);updateScheduleContext(()=>({}));setSchedulePanelOpen(false);}}>Remover agendamento</button>}
+                                </div>}
+                            </>}
+                            {advancedSubTab === 'note' && <>
+                                {(mode === 'edit' || displayAction?.briefing) && <label className="action-briefing"><span>Anotação</span>{mode === 'edit' && canEditAuthorialContent ? <textarea aria-label="Anotação" value={editableAction.briefing || ''} onChange={e=>setEditableAction(p=>({...p,briefing:e.target.value}))} placeholder="Escreva aqui…" /> : <p>{displayAction?.briefing || 'Sem anotação.'}</p>}</label>}
+                                {briefingPages.length > 0 && <button className="action-read-link" onClick={openBriefingReader}>Abrir leitura</button>}
+                                <div className="action-checklist-label">Checklist</div>
+                                <div className="action-checklist-scroll" aria-label="Itens do checklist">{(displayAction?.preFlight || []).map((item,i)=><div className="action-checklist-row" key={i}><span title={item}>{item}</span>{mode === 'edit' && canEditAuthorialContent && <button aria-label="Remover item do checklist" onClick={()=>setEditableAction(p=>({...p,preFlight:p.preFlight?.filter((_,idx)=>idx!==i)}))}><XIcon className="w-4 h-4" /></button>}</div>)}</div>
+                                {mode === 'edit' && canEditAuthorialContent && <form className="action-checklist-add" onSubmit={e=>{e.preventDefault();if(newChecklistItem.trim()){setEditableAction(p=>({...p,preFlight:[...(p.preFlight || []),newChecklistItem.trim()]}));setNewChecklistItem('');}}}><input aria-label="Novo item do checklist" maxLength={200} value={newChecklistItem} onChange={e=>setNewChecklistItem(e.target.value)} placeholder="Adicionar item…" /><button type="submit" aria-label="Adicionar item ao checklist">+</button></form>}
+                            </>}
+                                    {advancedSubTab === 'media' && (
+                                        <div className="h-full flex flex-col p-4">
+                                            {mediaPreviewUrl ?(
+                                                <div className="w-full aspect-video bg-black/40 rounded-xl overflow-hidden border border-white/8 relative group mb-4">
+                                                    <img
+                                                        src={mediaPreviewUrl}
+                                                        className="w-full h-full object-cover"
+                                                        alt="Mídia"
+                                                        onError={(e) => (e.currentTarget.style.display = 'none')}
+                                                    />
+                                                    {mode === 'edit' && (
+                                                        <button aria-label="Remover mídia"
+                                                            onClick={() => { setNewAssetUrl(''); setMediaSlot({ imageUrl: '', caption: '' }); setEditableAction(p => ({ ...p, assets: [] })); }}
+                                                            className="absolute top-2 right-2 p-1.5 bg-red-500/80 rounded-full text-white hover:bg-red-500 transition-colors"
+                                                        >
+                                                            <XIcon className="w-3 h-3" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="w-full aspect-video bg-white/5 rounded-xl border border-dashed border-white/8 flex flex-col items-center justify-center gap-2 mb-4">
+                                                    <span className="text-4xl opacity-20">📋</span>
+                                                    <span className="text-xs text-gray-500 font-medium">Sem mídia vinculada</span>
+                                                </div>
+                                            )}
 
+                                            {mode === 'edit' && canEditAuthorialContent && (
+                                                <div className="space-y-4">
+                                                    <div className="text-xs font-bold text-gray-400 uppercase">Upload de Foto (Anexo)</div>
+                                                    <ImageUploadSlot
+                                                        value={mediaSlot}
+                                                        onChange={(value) => {
+                                                            setMediaSlot(value);
+                                                            if (value.imageUrl) {
+                                                                const title = value.caption?.trim() || 'Mídia Principal';
+                                                                setNewAssetUrl(value.imageUrl);
+                                                                setEditableAction(prev => ({ ...prev, assets: [{ type: 'image', url: value.imageUrl, title }] }));
+                                                            } else {
+                                                                setNewAssetUrl('');
+                                                                setEditableAction(prev => ({ ...prev, assets: [] }));
+                                                            }
+                                                        }}
+                                                    />
+                                                    <div className="space-y-2">
+                                                        <label className="text-xs font-bold text-gray-400 uppercase">URL da Imagem/Vídeo</label>
+                                                        <input
+                                                            type="text"
+                                                            value={newAssetUrl || displayAction?.assets?.find(a => a.type === 'image' || a.type === 'video')?.url || ''}
+                                                            onChange={(e) => {
+                                                                const url = e.target.value;
+                                                                setNewAssetUrl(url);
+                                                                if (url) {
+                                                                    setMediaSlot(prev => ({ ...prev, imageUrl: url }));
+                                                                    const title = mediaSlot.caption?.trim() || 'Mídia Principal';
+                                                                    setEditableAction(prev => ({ ...prev, assets: [{ type: 'image', url, title }] }));
+                                                                } else {
+                                                                    setEditableAction(prev => ({ ...prev, assets: [] }));
+                                                                }
+                                                            }}
+                                                            placeholder="https://..."
+                                                            className="w-full p-3 bg-black/30 border border-white/8 rounded-xl text-xs focus:outline-none focus:border-[var(--skin-accent-color)] text-gray-300 placeholder:text-gray-600"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+
+                        </div>}
                     </div>
 
                     {/* 3. FOOTER (Fixed) */}

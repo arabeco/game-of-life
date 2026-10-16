@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Arena, Action, ScheduledTask, RelationshipLinkType } from '../types';
 import { getLocalDateString, useGame } from '../contexts/GameContext';
 import { PlusIcon, EditIcon, CheckIcon, LinkIcon, Trash2Icon, UsersIcon, SendIcon } from './Icons';
@@ -15,6 +15,7 @@ import { calculateArenaProgress, isExplicitSharedArena } from '../utils/progress
 import { getActionSurfaceBadgeClassName, resolveActionSurfaceBadge } from '../utils/actionSurfaceBadges';
 import { filterTasksAfterFreeProgressReset } from '../utils/freeProgressScope';
 import './arena-ui.css';
+import './arena-layout.css';
 import { EmojiGlyph } from './EmojiGlyph';
 import { ConnectionsModal } from './ConnectionsModal';
 import { PRODUCT_FEATURES } from '../constants/featureFlags';
@@ -167,6 +168,7 @@ export const ArenaDetailModal: React.FC<{
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
     const [isLinkingObserver, setIsLinkingObserver] = useState(false);
     const [isRelationshipHubOpen, setRelationshipHubOpen] = useState(false);
+    const [arenaTab, setArenaTab] = useState<'actions' | 'about'>('actions');
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
     const newActionRef = useRef<HTMLButtonElement>(null);
     const [currentLinkType, setCurrentLinkType] = useState<string | null>(linkedRelationshipType);
@@ -322,6 +324,7 @@ export const ArenaDetailModal: React.FC<{
     const forceSharedPool = isOfficeMode ? true : (isExplicitSharedArena(arena) ? undefined : false);
     const tasksForCounts = useMemo(() => {
         if (Array.isArray(tasksOverride)) return tasksOverride;
+        if (arena.originCodexId) return tasks;
         if (!activeCycle) return filterTasksAfterFreeProgressReset(tasks, freeProgressResetAt);
 
         const today = getLocalDateString();
@@ -331,7 +334,7 @@ export const ArenaDetailModal: React.FC<{
             task.date >= activeCycle.startDate &&
             task.date <= cycleEnd
         );
-    }, [activeCycle, freeProgressResetAt, tasks, tasksOverride]);
+    }, [activeCycle, freeProgressResetAt, tasks, tasksOverride, arena.originCodexId]);
     const arenaProgressState = useMemo(() => calculateArenaProgress({
         arena,
         actions: allActions,
@@ -572,16 +575,17 @@ export const ArenaDetailModal: React.FC<{
         <Portal>
             <div className="arena-detail-modal arena-detail-modal-overlay ui-modal-backdrop z-50" onClick={handleBackdropClick}>
                 <div
-                    className="arena-detail-modal-root ui-modal-panel dossier-bg arena-plate border w-full max-w-[21rem] m-0 px-4 py-5 flex flex-col h-auto max-h-[92vh] relative overflow-hidden"
+                    className="arena-detail-modal-root ui-modal-panel dossier-bg arena-plate border w-full max-w-[27rem] m-0 px-4 py-5 flex flex-col h-auto max-h-[92vh] relative overflow-hidden"
                     style={{
-                        borderColor: 'var(--skin-accent-color)',
+                        borderColor: accentColor,
+                        '--arena-accent': accentColor,
                         backgroundImage: [
                             `radial-gradient(circle at 50% 0%, rgba(255,255,255,0.18), rgba(255,255,255,0.07) 18%, transparent 44%)`,
                             `radial-gradient(circle at 18% 14%, rgba(255,255,255,0.05), transparent 22%)`,
                             `radial-gradient(circle at 100% 100%, ${rgbaString(accentColor, 0.22)}, transparent 40%)`,
                             `linear-gradient(160deg, rgba(192,197,207,0.6) 0%, rgba(118,125,138,0.68) 20%, rgba(66,72,84,0.82) 38%, rgba(18,20,26,0.94) 72%, ${rgbaString(accentColor, 0.14)} 92%, rgba(7,8,11,0.995) 100%)`,
                         ].join(', '),
-                    }}
+                    } as React.CSSProperties}
                 >
                     <div
                         className="modal-aura-overlay"
@@ -591,25 +595,16 @@ export const ArenaDetailModal: React.FC<{
                         className="modal-sheen-overlay"
                         style={{ '--modal-sheen-color': 'rgba(219, 229, 244, 0.52)' } as React.CSSProperties}
                     />
-                    <div className="relative z-10 flex flex-col space-y-3">
+                    <div className="arena-detail-content relative z-10 flex flex-col space-y-3">
                         <div className="arena-detail-modal-header arena-plate-header flex justify-between items-start flex-shrink-0 gap-2 rounded-xl px-2 py-2 bg-black/20">
                             <div className="flex flex-col items-center gap-1">
                                 {/* Allow editing for flexible arenas or if user is the Mentor */}
                                 {!isReadOnlyArena && (!isArenaEditLocked || isEditing || effectiveRelationshipType === 'mentoria') && (
-                                    <button onClick={handleEditToggle} className={`p-2 rounded-full transition-colors border border-white/14 ${isEditing ?'bg-white/20' : 'bg-transparent'}`}>
+                                    <button aria-label={isEditing ? 'Salvar arena' : 'Editar arena'} onClick={() => { handleEditToggle(); setArenaTab('about'); }} className={`p-2 rounded-full transition-colors border border-white/14 ${isEditing ?'bg-white/20' : 'bg-transparent'}`}>
                                         <EditIcon className={`w-5 h-5 ${isEditing ?'text-white' : 'text-gray-300'}`} />
                                     </button>
                                 )}
 
-                                {canDeleteArenaFromModal && (isSpecialArena || isRelationshipArena || arena.isArchived) && !isEditing && (
-                                    <button
-                                        onClick={() => setShowDeleteConfirmation(true)}
-                                        className="p-2 rounded-full transition-colors border border-red-500/30 bg-red-500/10 hover:bg-red-500/20"
-                                        title={deleteDialogTitle}
-                                    >
-                                        <Trash2Icon className="w-5 h-5 text-red-500" />
-                                    </button>
-                                )}
                                 {!isReadOnlyArena && isEditing && (
                                     <button
                                         onClick={() => {
@@ -696,7 +691,7 @@ export const ArenaDetailModal: React.FC<{
                                 </button>
                             )}
                             {!isEditing && (
-                                <button onClick={onClose} className="ui-modal-button luxe-skin-button min-w-[4.5rem]">
+                                <button onClick={onClose} className="ui-modal-button luxe-skin-button luxe-reward-gold luxe-brilho min-w-[4.5rem]">
                                     OK
                                 </button>
                             )}
@@ -716,16 +711,20 @@ export const ArenaDetailModal: React.FC<{
                             />
                         )}
 
-                        <div className="flex-shrink-0 flex flex-col items-center text-center space-y-1">
+                        <nav className="arena-detail-tabs" aria-label="Abas da arena">
+                            <button aria-pressed={arenaTab === 'actions' && !isEditing} onClick={()=>setArenaTab('actions')} disabled={isEditing}>Ações</button>
+                            <button aria-pressed={arenaTab === 'about' || isEditing} onClick={()=>setArenaTab('about')}>Sobre</button>
+                        </nav>
+                        {(arenaTab === 'about' || isEditing) ? <div className="arena-about">                        <div className="flex-shrink-0 flex flex-col items-center text-center space-y-1">
                             <button aria-label="Escolher ícone da arena"
                                 onClick={() => isEditing && setIsIconPickerOpen(true)}
                                 disabled={!isEditing}
-                                className="w-20 h-20 bg-white/10 rounded-xl flex items-center justify-center cursor-pointer disabled:cursor-default"
+                                className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center cursor-pointer disabled:cursor-default"
                             >
                                 <EmojiGlyph
                                     symbol={editableArena.icon}
                                     size="picker"
-                                    className="arena-icon scale-[2.55] text-white drop-shadow-[0_0_18px_rgba(255,255,255,0.18)]"
+                                    className="arena-icon scale-[1.5] text-white drop-shadow-[0_0_18px_rgba(255,255,255,0.18)]"
                                 />
                             </button>
 
@@ -733,6 +732,8 @@ export const ArenaDetailModal: React.FC<{
                                 <>
                                     <input
                                         type="text"
+                                        maxLength={80}
+                                        aria-label="Nome da arena"
                                         value={editableArena.name}
                                         onChange={(e) => setEditableArena(prev => ({ ...prev, name: e.target.value }))}
                                         className="arena-detail-title arena-detail-title-input luxe-title-ornate w-full text-center bg-transparent text-[1.82rem] font-bold uppercase tracking-[0.1em] text-[color:var(--skin-accent-color)] pt-2 focus:outline-none border-b border-dashed border-white/14"
@@ -741,6 +742,8 @@ export const ArenaDetailModal: React.FC<{
                                         value={editableArena.description}
                                         onChange={(e) => setEditableArena(prev => ({ ...prev, description: e.target.value }))}
                                         rows={2}
+                                        maxLength={1000}
+                                        aria-label="Descrição da arena"
                                         className="w-full text-center bg-transparent text-sm text-gray-500 pt-1 focus:outline-none"
                                     />
                                     <div className="arena-detail-field-card w-full rounded-2xl border border-white/8 bg-black/25 px-3 py-2 text-left">
@@ -765,68 +768,19 @@ export const ArenaDetailModal: React.FC<{
                             )}
                         </div>
 
-                        <div className="flex-grow space-y-2 flex flex-col overflow-y-auto">
-                            {milestoneActions.length > 0 && (
-                                <div className="flex-shrink-0">
-                                    <div className='relative text-center mb-2'>
-                                        <hr className="border-t border-gray-800" />
-                                        <h3 className="arena-detail-section-label text-xs font-semibold text-[var(--skin-accent-color)] uppercase tracking-wider absolute -top-2 left-1/2 -translate-x-1/2 bg-[#101010] px-2">Marcos</h3>
-                                    </div>
-                                    <div className="flex flex-col items-center space-y-2 py-2">
-                                        {milestoneActions.map(action => {
-                                            const backgroundStyle = getActionBackgroundStyle(action.id);
-                                            const task = tasksForCounts.find(t => t.actionId === action.id);
-                                            const isCompleted = task?.completed;
-
-                                            return (
-                                                <div key={action.id} className="relative">
-                                                    <button
-                                                        onClick={() => openActionDetails(action)}
-                                                        style={backgroundStyle}
-                                                        className="relative w-20 h-20 flex-shrink-0 border border-[var(--skin-accent-color)] rounded-xl hover:scale-105 transition-transform overflow-hidden p-1 transform rotate-45"
-                                                    >
-                                                        <div className="arena-plasma">
-                                                            <PlasmaCanvas color={'var(--skin-accent-color)'} opacity={0.189} className="arena-plasma-canvas" />
-                                                        </div>
-                                                        <div className="relative z-10 transform -rotate-45 flex flex-col items-center justify-center px-1 space-y-1.5">
-                                                            <EmojiGlyph symbol={action.icon || '\u{1F3C6}'} size="milestone" className="text-white" />
-                                                            <p className="text-[13px] font-bold leading-[1.05] line-clamp-2 text-white">{action.name}</p>
-                                                        </div>
-                                                    </button>
-                                                    {isCompleted && (
-                                                        <div className="absolute top-0 right-0 bg-green-500 rounded-full p-1 border-2 border-black">
-                                                            <CheckIcon className="w-3 h-3 text-white" />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="flex-grow overflow-x-auto overflow-y-hidden py-2">
-                                <div className="flex space-x-2 h-full items-center">
-                                    {bronzeActions.map(action => (
-                                        <ActionSquare
-                                            key={action.id}
-                                            action={action}
-                                            skinColor={'var(--skin-accent-color)'}
-                                            onClick={() => openActionDetails(action)}
-                                            sharedPool={isSharedPool}
-                                            countingTasks={tasksForCounts}
-                                            relationshipLinkType={effectiveRelationshipType as RelationshipLinkType | null}
-                                        />
-                                    ))}
-                                    {!previewMode && !isReadOnlyArena && !isArenaDeJornada && (
-                                        <button aria-label="Nova ação" id="add-action-button" ref={newActionRef} onClick={openNewAction} className="w-24 h-24 flex-shrink-0 border-2 border-dashed border-[var(--skin-accent-color)] rounded-xl flex flex-col items-center justify-center hover:border-[var(--skin-accent-color)] transition-colors text-gray-500 hover:text-white">
-                                            <PlusIcon className="w-8 h-8" />
-                                        </button>
-                                    )}
-                                </div>
+</div> : <>
+                            <div className="arena-actions-list" aria-label="Ações da arena">
+                                {allActions.map(action => {
+                                    const completed = tasksForCounts.filter(task=>task.actionId === action.id && task.completed).length;
+                                    return <button key={action.id} className="arena-action-row" onClick={()=>openActionDetails(action)}>
+                                        <span className="arena-action-tile" style={getActionBackgroundStyle(action.id)}><EmojiGlyph symbol={action.icon || '📝'} size="picker" /></span>
+                                        <span className="arena-action-copy"><strong>{action.name}</strong><small>{action.duration} min · {action.actionType === 'Ação Recorrente' ? `${completed}/${action.repetitions || 1} repetições` : action.actionType === 'Marco' ? (completed ? 'Marco alcançado' : 'Marco') : action.actionType}</small></span>
+                                    </button>;
+                                })}
+                                {!allActions.length && <p className="arena-actions-empty">Nenhuma ação ainda.</p>}
                             </div>
-                        </div>
-
+                            {!previewMode && !isReadOnlyArena && !isArenaDeJornada && <button aria-label="Nova ação" id="add-action-button" ref={newActionRef} onClick={openNewAction} className="arena-action-add"><PlusIcon className="w-5 h-5" /></button>}
+                        </>}
                         <div className="flex-shrink-0 space-y-2 pt-2">
                             {hasMeasurableProgress ? (
                                 <div className="arena-plate-progress">

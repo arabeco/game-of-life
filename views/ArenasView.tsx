@@ -1,3 +1,4 @@
+import { campaignAwareTasks } from '../utils/campaignScope';
 ﻿import { FloatingActionDock } from '../components/FloatingActionDock';
 import './arena-groups.css';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -82,12 +83,13 @@ type ArenaAttentionState = {
 };
 
 export const ArenasView: React.FC = () => {
-    const { getArenas, assets, actions, tasks, addArena, updateArena, addAction, arenaFolders, createArenaFolder, moveArenaToFolder, reorderArena, reorderEntity, reorderEntityPriority, campaigns, addCampaign, updateCampaign, deleteCampaign, activeCycle, freeProgressResetAt, resetFreeProgress, arenasViewMode, setArenasViewMode, userProfile, getClanQuestProgress, getClanQuestsForArena, getSharedActionPoolProgress, userCodexes, installCodex, missoesDeClaAtivas, atualizarMissaoDoCla } = useGame();
+    const { getArenas, assets, actions, tasks, addArena, updateArena, addAction, arenaFolders, createArenaFolder, moveArenaToFolder, reorderArena, reorderEntity, reorderEntityPriority, campaigns: allCampaigns, addCampaign, updateCampaign, deleteCampaign, activeCycle, freeProgressResetAt, resetFreeProgress, arenasViewMode, setArenasViewMode, userProfile, getClanQuestProgress, getClanQuestsForArena, getSharedActionPoolProgress, userCodexes, installCodex, missoesDeClaAtivas, atualizarMissaoDoCla } = useGame();
     // Abrir as arenas reconta a missao de cla: o que o grupo marcou aparece aqui.
     useEffect(() => {
         missoesDeClaAtivas.forEach((quest) => { void atualizarMissaoDoCla(quest.id); });
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
     const { isBuilderMode } = useCodexBuilder();
+    const campaigns = useMemo(() => allCampaigns.filter(c => c.status === 'active'), [allCampaigns]);
     const [selectedArenaId, setSelectedArenaId] = useState<string | null>(null);
     const [sharedLinkedArenas, setSharedLinkedArenas] = useState<LinkedRelationshipArena[]>([]);
     const [selectedSharedArenaDetail, setSelectedSharedArenaDetail] = useState<{
@@ -274,7 +276,7 @@ export const ArenasView: React.FC = () => {
     const installedCampaignCodexIds = useMemo(() => {
         const ids = new Set<string>();
         assets.forEach((asset) => asset.arenas.forEach((arena) => {
-            if (arena.originCodexId) ids.add(arena.originCodexId);
+            if (!arena.isArchived && arena.originCodexId) ids.add(arena.originCodexId);
         }));
         return ids;
     }, [assets]);
@@ -1202,6 +1204,7 @@ export const ArenasView: React.FC = () => {
         if (!activeCycle) return filterTasksAfterFreeProgressReset(tasks, freeProgressResetAt);
         return tasks.filter(task => task.date >= activeCycle.startDate && task.date <= activeCycle.endDate);
     }, [activeCycle, freeProgressResetAt, tasks]);
+    const campaignProgressTasks = useMemo(() => campaignAwareTasks(tasks, cycleScopedTasks, actions), [tasks, cycleScopedTasks, actions]);
     const completedFreeTasksCount = cycleScopedTasks.filter((task) => task.completed).length;
     const canResetFreeGoals = !activeCycle && completedFreeTasksCount > 0;
     const tasksByActionId = useMemo(() => {
@@ -1259,7 +1262,7 @@ export const ArenasView: React.FC = () => {
         const progress = calculateArenaProgress({
             arena,
             actions: arenaActions,
-            tasks: arenaTasks ?? cycleScopedTasks,
+            tasks: arenaTasks ?? campaignProgressTasks,
             clanQuests: getClanQuestsForArena(arena, arenaActions),
             getClanQuestProgress,
             getSharedActionPoolProgress,
@@ -1282,7 +1285,7 @@ export const ArenasView: React.FC = () => {
             const progress = calculateArenaProgress({
                 arena,
                 actions: arenaActions,
-                tasks: cycleScopedTasks,
+                tasks: campaignProgressTasks,
                 clanQuests: getClanQuestsForArena(arena, arenaActions),
                 getClanQuestProgress,
                 getSharedActionPoolProgress,
@@ -1312,7 +1315,7 @@ export const ArenasView: React.FC = () => {
         });
 
         return map;
-    }, [allArenas, cycleScopedTasks, getClanQuestProgress, getClanQuestsForArena, getSharedActionPoolProgress, relationshipLinkTypeByArenaId, actionsByArenaId]);
+    }, [allArenas, campaignProgressTasks, getClanQuestProgress, getClanQuestsForArena, getSharedActionPoolProgress, relationshipLinkTypeByArenaId, actionsByArenaId]);
     const campaignProgressById = useMemo(() => {
         const map = new Map<string, ReturnType<typeof calculateCampaignProgressSummary>>();
         campaigns.forEach((campaign) => {
@@ -1320,20 +1323,20 @@ export const ArenasView: React.FC = () => {
                 campaign,
                 arenasById,
                 actionsByArena: actionsByArenaRecord,
-                tasks: cycleScopedTasks,
+                tasks: campaignProgressTasks,
                 getClanQuestsForArena,
                 getClanQuestProgress,
                 getSharedActionPoolProgress,
             }));
         });
         return map;
-    }, [actionsByArenaRecord, arenasById, campaigns, cycleScopedTasks, getClanQuestProgress, getClanQuestsForArena, getSharedActionPoolProgress]);
+    }, [actionsByArenaRecord, arenasById, campaigns, campaignProgressTasks, getClanQuestProgress, getClanQuestsForArena, getSharedActionPoolProgress]);
     const getCampaignProgressMetrics = (campaign: Campaign) => {
         return campaignProgressById.get(campaign.id) || calculateCampaignProgressSummary({
             campaign,
             arenasById,
             actionsByArena: actionsByArenaRecord,
-            tasks: cycleScopedTasks,
+            tasks: campaignProgressTasks,
             getClanQuestsForArena,
             getClanQuestProgress,
             getSharedActionPoolProgress,
@@ -1782,7 +1785,7 @@ export const ArenasView: React.FC = () => {
                 </div>
                 <div className="px-2.5 pb-2">
                     <div className="mb-1 flex items-center justify-between text-[8px] font-black uppercase tracking-[0.14em] text-white/58">
-                        <span>{progressSummary.totalPlanned > 0 ? `${progressSummary.totalCompleted}/${progressSummary.totalPlanned} ações` : 'Sem meta'}</span>
+                        <span>{progressSummary.totalPlanned > 0 ? `${progressSummary.totalCompleted}/${progressSummary.totalPlanned} repetições` : 'Sem meta'}</span>
                         <span>{progressSummary.clearedArenaCount}/{progressSummary.totalArenaCount} arenas</span>
                     </div>
                     {progressSummary.totalPlanned > 0 ? (

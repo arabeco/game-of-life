@@ -1857,6 +1857,15 @@ body {
   flex: 1 1 0%;
 }
 
+/* Reward gold, kept on the shared luxe button for its bevel and light sweep. */
+.luxe-skin-button.luxe-reward-gold {
+  --ui-button-primary-bg: linear-gradient(135deg, #5c4a1f 0%, #d4af37 50%, #5c4a1f 100%);
+  --ui-button-primary-border: #d4af37;
+  --ui-button-primary-glow: rgba(212, 175, 55, 0.25);
+  --ui-text-on-accent: #1b1408;
+  --ui-text-on-accent-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
 .ui-modal-button {
   display: inline-flex;
   align-items: center;

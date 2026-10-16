@@ -26,7 +26,7 @@ export const getArenaLimitForProfile = (profile?: UserProfile | null): number =>
 };
 
 export const getArenaCapacitySummary = (assets: Asset[], profile?: UserProfile | null): ArenaCapacitySummary => {
-    const total = assets.reduce((sum, asset) => sum + asset.arenas.length, 0);
+    const total = assets.reduce((sum, asset) => sum + asset.arenas.filter(arena => !arena.isArchived).length, 0);
     const active = assets.reduce((sum, asset) => sum + asset.arenas.filter((arena) => !arena.isArchived).length, 0);
     const limit = getArenaLimitForProfile(profile);
     const remaining = Math.max(0, limit - total);
@@ -53,21 +53,21 @@ export const buildArenaLimitMessage = (
 
     if (requestedArenaCount > 1 && missingSlots > 0) {
         if (summary.isPlatinum) {
-            return `Essa operação precisa de ${requestedArenaCount} arenas, mas seu limite platinum de ${summary.limit} já ficou curto. Exclua ${missingSlots} arena(s) antes de continuar.`;
+            return `Essa operação precisa de ${requestedArenaCount} arenas, mas seu limite platinum de ${summary.limit} já ficou curto. Arquive ou exclua ${missingSlots} arena(s) antes de continuar.`;
         }
         if (summary.isPremium) {
-            return `Essa operação precisa de ${requestedArenaCount} arenas, mas seu limite premium de ${summary.limit} já ficou curto. Exclua ${missingSlots} arena(s) antes de continuar ou suba para o Platinum.`;
+            return `Essa operação precisa de ${requestedArenaCount} arenas, mas seu limite premium de ${summary.limit} já ficou curto. Arquive ou exclua ${missingSlots} arena(s) antes de continuar ou suba para o Platinum.`;
         }
-        return `Essa operação precisa de ${requestedArenaCount} arenas, mas o plano atual permite até ${summary.limit}. Exclua ${missingSlots} arena(s), ative Premium para ${PREMIUM_ARENA_LIMIT} ou Platinum para ${PLATINUM_ARENA_LIMIT}.`;
+        return `Essa operação precisa de ${requestedArenaCount} arenas, mas o plano atual permite até ${summary.limit}. Arquive ou exclua ${missingSlots} arena(s), ative Premium para ${PREMIUM_ARENA_LIMIT} ou Platinum para ${PLATINUM_ARENA_LIMIT}.`;
     }
 
     if (summary.isPlatinum) {
-        return `Você atingiu o limite de ${summary.limit} arenas. Exclua uma arena para continuar.`;
+        return `Você atingiu o limite de ${summary.limit} arenas. Arquive ou exclua uma arena para continuar.`;
     }
 
     if (summary.isPremium) {
-        return `Você atingiu o limite de ${summary.limit} arenas. Exclua uma arena para continuar ou suba para o Platinum com ${PLATINUM_ARENA_LIMIT}.`;
+        return `Você atingiu o limite de ${summary.limit} arenas. Arquive ou exclua uma arena para continuar ou suba para o Platinum com ${PLATINUM_ARENA_LIMIT}.`;
     }
 
-    return `Você atingiu o limite de ${summary.limit} arenas. Exclua uma arena, ative Premium para ${PREMIUM_ARENA_LIMIT} ou Platinum para ${PLATINUM_ARENA_LIMIT}.`;
+    return `Você atingiu o limite de ${summary.limit} arenas. Arquive ou exclua uma arena, ative Premium para ${PREMIUM_ARENA_LIMIT} ou Platinum para ${PLATINUM_ARENA_LIMIT}.`;
 };

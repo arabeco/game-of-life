@@ -12,6 +12,7 @@ export interface ArenaAttentionPayload {
 export interface AppNavigatePayload {
     view: 'assets' | 'arenas' | 'planner' | 'social' | 'settings' | 'reports';
     openDailyPanel?: boolean;
+    mundoTab?: 'arsenal';
 }
 
 export const ARENA_ATTENTION_EVENT = 'glyph:arena-attention';

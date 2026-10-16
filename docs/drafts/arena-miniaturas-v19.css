@@ -1,0 +1,4 @@
+.arena-demo{position:relative;isolation:isolate;background-color:rgba(9,12,18,.9);backdrop-filter:blur(10px) saturate(150%) brightness(1.06)}
+.arena-demo>*{position:relative;z-index:1}.arena-demo>.aab-plasma{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;transform:scale(1.18) translateY(-4%);transform-origin:center}
+/* Global index.html styles also present inside the AAB, beyond arena-ui.css. */
+.arena-demo>.aab-plasma{mix-blend-mode:screen;opacity:.35;filter:blur(.4px)}

@@ -32,7 +32,7 @@ const AssetSelectionModal: React.FC<{ onSelect: (assetId: LifeAreaId) => void; o
     return (
         <Portal>
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[245] flex items-center justify-center animate-fade-in" onClick={onClose}>
-                <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
+                <GlassCard variant="neutral" className="w-full max-w-md m-4 space-y-3 rounded-xl" onClick={e => e.stopPropagation()}>
                     <h2 className="text-lg font-bold uppercase tracking-wider text-center">Selecionar área</h2>
                     <div className="space-y-2 max-h-60 overflow-y-auto">
                         {areaAssets.map(asset => (
@@ -120,7 +120,7 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
         <>
             <Portal>
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[240] flex items-center justify-center animate-fade-in" onClick={onClose}>
-                    <GlassCard ref={modalCardRef} variant="silver" className="w-full max-w-sm m-4 space-y-4 rounded-3xl relative" onClick={e => e.stopPropagation()}>
+                    <GlassCard ref={modalCardRef} variant="silver" className="w-full max-w-md m-4 space-y-3 rounded-xl relative" onClick={e => e.stopPropagation()}>
                         <div className="text-center">
                             <CrownIcon className="w-8 h-8 mx-auto text-[var(--skin-accent-color)]" />
                             <h2 className="text-lg font-bold uppercase tracking-wider mt-2">Nova Arena</h2>
@@ -142,6 +142,8 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
                                 id="new-arena-name-input"
                                 type="text"
                                 placeholder="Nome da Arena"
+                                aria-label="Nome da arena"
+                                maxLength={80}
                                 value={name}
                                 onChange={e => setName(e.target.value)}
                                 onBlur={(event) => {
@@ -152,14 +154,14 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
                                 }}
                                 className="w-full h-12 px-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]"
                             />
-                            <textarea id="new-arena-description-input" placeholder="Descrição da Meta..." value={description} onChange={e => setDescription(e.target.value)} rows={3} className="w-full p-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]" />
+                            <textarea maxLength={1000} style={{height:72,resize:"none",overflowY:"auto",scrollbarWidth:"none"}} id="new-arena-description-input" placeholder="Descrição da Meta..." value={description} onChange={e => setDescription(e.target.value)} rows={3} className="w-full p-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]" />
                         </div>
 
                         <div className="flex space-x-2 pt-2">
                             <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-secondary">
                                 CANCELAR
                             </button>
-                            <button id="new-arena-submit-button" onClick={handleSave} disabled={!canCreateArena} className="w-full py-2 luxe-bico luxe-skin-button disabled:cursor-not-allowed disabled:opacity-50">
+                            <button id="new-arena-submit-button" onClick={handleSave} disabled={!canCreateArena} className="w-full py-2 luxe-bico luxe-skin-button luxe-reward-gold luxe-brilho disabled:cursor-not-allowed disabled:opacity-50">
                                 CRIAR ARENA
                             </button>
                         </div>

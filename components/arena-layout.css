@@ -1,0 +1,16 @@
+.arena-detail-modal-root{padding:12px 16px!important;border-radius:14px!important;max-height:88dvh!important}
+.arena-detail-content{min-height:0;overflow:hidden;gap:8px}.arena-detail-content>*{margin-top:0!important}
+.arena-detail-modal-header{position:relative;display:grid!important;grid-template-columns:40px minmax(0,1fr) 52px;align-items:start;padding:4px 0!important;background:transparent!important}
+.arena-detail-modal-header>div:nth-child(2){min-width:0}.arena-detail-modal-header .arena-detail-title-shell{padding:4px 0;border:0;background:transparent;box-shadow:none}
+.arena-detail-modal-header h2{font-size:17px!important;line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow-wrap:anywhere}
+.arena-detail-modal-header .ui-modal-button{grid-column:3;grid-row:1;padding:6px;min-width:46px}
+.arena-detail-tabs{display:flex;justify-content:center;gap:24px;flex:none;border-bottom:1px solid #ffffff20}
+.arena-detail-tabs button{padding:7px 10px;font-size:12px;border-bottom:2px solid transparent}.arena-detail-tabs button[aria-pressed=true]{color:var(--skin-accent-color);border-color:var(--skin-accent-color)}
+.arena-actions-list{max-height:186px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;min-height:0;flex:0 1 auto}.arena-actions-list::-webkit-scrollbar,.arena-about::-webkit-scrollbar{display:none}
+.arena-action-row{height:62px;width:100%;display:flex;align-items:center;gap:12px;border-bottom:1px solid #ffffff10;padding:7px 2px;text-align:left}
+.arena-action-tile{height:44px;width:44px;flex:none;border-radius:10px;border:1px solid color-mix(in srgb,var(--arena-accent) 65%,#c6ab77);display:grid;place-items:center;overflow:hidden}
+.arena-action-copy{min-width:0;flex:1}.arena-action-copy strong{display:block;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.arena-action-copy small{font-size:10px;color:#aaa;display:block;margin-top:4px}
+.arena-action-add{width:36px;height:36px;border:1px dashed #ffffff48;border-radius:9px;display:grid;place-items:center;margin-left:6px;flex:none;color:var(--skin-accent-color)}
+.arena-actions-empty{font-size:12px;text-align:center;color:#aaa;padding:14px}
+.arena-about{min-height:0;max-height:280px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}.arena-about p,.arena-about textarea{max-height:72px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;resize:none;font-size:12px;overflow-wrap:anywhere}.arena-about input{font-size:17px!important}
+@media(max-height:620px){.arena-actions-list{max-height:150px}.arena-about{max-height:210px}}

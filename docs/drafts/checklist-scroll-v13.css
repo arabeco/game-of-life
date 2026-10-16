@@ -1,0 +1,18 @@
+.plate .body.note-checklist-body{overflow:hidden;display:flex;flex-direction:column;min-height:0;gap:0}
+.note-checklist-body>.field{flex:none;margin-bottom:0}
+.note-checklist-body textarea.editor{height:72px;min-height:72px;max-height:72px;resize:none;overflow-y:auto;font-size:12px;line-height:1.5;padding:9px 10px}
+.note-checklist-body>.section-title{flex:none;margin-bottom:6px}
+.note-checklist-body>.view-note{flex:none;height:72px;max-height:72px;overflow-y:auto;margin:0;padding:8px 10px;border:1px solid #35373c;border-radius:6px;font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+.note-checklist-body .combined-section{display:flex;flex-direction:column;min-height:0;flex:1;margin-top:10px;padding-top:10px;overflow:hidden}
+.note-checklist-body .combined-section>.section-title:first-child{margin-bottom:4px}
+.note-checklist-body .combined-section>.section-title{flex:none;font-size:9px;margin-bottom:6px}
+.checklist-scroll{overflow-y:auto;max-height:126px;min-height:0;flex:0 1 auto;overscroll-behavior:contain}
+.note-checklist-body .checkrow{height:42px;min-height:42px;padding:4px 0;box-sizing:border-box;gap:8px}
+.note-checklist-body .checkrow>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.note-checklist-body .checkrow input[type=text]{min-width:0;flex:1;font-size:12px}
+.note-checklist-body .checkrow input[type=checkbox]{flex:none}
+.note-checklist-body .add-line{flex:none;margin-top:8px;gap:6px}
+.note-checklist-body .add-line input,.note-checklist-body .add-line button{min-height:36px;padding:7px 9px}
+.note-checklist-body textarea,.note-checklist-body .view-note,.checklist-scroll{scrollbar-width:none;overscroll-behavior:contain}
+.note-checklist-body textarea::-webkit-scrollbar,.note-checklist-body .view-note::-webkit-scrollbar,.checklist-scroll::-webkit-scrollbar{display:none}
+.note-checklist-body textarea.editor,.note-checklist-body>.view-note{height:60px;min-height:60px;max-height:60px}

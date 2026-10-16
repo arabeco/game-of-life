@@ -29,6 +29,8 @@ export const describeArenaProgress = (
         return { label: percentual, accessibleLabel: `${percentual} concluído`, remaining: null };
     }
     const unit = measured[0].actionType === 'Marco' ? 'marcos' : 'ações';
+    // Keep performed repetitions visible; campaign gates still use capped progress.
+    const performed = progress.totalPerformed ?? progress.totalCompleted;
     // DUAS FORMAS DO MESMO NUMERO.
     //
     // O que aparece no card e so "3/4": a palavra "ações" ocupava mais espaco que
@@ -36,8 +38,8 @@ export const describeArenaProgress = (
     // continua ouvindo a frase inteira — encolher o visivel nao pode encolher o
     // que e dito em voz alta.
     return {
-        label: `${progress.totalCompleted}/${progress.totalPlanned}`,
-        accessibleLabel: `${progress.totalCompleted}/${progress.totalPlanned} ${unit}`,
+        label: `${performed}/${progress.totalPlanned}`,
+        accessibleLabel: `${performed}/${progress.totalPlanned} ${unit}`,
         remaining: Math.max(0, progress.totalPlanned - progress.totalCompleted),
     };
 };

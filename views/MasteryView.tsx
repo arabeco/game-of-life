@@ -1,3 +1,5 @@
+import { useProgressRecognition } from '../hooks/useProgressRecognition';
+import { ProgressRecognitionBadge } from '../components/ProgressRecognitionBadge';
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { MASTERY_LEVEL_DESCRIPTIONS } from '../constants';
@@ -69,6 +71,8 @@ export const MasteryView: React.FC<{ onClose?: () => void; embedded?: boolean }>
         () => (currentAsset ? (MASTERY_LEVEL_DESCRIPTIONS[currentAsset.id] || []) : []),
         [currentAsset],
     );
+
+    const masteryRecognition = useProgressRecognition(userProfile.id, 'mastery', userProfile.id, getMasteryIndexFromAssets(assets));
 
     const lastUpdate = userProfile.lastLevelUpdate || 0;
     const threeDays = 72 * 60 * 60 * 1000;
@@ -225,6 +229,7 @@ export const MasteryView: React.FC<{ onClose?: () => void; embedded?: boolean }>
                                 </button>
 
                         </div>
+                        {!isAssessmentActive && <div className="flex justify-center pb-2"><ProgressRecognitionBadge value={masteryRecognition} context="Maestria" /></div>}
                         <div className="mastery-quiz-lower">
                             {!isAssessmentActive ? <>
                                 <p className="mastery-quiz-start-hint">{isMasteryLocked ? `Nova avaliação em ${remainingHours}h` : 'Toque no pentágono para avaliar suas cinco áreas.'}</p>

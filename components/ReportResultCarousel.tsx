@@ -1,3 +1,6 @@
+import { useProgressRecognition } from '../hooks/useProgressRecognition';
+import { expAverageLabel, officialTop } from '../utils/progressRecognition';
+import { ProgressRecognitionBadge } from './ProgressRecognitionBadge';
 ﻿import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { SlideAjustado } from './SlideAjustado';
 import { SlideCartaz } from './SlideCartaz';
@@ -132,6 +135,10 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     const REWARD_CARD_CAPTURE_ID = 'report-metal-card-capture';
     const preferNativeShare = shouldPreferNativeShare();
     const { userProfile, showToast, reports } = useGame();
+    const cycleExp = report.expGained ?? expGained ?? report.metrics.expGained ?? 0;
+    const recognition = useProgressRecognition(userProfile.id, 'cycle', report.cycleId || '', cycleExp);
+    const cycleAverageLabel = recognition?.days ? expAverageLabel(cycleExp / recognition.days, recognition.baseline, recognition.baselineDays) : null;
+    const cycleTop = officialTop(recognition);
     const userSkinId = userProfile.skin;
     const userSkin = SKINS_DATA.find(s => s.id === userSkinId);
     const skinColor = userSkin?.color || '#ffffff';
@@ -535,7 +542,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
      * Um ciclo sem meta selada passa a ter o que mostrar em vez de um vazio.
      */
     const renderAchievementsSlide = () => {
-        const expDoCiclo = report.expGained || expGained || metrics.expGained || 0;
+        const expDoCiclo = cycleExp;
         const jornadasFechadas = metrics.questsClosedTitles || [];
         const semNada = sealedMetas === 0 && (metrics.questsCompleted || 0) === 0 && expDoCiclo === 0;
 
@@ -568,9 +575,10 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
             <SlideCartaz
                 rank={notaDoRelatorio}
                 titulo="Conquistas"
+                selo={<ProgressRecognitionBadge value={recognition} context={`EXP · ciclos de ${recognition?.days} dias`} />}
                 numero={semNada ? '0' : `+${expDoCiclo}`}
                 sufixo="EXP"
-                rotulo={semNada ? 'este ciclo não depositou nada' : 'depositados na sua nobreza'}
+                rotulo={cycleAverageLabel ? `${cycleAverageLabel} por dia` : semNada ? 'este ciclo não depositou nada' : 'depositados na sua nobreza'}
                 legenda={legenda}
                 /* A JORNADA FECHADA E A MELHOR FRASE QUE ESTE QUADRO PODE TER.
                    Ela nomeia — "O Andarilho" —, e uma jornada de temporada leva
@@ -819,6 +827,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
          * objeto.
          */
         const rewardBadges = [
+            cycleTop ? { label: cycleTop, value: `EXP · ciclos de ${recognition?.days} dias` } : null,
             ((report.expGained || expGained) && (report.expGained || expGained) > 0)
                 ? { label: 'XP', value: `+${report.expGained || expGained}` }
                 : null,
@@ -848,6 +857,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                         score={report.performanceScore}
                         title={report.cycleName || 'Ciclo concluído'}
                         subtitle="Ciclo consolidado"
+                        summary={cycleAverageLabel ? `${cycleAverageLabel} por dia` : undefined}
                         dateRange={`${formatDate(report.startDate)} - ${formatDate(report.endDate)}`}
                         metrics={[
                             { label: 'Ações', value: `${metrics.actionsCompleted}/${metrics.totalPlannedActions}` },

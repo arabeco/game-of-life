@@ -16,6 +16,7 @@ interface ArenaProgressOptions {
 export interface ArenaProgressResult {
   progressPercent: number;
   totalCompleted: number;
+  totalPerformed?: number;
   totalPlanned: number;
   hasMeasurableProgress: boolean;
   completedActionIds: string[];

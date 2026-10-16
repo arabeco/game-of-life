@@ -80,6 +80,8 @@ export interface DailyPanelBoardProps {
     greeting?: string | null;
     reading?: string | null;
     comparisonLabel?: string | null;
+    expAverageLabel?: string | null;
+    expAverageHint?: string;
     onShare?: () => void;
 }
 
@@ -97,6 +99,8 @@ export const DailyPanelBoard: React.FC<DailyPanelBoardProps> = ({
     greeting,
     reading,
     comparisonLabel,
+    expAverageLabel,
+    expAverageHint,
     onShare,
 }) => {
     const pending = Math.max(0, total - completed);
@@ -158,6 +162,7 @@ export const DailyPanelBoard: React.FC<DailyPanelBoardProps> = ({
             <section className="daily-board-hero" aria-label="O que o dia rendeu">
                 <div className="daily-board-done">+{xp}</div>
                 <p className="daily-board-done-label">{dailyHeroLabel(isToday)}</p>
+                {expAverageLabel && <p className="mt-2 text-xs text-gray-300" title={expAverageHint}>{expAverageLabel}{isToday ? ' · parcial' : ''}</p>}
             </section>
 
             {/*

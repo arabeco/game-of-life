@@ -1,3 +1,5 @@
+import { useProgressRecognition } from '../hooks/useProgressRecognition';
+import { expAverageLabel } from '../utils/progressRecognition';
 import { ORACLE_ENGINE_V2 } from '../utils/oracleEngineV2';
 import { DailySummaryCard } from './DailySummaryCard';
 import { DailyPanelBoard } from './DailyPanelBoard';
@@ -167,6 +169,7 @@ export const DailyPanelContent: React.FC<{
         operationalDate: selectedDate,
         taskIds: rowsDoDia.map((row) => row.task.id),
         includePremium: hasPremiumAccess(userProfile),
+        premiumRate: getCycleXpBonusRate(userProfile),
     }).totalExp;
     /**
      * O TEMPO EXECUTADO, que nao e a EXP.
@@ -448,6 +451,8 @@ export const DailyPanelContent: React.FC<{
         });
     };
 
+    const personalExp = useProgressRecognition(userProfile.id, 'day', selectedDate, dayExp);
+    const personalExpLabel = expAverageLabel(dayExp, personalExp?.baseline, personalExp?.baselineDays);
     const comparison = useDailyComparison(userProfile.id, selectedDate, completedRows.length, dayExp);
     const dailySnapshot: DailyFeedSnapshot = {
         version: 1, date: selectedDate, dateLabel, completed: completedRows.length,
@@ -497,6 +502,8 @@ export const DailyPanelContent: React.FC<{
                 greeting={greeting?.text}
                 reading={dailySnapshot.reading}
                 comparisonLabel={dailySnapshot.comparisonLabel}
+                expAverageLabel={personalExpLabel}
+                expAverageHint={personalExp ? `Média por dia entre ${personalExp.baselineStart} e ${personalExp.baselineEnd}, incluindo dias sem atividade.${ehHoje ? ' Hoje ainda está em andamento.' : ''}` : undefined}
                 onShare={ehHoje ? undefined : () => setIsShareChoiceOpen(true)}
             />
 

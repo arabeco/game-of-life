@@ -8,8 +8,22 @@ export interface Candidate {
   score: number;
   text: string;
   important?: boolean;
+  discovery?: { topic: DiscoveryTopic; label: string };
 }
-export interface Spoken { id: string; subject: string; at: number; day: string; channel: Channel }
+export type DiscoveryTopic = 'mastery' | 'journal' | 'relationships' | 'campaigns' | 'arsenal' | 'garden' | 'wisdom';
+export interface Spoken { id: string; subject: string; at: number; day: string; channel: Channel; clickedAt?: number; important?: boolean }
+const DAY = 86_400_000;
+export function discoveryBlock(topic: DiscoveryTopic, history: Spoken[], now: number, day: string): string | null {
+  const tips = history.filter(h => h.subject.startsWith('discovery:'));
+  const own = tips.filter(h => h.subject === `discovery:${topic}`);
+  if (history.some(h => h.day === day && h.important)) return 'important_today';
+  if (history.some(h => h.channel === 'reaction' && now - h.at < 60_000)) return 'reaction_interval';
+  if (own.filter(h => !h.clickedAt).length >= 3) return 'discovery_ignored';
+  if (own.some(h => h.clickedAt && now - h.clickedAt < 30 * DAY)) return 'discovery_clicked';
+  if (own.some(h => now - h.at < 14 * DAY)) return 'discovery_topic_interval';
+  if (tips.some(h => now - h.at < 3 * DAY)) return 'discovery_interval';
+  return null;
+}
 export interface Selection { chosen: Candidate | null; rows: Array<{ id: string; score: number; reason: string }> }
 
 /** Eligibility precedes ranking. No debt, streak or assumed daily demand. */
@@ -26,7 +40,10 @@ export function selectSpeech(candidates: Candidate[], channel: Channel, presence
     const crowded = channel === 'reaction' && !candidate.important && daily.length >= (presence >= 3 ? 8 : 3);
     const reason = candidate.score < threshold ? 'presence' : duplicate ? 'already_spoken'
       : channel === 'opening' && presence === 2 && daily.length > 0 ? 'daily_limit'
-      : last && now - last.at < interval ? 'interval' : crowded ? 'daily_limit' : chosen ? 'lower_priority' : 'selected';
+      : last && now - last.at < interval ? 'interval' : crowded ? 'daily_limit'
+      : candidate.discovery && (channel !== 'opening' || discoveryBlock(candidate.discovery.topic, history, now, day))
+        ? (channel !== 'opening' ? 'opening_only' : discoveryBlock(candidate.discovery.topic, history, now, day)!)
+      : chosen ? 'lower_priority' : 'selected';
     rows.push({ id: candidate.id, score: candidate.score, reason });
     if (reason === 'selected') chosen = candidate;
   }

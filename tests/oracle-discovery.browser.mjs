@@ -1,0 +1,68 @@
+import { build } from 'esbuild';
+import { readFileSync, readdirSync, mkdirSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import assert from 'node:assert/strict';
+const require = createRequire(import.meta.url);
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'C:/Users/Afonso/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const source = readFileSync('components/AuthenticatedApp.tsx', 'utf8');
+const overlay = source.slice(source.indexOf('export const OracleSpeechOverlay:'), source.indexOf('type AppBroadcastRow'));
+const bundle = await build({ stdin: { resolveDir: process.cwd(), loader: 'tsx', contents: `
+import React,{useState,useEffect} from 'react';
+import {createRoot} from 'react-dom/client';
+import {getOraclePresenceRules} from './constants/oraclePresencePolicy';
+import {getOperationalDateString} from './utils/operationalDay.js';
+import {discoveryBlock} from './supabase/functions/_shared/oracle-engine-v2';
+import {rememberEngineSpeech,readEngineMemory,rememberDiscoveryClick} from './utils/oracleEngineV2';
+import {getOracleSpeakerToneTokens,OracleSpeakerMark} from './components/OracleSpeakerMark';
+import {XIcon} from './components/Icons';
+import {ORACLE_SPEECH_EVENT,ORACLE_GESTURE_START_EVENT,emitOracleSpeech,maoEntrouNaTela,maoSaiuDaTela} from './utils/oracleSpeech';
+const DEFAULT_ORACLE_PRESENCE_LEVEL=2, ORACLE_SPEECH_TYPING_INTERVAL_MS=22, PLANNER_ORACLE_LAST_SPEECH_PREFIX='oracle_last_speech:';
+const w=window as any; w.user='a';w.presence=3;w.blocked=false;w.nav=[];
+function useGame(){return {userProfile:{id:w.user},oraclePreferences:{presenceLevel:w.presence}};}
+${overlay}
+const root=createRoot(document.getElementById('root')!);
+w.render=()=>root.render(<OracleSpeechOverlay discoveryBlocked={w.blocked}/>);w.render();
+w.memory=()=>readEngineMemory(w.user);
+w.emit=(topic='journal',userId=w.user)=>emitOracleSpeech({message:'O Diário guarda suas anotações e reflexões.',kind:'abertura',discovery:{userId,day:getOperationalDateString(new Date()),candidate:{id:'discovery:'+topic,subject:'discovery:'+topic,score:30,text:'Dica',discovery:{topic,label:'Abrir '+topic}}}});
+w.start=maoEntrouNaTela;w.end=maoSaiuDaTela;
+w.reaction=()=>emitOracleSpeech({message:'Meta cumprida.',kind:'reacao'});
+window.addEventListener('glyph:open-feature',(e:any)=>w.nav.push(e.detail.topic));
+` }, bundle: true, write: false, format: 'iife' });
+const browser = await chromium.launch({ channel: 'msedge', headless: true });
+try {
+ const page = await browser.newPage({viewport:{width:390,height:844}});
+ await page.route('http://localhost/**',r=>r.fulfill({body:'<div id="root"></div>',contentType:'text/html'}));
+ await page.goto('http://localhost/fixture');
+ const css=readdirSync('dist/assets').filter(f=>f.endsWith('.css')).map(f=>readFileSync('dist/assets/'+f,'utf8')).join('\n');
+ await page.addStyleTag({content:css});
+ await page.addScriptTag({content:bundle.outputFiles[0].text});
+ await page.waitForTimeout(80);
+ await page.evaluate(()=>{window.start();window.emit();});
+ assert.equal(await page.getByRole('button',{name:'Abrir journal'}).count(),0);
+ assert.equal(await page.evaluate(()=>window.memory().length),0);
+ await page.evaluate(()=>window.end());
+ await page.getByRole('button',{name:'Abrir journal'}).waitFor();
+ assert.equal(await page.evaluate(()=>window.memory().length),1);
+ await page.waitForTimeout(1100);
+ mkdirSync('output/oracle-discovery',{recursive:true});
+ await page.screenshot({path:'output/oracle-discovery/mobile.png'});
+ await page.getByRole('button',{name:'Abrir journal'}).click();
+ assert.deepEqual(await page.evaluate(()=>window.nav),['journal']);
+ assert.ok(await page.evaluate(()=>window.memory()[0].clickedAt));
+ await page.evaluate(()=>window.emit());
+ assert.equal(await page.getByRole('button',{name:'Abrir journal'}).count(),0);
+ await page.evaluate(()=>{window.user='b';window.render();});await page.waitForTimeout(40);
+ await page.evaluate(()=>window.emit('garden','a'));
+ assert.equal(await page.evaluate(()=>window.memory().length),0);
+ await page.evaluate(()=>{window.blocked=true;window.render();});await page.waitForTimeout(40);
+ await page.evaluate(()=>window.emit('garden'));
+ assert.equal(await page.getByRole('button',{name:'Abrir garden'}).count(),0);
+ await page.evaluate(()=>{window.blocked=false;window.render();});await page.waitForTimeout(40);
+ await page.evaluate(()=>{window.start();window.reaction();window.emit('garden');window.end();});
+ await page.getByText('Meta cumprida.',{exact:true}).waitFor();
+ assert.equal(await page.getByRole('button',{name:'Abrir garden'}).count(),0);
+ assert.equal(await page.evaluate(()=>window.memory().length),0);
+ await page.evaluate(()=>window.start());
+ assert.equal(await page.getByText('Meta cumprida.',{exact:true}).count(),0);
+ console.log('Oracle overlay: deferred delivery, real CTA, click memory, account switch, modal blocking and pending-reaction priority passed.');
+} finally {await browser.close();}

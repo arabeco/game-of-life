@@ -206,10 +206,11 @@ const buildNotificationSignalMessage = (notification: Notification, oracleMode: 
 };
 
 
-export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; isEmbedded?: boolean; onNavigateTab?: (tab: OracleTabTarget) => void }> = ({ onClose, hideHeader = false, isEmbedded = false }) => {
+export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; isEmbedded?: boolean; initialSection?: 'guidance' | 'mission' | 'wisdom'; onNavigateTab?: (tab: OracleTabTarget) => void }> = ({ onClose, hideHeader = false, isEmbedded = false, initialSection }) => {
   const { userProfile, assets, actions, tasks, taskPool, activeCycle, freeProgressResetAt, dailyCommitment, cycleProgress, oraclePreferences, oracleMessages, markOracleMessageAsRead, notifications, requestOracleContentCard, activeArenaPact, arenaPactProgress, arenaPactCandidates, missaoIndividualDisponivel, missaoDeSistemaAtiva, showToast } = useGame();
   // Missao cumprida e ainda nao recebida: o Oraculo abre direto na aba dela.
-  const [section, setSection] = useState<'guidance' | 'mission' | 'wisdom'>(() => arenaPactProgress?.completed ? 'mission' : 'guidance');
+  const [section, setSection] = useState<'guidance' | 'mission' | 'wisdom'>(() => initialSection || (arenaPactProgress?.completed ? 'mission' : 'guidance'));
+  useEffect(() => { if (initialSection) setSection(initialSection); }, [initialSection]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
   const isInitialLoadRef = useRef(true);

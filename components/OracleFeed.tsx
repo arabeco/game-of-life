@@ -25,6 +25,7 @@ interface OracleFeedProps {
     onClose: () => void;
     initialTab?: Tab;
     initialParticipantId?: string | null;
+    initialSection?: 'guidance' | 'mission' | 'wisdom';
 }
 
 type Tab = 'chat' | 'action' | 'requests' | 'notifications' | 'clan' | 'dms';
@@ -32,7 +33,7 @@ type Tab = 'chat' | 'action' | 'requests' | 'notifications' | 'clan' | 'dms';
 const resolveInitialTab = (tab: Tab): 'chat' | 'requests' =>
     tab === 'requests' || tab === 'notifications' || tab === 'clan' || tab === 'dms' ? 'requests' : 'chat';
 
-export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab: initialTabProp = 'chat' as Tab }) => {
+export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab: initialTabProp = 'chat' as Tab, initialSection }) => {
     const {
         notifications,
         markNotificationRead,
@@ -117,6 +118,7 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab: ini
                             <div className="absolute inset-0 animate-in slide-in-from-left-4 duration-200">
                                 <Suspense fallback={<div className="absolute inset-0 bg-black/30 animate-pulse" />}>
                                     <OracleChat
+                                        initialSection={initialSection}
                                         onClose={onClose}
                                         isEmbedded={true}
                                         onNavigateTab={(tab) => setActiveTab(tab === 'requests' ? 'requests' : 'chat')}

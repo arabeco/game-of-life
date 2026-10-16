@@ -7,6 +7,7 @@ import { getOperationalDateString, taskMatchesOperationalDate } from './operatio
 import { isActionInPactScope, measurePactProgress, resolvePactArena, type ArenaPact } from './arenaPacts.ts';
 import { openingCandidates, reactionCandidates, selectSpeech, type Channel, type OpeningFacts, type ReadingFacts, type Spoken, type Voice, type Candidate } from '../supabase/functions/_shared/oracle-engine-v2.ts';
 export { ORACLE_ENGINE_V2 } from '../supabase/functions/_shared/oracle-engine-v2.ts';
+export type { Candidate } from '../supabase/functions/_shared/oracle-engine-v2.ts';
 
 export interface Scope { actions: Action[]; arenas: Arena[]; tasks: ScheduledTask[]; activeCycle: Cycle | null; resetAt?: string | null; today: string }
 const unique = (tasks: ScheduledTask[]) => [...new Map(tasks.map(t => [t.id, t])).values()];
@@ -47,14 +48,27 @@ const key = (userId: string) => `glyph:oracle-v2:${userId}`;
 export function readEngineMemory(userId: string): Spoken[] {
   try {
     const data = JSON.parse(localStorage.getItem(key(userId)) || '[]');
-    return Array.isArray(data) ? data.filter(h => h && typeof h.id === 'string' && typeof h.at === 'number' && (h.channel === 'opening' || h.channel === 'reaction')) : [];
+    return Array.isArray(data) ? data.filter(h => h && typeof h.id === 'string' && typeof h.subject === 'string' && typeof h.at === 'number' && (h.channel === 'opening' || h.channel === 'reaction')) : [];
   } catch { return []; }
 }
 export function rememberEngineSpeech(userId: string, candidate: Candidate, channel: Channel, day: string, now = Date.now()) {
-  try { localStorage.setItem(key(userId), JSON.stringify([...readEngineMemory(userId), { id: candidate.id, subject: candidate.subject, at: now, day, channel }].slice(-120))); } catch { /* private browsing */ }
+  const all = [...readEngineMemory(userId), { id: candidate.id, subject: candidate.subject, at: now, day, channel, important: candidate.important }];
+  // Ordinary activity must not erase the three ignored suggestions or a recent click.
+  const tips = all.filter(h => h.subject.startsWith('discovery:'));
+  const retained = [...new Set(tips.map(h => h.subject))].flatMap(subject => {
+    const own = tips.filter(h => h.subject === subject);
+    return [...own.filter(h => !h.clickedAt).slice(-3), ...own.filter(h => h.clickedAt).slice(-1)];
+  });
+  try { localStorage.setItem(key(userId), JSON.stringify([...all.filter(h => !h.subject.startsWith('discovery:')).slice(-90), ...retained])); } catch { /* private browsing */ }
 }
-export function chooseOpening(s: Scope, lastOpen: string | null, tone: Voice, presence: number, userId: string) {
-  return selectSpeech(openingCandidates(openingFacts(s, lastOpen), tone, s.today), 'opening', presence, readEngineMemory(userId), Date.now(), s.today);
+export function rememberDiscoveryClick(userId: string, id: string, now = Date.now()) {
+  const history = readEngineMemory(userId);
+  const latest = history.filter(h => h.id === id).sort((a, b) => b.at - a.at)[0];
+  if (latest) latest.clickedAt = now;
+  try { localStorage.setItem(key(userId), JSON.stringify(history)); } catch { /* private browsing */ }
+}
+export function chooseOpening(s: Scope, lastOpen: string | null, tone: Voice, presence: number, userId: string, discoveries: Candidate[] = []) {
+  return selectSpeech([...openingCandidates(openingFacts(s, lastOpen), tone, s.today), ...discoveries], 'opening', presence, readEngineMemory(userId), Date.now(), s.today);
 }
 export function chooseReaction(s: Scope, action: Action, completedTask: ScheduledTask, previousTasks: ScheduledTask[], pact: ArenaPact | null, tone: Voice, presence: number, userId: string) {
   const empty = { chosen: null, rows: [] };

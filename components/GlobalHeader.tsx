@@ -7,6 +7,8 @@ import { getMasteryIndexFromAssets } from '../constants/lifeAreas';
 import { SparklesIcon, MoonIcon } from './Icons';
 import { GlassCard } from './GlassCard';
 import './global-header.css';
+import type { DiscoveryTopic } from '../supabase/functions/_shared/oracle-engine-v2';
+import { APP_NAVIGATE_EVENT } from '../utils/arenaAttention';
 import {
     REST_SCREEN_ACTION_SESSION_EVENT,
     REST_SCREEN_ACTION_SESSION_CLEAR_EVENT,
@@ -18,6 +20,9 @@ import {
 } from '../utils/restScreenActionSession';
 
 const MoodModal = React.lazy(() => import('./MoodModal').then(m => ({ default: m.MoodModal })));
+const MasteryView = React.lazy(() => import('../views/MasteryView').then(m => ({ default: m.MasteryView })));
+const ConnectionsModal = React.lazy(() => import('./ConnectionsModal').then(m => ({ default: m.ConnectionsModal })));
+const Garden3DModal = React.lazy(() => import('./Garden3DModal').then(m => ({ default: m.Garden3DModal })));
 const OracleFeed = React.lazy(() => import('./OracleFeed').then(m => ({ default: m.OracleFeed })));
 const ClanOverviewModal = React.lazy(() => import('./ClanOverviewModal').then(m => ({ default: m.ClanOverviewModal })));
 const RestScreen = React.lazy(() => import('./RestScreen').then(m => ({ default: m.RestScreen })));
@@ -40,6 +45,23 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     const { userProfile, assets, oracleMessages, notifications, clan, oraclePreferences, arenaPactProgress } = useGame();
     const userId = userProfile?.id || '';
     const [isMoodModalOpen, setMoodModalOpen] = useState(false);
+    const [feature, setFeature] = useState<DiscoveryTopic | null>(null);
+    const [oracleSection, setOracleSection] = useState<'mission' | 'wisdom' | undefined>();
+    useEffect(() => {
+        const openFeature = (event: Event) => {
+            const topic = (event as CustomEvent<{ topic: DiscoveryTopic }>).detail?.topic;
+            if (topic === 'arsenal') {
+                window.dispatchEvent(new CustomEvent(APP_NAVIGATE_EVENT, { detail: { view: 'social', mundoTab: 'arsenal' } }));
+            } else if (topic === 'campaigns' || topic === 'wisdom') {
+                setOracleSection(topic === 'campaigns' ? 'mission' : 'wisdom');
+                setOracleInitialTab('chat');
+                setOracleOpen(true);
+            } else if (['mastery', 'journal', 'relationships', 'garden'].includes(topic)) setFeature(topic);
+        };
+        window.addEventListener('glyph:open-feature', openFeature);
+        return () => window.removeEventListener('glyph:open-feature', openFeature);
+    }, []);
+    useEffect(() => { setFeature(null); setOracleOpen(false); setOracleSection(undefined); }, [userId]);
     const [isOracleOpen, setOracleOpen] = useState(false);
     const [oracleInitialTab, setOracleInitialTab] = useState<'chat' | 'notifications' | 'dms'>('chat');
     const [oracleInitialParticipantId, setOracleInitialParticipantId] = useState<string | null>(null);
@@ -384,12 +406,18 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
             </header>
             <Suspense fallback={<HeaderOverlayFallback />}>
                 {isMoodModalOpen && <MoodModal onClose={() => setMoodModalOpen(false)} />}
+                {feature === 'journal' && <MoodModal initialTab="diario" onClose={() => setFeature(null)} />}
+                {feature === 'mastery' && <MasteryView onClose={() => setFeature(null)} />}
+                {feature === 'relationships' && <ConnectionsModal onClose={() => setFeature(null)} />}
+                {feature === 'garden' && <Garden3DModal onClose={() => setFeature(null)} />}
                 {isOracleOpen && (
                     <OracleFeed
+                        initialSection={oracleSection}
                         initialTab={oracleInitialTab}
                         initialParticipantId={oracleInitialParticipantId}
                         onClose={() => {
                             setOracleOpen(false);
+                            setOracleSection(undefined);
                             setOracleInitialParticipantId(null);
                         }}
                     />

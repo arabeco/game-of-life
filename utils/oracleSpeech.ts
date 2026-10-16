@@ -1,4 +1,5 @@
 export const ORACLE_SPEECH_EVENT = 'glyph:oracle-speech';
+export const ORACLE_GESTURE_START_EVENT = 'glyph:oracle-gesture-start';
 
 export type OracleSpeechKind = 'abertura' | 'reacao';
 
@@ -16,6 +17,8 @@ export type OracleSpeechPayload = {
   kind?: OracleSpeechKind;
   /** Botoes de navegacao que acompanham a fala, quando ela sugere um caminho. */
   quickActions?: Array<Record<string, unknown>>;
+  /** Count a discovery only after the existing gesture/presence gates actually display it. */
+  discovery?: { userId: string; candidate: import('./oracleEngineV2').Candidate; day: string };
   /** Compatibilidade com emissores antigos; todas as falas já são temporárias. */
   ephemeral?: boolean;
 };
@@ -39,10 +42,11 @@ export type OracleSpeechPayload = {
 let maosNaTela = 0;
 let falaGuardada: OracleSpeechPayload | null = null;
 let timerDeSaida: ReturnType<typeof setTimeout> | null = null;
+let ultimoGesto = -Infinity;
 
 /** O tempo entre soltar e falar. Curto para nao parecer atraso, longo o
  *  bastante para o proximo gesto comecar antes e adiar de novo. */
-const RESPIRO_APOS_SOLTAR_MS = 400;
+const RESPIRO_APOS_SOLTAR_MS = 650;
 
 const despachar = (payload: OracleSpeechPayload) => {
   window.dispatchEvent(new CustomEvent<OracleSpeechPayload>(ORACLE_SPEECH_EVENT, { detail: payload }));
@@ -56,6 +60,7 @@ const cancelarSaida = () => {
 
 /** Chamado quando um toque ou clique comeca. */
 export const maoEntrouNaTela = () => {
+  if (maosNaTela === 0 && typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(ORACLE_GESTURE_START_EVENT));
   maosNaTela += 1;
   cancelarSaida();
 };
@@ -63,6 +68,7 @@ export const maoEntrouNaTela = () => {
 /** Chamado quando o gesto termina, de qualquer jeito. */
 export const maoSaiuDaTela = () => {
   maosNaTela = Math.max(0, maosNaTela - 1);
+  ultimoGesto = Date.now();
   if (maosNaTela > 0 || !falaGuardada) return;
 
   cancelarSaida();
@@ -77,9 +83,22 @@ export const maoSaiuDaTela = () => {
 /** Aberturas e reações pertencem ao momento, sem persistência ou rede. */
 export const emitOracleSpeech = (payload: OracleSpeechPayload) => {
   if (typeof window === 'undefined' || !payload.message?.trim()) return;
-  if (maosNaTela > 0) {
+  if (maosNaTela > 0 || Date.now() - ultimoGesto < RESPIRO_APOS_SOLTAR_MS) {
+    // Discovery never replaces a reaction already waiting for the hand to leave.
+    if (payload.discovery && falaGuardada?.kind === 'reacao') return;
     falaGuardada = payload;
+    if (maosNaTela === 0) {
+      cancelarSaida();
+      timerDeSaida = setTimeout(() => {
+        timerDeSaida = null;
+        const pendente = falaGuardada;
+        falaGuardada = null;
+        if (pendente && maosNaTela === 0) despachar(pendente);
+      }, RESPIRO_APOS_SOLTAR_MS - (Date.now() - ultimoGesto));
+    }
     return;
   }
+  cancelarSaida();
+  falaGuardada = null;
   despachar(payload);
 };

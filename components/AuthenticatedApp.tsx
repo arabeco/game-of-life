@@ -1,6 +1,9 @@
 import { getPendingMembershipPurchase } from '../utils/membershipPurchase';
 import { speechVisualTone } from '../supabase/functions/_shared/oracle-visual-tone.ts';
-import { ORACLE_ENGINE_V2, chooseOpening, rememberEngineSpeech } from '../utils/oracleEngineV2';
+import { ORACLE_ENGINE_V2, chooseOpening, rememberEngineSpeech, rememberDiscoveryClick, readEngineMemory } from '../utils/oracleEngineV2';
+import { discoveryCandidates, readDiscoveryUsage } from '../utils/oracleDiscovery';
+import { discoveryBlock, type DiscoveryTopic } from '../supabase/functions/_shared/oracle-engine-v2';
+import { PRODUCT_FEATURES } from '../constants/featureFlags';
 ﻿import React, { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { GlobalHeader } from './GlobalHeader';
@@ -61,7 +64,7 @@ import { ConfirmationModal } from './ConfirmationModal';
 import type { AppBroadcast } from './AppBroadcastModal';
 import { PLANNER_OPEN_ACTION_MODAL_EVENT, REST_SCREEN_ACTION_VIEW_REQUEST_EVENT, RestScreenActionViewRequestDetail } from '../utils/restScreenActionSession';
 import { BLOCKING_OVERLAY_EVENT, type BlockingOverlayDetail } from '../utils/blockingOverlay';
-import { ORACLE_SPEECH_EVENT, emitOracleSpeech, type OracleSpeechPayload } from '../utils/oracleSpeech';
+import { ORACLE_SPEECH_EVENT, ORACLE_GESTURE_START_EVENT, emitOracleSpeech, type OracleSpeechPayload } from '../utils/oracleSpeech';
 import { getOraclePresenceRules } from '../constants/oraclePresencePolicy';
 import { resolveOracleSpeechTone } from '../constants/oracleSpeechLibrary';
 import { App as CapacitorApp } from '@capacitor/app';
@@ -148,7 +151,7 @@ const diffLocalDays = (fromDateString?: string | null, toDateString?: string | n
     return Math.round((to.getTime() - from.getTime()) / 86400000);
 };
 
-const OracleSpeechOverlay: React.FC = () => {
+export const OracleSpeechOverlay: React.FC<{ discoveryBlocked?: boolean }> = ({ discoveryBlocked = false }) => {
     const { oraclePreferences, userProfile } = useGame();
     const [speech, setSpeech] = useState<(OracleSpeechPayload & { id: number }) | null>(null);
     const [displayedText, setDisplayedText] = useState('');
@@ -157,6 +160,8 @@ const OracleSpeechOverlay: React.FC = () => {
         const handleSpeech = (event: Event) => {
             const detail = (event as CustomEvent<OracleSpeechPayload>).detail;
             if (!detail?.message?.trim()) return;
+            if (detail.discovery && detail.discovery.userId !== userProfile.id) return;
+            if (detail.discovery && (discoveryBlocked || discoveryBlock(detail.discovery.candidate.discovery!.topic, readEngineMemory(userProfile.id), Date.now(), detail.discovery.day))) return;
 
             // Quem decide a frequencia e a TABELA de presenca, e so ela.
             //
@@ -179,20 +184,32 @@ const OracleSpeechOverlay: React.FC = () => {
                 localStorage.setItem(storageKey, today);
             }
 
+            if (detail.discovery) {
+                rememberEngineSpeech(userProfile.id, detail.discovery.candidate, 'opening', detail.discovery.day);
+                localStorage.setItem(`${PLANNER_ORACLE_LAST_SPEECH_PREFIX}${userProfile.id}`, detail.discovery.day);
+            }
             setSpeech({ ...detail, id: Date.now() });
         };
 
         window.addEventListener(ORACLE_SPEECH_EVENT, handleSpeech as EventListener);
-        return () => window.removeEventListener(ORACLE_SPEECH_EVENT, handleSpeech as EventListener);
-    }, [oraclePreferences?.presenceLevel, userProfile.id]);
+        const liberarTela = () => setSpeech(null);
+        window.addEventListener(ORACLE_GESTURE_START_EVENT, liberarTela);
+        return () => {
+            window.removeEventListener(ORACLE_SPEECH_EVENT, handleSpeech as EventListener);
+            window.removeEventListener(ORACLE_GESTURE_START_EVENT, liberarTela);
+        };
+    }, [oraclePreferences?.presenceLevel, userProfile.id, discoveryBlocked]);
+    useEffect(() => { setSpeech(null); }, [userProfile.id]);
+    useEffect(() => { if (discoveryBlocked) setSpeech(current => current?.discovery ? null : current); }, [discoveryBlocked]);
 
     useEffect(() => {
         if (!speech) return;
 
         const fullText = speech.message;
-        setDisplayedText('');
+        const instantanea = speech.kind === 'reacao';
+        setDisplayedText(instantanea ? fullText : '');
         let index = 0;
-        const typingTimer = window.setInterval(() => {
+        const typingTimer = instantanea ? undefined : window.setInterval(() => {
             index += 1;
             setDisplayedText(fullText.slice(0, index));
             if (index >= fullText.length) window.clearInterval(typingTimer);
@@ -264,6 +281,13 @@ const OracleSpeechOverlay: React.FC = () => {
                         {displayedText}
                         {isTyping && <span className="ml-1 inline-block h-3 w-1 animate-pulse align-middle opacity-80" style={{ background: toneTokens.core }} />}
                     </p>
+                    {speech.discovery && <button type="button" className="pointer-events-auto mt-2 min-h-9 rounded-lg border border-white/15 px-3 text-xs font-semibold text-white"
+                        onClick={() => {
+                            const { candidate } = speech.discovery!;
+                            rememberDiscoveryClick(userProfile.id, candidate.id);
+                            window.dispatchEvent(new CustomEvent('glyph:open-feature', { detail: { topic: candidate.discovery!.topic } }));
+                            setSpeech(null);
+                        }}>{speech.discovery.candidate.discovery!.label}</button>}
                 </div>
             </div>
         </div>
@@ -444,6 +468,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     const [viewTransitionKind, setViewTransitionKind] = useState<ViewTransitionKind>('rest');
     const [viewTransitionVersion, setViewTransitionVersion] = useState(0);
     const [isProfileVisible, setProfileVisible] = useState(false);
+    const [mundoRequest, setMundoRequest] = useState<{ tab: 'arsenal'; at: number } | undefined>();
     const [isReportsVisible, setReportsVisible] = useState(false);
     // As regras secretas: confere ao carregar e a cada ciclo fechado, e segura
     // o modal enquanto o relatorio esta aberto.
@@ -774,6 +799,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         const handleAppNavigate = (event: Event) => {
             const customEvent = event as CustomEvent<AppNavigatePayload>;
             if (!customEvent.detail?.view) return;
+            if (customEvent.detail.mundoTab) setMundoRequest({ tab: customEvent.detail.mundoTab, at: Date.now() });
             if (customEvent.detail.openDailyPanel) {
                 setPendingDailyPanel({ date: null });
                 setRestScreenVisible(false);
@@ -1047,18 +1073,50 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
 
         if (ORACLE_ENGINE_V2) {
             const tone = hasPremiumAccess(userProfile) ? resolveOracleSpeechTone(oraclePreferences?.speechTone) : 'neutro';
-            const decision = chooseOpening({ actions, arenas: assets.flatMap(a => a.arenas), tasks, activeCycle, resetAt: freeProgressResetAt, today }, previousPlannerOpen, tone, presenceRules.value, userProfile.id);
-            if (!decision.chosen) return;
-            const chosen = decision.chosen;
-            const timer = window.setTimeout(() => {
+            const scope = { actions, arenas: assets.flatMap(a => a.arenas), tasks, activeCycle, resetAt: freeProgressResetAt, today };
+            const decide = (tips = [] as ReturnType<typeof discoveryCandidates>) => chooseOpening(scope, previousPlannerOpen, tone, presenceRules.value, userProfile.id, tips);
+            const ordinary = decide();
+            let cancelled = false;
+            let timer: number | undefined;
+            const deliver = (decision: ReturnType<typeof decide>) => {
+                const chosen = decision.chosen;
+                if (cancelled || !chosen) return;
+                timer = window.setTimeout(() => {
+                if (cancelled || filaNaFrenteRef.current || (window as any).__glyphPendingCycleResults) return;
                 openingSpokenThisSessionRef.current = true;
                 lastOpeningSpeechAtRef.current = Date.now();
-                localStorage.setItem(speechKey, today);
-                rememberEngineSpeech(userProfile.id, chosen, 'opening', today);
+                if (!chosen.discovery) localStorage.setItem(speechKey, today);
+                if (!chosen.discovery) rememberEngineSpeech(userProfile.id, chosen, 'opening', today);
                 emitOracleSpeech({ title: 'Oráculo', message: chosen.text, tone: speechVisualTone('opening', chosen.subject), kind: 'abertura', durationMs: 6800,
+                    discovery: chosen.discovery ? { userId: userProfile.id, candidate: chosen, day: today } : undefined,
                     quickActions: [{ id: 'oracle-v2-planner', label: 'Abrir planner', kind: 'open_planner' }] });
-            }, 520);
-            return () => window.clearTimeout(timer);
+                }, 520);
+            };
+            const history = readEngineMemory(userProfile.id);
+            const topics: DiscoveryTopic[] = ['mastery', 'journal', 'relationships', 'campaigns', 'arsenal', 'garden', 'wisdom'];
+            const mayDiscover = !isTutorialActive && !!userProfile.onboardingCompletedAt && !arenaPactProgress?.completed
+                && !reports.some(r => r.metrics?.sealedAt ? getOperationalDateString(new Date(r.metrics.sealedAt)) === today : r.endDate === today)
+                && !!ordinary.chosen && ordinary.chosen.score < 30
+                && topics.some(topic => !discoveryBlock(topic, history, Date.now(), today));
+            if (mayDiscover) {
+                // Bounded wait: optional usage checks must never hold an ordinary opening hostage.
+                let timeout: ReturnType<typeof setTimeout>;
+                const fallback = new Promise<{}>(resolve => { timeout = setTimeout(() => resolve({}), 1500); });
+                void Promise.race([readDiscoveryUsage(userProfile.id), fallback]).then(usage => {
+                    clearTimeout(timeout);
+                    if (cancelled) return;
+                    deliver(decide(discoveryCandidates({ ...usage,
+                        lastLevelUpdate: userProfile.lastLevelUpdate,
+                        hasClosedCycle: reports.length > 0,
+                        hasCampaign: scope.arenas.some(a => !!a.originCodexId) || !!userProfile.completedSeasonMissions?.includes('system-first-campaign'),
+                        hasUnequippedItem: userProfile.inventory.some(i => !i.isEquipped),
+                        hasEquippedItem: userProfile.inventory.some(i => i.isEquipped) || !!userProfile.completedSeasonMissions?.includes('system-first-equipped-item'),
+                        hasWisdomThemes: !oraclePreferences || oraclePreferences.enabledCategories.length > 0,
+                        gardenEnabled: PRODUCT_FEATURES.personalGarden,
+                    }, tone, Date.now())));
+                });
+            } else deliver(ordinary);
+            return () => { cancelled = true; window.clearTimeout(timer); };
         }
 
         const daysSinceLastPlannerOpen = diffLocalDays(previousPlannerOpen, today);
@@ -1185,7 +1243,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         }, 520);
 
         return () => window.clearTimeout(timer);
-    }, [openingEpoch, isProfileLoaded, freeProgressResetAt, actions, activeCycle, assets, currentView, cycleProgress, dailyCommitment, isRestScreenVisible, oraclePreferences, tasks, userProfile.dailyProofStreak, userProfile.id, userProfile.level, userProfile.nickname]);
+    }, [openingEpoch, isProfileLoaded, freeProgressResetAt, actions, activeCycle, assets, currentView, cycleProgress, dailyCommitment, isRestScreenVisible, oraclePreferences, tasks, userProfile.dailyProofStreak, userProfile.id, userProfile.level, userProfile.nickname, userProfile.lastLevelUpdate, userProfile.inventory, userProfile.completedSeasonMissions, userProfile.onboardingCompletedAt, isTutorialActive, arenaPactProgress?.completed, reports, isProfileVisible, isReportsVisible]);
 
     useEffect(() => {
         if (suppressScreenIntroTips || isTutorialActive) {
@@ -1421,7 +1479,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
                 case 'assets': return <AssetsView />;
                 case 'arenas': return <ArenasView />;
                 case 'planner': return <PlannerView onReportsClick={() => setReportsVisible(true)} />;
-                case 'social': return <MundoView />;
+                case 'social': return <MundoView requestedTab={mundoRequest} />;
                 case 'settings': return <SettingsView />;
                 default: return canUseAssetsView ?<AssetsView /> : <ArenasView />;
             }
@@ -2545,7 +2603,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                 )}
             </Suspense>
             <Suspense fallback={null}>
-                <OracleSpeechOverlay />
+                <OracleSpeechOverlay discoveryBlocked={Boolean(achievementUnlocked || showTerms || isFirstUseOnboardingActive || claimToken || shouldShowVanguardWelcome || shouldShowPremiumReward || shouldShowBetaReward || shouldShowPremiumRenewalOffer || shouldShowAppBroadcast || isInnerBlockingOverlayVisible || isDeepBlockingOverlayVisible)} />
                 {achievementUnlocked &&
                     !showTerms &&
                     !isFirstUseOnboardingActive &&

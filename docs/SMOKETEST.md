@@ -102,10 +102,10 @@ Toque no botão de humor no topo.
 
 Escrito pelo que foi combinado com o Codex em 15/10; conferir no código quando ele terminar.
 
-- [ ] **Cards da loja.** **[novo]** Esperado: cada card diz quantas arenas e ações tem (ex.: "2 arenas · 5 ações") e a duração separada — não "ações por dia".
+- [ ] **Cards da loja.** **[novo]** Esperado: cada card mostra dias, ações e arenas (ex.: "30 dias · 5 ações · 2 arenas") — não "ações por dia".
 - [ ] **Comprar não instala.** **[novo]** Esperado: comprar só libera; a campanha vai para a biblioteca, e as arenas só aparecem ao tocar em **Instalar**.
 - [ ] **Campanha com várias áreas.** **[novo]** Esperado: ao instalar, cada arena vai para a sua área, e a campanha inteira aparece em Campanhas Ativas.
-- [ ] **Fases.** **[novo]** Esperado: concluir uma fase mostra "Próxima arena liberada" com botão para abrir; na virada do ciclo, a fase liberada não volta a travar.
+- [ ] **Fases.** **[novo]** Esperado: concluir uma fase mostra "Arena liberada" com o botão "Abrir" e o nome da próxima arena; na virada do ciclo, a fase liberada não volta a travar.
 - [ ] **Campanha mais longa que o ciclo.** **[novo]** Esperado: o progresso continua de um ciclo para o outro, e a nota do ciclo não cai pelas repetições que ainda viriam. Repetir uma ação além do pedido não conta no lugar de outra pendente.
 - [ ] **Concluir e guardar / Arquivar.** **[novo]** Esperado: a campanha sai das arenas e volta para a biblioteca; instalar de novo começa do zero, e a tentativa anterior fica no histórico.
 - [ ] **Rascunho próprio.** **[novo]** Esperado: instalar uma campanha que você montou cria o grupo da campanha, não só arenas soltas.

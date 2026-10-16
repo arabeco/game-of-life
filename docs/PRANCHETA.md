@@ -1,6 +1,6 @@
 # Prancheta do Glyph
 
-Cópia da prancheta do Afonso (artefato no claude.ai: https://claude.ai/artifact/99dQUHcbX6dy4dcAuu2Dx6), regravada pelo Claude em **16/10/2026**, já com a consolidação do Codex de 13 e 14/10. **15 abertos de 93** (78 feitos).
+Cópia da prancheta do Afonso (artefato no claude.ai: https://claude.ai/artifact/99dQUHcbX6dy4dcAuu2Dx6), regravada pelo Claude em **16/10/2026**, já com a consolidação do Codex de 13 e 14/10. **14 abertos de 93** (79 feitos).
 
 **Uma lista só:** a fonte é a prancheta online, e este arquivo é regravado a partir dela. Não edite as listas abaixo; para avisar algo, escreva em "Recados da outra IA", no fim: o Claude lê e passa para a prancheta.
 
@@ -11,13 +11,13 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 ## Lançamento
 
 - [ ] Teste do Glyph com um amigo (planilha no claude.ai) *(Afonso)* — 15/10: https://claude.ai/artifact/DG8g73vkemJE832jUg4bJc — 26 testes (por caminho, sem item bobo) em Fácil, Médio e Difícil, com deu certo / deu errado e nota; os testes no aparelho (push, tema claro, vibração, widget, compra, reembolso, recuperar senha, excluir conta) moram lá agora, e não mais na prancheta. Precisa do AAB 112. O amigo precisa do link compartilhado (Share) para abrir. Versão em texto: docs/SMOKETEST.md.
-- [ ] Resend: resolver o 401 do teste e comprovar que o e-mail chega (recuperação de acesso) *(outra IA (Codex))* — 16/10 (Codex): o domínio glyph.life está verificado no Resend, mas o teste pelo painel oficial da função também voltou 401 antes de chegar no provedor. Envio e recebimento continuam sem prova; nenhuma credencial foi mudada. Para o Afonso: o recado do Codex no MD ainda diz 401, então este item não está fechado. Detalhes em docs/2026-10-16-validacao-mensageria.md.
 - [ ] Subir o AAB 111 na Play (ou pular direto para o 112) *(Afonso)* — 13/10: o 111 está pronto (ce54428) e não há registro de upload. O 112 terá o trabalho de 13/10 do Claude e do Codex.
 
-<details><summary>Feitos (9)</summary>
+<details><summary>Feitos (10)</summary>
 
 - [x] Idade mínima nos Termos *(outra IA (Codex))* — Publicado (Codex). Reconferido em 13/10 no HTML público: 13 anos, com autorização do responsável para menores de 18.
 - [x] Reembolso nos Termos (7 dias) *(outra IA (Codex))* — Publicado (Codex). Texto de 7 dias e encaminhamento ao Google Play no HTML público em 13/10.
+- [x] Resend: resolver o 401 do teste e comprovar que o e-mail chega (recuperação de acesso) *(outra IA (Codex))* — 16/10: resolvido pelo Codex; o Afonso confirmou que o e-mail chegou. O Luigi confere de novo no D9 (recuperação e "Conta excluída").
 - [x] Conferir se o código VANGUARDA25 existe *(Afonso)* — 10/10: VANGUARDA10 apagado; VANGUARDA25 valendo, 25 vagas, 1 por pessoa, agora 25 de ouro e sem o programa de 14 dias (sql/vanguarda25-sem-programa.sql rodado).
 - [x] Site: contador "guerreiros na fila" quebrado *(outra IA (Codex))* — Corrigido e publicado (Codex): chama get_waitlist_count(), rótulo “inscrições recebidas”. Reconferido em 13/10.
 - [x] Exclusão: finalizar o pedido pelo site e a retomada da limpeza parcial *(outra IA (Codex))* — 16/10 (Codex): exclusão pelo site e retomada automática implementadas e publicadas. Teste real com conta descartável concluiu o protocolo 102 e confirmou a remoção do login, do perfil, dos dados e do arquivo. O e-mail de confirmação depende do item do Resend. Detalhes em docs/2026-10-16-fechamento-exclusao-widget-push.md.
@@ -30,8 +30,8 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 
 ## App
 
-- [ ] AAB 112 (só quando o Afonso pedir) *(Afonso)* — Feito em 13/10, depois do 111: zoom 1x do planner com o dia inteiro; widget do dia novo (Resumo e Planner, sem concluir e sem login); sem pay-to-win (planos e loja sem EXP extra, Premium com 20 arenas); coroa no mini card e no perfil dos outros; mentoria sem trava de Premium; Platinum sem ficha (fica 20% em campanha); Buscar campanha no Oráculo, que abre a campanha na loja. 15/10: vibração nativa (@capacitor/haptics) no app inteiro e no arraste do planner (06a24f7) — plugin novo, o 112 precisa sair com ele. Do Codex (local, ainda sem commit): tags Top 1/5/10% e média de EXP, conquistas por evento, itens repetidos, gestos do planner, nickname, dicas do Oráculo e campanhas (pela metade em 15/10: o app não compila até ele terminar). Conferir o widget no celular.
-- [ ] Modal de arena e de ação: conferir no aparelho (Codex integrou) *(outra IA (Codex))* — 16/10 (Codex): integrados no código ActionModal, ArenaDetailModal, ArenaCard e NewArenaModal, com quatro abas (Geral, Contexto, Checklist, Mídia), slider de duração por etapas com campo numérico, rolagem interna no texto e no checklist e botões dourados. A agenda nova respeita as repetições e o fim do ciclo. Falta conferir na tela: tamanhos, teclado e cortes (o navegador dele não abriu o arquivo). Está na planilha do Luigi como M13.
+- [ ] AAB 112 (só quando o Afonso pedir) *(Afonso)* — 16/10: gerado pelo Claude a pedido do Afonso. Glyph-1.0.112-112.aab em android/app/build/outputs/bundle/release/ (assinado, versionCode 112). Leva tudo de 13 a 16/10: campanhas em biblioteca, modais novos de arena e ação com − e + nas repetições, exclusão retomável e pelo site, e-mail de conta excluída, vibração nativa, planner sem andar de lado, widget novo, sem pay-to-win. Falta o Afonso subir na Play (teste interno) para o Luigi instalar. O 111 pode ser pulado.
+- [ ] Modal de arena e de ação: conferir no aparelho (Codex integrou) *(outra IA (Codex))* — 16/10 (Codex): integrados no código ActionModal, ArenaDetailModal, ArenaCard e NewArenaModal, com quatro abas (Geral, Contexto, Checklist, Mídia), slider de duração por etapas com campo numérico, rolagem interna no texto e no checklist e botões dourados. A agenda nova respeita as repetições e o fim do ciclo. Falta conferir na tela: tamanhos, teclado e cortes (o navegador dele não abriu o arquivo). Está na planilha do Luigi como M13. 16/10 (Claude): botões − e + nas Repetições (prop comBotoes no StyledRangeInput, estilo .action-step em components/action-layout.css, teste acao-repeticoes-mais-menos). Ficou sem commit porque se apoia no ActionModal novo do Codex, que ainda não foi commitado: entra junto no commit dele.
 
 <details><summary>Feitos (41)</summary>
 
@@ -350,3 +350,52 @@ Afonso confirmou a execução de sql/temporadas-2027-artes.sql e pediu commit, p
 - Abertos do Codex desta manhã: terminar campanhas (o app não compila enquanto isso: import duplicado de buildCodexTemplateFromDraft no GameContext, e dois testes falham) e escolher a proposta do modal de arena e ação.
 - Vibração nativa no app e no arraste do planner: commit 06a24f7, plugin @capacitor/haptics novo — o 112 precisa sair com ele.
 - Os testes no aparelho saíram da prancheta e foram para a planilha "Teste do Glyph" (https://claude.ai/artifact/DG8g73vkemJE832jUg4bJc), feita para um amigo testar: Fácil, Médio e Difícil, com deu certo / deu errado. Nos opcionais entrou "Criar campanha para outra pessoa (como era o Codex)".
+
+
+### 15/10 — Biblioteca e continuidade de campanhas (Codex)
+
+- Implementação local: aquisição separada de instalação; abas Em andamento / Biblioteca / Histórico; concluir ou arquivar preserva tentativa e libera reutilização; ativos e fases preservados no template; instalação do rascunho usa agrupamento real.
+- Progresso das campanhas instaladas atravessa ciclos, não cobra o saldo futuro na nota e limita cada ação à própria meta. Agenda respeita fases e saldo. Corrigida abertura da prévia pela biblioteca e cartões cortados no celular.
+- Afonso confirmou execução de `supabase/migrations/20261015120000_campaign_library_runs.sql`. Não houve validação autenticada do RPC remoto nesta rodada.
+- TypeScript, Vite, regressões de campanhas/denominador/agendamento e interface simulada em celular passaram. Sem publicação ou novo AAB; não está no AAB 111. Detalhes: `docs/2026-10-15-auditoria-campanhas.md`.
+
+### 15/10 — Auditoria das Edge Functions (Codex)
+- [x] Corrigir leitura pública do segredo interno: SQL 20261015200000 aplicado; segredo rotacionado e sincronizado. Leitura anônima agora 401; autenticação do webhook reconferida sem envio.
+- [x] Mercado Pago: segredo `MERCADO_PAGO_WEBHOOK_SECRET` cadastrado pelo Afonso e presença confirmada em 16/10. Evento fictício sem assinatura retornou `Invalid signature`, antes de consultar pagamentos. Ainda falta confirmar uma notificação legítima assinada pelo Mercado Pago; este teste não comprova igualdade do segredo nem compra real.
+- [ ] Limpeza de segredos: auditoria das nove funções publicadas em 16/10 não encontrou referências a `OPENROUTER_API_KEY` ou `OPENROUTER_MODEL`. Candidatos à remoção; nenhum segredo foi apagado. Demais configurações personalizadas têm referências no código publicado; manter os segredos padrão do Supabase.
+- [x] Widget: arenas arquivadas e bloqueios de campanha — widget-action v4 publicado; teste real na conta descartável confirmou recusas e liberação após pré-requisito. Sem teste de gesto/layout no aparelho.
+- Push: duas inscrições ativas sem erro; envio registrado em 15/10 às 14h40. Histórico enviado não comprova exibição no aparelho. Auditoria: docs/2026-10-15-auditoria-edge-functions.md.
+
+### 16/10 — Fechamento das melhorias seguras
+- [x] Push web-push v37: até três tentativas para 500/503, respeitando espera do provedor; sem repetição cega de timeout ou sucesso. Testes simulados passaram, sem envio real. Fila de retentativas longas/429 não implementada.
+- [x] Contador de arena preserva 8/7 realizadas enquanto progresso elegível continua limitado por ação. Testes de apresentação e campanha passaram; apresentação local aguarda próximo AAB.
+- Detalhes e limites: docs/2026-10-16-fechamento-exclusao-widget-push.md.
+
+### 16/10 — Codex: revisão antes do AAB e do teste do Luigi
+
+- Este recado supera os estados antigos das listas principais, sem regravar a cópia da prancheta online.
+- Exclusão pelo site e retomada automática já implementadas/publicadas; teste real com conta descartável concluiu protocolo 102 e confirmou remoção de Auth, perfil, dados e arquivo. E-mail é uma pendência separada. Ver `2026-10-16-fechamento-exclusao-widget-push.md`.
+- Campanhas já têm implementação e testes locais registrados em `2026-10-15-auditoria-campanhas.md`; a afirmação antiga de trabalho interrompido/compilação quebrada está superada. `npx tsc --noEmit --pretty false` reconferido nesta revisão: passou. Fluxo completo autenticado de biblioteca/arquivar/reinstalar no banco remoto ainda merece validação antes do aparelho.
+- Mercado Pago: print do Afonso mostra simulação oficial payment.updated, data.id=0, chegando à consulta da API e retornando status 400 para o ID fictício. Com o segredo presente, confirma passagem pela assinatura. Teste sem assinatura havia sido rejeitado. Não é teste de compra/crédito real.
+- Afonso confirmou remoção dos dois segredos OPENROUTER. Não há mais ação de remoção pendente por parte dele.
+- FCM: push de teste autorizado para Mister X retornou sent=1, failed=0. Ainda falta confirmação de exibição no aparelho. Resend: teste remoto segue barrado com 401 antes do provedor; autenticação original preservada. Ver `2026-10-16-validacao-mensageria.md`.
+- `reward-routing.regression.mjs` reconferido: passou. `luz-e-placa-do-soberano.regression.mjs` ainda falha ao procurar comentário/estrutura antiga do slot; não comprova defeito visual por si só, pois o editor atual usa três slots. Revisar teste contra o layout aprovado e conferir visualmente.
+- Modais: os botões dourados já aparecem no código de ActionModal e ArenaDetailModal. A proposta HTML completa não deve ser tratada como integrada só por isso; conferir diferenças e fechar o escopo visual antes de incluir no AAB.
+- Prioridade sugerida: autenticação/entrega Resend; biblioteca de campanhas em conta de teste; conciliação dos modais aprovados; regressões e revisão visual; checkpoint do código e roteiro do Luigi. Arte de temporadas futuras e expansões podem ficar fora se não forem ativadas.
+- Nenhum novo AAB foi gerado nesta revisão.
+
+### 16/10 — Integração dos modais e validação real de campanhas (Codex)
+
+- Integrados no código real ActionModal, ArenaDetailModal, ArenaCard e NewArenaModal: quatro abas (Geral, Contexto, Checklist, Mídia), abas de leitura filtradas por conteúdo, lista de ações com quadrados arredondados e +, detalhes na cor do ativo, botões dourados. Miniaturas preservam PlasmaCanvas/gradiente existente e tags; arredondamento reduzido.
+- Duração: slider por etapas e campo numérico independente; repetições inteiras. Texto e checklist têm rolagem interna. A validação visual de dimensões/teclado NÃO foi concluída: navegador bloqueou file://. Não afirmar ausência de cortes em todo aparelho antes dessa verificação.
+- Agenda nova com início, dias e horário obrigatório respeita quantidade de repetições e horizonte do ciclo; regra alinhada também ao reagendamento de ciclo e caminho colaborativo. Agendas antigas sem limitToRepetitions mantêm seu comportamento anterior.
+- Campanhas: migração 20261016120000_campaign_run_task_id_compatibility.sql aplicada remotamente. Corrigidas comparações UUID/texto e data/texto em finish_campaign_run. Teste autenticado com conta descartável passou: recusa de conclusão incompleta, conclusão entre ciclos, arquivamento, preservação de histórico/biblioteca, remoção de pendências futuras e reinstalação com IDs/progresso novos. Conta de teste removida. Evidência: output/campaign-library/live-report.json. Não testa compra real nem instalação pela UI Android.
+- Resend: domínio glyph.life Verified; teste pelo painel oficial da função também retornou 401 unauthorized antes do provedor. Envio/recebimento continuam pendentes. Não houve alteração de credenciais ou ampliação de autenticação.
+- TypeScript e regressões focadas de agenda, campanhas e e-mail passaram. Build web conferido. Ainda sem novo AAB, sem commit/push; revisão geral/checkpoint/roteiro Luigi ficam para a rodada seguinte conforme solicitado.
+
+### 16/10 — Resend aceitou o envio real da exclusão (protocolo 103)
+
+- Testado o caminho interno account-delete → resend com uma conta nova descartável no alias misterxhermit+glyph-teste@gmail.com, autorizado por Afonso. Conta Mister X preservada.
+- Exclusão HTTP 200, protocolo completed, sem limpeza pendente; Auth e perfil removidos. E-mail accepted no retorno e no registro de despacho, com ID do provedor. Nenhuma mudança de autenticação ou credencial.
+- Este resultado supera a suspeita de que o 401 do teste externo indicava defeito no envio interno. Falta somente confirmar o recebimento desse e-mail. Recuperação de senha usa outro caminho (Supabase Auth/SMTP) e ainda exige teste próprio.
+- Evidência: output/deletion-email/live-report.json e docs/2026-10-16-validacao-mensageria.md.

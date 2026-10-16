@@ -1,6 +1,6 @@
 # Prancheta do Glyph
 
-Cópia da prancheta do Afonso (artefato no claude.ai: https://claude.ai/artifact/99dQUHcbX6dy4dcAuu2Dx6), regravada pelo Claude em **16/10/2026**, já com a consolidação do Codex de 13 e 14/10. **16 abertos de 91** (75 feitos).
+Cópia da prancheta do Afonso (artefato no claude.ai: https://claude.ai/artifact/99dQUHcbX6dy4dcAuu2Dx6), regravada pelo Claude em **16/10/2026**, já com a consolidação do Codex de 13 e 14/10. **17 abertos de 93** (76 feitos).
 
 **Uma lista só:** a fonte é a prancheta online, e este arquivo é regravado a partir dela. Não edite as listas abaixo; para avisar algo, escreva em "Recados da outra IA", no fim: o Claude lê e passa para a prancheta.
 
@@ -11,6 +11,7 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 ## Lançamento
 
 - [ ] Teste do Glyph com um amigo (planilha no claude.ai) *(Afonso)* — 15/10: https://claude.ai/artifact/DG8g73vkemJE832jUg4bJc — 26 testes (por caminho, sem item bobo) em Fácil, Médio e Difícil, com deu certo / deu errado e nota; os testes no aparelho (push, tema claro, vibração, widget, compra, reembolso, recuperar senha, excluir conta) moram lá agora, e não mais na prancheta. Precisa do AAB 112. O amigo precisa do link compartilhado (Share) para abrir. Versão em texto: docs/SMOKETEST.md.
+- [ ] Resend: resolver o 401 do teste e comprovar que o e-mail chega (recuperação de acesso) *(outra IA (Codex))* — 16/10 (Codex, parou por tokens; volta às 13h): o teste de envio responde 401, ou seja, a chamada não provou quem é (chave ou token errado ou ausente), e não falha de e-mail. Falta corrigir e ver um e-mail de recuperação chegar de verdade. A planilha do Luigi já cobre do lado dele (D9).
 - [ ] Subir o AAB 111 na Play (ou pular direto para o 112) *(Afonso)* — 13/10: o 111 está pronto (ce54428) e não há registro de upload. O 112 terá o trabalho de 13/10 do Claude e do Codex.
 - [ ] Exclusão: finalizar o pedido pelo site e a retomada da limpeza parcial *(outra IA (Codex))* — 13/10 (Codex): e-mails, permissões e tratamento de erro prontos. O que falta e o que o Claude pensa: (1) O pedido pelo site abre um e-mail para glyph.life.app@gmail.com, sem pedido guardado no banco. A Play exige uma página na web para pedir exclusão sem o app, e página explicando o processo com e-mail de contato costuma ser aceita: dá para lançar assim, desde que a página diga o que é apagado e em quanto tempo. O formulário com pedido guardado fica para depois. (2) Se algum arquivo da pessoa falhar ao ser apagado, o pedido fica 'cleanup_pending' e nada tenta de novo: a conta some, mas pode sobrar arquivo órfão. Por enquanto, rodar de vez em quando supabase/CHECK-limpeza-de-conta-pendente.sql (cf46cb2); a rotina automática de nova tentativa fica para quando tiver gente.
 
@@ -30,12 +31,13 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 ## App
 
 - [ ] AAB 112 (só quando o Afonso pedir) *(Afonso)* — Feito em 13/10, depois do 111: zoom 1x do planner com o dia inteiro; widget do dia novo (Resumo e Planner, sem concluir e sem login); sem pay-to-win (planos e loja sem EXP extra, Premium com 20 arenas); coroa no mini card e no perfil dos outros; mentoria sem trava de Premium; Platinum sem ficha (fica 20% em campanha); Buscar campanha no Oráculo, que abre a campanha na loja. 15/10: vibração nativa (@capacitor/haptics) no app inteiro e no arraste do planner (06a24f7) — plugin novo, o 112 precisa sair com ele. Do Codex (local, ainda sem commit): tags Top 1/5/10% e média de EXP, conquistas por evento, itens repetidos, gestos do planner, nickname, dicas do Oráculo e campanhas (pela metade em 15/10: o app não compila até ele terminar). Conferir o widget no celular.
-- [ ] Campanhas: biblioteca, progresso entre ciclos e correções (Codex, em andamento) *(outra IA (Codex))* — 15/10, combinado com o Afonso: (1) card com “2 arenas · 5 ações” e duração separada; (2) instalar do catálogo preserva a área de cada arena; (3) progresso da campanha acumula entre ciclos, sem cobrar repetições futuras; (4) fase não volta a travar na virada, excesso de uma ação não compensa outra, rascunho próprio cria o grupo, e “Próxima arena liberada — Abrir”; (5) biblioteca: comprar libera, Instalar quando quiser, “Concluir e guardar”/“Arquivar” devolve à biblioteca para recomeçar do zero com histórico. SQL 20261015120000 já rodado. Auditoria: docs/2026-10-15-auditoria-campanhas.md. Parou no limite de uso; enquanto não terminar, o app não compila. Testes já na planilha (M11, M12, D10–D12) — o Claude confere no código quando ele terminar.
-- [ ] Modal de arena e de ação: escolher a proposta (Codex) *(outra IA (Codex))* — 15/10: só propostas, ainda não ligadas ao app: docs/drafts/arena-acao-cinco-propostas.html e as versões de miniaturas, agendamento e checklist.
+- [ ] Campanhas no banco real: percorrer tudo com uma conta de teste *(outra IA (Codex))* — 16/10 (Codex): código e testes locais prontos; falta provar o caminho inteiro no servidor: comprar/liberar → biblioteca → instalar → avançar fases → arquivar → reinstalar. É o mesmo caminho dos testes M11, M12 e D10–D12 da planilha do Luigi; se o Codex fizer antes, o Luigi só confirma.
+- [ ] Modal de arena e de ação: integrar a proposta aprovada (Codex) *(outra IA (Codex))* — 16/10 (Codex): o botão dourado já entrou. Falta o modal de ação, que ainda usa duas abas internas (básico/avançado); a proposta aprovada, com quatro abas, sliders e rolagem interna, não está toda integrada. Propostas em docs/drafts/arena-acao-cinco-propostas.html.
 
-<details><summary>Feitos (39)</summary>
+<details><summary>Feitos (40)</summary>
 
 - [x] Onboarding novo: fechar e commitar *(Claude)* — Commitado em 09/10 (fb05e4e).
+- [x] Campanhas: biblioteca, progresso entre ciclos e correções (Codex) *(outra IA (Codex))* — 16/10: o Codex terminou. O Claude conferiu: o build compila e 131 de 134 testes passam (falham a-mao-ganha-do-oraculo e luz-e-placa, que são antigos, e apagar-conta, que ainda lê o arquivo antigo depois que a exclusão foi para _shared/accountDeletion.ts; é com o Codex). Os textos da planilha e do SMOKETEST foram ajustados ao app: card "30 dias · 5 ações · 2 arenas" e "Arena liberada — Abrir". O trabalho ainda não foi commitado; precisa estar antes do AAB 112.
 - [x] Planner sem tremer: commitar *(Claude)* — Commitado em 09/10 (fb05e4e).
 - [x] Botão do ciclo no planner e na ArenaView: commitar *(Claude)* — Commitado em 09/10 (fb05e4e).
 - [x] Widget (rótulo do dia): fechar a mudança e o teste *(Claude)* — Ok do Afonso em 10/10.

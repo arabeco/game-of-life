@@ -14,6 +14,7 @@ import { SovereignCustomizer } from '../components/SovereignCustomizer';
 import { SovereignVitrineModal } from '../components/SovereignVitrine';
 import { AvatarUploadModal } from '../components/AvatarUploadModal';
 import { shareElementWithFeedback } from '../components/Share';
+import { copiarTexto } from '../utils/convites';
 import { Portal } from '../components/Portal';
 import { ProfileBackgroundSurface } from '../components/ProfileBackgroundSurface';
 import { ProfileAssetsPreview } from '../components/ProfileAssetsPreview';
@@ -777,8 +778,10 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                     <button
                                         onClick={() => {
                                             void shareElementWithFeedback(showToast, 'shareable-profile', {
-                                                title: `Perfil de ${displayProfile.nickname} - Life OS`,
-                                                text: 'Olha só meu perfil no Glyph.',
+                                                title: `Perfil de ${displayProfile.nickname} - Glyph`,
+                                                text: isOwnProfile
+                                                    ? `Me adicione no Glyph!\nMeu nickname: ${displayProfile.nickname}`
+                                                    : `Adicione ${displayProfile.nickname} no Glyph!\nNickname: ${displayProfile.nickname}`,
                                                 preparingMessage: 'Preparando compartilhamento do perfil...',
                                                 sharedMessage: 'Perfil compartilhado.',
                                                 cancelledMessage: 'Compartilhamento cancelado.',
@@ -786,6 +789,9 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                             });
                                         }}
                                         className="p-2 rounded-full border border-white/20 bg-black/50 backdrop-blur-sm"
+                                        type="button"
+                                        aria-label="Compartilhar perfil"
+                                        title="Compartilhar perfil"
                                     >
                                         <ShareIcon className="w-5 h-5 text-gray-300" />
                                     </button>
@@ -894,6 +900,21 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                             )}
                                         </h2>
                                     </div>
+                                    <button
+                                        type="button"
+                                        disabled={!displayProfile.nickname?.trim()}
+                                        onClick={async () => {
+                                            try {
+                                                await copiarTexto(displayProfile.nickname.trim());
+                                                showToast('Nickname copiado.', 'success');
+                                            } catch {
+                                                showToast('Não foi possível copiar o nickname. Tente novamente.', 'error');
+                                            }
+                                        }}
+                                        className="mt-1 min-h-10 px-3 text-xs text-gray-300 hover:text-white rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:opacity-50"
+                                    >
+                                        Copiar nickname
+                                    </button>
                                     <button onClick={() => isOwnProfile && clan && setClanModalOpen(true)} disabled={!isOwnProfile || !clan} className="mt-1.5 bg-black/50 backdrop-blur-sm border border-white/10 rounded-xl py-1.5 px-4 inline-flex flex-col items-center hover:bg-black/70 transition-colors disabled:cursor-default">
                                         <span className="text-sm font-bold text-white">{clanName}</span>
                                         <span className="text-xs text-gray-400">{currentClanRank?.name || 'N/A'}</span>

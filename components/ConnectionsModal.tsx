@@ -543,7 +543,7 @@ export const ConnectionsModal: React.FC<{
                           <button type="button" disabled={Boolean(busyKey)} onClick={() => void endLink(link)} className="p-2 text-white/45 hover:text-rose-200" aria-label="Encerrar conexão"><TrashIcon className="h-4 w-4" /></button>
                         </div>
 
-                        {!live && link.linkType!=='competicao' ? (<div className="mt-3 flex gap-2"><button disabled={Boolean(busyKey)} onClick={()=>void renewLink(link)} className="rounded border border-white/20 px-3 py-2 text-xs text-white">Renovar · {getRelationshipRenewalPrice(link.linkType)} ouro</button><button disabled={Boolean(busyKey)} onClick={()=>void runBusy('hide:'+link.id,()=>runRelationshipRpc('hide_relationship_link',{p_link_id:link.id}))} className="text-xs text-white/50">Remover da minha lista</button></div>) : link.linkType === 'competicao' ? (
+                        {!live && link.linkType!=='competicao' ? (<div className="mt-3 flex gap-2"><button disabled={Boolean(busyKey)} onClick={()=>void renewLink(link)} className="luxe-skin-button luxe-brilho rounded-lg px-4 py-3 text-xs font-black disabled:opacity-50 disabled:cursor-not-allowed">Renovar · {getRelationshipRenewalPrice(link.linkType)} ouro</button><button disabled={Boolean(busyKey)} onClick={()=>void runBusy('hide:'+link.id,()=>runRelationshipRpc('hide_relationship_link',{p_link_id:link.id}))} className="text-xs text-white/50">Remover da minha lista</button></div>) : link.linkType === 'competicao' ? (
                           <div className="mt-3 space-y-2">
                             {challengesForLink(link.id).length === 0 ? (
                               <p className="text-[11px] leading-relaxed text-white/45">Nenhum desafio registrado.</p>

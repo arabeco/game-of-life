@@ -1,3 +1,4 @@
+import { avisarSegredoConfirmado } from '../utils/eventosDeSegredos';
 import { supabase } from '../supabaseClient';
 import { lerEntradas, paginaDeDestino, periodoDaPagina, type DestinoDaEntrada, type TagDoDiario } from '../utils/diario';
 
@@ -117,6 +118,7 @@ export const salvarPagina = async (
     console.error('[journal] falha ao salvar pagina:', error);
     return false;
   }
+  if (texto.trim().length >= 100) avisarSegredoConfirmado(userId, 'diario');
   return true;
 };
 

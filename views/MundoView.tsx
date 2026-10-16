@@ -895,8 +895,9 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
 
 // --- Main View ---
 
-const MundoView: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'social' | 'hall' | 'loja' | 'temporada' | 'arsenal'>('social');
+const MundoView: React.FC<{ requestedTab?: { tab: 'arsenal'; at: number } }> = ({ requestedTab }) => {
+    const [activeTab, setActiveTab] = useState<'social' | 'hall' | 'loja' | 'temporada' | 'arsenal'>(requestedTab?.tab || 'social');
+    useEffect(() => { if (requestedTab) setActiveTab(requestedTab.tab); }, [requestedTab]);
     const [socialSection, setSocialSection] = useState<SocialSection>('people');
     const [socialParticipantId, setSocialParticipantId] = useState<string | null>(null);
     const [socialRequestsRevision, setSocialRequestsRevision] = useState(0);

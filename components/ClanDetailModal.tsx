@@ -1,3 +1,5 @@
+import { useProgressRecognition } from '../hooks/useProgressRecognition';
+import { ProgressRecognitionBadge } from './ProgressRecognitionBadge';
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { GlassCard } from './GlassCard';
 import { XIcon, CheckIcon, UsersIcon, DoorIcon, ChevronDownIcon, SendIcon, CrownIcon } from './Icons';
@@ -160,7 +162,8 @@ type ClanDetailTab = 'santuario' | 'membros' | 'missoes';
 // --- Sub-components ---
 
 const ClanHeader: React.FC<{ userClanRole?: 'leader' | 'member'; expandDescription?: boolean }> = ({ userClanRole, expandDescription }) => {
-    const { clan, clanRanks, updateClan } = useGame();
+    const { clan, clanRanks, updateClan, userProfile } = useGame();
+    const clanRecognition = useProgressRecognition(userProfile.id, 'clan', clan?.id || '', clan?.exp || 0);
     const [isExpanded, setIsExpanded] = useState(false);
     const [isEditingDescription, setIsEditingDescription] = useState(false);
     const [editableDescription, setEditableDescription] = useState(clan?.description || '');
@@ -194,6 +197,7 @@ const ClanHeader: React.FC<{ userClanRole?: 'leader' | 'member'; expandDescripti
                 <div className="text-center">
                     <h2 className="text-lg font-black text-white luxe-title-shadow">{clan.name}</h2>
                     <p className="text-xs text-gray-300 font-bold">{currentRank?.name || 'N/A'}</p>
+                    <ProgressRecognitionBadge value={clanRecognition} context="EXP entre clãs" />
                 </div>
                 <div className="w-full bg-black/30 rounded-full h-2 mt-1 relative group">
                     <div className="bg-[var(--skin-accent-color)] h-full rounded-full" style={{ width: `${progressPercentage}%` }}></div>

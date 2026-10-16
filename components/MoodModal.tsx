@@ -14,11 +14,11 @@ const ESPECTRO_DO_HUMOR = `linear-gradient(90deg, ${MOODS_DATA.flatMap((mood) =>
     `${mood.trackEnd} ${Math.min(mood.max, 100)}%`,
 ]).join(', ')})`;
 
-export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+export const MoodModal: React.FC<{ onClose: () => void; initialTab?: 'humor' | 'diario' }> = ({ onClose, initialTab = 'humor' }) => {
     const { userProfile, dailyCommitment, updateMood, updateOperationalScratch, recordMoodEntry, fetchMoodHistory } = useGame();
     const [historico, setHistorico] = React.useState<Array<{ value: number; recordedAt: string }>>([]);
     const [registrando, setRegistrando] = React.useState(false);
-    const [aba, setAba] = useState<'humor' | 'diario'>('humor');
+    const [aba, setAba] = useState<'humor' | 'diario'>(initialTab);
 
     /*
      * A FRASE NASCE JUNTO DO HUMOR, E NAO NOUTRA ABA.

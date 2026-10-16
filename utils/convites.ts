@@ -80,9 +80,14 @@ export const copiarTexto = async (texto: string) => {
         campo.style.position = 'fixed';
         campo.style.opacity = '0';
         document.body.appendChild(campo);
-        campo.select();
-        document.execCommand('copy');
-        campo.remove();
+        try {
+            campo.select();
+            if (!document.execCommand('copy')) {
+                throw new Error('Não foi possível copiar o texto.');
+            }
+        } finally {
+            campo.remove();
+        }
     }
 };
 

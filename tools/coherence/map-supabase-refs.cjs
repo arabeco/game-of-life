@@ -1,0 +1,12 @@
+const fs=require('fs'),path=require('path');const out='output/supabase-audit-2026-10-11';
+const roots=['components','contexts','views','services','utils','hooks','constants','supabase/functions','android/app/src/main'];
+const files=[];function walk(p){if(!fs.existsSync(p))return;for(const e of fs.readdirSync(p,{withFileTypes:true})){const f=path.join(p,e.name);if(e.isDirectory())walk(f);else if(/\.(tsx?|jsx?|java|kt|html)$/.test(f))files.push(f);}}roots.forEach(walk);
+for(const n of ['index.html','script.js','descubra.html','suporte.html','exclusao.html','dashboard.html'])files.push('C:/Users/Afonso/Desktop/glyph-landing/'+n);
+const source=files.filter(f=>fs.existsSync(f)).map(f=>({file:f.replaceAll('\\','/'),lines:fs.readFileSync(f,'utf8').split(/\r?\n/)}));
+const tables=[...fs.readFileSync(out+'/table-stats.txt','utf8').matchAll(/public\.([a-z0-9_]+)\s*\|/g)].map(m=>m[1]);
+const migrations=fs.readdirSync('supabase/migrations').filter(n=>n.endsWith('.sql')).map(n=>({file:'supabase/migrations/'+n,text:fs.readFileSync('supabase/migrations/'+n,'utf8')}));
+const refs=name=>{const re=new RegExp('(?<![a-zA-Z0-9_])'+name+'(?![a-zA-Z0-9_])');return source.flatMap(s=>s.lines.flatMap((l,i)=>re.test(l)?[s.file+':'+(i+1)]:[]));};
+const inventory=tables.map(name=>({name,runtimeTextReferences:refs(name),migrationFiles:migrations.filter(m=>new RegExp('\\b'+name+'\\b').test(m.text)).map(m=>m.file),classification:name.startsWith('backup_')?'backup_historico_revisar_dependencias':refs(name).length?'referencia_no_codigo_preservar':'sem_referencia_textual_nao_prova_orfao'}));
+fs.writeFileSync(out+'/table-reference-map.json',JSON.stringify(inventory,null,2));
+const calls=[];for(const s of source)for(let i=0;i<s.lines.length;i++){for(const m of s.lines[i].matchAll(/\.rpc\(\s*['"]([^'"]+)['"]/g))calls.push({name:m[1],file:s.file,line:i+1});}fs.writeFileSync(out+'/rpc-call-map.json',JSON.stringify(calls,null,2));
+console.log(JSON.stringify({tables:tables.length,withRuntimeRefs:inventory.filter(t=>t.runtimeTextReferences.length).length,backups:inventory.filter(t=>t.name.startsWith('backup_')).map(t=>t.name),noRuntimeRefs:inventory.filter(t=>!t.runtimeTextReferences.length&&!t.name.startsWith('backup_')).map(t=>t.name),rpcNames:[...new Set(calls.map(c=>c.name))].length},null,2));

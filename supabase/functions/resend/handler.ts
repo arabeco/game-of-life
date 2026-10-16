@@ -23,23 +23,27 @@ export const createDeletionEmailHandler = ({ serviceKey, apiKey, from, admin,
   try {
     const payload = await req.json();
     const metadata = payload?.metadata;
-    if (payload?.type !== 'account_deleted' || metadata?.accountDeleted !== true || metadata?.sendEmail !== true) {
+    const isTest = payload?.type === 'delivery_test';
+    if ((!isTest && (payload?.type !== 'account_deleted' || metadata?.accountDeleted !== true)) || metadata?.sendEmail !== true) {
       return response(400, { error: 'unsupported_email' });
     }
     const key = metadata.dispatchKey;
     const email = typeof metadata.email === 'string' ? metadata.email.trim() : '';
-    if (typeof key !== 'string' || !/^account-deleted:\d+$/.test(key) || key.length > 200 ||
+    const validKey = isTest ? /^delivery-test:[a-zA-Z0-9-]{8,80}$/ : /^account-deleted:\d+$/;
+    if (typeof key !== 'string' || !validKey.test(key) || key.length > 200 ||
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.toLowerCase().endsWith('@gol.local')) {
       return response(400, { error: 'invalid_dispatch' });
     }
-    const content = typeof payload.content === 'string' ? payload.content.trim() : '';
+    const content = isTest
+      ? 'Este é um teste solicitado por você para conferir a entrega de e-mails do Glyph. Nenhuma conta foi excluída ou alterada. Confirme o recebimento no chat.'
+      : typeof payload.content === 'string' ? payload.content.trim() : '';
     if (!content || content.length > 3000) return response(400, { error: 'invalid_content' });
 
     // O sufixo separa reservas antigas, feitas antes de se saber o resultado.
     const dispatchKey = `v2:${key}`;
     const table = () => admin.from('notification_email_dispatches');
     const { error: insertError } = await table().insert({
-      dispatch_key: dispatchKey, notification_type: 'account_deleted', status: 'pending',
+      dispatch_key: dispatchKey, notification_type: isTest ? 'delivery_test' : 'account_deleted', status: 'pending',
     });
     if (insertError && insertError.code !== '23505') return response(503, { error: 'dispatch_storage_unavailable' });
     const { data: row, error: readError } = await table().select('status,created_at,provider_email_id')
@@ -53,9 +57,10 @@ export const createDeletionEmailHandler = ({ serviceKey, apiKey, from, admin,
     if (!Number.isFinite(age) || age < -60000 || age > 23 * 3600000) {
       return response(409, { error: 'dispatch_needs_review' });
     }
-    const body = JSON.stringify({ from, to: email, subject: 'Glyph — Conta excluída',
+    const heading = isTest ? 'Teste de entrega' : 'Conta excluída';
+    const body = JSON.stringify({ from, to: email, subject: `Glyph — ${heading}`,
       text: content,
-      html: `<div style="font-family:sans-serif;color:#222;padding:24px"><h2>Conta excluída</h2><p>${escape(content).replaceAll('\n', '<br>')}</p><p>Glyph</p></div>`,
+      html: `<div style="font-family:sans-serif;color:#222;padding:24px"><h2>${heading}</h2><p>${escape(content).replaceAll('\n', '<br>')}</p><p>Glyph</p></div>`,
     });
     let acceptedId = '';
     // Retentativas limitadas, mesmo corpo/chave; não consome novos envios em duplicidade.

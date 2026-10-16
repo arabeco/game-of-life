@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { checkWidgetArenaAccess } from "../_shared/widgetArenaAccess.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
@@ -40,6 +41,13 @@ serve(async (request) => {
 
   if (actionError || !action) return json({ error: "Acao nao encontrada." }, 404);
   if (action.action_type === "Marco") return json({ error: "Marcos devem ser confirmados dentro do app." }, 409);
+
+  try {
+    const blocked = await checkWidgetArenaAccess(supabase, user.id, action.arena_id);
+    if (blocked) return json({ error: blocked }, 409);
+  } catch {
+    return json({ error: "Não foi possível conferir a arena e a campanha. Tente novamente." }, 503);
+  }
 
   const safeDuration = Math.max(1, Number(action.duration || 15));
   const safeStartTime = Math.max(0, Math.min(1439, Math.round(completionMinute) - safeDuration));

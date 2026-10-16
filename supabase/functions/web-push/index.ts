@@ -3,6 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 import { SignJWT, importPKCS8 } from "npm:jose@5.9.6";
 import webpush from "npm:web-push@3.6.7";
 import { splitCardText } from "../_shared/oracle-card-library.ts";
+import { withPushRetry } from "../_shared/pushRetry.ts";
 
 type JsonRecord = Record<string, unknown>;
 type NotificationPriority = "critical" | "actionable" | "progress" | "ambient";
@@ -369,7 +370,10 @@ const sendNativePushNotification = async (
       || rawText
       || `http_${response.status}`;
 
-    throw new Error(`FCM send failed (${response.status}): ${message}`);
+    throw Object.assign(new Error(`FCM send failed (${response.status}): ${message}`), {
+      statusCode: response.status,
+      retryAfter: response.headers.get('retry-after'),
+    });
   }
 
   return {
@@ -1011,7 +1015,7 @@ const deliverPushToSubscription = async (
   payload: PushDispatchPayload,
 ) => {
   if (isNativeTokenSubscription(subscriptionRow)) {
-    return await sendNativePushNotification(subscriptionRow, payload);
+    return await withPushRetry(() => sendNativePushNotification(subscriptionRow, payload));
   }
 
   const pushSubscription = normalizeStoredSubscription(subscriptionRow);
@@ -1019,7 +1023,7 @@ const deliverPushToSubscription = async (
     throw new Error("invalid_subscription_payload");
   }
 
-  return await webpush.sendNotification(pushSubscription as any, JSON.stringify(payload));
+  return await withPushRetry(() => webpush.sendNotification(pushSubscription as any, JSON.stringify(payload)));
 };
 
 const registerSubscription = async (req: Request, body: JsonRecord, origin: string | null) => {

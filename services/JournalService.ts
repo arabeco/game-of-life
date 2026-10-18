@@ -49,7 +49,19 @@ const previaDe = (entradas: ReturnType<typeof lerEntradas>, conteudo: string): s
  * alternativa (uma view ou uma RPC) trocaria bytes por uma peca a mais para
  * manter. Se um dia o indice pesar, a troca e essa.
  */
-export const listarPaginas = async (userId: string): Promise<ResumoDePagina[]> => {
+export const listarPaginas = async (userId: string): Promise<ResumoDePagina[]> =>
+  (await listarPaginasOuFalha(userId)) ?? [];
+
+/**
+ * FALHA NAO E VAZIO (18/10/2026, teste do Luigi).
+ *
+ * As versoes de tela devolvem lista vazia e texto vazio quando a rede cai — para
+ * mostrar, tudo bem. Para GRAVAR, nao: "nao consegui ler" tratado como "nao ha
+ * nada" fazia a entrada nova ser gravada sozinha por cima da pagina, e o texto
+ * antigo sumia quando a rede voltava a meio caminho. Quem grava usa estas, que
+ * devolvem null na falha.
+ */
+export const listarPaginasOuFalha = async (userId: string): Promise<ResumoDePagina[] | null> => {
   const { data, error } = await supabase
     .from('journal_pages')
     .select('page_number, updated_at, content')
@@ -58,7 +70,7 @@ export const listarPaginas = async (userId: string): Promise<ResumoDePagina[]> =
 
   if (error) {
     console.error('[journal] falha ao listar paginas:', error);
-    return [];
+    return null;
   }
 
   // O conteudo ja vem para cortar a previa; humores e tags saem dele sem custo a mais.
@@ -77,7 +89,11 @@ export const listarPaginas = async (userId: string): Promise<ResumoDePagina[]> =
 };
 
 /** Uma pagina, uma linha. Pagina que nunca foi escrita volta vazia. */
-export const lerPagina = async (userId: string, pageNumber: number): Promise<string> => {
+export const lerPagina = async (userId: string, pageNumber: number): Promise<string> =>
+  (await lerPaginaOuFalha(userId, pageNumber)) ?? '';
+
+/** Como lerPagina, mas null quando a leitura falha (ver listarPaginasOuFalha). */
+export const lerPaginaOuFalha = async (userId: string, pageNumber: number): Promise<string | null> => {
   const { data, error } = await supabase
     .from('journal_pages')
     .select('content')
@@ -87,7 +103,7 @@ export const lerPagina = async (userId: string, pageNumber: number): Promise<str
 
   if (error) {
     console.error('[journal] falha ao ler pagina:', error);
-    return '';
+    return null;
   }
 
   return String(data?.content || '');
@@ -161,7 +177,9 @@ export const anexarEntrada = async (
   texto: string,
   destino: DestinoDaEntrada = 'ultima',
 ): Promise<boolean> => {
-  const paginas = await listarPaginas(userId);
+  // Sem conseguir ler, nao grava: gravaria por cima do que nao foi lido.
+  const paginas = await listarPaginasOuFalha(userId);
+  if (!paginas) return false;
   const existentes = paginas.map((p) => p.pageNumber);
   const ultima = existentes.length ? Math.max(...existentes) : 0;
 
@@ -170,7 +188,9 @@ export const anexarEntrada = async (
   const escolhida = paginaDeDestino(existentes, destino, JOURNAL_MAX_PAGINAS);
   if (escolhida === null) return false;
   let numero = escolhida;
-  let conteudo = existentes.includes(numero) ? await lerPagina(userId, numero) : '';
+  const lido = existentes.includes(numero) ? await lerPaginaOuFalha(userId, numero) : '';
+  if (lido === null) return false;
+  let conteudo = lido;
 
   // Nao cabe? A entrada comeca numa pagina nova em vez de ser cortada no meio.
   if (conteudo && conteudo.length + entrada.length + SEPARADOR_DE_ENTRADA.length + 4 > JOURNAL_MAX_CARACTERES) {

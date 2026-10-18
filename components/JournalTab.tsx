@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ClockIcon, LightbulbIcon, MoonIcon, PlusIcon, SparklesIcon, TrophyIcon } from './Icons';
 import { MOODS_DATA } from '../constants';
-import { cabecalhoDeHoje, JOURNAL_MAX_CARACTERES, JOURNAL_MAX_PAGINAS, lerPagina, listarPaginas, salvarPagina, type ResumoDePagina } from '../services/JournalService';
+import { cabecalhoDeHoje, JOURNAL_MAX_CARACTERES, JOURNAL_MAX_PAGINAS, lerPaginaOuFalha, listarPaginas, salvarPagina, type ResumoDePagina } from '../services/JournalService';
 import { TAGS_DO_DIARIO, lerEntradas, periodoDaPagina, type TagDoDiario } from '../utils/diario';
 
 
@@ -57,6 +57,8 @@ const JournalTab: React.FC<{ userId: string }> = ({ userId }) => {
     const [carregandoPagina, setCarregandoPagina] = useState(false);
     const [salvando, setSalvando] = useState(false);
     const [salvoEm, setSalvoEm] = useState<string | null>(null);
+    // Sem rede (18/10, teste do Luigi): avisa em vez de abrir em branco ou perder o texto.
+    const [semRede, setSemRede] = useState<string | null>(null);
     const textoOriginalRef = useRef('');
 
     useEffect(() => {
@@ -73,7 +75,15 @@ const JournalTab: React.FC<{ userId: string }> = ({ userId }) => {
         setAberta(numero);
         setCarregandoPagina(true);
         setSalvoEm(null);
-        const conteudo = await lerPagina(userId, numero);
+        setSemRede(null);
+        const conteudo = await lerPaginaOuFalha(userId, numero);
+        if (conteudo === null) {
+            // Abrir em branco e salvar depois apagaria o que nao foi lido.
+            setAberta(null);
+            setCarregandoPagina(false);
+            setSemRede('Sem internet: não consegui abrir a página.');
+            return;
+        }
         textoOriginalRef.current = conteudo;
         setTexto(conteudo);
         // Pagina em branco nao tem o que ler: ja abre escrevendo.
@@ -89,12 +99,17 @@ const JournalTab: React.FC<{ userId: string }> = ({ userId }) => {
         return null;
     })();
 
-    const salvar = async () => {
-        if (aberta === null || texto === textoOriginalRef.current) return;
+    /** true quando nao ha o que salvar ou salvou; false quando a rede falhou. */
+    const salvar = async (): Promise<boolean> => {
+        if (aberta === null || texto === textoOriginalRef.current) return true;
         setSalvando(true);
         const ok = await salvarPagina(userId, aberta, texto);
         setSalvando(false);
-        if (!ok) return;
+        if (!ok) {
+            setSemRede('Sem internet: não salvei. O texto continua aqui.');
+            return false;
+        }
+        setSemRede(null);
         textoOriginalRef.current = texto;
         setSalvoEm(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
         setPaginas((anteriores) => {
@@ -114,6 +129,7 @@ const JournalTab: React.FC<{ userId: string }> = ({ userId }) => {
                 : [...anteriores, resumo];
             return proximas.sort((a, b) => a.pageNumber - b.pageNumber);
         });
+        return true;
     };
 
     const inserirDataDeHoje = () => {
@@ -150,6 +166,7 @@ const JournalTab: React.FC<{ userId: string }> = ({ userId }) => {
     if (aberta === null) {
         return (
             <div className="space-y-3">
+                {semRede && <p role="alert" className="text-[11px] text-red-300/90">{semRede}</p>}
                 {paginas.some((p) => p.tags.length > 0) && filtroDeTags}
                 <div className="max-h-[22rem] space-y-2 overflow-y-auto pr-1">
                     {carregandoIndice ? (
@@ -206,15 +223,15 @@ const JournalTab: React.FC<{ userId: string }> = ({ userId }) => {
     return (
         <div className="space-y-3">
             <div className="flex items-center justify-between gap-2">
-                <button type="button" onClick={() => { void salvar(); setAberta(null); setEditando(false); }} className={botaoPequeno}>
+                <button type="button" onClick={async () => { const salvou = await salvar(); if (!salvou) return; setAberta(null); setEditando(false); }} className={botaoPequeno}>
                     Voltar
                 </button>
                 <span className="font-serif text-[12px] italic text-white/45">
                     Página {aberta}
-                    {salvando ? ' · salvando' : salvoEm ? ' · salvo ' + salvoEm : mudou ? ' · não salvo' : ''}
+                    {salvando ? ' · salvando' : semRede ? ' · sem internet, não salvo' : salvoEm ? ' · salvo ' + salvoEm : mudou ? ' · não salvo' : ''}
                 </span>
                 {editando ? (
-                    <button type="button" onClick={() => { void salvar(); setEditando(false); }} disabled={!texto.trim()} className={`${botaoPequeno} disabled:opacity-40`}>
+                    <button type="button" onClick={async () => { const salvou = await salvar(); if (!salvou) return; setEditando(false); }} disabled={!texto.trim()} className={`${botaoPequeno} disabled:opacity-40`}>
                         Pronto
                     </button>
                 ) : (

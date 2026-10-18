@@ -81,12 +81,6 @@ export const MoodModal: React.FC<{ onClose: () => void; initialTab?: 'humor' | '
         if (registrando) return;
         setRegistrando(true);
         try {
-            if (!semHumor) {
-                updateMood(localMood);
-                await recordMoodEntry(localMood);
-                setHistorico(await fetchMoodHistory(20));
-            }
-
             /* REGISTRAR HUMOR ESCREVE NO DIARIO.
 
                Sem isto, quem so arrasta a bolinha nunca teria uma pagina — e o
@@ -109,6 +103,13 @@ export const MoodModal: React.FC<{ onClose: () => void; initialTab?: 'humor' | '
                     return;
                 }
                 setFalhaAoGravar(false);
+                // O humor so muda DEPOIS de a entrada gravar (18/10, teste do
+                // Luigi): mudando antes, sem rede a bolinha "ia" e voltava sozinha.
+                if (!semHumor) {
+                    updateMood(localMood);
+                    await recordMoodEntry(localMood);
+                    setHistorico(await fetchMoodHistory(20));
+                }
                 setFrase('');
                 setTag(null);
                 setSemHumor(false);

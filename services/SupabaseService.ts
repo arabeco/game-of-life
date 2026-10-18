@@ -233,8 +233,11 @@ export class SupabaseService {
           beta_reward_pending: profile.betaRewardPending ?? false,
           beta_reward_shown_at: profile.betaRewardShownAt || null,
           beta_reward_payload: profile.betaRewardPayload ?? {},
-          gold: profile.wallet?.gold ?? 0,
-          fragments: profile.wallet?.fragments ?? 0,
+          // Ouro, fragmentos, baus, carteira e premium NAO vao aqui. Upsert e
+          // INSERT ... ON CONFLICT DO UPDATE, e o Postgres exige permissao de
+          // UPDATE em toda coluna enviada; essas so o servidor escreve (23/09).
+          // Mandar qualquer uma recusava a linha inteira e a conta nova ficava
+          // sem perfil (18/10, teste do Luigi). O banco preenche o padrao.
           sovereign: profile.sovereign,
           avatar_url: profile.avatarUrl,
           border: profile.border,
@@ -255,10 +258,7 @@ export class SupabaseService {
           accepted_system_challenges: profile.acceptedSystemChallenges ?? [],
           last_level_update: profile.lastLevelUpdate,
           nobility: profile.nobility,
-          mood: profile.mood,
-          chests: profile.chests,
-          wallet: profile.wallet,
-          is_premium: profile.isPremium ?? false
+          mood: profile.mood
         })
         .select()
         .single();

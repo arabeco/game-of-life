@@ -1,5 +1,7 @@
 import { OnboardingIdentity } from './OnboardingIdentity';
 import { supabase } from '../supabaseClient';
+// Logout intencional: o cru e desfeito no celular, que restaura a sessao do backup.
+import { signOutAndClearSupabaseSession } from '../utils/authSession';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Portal } from './Portal';
 import { useGame } from '../contexts/GameContext';
@@ -575,7 +577,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
   }, [active, identityReady, handleDismiss, handleNext, step?.hideNext]);
 
   if (!active || !step) return null;
-  if (!identityReady) return <OnboardingIdentity nickname={userProfile.nickname || ''} verificarNome={nicknameDisponivel} onExit={() => { void supabase.auth.signOut(); }} onSave={async (nickname, range) => {
+  if (!identityReady) return <OnboardingIdentity nickname={userProfile.nickname || ''} verificarNome={nicknameDisponivel} onExit={() => { void signOutAndClearSupabaseSession('local', 'onboarding-identity-exit'); }} onSave={async (nickname, range) => {
     const { data, error } = await supabase.from('user_profiles')
       .update({ nickname, onboarding_age_range: range }).eq('id', userProfile.id).select('id').single();
     if (error || !data) throw error || new Error('Profile not saved');

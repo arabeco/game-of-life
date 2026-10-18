@@ -81,7 +81,7 @@ Toque no botão de humor no topo.
 - [ ] **Tocar na bolinha ao lado do texto** (ela fica vazia) e registrar. Esperado: o botão vira "Registrar no diário"; a entrada entra **sem** humor e o humor do dia **não** muda.
 - [ ] **"Escrever em"** › escolher uma página antiga, e depois **Página nova**. Esperado: cada entrada cai na página escolhida.
 - [ ] **Aba Páginas.** Esperado: cada página mostra a prévia, o **período** (ex.: "05/10 – 12/10/2026"), as bolinhas dos humores e "pág. N" à direita; abrir mostra as entradas em cartões; **Editar** abre o texto cru; o filtro de tag funciona.
-- [ ] **Sem internet:** escreva e registre. Esperado: aviso "Não consegui guardar no diário. O texto continua aqui" e o texto **não** some.
+- [ ] **Sem internet:** escreva duas entradas e registre; ligue a internet e espere (ou reabra o app). Esperado: "Sem internet: 2 entradas guardadas no aparelho"; com a rede de volta, as duas entram na página, na ordem, sem repetir, e o texto antigo **continua**. Abrir uma página sem internet avisa e **não** abre em branco.
 
 ## 8. Média de EXP e tags Top (Codex)
 

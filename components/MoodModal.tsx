@@ -8,6 +8,8 @@ import { Portal } from './Portal';
 import JournalTab from './JournalTab';
 import { anexarEntrada, cabecalhoDeHoje, listarPaginas } from '../services/JournalService';
 import { TAGS_DO_DIARIO, cabecalhoDaEntrada, type DestinoDaEntrada, type TagDoDiario } from '../utils/diario';
+import { guardarPendente, lerPendentes } from '../utils/diarioPendente';
+import { DIARIO_PENDENTE_EVENTO } from '../hooks/useEnviarDiarioPendente';
 
 const ESPECTRO_DO_HUMOR = `linear-gradient(90deg, ${MOODS_DATA.flatMap((mood) => [
     `${mood.trackStart} ${mood.min}%`,
@@ -42,6 +44,13 @@ export const MoodModal: React.FC<{ onClose: () => void; initialTab?: 'humor' | '
     // pessoa toca no seletor, para abrir o Diario nao custar uma leitura a mais.
     const [destino, setDestino] = useState<DestinoDaEntrada>('ultima');
     const [falhaAoGravar, setFalhaAoGravar] = useState(false);
+    // A fila do diario (18/10): entradas escritas sem internet, esperando sair.
+    const [naFila, setNaFila] = useState(() => lerPendentes(userProfile?.id || '').length);
+    React.useEffect(() => {
+        const contar = () => setNaFila(lerPendentes(userProfile?.id || '').length);
+        window.addEventListener(DIARIO_PENDENTE_EVENTO, contar);
+        return () => window.removeEventListener(DIARIO_PENDENTE_EVENTO, contar);
+    }, [userProfile?.id]);
     const [paginasDoSeletor, setPaginasDoSeletor] = useState<number[] | null>(null);
     const carregarPaginasDoSeletor = () => {
         if (paginasDoSeletor !== null || !userProfile?.id) return;
@@ -92,14 +101,24 @@ export const MoodModal: React.FC<{ onClose: () => void; initialTab?: 'humor' | '
                quiser continuar escrevendo continua ali mesmo. */
             if (userProfile?.id) {
                 // Espera a gravacao: se falhar, o texto fica no campo em vez de sumir.
-                const gravou = await anexarEntrada(
-                    userProfile.id,
-                    cabecalhoDaEntrada(cabecalhoDeHoje(), semHumor ? null : currentMoodInfo.label, tag),
-                    frase.trim() || 'Estava me sentindo assim.',
-                    destino,
-                );
+                const cabecalho = cabecalhoDaEntrada(cabecalhoDeHoje(), semHumor ? null : currentMoodInfo.label, tag);
+                const texto = frase.trim() || 'Estava me sentindo assim.';
+                const gravou = await anexarEntrada(userProfile.id, cabecalho, texto, destino);
                 if (!gravou) {
-                    setFalhaAoGravar(true);
+                    // Sem internet: vai para a fila do aparelho e sai sozinha quando a
+                    // conexao voltar. So se nem isso der, o texto fica no campo.
+                    const guardou = guardarPendente(userProfile.id, {
+                        cabecalho, texto, destino, humor: semHumor ? null : localMood,
+                    });
+                    if (!guardou) {
+                        setFalhaAoGravar(true);
+                        return;
+                    }
+                    setFalhaAoGravar(false);
+                    setNaFila(lerPendentes(userProfile.id).length);
+                    setFrase('');
+                    setTag(null);
+                    setSemHumor(false);
                     return;
                 }
                 setFalhaAoGravar(false);
@@ -304,6 +323,11 @@ export const MoodModal: React.FC<{ onClose: () => void; initialTab?: 'humor' | '
 
                     {falhaAoGravar && (
                         <p role="alert" className="text-[11px] text-red-300/90">Não consegui guardar no diário. O texto continua aqui; tente de novo.</p>
+                    )}
+                    {naFila > 0 && !falhaAoGravar && (
+                        <p role="status" className="text-[11px] text-[#d9c18b]/90">
+                            Sem internet: {naFila === 1 ? 'uma entrada guardada' : `${naFila} entradas guardadas`} no aparelho. Envio sozinho quando a conexão voltar.
+                        </p>
                     )}
 
                     {/* Registrar tem nome e numero na frente: e a pessoa dizendo

@@ -1,4 +1,5 @@
 import { getPendingMembershipPurchase } from '../utils/membershipPurchase';
+import { useEnviarDiarioPendente } from '../hooks/useEnviarDiarioPendente';
 import { speechVisualTone } from '../supabase/functions/_shared/oracle-visual-tone.ts';
 import { ORACLE_ENGINE_V2, chooseOpening, rememberEngineSpeech, rememberDiscoveryClick, readEngineMemory } from '../utils/oracleEngineV2';
 import { discoveryCandidates, readDiscoveryUsage } from '../utils/oracleDiscovery';
@@ -454,7 +455,9 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
 }) => {
     const { isTutorialActive } = useTutorial();
     const { isBuilderMode, draftName, setDraftName, exitBuilderMode, packDraftToJson } = useCodexBuilder();
-    const { userProfile, activeTheme, notifications, showToast, assets, actions, tasks, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, achievementUnlocked, updateUserProfile, reports, activeArenaPact, arenaPactProgress, missaoIndividualDisponivel, isProfileLoaded, freeProgressResetAt } = useGame();
+    const { userProfile, activeTheme, notifications, showToast, assets, actions, tasks, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, achievementUnlocked, updateUserProfile, reports, activeArenaPact, arenaPactProgress, missaoIndividualDisponivel, isProfileLoaded, freeProgressResetAt, recordMoodEntry } = useGame();
+    // Diario escrito sem internet sai sozinho quando a conexao volta (18/10).
+    useEnviarDiarioPendente(userProfile?.id, recordMoodEntry);
     const historyReady = useRef(false);
 
     const effectiveUiSkin = resolveUiSkinId(userProfile.skin || 'BASIC');

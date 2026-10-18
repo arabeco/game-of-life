@@ -399,3 +399,48 @@ Afonso confirmou a execução de sql/temporadas-2027-artes.sql e pediu commit, p
 - Exclusão HTTP 200, protocolo completed, sem limpeza pendente; Auth e perfil removidos. E-mail accepted no retorno e no registro de despacho, com ID do provedor. Nenhuma mudança de autenticação ou credencial.
 - Este resultado supera a suspeita de que o 401 do teste externo indicava defeito no envio interno. Falta somente confirmar o recebimento desse e-mail. Recuperação de senha usa outro caminho (Supabase Auth/SMTP) e ainda exige teste próprio.
 - Evidência: output/deletion-email/live-report.json e docs/2026-10-16-validacao-mensageria.md.
+
+### 17/10 — Cesta esporádica do jardim (Codex)
+
+- Afonso delimitou esta rodada à cesta; fragmentos diários do Painel ficam para depois. Implementados 5–15 fragmentos por entrega e 5% de chance de o cálculo passar de 15, entregando um baú Comum em substituição.
+- Uma entrega a cada 3–5 dias ativos, no máximo um avanço por dia; duas entregas guardadas, sem expiração. Estado e recompensa no servidor, coleta idempotente por ID. Nenhum preço da loja/forja mudou.
+- Cesta fora da areia, aviso no perfil e atalho acessível. Visitantes não veem/coletam. Layout e desenhos existentes preservados. Tamanhos e guia permanecem pendentes como propostas.
+- SQL para Afonso executar: supabase/migrations/20261017210000_garden_basket.sql. Compilado com sql:checa e executado em teste PGlite; NÃO aplicado remotamente e nenhuma service-role usada.
+- TypeScript, build do jardim, build principal, regressão SQL da cesta, terreno e areia passaram. Navegador validou demonstração isolada (sem crédito real), visita e erro de coleta. Sem AAB nem subida de versão.
+- Detalhes: docs/2026-10-17-jardim-cesta-implementacao.md. Prévia: output/garden-basket/index.html.
+
+- Ajuste visual aprovado em 17/10: cesta substituída por saquinho clicável na entrada; sem abertura automática nem botão flutuante. Cordão/selo verde (5–9), azul (10–15) e dourado (baú). Recompensas e SQL não mudaram.
+
+
+### 18/10 — Retomada: expansões, fragmentos do Painel e emojis
+
+- Afonso aprovou sete expansões sequenciais por 80/140/220/320/450/650/900 fragmentos. Original/Amplo preservados; compra permanente, sem mover peças/desenhos. Implementação local e testes PostgreSQL passaram.
+- Regra final do Painel: 1 fragmento por 50 EXP crua, piso inteiro, teto 15; ao abrir o dia encerrado. Sem média pessoal, 12 na média ou mínimo de 8 (proposta rejeitada). Comprovante único e linha quadrada no estilo de recompensa.
+- Biblioteca: 315 emojis, busca em português e Todos; seletor nativo acima dos modais. Guia versão 2 com personalização atualizada.
+- SQL combinado para Afonso aplicar: sql/2026-10-18-jardim-fragmentos.sql (cesta pendente + expansões + Painel). NÃO aplicado remotamente; sem AAB, subida de versão ou publicação.
+- Evidências e decisões: docs/2026-10-17-retomada-jardim-painel-emojis.md. Prévia isolada: output/garden-retomada/index.html.
+
+### 18/10 — Próxima revisão visual: Campanhas e miniaturas da loja
+
+- [ ] Rever a aba Campanhas: Afonso rejeitou o excesso de arredondamento da apresentação atual.
+- [ ] Rever as miniaturas de campanhas na loja, incluindo enquadramento, proporções e legibilidade.
+- Reunir essas propostas com a referência dos modais de arena e ação: `docs/2026-10-17-modais-referencia.md`, seção “Próxima revisão visual”. Apenas registrado; alteração visual ainda não implementada.
+
+
+### 18/10 — Campanhas migradas para o estilo dos modais (local)
+
+- Minhas Campanhas, detalhe e miniaturas da loja revisados com placa em grafite, arredondamento discreto, títulos legíveis e arenas em linhas coloridas. Supera a anotação anterior de “apenas registrado”.
+- Prévia para avaliação: output/campaign-style/preview.html. TypeScript/build e revisão móvel local conferidos; dados simulados. Sem publicação/AAB; aguarda avaliação visual do Afonso.
+
+
+### 18/10 — Integração final de Campanhas e arenas
+
+- [x] Revisão incorporada ao código real: campanha em uma célula, duas placas internas com emoji, títulos de 13 px centralizados com emoji ao lado. Cards de 96 px.
+- [x] Gradiente das campanhas combina as cores das arenas contidas na grade, biblioteca, loja e detalhe.
+- [x] TypeScript, testes de campanhas/cores e build completo passaram; conferência local da ArenasView real com dados simulados.
+- Distribuição Android/publicação não executadas nesta rodada. Detalhes em `docs/2026-10-17-modais-referencia.md`.
+
+
+## Release Android 113 — 18/10/2026
+
+AAB 1.0.113 gerado, manifesto e assinatura verificados; build completo, dois typechecks e oito regressões passaram. Detalhes e hash em `docs/2026-10-18-checkpoint-aab-113.md`. Sem upload ao Play ou teste em aparelho nesta rodada.

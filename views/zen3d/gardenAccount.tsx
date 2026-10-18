@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react';
+import { gardenSize } from './gardenSizes';
 import type { GardenObject } from './model';
 import type { PlacedArtifact } from './ArtifactStands';
 import type { BaseId } from './gardenTemplates';
@@ -19,6 +20,10 @@ export interface GardenSnapshot {
   drawingBounds?:DrawingBounds;
 }
 export interface GardenAccount {
+  expansionLevel?:number;
+  expansionsAvailable?:boolean;
+  buyExpansion?:(level:number)=>void;
+  basket?: { score: number | null; open: () => void };
   /** Dev fixture only; never persisted in a garden document. */
   previewHour?:number;
   legacyPlaque?:{image:string;aspect:number};
@@ -67,7 +72,7 @@ export function validateGardenSnapshot(value:unknown):value is GardenSnapshot {
   const finite=(n:unknown)=>typeof n==='number'&&Number.isFinite(n)&&Math.abs(n)<1000;
   const text=(v:unknown)=>typeof v==='string'&&v.length>0&&v.length<100;
   return s.version===1&&['open','pond','river','path'].includes(s.base)
-    &&(s.terrain===undefined||!!s.terrain&&['classic','square','ellipse','circle'].includes(s.terrain.shape)&&['standard','spacious'].includes(s.terrain.size))
+    &&(s.terrain===undefined||!!s.terrain&&['classic','square','ellipse','circle'].includes(s.terrain.shape)&&!!gardenSize(s.terrain.size))
     &&(s.drawingBounds===undefined||!!s.drawingBounds&&[s.drawingBounds.x,s.drawingBounds.z].every(n=>finite(n)&&n>=1&&n<=32))
     &&['cloister','ruins','mist'].includes(s.environment)&&['morning','sunset','overcast'].includes(s.atmosphere)
     &&Number.isInteger(s.sand)&&s.sand>=0&&s.sand<3

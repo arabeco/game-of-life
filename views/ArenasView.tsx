@@ -1,3 +1,4 @@
+import { getCampaignGradient } from '../utils/arenaTones';
 import { campaignAwareTasks } from '../utils/campaignScope';
 ﻿import { FloatingActionDock } from '../components/FloatingActionDock';
 import './arena-groups.css';
@@ -1738,7 +1739,7 @@ export const ArenasView: React.FC = () => {
 
     // Helper to render Campaign Card
     const renderCampaignCard = (campaign: Campaign, isParallel: boolean, progress: number) => {
-        const campaignArenas = getArenas().filter(a => campaign.arenaIds.includes(a.id));
+        const campaignArenas = campaign.arenaIds.map(id => getArenas().find(arena => arena.id === id)).filter((arena): arena is Arena => Boolean(arena));
         const progressSummary = getCampaignProgressMetrics(campaign);
         const isDragOver = dragOverId === campaign.id;
         const isDragged = draggedId === campaign.id;
@@ -1760,44 +1761,22 @@ export const ArenasView: React.FC = () => {
                 onMouseDown={(e) => handleInteractionStart(e, campaign.id, 'campaign')}
                 onTouchStart={shouldEnableTouchReorder ? (e) => handleInteractionStart(e, campaign.id, 'campaign') : undefined}
                 onClick={() => setSelectedCampaignId(campaign.id)}
-                className={`relative col-span-2 min-w-0 aspect-[4/3] bg-[#1a1a1a] rounded-2xl border flex flex-col cursor-pointer transition-all group overflow-hidden ${isDragOver ? 'z-10 ring-2 ring-[var(--skin-accent-color)]' : ''} ${isDragged ? 'opacity-30' : ''} ${campaignAttentionClass}`}
-                style={{ borderColor: 'var(--skin-accent-color)', touchAction: 'pan-x pan-y' }}
+                className={`campaign-overview-card relative col-span-1 min-w-0 flex flex-col cursor-pointer transition-all group ${isDragOver ? 'z-10 ring-2 ring-[var(--skin-accent-color)]' : ''} ${isDragged ? 'opacity-30' : ''} ${campaignAttentionClass}`}
+                style={{ touchAction: 'pan-x pan-y', backgroundImage: getCampaignGradient(campaignArenas) }}
             >
-                {/* Folder Stack Effect */}
-                <div className="absolute top-0 right-0 w-full h-full bg-white/5 rounded-2xl -z-10 transform translate-x-1 -translate-y-1 border border-white/5" />
-                
-                {/* Header */}
-                <div className="p-2 border-b border-white/5 bg-black/20 flex items-center justify-between shrink-0 h-8">
-                    <div className="flex items-center gap-1.5 overflow-hidden">
-                        <span className="text-sm">📁</span>
-                        <span className="text-[9px] font-bold text-gray-300 truncate leading-none pt-0.5">{campaign.title}</span>
-                    </div>
-                    <div className="inline-flex shrink-0 items-center rounded-full border border-white/10 bg-black/35 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-[0.14em] text-[var(--skin-accent-color)]">
-                        {progressSummary.progressPercent}%
-                    </div>
+                <div className="campaign-overview-heading">
+                    <span className="campaign-overview-kicker">{campaignArenas.length} arenas</span>
+                    <span className="campaign-overview-title">{campaign.title}</span>
                 </div>
-
-                {/* Content / Thumbnails */}
-                <div className="flex-1 px-2.5 pt-1 pb-1 overflow-hidden">
-                    <div className="flex h-full min-h-[7.25rem] items-start justify-center rounded-xl border border-white/6 bg-[linear-gradient(180deg,rgba(139,92,246,0.26),rgba(36,25,74,0.2)_55%,rgba(15,15,15,0.18))] pt-0.5">
-                        <CampaignArenaStack arenas={campaignArenas} size="md" />
-                    </div>
+                <div className="campaign-overview-arenas">
+                    <CampaignArenaStack arenas={campaignArenas} size="xs" maxVisible={2} />
                 </div>
-                <div className="px-2.5 pb-2">
-                    <div className="mb-1 flex items-center justify-between text-[8px] font-black uppercase tracking-[0.14em] text-white/58">
-                        <span>{progressSummary.totalPlanned > 0 ? `${progressSummary.totalCompleted}/${progressSummary.totalPlanned} repetições` : 'Sem meta'}</span>
-                        <span>{progressSummary.clearedArenaCount}/{progressSummary.totalArenaCount} arenas</span>
+                <div className="campaign-overview-footer">
+                    <span>{progressSummary.totalPlanned > 0 ? `${progressSummary.totalCompleted}/${progressSummary.totalPlanned}` : 'Sem meta'}</span>
+                    <div className="campaign-overview-track" role="progressbar" aria-label={`Progresso de ${campaign.title}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progressSummary.progressPercent}>
+                        <div className={progressFillClass} style={{ width: `${progressSummary.progressPercent}%` }} />
                     </div>
-                    {progressSummary.totalPlanned > 0 ? (
-                        <div className="h-1.5 overflow-hidden rounded-full border border-white/10 bg-white/10">
-                            <div
-                                className={progressFillClass}
-                                style={{ width: `${progressSummary.progressPercent}%`, background: 'linear-gradient(90deg, #7a5813 0%, #d4af37 46%, #f6e2a3 100%)' }}
-                            />
-                        </div>
-                    ) : (
-                        <div className="h-1.5 rounded-full border border-white/8 bg-black/18" aria-label="Sem meta definida" />
-                    )}
+                    <span>{progressSummary.progressPercent}%</span>
                 </div>
             </div>
         );

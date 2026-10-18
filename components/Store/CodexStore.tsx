@@ -1,6 +1,7 @@
+import { getCampaignGradient } from '../../utils/arenaTones';
 ﻿import React, { useEffect, useMemo, useState } from 'react';
 import { useGame } from '../../contexts/GameContext';
-import { GlassCard } from '../GlassCard';
+import '../campaign-plate.css';
 import { CheckIcon, FilterIcon } from '../Icons';
 import { EVENTO_CAMPANHA_NA_LOJA, esquecerCampanhaPendente, olharCampanhaPendente } from '../../utils/campanhaNaLoja';
 import { CampaignsCodex } from '../CampaignsCodex';
@@ -11,11 +12,6 @@ import { CampaignArenaStack } from '../CampaignArenaStack';
 import { CodexCoverArt as SharedCodexCoverArt } from '../CodexCoverArt';
 import { ASSET_ACCENT_COLORS } from '../../constants/assetVisuals';
 
-/* O mesmo chanfro de oito cantos da placa de ciclo e da placa do legado. */
-const CANTO_DO_CARD = 14;
-const recorteDoCard = {
-    clipPath: `polygon(${CANTO_DO_CARD}px 0, calc(100% - ${CANTO_DO_CARD}px) 0, 100% ${CANTO_DO_CARD}px, 100% calc(100% - ${CANTO_DO_CARD}px), calc(100% - ${CANTO_DO_CARD}px) 100%, ${CANTO_DO_CARD}px 100%, 0 calc(100% - ${CANTO_DO_CARD}px), 0 ${CANTO_DO_CARD}px)`,
-};
 import {
     CATEGORY_LABELS,
     THEME_CATEGORY_ORDER,
@@ -278,7 +274,7 @@ export const CodexStore: React.FC = () => {
 
     return (
         <>
-            <div className="space-y-3 animate-fade-in pb-8">
+            <div className="campaign-store space-y-3 animate-fade-in pb-8">
                 {/* O titulo "CAMPANHAS" e a faixa do quiz sairam daqui.
                     O titulo nomeava a tela com a aba "Campanhas" ja selecionada
                     logo acima, e o quiz era um botao de largura inteira com rotulo,
@@ -288,7 +284,7 @@ export const CodexStore: React.FC = () => {
 
                     O quiz virou um botao quadrado na mesma faixa da busca e do filtro:
                     continua ao alcance, sem cobrar a abertura da tela. */}
-                <GlassCard variant="neutral" className="overflow-hidden border-white/10 p-3">
+                <div className="overflow-hidden border-white/10 p-3">
                     <div className="space-y-3">
                         <div className="flex items-center gap-2">
                             <input
@@ -296,15 +292,15 @@ export const CodexStore: React.FC = () => {
                                 value={searchQuery}
                                 onChange={(event) => setSearchQuery(event.target.value)}
                                 placeholder="Buscar campanha, palavra-chave ou ativo..."
-                                className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-white/35 focus:border-[var(--skin-accent-color)]/35"
+                                className="w-full rounded-sm border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-white/35 focus:border-[var(--skin-accent-color)]/35"
                             />
-                            <div className="rounded-full border border-white/10 bg-black/25 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/75">
+                            <div className="rounded-sm border border-white/10 bg-black/25 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/75">
                                 {filteredEntries.length}
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setFiltersOpen((current) => !current)}
-                                className={`relative inline-flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl border transition-all ${areFiltersOpen || activeFilterCount > 0 ? 'border-[var(--skin-accent-color)]/35 bg-[var(--skin-accent-color)]/10 text-[var(--ui-text-accent)]' : 'border-white/10 bg-white/5 text-white/78 hover:border-[var(--skin-accent-color)]/35 hover:bg-white/10 hover:text-white'}`}
+                                className={`relative inline-flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-sm border transition-all ${areFiltersOpen || activeFilterCount > 0 ? 'border-[var(--skin-accent-color)]/35 bg-[var(--skin-accent-color)]/10 text-[var(--ui-text-accent)]' : 'border-white/10 bg-white/5 text-white/78 hover:border-[var(--skin-accent-color)]/35 hover:bg-white/10 hover:text-white'}`}
                                 aria-expanded={areFiltersOpen}
                                 aria-label="Filtros"
                                 title="Filtros"
@@ -314,7 +310,7 @@ export const CodexStore: React.FC = () => {
                                     palavra "Filtros · 2" so cabia porque o botao era
                                     largo, e era o botao largo o problema. */}
                                 {activeFilterCount > 0 && (
-                                    <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--skin-accent-color)] px-1 text-[9px] font-black leading-none text-black">
+                                    <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-sm bg-[var(--skin-accent-color)] px-1 text-[9px] font-black leading-none text-black">
                                         {activeFilterCount}
                                     </span>
                                 )}
@@ -328,14 +324,14 @@ export const CodexStore: React.FC = () => {
                         )}
 
                         {areFiltersOpen && (
-                            <div className="space-y-3 rounded-2xl border border-white/10 bg-black/20 p-3">
+                            <div className="space-y-3 rounded-sm border border-white/10 bg-black/20 p-3">
                                 <div className="space-y-2">
                                     <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Ativo principal</div>
                                     <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
                                         <button
                                             type="button"
                                             onClick={() => setSelectedAssetId('all')}
-                                            className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] whitespace-nowrap transition-all ${selectedAssetId === 'all' ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
+                                            className={`rounded-sm px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] whitespace-nowrap transition-all ${selectedAssetId === 'all' ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
                                         >
                                             Todos
                                         </button>
@@ -344,7 +340,7 @@ export const CodexStore: React.FC = () => {
                                                 key={asset.id}
                                                 type="button"
                                                 onClick={() => setSelectedAssetId(asset.id)}
-                                                className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] whitespace-nowrap transition-all ${selectedAssetId === asset.id ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
+                                                className={`rounded-sm px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] whitespace-nowrap transition-all ${selectedAssetId === asset.id ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
                                             >
                                                 {asset.label}
                                             </button>
@@ -358,7 +354,7 @@ export const CodexStore: React.FC = () => {
                                         <button
                                             type="button"
                                             onClick={() => setSelectedCategory('all')}
-                                            className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] whitespace-nowrap transition-all ${selectedCategory === 'all' ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
+                                            className={`rounded-sm px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] whitespace-nowrap transition-all ${selectedCategory === 'all' ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
                                         >
                                             Todas
                                         </button>
@@ -368,20 +364,20 @@ export const CodexStore: React.FC = () => {
                                                 key={categoryId}
                                                 type="button"
                                                 onClick={() => setSelectedCategory(categoryId)}
-                                                className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] whitespace-nowrap transition-all ${selectedCategory === categoryId ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
+                                                className={`rounded-sm px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] whitespace-nowrap transition-all ${selectedCategory === categoryId ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
                                             >
                                                 {CATEGORY_LABELS[categoryId]}
                                             </button>
                                         ))}
 
-                                        <span className="my-1 w-px shrink-0 rounded-full bg-white/10" aria-hidden="true" />
+                                        <span className="my-1 w-px shrink-0 rounded-sm bg-white/10" aria-hidden="true" />
 
                                         {THEME_CATEGORY_ORDER.map((categoryId) => (
                                             <button
                                                 key={categoryId}
                                                 type="button"
                                                 onClick={() => setSelectedCategory(categoryId)}
-                                                className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] whitespace-nowrap transition-all ${selectedCategory === categoryId ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
+                                                className={`rounded-sm px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] whitespace-nowrap transition-all ${selectedCategory === categoryId ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
                                             >
                                                 {CATEGORY_LABELS[categoryId]}
                                             </button>
@@ -391,10 +387,10 @@ export const CodexStore: React.FC = () => {
                             </div>
                         )}
                     </div>
-                </GlassCard>
+                </div>
 
                 {filteredEntries.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="campaign-store-grid grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {filteredEntries.map(({ codex, template, preview, coverVisual, actionCount, goldPrice, listPrice, isFree }) => {
                             /*
                              * A COR DA CAMPANHA VEM DAS ARENAS QUE ELA REUNE.
@@ -412,106 +408,37 @@ export const CodexStore: React.FC = () => {
                             const isInstalled = Boolean(ownedCodex && installedCodexIds.has(ownedCodex.id));
 
                             return (
-                                /*
-                                 * O CARD DA CAMPANHA NA GRAMATICA DAS PLACAS.
-                                 *
-                                 * Era um `GlassCard` arredondado com borda de 1px — o dialeto
-                                 * anterior, o mesmo que os quadros do ciclo falavam antes de
-                                 * entrarem na familia. Agora usa o chanfro de oito cantos e a
-                                 * moldura de `border-image` que corre do escuro ao claro varias
-                                 * vezes, igual a placa de ciclo e a do legado.
-                                 */
                                 <div
                                     key={codex.id}
-                                    className="relative flex min-h-[17rem] flex-col gap-2 overflow-hidden p-2"
-                                    style={{
-                                        background: [
-                                            `radial-gradient(ellipse at 50% 0%, ${tomDaCampanha}26, transparent 62%)`,
-                                            'linear-gradient(180deg, rgba(14,14,16,0.98), rgba(8,8,10,0.98))',
-                                        ].join(', '),
-                                        ...recorteDoCard,
-                                    }}
+                                    className="campaign-store-card relative flex flex-col gap-2 p-3"
+                                    style={{ '--campaign-accent': tomDaCampanha, backgroundImage: getCampaignGradient(preview.arenas) } as React.CSSProperties}
                                 >
-                                    <span
-                                        aria-hidden="true"
-                                        className="pointer-events-none absolute inset-[3px] z-[2]"
-                                        style={{
-                                            border: '1px solid transparent',
-                                            borderImageSource: `linear-gradient(135deg, ${tomDaCampanha}cc 0%, ${tomDaCampanha}44 26%, ${tomDaCampanha}aa 52%, rgba(255,255,255,0.12) 78%, ${tomDaCampanha}88 100%)`,
-                                            borderImageSlice: 1,
-                                            ...recorteDoCard,
-                                        }}
-                                    />
                                     <div className="relative z-10 flex h-full flex-col gap-2">
                                         <button
                                             type="button"
                                             onClick={() => setCampaignPreview(preview)}
-                                            className="flex flex-1 flex-col overflow-hidden rounded-lg border border-white/8 bg-black/25 text-left transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.04]"
+                                            className="campaign-store-preview flex flex-1 flex-col text-left"
                                         >
-                                            {/*
-                                              * A HIERARQUIA DO CARD ESTAVA DE CABECA PARA BAIXO.
-                                              *
-                                              * O maior elemento era uma arte de emoji de 4.75rem — o
-                                              * que menos informa. Logo abaixo, tres numeros do mesmo
-                                              * peso (dias, acoes, arenas), nenhum protagonista. E a
-                                              * DESCRICAO, que e o unico texto que responde "isto
-                                              * serve para mim?", vinha por ultimo, em 9px cinza,
-                                              * cortada em duas linhas no meio da frase.
-                                              *
-                                              * Aqui o emoji vira selo do tamanho de um selo, ao lado
-                                              * do titulo; a descricao ganha o corpo e o espaco que
-                                              * ela merece; as arenas viram lista com nome, que e a
-                                              * prova do que vem dentro; e a exigencia — dias e acoes
-                                              * — cabe numa linha, porque numero que qualifica nao
-                                              * precisa de bloco proprio.
-                                              */}
                                             <div className="flex items-start gap-2 px-2 pt-2">
                                                 <div
-                                                    className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg"
+                                                    className="relative h-9 w-9 shrink-0 overflow-hidden rounded-sm"
                                                     style={{ background: `linear-gradient(160deg, ${tomDaCampanha}2e, rgba(0,0,0,0.35))` }}
                                                 >
                                                     <SharedCodexCoverArt cover={coverVisual} title={codex.title} emojiSize="cover-sm" />
                                                 </div>
                                                 <div
-                                                    className="min-w-0 flex-1 text-[12px] font-black uppercase leading-[1.05] tracking-[0.04em]"
-                                                    style={{
-                                                        /* A sequencia de paradas e a mesma da placa: comeca
-                                                           e passa pelo tom, mas TERMINA claro. Fechar no tom
-                                                           escuro apagava as letras das pontas — "RESET"
-                                                           entrava sumindo. */
-                                                        ...tintaMetalicaCom(gradienteMetalico(tomDaCampanha, '#e9edf2'), '#e9edf2'),
-                                                    }}
+                                                    className="campaign-tile-title min-w-0 flex-1"
                                                 >
                                                     {codex.title}
                                                 </div>
                                             </div>
 
-                                            <div className="px-2 pt-2 text-[10px] leading-[1.45] text-white/72">
+                                            <div className="px-2 pt-3 text-[12px] leading-relaxed text-white/70">
                                                 {codex.description || template.description}
                                             </div>
 
                                             <div className="mt-auto space-y-1.5 px-2 pb-2 pt-2.5">
-                                                <div className="space-y-1">
-                                                    {preview.arenas.slice(0, 3).map((arena) => {
-                                                        const quantas = preview.actions.filter((action) => action.arenaId === arena.id).length;
-                                                        return (
-                                                            <div key={arena.id} className="flex items-center gap-1.5">
-                                                                <span className="text-[11px] leading-none" aria-hidden>{arena.icon || '◇'}</span>
-                                                                <span className="min-w-0 flex-1 truncate text-[9px] font-black uppercase tracking-[0.08em] text-white/62">
-                                                                    {arena.name}
-                                                                </span>
-                                                                {quantas > 0 && (
-                                                                    <span className="shrink-0 text-[9px] font-black tabular-nums text-white/34">{quantas}</span>
-                                                                )}
-                                                            </div>
-                                                        );
-                                                    })}
-                                                    {preview.arenas.length > 3 && (
-                                                        <div className="text-[8.5px] font-black uppercase tracking-[0.14em] text-white/28">
-                                                            + {preview.arenas.length - 3} arenas
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                <CampaignArenaStack arenas={preview.arenas} actions={preview.actions} size="xs" />
 
                                                 <div
                                                     className="flex items-baseline gap-1 pt-1 text-[8.5px] font-black uppercase tracking-[0.14em] text-white/34"
@@ -542,7 +469,7 @@ export const CodexStore: React.FC = () => {
 
                                         <div className="flex items-center justify-between gap-2 border-t border-white/6 pt-1.5">
                                             {isInstalled ? (
-                                                <div className="inline-flex h-9 flex-1 items-center justify-center gap-1 rounded-xl border border-green-500/30 bg-green-500/12 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.14em] text-green-400">
+                                                <div className="inline-flex h-9 flex-1 items-center justify-center gap-1 rounded-sm border border-green-500/30 bg-green-500/12 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.14em] text-green-400">
                                                     <CheckIcon className="h-3 w-3" />
                                                     No app
                                                 </div>
@@ -551,7 +478,7 @@ export const CodexStore: React.FC = () => {
                                                     type="button"
                                                     onClick={() => { void installCodex(ownedCodex.id); }}
                                                     disabled={purchasing === codex.id}
-                                                    className="inline-flex h-9 flex-1 items-center justify-center gap-1 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.14em] text-white/82 transition-all hover:border-[var(--skin-accent-color)]/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                                                    className="inline-flex h-9 flex-1 items-center justify-center gap-1 rounded-sm border border-white/10 bg-white/5 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.14em] text-white/82 transition-all hover:border-[var(--skin-accent-color)]/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
                                                     Instalar
                                                 </button>
@@ -563,7 +490,7 @@ export const CodexStore: React.FC = () => {
                                                     data-price={goldPrice}
                                                     onClick={() => handlePurchase(codex.id)}
                                                     disabled={!!purchasing}
-                                                    className="luxe-skin-button inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl px-3 text-[10px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-50"
+                                                    className="luxe-skin-button inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-sm px-3 text-[10px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
                                                     {/*
                                                       * NO BOTAO, SO O NUMERO E O OURO.
@@ -642,10 +569,10 @@ export const CodexStore: React.FC = () => {
                         })}
                     </div>
                 ) : (
-                    <GlassCard variant="neutral" className="border-dashed border-white/10 px-4 py-12 text-center">
+                    <div className="border-dashed border-white/10 px-4 py-12 text-center">
                         <div className="text-sm font-semibold text-white/80">Nenhuma campanha encontrada.</div>
                         <div className="mt-1 text-xs text-white/45">Tente mudar o filtro, a aba ou a busca.</div>
-                    </GlassCard>
+                    </div>
                 )}
             </div>
 

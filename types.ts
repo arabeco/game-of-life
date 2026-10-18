@@ -184,6 +184,8 @@ export interface Action {
 
 export interface Arena {
   id: string;
+  /** Permanent sequence per owner/life area; palette wraps every five arenas. */
+  colorToneSequence?: number;
   assetId: string;
   name: string;
   description: string;

@@ -69,8 +69,11 @@
 .glyph-garden .garden-shapes i{display:block;width:32px;height:32px;background:#d9cdb0;border:2px solid #829073;border-radius:6px}
 .glyph-garden .garden-shapes .garden-shape-circle{border-radius:50%}
 .glyph-garden .garden-shapes .garden-shape-ellipse,.glyph-garden .garden-shapes .garden-shape-classic{border-radius:50%;width:22px}
-.glyph-garden .garden-sizes{display:flex;gap:6px}
+.glyph-garden .garden-sizes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .glyph-garden .garden-sizes button{flex:1;font-size:11px;padding:8px;border-radius:10px;background:var(--garden-control);border:1px solid var(--garden-line-soft)}
+.glyph-garden .garden-sizes button{min-height:44px;white-space:normal;text-align:left;line-height:1.45;color:var(--garden-text)}
+.glyph-garden .garden-sizes button small{margin-top:4px;font-size:10px;color:var(--garden-muted)}
+.glyph-garden .garden-sizes button:disabled{opacity:.55;cursor:default}
 .glyph-garden .garden-shapes button[aria-pressed=true],.glyph-garden .garden-sizes button[aria-pressed=true]{background:var(--garden-active);border-color:var(--garden-line);box-shadow:inset 0 0 0 1px var(--garden-line)}
 .glyph-garden .garden-measurement{color:var(--garden-text)!important}.garden-measurement span{color:var(--garden-muted)}
 .glyph-garden .garden-model-card{width:100%;display:flex;align-items:center;gap:14px;text-align:left;margin:7px 0;padding:12px;border-radius:12px;background:var(--garden-control);border:1px solid var(--garden-line-soft)}
@@ -82,3 +85,28 @@
 .glyph-garden .garden-sky-info{padding:12px 8px 18px;text-align:center}
 .glyph-garden .garden-sky-orbit{display:grid;place-items:center;margin:8px auto;width:54px;height:54px;border:1px solid var(--garden-line-soft);border-radius:50%;font-size:29px;color:var(--garden-text)}
 .glyph-garden .garden-legacy-detail{width:min(540px,calc(100vw - 24px));max-width:none;left:50%;right:auto;transform:translateX(-50%)}
+
+/* Invisible hit area follows the actual pouch; focus ring only for keyboard. */
+.garden-pouch-target{position:absolute;z-index:4;width:52px;height:58px;transform:translate(-50%,-50%);border:0;border-radius:40%;background:transparent;cursor:pointer;padding:0;visibility:hidden}
+.garden-pouch-target:focus-visible{outline:2px solid var(--garden-accent);outline-offset:3px;background:#fff1}
+.garden-guide{box-sizing:border-box;width:min(460px,calc(100vw - 24px));max-height:calc(100dvh - 24px);padding:0;border:1px solid var(--garden-line);border-radius:22px;background:var(--garden-panel-strong);color:var(--garden-text);box-shadow:0 24px 80px #0009;overflow:auto;font-family:inherit}
+.garden-guide::backdrop{background:#080c12a6;backdrop-filter:blur(5px)}
+.garden-guide header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;font-size:12px;color:var(--garden-muted)}
+.garden-guide button{font:inherit;color:var(--garden-text);border:1px solid var(--garden-line-soft);background:var(--garden-control);border-radius:10px;min-height:42px;cursor:pointer}
+.garden-guide header button{width:36px;min-height:36px;font-size:22px;background:transparent;border:0}
+.garden-guide-image{display:block;width:100%;height:230px;object-fit:contain;background:#111920}
+.garden-guide section{padding:20px 24px 4px;min-height:170px}
+.garden-guide-count{font-size:11px;letter-spacing:.14em;color:var(--garden-muted)}
+.garden-guide h2{font-size:23px;line-height:1.2;margin:8px 0 12px;color:var(--garden-text)}
+.garden-guide p{font-size:14px;line-height:1.65;margin:0;color:var(--garden-muted)}
+.garden-guide nav{display:flex;justify-content:center;gap:2px}
+.garden-guide nav button{width:30px;min-height:34px;background:none;border:0;display:grid;place-items:center}
+.garden-guide nav span{width:6px;height:6px;border-radius:50%;background:var(--garden-muted);opacity:.45}
+.garden-guide nav [aria-current] span{width:18px;border-radius:5px;background:var(--garden-accent);opacity:1}
+.garden-guide footer{display:flex;align-items:center;gap:8px;padding:8px 20px 20px}
+.garden-guide footer button{padding:0 16px}
+.garden-guide footer .garden-guide-skip{margin-right:auto;border:0;background:none;color:var(--garden-muted)}
+.garden-guide footer .garden-guide-next{background:var(--garden-metal);color:var(--garden-metal-text);font-weight:700}
+.garden-guide button:disabled{opacity:.3;cursor:default}
+.garden-guide button:focus-visible{outline:2px solid var(--garden-accent);outline-offset:2px}
+@media(max-height:650px){.garden-guide-image{height:150px}.garden-guide section{min-height:0;padding-top:12px}.garden-guide h2{font-size:20px}.garden-guide p{font-size:13px}}

@@ -1,3 +1,6 @@
+import type { DailyFragmentReceipt } from '../components/DailyFragmentReward';
+import { GARDEN_BASKET_CHANGED, type GardenBasketReceipt } from '../services/gardenBasket';
+import { getArenaActionGradient, nextArenaToneSequence } from '../utils/arenaTones.ts';
 import { campaignAwareTasks } from '../utils/campaignScope';
 import { unavailableCampaignArenas } from '../utils/campaignScheduling';
 import { avisarSegredoConfirmado } from '../utils/eventosDeSegredos';
@@ -914,6 +917,7 @@ export interface GameContextType {
     toggleFeedLike: (eventId: string) => Promise<boolean>;
     fetchLikesReceived: () => Promise<number | null>;
     getArenas: () => Arena[];
+    getNextArenaToneSequence: (assetId: string) => number;
     activeArenaPact: ArenaPact | null;
     arenaPactProgress: { current: number; goal: number; percent: number; completed: boolean; windowEnded?: boolean } | null;
     arenaPactCandidates: ArenaPact[];
@@ -1003,6 +1007,9 @@ export interface GameContextType {
     applyExp: (expGained: number, options?: ApplyExpOptions) => void;
     addChest: (chestType: ChestType) => Promise<boolean>;
     buyChestWithFragments: (chestType: ChestType) => Promise<boolean>;
+    claimDailyFragments: (date: string) => Promise<DailyFragmentReceipt|null>;
+    buyGardenExpansion: (level: number) => Promise<{level:number;balance:number;charged:number}>;
+    claimGardenBasket: (deliveryId: string) => Promise<GardenBasketReceipt>;
     startNewCycle: (arenaChanges: ArenaSetupChange[], cycleDetails: { name: string; startDate?: string; endDate: string; }) => Promise<Cycle | null>;
     deleteCycle: (cycleId: string) => Promise<boolean>; // Added deleteCycle to interface
     freeProgressResetAt: string | null;
@@ -1230,6 +1237,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const [assets, setAssets] = useState<Asset[]>(() => createDefaultAssets(true));
     const assetsRef = useRef<Asset[]>(createDefaultAssets(true));
+    const arenaToneCountersRef = useRef<{ owner: string; values: Record<string, number> }>({ owner: "", values: {} });
 
     const [arenaFolders, setArenaFolders] = useState<ArenaFolder[]>(() => []);
 
@@ -2709,6 +2717,44 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
      * cliente escolhe. Forjar e reciclar ja passavam pelo servidor; comprar bau
      * seria a unica porta em que a carteira era conferida por quem gasta.
      */
+    const claimDailyFragments = async (date: string): Promise<DailyFragmentReceipt|null> => {
+        const owner = getSupabaseUserId();
+        if (!owner) throw new Error('AUTH_REQUIRED');
+        const { data, error } = await supabase.rpc('claim_daily_fragments', { p_day: date });
+        if (error?.code === 'PGRST202' || error?.code === '42883') return null;
+        if (error) throw error;
+        if (!data) return null;
+        const receipt = data as DailyFragmentReceipt;
+        setUserProfile(prev => prev.id === owner ? { ...prev, wallet: { ...prev.wallet, fragments: receipt.balance } } : prev);
+        return receipt;
+    };
+
+    const buyGardenExpansion = async (level: number) => {
+        const owner = getSupabaseUserId();
+        if (!owner) throw new Error('AUTH_REQUIRED');
+        const { data, error } = await supabase.rpc('buy_garden_expansion', { p_level: level });
+        if (error || !data) throw error || new Error('EXPANSION_RESPONSE_MISSING');
+        const receipt = data as {level:number;balance:number;charged:number};
+        setUserProfile(prev => prev.id === owner ? { ...prev, wallet: { ...prev.wallet, fragments: receipt.balance } } : prev);
+        return receipt;
+    };
+
+    const claimGardenBasket = async (deliveryId: string): Promise<GardenBasketReceipt> => {
+        const owner = getSupabaseUserId();
+        if (!owner) throw new Error('AUTH_REQUIRED');
+        const { data, error } = await supabase.rpc('claim_garden_basket', { p_delivery_id: deliveryId });
+        if (error || !data) throw error || new Error('BASKET_RESPONSE_MISSING');
+        const receipt = data as GardenBasketReceipt;
+        // Only reconcile server truth locally. Never persist a calculated wallet.
+        setUserProfile(prev => prev.id === owner ? { ...prev, wallet: { ...prev.wallet, fragments: receipt.balance } } : prev);
+        if (receipt.chest || !receipt.awarded) {
+            const chests = await fetchChestsFromDB(owner);
+            if (chests) setUserProfile(prev => prev.id === owner ? { ...prev, chests } : prev);
+        }
+        window.dispatchEvent(new Event(GARDEN_BASKET_CHANGED));
+        return receipt;
+    };
+
     const buyChestWithFragments = async (chestType: ChestType): Promise<boolean> => {
         const userId = getSupabaseUserId();
         if (!userId) return false;
@@ -5650,7 +5696,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 actionsResult,
                 tasksResult,
                 levelsResult,
-                cyclesResult
+                cyclesResult,
+                toneCountersResult
             ] = await rateLimiter.batchRequests([
                 () => supabase.from('arenas').select('*').eq('user_id', userId),
                 () => supabase.from('actions').select('*').eq('user_id', userId),
@@ -5668,7 +5715,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     .order('start_date', { ascending: true })
                     .order('created_at', { ascending: false })
                     .limit(50),
+                () => supabase.from('arena_tone_counters').select('asset_id,next_sequence').eq('user_id', userId),
             ]) as any[];
+            arenaToneCountersRef.current = { owner: userId, values: Object.fromEntries((toneCountersResult?.data || []).map((row: any) => [row.asset_id, row.next_sequence])) };
 
             let loadedArenas: Arena[] = [];
             let loadedActions: Action[] = [];
@@ -11263,6 +11312,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const getArenas = useCallback(() => allArenas, [allArenas]);
+    const getNextArenaToneSequence = (assetId: string): number => {
+        const owner = getSupabaseUserId() || 'local';
+        const counters = arenaToneCountersRef.current;
+        return nextArenaToneSequence(assetsRef.current.flatMap(asset => asset.arenas), assetId,
+            counters.owner === owner ? counters.values[normalizeLifeAreaId(assetId)] || 0 : 0);
+    };
+    const reserveArenaTone = (assetId: string): number => {
+        const owner = getSupabaseUserId() || 'local';
+        const sequence = getNextArenaToneSequence(assetId);
+        if (arenaToneCountersRef.current.owner !== owner) arenaToneCountersRef.current = { owner, values: {} };
+        arenaToneCountersRef.current.values[normalizeLifeAreaId(assetId)] = sequence + 1;
+        return sequence;
+    };
     const addArena = async (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb: boolean = false): Promise<Arena> => {
         const willStartArchived = arenaData.isArchived ?? false;
         const capacity = getArenaCapacitySummary(assetsRef.current, userProfile);
@@ -11272,7 +11334,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             throw new Error(message);
         }
 
-        const newArena: Arena = { ...arenaData, id: crypto.randomUUID(), assetId, actionIds: [], isArchived: willStartArchived };
+        const newArena: Arena = { ...arenaData, id: crypto.randomUUID(), assetId, actionIds: [], isArchived: willStartArchived, colorToneSequence: reserveArenaTone(assetId) };
 
         setAssets(prevAssets => {
             const nextAssets = prevAssets.map(asset => asset.id === assetId ?{ ...asset, arenas: [...asset.arenas, newArena] } : asset);
@@ -11294,9 +11356,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         try {
-            const { error } = await supabase.from('arenas').insert(snakeCaseData);
+            const { data, error } = await supabase.from('arenas').insert(snakeCaseData).select('color_tone_sequence').single();
             if (error) throw error;
-            return newArena;
+            const savedArena = { ...newArena, colorToneSequence: data.color_tone_sequence ?? undefined };
+            if (typeof data.color_tone_sequence === 'number') {
+                arenaToneCountersRef.current.values[normalizeLifeAreaId(assetId)] = Math.max(
+                    arenaToneCountersRef.current.values[normalizeLifeAreaId(assetId)] || 0, data.color_tone_sequence + 1);
+            }
+            setAssets(prev => prev.map(asset => ({ ...asset, arenas: asset.arenas.map(arena => arena.id === savedArena.id ? savedArena : arena) })));
+            return savedArena;
         } catch (error: any) {
             console.error("Supabase add arena error:", error?.message || error);
             setAssets(prevAssets => {
@@ -11367,8 +11435,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const userId = getSupabaseUserId();
         if (userId) {
             const snakeCaseData = mapToSnakeCase(arenaData);
-            supabase.from('arenas').update(snakeCaseData).eq('id', arenaId).then(({ error }) => {
+            supabase.from('arenas').update(snakeCaseData).eq('id', arenaId).select('color_tone_sequence').single().then(({ data, error }) => {
                 if (error) console.error("Supabase update arena error:", error.message);
+                else if (data) {
+                    const targetArea = normalizeLifeAreaId(arenaData.assetId || currentArena?.assetId);
+                    if (typeof data.color_tone_sequence === 'number' && arenaToneCountersRef.current.owner === userId) {
+                        arenaToneCountersRef.current.values[targetArea] = Math.max(arenaToneCountersRef.current.values[targetArea] || 0, data.color_tone_sequence + 1);
+                    }
+                    setAssets(prev => prev.map(asset => ({ ...asset, arenas: asset.arenas.map(arena => arena.id === arenaId ? { ...arena, colorToneSequence: data.color_tone_sequence ?? undefined } : arena) })));
+                }
             });
         }
     };
@@ -12037,7 +12112,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (arenaFlags.isSeasonQuest) return { background: 'var(--quest-grad-season)' };
             if (arenaFlags.isClanQuest) return { background: 'var(--quest-grad-clan)' };
             if (arenaFlags.isSideQuest) return { background: 'var(--quest-grad-sidequest)' };
-            return { background: buildAssetActionGradient(arena.assetId) };
+            return { background: getArenaActionGradient(arena) };
         }
         const asset = getAssetForAction(actionId);
         return { background: buildAssetActionGradient(asset?.id) };
@@ -15584,9 +15659,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             getSharedActionPoolProgress, isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, sequenceItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, upcomingCycle, dailyCommitment, judgedOperationalDates, judgedTaskIdsByDate, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, grantInventoryItem, acceptSeasonQuest,
             abortSeasonQuest,
             missoesDoCla, missoesDeClaAtivas, atualizarMissaoDoCla, entrarNaMissaoDoCla, receberPremioDaMissaoDoCla, humorDoCla, carregarHumorDoCla, autoresDoFeed,
-            roundExpBonus, addProfileFlag, feed, addFeedEvent, deleteFeedEvent, toggleFeedLike, fetchLikesReceived, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, ensureTasksLoadedThrough, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, addSequenceItem, updateSequenceItem, markSequenceItemToday, adjustSequenceItemDays, resetSequenceItem, deleteSequenceItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, recordMoodEntry, fetchMoodHistory, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, respondToClanInvite, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
+            roundExpBonus, addProfileFlag, feed, addFeedEvent, deleteFeedEvent, toggleFeedLike, fetchLikesReceived, getArenas, getNextArenaToneSequence, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, ensureTasksLoadedThrough, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, addSequenceItem, updateSequenceItem, markSequenceItemToday, adjustSequenceItemDays, resetSequenceItem, deleteSequenceItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, recordMoodEntry, fetchMoodHistory, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, respondToClanInvite, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
             directMessages, dmConversations, blockedUsers, blockedUserIds, sendDirectMessage, markDMAsRead, fetchDMs, blockUser, unblockUser, submitModerationReport,
-            addSeason, updateSeason, addSeasonMission, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, isProfileLoaded, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, donateItem, craftItem, buyChestWithFragments, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, finishCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, createCompetitionInvite, respondToRelationshipInvite, endRelationshipLink, renewRelationshipLink, offerMentorshipArena, respondMentorshipOffer, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, respondCompetitionChallenge, cancelCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
+            addSeason, updateSeason, addSeasonMission, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, isProfileLoaded, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, donateItem, craftItem, buyChestWithFragments, claimGardenBasket, buyGardenExpansion, claimDailyFragments, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, finishCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, createCompetitionInvite, respondToRelationshipInvite, endRelationshipLink, renewRelationshipLink, offerMentorshipArena, respondMentorshipOffer, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, respondCompetitionChallenge, cancelCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,
             aldeiaSlots, aldeiaPresence, loadAldeiaData, setAldeiaSlots, setAldeiaPresence,
             activeArenaPact, arenaPactProgress, arenaPactCandidates, missaoIndividualDisponivel, getArenaPactOptionsForArena, acceptArenaPact, abandonArenaPact, claimArenaPact, missaoDeSistemaAtiva, diasNoApp,

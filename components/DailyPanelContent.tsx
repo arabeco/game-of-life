@@ -1,4 +1,5 @@
 import { useProgressRecognition } from '../hooks/useProgressRecognition';
+import { DailyFragmentReward } from './DailyFragmentReward';
 import { expAverageLabel } from '../utils/progressRecognition';
 import { ORACLE_ENGINE_V2 } from '../utils/oracleEngineV2';
 import { DailySummaryCard } from './DailySummaryCard';
@@ -489,6 +490,7 @@ export const DailyPanelContent: React.FC<{
     return (
         <div className="daily-review daily-board-layout">
             <DailyPanelBoard
+                reward={!ehHoje ? <DailyFragmentReward date={selectedDate}/> : undefined}
                 date={selectedDate}
                 dateLabel={dateLabel}
                 isToday={ehHoje}

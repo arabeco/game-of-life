@@ -1,3 +1,6 @@
+import { getArenaTone, getArenaActionGradient } from '../utils/arenaTones.ts';
+import { getTaskMinutes } from '../utils/taskExp';
+import { ReferencePlate } from './ReferencePlate';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Arena, Action, ScheduledTask, RelationshipLinkType } from '../types';
 import { getLocalDateString, useGame } from '../contexts/GameContext';
@@ -277,10 +280,7 @@ export const ArenaDetailModal: React.FC<{
             : isReceivedCodexArena
                 ? 'Campanha recebida fica protegida. So campanha comprada ou autoral pode ser adaptada.'
                 : null;
-    const resolvedAssetAccent =
-        ASSET_ACCENT_COLORS[arena.assetId as keyof typeof ASSET_ACCENT_COLORS]
-        || ASSET_ACCENT_COLORS[normalizeAssetKey(parentAsset?.name) as keyof typeof ASSET_ACCENT_COLORS]
-        || '#F0C843';
+    const resolvedAssetAccent = getArenaTone({ ...arena, ...editableArena });
     const accentColor = isClanQuestArena ?QUEST_VISUAL.hex : resolvedAssetAccent;
 
     useEffect(() => {
@@ -345,6 +345,14 @@ export const ArenaDetailModal: React.FC<{
         forceSharedPool,
     }), [allActions, arena, clanQuests, forceSharedPool, getClanQuestProgress, getSharedActionPoolProgress, tasksForCounts]);
     const isSharedPool = arenaProgressState.isSharedPool;
+    const completedArenaMinutes = tasksForCounts.reduce((total, task) => {
+        const action = allActions.find(candidate => candidate.id === task.actionId);
+        return task.completed && action ? total + getTaskMinutes(task, action) : total;
+    }, 0);
+    const practiceLabel = completedArenaMinutes >= 60
+        ? `${Math.floor(completedArenaMinutes / 60)}h${completedArenaMinutes % 60 ? ` ${completedArenaMinutes % 60}min` : ''}`
+        : `${completedArenaMinutes}min`;
+
 
     const allActionInstances = arenaProgressState.totalPlanned || 0;
     const allCompletedInstances = arenaProgressState.totalCompleted || 0;
@@ -573,35 +581,15 @@ export const ArenaDetailModal: React.FC<{
 
     return (
         <Portal>
-            <div className="arena-detail-modal arena-detail-modal-overlay ui-modal-backdrop z-50" onClick={handleBackdropClick}>
-                <div
-                    className="arena-detail-modal-root ui-modal-panel dossier-bg arena-plate border w-full max-w-[27rem] m-0 px-4 py-5 flex flex-col h-auto max-h-[92vh] relative overflow-hidden"
-                    style={{
-                        borderColor: accentColor,
-                        '--arena-accent': accentColor,
-                        backgroundImage: [
-                            `radial-gradient(circle at 50% 0%, rgba(255,255,255,0.18), rgba(255,255,255,0.07) 18%, transparent 44%)`,
-                            `radial-gradient(circle at 18% 14%, rgba(255,255,255,0.05), transparent 22%)`,
-                            `radial-gradient(circle at 100% 100%, ${rgbaString(accentColor, 0.22)}, transparent 40%)`,
-                            `linear-gradient(160deg, rgba(192,197,207,0.6) 0%, rgba(118,125,138,0.68) 20%, rgba(66,72,84,0.82) 38%, rgba(18,20,26,0.94) 72%, ${rgbaString(accentColor, 0.14)} 92%, rgba(7,8,11,0.995) 100%)`,
-                        ].join(', '),
-                    } as React.CSSProperties}
-                >
-                    <div
-                        className="modal-aura-overlay"
-                        style={{ '--modal-aura-color': 'rgba(214, 224, 238, 0.16)' } as React.CSSProperties}
-                    />
-                    <div
-                        className="modal-sheen-overlay"
-                        style={{ '--modal-sheen-color': 'rgba(219, 229, 244, 0.52)' } as React.CSSProperties}
-                    />
-                    <div className="arena-detail-content relative z-10 flex flex-col space-y-3">
-                        <div className="arena-detail-modal-header arena-plate-header flex justify-between items-start flex-shrink-0 gap-2 rounded-xl px-2 py-2 bg-black/20">
-                            <div className="flex flex-col items-center gap-1">
+            <div className="reference-arena-overlay ui-modal-backdrop z-50" onClick={handleBackdropClick}>
+                <ReferencePlate role="dialog" aria-modal="true" aria-label={arena.name} className="reference-arena" style={{'--arena-accent': accentColor, '--arena-gradient': getArenaActionGradient({ ...arena, ...editableArena })} as React.CSSProperties}>
+                    <div className="reference-arena-content">
+                        <div className="reference-header reference-arena-header">
+                            <div className="reference-arena-tools">
                                 {/* Allow editing for flexible arenas or if user is the Mentor */}
                                 {!isReadOnlyArena && (!isArenaEditLocked || isEditing || effectiveRelationshipType === 'mentoria') && (
-                                    <button aria-label={isEditing ? 'Salvar arena' : 'Editar arena'} onClick={() => { handleEditToggle(); setArenaTab('about'); }} className={`p-2 rounded-full transition-colors border border-white/14 ${isEditing ?'bg-white/20' : 'bg-transparent'}`}>
-                                        <EditIcon className={`w-5 h-5 ${isEditing ?'text-white' : 'text-gray-300'}`} />
+                                    <button aria-label={isEditing ? 'Cancelar edição da arena' : 'Editar arena'} onClick={() => { if (isEditing) { setEditableArena({...arena}); setIsEditing(false); setArenaTab('actions'); } else { handleEditToggle(); setArenaTab('about'); } }} className="reference-corner reference-edit">
+                                        {isEditing ? <span>←</span> : <EditIcon className="w-4 h-4" />}
                                     </button>
                                 )}
 
@@ -634,17 +622,27 @@ export const ArenaDetailModal: React.FC<{
                                     </button>
                                 )}
                             </div>
-                            <div className="flex-1 flex flex-col items-center text-center">
-                                <div className="arena-detail-title-shell inline-flex max-w-full flex-col items-center rounded-[1.05rem] border border-white/12 bg-black/24 px-4 py-2 shadow-[0_14px_34px_rgba(0,0,0,0.24)]">
-                                    <h2 className="ui-modal-title arena-detail-title luxe-title-ornate text-[1.34rem] tracking-[0.1em] text-[color:var(--skin-accent-color)] sm:text-[1.46rem]">
-                                        {isEditing ?"EDITAR ARENA" : arena.name}
-                                    </h2>
-                                    {parentAsset?.name && (
-                                        <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-white/80">
-                                            {formatAssetLabel(parentAsset.id, parentAsset.name)}
-                                        </p>
-                                    )}
-                                </div>
+                            <div className="reference-arena-identity">
+<button aria-label="Escolher ícone da arena"
+                                onClick={() => isEditing && setIsIconPickerOpen(true)}
+                                disabled={!isEditing}
+                                className="reference-emoji"
+                            >
+                                <EmojiGlyph
+                                    symbol={editableArena.icon}
+                                    size="picker"
+                                    className="text-white"
+                                />
+                            </button>
+                                <div className="reference-eyebrow">{parentAsset?.name && formatAssetLabel(parentAsset.id, parentAsset.name)}</div>
+                                {isEditing ? <input
+                                        type="text"
+                                        maxLength={80}
+                                        aria-label="Nome da arena"
+                                        value={editableArena.name}
+                                        onChange={(e) => setEditableArena(prev => ({ ...prev, name: e.target.value }))}
+                                        className="reference-title-input"
+                                    /> : <h2>{arena.name}</h2>}
                                 <ArenaStatusTags
                                     relationshipType={effectiveRelationshipType as RelationshipLinkType | null}
                                     hasPersonalPact={hasPersonalPact}
@@ -680,21 +678,7 @@ export const ArenaDetailModal: React.FC<{
                                     </div>
                                 )}
                             </div>
-                            {/* Right side actions - redundant delete button removed if we moved it to left for special arenas, but kept for consistency in edit mode */}
-                            {canDeleteArenaFromModal && isEditing && (
-                                <button
-                                    onClick={() => setShowDeleteConfirmation(true)}
-                                    className="p-2 rounded-full transition-colors border border-red-500/30 bg-red-500/10 hover:bg-red-500/20"
-                                    title={deleteDialogTitle}
-                                >
-                                    <Trash2Icon className="w-5 h-5 text-red-500" />
-                                </button>
-                            )}
-                            {!isEditing && (
-                                <button onClick={onClose} className="ui-modal-button luxe-skin-button luxe-reward-gold luxe-brilho min-w-[4.5rem]">
-                                    OK
-                                </button>
-                            )}
+                            <button className="reference-corner reference-close" aria-label="Fechar arena" onClick={onClose}>×</button>
                         </div>
 
                         {showDeleteConfirmation && (
@@ -711,44 +695,23 @@ export const ArenaDetailModal: React.FC<{
                             />
                         )}
 
-                        <nav className="arena-detail-tabs" aria-label="Abas da arena">
+                        <nav className="reference-tabs arena-detail-tabs" aria-label="Abas da arena">
                             <button aria-pressed={arenaTab === 'actions' && !isEditing} onClick={()=>setArenaTab('actions')} disabled={isEditing}>Ações</button>
                             <button aria-pressed={arenaTab === 'about' || isEditing} onClick={()=>setArenaTab('about')}>Sobre</button>
                         </nav>
                         {(arenaTab === 'about' || isEditing) ? <div className="arena-about">                        <div className="flex-shrink-0 flex flex-col items-center text-center space-y-1">
-                            <button aria-label="Escolher ícone da arena"
-                                onClick={() => isEditing && setIsIconPickerOpen(true)}
-                                disabled={!isEditing}
-                                className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center cursor-pointer disabled:cursor-default"
-                            >
-                                <EmojiGlyph
-                                    symbol={editableArena.icon}
-                                    size="picker"
-                                    className="arena-icon scale-[1.5] text-white drop-shadow-[0_0_18px_rgba(255,255,255,0.18)]"
-                                />
-                            </button>
-
                             {isEditing ?(
                                 <>
-                                    <input
-                                        type="text"
-                                        maxLength={80}
-                                        aria-label="Nome da arena"
-                                        value={editableArena.name}
-                                        onChange={(e) => setEditableArena(prev => ({ ...prev, name: e.target.value }))}
-                                        className="arena-detail-title arena-detail-title-input luxe-title-ornate w-full text-center bg-transparent text-[1.82rem] font-bold uppercase tracking-[0.1em] text-[color:var(--skin-accent-color)] pt-2 focus:outline-none border-b border-dashed border-white/14"
-                                    />
-                                    <textarea
+                                    <label className="reference-field w-full text-left"><span>O que você quer construir?</span><textarea
                                         value={editableArena.description}
                                         onChange={(e) => setEditableArena(prev => ({ ...prev, description: e.target.value }))}
                                         rows={2}
                                         maxLength={1000}
                                         aria-label="Descrição da arena"
-                                        className="w-full text-center bg-transparent text-sm text-gray-500 pt-1 focus:outline-none"
-                                    />
-                                    <div className="arena-detail-field-card w-full rounded-2xl border border-white/8 bg-black/25 px-3 py-2 text-left">
+                                    /></label>
+                                    <div className="reference-field w-full text-left">
                                         <label className="block text-[10px] font-bold uppercase tracking-[0.22em] text-gray-400 mb-2">
-                                            Ativo pai
+                                            Área da vida
                                         </label>
                                         <select
                                             value={editableArena.assetId}
@@ -769,22 +732,15 @@ export const ArenaDetailModal: React.FC<{
                         </div>
 
 </div> : <>
-                            <div className="arena-actions-list" aria-label="Ações da arena">
-                                {allActions.map(action => {
-                                    const completed = tasksForCounts.filter(task=>task.actionId === action.id && task.completed).length;
-                                    return <button key={action.id} className="arena-action-row" onClick={()=>openActionDetails(action)}>
-                                        <span className="arena-action-tile" style={getActionBackgroundStyle(action.id)}><EmojiGlyph symbol={action.icon || '📝'} size="picker" /></span>
-                                        <span className="arena-action-copy"><strong>{action.name}</strong><small>{action.duration} min · {action.actionType === 'Ação Recorrente' ? `${completed}/${action.repetitions || 1} repetições` : action.actionType === 'Marco' ? (completed ? 'Marco alcançado' : 'Marco') : action.actionType}</small></span>
-                                    </button>;
-                                })}
-                                {!allActions.length && <p className="arena-actions-empty">Nenhuma ação ainda.</p>}
+                            <div className="reference-arena-summary">
+                                <span><b>{isClanQuestArena || isSharedPool ? allCompletedInstances : tasksForCounts.filter(task => task.completed && allActions.some(action => action.id === task.actionId)).length}</b> concluídas</span>
+                                <span><b>{hasMeasurableProgress ? allActionInstances : allActions.length}</b> ações</span>
+                                <span><b>{practiceLabel}</b> {isClanQuestArena || isSharedPool ? 'por você' : 'de prática'}</span>
                             </div>
-                            {!previewMode && !isReadOnlyArena && !isArenaDeJornada && <button aria-label="Nova ação" id="add-action-button" ref={newActionRef} onClick={openNewAction} className="arena-action-add"><PlusIcon className="w-5 h-5" /></button>}
-                        </>}
-                        <div className="flex-shrink-0 space-y-2 pt-2">
+                        {!isEditing && <div className="reference-arena-progress" aria-label="Progresso da arena">
                             {hasMeasurableProgress ? (
-                                <div className="arena-plate-progress">
-                                    <div className="arena-plate-progress-fill" style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #7a5813 0%, #d4af37 46%, #f6e2a3 100%)' }}></div>
+                                <div className="arena-plate-progress" role="progressbar" aria-label="Progresso da arena" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, Math.max(0, progress))}>
+                                    <div className="arena-plate-progress-fill" style={{ width: `${progress}%` }}></div>
                                 </div>
                             ) : (
                                 <div className="rounded-full border border-white/8 bg-black/20 px-3 py-1 text-center text-[10px] font-black uppercase tracking-[0.14em] text-white/42">
@@ -800,9 +756,31 @@ export const ArenaDetailModal: React.FC<{
                                         ? `${allActionInstances - allCompletedInstances} ações restantes`
                                         : `${progress.toFixed(0)}%`}
                             </p>
-                        </div>
+                        </div>}
+                            <div className="reference-list-heading"><span>Suas ações</span><small>Progresso registrado</small></div>
+                            <div className="arena-actions-list" aria-label="Ações da arena">
+                                {allActions.map(action => {
+                                    const actionProgress = calculateArenaProgress({ arena, actions: [action], tasks: tasksForCounts, clanQuests: [], getClanQuestProgress, getSharedActionPoolProgress, forceSharedPool });
+                                    const completed = action.actionType === 'Livre'
+                                        ? tasksForCounts.filter(task => task.actionId === action.id && task.completed).length
+                                        : actionProgress.totalCompleted;
+                                    const countLabel = isClanQuestArena ? 'Clã' : action.actionType === 'Livre' ? `${completed} feitas` : `${completed} / ${actionProgress.totalPlanned}`;
+                                    return <button key={action.id} className="arena-action-row" onClick={()=>openActionDetails(action)}>
+                                        <span className="arena-action-tile" style={getActionBackgroundStyle(action.id)}><EmojiGlyph symbol={action.icon || '📝'} size="picker" /></span>
+                                        <span className="arena-action-copy"><strong>{action.name}</strong><small>{action.duration} min · {action.actionType === 'Ação Recorrente' ? 'recorrente' : action.actionType.toLowerCase()}</small>{!isClanQuestArena && actionProgress.hasMeasurableProgress && <span className="reference-line-progress"><i style={{width: `${Math.min(100,actionProgress.progressPercent)}%`}} /></span>}</span>
+                                        <span className="reference-action-count">{countLabel}<span>›</span></span>
+                                    </button>;
+                                })}
+                                {!allActions.length && <p className="arena-actions-empty">Nenhuma ação ainda.</p>}
+                            </div>
+                            {!previewMode && !isReadOnlyArena && !isArenaDeJornada && <button aria-label="Nova ação" id="add-action-button" ref={newActionRef} onClick={openNewAction} className="arena-action-add"><PlusIcon className="w-5 h-5" /></button>}
+                        </>}
+                        {isEditing && <footer className="reference-footer reference-arena-edit-footer">
+                            {canDeleteArenaFromModal && <button className="reference-delete" onClick={() => setShowDeleteConfirmation(true)}><Trash2Icon className="w-4 h-4" />{deleteDialogTitle}</button>}
+                            <button className="reference-primary" onClick={handleEditToggle}>Salvar arena</button>
+                        </footer>}
                     </div>
-                </div>
+                </ReferencePlate>
             </div>
             {isIconPickerOpen && <IconPickerModal onSelect={handleIconSelect} onClose={() => setIsIconPickerOpen(false)} />}
             {actionModalState && (

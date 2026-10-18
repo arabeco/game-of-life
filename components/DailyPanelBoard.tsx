@@ -67,6 +67,7 @@ export interface DailyBoardAction {
 }
 
 export interface DailyPanelBoardProps {
+    reward?: React.ReactNode;
     date: string;
     dateLabel: string;
     isToday: boolean;
@@ -86,6 +87,7 @@ export interface DailyPanelBoardProps {
 }
 
 export const DailyPanelBoard: React.FC<DailyPanelBoardProps> = ({
+    reward,
     date,
     dateLabel,
     isToday,
@@ -164,6 +166,8 @@ export const DailyPanelBoard: React.FC<DailyPanelBoardProps> = ({
                 <p className="daily-board-done-label">{dailyHeroLabel(isToday)}</p>
                 {expAverageLabel && <p className="mt-2 text-xs text-gray-300" title={expAverageHint}>{expAverageLabel}{isToday ? ' · parcial' : ''}</p>}
             </section>
+
+            {reward}
 
             {/*
               * UM QUADRADO, UMA UNIDADE.

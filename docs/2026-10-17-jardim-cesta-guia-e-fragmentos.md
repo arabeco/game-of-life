@@ -1,5 +1,13 @@
 # Jardim: cesta, tamanhos, guia — e fragmentos no Painel Diário
 
+> Atualização de escopo em 17/10, confirmada pelo Afonso: implementar agora a
+> cesta esporádica de 5–15 fragmentos, com baú Comum raro quando o cálculo passa
+> de 15. Painel Diário fica para depois. Preços atuais preservados nesta rodada.
+> Implementação, calibração, testes e SQL pendente em
+> [jardim-cesta-implementacao](2026-10-17-jardim-cesta-implementacao.md).
+> Os demais tópicos abaixo continuam sendo o roteiro de propostas, não uma
+> declaração de implementação concluída.
+
 Pedido do Afonso em 17/10/2026, conversado com o Claude. Para o Codex fazer **junto**, numa rodada só, porque as três partes mexem na mesma economia de fragmentos e o guia precisa mostrar a cesta.
 
 **Primeiro proponha, com números; implemente só depois do ok do Afonso.**

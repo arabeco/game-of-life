@@ -8,14 +8,22 @@ const load=(file,replacements={})=>{
 };
 const modelURL=load('model.ts'),templatesURL=load('gardenTemplates.ts');
 const model=await import(modelURL),templates=await import(templatesURL);
-const terrain=await import(load('gardenTerrain.ts',{'./model':modelURL,'./gardenTemplates':templatesURL}));
-const {validateGardenSnapshot}=await import(load('gardenAccount.tsx',{'react':import.meta.resolve('react')}));
+const sizesURL=load('gardenSizes.ts');
+const terrain=await import(load('gardenTerrain.ts',{'./model':modelURL,'./gardenTemplates':templatesURL,'./gardenSizes':sizesURL}));
+const {GARDEN_SIZES}=await import(sizesURL);
+const {validateGardenSnapshot}=await import(load('gardenAccount.tsx',{'react':import.meta.resolve('react'),'./gardenSizes':sizesURL}));
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-9,`${a} != ${b}`);
 const drawing={color:'data:image/png;base64,YQ==',height:'data:image/png;base64,Yg=='};
 const old={version:1,base:'open',objects:templates.templateObjects('open','rustic'),artifacts:[],sand:1,environment:'mist',atmosphere:'morning',drawing};
 const original=JSON.stringify(old);
 assert.ok(validateGardenSnapshot(old),'Legacy documents remain readable');
 for(const base of templates.BASES){
+  for(const size of GARDEN_SIZES){
+    const choice={shape:'classic',size:size.id},bounds=terrain.terrainDimensions(base.id,choice);
+    close(bounds.x/(base.width/2),size.scale);
+    const saved=JSON.parse(JSON.stringify({...old,base:base.id,terrain:choice,drawingBounds:bounds}));
+    assert.ok(validateGardenSnapshot(saved));assert.deepEqual(saved.objects,old.objects);assert.deepEqual(saved.drawing,drawing);
+  }
   const before=terrain.legacyDrawingBounds(base.id),after=terrain.terrainDimensions(base.id);
   close(after.x/before.x,1.25);close(after.z/before.z,1.25);
   close(after.x*after.z/(before.x*before.z),1.5625);

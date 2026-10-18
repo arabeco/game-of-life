@@ -1,8 +1,4 @@
 /* Action plate: dark surface, life-area colour confined to the icon and details. */
-.action-dialog-v2{height:min(720px,90dvh)!important;max-height:90dvh!important;background:#0b0c0f!important;border-radius:18px!important;border-top:2px solid var(--action-accent)!important}
-.action-dialog-v2 .action-dialog-header{padding:8px 12px;gap:2px;background:transparent}
-.action-dialog-v2 .action-dialog-header h2{font-size:18px;line-height:1.2}
-.action-dialog-v2 .action-dialog-header .ui-modal-eyebrow{font-size:8px}
 .action-main-tabs{display:flex;justify-content:center;flex:none;gap:4px;padding:6px 12px;border-bottom:1px solid #ffffff12}
 .action-main-tabs button{flex:1;min-width:0;padding:8px 2px;font-size:11px;border-bottom:2px solid transparent;color:#a2a2ab}
 .action-main-tabs button[aria-pressed=true]{color:var(--action-accent);border-color:var(--action-accent)}
@@ -34,7 +30,6 @@
 .action-weekdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}.action-weekdays button{padding:8px 1px;border:1px solid #ffffff22;border-radius:5px;font-size:10px}.action-weekdays button[aria-pressed=true]{border-color:var(--action-accent);color:var(--action-accent);background:color-mix(in srgb,var(--action-accent) 12%,transparent)}
 .action-schedule-summary{font-size:11px;color:#aaa}.action-extra-context{min-height:0;font-size:11px;color:#aaa}.action-extra-context summary{cursor:pointer}.action-extra-context[open]{overflow:hidden;display:flex;flex-direction:column}.action-inner-scroll{max-height:140px;overflow:auto;scrollbar-width:none;overscroll-behavior:contain}.action-inner-scroll>div{padding:8px 0}.action-inner-scroll button{padding:6px}.action-inner-scroll label{font-size:9px}
 .action-section-media{overflow-y:auto;scrollbar-width:none;overscroll-behavior:contain}.action-section-media>div{padding:0}.action-section-media .aspect-video{max-height:140px}
-@media(max-height:700px){.action-dialog-v2 .action-dialog-header h2{font-size:15px}.action-dialog-v2 .action-dialog-header{padding:5px 10px}.action-general{padding:8px 12px!important;gap:5px}.action-general .action-range{padding:5px 8px}.action-main-tabs{padding:3px 10px}.action-main-tabs button{padding:6px 2px}}
 
 .action-identity{display:flex;flex-direction:column;align-items:center;gap:8px}
 .action-general .action-view-icon{width:64px;height:64px;border-radius:14px;background:linear-gradient(145deg,color-mix(in srgb,var(--action-accent) 45%,#101218),#08090c);border-color:var(--action-accent)}

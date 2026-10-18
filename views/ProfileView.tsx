@@ -1,3 +1,4 @@
+import { useGardenBasket } from '../hooks/useGardenBasket';
 ﻿import React, { Suspense, useMemo, useState, useRef, useEffect } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { GlassCard } from '../components/GlassCard';
@@ -104,7 +105,11 @@ const ProfileMasteryOrb: React.FC<{
     </div>
 );
 
-const ProfileGardenOrb: React.FC<{ onClick: () => void; title?: string }> = ({ onClick, title = 'Meu jardim' }) => (
+const ProfileGardenOrb: React.FC<{ onClick: () => void; title?: string; ownerId?: string }> = ({ onClick, title = 'Meu jardim', ownerId }) => {
+    const { tasks } = useGame();
+    const activityKey = tasks.filter(t => t.completed).length;
+    const basket = useGardenBasket(ownerId, activityKey);
+    return (
     <button
         type="button"
         onClick={onClick}
@@ -117,8 +122,10 @@ const ProfileGardenOrb: React.FC<{ onClick: () => void; title?: string }> = ({ o
         aria-label={title}
     >
         <span className="translate-y-[-1px]">{'\u{1FAB4}'}</span>
+        {basket.deliveries.length>0&&<span role="status" aria-label="Presente na cesta do jardim" className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-amber-200"/>}
     </button>
 );
+};
 
 type ProfileInsignia = { id: string; name: string; imageUrl: string; count: number };
 
@@ -1153,6 +1160,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                         )}
                         {PRODUCT_FEATURES.personalGarden && canViewGarden && (
                             <ProfileGardenOrb
+                                ownerId={isOwnProfile ? displayProfile.id : undefined}
                                 onClick={() => setGardenOpen(true)}
                                 title={isOwnProfile ? 'Meu jardim' : `Jardim de ${displayProfile.nickname || 'jogador'}`}
                             />

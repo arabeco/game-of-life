@@ -1,0 +1,15 @@
+/* Final miniature geometry (v17–v19); retain ArenaCard's actual background/plasma. */
+.arena-plate.reference-thumbnail {height:96px!important;min-width:0;padding:2px 3px;gap:1px;border-radius:4px;justify-content:flex-start}
+.reference-thumbnail-top {flex:none;width:100%;min-width:0}
+.reference-thumbnail-heading {display:flex;flex-direction:row;justify-content:center;align-items:center;gap:4px;height:32px;min-width:0;padding:0}
+.reference-thumbnail-icon {position:static;width:14px;height:14px;flex:0 0 14px;display:flex;align-items:center;justify-content:center;border:1px solid;border-radius:50%;overflow:hidden}
+.reference-thumbnail-icon :is(img,svg) {width:11px;height:11px}
+.reference-thumbnail-heading h3 {font-size:13px;text-align:center;line-height:1.1;flex:0 1 auto;width:auto;min-width:0;font-weight:650;letter-spacing:0;color:#eeeae1;margin:0;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:normal}
+.reference-thumbnail-tags {height:8px;display:flex;align-items:center;justify-content:flex-end;gap:3px}
+.reference-thumbnail .arena-thumbnail-actions {width:100%;height:24px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;touch-action:pan-x;overscroll-behavior-x:contain;cursor:grab}
+.reference-thumbnail .arena-thumbnail-actions>div {gap:3px;height:24px}
+.reference-thumbnail .arena-thumbnail-actions>div>div {width:23px;height:23px;flex:0 0 23px}
+.reference-thumbnail .arena-thumbnail-actions::-webkit-scrollbar {display:none}
+.reference-thumbnail .reference-thumbnail-progress {display:flex;align-items:center;gap:3px;width:100%;height:10px;min-width:0;margin-top:7px}
+.reference-thumbnail .reference-thumbnail-progress>div:first-child {font-size:7px;line-height:8px;margin:0;max-width:45%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reference-thumbnail .arena-mini-progress {height:3px;flex:1;min-width:0;border:0;margin:0}

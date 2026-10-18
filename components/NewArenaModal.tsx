@@ -1,3 +1,4 @@
+import { getArenaTone, getArenaActionGradient } from '../utils/arenaTones.ts';
 import { useScreenIntroTip } from '../hooks/useScreenIntroTip';
 import React, { useEffect, useRef, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
@@ -5,6 +6,8 @@ import { Arena, Asset } from '../types';
 import type { LifeAreaId } from '../constants/lifeAreas';
 import { CrownIcon, ChevronRightIcon } from './Icons';
 import { GlassCard } from './GlassCard';
+import { ReferencePlate } from './ReferencePlate';
+import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import { Portal } from './Portal';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 import { suggestEmojiForLabel } from '../utils/suggestEmojiForLabel';
@@ -48,7 +51,7 @@ const AssetSelectionModal: React.FC<{ onSelect: (assetId: LifeAreaId) => void; o
 };
 
 export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAssetId, isOpen, onClose, onArenaCreated, initialRelationship }) => {
-    const { addArena, assets, showToast, userProfile } = useGame();
+    const { addArena, assets, showToast, userProfile, getNextArenaToneSequence } = useGame();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [assetId, setAssetId] = useState(
@@ -74,6 +77,7 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
 
     useScreenIntroTip(isOpen ? 'arena_modal' : null, 30);
 
+    const [creationTab, setCreationTab] = useState<'general' | 'intention'>('general');
     if (!isOpen) return null;
     const arenaCapacity = getArenaCapacitySummary(assets, userProfile);
     const canCreateArena = !arenaCapacity.isAtLimit;
@@ -115,29 +119,17 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
 
     const selectedAsset = assets.find(a => a.id === assetId);
     const selectedAssetLabel = selectedAsset?.name;
+    const previewArena = { id: 'preview', assetId, name: '', description: '', icon: '', actionIds: [], colorToneSequence: getNextArenaToneSequence(assetId) };
 
     return (
         <>
             <Portal>
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[240] flex items-center justify-center animate-fade-in" onClick={onClose}>
-                    <GlassCard ref={modalCardRef} variant="silver" className="w-full max-w-md m-4 space-y-3 rounded-xl relative" onClick={e => e.stopPropagation()}>
-                        <div className="text-center">
-                            <CrownIcon className="w-8 h-8 mx-auto text-[var(--skin-accent-color)]" />
-                            <h2 className="text-lg font-bold uppercase tracking-wider mt-2">Nova Arena</h2>
-                            <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/45">
-                                Arenas: {arenaCapacity.total}/{arenaCapacity.limit}
-                            </p>
-                        </div>
-
-                        <div className="space-y-2">
-                            <button
-                                id="new-arena-asset-button"
-                                onClick={() => setIsAssetPickerOpen(true)}
-                                className="w-full p-3 bg-black/30 border border-[var(--glass-border)] rounded-xl flex justify-between items-center text-left"
-                            >
-                                <span className={!selectedAsset ? 'text-gray-400' : ''}>{selectedAssetLabel || 'Selecione a área'}</span>
-                                <ChevronRightIcon className="w-5 h-5 text-gray-400" />
-                            </button>
+                <div className="ui-modal-backdrop z-[240] animate-fade-in" onClick={onClose}>
+                    <ReferencePlate ref={modalCardRef} role="dialog" aria-modal="true" aria-label="Nova arena" className="reference-arena reference-new-arena" style={{'--arena-accent': getArenaTone(previewArena), '--arena-gradient': getArenaActionGradient(previewArena)} as React.CSSProperties} onClick={e => e.stopPropagation()}>
+                        <header className="reference-header">
+                            <button className="reference-corner reference-close" aria-label="Fechar nova arena" onClick={onClose}>×</button>
+                            <div className="reference-emoji"><CrownIcon className="w-6 h-6" /></div>
+                            <div className="reference-eyebrow">Nova arena</div>
                             <input
                                 id="new-arena-name-input"
                                 type="text"
@@ -152,20 +144,26 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
                                     if (relatedTarget?.id === 'first-use-onboarding-next') return;
                                     window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.arenaNameCompleted));
                                 }}
-                                className="w-full h-12 px-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]"
+                                className="reference-title-input"
                             />
-                            <textarea maxLength={1000} style={{height:72,resize:"none",overflowY:"auto",scrollbarWidth:"none"}} id="new-arena-description-input" placeholder="Descrição da Meta..." value={description} onChange={e => setDescription(e.target.value)} rows={3} className="w-full p-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]" />
+                            <p className="reference-context">{selectedAssetLabel} · {arenaCapacity.total}/{arenaCapacity.limit} arenas</p>
+                        </header>
+                        <nav className="reference-tabs" aria-label="Abas da nova arena">
+                            <button aria-pressed={creationTab === 'general'} onClick={() => setCreationTab('general')}>Geral</button>
+                            <button aria-pressed={creationTab === 'intention'} onClick={() => setCreationTab('intention')}>Intenção</button>
+                        </nav>
+                        <div className="reference-body">
+                            {creationTab === 'general' ? <><label className="reference-label" htmlFor="new-arena-asset-button">Área da vida</label><button
+                                id="new-arena-asset-button"
+                                onClick={() => setIsAssetPickerOpen(true)}
+                                className="w-full p-3 bg-black/30 border border-[var(--glass-border)] rounded-xl flex justify-between items-center text-left"
+                            >
+                                <span className={!selectedAsset ? 'text-gray-400' : ''}>{selectedAssetLabel || 'Selecione a área'}</span>
+                                <ChevronRightIcon className="w-5 h-5 text-gray-400" />
+                            </button></> : <label className="reference-field"><span>O que você quer construir?</span><textarea id="new-arena-description-input" maxLength={1000} value={description} onChange={e => setDescription(e.target.value)} rows={3} /></label>}
                         </div>
-
-                        <div className="flex space-x-2 pt-2">
-                            <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-secondary">
-                                CANCELAR
-                            </button>
-                            <button id="new-arena-submit-button" onClick={handleSave} disabled={!canCreateArena} className="w-full py-2 luxe-bico luxe-skin-button luxe-reward-gold luxe-brilho disabled:cursor-not-allowed disabled:opacity-50">
-                                CRIAR ARENA
-                            </button>
-                        </div>
-                    </GlassCard>
+                        <footer className="reference-footer"><button id="new-arena-submit-button" onClick={handleSave} disabled={!canCreateArena} className="reference-primary luxe-skin-button luxe-brilho">Criar arena</button></footer>
+                    </ReferencePlate>
                 </div>
             </Portal>
             {isAssetPickerOpen && <AssetSelectionModal onSelect={(id) => {

@@ -3,6 +3,7 @@ import { Portal } from './Portal';
 import { GlassCard } from './GlassCard';
 import { EmojiGlyph } from './EmojiGlyph';
 import { ICON_PICKER_CATEGORIES } from '../constants/assetVisuals';
+import { ALL_PICKER_ICONS, emojiDescription, searchPickerIcons } from '../utils/emojiSearch';
 import { useGame } from '../contexts/GameContext';
 import './core-ui.css';
 
@@ -13,28 +14,37 @@ interface IconPickerModalProps {
 
 export const IconPickerModal: React.FC<IconPickerModalProps> = ({ onSelect, onClose }) => {
     const { activeTheme } = useGame();
+    const [query, setQuery] = useState('');
+    const [showAll, setShowAll] = useState(true);
     const [activeCategory, setActiveCategory] = useState<(typeof ICON_PICKER_CATEGORIES)[number]['id']>(ICON_PICKER_CATEGORIES[0].id);
     const currentCategory = ICON_PICKER_CATEGORIES.find(category => category.id === activeCategory) || ICON_PICKER_CATEGORIES[0];
+    const icons = query.trim() ? searchPickerIcons(query) : showAll ? ALL_PICKER_ICONS : currentCategory.icons;
     const isLightTheme = activeTheme === 'LIGHT';
     const categoryTextColor = isLightTheme ? '#27364a' : '#ffffff';
     const categoryMutedTextColor = isLightTheme ? 'rgba(39,54,74,0.8)' : 'rgba(209,213,219,0.88)';
 
     return (
         <Portal>
+            <dialog ref={node => {if(node&&!node.open)node.showModal();}} aria-label="Biblioteca de ícones" onCancel={e=>{e.preventDefault();e.stopPropagation();onClose();}} style={{position:'fixed',inset:0,width:'100%',maxWidth:'none',height:'100dvh',maxHeight:'none',margin:0,padding:0,border:0,background:'transparent',color:'inherit'}}>
             <div className="fixed inset-0 z-[10002] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" onClick={onClose}>
-                <GlassCard variant="neutral" className="core-surface-strong m-4 w-full max-w-3xl space-y-4 rounded-[28px]" onClick={e => e.stopPropagation()}>
-                    <div className="space-y-1">
-                        <h2 className={`text-base text-center font-semibold tracking-[0.08em] ${isLightTheme ? 'text-slate-900' : 'text-white'}`}>Selecionar ícone</h2>
+                <GlassCard variant="neutral" className="core-surface-strong m-4 w-full max-w-3xl max-h-[calc(100dvh-32px)] overflow-y-auto space-y-4 rounded-[28px]" onClick={e => e.stopPropagation()}>
+                    <div className="flex items-center justify-between">
+                        <h2 className={`text-base font-semibold tracking-[0.08em] ${isLightTheme ? 'text-slate-900' : 'text-white'}`}>Selecionar ícone</h2>
+                        <button type="button" onClick={onClose} aria-label="Fechar biblioteca de ícones" className="h-11 w-11 rounded-xl">×</button>
                     </div>
 
+                    <input type="search" value={query} onChange={e => setQuery(e.target.value)} aria-label="Buscar ícone" placeholder="Buscar: corrida, estudo, cachorro…" className={`w-full rounded-xl border px-4 py-3 ${isLightTheme ? 'border-slate-300 bg-white text-slate-900' : 'border-white/15 bg-black/25 text-white'}`} />
+
                     <div className="scrollbar-hide flex gap-2 overflow-x-auto pb-1">
+                        <button type="button" aria-pressed={showAll && !query.trim()} onClick={() => {setShowAll(true); setQuery('');}} className="min-w-fit rounded-xl border px-3 py-2 text-sm">Todos</button>
                         {ICON_PICKER_CATEGORIES.map(category => {
-                            const isActive = activeCategory === category.id;
+                            const isActive = !showAll && !query.trim() && activeCategory === category.id;
                             const categoryColor = isActive ? categoryTextColor : categoryMutedTextColor;
                             return (
                                 <button
                                     key={category.id}
-                                    onClick={() => setActiveCategory(category.id)}
+                                    aria-pressed={isActive}
+                                    onClick={() => {setActiveCategory(category.id); setShowAll(false); setQuery('');}}
                                     className={`min-w-fit rounded-xl border px-3 py-2 transition-all ${
                                         isActive
                                             ? isLightTheme
@@ -83,17 +93,18 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({ onSelect, onCl
                         <div className="mb-3 flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <EmojiGlyph symbol={currentCategory.tabIcon} size="badge" />
-                                <span className={`text-sm font-semibold ${isLightTheme ? 'text-slate-900' : 'text-white'}`}>{currentCategory.label}</span>
+                                <span className={`text-sm font-semibold ${isLightTheme ? 'text-slate-900' : 'text-white'}`}>{query.trim() ? 'Resultados em todas as áreas' : showAll ? 'Todos os ícones' : currentCategory.label}</span>
                             </div>
-                            <span className={`text-[11px] ${isLightTheme ? 'text-slate-600' : 'text-gray-500'}`}>{currentCategory.icons.length} opções</span>
+                            <span role="status" className={`text-[11px] ${isLightTheme ? 'text-slate-600' : 'text-gray-500'}`}>{icons.length} opções</span>
                         </div>
 
                         <div className="grid max-h-72 grid-cols-6 gap-2 overflow-y-auto pr-1 sm:grid-cols-8">
-                            {currentCategory.icons.map(icon => (
+                            {icons.map(icon => (
                                 <button
                                     key={`${currentCategory.id}-${icon}`}
                                     onClick={() => onSelect(icon)}
-                                    aria-label={`Selecionar ${icon}`}
+                                    aria-label={`Selecionar ${icon}: ${emojiDescription(icon)}`}
+                                    title={emojiDescription(icon)}
                                     className={`aspect-square rounded-xl border flex items-center justify-center transition-transform hover:scale-105 ${
                                         isLightTheme
                                             ? 'border-slate-300/30 bg-white/58 hover:bg-white/78 hover:border-slate-400/35'
@@ -104,9 +115,11 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({ onSelect, onCl
                                 </button>
                             ))}
                         </div>
+                        {icons.length === 0 && <p className="py-6 text-center text-sm">Nenhum ícone encontrado. Tente outra palavra, como “casa” ou “treino”.</p>}
                     </div>
                 </GlassCard>
             </div>
+            </dialog>
         </Portal>
     );
 };

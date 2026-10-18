@@ -13,12 +13,14 @@ export function AccountGarden({skinId,theme}:{skinId:string;theme:'light'|'dark'
       const d=event.data;
       if(d?.type==='glyph-garden-init'&&Array.isArray(d.owned)&&Array.isArray(d.artifacts)&&(!d.state||validateGardenSnapshot(d.state))){
         setGardenArtifacts(d.artifacts);
-        setAccount({legacyPlaque:validGardenPlaque(d.legacyPlaque)?d.legacyPlaque:undefined,previewHour:['127.0.0.1','localhost'].includes(location.hostname)&&typeof d.previewHour==='number'&&Number.isFinite(d.previewHour)?d.previewHour:undefined,owned:d.owned,initial:d.state,products:d.products??[],readOnly:d.readOnly===true,markDirty:dirty=>send({type:'glyph-garden-dirty',dirty}),buy:id=>send({type:'glyph-garden-buy',id}),save:state=>new Promise<void>((resolve,reject)=>{
+        setAccount({basket:d.readOnly!==true&&d.basketEnabled===true?{score:typeof d.basketScore==='number'?d.basketScore:null,open:()=>send({type:'glyph-garden-open-basket'})}:undefined,legacyPlaque:validGardenPlaque(d.legacyPlaque)?d.legacyPlaque:undefined,previewHour:['127.0.0.1','localhost'].includes(location.hostname)&&typeof d.previewHour==='number'&&Number.isFinite(d.previewHour)?d.previewHour:undefined,owned:d.owned,initial:d.state,products:d.products??[],readOnly:d.readOnly===true,markDirty:dirty=>send({type:'glyph-garden-dirty',dirty}),buy:id=>send({type:'glyph-garden-buy',id}),save:state=>new Promise<void>((resolve,reject)=>{
           if(pending.current){reject(Error('Aguarde o salvamento atual.'));return;}
           const id=crypto.randomUUID();const timer=window.setTimeout(()=>{pending.current=null;reject(Error('Sem confirmação do servidor. Reabra o jardim antes de tentar novamente.'));},30000);
           pending.current={id,resolve,reject,timer};send({type:'glyph-garden-save',id,state});
         })});
       }
+      if(d?.type==='glyph-garden-expansions')setAccount(a=>a?{...a,expansionLevel:Number.isInteger(d.level)&&d.level>=0&&d.level<=7?d.level:0,expansionsAvailable:!a.readOnly&&d.available===true,buyExpansion:level=>send({type:'glyph-garden-buy-expansion',level})}:a);
+      if(d?.type==='glyph-garden-basket')setAccount(a=>a?{...a,basket:!a.readOnly&&d.enabled===true?{score:typeof d.score==='number'?d.score:null,open:()=>send({type:'glyph-garden-open-basket'})}:undefined}:a);
       if(d?.type==='glyph-garden-legacy'&&validGardenPlaque(d.plaque))setAccount(a=>a?{...a,legacyPlaque:d.plaque}:a);
       if(d?.type==='glyph-garden-inventory'&&Array.isArray(d.owned)){setAccount(a=>a?{...a,owned:d.owned}:a);}
       if(d?.type==='glyph-garden-saved'&&pending.current?.id===d.id){const p=pending.current!;pending.current=null;clearTimeout(p.timer);d.error?p.reject(Error(d.error)):p.resolve();}

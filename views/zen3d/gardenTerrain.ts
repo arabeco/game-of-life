@@ -1,19 +1,20 @@
 import { BASES, type BaseId } from './gardenTemplates';
 import { worldFootprint, type GardenObject } from './model';
+import { gardenSize } from './gardenSizes';
 
 export const GARDEN_SHAPES = [
   {id:'classic',name:'Do modelo'}, {id:'square',name:'Quadrado'},
   {id:'ellipse',name:'Elipse'}, {id:'circle',name:'Círculo'},
 ] as const;
 export type GardenShape = typeof GARDEN_SHAPES[number]['id'];
-export interface GardenTerrain { shape:GardenShape; size:'standard'|'spacious' }
+export interface GardenTerrain { shape:GardenShape; size:'standard'|'spacious'|`expansion-${number}` }
 export interface DrawingBounds { x:number; z:number }
 export const DEFAULT_TERRAIN:GardenTerrain = {shape:'classic',size:'spacious'};
 
 // Old documents use the larger ground too; object coordinates are never migrated.
 export function terrainDimensions(base:BaseId,terrain:GardenTerrain=DEFAULT_TERRAIN) {
   const model=BASES.find(b=>b.id===base)!;
-  const scale=terrain.size==='spacious'?1.25:1;
+  const scale=gardenSize(terrain.size)?.scale??1.25;
   const side=Math.max(model.width,model.depth)*scale;
   return {
     x:(terrain.shape==='square'||terrain.shape==='circle'?side:model.width*scale)/2,

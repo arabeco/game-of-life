@@ -1,9 +1,10 @@
+import { getArenaTone, getArenaActionGradient } from '../utils/arenaTones.ts';
 import { useScreenIntroTip } from '../hooks/useScreenIntroTip';
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { buildRecurringDates, countRecurringOccurrences, resolveScheduleHorizon } from '../utils/cycleScheduling';
 import { Action, DayOfWeek, ActionType, PlannerMatrixQuadrant, ScheduledTask } from '../types';
-import { GlassCard } from './GlassCard';
+import { ReferencePlate } from './ReferencePlate';
 import { ChevronLeftIcon, ChevronRightIcon, EditIcon, XIcon, CalendarIcon, Trash2Icon, ClockIcon, PlayIcon, CheckCircleIcon } from './Icons';
 import { IconPickerModal } from './IconPickerModal';
 import { WheelPicker } from './inputs/WheelPicker';
@@ -182,7 +183,7 @@ const ActionNumberInput: React.FC<{label: string; value: number; min: number; ma
 
 const StyledRangeInput: React.FC<{ label: string, value: number, min: number, max: number, step: number, unit: string, onChange: (val: number) => void, inputRef?: React.Ref<HTMLDivElement>, containerId?: string, snapValues?: number[], formatValue?: (val: number) => string, comBotoes?: boolean }> =
     ({ label, value, min, max, step, unit, onChange, inputRef, containerId, snapValues, formatValue, comBotoes }) => (
-        <div id={containerId} ref={inputRef} className="action-range p-2.5 core-surface rounded-xl space-y-1.5">
+        <div id={containerId} ref={inputRef} className="action-range">
             <div className="flex justify-between items-center">
                 <label className="core-label">{label}</label>
                 {/* `comBotoes`: - e + de um em um (16/10, repeticoes). Ir de 5 para 6
@@ -207,7 +208,7 @@ const StyledRangeInput: React.FC<{ label: string, value: number, min: number, ma
                 aria-valuetext={formatValue ? formatValue(value) : `${value} ${unit}`}
                 className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg accent-[var(--skin-accent-color)]"
             />
-            {formatValue && <output className="action-duration-equivalent">{formatValue(value)}</output>}
+            {(formatValue || unit === 'x') && <div className="reference-range-scale"><span>{min} {unit}</span>{formatValue && <output className="action-duration-equivalent">{formatValue(value)}</output>}<span>{max === 480 ? '8h' : `${max} ${unit}`}</span></div>}
         </div>
     );
 
@@ -1350,12 +1351,10 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
     if (!displayAction && mode === 'view') return null;
 
-    const arenaAccentColor = currentArena?.assetId
-        ?ASSET_ACCENT_COLORS[currentArena.assetId as keyof typeof ASSET_ACCENT_COLORS]
-        : undefined;
+    const arenaAccentColor = currentArena ? getArenaTone(currentArena) : undefined;
     const accentColor = customThemeColor || arenaAccentColor || '#F0C843';
     // Omit the override to inherit the skin. A self-reference invalidates the token.
-    const modalStyle = { ...(customThemeColor ? { '--skin-accent-color': customThemeColor } : {}), '--action-accent': accentColor, '--accent-bronze': accentColor } as React.CSSProperties;
+    const modalStyle = { ...(customThemeColor ? { '--skin-accent-color': customThemeColor } : {}), '--action-accent': accentColor, '--action-gradient': currentArena ? getArenaActionGradient(currentArena) : undefined, '--accent-bronze': accentColor } as React.CSSProperties;
     const headerTitle = mode === 'view'
         ?(displayAction?.name || (isPreview ?'Preview de Ação' : 'Detalhe da Ação'))
         : (isEditingTaskInstance
@@ -1366,18 +1365,6 @@ export const ActionModal: React.FC<ActionModalProps> = ({
             ?'Ocorrência'
             : (isNew ?'Criação' : hasTaskInstanceContext ?'Ação Base' : 'Edição'))
         : (isPreview ?'Preview' : hasTaskInstanceContext ?'Ocorrência' : 'Ação');
-    const handleHeaderOk = () => {
-        if (isPreview) {
-            onClose();
-            return;
-        }
-        if (mode === 'edit') {
-            handleSave();
-            return;
-        }
-        onClose();
-    };
-
     const requestActionBaseEdit = () => {
         if (isLockedFromSource) {
             showToast(lockedEditMessage || 'Essa ação não pode ser editada.', 'warning');
@@ -1404,61 +1391,65 @@ export const ActionModal: React.FC<ActionModalProps> = ({
         <>
         <Portal>
             <div className="ui-modal-backdrop z-[100]" onClick={handleBackdropClick} style={modalStyle}>
-                <GlassCard
-                    variant="neutral"
-                    className="ui-modal-panel action-dialog action-dialog-v2 w-full max-w-[24rem] m-0 flex flex-col max-h-[88dvh] h-auto p-0 relative overflow-hidden border-white/14 shadow-[0_24px_70px_rgba(0,0,0,0.45)]"
-                >
-                    {/* Header Fixed */}
-                    {/* Controls and title occupy separate rows, including long action names. */}
-                    <div className="action-dialog-header flex-none p-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 z-30 relative border-b border-white/8">
-                        <div className="flex items-center gap-2 pt-1">
-                            {!isPreview && !disableAuthoring && (hasTaskInstanceContext || !isLockedFromSource || mode === 'edit') && (
-                                <button
-                                    onClick={mode === 'view' ?requestEditMode : handleCancel}
-                                    aria-label={mode === 'view' ? 'Editar ação' : 'Cancelar edição'}
-                                    className={`p-2 rounded-full border transition-all ${mode === 'edit' ?'bg-red-500/18 text-red-300 border-red-500/30 hover:bg-red-500/26' : 'bg-black/16 border-white/14 text-white/65 hover:text-white hover:bg-white/12'}`}
-                                >
-                                    {mode === 'view' ?<EditIcon className="w-4 h-4" /> : <XIcon className="w-4 h-4" />}
-                                </button>
-                            )}
+                <ReferencePlate role="dialog" aria-modal="true" aria-label={headerTitle} className="reference-action">
+                    <header className="reference-header action-dialog-header">
+                        {!isPreview && !disableAuthoring && !isNew && (hasTaskInstanceContext || !isLockedFromSource || mode === 'edit') && (
+                            <button className="reference-corner reference-edit" onClick={mode === 'view' ? requestEditMode : handleCancel} aria-label={mode === 'view' ? 'Editar ação' : 'Cancelar edição'}>
+                                {mode === 'view' ? <EditIcon className="w-4 h-4" /> : <span>←</span>}
+                            </button>
+                        )}
+                        <button className="reference-corner reference-close" onClick={onClose} aria-label="Fechar ação"><XIcon className="w-4 h-4" /></button>
+                        {mode === 'edit' && !isEditingTaskInstance ? <>
+                            <div className="action-identity">
+                                                <div className="flex justify-center">
+                                                    <button
+                                                        type="button"
+                                                        aria-label="Escolher emoji da ação"
+                                                        onClick={() => canEditAuthorialContent && setIsIconPickerOpen(true)}
+                                                        disabled={!canEditAuthorialContent}
+                                                        className={`action-emoji-button reference-emoji relative group ${canEditAuthorialContent ? '' : 'opacity-60 cursor-not-allowed'}`}
+                                                    >
+                                                        <EmojiGlyph symbol={editableAction.icon || '📝'} size="picker" className="scale-[1.45] text-white" />
+                                                        <div className={`absolute inset-0 bg-black/40 rounded-[18px] flex items-center justify-center transition-opacity ${canEditAuthorialContent ? 'opacity-0 group-hover:opacity-100' : 'opacity-0'}`}>
+                                                            <EditIcon className="w-6 h-6 text-white" />
+                                                        </div>
+                                                    </button>
+                                                </div>
 
-                            {/*
-                              * EXCLUIR MORA AO LADO DE EDITAR.
-                              *
-                              * O botao vivia no FIM do formulario, depois de todos os campos:
-                              * para apagar uma acao era preciso entrar em edicao e rolar a
-                              * tela inteira ate o rodape. Apagar nao e a ultima etapa de
-                              * preencher um formulario — e uma decisao sobre a acao, da mesma
-                              * familia de editar, e o lugar dela e junto.
-                              *
-                              * So em edicao, e so em acao que ja existe: no modo de leitura
-                              * um lixo permanente fica a um toque de distancia de quem so
-                              * queria olhar.
-                              */}
-                            {mode === 'edit' && !isNew && !isPreview && !disableAuthoring && (
-                                <button
-                                    onClick={handleDelete}
-                                    aria-label="Excluir ação"
-                                    title="Excluir ação"
-                                    className="rounded-full border border-red-900/40 bg-red-900/20 p-2 text-red-400 transition-all hover:bg-red-900/40 hover:text-red-300"
-                                >
-                                    <Trash2Icon className="w-4 h-4" />
-                                </button>
-                            )}
-                        </div>
-                        <div className="min-w-0 col-span-2 row-start-2 px-1 text-center">
-                            <div className="ui-modal-eyebrow text-white/54">{headerEyebrow}</div>
-                            <h2 className="ui-modal-title mt-1 line-clamp-2 break-words" title={headerTitle}>
-                                {headerTitle}
-                            </h2>
-                            <p className="mt-1 truncate text-[10px] font-medium uppercase tracking-[0.22em] text-white/58">
-                                {hasTaskInstanceContext && plannerOccurrenceLabel ?`${plannerOccurrenceLabel} • ${currentArena?.name || 'Arena'}` : (currentArena?.name || 'Arena')}
-                            </p>
-                        </div>
-                        <button id="onboarding-action-save-button" onClick={handleHeaderOk} className="ui-modal-button luxe-skin-button luxe-reward-gold luxe-brilho col-start-2 row-start-1 justify-self-end shrink-0 min-w-[4.5rem]">
-                            {mode === 'edit' ? 'Salvar' : 'OK'}
-                        </button>
-                    </div>
+                                                <div className="reference-eyebrow">{isNew ? 'Nova ação' : 'Editar ação'}</div>
+                                                <input
+                                                    id="onboarding-action-name-input"
+                                                    ref={nameInputRef}
+                                                    type="text"
+                                                    aria-label="Nome da ação"
+                                                    maxLength={80}
+                                                    placeholder="Nome da ação"
+                                                    value={editableAction.name || ''}
+                                                    onBlur={(event) => {
+                                                        if (!event.target.value.trim()) return;
+                                                        const relatedTarget = event.relatedTarget as HTMLElement | null;
+                                                        if (relatedTarget?.id === 'first-use-onboarding-next') return;
+                                                        handleTutorialNextFormStep(FIRST_USE_ONBOARDING_EVENTS.actionNameCompleted);
+                                                    }}
+                                                    onChange={e => setEditableAction(p => ({ ...p, name: e.target.value }))}
+                                                    disabled={!canEditAuthorialContent}
+                                                    className={`action-name-input reference-title-input ${canEditAuthorialContent ? '' : 'opacity-65 cursor-not-allowed'}`}
+                                                />
+                                                </div>
+                        </> : <>
+                            <div className="reference-emoji" style={{background: 'var(--action-gradient)'}}><EmojiGlyph symbol={displayAction?.icon || '📝'} size="picker" /></div>
+                            <div className="reference-eyebrow">{headerEyebrow}</div>
+                            <h2>{headerTitle}</h2>
+                        </>}
+                        {mode === 'edit' && !isEditingTaskInstance ? <button
+                                                    onClick={handleArenaButtonClick}
+                                                    disabled={!currentArena && (lockArenaAssignment || !canEditExecutionSettings)}
+                                                    className="reference-context reference-arena-choice"
+                                                >
+                                                    <span className="truncate">{currentArena?.icon ? `${currentArena.icon} ` : ''}{currentArena?.name || 'Escolher arena'}</span>
+                                                    <ChevronRightIcon className="w-4 h-4 text-gray-500" />
+                                                </button> : <p className="reference-context">{hasTaskInstanceContext && plannerOccurrenceLabel ? `${plannerOccurrenceLabel} · ` : ''}{currentArena?.name || 'Escolha uma arena'}</p>}
+                    </header>
 
                     {saveError && (
                         <div
@@ -1517,19 +1508,6 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                 {mode === 'view' && displayAction ?(
                                     // VIEW MODE CONTENT
                                     <>
-                                        {/* Icon - Centralized */}
-                                        <div className="relative group mt-0 mb-1 flex justify-center">
-                                            <div className="absolute inset-0 bg-[var(--skin-accent-color)]/20 blur-xl rounded-full group-hover:bg-[var(--skin-accent-color)]/30 transition-all duration-500" />
-                                            <div className="action-view-icon relative w-24 h-24 rounded-3xl bg-gradient-to-br from-[#2a211c] to-black border border-[var(--skin-accent-color)]/30 flex items-center justify-center shadow-2xl transform group-hover:scale-105 transition-all duration-500">
-                                                <EmojiGlyph symbol={displayAction.icon || '📝'} size="picker" className="scale-[1.55] text-white drop-shadow-[0_0_15px_var(--sephirot-glow-color)]" />
-                                            </div>
-                                            {displaySurfaceBadge && (
-                                                <div className={`absolute -bottom-2 left-1/2 z-20 -translate-x-1/2 rounded-full border px-2 py-1 text-[8px] font-black uppercase leading-none tracking-[0.1em] shadow-[0_6px_16px_rgba(0,0,0,0.4)] ${getActionSurfaceBadgeClassName(displaySurfaceBadge.tone)}`}>
-                                                    {displaySurfaceBadge.label}
-                                                </div>
-                                            )}
-                                        </div>
-
                                         {/* Desc Only (Title moved to Header) - Expandable */}
                                         <div className="space-y-2 w-full text-center mb-4 px-2">
                                             <div className="relative">
@@ -1548,36 +1526,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                             </div>
                                         </div>
 
-                                        {/* Metadata Grid - Compact & Spaced */}
-                                        <div className="grid grid-cols-2 gap-3 w-full">
-                                            <div className="rounded-[18px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.025))] p-3 backdrop-blur-sm flex flex-col items-center justify-center min-h-[60px]">
-                                                <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Tipo</div>
-                                                <div className="text-xs font-bold accent-text truncate text-center w-full">{displayActionTypeLabel}</div>
-                                            </div>
-                                            <div className="rounded-[18px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.025))] p-3 backdrop-blur-sm flex flex-col items-center justify-center min-h-[60px]">
-                                                <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Duração</div>
-                                                <div className="text-xs font-bold text-white text-center w-full">{formatDurationLabel(effectiveDuration)}</div>
-                                            </div>
-                                            {displayAction.actionType === 'Ação Recorrente' && (
-                                                <div className="rounded-[18px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.025))] p-3 backdrop-blur-sm flex flex-col items-center justify-center min-h-[60px]">
-                                                    <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Repetições</div>
-                                                    <div className="text-xs font-bold text-white text-center w-full">{displayAction.repetitions}x</div>
-                                                </div>
-                                            )}
-                                            <div className="rounded-[18px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.025))] p-3 backdrop-blur-sm flex flex-col items-center justify-center min-h-[60px]">
-                                                <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Dificuldade</div>
-                                                <div className={`text-xs font-bold text-center w-full ${displayDifficulty === 0
-                                                    ? 'text-slate-300'
-                                                    : displayDifficulty === 1
-                                                        ? 'text-emerald-300'
-                                                        : displayDifficulty === 2
-                                                            ? 'text-[var(--skin-accent-color)]'
-                                                            : 'text-amber-300'
-                                                    }`}>
-                                                    {displayDifficultyLabel || difficultyLabels[displayDifficulty]}
-                                                </div>
-                                            </div>
+                                        <div className="reference-action-summary">
+                                            <div className="reference-stat"><strong>{formatDurationLabel(effectiveDuration)}</strong><small>por vez</small></div>
+                                            {displayAction.actionType === 'Ação Recorrente' && <div className="reference-stat"><strong>{displayAction.repetitions}</strong><small>repetições</small></div>}
                                         </div>
+                                        <p className="reference-action-kind">{displayActionTypeLabel} · {displayDifficultyLabel || difficultyLabels[displayDifficulty]}</p>
                                     </>
                                 ) : (
                                     // EDIT MODE CONTENT (Form)
@@ -1702,55 +1655,12 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                             </>
                                         ) : (
                                             <>
-                                                <div className="action-identity">
-                                                <div className="flex justify-center">
-                                                    <button
-                                                        type="button"
-                                                        aria-label="Escolher emoji da ação"
-                                                        onClick={() => canEditAuthorialContent && setIsIconPickerOpen(true)}
-                                                        disabled={!canEditAuthorialContent}
-                                                        className={`action-emoji-button w-12 h-12 border rounded-xl transition-colors flex items-center justify-center relative group ${canEditAuthorialContent ? '' : 'opacity-60 cursor-not-allowed'}`}
-                                                    >
-                                                        <EmojiGlyph symbol={editableAction.icon || '📝'} size="picker" className="scale-[1.45] text-white" />
-                                                        <div className={`absolute inset-0 bg-black/40 rounded-[18px] flex items-center justify-center transition-opacity ${canEditAuthorialContent ? 'opacity-0 group-hover:opacity-100' : 'opacity-0'}`}>
-                                                            <EditIcon className="w-6 h-6 text-white" />
-                                                        </div>
-                                                    </button>
-                                                </div>
-
-                                                <input
-                                                    id="onboarding-action-name-input"
-                                                    ref={nameInputRef}
-                                                    type="text"
-                                                    aria-label="Nome da ação"
-                                                    maxLength={80}
-                                                    placeholder="Nome da ação"
-                                                    value={editableAction.name || ''}
-                                                    onBlur={(event) => {
-                                                        if (!event.target.value.trim()) return;
-                                                        const relatedTarget = event.relatedTarget as HTMLElement | null;
-                                                        if (relatedTarget?.id === 'first-use-onboarding-next') return;
-                                                        handleTutorialNextFormStep(FIRST_USE_ONBOARDING_EVENTS.actionNameCompleted);
-                                                    }}
-                                                    onChange={e => setEditableAction(p => ({ ...p, name: e.target.value }))}
-                                                    disabled={!canEditAuthorialContent}
-                                                    className={`action-name-input w-full min-w-0 h-12 px-3 border rounded-xl text-left text-base font-bold ${canEditAuthorialContent ? '' : 'opacity-65 cursor-not-allowed'}`}
-                                                />
-                                                </div>
                                                 {!canEditAuthorialContent && (
                                                     <p className="px-1 text-[11px] leading-relaxed text-white/52">
                                                         Nome e ícone ficam protegidos na campanha. Aqui você só ajusta a execução local.
                                                     </p>
                                                 )}
 
-                                                <button
-                                                    onClick={handleArenaButtonClick}
-                                                    disabled={!currentArena && (lockArenaAssignment || !canEditExecutionSettings)}
-                                                    className={`w-full p-3 rounded-xl flex justify-between items-center text-left transition-colors border disabled:cursor-not-allowed disabled:opacity-60 ${currentArena ? 'bg-black/28 border-[var(--glass-border)] hover:bg-black/34' : 'bg-[var(--skin-accent-color)]/8 border-[var(--skin-accent-color)]/30 hover:bg-[var(--skin-accent-color)]/12'}`}
-                                                >
-                                                    <span className={`text-sm ${currentArena ? 'text-white' : 'text-[var(--skin-accent-color)]'}`}>{currentArena?.icon ? `${currentArena.icon} ` : ''}{currentArena?.name || 'Escolher arena'}</span>
-                                                    <ChevronRightIcon className="w-4 h-4 text-gray-500" />
-                                                </button>
                                                 {lockArenaAssignment && (
                                                     <p className="mt-1 px-1 text-[10px] leading-relaxed text-white/46">
                                                         Esta ação segue presa a esta arena guiada da mentoria.
@@ -1760,7 +1670,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                 <div id="onboarding-action-type-button" className="space-y-2">
                                                     <div className="flex items-center justify-between px-1">
                                                         <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/42">Tipo da ação</span>
-                                                        <span className="text-[10px] font-semibold text-white/36">Livre = sem contador</span>
+
                                                     </div>
                                                     <div className="action-type-options" role="group" aria-label="Tipo da ação">
                                                         {[...ACTION_TYPE_CHOICES].sort((a, b) => ['Ação Recorrente', 'Livre', 'Marco', 'Compromisso'].indexOf(a.value) - ['Ação Recorrente', 'Livre', 'Marco', 'Compromisso'].indexOf(b.value)).map(choice => {
@@ -1772,7 +1682,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                                     aria-pressed={selected}
                                                                     onClick={() => canEditActionType && handleActionTypeChange(choice.value)}
                                                                     disabled={!canEditActionType}
-                                                                    className="action-type-choice min-h-[54px] rounded-xl border px-2.5 py-2 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60"
+                                                                    className="action-type-choice disabled:cursor-not-allowed disabled:opacity-60"
                                                                 >
                                                                     <div className="flex items-center gap-2">
                                                                         <span className="action-type-mark flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-sm font-black" aria-hidden="true">
@@ -1800,6 +1710,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                     containerId="onboarding-action-duration"
                                                     inputRef={durationInputRef}
                                                     label="Duração"
+                                                    comBotoes
                                                     value={editableAction.duration || 60}
                                                     min={5} max={480} step={1} unit="min"
                                                     snapValues={ACTION_DURATION_OPTIONS}
@@ -2029,122 +1940,21 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                         </div>}
                     </div>
 
-                    {/* 3. FOOTER (Fixed) */}
-                    {mode !== 'edit' && (
-                    <div className="flex-none p-4 bg-[#120f0d]/88 backdrop-blur-xl border-t border-white/8 space-y-3 z-20 shadow-[0_-10px_30px_rgba(0,0,0,0.35)]">
-                        <div className="flex gap-2">
-                            {isPreview ?(
-                                <button
-                                    ref={saveButtonRef}
-                                    onClick={onClose}
-                                    className="flex-1 py-3.5 rounded-xl text-xs font-semibold uppercase tracking-[0.14em] shadow-[0_0_15px_var(--sephirot-glow-color)] hover:shadow-[0_0_24px_var(--sephirot-glow-color)] transition-all transform active:scale-[0.98] border border-[color:rgba(255,215,0,0.16)] group relative overflow-hidden luxe-skin-button"
-                                >
-                                    <span className="relative z-10 group-hover:text-black transition-colors">Fechar</span>
-                                    <div className="absolute inset-0 transition-colors bg-[var(--skin-accent-color)]/0 group-hover:bg-[var(--skin-accent-color)]/10" />
-                                </button>
-                            ) : canStartNow ?(
-                                <>
-                                    <button
-                                        ref={saveButtonRef}
-                                        onClick={handleStartMission}
-                                        className="flex-1 rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-3 text-white transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.06] active:scale-[0.99]"
-                                    >
-                                        <div className="flex items-center justify-between gap-3">
-                                            <div className="flex items-center gap-3 min-w-0">
-                                                <div className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--skin-accent-color)]/25 bg-[var(--skin-accent-color)]/10 shrink-0">
-                                                    <div className="inline-flex items-center gap-0.5 text-[var(--skin-accent-color)]">
-                                                        <ClockIcon className="w-3.5 h-3.5" />
-                                                        <PlayIcon className="w-3 h-3" />
-                                                    </div>
-                                                </div>
-                                                <div className="min-w-0 text-left">
-                                                    <div className="text-xs font-semibold leading-none">Começar agora</div>
-                                                    <div className="mt-1 text-[9px] uppercase tracking-[0.18em] font-black text-gray-500">
-                                                        Abrir modo foco
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="shrink-0 text-right">
-                                                <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/70">{formatDurationLabel(startNowDurationMinutes)}</div>
-                                                <div className="mt-1 text-[9px] uppercase tracking-[0.16em] font-black text-gray-500">Tela cheia</div>
-                                            </div>
-                                        </div>
-                                    </button>
-                                    <button
-                                        onMouseDown={handleCompleteNowStart}
-                                        onMouseUp={clearCompleteNowHold}
-                                        onMouseLeave={clearCompleteNowHold}
-                                        onTouchStart={handleCompleteNowStart}
-                                        onTouchEnd={clearCompleteNowHold}
-                                        onTouchCancel={clearCompleteNowHold}
-                                        onContextMenu={(e) => e.preventDefault()}
-                                        className={`flex-1 rounded-2xl border px-4 py-3 text-white transition-all active:scale-[0.99] relative overflow-hidden ${completeNowTriggered
-                                            ? 'border-emerald-400/50 bg-emerald-500/12 shadow-[0_0_28px_rgba(52,211,153,0.18)]'
-                                            : isCompletingNowHold
-                                                ? 'border-emerald-300/40 bg-emerald-500/10 shadow-[0_0_18px_rgba(52,211,153,0.12)]'
-                                                : 'border-white/8 bg-white/[0.04] hover:border-emerald-300/25 hover:bg-white/[0.06]'
-                                            }`}
-                                        style={{
-                                            touchAction: 'none',
-                                            userSelect: 'none',
-                                            WebkitUserSelect: 'none',
-                                            WebkitTouchCallout: 'none',
-                                        } as React.CSSProperties}
-                                    >
-                                        <div
-                                            className="absolute inset-y-0 left-0 bg-[linear-gradient(90deg,rgba(52,211,153,0.24),rgba(52,211,153,0.08),transparent)] transition-[width] duration-75"
-                                            style={{ width: `${completeNowHoldProgress}%` }}
-                                        />
-                                        <div className="absolute inset-x-0 bottom-0 h-[2px] bg-white/5">
-                                            <div
-                                                className="h-full bg-emerald-300 transition-all duration-75"
-                                                style={{ width: `${completeNowHoldProgress}%` }}
-                                            />
-                                        </div>
-                                        <div className="relative z-10 flex items-center justify-between gap-3">
-                                            <div className="flex items-center gap-3 min-w-0">
-                                                <div className={`inline-flex h-9 w-9 items-center justify-center rounded-full border shrink-0 ${isCompletingNowHold || completeNowTriggered ? 'border-emerald-300/45 bg-emerald-500/14 text-emerald-100' : 'border-emerald-300/20 bg-emerald-500/10 text-emerald-300'}`}>
-                                                    <CheckCircleIcon className="w-4 h-4" />
-                                                </div>
-                                                <div className="min-w-0 text-left">
-                                                    <div className="text-xs font-semibold leading-none">Segure para concluir</div>
-                                                    <div className={`mt-1 text-[9px] uppercase tracking-[0.18em] font-black ${isCompletingNowHold || completeNowTriggered ? 'text-emerald-200' : 'text-gray-500'}`}>
-                                                        {completeNowTriggered ? 'Concluindo' : isCompletingNowHold ? `Segurando... ${Math.round(completeNowHoldProgress)}%` : 'Segure 1s'}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="shrink-0 text-right">
-                                                <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/70">Agora</div>
-                                                <div className={`mt-1 text-[9px] uppercase tracking-[0.16em] font-black ${isCompletingNowHold ? 'text-white/65' : 'text-gray-500'}`}>
-                                                    {isCompletingNowHold ? 'Solte para cancelar' : 'Fechar tarefa'}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </button>
-                                </>
-                            ) : mode === 'view' ?(
-                                <button
-                                    ref={saveButtonRef}
-                                    onClick={onClose}
-                                    className="flex-1 py-3.5 rounded-xl text-xs font-semibold uppercase tracking-[0.14em] shadow-[0_0_15px_var(--sephirot-glow-color)] hover:shadow-[0_0_24px_var(--sephirot-glow-color)] transition-all transform active:scale-[0.98] border border-[color:rgba(255,215,0,0.16)] group relative overflow-hidden luxe-skin-button"
-                                >
-                                    <span className="relative z-10 group-hover:text-black transition-colors">Fechar</span>
-                                    <div className="absolute inset-0 transition-colors bg-[var(--skin-accent-color)]/0 group-hover:bg-[var(--skin-accent-color)]/10" />
-                                </button>
-                            ) : (
-                                <button
-                                    ref={saveButtonRef}
-                                    onClick={handleSave}
-                                    className="flex-1 py-3.5 rounded-xl text-xs font-semibold uppercase tracking-[0.14em] shadow-[0_0_15px_var(--sephirot-glow-color)] hover:shadow-[0_0_24px_var(--sephirot-glow-color)] transition-all transform active:scale-[0.98] border border-[color:rgba(255,215,0,0.16)] group relative overflow-hidden luxe-skin-button"
-                                >
-                                    <span className="relative z-10">{isNew ? 'Criar ação' : 'Salvar alterações'}</span>
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                    )}
+                    {mode === 'view' && <footer className="reference-footer action-view-footer">
+                        {!isPreview && canStartNow ? <div className="reference-execution-buttons">
+                            <button ref={saveButtonRef} onClick={handleStartMission} className="reference-primary"><PlayIcon className="w-4 h-4" />Começar agora</button>
+                            <button onMouseDown={handleCompleteNowStart} onMouseUp={clearCompleteNowHold} onMouseLeave={clearCompleteNowHold} onTouchStart={handleCompleteNowStart} onTouchEnd={clearCompleteNowHold} onTouchCancel={clearCompleteNowHold} onContextMenu={e => e.preventDefault()} className="reference-complete" style={{touchAction:'none',userSelect:'none',WebkitTouchCallout:'none'} as React.CSSProperties}>
+                                <span>{completeNowTriggered ? 'Concluindo' : isCompletingNowHold ? `Segurando… ${Math.round(completeNowHoldProgress)}%` : 'Segure 1s para concluir'}</span>
+                                <i style={{width:`${completeNowHoldProgress}%`}} />
+                            </button>
+                        </div> : <button ref={saveButtonRef} onClick={onClose} className="reference-primary">Fechar</button>}
+                    </footer>}
 
-                </GlassCard>
+                    {mode === 'edit' && <footer className="reference-footer">
+                        {!isNew && !isPreview && !disableAuthoring && <button className="reference-delete" onClick={handleDelete}><Trash2Icon className="w-4 h-4" />Excluir ação</button>}
+                        <button id="onboarding-action-save-button" ref={saveButtonRef} onClick={handleSave} className="reference-primary luxe-skin-button luxe-brilho">{isNew ? 'Criar ação' : 'Salvar alterações'}</button>
+                    </footer>}
+                </ReferencePlate>
             </div>
 
             {/* Pickers */}

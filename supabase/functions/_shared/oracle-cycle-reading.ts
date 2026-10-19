@@ -203,6 +203,8 @@ export interface AcaoDoBanco {
   repetitions?: number | null;
   action_type?: string | null;
   source_quest_id?: string | null;
+  /** Acao de campanha (codex instalado). */
+  origin_codex_id?: string | null;
 }
 
 export interface ArenaDoBanco {
@@ -236,12 +238,15 @@ export const medirCicloPrometido = ({ acoes, arenas, tarefas, inicio, fim }: {
 }): { feitas: number; prometidas: number } => {
   const arenaPorId = new Map(arenas.map((arena) => [arena.id, arena]));
   const arenasAtivas = new Set(arenas.filter((arena) => !arena.is_archived).map((arena) => arena.id));
-  const acoesAtivas = acoes.filter((acao) => arenasAtivas.has(acao.arena_id));
-  const prometidas = acoesAtivas.filter((acao) =>
-    acao.action_type !== 'Livre' &&
-    !acao.source_quest_id &&
-    !ehArenaDeMissao(arenaPorId.get(acao.arena_id)));
-  const idsPrometidos = new Set(prometidas.map((acao) => acao.id));
+  const acoesAtivas = acoes.filter((acao) => arenasAtivas.has(acao.arena_id) || Boolean(acao.origin_codex_id));
+  const ehExtra = (acao: AcaoDoBanco) =>
+    Boolean(acao.source_quest_id) || ehArenaDeMissao(arenaPorId.get(acao.arena_id)) || Boolean(acao.origin_codex_id);
+  const prometidas = acoesAtivas.filter((acao) => acao.action_type !== 'Livre' && !ehExtra(acao));
+  // Missao e campanha contam so para o bem (19/10): prometido = feito no ciclo.
+  // Mesma regra de utils/cycleCommitment.ts; o teste ciclo-extras-so-para-o-bem
+  // garante que o Oraculo le o mesmo numero que a tela.
+  const extras = acoesAtivas.filter((acao) => acao.action_type !== 'Livre' && ehExtra(acao));
+  const idsPrometidos = new Set([...prometidas, ...extras].map((acao) => acao.id));
 
   const feitasPorAcao = new Map<string, number>();
   const vistas = new Set<string>();
@@ -259,6 +264,11 @@ export const medirCicloPrometido = ({ acoes, arenas, tarefas, inicio, fim }: {
     const repeticoes = Math.max(1, Math.floor(Number(acao.repetitions) || 1));
     total += repeticoes;
     feitas += Math.min(repeticoes, feitasPorAcao.get(acao.id) || 0);
+  }
+  for (const acao of extras) {
+    const feitasNoCiclo = feitasPorAcao.get(acao.id) || 0;
+    total += feitasNoCiclo;
+    feitas += feitasNoCiclo;
   }
   return { feitas, prometidas: total };
 };

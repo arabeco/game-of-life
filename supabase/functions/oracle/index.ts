@@ -155,6 +155,7 @@ type ActionRow = {
   repetitions?: number | null;
   action_type?: string | null;
   source_quest_id?: string | null;
+  origin_codex_id?: string | null;
 };
 
 type TaskRow = {
@@ -1142,7 +1143,7 @@ const createAutomaticOracleMessage = async (
       .returns<ArenaRow[]>(),
     supabaseAdmin
       .from("actions")
-      .select("id, arena_id, name, repetitions, action_type, source_quest_id")
+      .select("id, arena_id, name, repetitions, action_type, source_quest_id, origin_codex_id")
       .eq("user_id", userId)
       .returns<ActionRow[]>(),
     fetchReadingTasks(),

@@ -108,7 +108,10 @@ for (const [estado, frases] of Object.entries(FRASES_DA_LEITURA)) {
     fim: '2026-10-14',
   });
   assert.deepEqual(servidor, { feitas: tela.completedCount, prometidas: tela.plannedCount });
-  assert.deepEqual(servidor, { feitas: 4, prometidas: 4 }, 'x1 (3, teto) + x6 (1): Livre, arquivada e missao ficam fora');
+  // x1 (3, teto) + x6 (1) + x4 (arena de missao, 1 feita = 1 de 1: missao conta so
+  // para o bem desde 19/10). Livre e arquivada ficam fora; a x5 (missao sem nada
+  // feito no ciclo) nao aparece.
+  assert.deepEqual(servidor, { feitas: 5, prometidas: 5 });
 }
 
 // 6. O app junta os fatos com a mesma regua, e o botao fala o mesmo que o push.
@@ -143,7 +146,7 @@ const servidor = readFileSync(new URL('../supabase/functions/oracle/index.ts', i
 assert.match(servidor, /montarLeituraDoCiclo\(/, 'o push sai do motor');
 assert.match(servidor, /medirCicloPrometido\(/, 'o push usa a regua da tela');
 assert.doesNotMatch(servidor, /buildContextualOracleLine/, 'as 39 frases antigas nao voltam');
-assert.match(servidor, /"id, arena_id, name, repetitions, action_type, source_quest_id"/, 'a regua precisa saber o que e missao');
+assert.match(servidor, /"id, arena_id, name, repetitions, action_type, source_quest_id, origin_codex_id"/, 'a regua precisa saber o que e missao e o que e campanha');
 const semLeitura = servidor.slice(servidor.indexOf('if (!text) {'), servidor.indexOf('const messageId'));
 assert.match(semLeitura, /resolveAutomaticOracleCategory/, 'sem leitura, a Sabedoria ainda sai');
 

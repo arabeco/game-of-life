@@ -23,7 +23,9 @@ assert.equal(api.unavailableCampaignArenas([campaign],arenas,actions,completed,c
 assert.equal(api.unavailableCampaignArenas([{...campaign,status:'archived'}],arenas,actions,completed,cycle).has('one'),true);
 const current=[...completed,task('7','c','2026-10-15'),task('8','personal','2026-10-15')];
 const commitment=api.buildCycleCommitment({arenas,actions,tasks:current,...cycle});
-assert.equal(commitment.plannedCount,5);assert.equal(commitment.completedCount,1);
+// Campanha conta so para o bem (19/10): a acao de campanha feita no ciclo entra
+// como 1 de 1; o pessoal segue com a meta inteira (5, feita 1).
+assert.equal(commitment.plannedCount,6);assert.equal(commitment.completedCount,2);
 assert.equal(commitment.questTasks.length,0,'campaigns are not mission reward claims');
 assert.equal(commitment.cycleTasks.length,2,'campaign work contributes to cycle activity');
 const archived=api.buildCycleCommitment({arenas:arenas.map(a=>a.id==='two'?{...a,isArchived:true}:a),actions,tasks:current,...cycle});

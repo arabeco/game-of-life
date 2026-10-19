@@ -234,7 +234,9 @@ export const buildFairScoreFromTasks = ({
     const metaStats = buildMetaSealStats(relevantTasks, actionById, arenaById);
     if (plannedEntries) {
         const buckets = new Map();
-        for (const entry of plannedEntries) {
+        // Missao e campanha (`extra`) somam acao, dia e horas, mas nao viram meta
+        // a selar: "prometido = feito" selaria sempre e inflaria a nota.
+        for (const entry of plannedEntries.filter((e) => !e.extra)) {
             const record = toTaskRecord({ actionId: entry.action.id, duration: entry.action.duration }, actionById, arenaById);
             const bucket = buckets.get(record.arenaId) || { arenaId: record.arenaId, arenaName: record.arenaName,
                 plannedCount: 0, completedCount: 0, plannedUnits: 0, completedUnits: 0 };

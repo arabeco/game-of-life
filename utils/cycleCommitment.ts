@@ -26,13 +26,31 @@ export const buildCycleCommitment = ({ actions, arenas, tasks, startDate, endDat
   for (const task of cycleTasks) {
     if (task.completed === true) completedByAction.set(task.actionId, (completedByAction.get(task.actionId) || 0) + 1);
   }
-  const entries = plannedActions.map(action => {
+  const promised = plannedActions.map(action => {
     const planned = Math.max(1, Math.floor(Number(action.repetitions) || 1));
-    return { action, planned, completed: Math.min(planned, completedByAction.get(action.id) || 0) };
+    return { action, planned, completed: Math.min(planned, completedByAction.get(action.id) || 0), extra: false };
   });
+  /*
+   * MISSAO E CAMPANHA CONTAM SO PARA O BEM (19/10/2026, decisao do Afonso).
+   *
+   * "Andarilho: 20 caminhadas, fiz 3, acabou o ciclo. Nao quero perder % de
+   * conclusao; quero as 3 acoes e o tempo contados." Missao de temporada, de
+   * cla e campanha entram como PROMETIDO = FEITO, so com o que foi feito
+   * dentro deste ciclo. O que faltou nao pesa (somar "x de x" nunca baixa a
+   * porcentagem), e o que foi feito vale como acao, dia ativo e horas.
+   *
+   * A campanha atravessa ciclos: aqui so conta o que caiu na janela do ciclo;
+   * o progresso dela (fases) continua contando a vida toda em outro lugar.
+   * `extra` avisa a nota para nao tratar essas arenas como meta a selar.
+   */
+  const extras = activeActions
+    .filter(action => action.actionType !== 'Livre' && (questIds.has(action.id) || Boolean(action.originCodexId)))
+    .map(action => ({ action, planned: completedByAction.get(action.id) || 0, completed: completedByAction.get(action.id) || 0, extra: true }))
+    .filter(entry => entry.completed > 0);
+  const entries = [...promised, ...extras];
   const plannedCount = entries.reduce((sum, entry) => sum + entry.planned, 0);
   const completedCount = entries.reduce((sum, entry) => sum + entry.completed, 0);
-  const plannedIds = new Set(plannedActions.map(action => action.id));
+  const plannedIds = new Set(entries.map(entry => entry.action.id));
   return {
     entries, cycleTasks, plannedCount, completedCount,
     progressPercent: plannedCount > 0 ? completedCount / plannedCount * 100 : 0,

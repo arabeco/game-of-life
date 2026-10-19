@@ -31,19 +31,22 @@ assert.equal(build([...tasks,{...tasks[0],id:'outside',date:'2026-10-04'}]).comp
 const repeated = Array.from({length:30},(_,i)=>({...tasks[0],id:`repeat${i}`}));
 assert.equal(build(repeated).completedCount,20,'extra repetitions cannot pay another action target');
 assert.equal(result.entries.find(e=>e.action.id==='a13').planned,20,'SIDEQUESTS is a personal arena');
+// Sem nada feito no ciclo, a missao nem aparece; com algo feito, entra como
+// prometido = feito (19/10: missao e campanha contam so para o bem).
 assert.ok(!result.entries.some(e=>['quest','old','free'].includes(e.action.id)));
 const questDone={id:'quest-task',actionId:'quest',date:'2026-10-06',completed:true,duration:30,startTime:600};
 result=build([...tasks,questDone]);
 assert.equal(result.questTasks.length,1,'season mission retained separately');
-assert.equal(result.plannedCount,258);
+assert.equal(result.plannedCount,259,'the season walk done counts as 1 of 1, never as debt');
+assert.equal(result.completedCount,3);
 const pace=buildCyclePaceMetrics(result.scoredTasks,window.startDate,'2026-10-06',window.endDate,result.questTasks,result);
-assert.equal(pace.executionRatePct,Math.round(2/258*100));
+assert.equal(pace.executionRatePct,Math.round(3/259*100));
 assert.equal(pace.consistencyDays,2,'season completion still counts as presence');
 const fair=buildFairScoreFromTasks({tasks:result.cycleTasks,actions,arenas,plannedEntries:result.entries,durationDays:28});
-assert.equal(fair.plannedTaskCount,258);
+assert.equal(fair.plannedTaskCount,259);
 assert.equal(fair.fairness.sealedMetas,0,'two completed appointments cannot seal the whole planned arena');
-assert.equal(fair.fairness.plannedMetas,2);
-assert.equal(fair.fairness.planLoadUnits,258);
+assert.equal(fair.fairness.plannedMetas,2,'the mission arena is not a meta to seal');
+assert.equal(fair.fairness.planLoadUnits,259);
 // A season longer than the cycle must never create debt in that cycle.
 const pendingSeason = Array.from({length:40},(_,i)=>({id:`season-pending-${i}`,actionId:'quest',
   date:i<20?'2026-10-12':'2026-11-12',startTime:600,duration:30,completed:false}));

@@ -266,7 +266,7 @@ export const MasteryView: React.FC<{ onClose?: () => void; embedded?: boolean }>
                                     selecionado={currentLevel}
                                     frases={currentDescriptions}
                                     onSelecionar={handleLevelChange}
-                                    hapticos={oraclePreferences?.hapticsEnabled !== false}
+                                    hapticos={Boolean(oraclePreferences?.hapticsEnabled)}
                                 />
 
                                 <div className="mastery-quiz-actions">

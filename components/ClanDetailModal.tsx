@@ -18,7 +18,6 @@ import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
 import { normalizeDomainLabel } from '../utils/taskDomain.js';
 import { ArenaCard } from './ArenaCard';
 import { SupabaseService } from '../services/SupabaseService';
-import { safeVibrate } from '../utils/safeVibrate';
 import { UserAvatar } from './UserAvatar';
 import { PRODUCT_FEATURES } from '../constants/featureFlags';
 import { getDisplayLevel } from '../constants/lifeAreas';
@@ -438,7 +437,7 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
         longPressTimer.current = setTimeout(() => {
             isLongPressTriggered.current = true;
             // Visual feedback of completion happens here (maybe vibrate if possible)
-            safeVibrate(200);
+            trigger('impact'); // respeita a Vibracao do menu (19/10)
 
             setPressingSlot(null);
             setShowHoldVisual(false);

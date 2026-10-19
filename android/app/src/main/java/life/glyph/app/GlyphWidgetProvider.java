@@ -145,8 +145,12 @@ public class GlyphWidgetProvider extends AppWidgetProvider {
             String title = cycleName.isEmpty() ? DEFAULT_TITLE : cycleName;
             String dayLabel = cycle != null ? safeString(source, "timingLabel") : safeString(source, "cycleDayLabel");
             String subtitle = dayLabel.isEmpty() ? "Ciclo ativo" : dayLabel;
-            String startDate = formatDate(cycle != null ? safeString(source, "startDate") : safeString(source, "cycleStartDate"));
-            String endDate = formatDate(cycle != null ? safeString(source, "endDate") : safeString(source, "cycleEndDate"));
+            String startRaw = cycle != null ? safeString(source, "startDate") : safeString(source, "cycleStartDate");
+            String endRaw = cycle != null ? safeString(source, "endDate") : safeString(source, "cycleEndDate");
+            String startDate = formatDate(startRaw);
+            String endDate = formatDate(endRaw);
+            // O dia e o tempo saem do relogio, nao do snapshot (CicloDoWidget).
+            int[] tempoAoVivo = CicloDoWidget.tempo(startRaw, endRaw, java.util.Calendar.getInstance());
             int completed = cycle != null
                 ? source.optInt("completedTaskCount", 0)
                 : source.optInt("completedAllCount", source.optInt("completedCount", 0));
@@ -156,7 +160,9 @@ public class GlyphWidgetProvider extends AppWidgetProvider {
             int progressPercent = total > 0
                 ? clamp((int) Math.round(source.optDouble(cycle != null ? "taskProgressPercent" : "progressPercent", 0)))
                 : 0;
-            int timeProgress = clamp((int) Math.round(source.optDouble("timeProgressPercent", 0)));
+            int timeProgress = tempoAoVivo != null
+                ? tempoAoVivo[2]
+                : clamp((int) Math.round(source.optDouble("timeProgressPercent", 0)));
             int elapsedDays = cycle != null ? source.optInt("elapsedDays", 0) : source.optInt("cycleElapsedDays", 0);
             int totalDays = cycle != null ? source.optInt("totalDays", 0) : source.optInt("cycleTotalDays", 0);
             String period = !startDate.isEmpty() && !endDate.isEmpty()
@@ -174,9 +180,16 @@ public class GlyphWidgetProvider extends AppWidgetProvider {
             // app ja calcula essa frase (getCycleTimingSummary.statusLabel) e ja a
             // manda no snapshot; faltava so usa-la. A remontagem fica como ultimo
             // recurso, para snapshot velho que ainda nao traga o campo.
-            String day = !dayLabel.isEmpty()
-                ? dayLabel
-                : (elapsedDays > 0 && totalDays > 0 ? "Dia " + (elapsedDays + 1) + "/" + totalDays : subtitle);
+            //
+            // 19/10/2026: o rotulo do snapshot envelhecia. Sem abrir o app no
+            // domingo, o widget seguia no "Dia 13/14" de sabado. Agora o dia sai do
+            // relogio (CicloDoWidget, mesma regra do app) e o rotulo do app so vale
+            // antes de o ciclo comecar ("Comeca em N dias") ou se as datas faltarem.
+            String day = tempoAoVivo != null
+                ? CicloDoWidget.rotulo(tempoAoVivo)
+                : !dayLabel.isEmpty()
+                    ? dayLabel
+                    : (elapsedDays > 0 && totalDays > 0 ? "Dia " + (elapsedDays + 1) + "/" + totalDays : subtitle);
 
             return new WidgetCopy(
                 trim(title.toUpperCase(), 28),

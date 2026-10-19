@@ -62,10 +62,15 @@ assert.ok(
   'o widget voltou a escrever o rotulo com elapsedDays cru — esse numero e dias decorridos, nao o numero do dia',
 );
 
+// 19/10/2026: a frase pronta envelhecia — sem abrir o app no domingo, o widget
+// seguia no "Dia 13/14" de sabado. O widget passou a calcular o dia na hora
+// (CicloDoWidget.java). Sao duas contas de novo, mas o medo deste teste (as duas
+// divergirem) agora e guardado por tempo-do-ciclo-widget-e-cartao, que roda o
+// Java e compara com o app dia a dia. A frase do app fica como reserva.
 assert.match(
   codigo,
-  /String day = !dayLabel\.isEmpty\(\)\s*\n\s*\? dayLabel/,
-  'o widget tem de preferir o rotulo que o app mandou pronto',
+  /String day = tempoAoVivo != null\s*\n\s*\? CicloDoWidget\.rotulo\(tempoAoVivo\)\s*\n\s*: !dayLabel\.isEmpty\(\)\s*\n\s*\? dayLabel/,
+  'o widget tem de calcular o dia na hora e so cair na frase do app como reserva',
 );
 
 // O caminho de tras so vale para snapshot velho, e mesmo ele precisa do +1.

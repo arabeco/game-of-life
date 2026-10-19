@@ -4,7 +4,7 @@ import { campaignAwareTasks } from '../utils/campaignScope';
 import { useGame } from '../contexts/GameContext';
 import { useConfirmation } from '../hooks/useConfirmation';
 import { Action, Arena, Campaign } from '../types';
-import { PlusIcon, LockIcon, TrashIcon, EditIcon, LinkIcon, ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon, LightbulbIcon } from './Icons';
+import { ArchiveBoxIcon, PlusIcon, LockIcon, TrashIcon, EditIcon, LinkIcon, ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon, LightbulbIcon } from './Icons';
 import { ArenaCard } from './ArenaCard';
 import { NewArenaModal } from './NewArenaModal';
 import { ArenaDetailModal } from './ArenaDetailModal';
@@ -210,6 +210,8 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
     const [isCreateCampaignModalOpen, setIsCreateCampaignModalOpen] = useState(false);
     const [isAttachArenaModalOpen, setIsAttachArenaModalOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [targetArenaPhase, setTargetArenaPhase] = useState(0);
+    const [addArenaPhase, setAddArenaPhase] = useState<number | null>(null);
     const [editTitle, setEditTitle] = useState('');
     const [editDescription, setEditDescription] = useState('');
     const [selectedArenaId, setSelectedArenaId] = useState<string | null>(null);
@@ -370,7 +372,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
     const campaignCodex = campaignCodexOriginId
         ? userCodexes.find(codex => codex.id === campaignCodexOriginId) ?? null
         : null;
-    const isReadOnlyCodexCampaign = campaignCodex?.source_type === 'gift_link' || campaignCodex?.source_type === 'gift_in_app';
+    const isReadOnlyCodexCampaign = Boolean(isCodexCampaign || selectedCampaign?.sourceCodexId);
     const canDeletePreviewCampaign = isPreviewCampaign && typeof onDeletePreviewCampaign === 'function';
     const canEditPreviewCampaign = isPreviewCampaign && previewEditable && typeof onUpdatePreviewCampaign === 'function';
     const canEditCampaignMetadata = isPreviewCampaign ? canEditPreviewCampaign : true;
@@ -735,7 +737,9 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                     ...(prev.arenaConfig || {}),
                     [newArena.id]: {
                         isLocked: false,
-                        isHidden: false
+                        isHidden: false,
+                        phase: targetArenaPhase,
+                        prerequisiteArenaIds: arenaPhaseRows.find(row => row.phase === targetArenaPhase - 1)?.arenas.map(arena => arena.id) || []
                     }
                 }
             } : prev);
@@ -747,7 +751,9 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                     ...(selectedCampaign.arenaConfig || {}),
                     [newArena.id]: {
                         isLocked: false,
-                        isHidden: false
+                        isHidden: false,
+                        phase: targetArenaPhase,
+                        prerequisiteArenaIds: arenaPhaseRows.find(row => row.phase === targetArenaPhase - 1)?.arenas.map(arena => arena.id) || []
                     }
                 }
             });
@@ -1058,6 +1064,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                     <div className="p-4 border-b border-white/10 shrink-0 bg-black/20">
                         <div className="arena-plate-header flex justify-between items-start gap-1 rounded-sm px-1 py-2 bg-black/20">
                             <div className="flex flex-col items-center gap-1 pl-0.5">
+                                <button disabled={finishingRun} onClick={() => void handleFinishRun('archived')} className="p-2 rounded-sm border border-white/20 text-white/60" title="Arquivar tentativa" aria-label="Arquivar tentativa"><ArchiveBoxIcon className="w-5 h-5" /></button>
                                 {canEditCampaignMetadata && (
                                     <button
                                         onClick={() => setIsEditing((current) => !current)}
@@ -1144,18 +1151,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                 <button onClick={onClose} className="px-5 py-2 text-sm font-bold rounded-sm luxe-skin-button">
                                     OK
                                 </button>
-                                {canEditCampaignStructure && isEditing && (
-                                    <button
-                                        type="button"
-                                        onClick={handleAttachExistingArenas}
-                                        disabled={attachableArenaIds.length === 0}
-                                        className="inline-flex items-center gap-1 rounded-sm border border-white/12 bg-white/6 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/78 transition-all hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-                                        title={attachableArenaIds.length === 0 ? 'Nenhuma arena livre para anexar' : 'Escolher arenas existentes'}
-                                    >
-                                        <LinkIcon className="h-3.5 w-3.5" />
-                                        <span>Arenas</span>
-                                    </button>
-                                )}
+
                                 {canEditCampaignStructure && isEditing && (
                                     <button
                                         onClick={handleAddPhase}
@@ -1178,7 +1174,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                 {canEditCampaignStructure && (
                                     <div className="flex flex-wrap items-center justify-center gap-2">
                                         <button 
-                                            onClick={handleAttachExistingArenas}
+                                            onClick={() => { setTargetArenaPhase(0); handleAttachExistingArenas(); }}
                                             disabled={attachableArenaIds.length === 0}
                                             className="inline-flex items-center gap-2 rounded-sm border border-white/10 px-4 py-2 text-sm transition-all hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
                                         >
@@ -1186,7 +1182,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                             <span>Escolher arenas</span>
                                         </button>
                                         <button 
-                                            onClick={handleCreateFutureArena}
+                                            onClick={() => { setTargetArenaPhase(0); handleCreateFutureArena(); }}
                                             className="inline-flex items-center gap-2 rounded-sm border border-white/10 px-4 py-2 text-sm transition-all hover:bg-white/5"
                                         >
                                             <PlusIcon className="h-4 w-4" />
@@ -1303,20 +1299,20 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                                 {/* Status Header Overlay */}
                                                 {(locked || campaignArenaStates[arena.id]?.isCleared) && !isLinkingMode && (
                                                     <div className={`absolute left-0 right-0 top-0 z-20 h-1 ${
-                                                        locked ?'bg-red-500' : 'bg-green-500'
+                                                        locked ?'bg-zinc-600' : 'bg-green-500'
                                                     }`} />
                                                 )}
                                                 
                                                 {/* Locked Overlay with Padlock */}
                                                 {locked && !isLinkingMode && (
-                                                    <div className="absolute left-2 top-2 z-20 pointer-events-none">
-                                                        <div className="flex h-6 w-6 items-center justify-center rounded-sm border border-red-500/35 bg-black/70 shadow-lg backdrop-blur-sm">
-                                                            <LockIcon className="w-3.5 h-3.5 text-red-300" />
+                                                    <div className="campaign-detail-lock">
+                                                        <div className="campaign-detail-lock-badge">
+                                                            <LockIcon className="w-4 h-4" />
                                                         </div>
                                                     </div>
                                                 )}
 
-                                                <div className={`${isLinkingMode ? 'pointer-events-none' : ''} rounded-sm border border-transparent ${borderClass}`}>
+                                                <div className={`${isLinkingMode ? 'pointer-events-none' : ''} rounded-sm border border-transparent ${borderClass} ${locked && !isLinkingMode ? 'campaign-detail-arena-locked' : ''}`}>
                                                     {isPreviewCampaign ? (
                                                         <PreviewArenaMiniCard arena={arena} actions={arenaActions} />
                                                     ) : (
@@ -1333,7 +1329,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                                 </div>
                                             </div>
 
-                                            {!isReadOnlyCodexCampaign && prereqs.length > 0 && (
+                                            {isEditing && !isReadOnlyCodexCampaign && prereqs.length > 0 && (
                                                 <div className="mt-1 flex min-h-[24px] items-center justify-center rounded-sm border border-white/6 bg-black/55 px-1.5 py-1">
                                                     <div className="flex w-full flex-wrap justify-center gap-1">
                                                         {prereqs.map(pid => {
@@ -1361,25 +1357,13 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                                 Solte uma arena aqui
                                             </div>
                                         )}
-                                        {canEditCampaignStructure && phaseIndex === renderedPhaseRows.length - 1 && (
-                                            <div className="flex min-h-[5.8rem] items-end gap-2 self-stretch pb-1 pr-1">
-                                                <button
-                                                    type="button"
-                                                    onClick={handleAttachExistingArenas}
-                                                    disabled={attachableArenaIds.length === 0}
-                                                    className="inline-flex h-9 items-center justify-center gap-1 rounded-sm border border-white/12 bg-white/8 px-3 text-[10px] font-black uppercase tracking-[0.14em] text-white/78 transition-all hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-40"
-                                                    title={attachableArenaIds.length === 0 ? 'Nenhuma arena livre para anexar' : 'Escolher arenas existentes'}
-                                                >
-                                                    <LinkIcon className="h-3.5 w-3.5" />
-                                                    <span>Arenas</span>
-                                                </button>
-                                                <button
-                                                    onClick={handleCreateFutureArena}
-                                                    className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-sm luxe-skin-button shadow-lg shadow-black/30"
-                                                    title="Adicionar Arena"
-                                                >
-                                                    <PlusIcon className="w-4 h-4" />
-                                                </button>
+                                        {canEditCampaignStructure && (
+                                            <div className="campaign-add-arena-slot">
+                                                {addArenaPhase === phase ? <>
+                                                    <button onClick={() => { setTargetArenaPhase(phase); setAddArenaPhase(null); handleAttachExistingArenas(); }} disabled={!attachableArenaIds.length}>Escolher arena</button>
+                                                    <button onClick={() => { setTargetArenaPhase(phase); setAddArenaPhase(null); handleCreateFutureArena(); }}>Criar arena</button>
+                                                    <button onClick={() => setAddArenaPhase(null)} aria-label="Cancelar adição">Cancelar</button>
+                                                </> : <button aria-label={'Adicionar arena à fase ' + (phase + 1)} onClick={() => setAddArenaPhase(phase)}><PlusIcon className="w-5 h-5" /></button>}
                                             </div>
                                         )}
                                         </div>
@@ -1390,10 +1374,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                             {!isPreviewCampaign && <div className="flex items-center justify-between gap-2 pt-3">
                                 {selectedCampaignProgressSummary.totalArenaCount > 0 && selectedCampaignProgressSummary.clearedArenaCount === selectedCampaignProgressSummary.totalArenaCount ? (
                                     <button disabled={finishingRun} className="luxe-skin-button px-4 py-2 text-xs" onClick={() => void handleFinishRun('completed')}>Concluir e guardar</button>
-                                ) : (() => { const next = sortedArenas.find(a => !campaignArenaStates[a.id]?.isLocked && !campaignArenaStates[a.id]?.isCleared); return next ? (
-                                    <div>{(campaignArenaStates[next.id]?.prerequisiteArenaIds.length || 0) > 0 && <div className="mb-1 text-xs text-emerald-200">Arena liberada</div>}<button className="luxe-button-secondary px-3 py-2 text-xs" onClick={() => setSelectedArenaId(next.id)}>Abrir {next.name}</button></div>
-                                ) : null; })()}
-                                <button disabled={finishingRun} className="px-3 py-2 text-xs text-white/60" onClick={() => void handleFinishRun('archived')}>Arquivar</button>
+                                ) : null}
                             </div>}
                             <div className="px-1 pt-3">
                                 <div className="mb-1 flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--skin-accent-color)]">
@@ -1425,6 +1406,8 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                     {isAttachArenaModalOpen && selectedCampaign && (
                         <CreateCampaignModal
                             targetCampaign={selectedCampaign}
+                            targetPhase={targetArenaPhase}
+                            prerequisiteArenaIds={arenaPhaseRows.find(row => row.phase === targetArenaPhase - 1)?.arenas.map(arena => arena.id) || []}
                             availableArenaIds={attachableArenaIds}
                             onClose={() => setIsAttachArenaModalOpen(false)}
                             onAttached={() => {

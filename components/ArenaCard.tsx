@@ -1,5 +1,4 @@
 import { getArenaTone, getArenaActionGradient } from '../utils/arenaTones.ts';
-import './arena-thumbnail.css';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Arena, Action, RelationshipLinkType } from '../types';
 import { CheckIcon, UsersIcon } from './Icons';
@@ -500,7 +499,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     return (
         <div 
             onClick={onClick} 
-            className={`${baseClasses} ${styleClasses} ${archivedClasses} ${isCompactThumbnail ? 'reference-thumbnail' : ''}`}
+            className={`${baseClasses} ${styleClasses} ${archivedClasses} ${isCompactThumbnail ? 'justify-start gap-[1px]' : ''}`}
             style={{ ...cardStyle, ...tiltStyle }}
         >
             {!isCompactThumbnail && <div className="absolute top-0 left-0 right-0 h-[2px] z-10" style={{ background: arenaGoldBar }} />}
@@ -524,15 +523,36 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                 )}
             </div>
             <div
-                className={`text-center relative z-10 pointer-events-none select-none ${isCompactThumbnail ? 'reference-thumbnail-top' : ''}`}
+                className={`text-center relative z-10 pointer-events-none select-none ${isCompactThumbnail ? 'arena-thumb-layout flex-1 min-h-0' : ''}`}
             >
                 {isCompactThumbnail ? (
                     <>
-                    <div className="reference-thumbnail-heading">
-                        <span className="reference-thumbnail-icon" style={{borderColor: skinColor, background: rgbaString(accentColor,.3)}}>{getIcon()}</span>
-                        <h3>{arena.name}</h3>
+                    <div className="arena-thumb-header flex-1 justify-start gap-[0.02rem] pt-0">
+                        <div className="arena-thumb-link-space left-auto right-[0.04rem] top-[0.02rem] z-[3]">
+                            {renderArenaStatusTags(true)}
+                        </div>
+                        <div className="relative h-[1.58rem] w-full">
+                            <span
+                                className="absolute -left-[0.3rem] top-[0.08rem] z-[3] inline-flex h-[1.14rem] w-[1.14rem] items-center justify-center rounded-full border shadow-[0_6px_14px_rgba(0,0,0,0.24)]"
+                                style={{
+                                    borderColor: skinColor,
+                                    background: `linear-gradient(160deg, ${rgbaString(accentColor, 0.52)} 0%, ${rgbaString(accentColor, 0.24)} 100%)`,
+                                }}
+                            >
+                                <span className="arena-icon arena-thumb-header-icon" style={{ lineHeight: 0 }}>
+                                    {getIcon()}
+                                </span>
+                            </span>
+                            <div className="ml-[0.38rem] flex h-[1.56rem] w-[calc(100%-0.38rem)] items-center justify-center overflow-hidden rounded-[4px] border border-white/6 bg-black/12 px-[0.16rem] py-[0.04rem] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                                <div className="flex h-full w-full items-center justify-center overflow-hidden py-[0.08rem]">
+                                    <h3 className={`arena-title arena-title-text arena-title-readable arena-thumb-title arena-thumb-title--plain w-full break-normal [overflow-wrap:normal] text-white text-center leading-[0.98] tracking-[0.06em] line-clamp-2 ${arena.name.length > 18 ? 'text-[5.9px]' : arena.name.length > 14 ? 'text-[6.1px]' : arena.name.length > 10 ? 'text-[6.35px]' : arena.name.length > 8 ? 'text-[6.65px]' : 'text-[6.95px]'}`}>{arena.name}</h3>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div className="reference-thumbnail-tags">{renderArenaStatusTags(true)}</div>
+                    {/* O ativo (Trabalho & Estudos, Saude...) saiu daqui: a COR da
+                        arena ja diz a qual ele pertence, e o texto so cabia numa
+                        faixa de 0.32rem que ficava vazia na maioria dos cards. */}
                     </>
                 ) : (
                     <>
@@ -568,7 +588,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
             
             <div className={`flex flex-col items-center flex-shrink-0 relative z-10 pointer-events-auto ${isCompactThumbnail ? 'w-full gap-[0.08rem] mt-auto' : 'space-y-2'}`}>
                 {isCompactThumbnail ? (
-                    <div className="arena-thumbnail-actions">
+                    <div className="arena-thumbnail-actions w-full overflow-x-auto overscroll-x-contain hide-scrollbar rounded-[4px] border border-white/6 bg-black/10 px-[0.08rem] py-[0.08rem] shadow-[inset_0_1px_0_rgba(255,255,255,0.045)]">
                         <div className="flex min-w-max items-center gap-[0.18rem]">
                             {orderedCompactActions.map(action => {
                                 const backgroundStyle = getActionBackgroundStyle(action.id);
@@ -677,7 +697,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                     </>
                 )}
                 {hasMeasurableProgress ? (
-                    <div className={isCompactThumbnail ? "reference-thumbnail-progress" : "w-full min-w-0 shrink-0"}>
+                    <div className="w-full min-w-0 shrink-0">
                         {/* Discreto de proposito: o numero acompanha a barra, nao
                             compete com ela. Antes era branco e semibold, do mesmo
                             peso do nome da arena, e a tela inteira gritava junto. */}

@@ -41,20 +41,40 @@
 }
 .campaign-phase-panel {padding:10px;border:1px solid #3c3f45;background:#0c0e12;box-shadow:inset 0 1px #ffffff08}.campaign-hub .luxe-skin-button,.campaign-detail .luxe-skin-button {box-shadow:none;background:linear-gradient(140deg,#dbbd80,#a8874f);color:#17130d;border:1px solid #ba9a5e;border-radius:2px}.campaign-detail h1 {color:#eeeae1;font-size:20px;font-weight:600;letter-spacing:0;text-transform:none;text-shadow:none}
 
-/* A campaign uses one grid cell and contains two miniature arena plates. */
-.campaign-overview-card {box-sizing:border-box;height:96px;min-height:96px;padding:4px 5px;border:1px solid #62616a;border-radius:4px;background:linear-gradient(145deg,#292a32,#101216 65%);box-shadow:inset 0 0 0 2px #0b0d10;color:#eeeae1;overflow:hidden;gap:3px}
-.campaign-overview-heading {display:flex;flex-direction:column-reverse;align-items:center;gap:1px;min-width:0;height:29px;flex:none;padding:0;border:0}
-.campaign-overview-kicker {font-size:7px;line-height:9px;letter-spacing:.3px;color:#c5ad80;flex:none}
-.campaign-overview-title {text-align:center;width:100%;font-size:13px;line-height:16px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;min-width:0}
-.campaign-overview-arenas {flex:1;min-height:0;min-width:0;display:flex;align-items:center}
-.campaign-overview-card .campaign-arena-list {display:flex;flex-direction:column;gap:3px;align-items:stretch;width:100%}
-.campaign-overview-card .campaign-arena-summary {min-width:0;display:block;padding:3px 5px;border:1px solid color-mix(in srgb,var(--campaign-accent) 45%,#3d4149);border-radius:0;background:linear-gradient(115deg,color-mix(in srgb,var(--campaign-accent) 17%,#191c23),#101216);box-shadow:inset 0 0 0 1px #080a0d;clip-path:polygon(4px 0,calc(100% - 4px) 0,100% 4px,100% calc(100% - 4px),calc(100% - 4px) 100%,4px 100%,0 calc(100% - 4px),0 4px)}
-.campaign-overview-card .campaign-arena-label,.campaign-overview-card .campaign-arena-count,.campaign-overview-card .campaign-arena-more {display:none}
-.campaign-overview-card .campaign-arena-name {display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:9px;line-height:11px;font-weight:550}
-.campaign-overview-footer {display:flex;align-items:center;gap:4px;font-size:7px;color:#aeb0b7;height:9px;flex:none}
-.campaign-overview-track {flex:1;min-width:0;height:3px;background:#ffffff20;overflow:hidden}
+/* Folder silhouette stays inside the same 76px grid cell as an arena. */
+.campaign-overview-card {box-sizing:border-box;height:4.75rem;min-height:4.75rem;padding:2px 5px 4px;border:0;border-radius:0;background:linear-gradient(145deg,#292a32,#101216 65%);color:#eeeae1;overflow:hidden;gap:2px;isolation:isolate;clip-path:polygon(0 0,78% 0,85% 12px,100% 12px,100% 100%,0 100%);box-shadow:inset 0 0 0 1px #8a8291}
+.campaign-overview-heading {position:relative;display:flex;align-items:center;min-width:0;height:1.58rem;flex:none;padding:0;border:0}
+.campaign-overview-title-wrap {margin-left:.38rem;display:flex;align-items:center;justify-content:center;height:1.56rem;width:calc(100% - .38rem);padding:.04rem .16rem;overflow:hidden;border:1px solid #ffffff0f;border-radius:4px;background:#0000001f;box-shadow:inset 0 1px #ffffff0f}
+.campaign-overview-arenas {flex:1;min-height:0;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;touch-action:pan-x pan-y;overscroll-behavior-x:contain;padding:1px 0 3px;cursor:auto}
+.campaign-overview-arenas::-webkit-scrollbar {display:none}
+.campaign-phase-divider {flex:0 0 1px;align-self:center;height:25px;margin:0 4px;background:#d7c59b99;box-shadow:1px 0 #0008}
+.campaign-overview-card .campaign-arena-list {display:flex;flex-direction:row;align-items:center;gap:5px;width:max-content;height:100%}
+.campaign-overview-card .campaign-arena-summary {position:relative;inset:auto;flex:0 0 auto;width:max-content;min-width:78px;height:25px;display:flex;flex-direction:column;justify-content:center;padding:2px 7px;border:1px solid color-mix(in srgb,var(--campaign-accent) 50%,#686673);border-left:3px solid var(--campaign-accent);border-radius:2px;background:linear-gradient(115deg,color-mix(in srgb,var(--campaign-accent) 24%,#191c23),#101216);box-shadow:inset 0 1px #ffffff0a}
+.campaign-overview-card .campaign-arena-summary:nth-child(2) {inset:auto;z-index:auto}
+.campaign-overview-card .campaign-arena-summary {clip-path:none}
+.campaign-overview-card .campaign-arena-label {display:none}
+.campaign-overview-card .campaign-arena-count,.campaign-overview-card .campaign-arena-more {display:none}
+.campaign-overview-card .campaign-arena-name {display:block;white-space:nowrap;font-size:10px;line-height:16px;font-weight:550}
+.campaign-overview-footer {display:flex;align-items:center;gap:4px;font-size:8px;color:#e2d6bd;height:5px;flex:none;z-index:2}
+.campaign-overview-kicker {font-size:8px;line-height:10px;font-weight:650;white-space:nowrap}
+.campaign-overview-track {flex:1;min-width:0;height:2px;background:#ffffff20;overflow:hidden}
 .campaign-overview-track>div {height:100%;background:linear-gradient(90deg,#91713e,#e3cc95)}
-
 .campaign-contained-emoji {display:none}
-.campaign-overview-card .campaign-contained-emoji {display:inline-flex;vertical-align:middle;align-items:center;justify-content:center;width:13px;height:13px;margin-right:4px}
-.campaign-overview-card .campaign-contained-emoji :is(img,svg) {width:12px;height:12px}
+.campaign-overview-card .campaign-contained-emoji {display:inline-flex;vertical-align:middle;align-items:center;justify-content:center;width:12px;height:12px;margin-right:3px}
+.campaign-overview-card .campaign-contained-emoji :is(img,svg) {width:11px;height:11px}
+
+.campaign-folder-backdrop {position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:16px;background:#000b;backdrop-filter:blur(4px)}
+.campaign-folder-panel {width:min(100%,420px);max-height:85dvh;overflow:auto;padding:16px;background:linear-gradient(145deg,#24262c,#101216);color:#eeeae1;border:1px solid #62616a;border-radius:4px;box-shadow:inset 0 0 0 3px #0b0d10}
+.campaign-folder-panel header {display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.campaign-folder-panel h2 {font-size:18px;margin:0}.campaign-folder-panel small {font-size:10px;color:#aaa}.campaign-folder-panel header button {font-size:24px;min-width:36px;min-height:36px}.campaign-folder-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.campaign-folder-grid>div {min-width:0}.campaign-folder-panel footer {margin-top:18px;text-align:right;font-size:12px;color:#d5b878}.campaign-folder-panel button:focus-visible,.campaign-folder-grid>div:focus-visible,.campaign-overview-card:focus-visible {outline:2px solid #d5b878;outline-offset:3px}
+
+.campaign-overview-meta {flex:none;height:8px;line-height:8px;text-align:right;font-size:7px;color:#d3c8b5}
+.campaign-overview-icon {position:absolute;left:-.3rem;top:.08rem;z-index:3;width:1.14rem;height:1.14rem;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid #b6a47c99;border-radius:50%;background:#36313f;box-shadow:0 6px 14px #0004}.campaign-overview-icon .emoji-glyph--arena {width:1.12rem;height:1.12rem;font-size:1.02rem;transform:translate(-.02rem,-.03rem)}
+
+.campaign-overview-card .campaign-arena-summary--locked {background:#101013;border-color:#454549;color:#929298;box-shadow:none}
+.campaign-overview-card .campaign-arena-summary--locked .campaign-arena-name {filter:grayscale(1);opacity:.28}
+.campaign-arena-lock {position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;display:flex;align-items:center;justify-content:center;width:21px;height:21px;border:1px solid #9b7a3e;border-radius:3px;background:#080808;color:#d9b668;box-shadow:0 1px 4px #000b;pointer-events:none}
+.campaign-arena-lock svg {width:13px;height:13px}
+
+.campaign-detail-arena-locked {filter:grayscale(1);opacity:.3}.campaign-detail-lock {position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;pointer-events:none}.campaign-detail-lock-badge {display:flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid #9b7a3e;border-radius:3px;background:#080808;color:#d9b668;box-shadow:0 2px 8px #000b}
+
+.campaign-add-arena-slot {width:6.85rem;height:4.95rem;flex-shrink:0;border:1px dashed #b6a47c66;border-radius:4px;display:flex;flex-direction:column;align-items:stretch;justify-content:center;color:#d9b668;background:#0002}.campaign-add-arena-slot button {display:flex;align-items:center;justify-content:center;flex:1;font-size:10px}.campaign-add-arena-slot button:hover {background:#ffffff0a}.campaign-add-arena-slot button:disabled {opacity:.35}

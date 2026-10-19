@@ -9,6 +9,8 @@ interface CreateCampaignModalProps {
     selectedArenaIds?: string[];
     availableArenaIds?: string[];
     targetCampaign?: Campaign | null;
+    targetPhase?: number;
+    prerequisiteArenaIds?: string[];
     onClose: () => void;
     onCreated?: (campaign: Campaign) => void;
     onAttached?: (arenaIds: string[]) => void;
@@ -28,6 +30,8 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
     selectedArenaIds = [],
     availableArenaIds,
     targetCampaign = null,
+    targetPhase,
+    prerequisiteArenaIds = [],
     onClose,
     onCreated,
     onAttached,
@@ -110,6 +114,7 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
             if (!targetCampaign || selectedIds.length === 0) return;
             const nextArenaIds = [...targetCampaign.arenaIds, ...selectedIds.filter((arenaId) => !targetCampaignArenaIdSet.has(arenaId))];
             const nextArenaConfig = buildDefaultArenaConfig(nextArenaIds, targetCampaign.arenaConfig || {});
+            if (targetPhase !== undefined) selectedIds.filter(id => !targetCampaignArenaIdSet.has(id)).forEach(id => { nextArenaConfig[id] = { ...nextArenaConfig[id], phase: targetPhase, prerequisiteArenaIds }; });
             const success = await updateCampaign(targetCampaign.id, {
                 arenaIds: nextArenaIds,
                 arenaConfig: nextArenaConfig,

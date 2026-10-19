@@ -17,10 +17,12 @@ import { IconPickerModal } from '../components/IconPickerModal';
 import { FolderDetailModal } from '../components/FolderDetailModal';
 import { CampaignsCodex } from '../components/CampaignsCodex';
 import { CreateCampaignModal } from '../components/CreateCampaignModal';
-import { CampaignArenaStack } from '../components/CampaignArenaStack';
+import { CampaignArenaStack, getCampaignArenaPhases } from '../components/CampaignArenaStack';
+import { CodexCoverArt as SharedCodexCoverArt } from '../components/CodexCoverArt';
+import { CampaignFolderModal } from '../components/CampaignFolderModal';
 import { ConnectionsModal } from '../components/ConnectionsModal';
 import { EmojiGlyph } from '../components/EmojiGlyph';
-import { calculateArenaProgress, calculateCampaignProgress, calculateCampaignProgressSummary, isExplicitSharedArena } from '../utils/progressUtils';
+import { getCampaignArenaStates, calculateArenaProgress, calculateCampaignProgress, calculateCampaignProgressSummary, isExplicitSharedArena } from '../utils/progressUtils';
 import { ARENA_ATTENTION_EVENT, ArenaAttentionPayload, ArenaAttentionPhase, consumeArenaAttention } from '../utils/arenaAttention';
 import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../utils/codexPreview';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
@@ -146,6 +148,7 @@ export const ArenasView: React.FC = () => {
 
     const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
     const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
+    const [openCampaignFolderId, setOpenCampaignFolderId] = useState<string | null>(null);
     const [isCampaignHubOpen, setCampaignHubOpen] = useState(false);
     const [campaignHubOpenNonce, setCampaignHubOpenNonce] = useState(0);
     const [isRelationshipHubOpen, setRelationshipHubOpen] = useState(false);
@@ -321,6 +324,7 @@ export const ArenasView: React.FC = () => {
     const selectedArena = allArenas.find(a => a.id === selectedArenaId);
     const selectedFolder = arenaFolders.find(f => f.id === selectedFolderId);
     const selectedCampaign = campaigns.find(c => c.id === selectedCampaignId);
+    const openCampaignFolder = campaigns.find(c => c.id === openCampaignFolderId);
     const isCreateArenaFabHidden = Boolean(
         isSelectionMode
         || selectedArena
@@ -328,6 +332,7 @@ export const ArenasView: React.FC = () => {
         || selectedReceivedCampaignPreview
         || selectedFolder
         || selectedCampaign
+        || openCampaignFolder
         || isCreatingArena
         || isCampaignHubOpen
         || isRelationshipHubOpen
@@ -1740,6 +1745,9 @@ export const ArenasView: React.FC = () => {
     // Helper to render Campaign Card
     const renderCampaignCard = (campaign: Campaign, isParallel: boolean, progress: number) => {
         const campaignArenas = campaign.arenaIds.map(id => getArenas().find(arena => arena.id === id)).filter((arena): arena is Arena => Boolean(arena));
+        const arenaStates = getCampaignArenaStates({ campaign, arenasById, actionsByArena: actionsByArenaRecord, tasks: campaignProgressTasks, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress });
+        const phaseCount = new Set(getCampaignArenaPhases(campaignArenas, campaign).values()).size;
+        const campaignCover = userCodexes.find(codex => codex.id === campaign.sourceCodexId)?.template?.coverImage;
         const progressSummary = getCampaignProgressMetrics(campaign);
         const isDragOver = dragOverId === campaign.id;
         const isDragged = draggedId === campaign.id;
@@ -1760,20 +1768,28 @@ export const ArenasView: React.FC = () => {
                 data-drop-id={campaign.id}
                 onMouseDown={(e) => handleInteractionStart(e, campaign.id, 'campaign')}
                 onTouchStart={shouldEnableTouchReorder ? (e) => handleInteractionStart(e, campaign.id, 'campaign') : undefined}
-                onClick={() => setSelectedCampaignId(campaign.id)}
+                onClick={() => setOpenCampaignFolderId(campaign.id)}
+                role="button"
+                tabIndex={0}
+                aria-label={`Abrir pasta ${campaign.title}, ${campaignArenas.length} arenas`}
+                onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        setOpenCampaignFolderId(campaign.id);
+                    }
+                }}
                 className={`campaign-overview-card relative col-span-1 min-w-0 flex flex-col cursor-pointer transition-all group ${isDragOver ? 'z-10 ring-2 ring-[var(--skin-accent-color)]' : ''} ${isDragged ? 'opacity-30' : ''} ${campaignAttentionClass}`}
                 style={{ touchAction: 'pan-x pan-y', backgroundImage: getCampaignGradient(campaignArenas) }}
             >
                 <div className="campaign-overview-heading">
-                    <span className="campaign-overview-kicker">{campaignArenas.length} arenas</span>
-                    <span className="campaign-overview-title">{campaign.title}</span>
+                    <span className="campaign-overview-icon"><SharedCodexCoverArt cover={campaignCover} title={campaign.title} emojiSize="arena" backgroundClassName="flex items-center justify-center" /></span><span className="campaign-overview-title-wrap"><h3 className={`arena-title arena-title-text arena-title-readable arena-thumb-title arena-thumb-title--plain w-full text-center line-clamp-2 ${campaign.title.length > 18 ? 'text-[5.9px]' : campaign.title.length > 14 ? 'text-[6.1px]' : campaign.title.length > 10 ? 'text-[6.35px]' : campaign.title.length > 8 ? 'text-[6.65px]' : 'text-[6.95px]'}`}>{campaign.title}</h3></span>
                 </div>
-                <div className="campaign-overview-arenas">
-                    <CampaignArenaStack arenas={campaignArenas} size="xs" maxVisible={2} />
+                <div className="campaign-overview-arenas" tabIndex={0} role="region" aria-label={`Arenas de ${campaign.title}; role para ver todas`} onMouseDown={event => event.stopPropagation()} onTouchStart={event => event.stopPropagation()} onClick={event => event.stopPropagation()} onKeyDown={event => event.stopPropagation()}>
+                    <CampaignArenaStack arenas={campaignArenas} size="xs" maxVisible={campaignArenas.length} campaign={campaign} arenaStates={arenaStates} />
                 </div>
+                <div className="campaign-overview-meta">{campaignArenas.length} arenas · {phaseCount} {phaseCount === 1 ? 'fase' : 'fases'}</div>
                 <div className="campaign-overview-footer">
-                    <span>{progressSummary.totalPlanned > 0 ? `${progressSummary.totalCompleted}/${progressSummary.totalPlanned}` : 'Sem meta'}</span>
-                    <div className="campaign-overview-track" role="progressbar" aria-label={`Progresso de ${campaign.title}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progressSummary.progressPercent}>
+                    <div className="campaign-overview-track" role="progressbar" title="Progresso total da campanha" aria-label={`Progresso total de ${campaign.title}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progressSummary.progressPercent}>
                         <div className={progressFillClass} style={{ width: `${progressSummary.progressPercent}%` }} />
                     </div>
                     <span>{progressSummary.progressPercent}%</span>
@@ -2780,6 +2796,19 @@ export const ArenasView: React.FC = () => {
                 <CampaignsCodex
                     initialCampaignId={selectedCampaign.id}
                     onClose={() => setSelectedCampaignId(null)}
+                />
+            )}
+            {openCampaignFolder && !selectedArena && (
+                <CampaignFolderModal
+                    campaign={openCampaignFolder}
+                    tasks={campaignProgressTasks}
+                    arenas={openCampaignFolder.arenaIds.map(id => getArenas().find(arena => arena.id === id)).filter((arena): arena is Arena => Boolean(arena))}
+                    onClose={() => setOpenCampaignFolderId(null)}
+                    onOpenArena={setSelectedArenaId}
+                    onDetails={() => {
+                        setSelectedCampaignId(openCampaignFolder.id);
+                        setOpenCampaignFolderId(null);
+                    }}
                 />
             )}
             {showCreateCampaignModal && (

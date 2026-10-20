@@ -162,6 +162,24 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 
 ## Recados da outra IA
 
+### 19/10/2026 — Miniaturas compactas e campanha como pasta aprovadas (Codex)
+
+Afonso aprovou a faixa horizontal de arenas dentro da campanha: todas disponíveis por rolagem, cada uma com emoji, nome e cor, sem rótulo ARENA acima. Miniatura de campanha com aba de pasta e mesma altura de 76 px da arena; ArenaCard recuperou o layout anterior preservando as cores novas. Clique na campanha abre CampaignFolderModal com as arenas normais, respeitando requisitos e oferecendo acesso aos detalhes. Rolagem interna não inicia reordenação nem abre a pasta. Prévia com quatro arenas conferida no navegador; TypeScript e regressão de ciclo de campanhas passaram durante esta rodada. Alterações no código local; sem novo AAB, commit ou push. Loja mantém seu card maior, sem aplicar a faixa compacta.
+
+### 18/10/2026 — Cinco skins aprovadas e integradas no código (Codex)
+
+Afonso aprovou explicitamente a revisão 3 e autorizou integrar. As cinco artes foram copiadas sem alteração para o catálogo; offsets, cobre braços/pernas/pés e mãos na frente são os da revisão aprovada. Catálogo e coleções vinculados; Aurora II ocupa o slot da coleção, preservando o item e a arte do Guardião Aurora original. Zênite II ganhou a chave de coleção no calendário, sem inventar missões. TypeScript, build e regressões de arte/recompensas passaram. SQL de cadastro validado em `sql/2026-10-18-skins-temporadas-aprovadas.sql`, ainda NÃO aplicado ao banco: cadastra as cinco desligadas para não antecipar as temporadas futuras. Sem novo AAB, commit ou push. Este registro substitui a pendência de aprovação/integração da revisão 3 abaixo; temas e demais conteúdos das temporadas continuam pendentes.
+
+### 18/10 — Skins revisão 3: cobre e ajuste feminino autorizados
+
+Afonso aprovou o visual da revisão 2, incluindo Aurora II, e dispensou redesenho feminino. Cinco entradas de revisão em avatarOffsets.ts com cobre braços/pernas/pés; base x0 y-2 scale1 e delta body_fem x-2 y0 scale0.98. PNGs idênticos aos aprovados, somente em output/temporadas-skins-2026-10-18/revisao-v3. Sem catálogo/loja/recompensas. avatarHands restaura mãos dessas cinco a partir de y246, limitando lateral para não restaurar coxa junto à saia. Bancada agora chama drawHandsInFront compartilhado e aceita candidatas via ?seasonReview=3. Folha HTML importa as funções reais de offset, recorte e mãos; PNG auxiliar simula a mesma composição. Controle de navegador desabilitado nesta sessão: não foi possível afinar interativamente na bancada nem capturar seu canvas; offsets avaliados nas composições PNG. Revisão do usuário e validação no navegador pendentes. Não houve AAB, commit ou push.
+
+
+### 18/10 — Skins de temporada: segunda revisão, sem integração
+
+Codex: cinco candidatas vestidas e extraídas em `output/temporadas-skins-2026-10-18/`. Revisão posterior em `revisao-v2/index.html`: limpeza de componentes soltos nas golas; Aurora II refeita com image_gen para corrigir a barra recortada, pernas e botas. PNGs RGBA 500×500, folha geral e cinco folhas com os oito corpos. `revisao-v2/validation.json` registra pixels expostos sobre o corpo inteiro, sem recortes `cobre` (não confundir com restos de pele na roupa). A meta zero ainda NÃO foi atingida; encaixe continua pendente, sobretudo no feminino. Não marcar a tarefa como concluída. Nenhum catálogo, offset, recompensa, versão ou AAB alterado. Guardião Aurora original preservado.
+
+
 > Histórico preservado. As listas acima foram reconciliadas em 13/10; “pendente” em um recado antigo pode ter sido superado por outro posterior.
 
 
@@ -437,8 +455,8 @@ Afonso confirmou a execução de sql/temporadas-2027-artes.sql e pediu commit, p
 
 ### 18/10 — Próxima revisão visual: Campanhas e miniaturas da loja
 
-- [ ] Rever a aba Campanhas: Afonso rejeitou o excesso de arredondamento da apresentação atual.
-- [ ] Rever as miniaturas de campanhas na loja, incluindo enquadramento, proporções e legibilidade.
+- [x] Rever a aba Campanhas: Afonso rejeitou o excesso de arredondamento da apresentação atual. Superado pela revisão aprovada: campanha em um card compacto, com faixa horizontal das arenas, fases e gradiente formado pelas cores das arenas.
+- [x] Rever as miniaturas de campanhas na loja, incluindo enquadramento, proporções e legibilidade. Superado pela integração aprovada; a loja mantém card próprio, sem copiar a faixa compacta da ArenaView.
 - Reunir essas propostas com a referência dos modais de arena e ação: `docs/2026-10-17-modais-referencia.md`, seção “Próxima revisão visual”. Apenas registrado; alteração visual ainda não implementada.
 
 
@@ -459,3 +477,10 @@ Afonso confirmou a execução de sql/temporadas-2027-artes.sql e pediu commit, p
 ## Release Android 113 — 18/10/2026
 
 AAB 1.0.113 gerado, manifesto e assinatura verificados; build completo, dois typechecks e oito regressões passaram. Detalhes e hash em `docs/2026-10-18-checkpoint-aab-113.md`. Sem upload ao Play ou teste em aparelho nesta rodada.
+
+### 20/10 — Vagas unificadas de vínculos e mentoria (Codex)
+
+- SQL `20261020140000_unified_relationship_slots.sql` confirmado pelo Afonso: coluna de vagas, responsável pelo vínculo, gatilho de limite e regra de planos retornaram `true`.
+- Plano grátis tem 0 vagas, Premium tem 2 e Platinum tem 5; uma vaga extra custa 50 ouro. O dono da vaga é um único participante; em mentoria, quem oferece o acompanhamento. Vínculos encerrados ou vencidos liberam a vaga.
+- Vínculos mostra `Vagas livres: X / Y` e botão `Comprar vaga · 50 ouro`. Convite de mentoria não cobra mais o orientado; no aceite ele usa uma vaga do mentor. Convites pendentes permanecem pendentes se a vaga estiver cheia.
+- Benefício incluído no catálogo de Premium/Platinum do app e na landing `glyph-landing/descubra.html`. Código local, validado por TypeScript e `sql:checa`; falta checkpoint/commit e AAB 115.

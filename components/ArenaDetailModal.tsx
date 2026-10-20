@@ -271,7 +271,12 @@ export const ArenaDetailModal: React.FC<{
         () => (arena.originCodexId ? userCodexes.find(codex => codex.id === arena.originCodexId) ?? null : null),
         [arena.originCodexId, userCodexes]
     );
-    const isReceivedCodexArena = sourceCodex?.source_type === 'gift_link' || sourceCodex?.source_type === 'gift_in_app';
+    // O Codex de mentor chega como presente, mas nao e conteudo protegido: o
+    // orientado recebeu um ponto de partida e deve adaptar a propria arena.
+    const isMentorDeliveredArena = Boolean(sourceCodex?.mentor_relationship_link_id);
+    const isReceivedCodexArena = !isMentorDeliveredArena && (
+        sourceCodex?.source_type === 'gift_link' || sourceCodex?.source_type === 'gift_in_app'
+    );
     const isArenaEditLocked = isSpecialArena || isReceivedCodexArena;
     const arenaEditLockMessage = isSeasonQuestArena
         ? 'Missões de temporada são travadas e não podem ser editadas.'

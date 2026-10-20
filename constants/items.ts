@@ -222,6 +222,11 @@ export const ITEMS_DB: ItemDef[] = [
     avatarItem('skin', { id: 'item_skin_5_002', name: 'Vestido Real', tier: 6, rarity: 'mythic', icon: '\uD83D\uDC57', asset: 'SKIN_T5_VESTIDO_REAL.png', isSeasonExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'skin', description: 'Traje lendário reservado aos baús mais raros do inventário.' }),
 
     // Season
+    { id: 'item_skin_zenite_1_2027', name: 'Zênite I', category: 'skin', tier: 6, rarity: 'mythic', icon: '✦', imageUrl: avatarPngAsset('SKIN_SEASON_ZENITE_I'), isSeasonExclusive: true, seasonKey: 'zenite_1_2027', seasonSlot: 'skin' },
+    { id: 'item_skin_eclipse_1_2027', name: 'Eclipse I', category: 'skin', tier: 6, rarity: 'mythic', icon: '✦', imageUrl: avatarPngAsset('SKIN_SEASON_ECLIPSE_I'), isSeasonExclusive: true, seasonKey: 'eclipse_1_2027', seasonSlot: 'skin' },
+    { id: 'item_skin_egide_1_2027', name: 'Égide I', category: 'skin', tier: 6, rarity: 'mythic', icon: '✦', imageUrl: avatarPngAsset('SKIN_SEASON_EGIDE_I'), isSeasonExclusive: true, seasonKey: 'egide_1_2027', seasonSlot: 'skin' },
+    { id: 'item_skin_aurora_2_2027', name: 'Aurora II', category: 'skin', tier: 6, rarity: 'mythic', icon: '✦', imageUrl: avatarPngAsset('SKIN_SEASON_AURORA_II'), isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'skin' },
+    { id: 'item_skin_zenite_2_2027', name: 'Zênite II', category: 'skin', tier: 6, rarity: 'mythic', icon: '✦', imageUrl: avatarPngAsset('SKIN_SEASON_ZENITE_II'), isSeasonExclusive: true, seasonKey: 'zenite_2_2027', seasonSlot: 'skin' },
     { id: 'item_skin_season_001', name: 'O Criador', category: 'skin', tier: 4, rarity: 'epic', icon: '🛠️', isGmExclusive: true, imageUrl: avatarPngAsset('SKIN_SEASON_CRIADOR') },
     { id: 'item_skin_aurora_1_2026', name: 'Guardião Aurora', category: 'skin', tier: 6, rarity: 'mythic', icon: '\uD83C\uDF0C', imageUrl: avatarPngAsset('SKIN_QUEST_GUARDIAO_AURORA'), isQuestExclusive: true, isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'skin' },
 
@@ -551,30 +556,34 @@ export const RANK_UP_INSIGNIA_ID = 'insignia_levelup_rara';
 
 export const SEASON_COLLECTION_SLOTS: ItemSeasonSlot[] = ['skin', 'border', 'banner', 'insignia', 'ui_skin'];
 export const SEASON_COLLECTIONS: Record<string, SeasonCollectionDef> = {
-    // Arte cadastrada; skin e tema aguardam conclusão. Não inventar substitutos.
+    // Skins aprovadas em 18/10; temas e conteúdo futuro continuam independentes.
     zenite_1_2027: {
         id: 'zenite_1_2027', name: 'Zênite I',
-        slots: { skin: null, border: 'item_border_zenite_1_2027', banner: 'item_banner_zenite_1_2027', insignia: 'insignia_season_zenite_1_2027', ui_skin: null },
+        slots: { skin: 'item_skin_zenite_1_2027', border: 'item_border_zenite_1_2027', banner: 'item_banner_zenite_1_2027', insignia: 'insignia_season_zenite_1_2027', ui_skin: null },
     },
     eclipse_1_2027: {
         id: 'eclipse_1_2027', name: 'Eclipse I',
-        slots: { skin: null, border: 'item_border_eclipse_1_2027', banner: 'item_banner_eclipse_1_2027', insignia: 'insignia_season_eclipse_1_2027', ui_skin: null },
+        slots: { skin: 'item_skin_eclipse_1_2027', border: 'item_border_eclipse_1_2027', banner: 'item_banner_eclipse_1_2027', insignia: 'insignia_season_eclipse_1_2027', ui_skin: null },
     },
     egide_1_2027: {
         id: 'egide_1_2027', name: 'Égide I',
-        slots: { skin: null, border: 'item_border_egide_1_2027', banner: 'item_banner_egide_1_2027', insignia: 'insignia_season_egide_1_2027', ui_skin: null },
+        slots: { skin: 'item_skin_egide_1_2027', border: 'item_border_egide_1_2027', banner: 'item_banner_egide_1_2027', insignia: 'insignia_season_egide_1_2027', ui_skin: null },
     },
     aurora_1_2026: {
         id: 'aurora_1_2026',
         name: 'Aurora II',
         storeMode: 'seasonal_high',
         slots: {
-            skin: 'item_skin_aurora_1_2026',
+            skin: 'item_skin_aurora_2_2027',
             border: 'item_border_aurora_1_2026',
             banner: 'item_banner_aurora_1_2026',
             insignia: 'insignia_season_aurora_1',
             ui_skin: 'AURORA_I',
         },
+    },
+    zenite_2_2027: {
+        id: 'zenite_2_2027', name: 'Zênite II',
+        slots: { skin: 'item_skin_zenite_2_2027', border: null, banner: null, insignia: null, ui_skin: null },
     },
     genesis_legacy: {
         id: 'genesis_legacy',

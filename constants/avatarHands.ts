@@ -4,6 +4,12 @@
  * volta por cima da abertura da manga. Valores no quadro-base de 500x500.
  */
 export const HAND_FRONT_CUTOFF: Record<string, number> = {
+    'SKIN_SEASON_ZENITE_I.png': 246,
+    'SKIN_SEASON_ECLIPSE_I.png': 246,
+    'SKIN_SEASON_EGIDE_I.png': 246,
+    'SKIN_SEASON_AURORA_II.png': 246,
+    'SKIN_SEASON_ZENITE_II.png': 246,
+
     'SKIN_T2_CAVALEIRO.png': 248,
     'SKIN_T2_TRILHA.png': 248,
     'SKIN_T4_REI.png': 248,
@@ -37,10 +43,15 @@ export const drawHandsInFront = (
 ): void => {
     const cutoff = getHandFrontCutoff(outfitUrl);
     if (cutoff === undefined) return;
+    // As candidatas de temporada deixam a lateral da saia livre: excluir a coxa
+    // da faixa das mãos evita restaurar uma tira do corpo junto ao punho.
+    const seasonReview = /SKIN_SEASON_(ZENITE_I|ECLIPSE_I|EGIDE_I|AURORA_II|ZENITE_II)\.png(?:\?|$)/.test(outfitUrl || '');
+    const leftEdge = seasonReview ? 194 : 199;
+    const rightEdge = seasonReview ? 302 : 296;
     target.save();
     target.beginPath();
-    target.rect(0, height * cutoff / 500, width * 199 / 500, height * (290 - cutoff) / 500);
-    target.rect(width * 296 / 500, height * cutoff / 500, width * 204 / 500, height * (290 - cutoff) / 500);
+    target.rect(0, height * cutoff / 500, width * leftEdge / 500, height * (290 - cutoff) / 500);
+    target.rect(width * rightEdge / 500, height * cutoff / 500, width * (500 - rightEdge) / 500, height * (290 - cutoff) / 500);
     target.clip();
     target.drawImage(bodyLayer, 0, 0);
     target.restore();

@@ -182,6 +182,13 @@ export const REFERENCIA = {
  * SKIN_T2_MILITAR nao tem entrada de proposito: a skin foi aposentada.
  */
 export const AVATAR_OFFSETS: Record<string, AvatarOffset> = {
+    // Skins de temporada aprovadas na revisão 3, com ajuste feminino e cobertura.
+    'SKIN_SEASON_ZENITE_I.png': { x: 0, y: -2, scale: 1, cobre: ['bracos', 'pernas', 'pes'], porCorpo: { 'body_fem': { x: -2, y: 0, scale: 0.98 } } },
+    'SKIN_SEASON_ECLIPSE_I.png': { x: 0, y: -2, scale: 1, cobre: ['bracos', 'pernas', 'pes'], porCorpo: { 'body_fem': { x: -2, y: 0, scale: 0.98 } } },
+    'SKIN_SEASON_EGIDE_I.png': { x: 0, y: -2, scale: 1, cobre: ['bracos', 'pernas', 'pes'], porCorpo: { 'body_fem': { x: -2, y: 0, scale: 0.98 } } },
+    'SKIN_SEASON_AURORA_II.png': { x: 0, y: -2, scale: 1, cobre: ['bracos', 'pernas', 'pes'], porCorpo: { 'body_fem': { x: -2, y: 0, scale: 0.98 } } },
+    'SKIN_SEASON_ZENITE_II.png': { x: 0, y: -2, scale: 1, cobre: ['bracos', 'pernas', 'pes'], porCorpo: { 'body_fem': { x: -2, y: 0, scale: 0.98 } } },
+
     'CABELO_T1_CACHOS_ama.png': { x: -3, y: 9 },
     'CABELO_T1_CACHOS_cast.png': { x: -3, y: 1, scale: 0.93 },
     'CABELO_T1_CACHOS_preto.png': { x: -3, y: 10, scale: 0.98 },

@@ -39,6 +39,7 @@ export const GOLD_PREMIUM_PRODUCT = {
         'Oráculo: todos os tons de fala',
         'Oráculo: escolha os temas e peça card na hora',
         'Cena do legado com 50% off',
+        '2 vagas de vínculos ativos',
     ],
 } as const;
 
@@ -54,6 +55,7 @@ export const GOLD_PLATINUM_PRODUCT = {
         'Cena do legado com 70% off',
         'Campanhas com 20% off',
         'Todos os planos de fundo e aparências premium',
+        '5 vagas de vínculos ativos',
     ],
 } as const;
 

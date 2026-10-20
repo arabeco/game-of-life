@@ -269,9 +269,9 @@ const naPasta = (relativo) => fs.existsSync(path.join(root, 'public', relativo.r
 
     // E quem tem chave de colecao precisa das cinco pecas. A lista abaixo e a
     // espera visivel: quando a arte entrar, tire daqui e o teste passa a cobrar.
-    // Arte cadastrada em 12/10/2026; ainda sem skin, tema ou quests.
-    // O SQL de cadastro deixa as nove pecas desligadas no servidor.
-    const incompletasConhecidas = { zenite_1_2027: 3, eclipse_1_2027: 3, egide_1_2027: 3 };
+    // Skins aprovadas em 18/10/2026; ainda faltam temas/quests e demais peças de Zênite II.
+    // Os SQLs de cadastro mantêm as peças futuras desligadas no servidor.
+    const incompletasConhecidas = { zenite_1_2027: 4, eclipse_1_2027: 4, egide_1_2027: 4, zenite_2_2027: 1 };
     for (const chave of Object.keys(incompletasConhecidas)) {
         const temporada = todas.find(season => season.seasonKey === chave);
         assert.ok(temporada, `${chave} sem calendario`);
@@ -283,7 +283,8 @@ const naPasta = (relativo) => fs.existsSync(path.join(root, 'public', relativo.r
         // Genesis tem uma borda e um banner epicos aposentados, alem dos
         // miticos que valem. Contar os dois grupos daria sete pecas numa
         // colecao de cinco.
-        if (item.seasonKey && !item.isLegacyRetired) {
+        // Guardião Aurora continua disponível aos donos; a coleção agora aponta para Aurora II.
+        if (item.seasonKey && !item.isLegacyRetired && item.id !== 'item_skin_aurora_1_2026') {
             porChave[item.seasonKey] = (porChave[item.seasonKey] || 0) + 1;
         }
     }

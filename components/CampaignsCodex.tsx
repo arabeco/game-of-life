@@ -372,7 +372,13 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
     const campaignCodex = campaignCodexOriginId
         ? userCodexes.find(codex => codex.id === campaignCodexOriginId) ?? null
         : null;
-    const isReadOnlyCodexCampaign = Boolean(isCodexCampaign || selectedCampaign?.sourceCodexId);
+    // Uma campanha de loja/presente comum conserva o manuscrito original. A de
+    // mentoria e uma proposta: ao instalar, ela passa a pertencer ao orientado
+    // e precisa aceitar fases, arenas e ações ajustadas à rotina real dele.
+    const isMentorDeliveredCampaign = Boolean(campaignCodex?.mentor_relationship_link_id);
+    const isReadOnlyCodexCampaign = Boolean(
+        (isCodexCampaign || selectedCampaign?.sourceCodexId) && !isMentorDeliveredCampaign
+    );
     const canDeletePreviewCampaign = isPreviewCampaign && typeof onDeletePreviewCampaign === 'function';
     const canEditPreviewCampaign = isPreviewCampaign && previewEditable && typeof onUpdatePreviewCampaign === 'function';
     const canEditCampaignMetadata = isPreviewCampaign ? canEditPreviewCampaign : true;

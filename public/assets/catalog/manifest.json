@@ -1,6 +1,6 @@
 {
-  "totalFiles": 240,
-  "totalBytes": 16215093,
+  "totalFiles": 245,
+  "totalBytes": 16807565,
   "assets": [
     {
       "path": "aurora_i.png",
@@ -1201,6 +1201,31 @@
       "path": "void.png",
       "bytes": 89349,
       "sha256": "84d502ae75b2cad476b4a7d634c3e724abef11fd25f730397b149f9815bc35fd"
+    },
+    {
+      "path": "avatars/SKIN_SEASON_AURORA_II.png",
+      "bytes": 126691,
+      "sha256": "7f20d1fadb931c78698fe4d2602c97ca463cbab50e0c11d08a64cad096a615aa"
+    },
+    {
+      "path": "avatars/SKIN_SEASON_ECLIPSE_I.png",
+      "bytes": 116773,
+      "sha256": "828b7e056196452deaaea1711379e989337f25a0f7c0ea8311b17562c8f4e4c1"
+    },
+    {
+      "path": "avatars/SKIN_SEASON_EGIDE_I.png",
+      "bytes": 114758,
+      "sha256": "23e89059097d30827f12b981f0d65671a14f3ad5d8e707f7e9a52f1403099935"
+    },
+    {
+      "path": "avatars/SKIN_SEASON_ZENITE_I.png",
+      "bytes": 120247,
+      "sha256": "b13081039863a5633f7d63f354ef131371eacbd8b439ae90ede2ee5106d86f11"
+    },
+    {
+      "path": "avatars/SKIN_SEASON_ZENITE_II.png",
+      "bytes": 114003,
+      "sha256": "4a52e6deef03d582999f89cee6a26b652e7673474f02382e424e046ad4610ea0"
     }
   ]
 }

@@ -14,6 +14,8 @@ create role authenticated;
 create role service_role;
 
 create schema if not exists auth;
+create schema if not exists extensions;
+create or replace function extensions.gen_random_uuid() returns uuid language sql volatile as $$ select gen_random_uuid() $$;
 create table if not exists auth.users (id uuid primary key);
 
 -- Sempre nulo: o checador nao simula sessao. Quem testa comportamento de RLS e
@@ -135,7 +137,7 @@ create table if not exists public.items (
   is_chest_exclusive boolean,
   is_legacy_retired boolean,
   season_key text,
-  season_slot integer,
+  season_slot text, -- Conferido no schema remoto em 18/10/2026.
   -- NOT NULL em producao: uma insercao sem ele quebrou na mao do Afonso em
   -- 06/10/2026 (23502). O andaime cobra o mesmo, para quebrar aqui antes.
   recycle_value integer not null,
@@ -187,8 +189,35 @@ create table if not exists public.relationship_links (
   mentor_id uuid,
   pupil_id uuid,
   ended_at timestamptz,
-  expires_at timestamptz
+  expires_at timestamptz,
+  updated_at timestamptz,
+  mentor_status text,
+  planner_share_mode text
 );
+create table if not exists public.relationship_link_invites (
+  id uuid primary key default gen_random_uuid(),
+  sender_id uuid,
+  recipient_id uuid,
+  pupil_user_id uuid,
+  link_type text,
+  status text,
+  cost_gold integer,
+  expires_at timestamptz,
+  responded_at timestamptz,
+  arena_slots integer,
+  renewal_link_id uuid,
+  arena_snapshot jsonb,
+  actions_snapshot jsonb
+);
+create or replace function public.relationship_link_is_live(p_link public.relationship_links)
+returns boolean language sql stable as $$
+  select p_link.ended_at is null and (p_link.expires_at is null or p_link.expires_at > now())
+$$;
+
+-- Implementacao real vem da migracao de ciclo de vida; o andaime so precisa
+-- expor a assinatura para validar migracoes que a reusam.
+create or replace function public.respond_relationship_link_invite(p_invite_id uuid, p_action text)
+returns jsonb language sql as $$ select jsonb_build_object('success', true) $$;
 create table if not exists public.relationship_link_arenas (
   id uuid primary key,
   relationship_link_id uuid,
@@ -198,7 +227,7 @@ create table if not exists public.relationship_link_arenas (
   completed_at timestamptz,
   metadata jsonb
 );
-create table if not exists public.arenas (id uuid primary key, user_id uuid, asset_id text, name text, is_archived boolean);
+create table if not exists public.arenas (id uuid primary key, user_id uuid, asset_id text, name text, icon text, is_archived boolean);
 
 -- As duas que faltavam para checar qualquer consulta que olhe o CICLO de
 -- verdade: o que foi agendado e a qual arena aquilo pertence. Sem elas, tanto
@@ -283,6 +312,45 @@ create table if not exists public.user_purchases (
   is_active boolean,
   purchased_at timestamptz default now()
 );
+
+-- Codex e propostas pendentes de mentor. O andaime nao simula o saldo nem RLS;
+-- basta que as assinaturas existam para a migration ser analisada pelo Postgres.
+create table if not exists public.codex (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid,
+  catalog_id uuid,
+  name text,
+  description text,
+  author text,
+  price integer,
+  template jsonb,
+  schema_version text,
+  is_public boolean,
+  source_type text,
+  origin_codex_id uuid,
+  created_by_user_id uuid,
+  mentor_relationship_link_id uuid,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+create table if not exists public.codex_shares (
+  id uuid primary key,
+  sender_user_id uuid,
+  recipient_user_id uuid,
+  source_codex_id uuid,
+  delivery_method text,
+  share_token text,
+  status text,
+  cost_gold integer,
+  notification_id uuid,
+  claimed_by_user_id uuid,
+  claimed_codex_id uuid,
+  claimed_at timestamptz,
+  created_at timestamptz default now(),
+  metadata jsonb
+);
+create or replace function public._codex_debit_gold(uuid, integer, text, text, jsonb)
+returns integer language sql as $$ select 0 $$;
 
 -- O que minhas_marcas_secretas() le alem do que ja estava aqui
 -- (supabase/migrations/20261006180000_regras_secretas.sql).

@@ -391,6 +391,7 @@ export const SEASONS: Record<string, SeasonConfig> = {
   },
   'season-zenite-2-2027': {
     id: 'season-zenite-2-2027',
+    seasonKey: 'zenite_2_2027',
     name: 'Zenite II',
     description: 'Pressão central da Segunda Era. Ritmo alto, leituras mais duras e recompensa mais rara.',
     backgroundUrl: `${ROOT_IMAGES_URL}/gold.png`,

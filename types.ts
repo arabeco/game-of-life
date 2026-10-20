@@ -563,6 +563,7 @@ export interface UserProfile {
   competitionSlotsPurchased?: number;
   mentorSlotsPurchased?: number;
   linkedArenaSlotsPurchased?: number;
+  relationshipSlotsPurchased?: number;
 
   themePreference?: ThemePreference;
   arenasViewMode?: ArenasViewMode;
@@ -1339,10 +1340,14 @@ export interface RelationshipLink {
   arenaSlots?: number;
   renewedAt?: string | null;
   renewalCount?: number;
+  /** Estado privado escolhido pelo mentor para organizar seus mentorados. */
+  mentorStatus?: 'em_ritmo' | 'atencao' | 'pausado';
+  /** Quanto do planner o mentor pode consultar em modo somente leitura. */
+  plannerShareMode?: 'none' | 'shared_arenas' | 'full';
 }
 
-export type RelationshipCapacityBucket = 'partnership' | 'competition' | 'mentor' | 'linked_arena' | 'pupil_mentor';
-export type RelationshipCapacitySlotType = 'partnership' | 'competition' | 'mentor' | 'linked_arena';
+export type RelationshipCapacityBucket = 'partnership' | 'competition' | 'mentor' | 'linked_arena' | 'pupil_mentor' | 'relationship_slot';
+export type RelationshipCapacitySlotType = 'partnership' | 'competition' | 'mentor' | 'linked_arena' | 'relationship_slot';
 export type RelationshipInviteAction = 'accept' | 'decline' | 'revoke';
 
 export interface RelationshipCapacityEntry {
@@ -1369,6 +1374,7 @@ export interface RelationshipCapacitySummary {
   mentor: RelationshipCapacityEntry;
   linked_arena: RelationshipCapacityEntry;
   pupil_mentor: RelationshipCapacityEntry;
+  relationship_slot: RelationshipCapacityEntry;
 }
 
 export interface LinkedRelationshipArena {

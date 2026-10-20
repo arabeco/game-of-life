@@ -22,11 +22,30 @@ import { getDisplayLevel } from '../constants/lifeAreas';
 import { ArenaCard } from './ArenaCard';
 import { ArenaDetailModal } from './ArenaDetailModal';
 import { NewArenaModal } from './NewArenaModal';
+import { CodexModal } from './CodexModal';
 import { getRelationshipLifecycle, getRelationshipLinkPrice, getRelationshipRenewalPrice } from '../constants/relationshipLinks';
 import { getArenaPresentationTasks } from '../utils/arenaProgressPresentation';
 
 type VisibleConnectionType = Extract<RelationshipLinkType, 'mentoria' | 'parceria' | 'competicao'>;
 type ProfileLite = Pick<UserProfile, 'id' | 'nickname' | 'avatarUrl' | 'level'>;
+type MentorPlannerRow = {
+  task_id: string;
+  action_id: string;
+  action_name: string;
+  arena_id: string | null;
+  arena_name: string | null;
+  arena_icon: string | null;
+  task_date: string;
+  start_time: number | null;
+  duration: number | null;
+  completed: boolean;
+};
+
+const mentorStatusCopy = {
+  em_ritmo: { label: 'Em ritmo', className: 'border-emerald-300/22 bg-emerald-300/[0.08] text-emerald-100' },
+  atencao: { label: 'Atenção', className: 'border-amber-300/22 bg-amber-300/[0.08] text-amber-100' },
+  pausado: { label: 'Pausado', className: 'border-white/16 bg-white/[0.06] text-white/65' },
+} as const;
 
 const typeCopy: Record<VisibleConnectionType, { label: string; invite: string; description: string }> = {
   mentoria: {
@@ -128,6 +147,7 @@ export const ConnectionsModal: React.FC<{
     friends,
     getActionsForArena,
     respondToRelationshipInvite,
+    searchPlayers,
     selectMentorshipArena,
     shareRelationshipArena,
     showToast,
@@ -157,8 +177,17 @@ export const ConnectionsModal: React.FC<{
   const [profiles, setProfiles] = useState<Record<string, ProfileLite>>({});
   const [activeType, setActiveType] = useState<VisibleConnectionType>(initialTab);
   const [inviteType, setInviteType] = useState<VisibleConnectionType | null>(initialRecipientId ? initialTab : null);
+  const [inviteSearch, setInviteSearch] = useState('');
+  const [inviteSearchResults, setInviteSearchResults] = useState<UserProfile[]>([]);
+  const [searchingInvitees, setSearchingInvitees] = useState(false);
+  const searchPlayersRef = useRef(searchPlayers);
+  searchPlayersRef.current = searchPlayers;
   const [arenaPickerLink, setArenaPickerLink] = useState<RelationshipLink | null>(null);
   const [mentorshipPickerLink, setMentorshipPickerLink] = useState<RelationshipLink | null>(null);
+  const [mentorCodexLink, setMentorCodexLink] = useState<RelationshipLink | null>(null);
+  const [menteeDetailLink, setMenteeDetailLink] = useState<RelationshipLink | null>(null);
+  const [fullPlannerRows, setFullPlannerRows] = useState<MentorPlannerRow[]>([]);
+  const [loadingFullPlanner, setLoadingFullPlanner] = useState(false);
   const [competitionInviteFriend, setCompetitionInviteFriend] = useState<UserProfile | null>(null);
   const [selectedArenaId, setSelectedArenaId] = useState('');
   /** Arena de vinculo aberta em detalhe. Ver abrirArenaDoVinculo. */
@@ -175,6 +204,57 @@ export const ConnectionsModal: React.FC<{
     assets.flatMap((asset) => asset.arenas).find((arena) => arena.id === entry.arenaId) || null
   ), [assets]);
   const [competitionDurationDays, setCompetitionDurationDays] = useState(7);
+
+  useEffect(() => {
+    const link = menteeDetailLink;
+    if (!link || link.plannerShareMode !== 'full') {
+      setFullPlannerRows([]);
+      setLoadingFullPlanner(false);
+      return;
+    }
+    let cancelled = false;
+    setLoadingFullPlanner(true);
+    void supabase.rpc('mentor_planner_week', { p_link_id: link.id, p_start_date: getLocalDateString() }).then(({ data, error }) => {
+      if (cancelled) return;
+      if (error) {
+        console.error('Error fetching full mentee planner:', error);
+        showToast('Não foi possível abrir o planner completo.', 'error');
+        setFullPlannerRows([]);
+      } else {
+        setFullPlannerRows((data || []) as MentorPlannerRow[]);
+      }
+      setLoadingFullPlanner(false);
+    });
+    return () => { cancelled = true; };
+  }, [menteeDetailLink?.id, menteeDetailLink?.plannerShareMode, showToast]);
+
+  const updateMentorStatus = async (link: RelationshipLink, status: keyof typeof mentorStatusCopy) => {
+    setBusyKey(`mentor-status:${link.id}`);
+    try {
+      const { error } = await supabase.rpc('set_mentorship_mentor_status', { p_link_id: link.id, p_status: status });
+      if (error) throw error;
+      setMenteeDetailLink(previous => previous ? { ...previous, mentorStatus: status } : previous);
+      await refresh();
+    } catch (error: any) {
+      showToast(`Não foi possível alterar o status: ${error?.message || 'erro desconhecido'}`, 'error');
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const updatePlannerVisibility = async (link: RelationshipLink, mode: 'none' | 'shared_arenas' | 'full') => {
+    setBusyKey(`planner-visibility:${link.id}`);
+    try {
+      const { error } = await supabase.rpc('set_mentorship_planner_visibility', { p_link_id: link.id, p_mode: mode });
+      if (error) throw error;
+      await refresh();
+      showToast('Visibilidade do planner atualizada.', 'success');
+    } catch (error: any) {
+      showToast(`Não foi possível alterar a visibilidade: ${error?.message || 'erro desconhecido'}`, 'error');
+    } finally {
+      setBusyKey(null);
+    }
+  };
 
   const visibleInvites = useMemo(
     () => invites.filter((invite) => invite.linkType === activeType),
@@ -205,9 +285,27 @@ export const ConnectionsModal: React.FC<{
     return { actionCount: measurableActions.length, plannedTotal, rewardChestType, rewardXp };
   }, [actions, selectedCompetitionArena]);
   const inviteCandidates = useMemo(
-    () => initialRecipientId ? friends.filter((friend) => friend.id === initialRecipientId) : friends,
-    [friends, initialRecipientId],
+    () => initialRecipientId ? friends.filter((friend) => friend.id === initialRecipientId) : inviteSearch.trim().length >= 3 ? inviteSearchResults : friends,
+    [friends, initialRecipientId, inviteSearch, inviteSearchResults],
   );
+
+  useEffect(() => {
+    if (!inviteType || initialRecipientId || inviteSearch.trim().length < 3) {
+      setInviteSearchResults([]);
+      setSearchingInvitees(false);
+      return;
+    }
+    let cancelled = false;
+    setSearchingInvitees(true);
+    const timer = window.setTimeout(() => {
+      void searchPlayersRef.current(inviteSearch).then((results) => {
+        if (!cancelled) setInviteSearchResults(results);
+      }).finally(() => {
+        if (!cancelled) setSearchingInvitees(false);
+      });
+    }, 240);
+    return () => { cancelled = true; window.clearTimeout(timer); };
+  }, [initialRecipientId, inviteSearch, inviteType]);
 
   // Accepting an invite triggers two refreshes: respond() awaits one, and
   // respondToRelationshipInvite dispatches glyph:relationships-updated, whose listener
@@ -304,7 +402,10 @@ export const ConnectionsModal: React.FC<{
   const respond = async (invite: RelationshipLinkInvite, action: RelationshipInviteAction) => {
     setBusyKey(`${action}:${invite.id}`);
     try {
-      if (await respondToRelationshipInvite(invite.id, action)) await refresh();
+      const accepted = invite.linkType === 'mentoria'
+        ? await runRelationshipRpc('respond_client_paid_mentorship_invite', { p_invite_id: invite.id, p_action: action })
+        : await respondToRelationshipInvite(invite.id, action);
+      if (accepted) await refresh();
     } finally {
       setBusyKey(null);
     }
@@ -322,7 +423,7 @@ export const ConnectionsModal: React.FC<{
     }
     setBusyKey(`invite:${friendId}`);
     try {
-      const sent=inviteType==='mentoria' ? await runRelationshipRpc('propose_relationship_v3',{p_recipient_id:friendId,p_link_type:'mentoria',p_pupil_id:mentorshipRole==='pupil'?userProfile.id:friendId}) : await createRelationshipInvite(friendId,inviteType);
+      const sent=inviteType==='mentoria' ? await runRelationshipRpc('propose_client_paid_mentorship',{p_recipient_id:friendId,p_pupil_id:mentorshipRole==='pupil'?userProfile.id:friendId}) : await createRelationshipInvite(friendId,inviteType);
       if(sent){
         setInviteType(null);
         await refresh();
@@ -368,13 +469,27 @@ export const ConnectionsModal: React.FC<{
 
   const runRelationshipRpc=async(name:string,args:Record<string,unknown>)=>{
     const {error}=await supabase.rpc(name,args);
-    if(error){showToast('Não foi possível concluir: '+error.message,'error');return false;}
+    if(error){
+      const raw=String(error.message||'');
+      showToast(raw.includes('RELATIONSHIP_SLOT_LIMIT_REACHED') ? 'Sem vagas livres. Compre uma vaga no topo de Vínculos.' : 'Não foi possível concluir: '+raw,'error');
+      if(raw.includes('RELATIONSHIP_SLOT_LIMIT_REACHED')) await refresh();
+      return false;
+    }
     await refresh();window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));return true;
   };
   const runBusy=async(key:string,action:()=>Promise<unknown>)=>{if(busyKey)return;setBusyKey(key);try{await action();}finally{setBusyKey(null);}};
   const renewLink=async(link:RelationshipLink)=>{
-    if(!await confirm({title:'Propor renovação?',message:getRelationshipRenewalPrice(link.linkType)+' ouros serão reservados. Os 30 dias começam no aceite da outra pessoa.',confirmLabel:'PROPOR'}))return;
-    await runBusy('renew:'+link.id,async()=>{if(await renewRelationshipLink(link.id))await refresh();});
+    const clientPays = link.linkType === 'mentoria';
+    const message = clientPays
+      ? 'A renovação usa uma vaga livre de quem oferece a mentoria. Os 30 dias começam no aceite.'
+      : `${getRelationshipRenewalPrice(link.linkType)} ouros serão reservados. Os 30 dias começam no aceite da outra pessoa.`;
+    if(!await confirm({title:'Propor renovação?',message,confirmLabel:'PROPOR'}))return;
+    await runBusy('renew:'+link.id,async()=>{
+      const renewed = clientPays
+        ? await runRelationshipRpc('renew_client_paid_mentorship', { p_relationship_link_id: link.id })
+        : await renewRelationshipLink(link.id);
+      if(renewed) await refresh();
+    });
   };
   const endLink = async (link: RelationshipLink) => {
     if (!(await confirm({
@@ -438,6 +553,19 @@ export const ConnectionsModal: React.FC<{
             </div>
           </header>
 
+          {capacidade && (() => {
+            const vagas = capacidade.relationship_slot;
+            const livres = Math.max(0, vagas.limit - vagas.used);
+            return (
+              <div className="flex items-center justify-between gap-3 border-b border-amber-200/10 bg-amber-200/[0.035] px-4 py-2">
+                <div className="text-[10px] font-bold text-amber-100/80">Vagas livres: <span className="text-amber-200">{livres} / {vagas.limit}</span></div>
+                <button type="button" disabled={comprandoEspaco} onClick={async () => { setComprandoEspaco(true); try { if (await buyRelationshipCapacitySlot('relationship_slot', vagas.costGold)) await refresh(); } finally { setComprandoEspaco(false); } }} className="rounded-md border border-amber-200/25 bg-amber-200/[0.08] px-2 py-1 text-[9px] font-black uppercase tracking-[0.09em] text-amber-100 disabled:opacity-45">
+                  {comprandoEspaco ? 'Comprando…' : `Comprar vaga · ${vagas.costGold} ouro`}
+                </button>
+              </div>
+            );
+          })()}
+
           <div className="custom-scrollbar flex-1 space-y-5 overflow-y-auto p-4">
             <section className="grid grid-cols-3 gap-1 rounded-lg border border-white/10 bg-black/25 p-1">
               {(Object.keys(typeCopy) as VisibleConnectionType[]).map((type) => (
@@ -459,7 +587,7 @@ export const ConnectionsModal: React.FC<{
             </section>
 
             <section className="flex items-center justify-between gap-3">
-              <p className="text-[11px] leading-relaxed text-white/45">{typeCopy[activeType].description} · {getRelationshipLinkPrice(activeType)} ouro{activeType!=='competicao'?' / 30 dias':' por duelo'}</p>
+              <p className="text-[11px] leading-relaxed text-white/45">{typeCopy[activeType].description}{activeType === 'mentoria' ? ' · usa uma vaga do mentor' : ` · ${getRelationshipLinkPrice(activeType)} ouro${activeType!=='competicao'?' / 30 dias':' por duelo'}`}</p>
               <button id="connections-invite-open" type="button" onClick={() => setInviteType(activeType)} className="shrink-0 rounded-md bg-[var(--skin-accent-color)] px-3 py-2 text-[10px] font-black uppercase tracking-[0.1em] text-black">
                 {typeCopy[activeType].invite}
               </button>
@@ -505,7 +633,7 @@ export const ConnectionsModal: React.FC<{
             )}
 
             <section>
-              <h3 className="text-[10px] font-black uppercase tracking-[0.18em] text-white/45">Conexões</h3>
+              <h3 className="text-[10px] font-black uppercase tracking-[0.18em] text-white/45">{activeType === 'mentoria' && visibleLinks.some(link => link.mentorId === userProfile.id) ? 'Meus mentorados' : 'Conexões'}</h3>
 
               {/*
                 * A REGRA DO ESPACO, ESCRITA ONDE ELA ACONTECE.
@@ -529,6 +657,33 @@ export const ConnectionsModal: React.FC<{
                     const lifecycle=getRelationshipLifecycle(link);
                     const live=lifecycle==='ativo';
                     const isMentor = link.linkType === 'mentoria' && link.mentorId === userProfile.id;
+                    if (isMentor) {
+                      const mentorStatus = link.mentorStatus || 'em_ritmo';
+                      const statusCopy = mentorStatusCopy[mentorStatus];
+                      return (
+                        <button
+                          key={link.id}
+                          type="button"
+                          data-connection-link={link.id}
+                          data-link-type={link.linkType}
+                          onClick={() => setMenteeDetailLink(link)}
+                          className="group w-full rounded-lg border border-amber-300/14 bg-gradient-to-br from-amber-300/[0.07] to-transparent p-3 text-left transition-colors hover:border-amber-300/30"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Avatar profile={other} />
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-sm font-black text-white">{other?.nickname || 'Mentorado'}</div>
+                              <div className="mt-0.5 text-[10px] text-white/45">{relationshipArenas.length} arena{relationshipArenas.length === 1 ? '' : 's'} compartilhada{relationshipArenas.length === 1 ? '' : 's'} · até {new Date(link.endedAt||link.expiresAt||link.createdAt).toLocaleDateString('pt-BR')}</div>
+                            </div>
+                            <span className={`shrink-0 rounded-full border px-2 py-1 text-[9px] font-black uppercase tracking-[0.1em] ${statusCopy.className}`}>{statusCopy.label}</span>
+                          </div>
+                          <div className="mt-3 flex items-center justify-between border-t border-white/8 pt-2 text-[10px] font-bold text-amber-100/70">
+                            <span>{link.plannerShareMode === 'full' ? 'Planner completo compartilhado' : link.plannerShareMode === 'none' ? 'Planner não compartilhado' : 'Planner das arenas compartilhadas'}</span>
+                            <span className="text-white/45 group-hover:text-amber-100">Abrir acompanhamento →</span>
+                          </div>
+                        </button>
+                      );
+                    }
                     return (
                       <article key={link.id} data-connection-link={link.id} data-link-type={link.linkType} className="rounded-lg border border-white/10 bg-white/[0.035] p-3">
                         <div className="flex items-center gap-3">
@@ -543,7 +698,7 @@ export const ConnectionsModal: React.FC<{
                           <button type="button" disabled={Boolean(busyKey)} onClick={() => void endLink(link)} className="p-2 text-white/45 hover:text-rose-200" aria-label="Encerrar conexão"><TrashIcon className="h-4 w-4" /></button>
                         </div>
 
-                        {!live && link.linkType!=='competicao' ? (<div className="mt-3 flex gap-2"><button disabled={Boolean(busyKey)} onClick={()=>void renewLink(link)} className="luxe-skin-button luxe-brilho rounded-lg px-4 py-3 text-xs font-black disabled:opacity-50 disabled:cursor-not-allowed">Renovar · {getRelationshipRenewalPrice(link.linkType)} ouro</button><button disabled={Boolean(busyKey)} onClick={()=>void runBusy('hide:'+link.id,()=>runRelationshipRpc('hide_relationship_link',{p_link_id:link.id}))} className="text-xs text-white/50">Remover da minha lista</button></div>) : link.linkType === 'competicao' ? (
+                        {!live && link.linkType!=='competicao' ? (<div className="mt-3 flex gap-2"><button disabled={Boolean(busyKey)} onClick={()=>void renewLink(link)} className="luxe-skin-button luxe-brilho rounded-lg px-4 py-3 text-xs font-black disabled:opacity-50 disabled:cursor-not-allowed">{link.linkType==='mentoria' ? 'Renovar com vaga' : `Renovar · ${getRelationshipRenewalPrice(link.linkType)} ouro`}</button><button disabled={Boolean(busyKey)} onClick={()=>void runBusy('hide:'+link.id,()=>runRelationshipRpc('hide_relationship_link',{p_link_id:link.id}))} className="text-xs text-white/50">Remover da minha lista</button></div>) : link.linkType === 'competicao' ? (
                           <div className="mt-3 space-y-2">
                             {challengesForLink(link.id).length === 0 ? (
                               <p className="text-[11px] leading-relaxed text-white/45">Nenhum desafio registrado.</p>
@@ -630,15 +785,40 @@ export const ConnectionsModal: React.FC<{
                         )}
 
                         {live && link.linkType === 'mentoria' && !isMentor && (
+                          <div className="mt-3 flex flex-wrap items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedMentorshipIds(relationshipArenas.map(e=>e.arenaId));
+                                setMentorshipPickerLink(link);
+                              }}
+                              className="inline-flex items-center gap-2 rounded-md border border-amber-300/18 bg-amber-300/[0.06] px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-amber-100"
+                            >
+                              <PlusIcon className="h-3.5 w-3.5" /> Selecionar arenas
+                            </button>
+                            <label className="flex items-center gap-2 text-[10px] font-bold text-white/55">
+                              Meu planner
+                              <select
+                                value={link.plannerShareMode || 'shared_arenas'}
+                                disabled={Boolean(busyKey)}
+                                onChange={(event) => void updatePlannerVisibility(link, event.target.value as 'none' | 'shared_arenas' | 'full')}
+                                className="rounded-md border border-white/12 bg-black/35 px-2 py-1.5 text-[10px] text-white outline-none"
+                              >
+                                <option value="none">Não compartilhar</option>
+                                <option value="shared_arenas">Só arenas compartilhadas</option>
+                                <option value="full">Planner completo</option>
+                              </select>
+                            </label>
+                          </div>
+                        )}
+
+                        {live && link.linkType === 'mentoria' && isMentor && (
                           <button
                             type="button"
-                            onClick={() => {
-                              setSelectedMentorshipIds(relationshipArenas.map(e=>e.arenaId));
-                              setMentorshipPickerLink(link);
-                            }}
+                            onClick={() => setMentorCodexLink(link)}
                             className="mt-3 inline-flex items-center gap-2 rounded-md border border-amber-300/18 bg-amber-300/[0.06] px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-amber-100"
                           >
-                            <PlusIcon className="h-3.5 w-3.5" /> Selecionar arenas
+                            <PlusIcon className="h-3.5 w-3.5" /> Criar campanha
                           </button>
                         )}
 
@@ -671,13 +851,14 @@ export const ConnectionsModal: React.FC<{
           <div className="max-h-[70vh] w-full max-w-sm overflow-y-auto rounded-lg border border-white/12 bg-[#0b0c0f] p-4" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-center justify-between">
               <h3 className="text-base font-black text-white">{typeCopy[inviteType].invite}</h3>
-            <p className="my-2 text-xs text-white/60">{getRelationshipLinkPrice(inviteType)} ouros reservados no envio. Aceite confirma o pagamento; recusa ou expiração devolve a reserva.</p>
-            {inviteType==='mentoria'&&<label className="block text-xs text-white">Meu papel<select value={mentorshipRole} onChange={e=>setMentorshipRole(e.target.value as 'mentor'|'pupil')} className="ml-2 bg-black p-2"><option value="mentor">Acompanhar a outra pessoa</option><option value="pupil">Compartilhar minhas arenas</option></select></label>}
+            <p className="my-2 text-xs text-white/60">{inviteType === 'mentoria' ? 'Ao aceitar, este vínculo usará uma vaga livre de quem oferece a mentoria.' : `${getRelationshipLinkPrice(inviteType)} ouros reservados no envio. Aceite confirma o pagamento; recusa ou expiração devolve a reserva.`}</p>
+            {inviteType==='mentoria'&&<label className="block text-xs text-white">Quero<select value={mentorshipRole} onChange={e=>setMentorshipRole(e.target.value as 'mentor'|'pupil')} className="ml-2 bg-black p-2"><option value="mentor">Oferecer mentoria</option><option value="pupil">Pedir mentoria</option></select></label>}
               <button aria-label="Voltar" type="button" onClick={() => setInviteType(null)} className="p-2 text-white/55"><XIcon className="h-4 w-4" /></button>
             </div>
+            {!initialRecipientId && <input value={inviteSearch} onChange={(event) => setInviteSearch(event.target.value)} placeholder="Buscar pessoa pelo nome" className="mt-3 w-full rounded-md border border-white/12 bg-black/35 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/35 focus:border-amber-300/35" />}
             <div className="mt-3 space-y-2">
               {inviteCandidates.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-white/12 p-4 text-center text-xs text-white/45">Adicione a pessoa como amiga primeiro.</div>
+                <div className="rounded-lg border border-dashed border-white/12 p-4 text-center text-xs text-white/45">{searchingInvitees ? 'Buscando pessoas…' : inviteSearch.trim().length >= 3 ? 'Nenhuma pessoa encontrada.' : 'Busque alguém pelo nome ou escolha um amigo.'}</div>
               ) : inviteCandidates.map((friend) => (
                 <button key={friend.id} id={`connections-invite-friend-${friend.id}`} type="button" disabled={Boolean(busyKey)} onClick={() => void sendInvite(friend.id)} className="flex w-full items-center gap-3 rounded-lg border border-white/10 bg-white/[0.035] p-3 text-left hover:bg-white/[0.07]">
                   <Avatar profile={profileFromUser(friend)} />
@@ -789,6 +970,37 @@ export const ConnectionsModal: React.FC<{
         </div>
       )}
 
+      {mentorCodexLink && (
+        <CodexModal
+          onClose={() => setMentorCodexLink(null)}
+          recipientId={mentorCodexLink.pupilId}
+          recipientName={profileFor(mentorCodexLink.pupilId)?.nickname || 'orientado'}
+          relationshipLinkId={mentorCodexLink.id}
+          onDelivered={() => setMentorCodexLink(null)}
+        />
+      )}
+
+      {menteeDetailLink && (() => {
+        const pupil = profileFor(menteeDetailLink.pupilId);
+        const linked = arenasForLink(menteeDetailLink.id);
+        const status = menteeDetailLink.mentorStatus || 'em_ritmo';
+        const sharedRows = linked.flatMap((entry) => tasksForEntry(entry).map((task) => {
+          const action = (entry.actions || []).find(candidate => candidate.id === task.actionId);
+          const arena = previewArenaFromEntry(entry);
+          return { task_id: task.id, action_name: action?.name || 'Ação', arena_name: arena.name, arena_icon: arena.icon, task_date: task.date, start_time: task.startTime, completed: Boolean(task.completed) };
+        })).filter(row => row.task_date >= getLocalDateString()).sort((a, b) => `${a.task_date}-${a.start_time || 0}`.localeCompare(`${b.task_date}-${b.start_time || 0}`)).slice(0, 30);
+        const plannerRows = menteeDetailLink.plannerShareMode === 'full' ? fullPlannerRows : sharedRows;
+        const plannerLabel = menteeDetailLink.plannerShareMode === 'full' ? 'Planner completo' : menteeDetailLink.plannerShareMode === 'none' ? 'Planner não compartilhado' : 'Planner das arenas compartilhadas';
+        return <div className="fixed inset-0 z-[10035] flex items-end justify-center bg-black/75 p-3 sm:items-center" onClick={() => setMenteeDetailLink(null)}>
+          <div className="custom-scrollbar max-h-[88vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-amber-300/20 bg-[#101216] p-4 shadow-2xl sm:p-6" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-start gap-3"><Avatar profile={pupil} /><div className="min-w-0 flex-1"><div className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-200/65">Mentorado</div><h3 className="truncate text-xl font-black text-white">{pupil?.nickname || 'Mentorado'}</h3><p className="mt-1 text-[11px] text-white/45">{plannerLabel} · {linked.length} arena{linked.length === 1 ? '' : 's'} compartilhada{linked.length === 1 ? '' : 's'}</p></div><button type="button" onClick={() => setMenteeDetailLink(null)} className="p-2 text-white/55 hover:text-white" aria-label="Fechar acompanhamento"><XIcon className="h-5 w-5" /></button></div>
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-y border-white/8 py-3"><label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.12em] text-white/55">Status<select value={status} disabled={Boolean(busyKey)} onChange={(event) => void updateMentorStatus(menteeDetailLink, event.target.value as keyof typeof mentorStatusCopy)} className="rounded-md border border-amber-300/20 bg-black/35 px-2 py-1.5 text-[10px] font-black normal-case tracking-normal text-amber-100 outline-none"><option value="em_ritmo">Em ritmo</option><option value="atencao">Atenção</option><option value="pausado">Pausado</option></select></label><button type="button" onClick={() => { setMentorCodexLink(menteeDetailLink); setMenteeDetailLink(null); }} className="inline-flex items-center gap-2 rounded-md border border-amber-300/22 bg-amber-300/[0.09] px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-amber-100"><PlusIcon className="h-3.5 w-3.5" /> Criar campanha</button></div>
+            <section className="mt-5"><div className="flex items-center justify-between gap-3"><h4 className="text-[10px] font-black uppercase tracking-[0.18em] text-white/45">Planner · próximos 7 dias</h4><span className="text-[10px] text-white/40">Somente leitura</span></div>{menteeDetailLink.plannerShareMode === 'none' ? <p className="mt-3 rounded-lg border border-dashed border-white/12 p-4 text-xs leading-relaxed text-white/45">Esta pessoa escolheu não compartilhar o planner. As arenas continuam separadas abaixo.</p> : loadingFullPlanner ? <div className="mt-3 h-28 animate-pulse rounded-lg bg-white/5" /> : plannerRows.length === 0 ? <p className="mt-3 rounded-lg border border-dashed border-white/12 p-4 text-xs text-white/45">Nenhuma ação agendada para os próximos dias.</p> : <div className="mt-3 divide-y divide-white/8 rounded-lg border border-white/10 bg-black/20">{plannerRows.map((row) => <div key={row.task_id} className="flex items-center gap-3 px-3 py-2.5"><span className="w-12 shrink-0 text-[10px] font-bold text-white/45">{new Date(`${row.task_date}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' })}</span><span className="w-10 shrink-0 text-[10px] text-white/45">{row.start_time == null ? '—' : `${String(Math.floor(row.start_time / 60)).padStart(2, '0')}:${String(row.start_time % 60).padStart(2, '0')}`}</span><div className="min-w-0 flex-1"><div className={`truncate text-xs font-bold ${row.completed ? 'text-white/40 line-through' : 'text-white/85'}`}>{row.action_name}</div><div className="truncate text-[10px] text-white/40">{row.arena_icon} {row.arena_name || 'Sem arena'}</div></div>{row.completed && <CheckIcon className="h-4 w-4 shrink-0 text-emerald-300" />}</div>)}</div>}</section>
+            <section className="mt-6"><h4 className="text-[10px] font-black uppercase tracking-[0.18em] text-white/45">Arenas compartilhadas</h4>{linked.length === 0 ? <p className="mt-3 text-xs text-white/45">Ainda não há arenas selecionadas para esta mentoria.</p> : <div className="mt-3 grid gap-3 sm:grid-cols-2">{linked.map((entry) => <ArenaProgress key={entry.id} entry={entry} owner={pupil?.nickname || 'Mentorado'} onOpen={() => setArenaDoVinculoAberta(entry)} />)}</div>}</section>
+          </div>
+        </div>;
+      })()}
+
       {arenaDoVinculoAberta && (() => {
         // Quando a arena e sua, o modal recebe a arena VIVA do contexto: assim
         // ele abre editavel e mostra o seu estado de agora, nao a foto que o
@@ -812,7 +1024,7 @@ export const ConnectionsModal: React.FC<{
       {creatingArena&&<NewArenaModal isOpen onClose={()=>setCreatingArena(false)} onArenaCreated={arena=>{setCreatingArena(false);setSelectedArenaId(arena.id);setEditingCreatedArena(arena);}}/>}
       {editingCreatedArena&&<ArenaDetailModal arena={assets.flatMap(a=>a.arenas).find(a=>a.id===editingCreatedArena.id)||editingCreatedArena} onClose={()=>setEditingCreatedArena(null)}/>}
       {reviewInvite&&<div className="fixed inset-0 z-[10040] flex items-center justify-center bg-black/80 p-4"><div className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-lg bg-[#10131a] p-5 text-white">
-        <h3 className="font-bold">{reviewInvite.renewalLinkId?'Renovar por 30 dias':'Revisar convite'}</h3><p className="my-2 text-sm">Quem enviou paga {reviewInvite.costGold} ouros. Você não será cobrado.</p>
+        <h3 className="font-bold">{reviewInvite.renewalLinkId?'Renovar por 30 dias':'Revisar convite'}</h3><p className="my-2 text-sm">{reviewInvite.linkType === 'mentoria' ? 'Ao aceitar, a mentoria ocupará uma vaga livre de quem oferece o acompanhamento.' : `Quem enviou paga ${reviewInvite.costGold} ouros. Você não será cobrado.`}</p>
         {reviewInvite.linkType==='mentoria'&&<p className="text-sm">{reviewInvite.pupilUserId===userProfile.id?'Você escolhe as arenas que a outra pessoa poderá acompanhar.':'Você acompanhará as arenas autorizadas pela outra pessoa.'}</p>}
         {reviewInvite.linkType==='competicao'&&<p className="text-sm">{reviewInvite.arenaSnapshot?.name} · {reviewInvite.arenaSnapshot?.durationDays} dias. Os dois começam do zero.</p>}
         {reviewInvite.actionsSnapshot?.map((a,index)=><p key={index} className="mt-2 text-xs text-white/70">{a.name} · {a.repetitions||1} repetições · {a.duration||0} min</p>)}

@@ -13,7 +13,6 @@ import { buildCodexTemplateFromDraft, type CodexCampaignPreview } from '../utils
 import { suggestEmojiForLabel } from '../utils/suggestEmojiForLabel';
 import { EmojiGlyph } from './EmojiGlyph';
 import { supabase } from '../supabaseClient';
-import { getGoldMechanicPrice } from '../constants/goldCatalog';
 import { buildArenaLimitMessage, getArenaCapacitySummary } from '../utils/arenaCapacity';
 
 type CodexDraft = {
@@ -22,11 +21,11 @@ type CodexDraft = {
   description: string;
   arenas: Arena[];
   actions: Action[];
+  campaign?: Pick<Campaign, 'type' | 'arenaConfig'>;
   updatedAt: string;
 };
 
 const CODEX_DRAFT_SCHEMA_VERSION = 'draft-v1';
-const MENTOR_CAMPAIGN_FORGE_GOLD_COST = getGoldMechanicPrice('mentor_codex_forge', 100);
 
 const difficultyLabels = ['MUITO FÁCIL', 'FÁCIL', 'NORMAL', 'DIFÍCIL', 'EXTREMO'];
 const actionTypeOptions: ActionType[] = ['Ação Recorrente', 'Compromisso', 'Marco'];
@@ -265,11 +264,12 @@ export const CodexModal: React.FC<{
   const buildDraftPreview = (draft: CodexDraft): CodexCampaignPreview => {
     const orderedArenas = draft.arenas.filter(arena => showArchived || !arena.isArchived);
     const arenaIds = orderedArenas.map(arena => arena.id);
+    const savedConfig = draft.campaign?.arenaConfig || {};
     const arenaConfig: NonNullable<Campaign['arenaConfig']> = {};
 
     orderedArenas.forEach((arena, index) => {
       const previousArenaId = orderedArenas[index - 1]?.id;
-      arenaConfig[arena.id] = {
+      arenaConfig[arena.id] = savedConfig[arena.id] || {
         isLocked: index > 0,
         isHidden: false,
         prerequisiteArenaIds: previousArenaId ? [previousArenaId] : [],
@@ -286,7 +286,7 @@ export const CodexModal: React.FC<{
         createdAt: draft.updatedAt || new Date().toISOString(),
         arenaIds,
         arenaConfig,
-        type: 'sequential',
+        type: draft.campaign?.type || 'sequential',
         priority: 'media',
         order: -1,
         priorityOrder: -1,
@@ -307,6 +307,7 @@ export const CodexModal: React.FC<{
       description: '',
       arenas: [],
       actions: [],
+      campaign: { type: 'sequential', arenaConfig: {} },
       updatedAt: new Date().toISOString(),
     };
     setCodexes(prev => [newCodex, ...prev]);
@@ -420,6 +421,13 @@ export const CodexModal: React.FC<{
     updateCodex(activeCodex.id, draft => ({
       ...draft,
       arenas: [newArena, ...draft.arenas],
+      campaign: {
+        type: draft.campaign?.type || 'sequential',
+        arenaConfig: {
+          ...(draft.campaign?.arenaConfig || {}),
+          [newArena.id]: { isLocked: false, isHidden: false, phase: 0, prerequisiteArenaIds: [] },
+        },
+      },
       updatedAt: new Date().toISOString(),
     }));
     setIsCreatingArena(false);
@@ -515,7 +523,7 @@ export const CodexModal: React.FC<{
     try {
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) return;
-      const template = buildCodexTemplateFromDraft(activeCodex);
+      const template = buildCodexTemplateFromDraft({ ...activeCodex, campaign: buildDraftPreview(activeCodex).campaign });
       const { data, error } = await supabase.from('codex').insert({
         owner_id: auth.user.id, name: activeCodex.name, description: activeCodex.description,
         template, schema_version: 'v2', source_type: 'created',
@@ -533,7 +541,7 @@ export const CodexModal: React.FC<{
   const handleDeliverCodex = async () => {
     if (!activeCodex || !recipientId) return;
 
-    const template = buildCodexTemplateFromDraft(activeCodex);
+    const template = buildCodexTemplateFromDraft({ ...activeCodex, campaign: buildDraftPreview(activeCodex).campaign });
     if (template.levels.length === 0) {
       setStatus('Crie ao menos uma arena antes de enviar.');
       return;
@@ -553,7 +561,7 @@ export const CodexModal: React.FC<{
 
     localStorage.removeItem(draftStorageKey);
     setCodexes([]);
-    setStatus(`Campanha enviada para ${recipientName || 'o pupilo'}.`);
+    setStatus(`Proposta enviada para ${recipientName || 'o orientado'}.`);
     window.setTimeout(() => setStatus(null), 1800);
     onDelivered?.();
     onClose();
@@ -562,6 +570,38 @@ export const CodexModal: React.FC<{
   const selectedArena = activeCodex?.arenas.find(a => a.id === selectedArenaId) || null;
   const selectedArenaActions = selectedArena ? actionsForArena(selectedArena.id) : [];
   const actionArena = activeCodex?.arenas.find(a => a.id === actionDraft.arenaId) || null;
+  const maxDraftPhase = Math.max(0, ...(activeCodex?.arenas || []).map((arena) => (
+    activeCodex?.campaign?.arenaConfig?.[arena.id]?.phase ?? 0
+  )));
+  const selectedArenaPhase = selectedArena
+    ? (activeCodex?.campaign?.arenaConfig?.[selectedArena.id]?.phase ?? 0)
+    : 0;
+  const moveDraftArenaToPhase = (arenaId: string, phase: number) => {
+    if (!activeCodex) return;
+    updateCodex(activeCodex.id, (draft) => {
+      const previousPhaseIds = phase > 0
+        ? draft.arenas
+          .filter((arena) => (draft.campaign?.arenaConfig?.[arena.id]?.phase ?? 0) === phase - 1)
+          .map((arena) => arena.id)
+        : [];
+      const previous = draft.campaign?.arenaConfig?.[arenaId];
+      return {
+        ...draft,
+        campaign: {
+          type: draft.campaign?.type || 'sequential',
+          arenaConfig: {
+            ...(draft.campaign?.arenaConfig || {}),
+            [arenaId]: {
+              isLocked: phase > 0,
+              isHidden: previous?.isHidden || false,
+              phase,
+              prerequisiteArenaIds: previousPhaseIds,
+            },
+          },
+        },
+      };
+    });
+  };
 
   return (
     <Portal>
@@ -649,7 +689,7 @@ export const CodexModal: React.FC<{
                 <button onClick={() => activeCodex && setCampaignPreview(buildDraftPreview(activeCodex))} className="w-full py-2 rounded-xl luxe-button-secondary col-span-2 font-bold tracking-wider">VER CAMPANHA</button>
                 {recipientId ? (
                   <button onClick={handleDeliverCodex} className="w-full py-2 luxe-bico luxe-skin-button col-span-2 font-bold tracking-wider">
-                    FORJAR PARA {recipientName?.toUpperCase() || 'PUPILO'} · {MENTOR_CAMPAIGN_FORGE_GOLD_COST} OURO
+                    ENVIAR PROPOSTA PARA {recipientName?.toUpperCase() || 'PUPILO'}
                   </button>
                 ) : (
                   <button onClick={handleApplyCodex} disabled={installingDraft} className="w-full py-2 luxe-bico luxe-skin-button col-span-2 font-bold tracking-wider">INSTALAR NO JOGO</button>
@@ -701,6 +741,18 @@ export const CodexModal: React.FC<{
               </div>
               <p className="text-sm text-gray-500">{selectedArena.description || 'Sem descrição.'}</p>
             </div>
+            <label className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-gray-300">
+              <span className="font-bold uppercase tracking-wider text-gray-400">Fase</span>
+              <select
+                value={selectedArenaPhase}
+                onChange={(event) => moveDraftArenaToPhase(selectedArena.id, Number(event.target.value))}
+                className="rounded-lg border border-white/10 bg-black/45 px-2 py-1 text-xs font-bold text-white outline-none"
+              >
+                {Array.from({ length: maxDraftPhase + 2 }, (_, phase) => (
+                  <option key={phase} value={phase}>Fase {phase + 1}</option>
+                ))}
+              </select>
+            </label>
             <div className="flex items-center justify-between">
               <div className="text-xs font-bold uppercase tracking-wider text-gray-400">Ações</div>
               <button onClick={() => openActionModal(selectedArena.id)} className="px-3 py-2 rounded-xl luxe-skin-button text-xs">Nova ação</button>

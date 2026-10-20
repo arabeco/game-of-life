@@ -509,6 +509,7 @@
     var corpoAparte = document.createElement('canvas');
     corpoAparte.width = 500; corpoAparte.height = 500;
     var ctxAparte = corpoAparte.getContext('2d');
+    var maosAparte = document.createElement('canvas'); maosAparte.width=500; maosAparte.height=500;
 
     ordem.forEach(function (c) {
       var img = cache[c.url];
@@ -516,6 +517,7 @@
       var e = encaixe(efetivo(c.url));
       if (c.papel === 'corpo') {
         ctxAparte.drawImage(img, e.x, e.y, e.w, e.h);
+        maosAparte.getContext('2d').drawImage(corpoAparte,0,0);
         esconde.forEach(function (r) {
           (REGIOES[r] || []).forEach(function (cx) { ctxAparte.clearRect(cx[0], cx[1], cx[2], cx[3]); });
         });
@@ -524,6 +526,7 @@
         return;
       }
       ctx.drawImage(img, e.x, e.y, e.w, e.h);
+      if(c.papel === 'roupa' && window.__drawHandsInFront) window.__drawHandsInFront(ctx,maosAparte,c.url,500,500);
     });
 
     // Os recortes a mao, desenhados na mesma camada do corpo.
@@ -724,7 +727,7 @@
     function add(sel, papel) {
       var v = sel.value;
       if (!v) return;
-      camadas.push({ url: RAIZ + v, nome: nomeArquivo(v), papel: papel });
+      camadas.push({ url: v.startsWith('/') ? v : RAIZ + v, nome: nomeArquivo(v), papel: papel });
     }
     add(els.corpo, 'corpo');
     add(els.roupa, 'roupa');
@@ -1206,6 +1209,11 @@
 
     opcoes(els.corpo, corpos, null, GABARITO.corpo);
     opcoes(els.cabelo, cabelos, '(sem cabelo)');
+    if (new URLSearchParams(location.search).get('seasonReview') === '3') {
+      ['ZENITE_I','ECLIPSE_I','EGIDE_I','AURORA_II','ZENITE_II'].forEach(function(n) {
+        roupas.unshift('/output/temporadas-skins-2026-10-18/revisao-v3/SKIN_SEASON_'+n+'.png');
+      });
+    }
     opcoes(els.roupa, roupas, '(sem roupa)');
 
     /* AS QUE CHEGARAM AGORA VAO PARA O TOPO, COM MARCA.
@@ -1266,6 +1274,8 @@
 -->
 <script type="module">
   import { AVATAR_OFFSETS } from '../constants/avatarOffsets';
+  import { drawHandsInFront } from '../constants/avatarHands';
+  window.__drawHandsInFront = drawHandsInFront;
   window.__offsetsDoArquivo = AVATAR_OFFSETS;
   if (typeof window.semearDoArquivo === 'function') window.semearDoArquivo(AVATAR_OFFSETS, false);
 </script>

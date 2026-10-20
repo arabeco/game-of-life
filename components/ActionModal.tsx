@@ -401,9 +401,12 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     const arenas = typeof getArenas === 'function' ?getArenas() : [];
     const currentArena = arenas.find(a => a.id === editableAction.arenaId);
     const arenaFlags = React.useMemo(() => getArenaDomainFlags(currentArena), [currentArena]);
-    const isReceivedInstalledCodexAction = installedCodex?.source_type === 'gift_link' || installedCodex?.source_type === 'gift_in_app';
+    const isMentorDeliveredAction = Boolean(installedCodex?.mentor_relationship_link_id);
+    const isReceivedInstalledCodexAction = !isMentorDeliveredAction && (
+        installedCodex?.source_type === 'gift_link' || installedCodex?.source_type === 'gift_in_app'
+    );
     const isSeasonLockedAction = arenaFlags.isSeasonQuest;
-    const isInstalledCampaignAction = isInstalledCodexAction || isReceivedInstalledCodexAction;
+    const isInstalledCampaignAction = !isMentorDeliveredAction && (isInstalledCodexAction || isReceivedInstalledCodexAction);
     const isLockedFromSource = isSeasonLockedAction;
     const canEditAuthorialContent = !disableAuthoring && !isInstalledCampaignAction && !isSeasonLockedAction;
     const canEditExecutionSettings = !isSeasonLockedAction;

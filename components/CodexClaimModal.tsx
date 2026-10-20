@@ -35,7 +35,7 @@ const CodexCoverArt: React.FC<{ cover?: string; title: string }> = ({ cover, tit
 };
 
 export const CodexClaimModal: React.FC<CodexClaimModalProps> = ({ onClose, token, shareId, onClaimed }) => {
-  const { getCodexSharePreview, claimCodexShare } = useGame();
+  const { getCodexSharePreview, claimCodexShare, declineCodexShare } = useGame();
   const [preview, setPreview] = useState<CodexSharePreview | null>(null);
   const [loading, setLoading] = useState(true);
   const [isClaiming, setIsClaiming] = useState(false);
@@ -66,6 +66,17 @@ export const CodexClaimModal: React.FC<CodexClaimModalProps> = ({ onClose, token
   const handleClaim = async () => {
     setIsClaiming(true);
     const success = await claimCodexShare({ token, shareId: preview?.shareId || shareId });
+    setIsClaiming(false);
+    if (!success) return;
+    onClaimed?.();
+    onClose();
+  };
+
+  const handleDecline = async () => {
+    const id = preview?.shareId || shareId;
+    if (!id) return;
+    setIsClaiming(true);
+    const success = await declineCodexShare(id);
     setIsClaiming(false);
     if (!success) return;
     onClaimed?.();
@@ -241,9 +252,14 @@ export const CodexClaimModal: React.FC<CodexClaimModalProps> = ({ onClose, token
                       Ver campanha
                     </button>
                   )}
+                  {preview.deliveryMethod === 'in_app' && (
+                    <button onClick={handleDecline} disabled={isClaiming} className="inline-flex items-center justify-center rounded-xl border border-white/14 px-4 py-3 text-xs font-bold text-white/60 hover:border-rose-300/30 hover:text-rose-100 disabled:cursor-not-allowed disabled:opacity-50">
+                      Recusar campanha
+                    </button>
+                  )}
                   <button onClick={handleClaim} disabled={!preview.canClaim || isClaiming} className="inline-flex items-center justify-center gap-2 luxe-bico luxe-skin-button px-4 py-3 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-50">
                     {preview.deliveryMethod === 'external_link' ? <LinkIcon className="h-4 w-4" /> : <CheckIcon className="h-4 w-4" />}
-                    {isClaiming ? 'Reivindicando...' : preview.canClaim ? 'Reivindicar campanha' : 'Indisponivel'}
+                    {isClaiming ? 'Pegando campanha...' : preview.canClaim ? 'Pegar campanha' : 'Indisponível'}
                   </button>
                 </div>
               </>

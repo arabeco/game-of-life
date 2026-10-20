@@ -1123,6 +1123,7 @@ export interface GameContextType {
     transferUserCodex: (codexId: string, recipientId: string) => Promise<void>;
     getCodexSharePreview: (input: { token?: string; shareId?: string }) => Promise<CodexSharePreview | null>;
     claimCodexShare: (input: { token?: string; shareId?: string }) => Promise<boolean>;
+    declineCodexShare: (shareId: string) => Promise<boolean>;
     installCodex: (userCodexId: string, source?: UserCodex) => Promise<void>;
     duplicateUserCodexToRecipient: (codexId: string, recipientId: string, relationshipLinkId?: string | null) => Promise<boolean>;
     createMentorCodexForRecipient: (recipientId: string, codex: { name: string; description?: string; template: any }, relationshipLinkId?: string | null) => Promise<boolean>;
@@ -6691,6 +6692,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             mentor: normalizeEntry(raw.mentor),
             linked_arena: normalizeEntry(raw.linked_arena),
             pupil_mentor: normalizeEntry(raw.pupil_mentor),
+            relationship_slot: normalizeEntry(raw.relationship_slot),
         };
     };
 
@@ -6699,7 +6701,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const { data, error } = await supabase
             .from('user_profiles')
-            .select('wallet,partnership_slots_purchased,competition_slots_purchased,mentor_slots_purchased,linked_arena_slots_purchased')
+            .select('wallet,partnership_slots_purchased,competition_slots_purchased,mentor_slots_purchased,linked_arena_slots_purchased,relationship_slots_purchased')
             .eq('id', userId)
             .maybeSingle();
 
@@ -6711,6 +6713,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             competitionSlotsPurchased: Number((data as any).competition_slots_purchased ?? userProfile.competitionSlotsPurchased ?? 0),
             mentorSlotsPurchased: Number((data as any).mentor_slots_purchased ?? userProfile.mentorSlotsPurchased ?? 0),
             linkedArenaSlotsPurchased: Number((data as any).linked_arena_slots_purchased ?? userProfile.linkedArenaSlotsPurchased ?? 0),
+            relationshipSlotsPurchased: Number((data as any).relationship_slots_purchased ?? userProfile.relationshipSlotsPurchased ?? 0),
         });
     };
 
@@ -6745,6 +6748,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         arenaSlots: typeof row.arena_slots === 'number' ? row.arena_slots : 1,
         renewedAt: row.renewed_at ?? null,
         renewalCount: typeof row.renewal_count === 'number' ? row.renewal_count : 0,
+        mentorStatus: row.mentor_status === 'atencao' || row.mentor_status === 'pausado' ? row.mentor_status : 'em_ritmo',
+        plannerShareMode: row.planner_share_mode === 'none' || row.planner_share_mode === 'full' ? row.planner_share_mode : 'shared_arenas',
     });
 
     const buildLinkedRelationshipArenaPreview = (
@@ -6857,7 +6862,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (!raw) return fallback;
         if (raw.includes('arena_snapshot')) return 'Seu banco ainda esta com o schema antigo da mentoria. Rode o SQL que libera arena_snapshot como opcional.';
         if (raw.includes('MENTOR_PREMIUM_REQUIRED')) return 'A mentoria básica não usa mais Premium. Se isso apareceu, o banco ainda esta com regra antiga.';
-        if (raw.includes('RELATIONSHIP_SLOT_LIMIT_REACHED')) return 'Não foi possível abrir outro vínculo desse tipo agora.';
+        if (raw.includes('RELATIONSHIP_SLOT_LIMIT_REACHED')) return 'Sem vagas livres. Compre uma vaga ou ative Premium ou Platinum.';
         if (raw.includes('PUPIL_MENTOR_SLOT_LIMIT_REACHED')) return 'Esse pupilo já esta em outra mentoria ativa.';
         if (raw.includes('RELATIONSHIP_INVITE_ALREADY_PENDING')) return 'Já existe um convite pendente com esse aliado.';
         if (raw.includes('RELATIONSHIP_LINK_ALREADY_ACTIVE')) return 'Esse vínculo já esta ativo.';
@@ -7356,6 +7361,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 competitionSlotsPurchased: summary.competition.purchased ?? userProfile.competitionSlotsPurchased ?? 0,
                 mentorSlotsPurchased: summary.mentor.purchased ?? userProfile.mentorSlotsPurchased ?? 0,
                 linkedArenaSlotsPurchased: summary.linked_arena.purchased ?? userProfile.linkedArenaSlotsPurchased ?? 0,
+                relationshipSlotsPurchased: summary.relationship_slot.purchased ?? userProfile.relationshipSlotsPurchased ?? 0,
             });
         }
 
@@ -7860,6 +7866,17 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         showToast(`Campanha "${String((data as any)?.codex_name || 'Recebida')}" reivindicada.`, 'success');
         return true;
     };
+    const declineCodexShare = async (shareId: string): Promise<boolean> => {
+        const { error } = await supabase.rpc('decline_codex_share', { p_share_id: shareId });
+        if (error) {
+            console.error('Error declining codex share:', error);
+            showToast('Não foi possível recusar a campanha.', 'error');
+            return false;
+        }
+        await fetchNotifications();
+        showToast('Campanha recusada.', 'success');
+        return true;
+    };
     const deleteUserCodex = async (codexId: string) => {
         const userId = getSupabaseUserId();
         if (!userId) return;
@@ -7968,7 +7985,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         updateUserProfile({
             wallet: { ...userProfile.wallet, gold: nextGold },
         });
-        showToast('Nova campanha enviada ao pupilo por 100 de ouro.', 'success');
+        showToast('Proposta de campanha enviada. Ela entra no jogo após o aceite.', 'success');
         return true;
     };
 
@@ -15661,7 +15678,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             missoesDoCla, missoesDeClaAtivas, atualizarMissaoDoCla, entrarNaMissaoDoCla, receberPremioDaMissaoDoCla, humorDoCla, carregarHumorDoCla, autoresDoFeed,
             roundExpBonus, addProfileFlag, feed, addFeedEvent, deleteFeedEvent, toggleFeedLike, fetchLikesReceived, getArenas, getNextArenaToneSequence, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, ensureTasksLoadedThrough, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, addSequenceItem, updateSequenceItem, markSequenceItemToday, adjustSequenceItemDays, resetSequenceItem, deleteSequenceItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, recordMoodEntry, fetchMoodHistory, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, respondToClanInvite, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
             directMessages, dmConversations, blockedUsers, blockedUserIds, sendDirectMessage, markDMAsRead, fetchDMs, blockUser, unblockUser, submitModerationReport,
-            addSeason, updateSeason, addSeasonMission, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, isProfileLoaded, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, donateItem, craftItem, buyChestWithFragments, claimGardenBasket, buyGardenExpansion, claimDailyFragments, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, finishCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, createCompetitionInvite, respondToRelationshipInvite, endRelationshipLink, renewRelationshipLink, offerMentorshipArena, respondMentorshipOffer, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, respondCompetitionChallenge, cancelCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
+            addSeason, updateSeason, addSeasonMission, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, isProfileLoaded, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, donateItem, craftItem, buyChestWithFragments, claimGardenBasket, buyGardenExpansion, claimDailyFragments, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, finishCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, createCompetitionInvite, respondToRelationshipInvite, endRelationshipLink, renewRelationshipLink, offerMentorshipArena, respondMentorshipOffer, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, respondCompetitionChallenge, cancelCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, declineCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,
             aldeiaSlots, aldeiaPresence, loadAldeiaData, setAldeiaSlots, setAldeiaPresence,
             activeArenaPact, arenaPactProgress, arenaPactCandidates, missaoIndividualDisponivel, getArenaPactOptionsForArena, acceptArenaPact, abandonArenaPact, claimArenaPact, missaoDeSistemaAtiva, diasNoApp,

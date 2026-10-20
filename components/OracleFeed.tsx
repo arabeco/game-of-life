@@ -467,15 +467,15 @@ const NotificationDetailModal: React.FC<{
                 </div>
 
                 <div className="mt-4 flex flex-col gap-3">
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">
                             Toque fora para fechar
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex max-w-full flex-wrap gap-2 sm:justify-end">
                             {actionLabel && (
                                 <button
                                     onClick={() => onNavigate(notification)}
-                                    className="rounded-full border border-[var(--skin-accent-color)]/25 bg-[var(--skin-accent-color)]/12 px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--skin-accent-color)] transition-colors hover:bg-[var(--skin-accent-color)]/18"
+                                    className="whitespace-nowrap rounded-full border border-[var(--skin-accent-color)]/25 bg-[var(--skin-accent-color)]/12 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--skin-accent-color)] transition-colors hover:bg-[var(--skin-accent-color)]/18"
                                 >
                                     {actionLabel}
                                 </button>
@@ -483,7 +483,7 @@ const NotificationDetailModal: React.FC<{
                             {!notification.read && (
                                 <button
                                     onClick={() => onRead(notification.id)}
-                                    className="rounded-full border border-white/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/75 transition-colors hover:bg-white/5"
+                                    className="whitespace-nowrap rounded-full border border-white/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white/75 transition-colors hover:bg-white/5"
                                 >
                                     Marcar lida
                                 </button>
@@ -493,7 +493,7 @@ const NotificationDetailModal: React.FC<{
                                     onDelete(notification.id);
                                     onClose();
                                 }}
-                                className="rounded-full border border-red-400/20 bg-red-500/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-red-200 transition-colors hover:bg-red-500/15"
+                                className="whitespace-nowrap rounded-full border border-red-400/20 bg-red-500/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-red-200 transition-colors hover:bg-red-500/15"
                             >
                                 Excluir
                             </button>

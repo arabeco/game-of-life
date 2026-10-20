@@ -1,6 +1,6 @@
 # Prancheta do Glyph
 
-Cópia da prancheta do Afonso (artefato no claude.ai: https://claude.ai/artifact/99dQUHcbX6dy4dcAuu2Dx6), regravada pelo Claude em **16/10/2026**, já com a consolidação do Codex de 13 e 14/10. **14 abertos de 93** (79 feitos).
+Cópia da prancheta do Afonso (artefato no claude.ai: https://claude.ai/artifact/99dQUHcbX6dy4dcAuu2Dx6), regravada pelo Claude em **20/10/2026**, já com a consolidação do Codex de 13 e 14/10. **12 abertos de 100** (88 feitos).
 
 **Uma lista só:** a fonte é a prancheta online, e este arquivo é regravado a partir dela. Não edite as listas abaixo; para avisar algo, escreva em "Recados da outra IA", no fim: o Claude lê e passa para a prancheta.
 
@@ -10,14 +10,17 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 
 ## Lançamento
 
-- [ ] Teste do Glyph com um amigo (planilha no claude.ai) *(Afonso)* — 15/10: https://claude.ai/artifact/DG8g73vkemJE832jUg4bJc — 26 testes (por caminho, sem item bobo) em Fácil, Médio e Difícil, com deu certo / deu errado e nota; os testes no aparelho (push, tema claro, vibração, widget, compra, reembolso, recuperar senha, excluir conta) moram lá agora, e não mais na prancheta. Precisa do AAB 112. O amigo precisa do link compartilhado (Share) para abrir. Versão em texto: docs/SMOKETEST.md.
-- [ ] Subir o AAB 111 na Play (ou pular direto para o 112) *(Afonso)* — 13/10: o 111 está pronto (ce54428) e não há registro de upload. O 112 terá o trabalho de 13/10 do Claude e do Codex.
+- [ ] AAB 114: subir na Play *(Afonso)* — 19/10: gerado pelo Claude (a1e17b3), assinado, versionCode 114, numa cópia limpa do repositório, sem as skins de temporada (dependem de SQL). Leva: vibração desligada não vibra, dia certo no widget com Tempo em %, missão e campanha contando só para o bem, campanhas como pastas. Arquivo: android/app/build/outputs/bundle/release/Glyph-1.0.114-114.aab (SHA-256 624674de…). A função oracle precisa ser republicada para a leitura do ciclo seguir a regra nova.
 
-<details><summary>Feitos (10)</summary>
+<details><summary>Feitos (14)</summary>
 
+- [x] Conta nova travava no cadastro (idade não salvava) e o Sair da conta não saía — achado do Luigi *(Afonso)* — 18/10: causa achada e corrigida pelo Claude (a5da99e). O upsert do perfil mandava ouro, fragmentos, carteira, baús e premium, que desde 23/09 não aceitam escrita do app; o banco recusava a linha inteira e a conta nova ficava sem perfil. O Sair da conta do primeiro acesso usava o logout cru, que o celular desfaz. SQL 20261018100000 no banco (o Codex conferiu em 18/10): o 112 já cadastra; o Luigi só precisa fechar e abrir o app. O app corrigido e o Sair da conta estão no 113.
 - [x] Idade mínima nos Termos *(outra IA (Codex))* — Publicado (Codex). Reconferido em 13/10 no HTML público: 13 anos, com autorização do responsável para menores de 18.
+- [x] AAB 113: subir na Play e passar o Luigi para ele *(Afonso)* — 18/10: o Afonso subiu na Play. Superado pelo 114.
 - [x] Reembolso nos Termos (7 dias) *(outra IA (Codex))* — Publicado (Codex). Texto de 7 dias e encaminhamento ao Google Play no HTML público em 13/10.
+- [x] Teste do Glyph com um amigo (planilha no claude.ai) *(Afonso)* — Feito pelo Luigi no 112 (achados passados de boca, não pela planilha). Tudo corrigido e no 114: idade não salvava no cadastro (perfil da conta nova) e Sair da conta (a5da99e + SQL 20261018100000), diário sem internet apagando texto + fila (ae96664, 5d1ff65), vibração no arraste com a vibração desligada (1152cae). Opcional: uma passada rápida no 114 nos modais novos, no jardim (saquinho, guia, tamanhos) e no widget, que ele não viu.
 - [x] Resend: resolver o 401 do teste e comprovar que o e-mail chega (recuperação de acesso) *(outra IA (Codex))* — 16/10: resolvido pelo Codex; o Afonso confirmou que o e-mail chegou. O Luigi confere de novo no D9 (recuperação e "Conta excluída").
+- [x] Subir o AAB 111 na Play (ou pular direto para o 112) *(Afonso)* — Pulado: o Afonso subiu o 113 (18/10) e o 114 já está gerado.
 - [x] Conferir se o código VANGUARDA25 existe *(Afonso)* — 10/10: VANGUARDA10 apagado; VANGUARDA25 valendo, 25 vagas, 1 por pessoa, agora 25 de ouro e sem o programa de 14 dias (sql/vanguarda25-sem-programa.sql rodado).
 - [x] Site: contador "guerreiros na fila" quebrado *(outra IA (Codex))* — Corrigido e publicado (Codex): chama get_waitlist_count(), rótulo “inscrições recebidas”. Reconferido em 13/10.
 - [x] Exclusão: finalizar o pedido pelo site e a retomada da limpeza parcial *(outra IA (Codex))* — 16/10 (Codex): exclusão pelo site e retomada automática implementadas e publicadas. Teste real com conta descartável concluiu o protocolo 102 e confirmou a remoção do login, do perfil, dos dados e do arquivo. O e-mail de confirmação depende do item do Resend. Detalhes em docs/2026-10-16-fechamento-exclusao-widget-push.md.
@@ -30,16 +33,19 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 
 ## App
 
-- [ ] AAB 112 (só quando o Afonso pedir) *(Afonso)* — 16/10: gerado pelo Claude a pedido do Afonso. Glyph-1.0.112-112.aab em android/app/build/outputs/bundle/release/ (assinado, versionCode 112). Leva tudo de 13 a 16/10: campanhas em biblioteca, modais novos de arena e ação com − e + nas repetições, exclusão retomável e pelo site, e-mail de conta excluída, vibração nativa, planner sem andar de lado, widget novo, sem pay-to-win. Falta o Afonso subir na Play (teste interno) para o Luigi instalar. O 111 pode ser pulado.
-- [ ] Modal de arena e de ação: conferir no aparelho (Codex integrou) *(outra IA (Codex))* — 16/10 (Codex): integrados no código ActionModal, ArenaDetailModal, ArenaCard e NewArenaModal, com quatro abas (Geral, Contexto, Checklist, Mídia), slider de duração por etapas com campo numérico, rolagem interna no texto e no checklist e botões dourados. A agenda nova respeita as repetições e o fim do ciclo. Falta conferir na tela: tamanhos, teclado e cortes (o navegador dele não abriu o arquivo). Está na planilha do Luigi como M13. 16/10 (Claude): botões − e + nas Repetições (prop comBotoes no StyledRangeInput, estilo .action-step em components/action-layout.css, teste acao-repeticoes-mais-menos). Ficou sem commit porque se apoia no ActionModal novo do Codex, que ainda não foi commitado: entra junto no commit dele.
+- [ ] Refinar o widget do planner *(Afonso)* — 20/10: pedido do Afonso. É o widget do dia (GLYPH Hoje), com as abas Resumo e Planner (GlyphDayWidgetProvider e GlyphDayPaint). Definir com ele o que refinar.
 
-<details><summary>Feitos (41)</summary>
+<details><summary>Feitos (45)</summary>
 
+- [x] AAB 112 (só quando o Afonso pedir) *(Afonso)* — Superado pelo 113 e pelo 114 (20/10).
+- [x] Diário sem internet: texto sumia quando a rede voltava — achado do Luigi *(Claude)* — 18/10 (ae96664 + 5d1ff65, vão no 113): falha de leitura era tratada como página vazia, e com a rede oscilando a entrada nova era gravada sozinha por cima da página (o texto antigo sumia); o editor abria a página em branco sem rede e o Voltar saía sem esperar gravar; a bolinha do humor mudava antes de gravar e voltava. Agora: sem ler não grava; o editor avisa "Sem internet" e mantém o texto; e o Registrar sem internet manda a entrada para uma FILA no aparelho, que sai sozinha quando a rede volta (ao abrir o app, ao voltar do fundo, a cada minuto), na ordem e uma vez. Planilha do Luigi (M6) e SMOKETEST atualizados.
 - [x] Onboarding novo: fechar e commitar *(Claude)* — Commitado em 09/10 (fb05e4e).
 - [x] Campanhas: biblioteca, progresso entre ciclos e correções (Codex) *(outra IA (Codex))* — 16/10: o Codex terminou. O Claude conferiu: o build compila e 131 de 134 testes passam (falham a-mao-ganha-do-oraculo e luz-e-placa, que são antigos, e apagar-conta, que ainda lê o arquivo antigo depois que a exclusão foi para _shared/accountDeletion.ts; é com o Codex). Os textos da planilha e do SMOKETEST foram ajustados ao app: card "30 dias · 5 ações · 2 arenas" e "Arena liberada — Abrir". O trabalho ainda não foi commitado; precisa estar antes do AAB 112.
 - [x] Planner sem tremer: commitar *(Claude)* — Commitado em 09/10 (fb05e4e).
 - [x] Campanhas no banco real: percorrer tudo com uma conta de teste *(outra IA (Codex))* — 16/10 (Codex): migração 20261016120000_campaign_run_task_id_compatibility aplicada; corrigidas comparações em finish_campaign_run. Teste com conta descartável passou: recusa conclusão incompleta, conclui entre ciclos, arquiva, guarda histórico e biblioteca, tira as pendências futuras e reinstala do zero. Conta removida. Evidência: output/campaign-library/live-report.json. Falta só compra real e instalar pela tela no Android: fica com o Luigi (M11, M12, D10–D12).
 - [x] Botão do ciclo no planner e na ArenaView: commitar *(Claude)* — Commitado em 09/10 (fb05e4e).
+- [x] Missão de temporada, de clã e campanha contam só para o bem no ciclo *(Claude)* — 19/10 (1a5b3a8): entram como prometido = feito, só com o que caiu dentro do ciclo. O que faltou não pesa; o feito vale como ação, dia ativo e horas na nota. Não viram meta a selar. Quem faz só campanha deixa de ficar com 0%. Ciclos fechados não mudam. Antes, nem as missões ajudavam na nota de verdade (o bônus delas só alimentava a nota antiga). Vai no próximo AAB. A leitura do ciclo do Oráculo também foi ajustada: só vale depois de republicar a função oracle.
+- [x] Modal de arena e de ação: conferir no aparelho (Codex integrou) *(outra IA (Codex))* — 16/10 (Codex): integrados no código ActionModal, ArenaDetailModal, ArenaCard e NewArenaModal, com quatro abas (Geral, Contexto, Checklist, Mídia), slider de duração por etapas com campo numérico, rolagem interna no texto e no checklist e botões dourados. A agenda nova respeita as repetições e o fim do ciclo. Falta conferir na tela: tamanhos, teclado e cortes (o navegador dele não abriu o arquivo). Está na planilha do Luigi como M13. 16/10 (Claude): botões − e + nas Repetições (prop comBotoes no StyledRangeInput, estilo .action-step em components/action-layout.css, teste acao-repeticoes-mais-menos). Ficou sem commit porque se apoia no ActionModal novo do Codex, que ainda não foi commitado: entra junto no commit dele.
 - [x] Widget (rótulo do dia): fechar a mudança e o teste *(Claude)* — Ok do Afonso em 10/10.
 - [x] Editor do Soberano: fechar a mudança e o teste *(Claude)* — Ok do Afonso em 10/10. O teste luz-e-placa-do-soberano ainda acusa o slot do artefato fora do lugar.
 - [x] AAB 110 *(Afonso)* — 12/10: AAB 110 gerado pelo Codex (6b33f9a) em android/app/build/outputs/bundle/release/Glyph-1.0.110-110.aab, com tudo até o cartão do ciclo mais baixo (329d540). Falta subir no Play.
@@ -106,7 +112,7 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 
 ## Arte
 
-- [ ] Gerar de novo as 5 skins das temporadas (Zênite I, Eclipse I, Égide I, Aurora II, Zênite II) *(Afonso)* — 16/10: Afonso conferiu as 5 da leva de 12/10 e reprovou — manga e pedacinho de couro/pele aparecendo (vão entre manga e tronco, calcanhar de fora). Vão ser pedidas de novo. O pedido novo tem que: vestir em cima do body_masc_1 na mesma posição e escala; manga fechada até o pulso, colada no braço, manopla emendada; bota cobrindo o pé inteiro, calcanhar incluso; só depois tirar o corpo (fundo transparente, sem cabeça nem mão). A leva antiga fica em output/temporadas-skins-2026-10-12/ como referência; nada foi para o catálogo. Encaixe fino depois na tools/avatar-align.html.
+- [ ] Skins das temporadas: integrar as 5 aprovadas (Codex) e rodar o SQL *(Afonso)* — 16/10 reprovadas; 18/10 refeitas vestindo o avatar (docs/2026-10-18-skins-refazer-sobre-o-avatar.md). Revisão 3 aprovada pelo Afonso: sem pele nos 8 corpos, com cobre, ajuste feminino e mãos na frente. O Codex está integrando (PNGs no catálogo, itens, offsets), ainda sem commit. SQL sql/2026-10-18-skins-temporadas-aprovadas.sql rodado pelo Afonso (20/10). Falta o commit do Codex e entrar num AAB (não estão no 114).
 - [ ] Completar o conteúdo das temporadas futuras antes de ativá-las *(Afonso)* — 13/10 (Codex): Zênite I, Eclipse I e Égide I ainda precisam de skin, tema e jornadas; Zênite II segue em proposta.
 
 <details><summary>Feitos (8)</summary>
@@ -130,6 +136,8 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 
 ## Git
 
+- [ ] Republicar a função oracle (limpar os tokens do Supabase antes) *(Afonso)* — 19/10: o login do CLI falhou porque a conta chegou a 20 tokens pessoais (cada login das IAs cria um). Apagar os velhos em supabase.com/dashboard/account/tokens, depois npx supabase login e npx supabase functions deploy oracle --project-ref klmsdcncmhtgnlcejzdi. Serve para a leitura do ciclo do Oráculo seguir a regra nova de missão e campanha (1a5b3a8); o app já está certo no 114.
+
 <details><summary>Feitos (2)</summary>
 
 - [x] Subir os commits para o GitHub *(Claude)* — 46 commits no GitHub em 09/10.
@@ -141,9 +149,14 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 
 - [ ] Site: banner de cookie (opcional) *(outra IA (Codex))* — 13/10: o site não tem rastreador (nem Analytics, nem pixel); só guarda o que é do funcionamento. Pela LGPD isso não pede banner, só menção na Política de Privacidade. Volta se entrar analytics no site.
 - [ ] Criar campanha para outra pessoa (como era o Codex) *(Afonso)* — 15/10: ideia do Afonso. Alguém monta uma campanha (arenas, ações, plano de dias) e manda para outro jogador, como os manuscritos do Codex por @nickname. O código do Codex está guardado (migração 20260313_add_codex_forge_library.sql); dá para reaproveitar.
-- [ ] Jardim conquistado: expandir ou limite de peças atrelado ao progresso (depois) *(Afonso)* — 12/10: ideia do Afonso, para depois. O jardim iria sendo conquistado — área que expande, ou limite de coisas que se desbloqueia com o que você faz. Mesma direção do clã: integrado, não à parte.
 - [ ] Tag ou link de perfil para adicionar amigo (depois) *(Afonso)* — 12/10: código/link do perfil para adicionar sem buscar o nome. 13/10: o Codex já fez Copiar nickname e o cartão compartilhado com “Me adicione no Glyph!”; o link direto segue como expansão.
 - [ ] Feed: ordem do Reino (depois) *(Afonso)* — 12/10: o feed tem duas abas sem repetição (Aliados = você e amigos; Reino = o resto), commit 8ce20b6. Depois: quem é do seu clã e não é amigo ganha preferência no Reino, e um filtro para não floodar quando houver gente. Atenção: o app baixa só os 80 posts mais novos de todos; com muita gente pública, posts de amigos podem sumir do Aliados.
+
+<details><summary>Feitos (1)</summary>
+
+- [x] Jardim: cesta, tamanhos, guia — e fragmentos no Painel Diário (Codex, numa rodada só) *(outra IA (Codex))* — 18/10: no AAB 113 (228ba7f, Codex): saquinho do jardim, 7 expansões por fragmento, guia ilustrado, fragmentos do Painel Diário (1 por 50 EXP crua, até 15), busca de emojis e tons por arena. Os SQLs estão no banco (o Claude conferiu as tabelas em 18/10). Falta só ver no aparelho.
+
+</details>
 
 ## Recados da outra IA
 

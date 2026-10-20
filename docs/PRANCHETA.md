@@ -1,6 +1,6 @@
 # Prancheta do Glyph
 
-Cópia da prancheta do Afonso (artefato no claude.ai: https://claude.ai/artifact/99dQUHcbX6dy4dcAuu2Dx6), regravada pelo Claude em **20/10/2026**, já com a consolidação do Codex de 13 e 14/10. **12 abertos de 100** (88 feitos).
+Cópia da prancheta do Afonso (artefato no claude.ai: https://claude.ai/artifact/99dQUHcbX6dy4dcAuu2Dx6), regravada pelo Claude em **20/10/2026**, já com a consolidação do Codex de 13 e 14/10. **13 abertos de 102** (89 feitos).
 
 **Uma lista só:** a fonte é a prancheta online, e este arquivo é regravado a partir dela. Não edite as listas abaixo; para avisar algo, escreva em "Recados da outra IA", no fim: o Claude lê e passa para a prancheta.
 
@@ -10,13 +10,14 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 
 ## Lançamento
 
-- [ ] AAB 114: subir na Play *(Afonso)* — 19/10: gerado pelo Claude (a1e17b3), assinado, versionCode 114, numa cópia limpa do repositório, sem as skins de temporada (dependem de SQL). Leva: vibração desligada não vibra, dia certo no widget com Tempo em %, missão e campanha contando só para o bem, campanhas como pastas. Arquivo: android/app/build/outputs/bundle/release/Glyph-1.0.114-114.aab (SHA-256 624674de…). A função oracle precisa ser republicada para a leitura do ciclo seguir a regra nova.
+- [ ] AAB 115: gerar e subir na Play *(Afonso)* — 20/10 (Codex): o 114 não tem as skins aprovadas, a campanha por mentoria, as vagas de vínculos nem os últimos ajustes de campanhas. O 115 sai depois do checkpoint (commit) desses trabalhos. A função oracle também precisa ser republicada (ver o item dos tokens).
 
-<details><summary>Feitos (14)</summary>
+<details><summary>Feitos (15)</summary>
 
 - [x] Conta nova travava no cadastro (idade não salvava) e o Sair da conta não saía — achado do Luigi *(Afonso)* — 18/10: causa achada e corrigida pelo Claude (a5da99e). O upsert do perfil mandava ouro, fragmentos, carteira, baús e premium, que desde 23/09 não aceitam escrita do app; o banco recusava a linha inteira e a conta nova ficava sem perfil. O Sair da conta do primeiro acesso usava o logout cru, que o celular desfaz. SQL 20261018100000 no banco (o Codex conferiu em 18/10): o 112 já cadastra; o Luigi só precisa fechar e abrir o app. O app corrigido e o Sair da conta estão no 113.
 - [x] Idade mínima nos Termos *(outra IA (Codex))* — Publicado (Codex). Reconferido em 13/10 no HTML público: 13 anos, com autorização do responsável para menores de 18.
 - [x] AAB 113: subir na Play e passar o Luigi para ele *(Afonso)* — 18/10: o Afonso subiu na Play. Superado pelo 114.
+- [x] AAB 114: subir na Play *(Afonso)* — 19/10: gerado e assinado (a1e17b3), sem skins, mentoria e vagas de vínculos. 20/10 (Codex): o próximo a subir é o 115, que junta tudo depois do checkpoint.
 - [x] Reembolso nos Termos (7 dias) *(outra IA (Codex))* — Publicado (Codex). Texto de 7 dias e encaminhamento ao Google Play no HTML público em 13/10.
 - [x] Teste do Glyph com um amigo (planilha no claude.ai) *(Afonso)* — Feito pelo Luigi no 112 (achados passados de boca, não pela planilha). Tudo corrigido e no 114: idade não salvava no cadastro (perfil da conta nova) e Sair da conta (a5da99e + SQL 20261018100000), diário sem internet apagando texto + fila (ae96664, 5d1ff65), vibração no arraste com a vibração desligada (1152cae). Opcional: uma passada rápida no 114 nos modais novos, no jardim (saquinho, guia, tamanhos) e no widget, que ele não viu.
 - [x] Resend: resolver o 401 do teste e comprovar que o e-mail chega (recuperação de acesso) *(outra IA (Codex))* — 16/10: resolvido pelo Codex; o Afonso confirmou que o e-mail chegou. O Luigi confere de novo no D9 (recuperação e "Conta excluída").
@@ -33,6 +34,7 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 
 ## App
 
+- [ ] Campanha por mentoria e vagas de vínculos (Codex) *(outra IA (Codex))* — 20/10 (Codex), local e sem commit: mentor e orientado aceitam o vínculo; o mentor forja uma campanha em sandbox para a pessoa aceitar ou recusar, e a cópia recebida continua editável; lista de mentorados, status e visibilidade do planner. Vagas unificadas: grátis 0, Premium 2, Platinum 5, vaga extra 50 de ouro; quem oferece a mentoria usa a vaga; encerrado ou vencido libera. SQL 20261020140000 confirmado pelo Afonso. Falta commit, AAB 115 e conferir no aparelho.
 - [ ] Refinar o widget do planner *(Afonso)* — 20/10: pedido do Afonso. É o widget do dia (GLYPH Hoje), com as abas Resumo e Planner (GlyphDayWidgetProvider e GlyphDayPaint). Definir com ele o que refinar.
 
 <details><summary>Feitos (45)</summary>
@@ -112,7 +114,7 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 
 ## Arte
 
-- [ ] Skins das temporadas: integrar as 5 aprovadas (Codex) e rodar o SQL *(Afonso)* — 16/10 reprovadas; 18/10 refeitas vestindo o avatar (docs/2026-10-18-skins-refazer-sobre-o-avatar.md). Revisão 3 aprovada pelo Afonso: sem pele nos 8 corpos, com cobre, ajuste feminino e mãos na frente. O Codex está integrando (PNGs no catálogo, itens, offsets), ainda sem commit. SQL sql/2026-10-18-skins-temporadas-aprovadas.sql rodado pelo Afonso (20/10). Falta o commit do Codex e entrar num AAB (não estão no 114).
+- [ ] Skins das temporadas: checkpoint e AAB 115 *(outra IA (Codex))* — 20/10 (Codex): as 5 revisões aprovadas e integradas localmente (PNGs no catálogo, itens, cobre, ajuste feminino e mãos na frente; Aurora II no slot da coleção, preservando o Guardião Aurora original). SQL sql/2026-10-18-skins-temporadas-aprovadas.sql rodado pelo Afonso em 20/10. Falta o commit e entrar no 115.
 - [ ] Completar o conteúdo das temporadas futuras antes de ativá-las *(Afonso)* — 13/10 (Codex): Zênite I, Eclipse I e Égide I ainda precisam de skin, tema e jornadas; Zênite II segue em proposta.
 
 <details><summary>Feitos (8)</summary>

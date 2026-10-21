@@ -1,6 +1,6 @@
 # Prancheta do Glyph
 
-Cópia da prancheta do Afonso (artefato no claude.ai: https://claude.ai/artifact/99dQUHcbX6dy4dcAuu2Dx6), regravada pelo Claude em **20/10/2026**, já com a consolidação do Codex de 13 e 14/10. **13 abertos de 102** (89 feitos).
+Cópia da prancheta do Afonso (artefato no claude.ai: https://claude.ai/artifact/99dQUHcbX6dy4dcAuu2Dx6), regravada pelo Claude em **21/10/2026**, já com a consolidação do Codex de 13 e 14/10. **11 abertos de 103** (92 feitos).
 
 **Uma lista só:** a fonte é a prancheta online, e este arquivo é regravado a partir dela. Não edite as listas abaixo; para avisar algo, escreva em "Recados da outra IA", no fim: o Claude lê e passa para a prancheta.
 
@@ -10,7 +10,7 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 
 ## Lançamento
 
-- [ ] AAB 115: gerar e subir na Play *(Afonso)* — 20/10 (Codex): o 114 não tem as skins aprovadas, a campanha por mentoria, as vagas de vínculos nem os últimos ajustes de campanhas. O 115 sai depois do checkpoint (commit) desses trabalhos. A função oracle também precisa ser republicada (ver o item dos tokens).
+- [ ] AAB 116: gerar e subir na Play (build de lançamento) *(Afonso)* — O 115 (gerado em 20/10, SHA-256 43752d3f…) saiu com dois problemas já corrigidos no git: a grade das arenas cortando as bordas (efb7d7c) e o planner tremendo com o sensor de movimento (57de1f4). O 116 junta essas duas correções, o widget do planner novo do Codex (falta o commit dele) e o resto do trabalho dele que estava solto na pasta. Depois, conferir no celular a mentoria, o jardim e as arenas e promover para Produção.
 
 <details><summary>Feitos (15)</summary>
 
@@ -34,20 +34,21 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 
 ## App
 
-- [ ] Campanha por mentoria e vagas de vínculos (Codex) *(outra IA (Codex))* — 20/10 (Codex), local e sem commit: mentor e orientado aceitam o vínculo; o mentor forja uma campanha em sandbox para a pessoa aceitar ou recusar, e a cópia recebida continua editável; lista de mentorados, status e visibilidade do planner. Vagas unificadas: grátis 0, Premium 2, Platinum 5, vaga extra 50 de ouro; quem oferece a mentoria usa a vaga; encerrado ou vencido libera. SQL 20261020140000 confirmado pelo Afonso. Falta commit, AAB 115 e conferir no aparelho.
-- [ ] Refinar o widget do planner *(Afonso)* — 20/10: pedido do Afonso. É o widget do dia (GLYPH Hoje), com as abas Resumo e Planner (GlyphDayWidgetProvider e GlyphDayPaint). Definir com ele o que refinar.
+- [ ] Campanha por mentoria e vagas de vínculos: conferir no aparelho *(outra IA (Codex))* — Commit aa22424 (Codex), no AAB 115. Mentor forja campanha em sandbox para a pessoa aceitar ou recusar; vagas: grátis 0, Premium 2, Platinum 5, extra 50 de ouro. 21/10: o Afonso confirmou que é para pagar mesmo, inclusive parceria. Falta ver funcionando no celular.
 
-<details><summary>Feitos (45)</summary>
+<details><summary>Feitos (47)</summary>
 
 - [x] AAB 112 (só quando o Afonso pedir) *(Afonso)* — Superado pelo 113 e pelo 114 (20/10).
 - [x] Diário sem internet: texto sumia quando a rede voltava — achado do Luigi *(Claude)* — 18/10 (ae96664 + 5d1ff65, vão no 113): falha de leitura era tratada como página vazia, e com a rede oscilando a entrada nova era gravada sozinha por cima da página (o texto antigo sumia); o editor abria a página em branco sem rede e o Voltar saía sem esperar gravar; a bolinha do humor mudava antes de gravar e voltava. Agora: sem ler não grava; o editor avisa "Sem internet" e mantém o texto; e o Registrar sem internet manda a entrada para uma FILA no aparelho, que sai sozinha quando a rede volta (ao abrir o app, ao voltar do fundo, a cada minuto), na ordem e uma vez. Planilha do Luigi (M6) e SMOKETEST atualizados.
 - [x] Onboarding novo: fechar e commitar *(Claude)* — Commitado em 09/10 (fb05e4e).
 - [x] Campanhas: biblioteca, progresso entre ciclos e correções (Codex) *(outra IA (Codex))* — 16/10: o Codex terminou. O Claude conferiu: o build compila e 131 de 134 testes passam (falham a-mao-ganha-do-oraculo e luz-e-placa, que são antigos, e apagar-conta, que ainda lê o arquivo antigo depois que a exclusão foi para _shared/accountDeletion.ts; é com o Codex). Os textos da planilha e do SMOKETEST foram ajustados ao app: card "30 dias · 5 ações · 2 arenas" e "Arena liberada — Abrir". O trabalho ainda não foi commitado; precisa estar antes do AAB 112.
 - [x] Planner sem tremer: commitar *(Claude)* — Commitado em 09/10 (fb05e4e).
+- [x] Planner tremia com o celular (sensor de movimento) *(Claude)* — 21/10 (57de1f4): achado do Afonso. O App escutava o sensor de movimento o tempo todo e reescrevia --tilt-x/--tilt-y no <html> a cada leitura; a página inteira recalculava o estilo a cada mexida do celular. Ninguém usava essas variáveis (a inclinação já estava desligada); a escuta saiu. Não está no 115: vai no próximo AAB.
 - [x] Campanhas no banco real: percorrer tudo com uma conta de teste *(outra IA (Codex))* — 16/10 (Codex): migração 20261016120000_campaign_run_task_id_compatibility aplicada; corrigidas comparações em finish_campaign_run. Teste com conta descartável passou: recusa conclusão incompleta, conclui entre ciclos, arquiva, guarda histórico e biblioteca, tira as pendências futuras e reinstala do zero. Conta removida. Evidência: output/campaign-library/live-report.json. Falta só compra real e instalar pela tela no Android: fica com o Luigi (M11, M12, D10–D12).
 - [x] Botão do ciclo no planner e na ArenaView: commitar *(Claude)* — Commitado em 09/10 (fb05e4e).
 - [x] Missão de temporada, de clã e campanha contam só para o bem no ciclo *(Claude)* — 19/10 (1a5b3a8): entram como prometido = feito, só com o que caiu dentro do ciclo. O que faltou não pesa; o feito vale como ação, dia ativo e horas na nota. Não viram meta a selar. Quem faz só campanha deixa de ficar com 0%. Ciclos fechados não mudam. Antes, nem as missões ajudavam na nota de verdade (o bônus delas só alimentava a nota antiga). Vai no próximo AAB. A leitura do ciclo do Oráculo também foi ajustada: só vale depois de republicar a função oracle.
 - [x] Modal de arena e de ação: conferir no aparelho (Codex integrou) *(outra IA (Codex))* — 16/10 (Codex): integrados no código ActionModal, ArenaDetailModal, ArenaCard e NewArenaModal, com quatro abas (Geral, Contexto, Checklist, Mídia), slider de duração por etapas com campo numérico, rolagem interna no texto e no checklist e botões dourados. A agenda nova respeita as repetições e o fim do ciclo. Falta conferir na tela: tamanhos, teclado e cortes (o navegador dele não abriu o arquivo). Está na planilha do Luigi como M13. 16/10 (Claude): botões − e + nas Repetições (prop comBotoes no StyledRangeInput, estilo .action-step em components/action-layout.css, teste acao-repeticoes-mais-menos). Ficou sem commit porque se apoia no ActionModal novo do Codex, que ainda não foi commitado: entra junto no commit dele.
+- [x] Refinar o widget do planner *(outra IA (Codex))* — 21/10: feito pelo Codex (GlyphDayPaint, GlyphDayWidgetProvider, utils/widgetPlanner.ts) e aprovado pelo Afonso. O teste widget-planner-do-dia passa. Ainda sem commit; entra no AAB 116.
 - [x] Widget (rótulo do dia): fechar a mudança e o teste *(Claude)* — Ok do Afonso em 10/10.
 - [x] Editor do Soberano: fechar a mudança e o teste *(Claude)* — Ok do Afonso em 10/10. O teste luz-e-placa-do-soberano ainda acusa o slot do artefato fora do lugar.
 - [x] AAB 110 *(Afonso)* — 12/10: AAB 110 gerado pelo Codex (6b33f9a) em android/app/build/outputs/bundle/release/Glyph-1.0.110-110.aab, com tudo até o cartão do ciclo mais baixo (329d540). Falta subir no Play.
@@ -114,10 +115,9 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 
 ## Arte
 
-- [ ] Skins das temporadas: checkpoint e AAB 115 *(outra IA (Codex))* — 20/10 (Codex): as 5 revisões aprovadas e integradas localmente (PNGs no catálogo, itens, cobre, ajuste feminino e mãos na frente; Aurora II no slot da coleção, preservando o Guardião Aurora original). SQL sql/2026-10-18-skins-temporadas-aprovadas.sql rodado pelo Afonso em 20/10. Falta o commit e entrar no 115.
-- [ ] Completar o conteúdo das temporadas futuras antes de ativá-las *(Afonso)* — 13/10 (Codex): Zênite I, Eclipse I e Égide I ainda precisam de skin, tema e jornadas; Zênite II segue em proposta.
+- [ ] Completar o conteúdo das temporadas futuras antes de ativá-las *(outra IA (Codex))* — 13/10 (Codex): Zênite I, Eclipse I e Égide I ainda precisam de tema e jornadas (as skins já entraram no 115); Zênite II segue em proposta. 21/10: o Afonso vai passar para o Codex.
 
-<details><summary>Feitos (8)</summary>
+<details><summary>Feitos (9)</summary>
 
 - [x] Borda Soberano no app e no banco (SQL rodado) *(Claude)*
 - [x] Commitar a conversão para WEBP (borda e catálogo) *(Claude)* — Commitado em 09/10 (d1c53b3).
@@ -127,6 +127,7 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 - [x] Catálogo acima do teto de tamanho (14,8 MB de 12) *(Claude)* — 10/10: teto subiu de 12 para 18 MB de propósito (03f61f7); a pasta está com 14,8 MB. Teste egress-estatico passa.
 - [x] Skin Chuva mudou de arquivo e o teste do catálogo acusa *(Claude)* — Fica. O teste acusava só a lista de tamanhos, desatualizada desde a arte das mãos de 23/09 (15 roupas). Lista atualizada em 10/10 (52d3592); encaixe conferido nos 4 corpos.
 - [x] Gerar as artes das próximas temporadas *(outra IA (Codex))* — 12 peças de Zênite I, Eclipse I, Égide I e Aurora II integradas (Codex), no AAB 111. Falta o conteúdo das temporadas (skin, tema e jornadas) antes de ativá-las.
+- [x] Skins das temporadas integradas *(outra IA (Codex))* — Commit aa22424 (Codex), SQL rodado pelo Afonso em 20/10, no AAB 115.
 
 </details>
 

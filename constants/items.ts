@@ -317,6 +317,7 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_border_zenite_1_2027', name: 'Zênite I', category: 'border', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'zenite_1_2027', seasonSlot: 'border', icon: '☀️', imageUrl: `${INTERFACE_BASE_URL}/borda-zenite-i.webp` },
     { id: 'item_border_eclipse_1_2027', name: 'Eclipse I', category: 'border', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'eclipse_1_2027', seasonSlot: 'border', icon: '🌘', imageUrl: `${INTERFACE_BASE_URL}/borda-eclipse-i.webp` },
     { id: 'item_border_egide_1_2027', name: 'Égide I', category: 'border', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'egide_1_2027', seasonSlot: 'border', icon: '🛡️', imageUrl: `${INTERFACE_BASE_URL}/borda-egide-i.webp` },
+    { id: 'item_border_zenite_2_2027', name: 'Zênite II', category: 'border', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'zenite_2_2027', seasonSlot: 'border', icon: '🌅', imageUrl: `${INTERFACE_BASE_URL}/borda-zenite-ii.webp` },
     { id: 'item_border_t5_genesis', name: 'Gênesis', category: 'border', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'border', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/borda_t5_genesis.png` },
 
     // --- BANNERS ---
@@ -346,6 +347,7 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_banner_zenite_1_2027', name: 'Zênite I', category: 'banner', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'zenite_1_2027', seasonSlot: 'banner', icon: '☀️', imageUrl: `${INTERFACE_BASE_URL}/banner-zenite-i.webp` },
     { id: 'item_banner_eclipse_1_2027', name: 'Eclipse I', category: 'banner', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'eclipse_1_2027', seasonSlot: 'banner', icon: '🌘', imageUrl: `${INTERFACE_BASE_URL}/banner-eclipse-i.webp` },
     { id: 'item_banner_egide_1_2027', name: 'Égide I', category: 'banner', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'egide_1_2027', seasonSlot: 'banner', icon: '🛡️', imageUrl: `${INTERFACE_BASE_URL}/banner-egide-i.webp` },
+    { id: 'item_banner_zenite_2_2027', name: 'Zênite II', category: 'banner', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'zenite_2_2027', seasonSlot: 'banner', icon: '🌅', imageUrl: `${INTERFACE_BASE_URL}/banner-zenite-ii.webp` },
     { id: 'item_banner_t5_genesis', name: 'Gênesis', category: 'banner', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'banner', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/banner_t5_genesis.png` },
 
     // --- PREMIOS DAS REGRAS SECRETAS DE 06/10/2026 ---
@@ -427,6 +429,10 @@ export const ITEMS_DB: ItemDef[] = [
     // Este e a quinta peca da colecao da Aurora I, entregue pelo selo, e usa o
     // orbe novo (aurora_i.png), que e outro desenho.
     themeCatalogItem({ id: 'AURORA_I', name: 'Tema: Aurora II', tier: 6, rarity: 'mythic', icon: '🌌', asset: 'aurora_i.png', isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'ui_skin' }),
+    themeCatalogItem({ id: 'ZENITE_I', name: 'Tema: Zênite I', tier: 6, rarity: 'mythic', icon: '☀️', isSeasonExclusive: true, seasonKey: 'zenite_1_2027', seasonSlot: 'ui_skin' }),
+    themeCatalogItem({ id: 'ECLIPSE_I', name: 'Tema: Eclipse I', tier: 6, rarity: 'mythic', icon: '🌘', isSeasonExclusive: true, seasonKey: 'eclipse_1_2027', seasonSlot: 'ui_skin' }),
+    themeCatalogItem({ id: 'EGIDE_I', name: 'Tema: Égide I', tier: 6, rarity: 'mythic', icon: '🛡️', isSeasonExclusive: true, seasonKey: 'egide_1_2027', seasonSlot: 'ui_skin' }),
+    themeCatalogItem({ id: 'ZENITE_II', name: 'Tema: Zênite II', tier: 6, rarity: 'mythic', icon: '🌅', isSeasonExclusive: true, seasonKey: 'zenite_2_2027', seasonSlot: 'ui_skin' }),
     // T5
     themeCatalogItem({ id: 'VOID', name: 'Tema: Vazio Primordial', tier: 5, rarity: 'legendary', icon: '\uD83D\uDD2E', asset: 'void.png', costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.VOID }),
     themeCatalogItem({ id: 'GENESIS', name: 'Tema: Genesis', tier: 6, rarity: 'mythic', icon: '\u2726', asset: 'genesis.png', isSeasonExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'ui_skin' }),
@@ -462,6 +468,7 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'insignia_season_zenite_1_2027', name: 'Zênite I', category: 'insignia', tier: 6, rarity: 'mythic', icon: '☀️', isSeasonExclusive: true, seasonKey: 'zenite_1_2027', seasonSlot: 'insignia', imageUrl: `${INTERFACE_BASE_URL}/insignia-zenite-i.webp` },
     { id: 'insignia_season_eclipse_1_2027', name: 'Eclipse I', category: 'insignia', tier: 6, rarity: 'mythic', icon: '🌘', isSeasonExclusive: true, seasonKey: 'eclipse_1_2027', seasonSlot: 'insignia', imageUrl: `${INTERFACE_BASE_URL}/insignia-eclipse-i.webp` },
     { id: 'insignia_season_egide_1_2027', name: 'Égide I', category: 'insignia', tier: 6, rarity: 'mythic', icon: '🛡️', isSeasonExclusive: true, seasonKey: 'egide_1_2027', seasonSlot: 'insignia', imageUrl: `${INTERFACE_BASE_URL}/insignia-egide-i.webp` },
+    { id: 'insignia_season_zenite_2_2027', name: 'Zênite II', category: 'insignia', tier: 6, rarity: 'mythic', icon: '🌅', isSeasonExclusive: true, seasonKey: 'zenite_2_2027', seasonSlot: 'insignia', imageUrl: `${INTERFACE_BASE_URL}/insignia-zenite-ii.webp` },
 ];
 
 const LEGACY_ITEM_ID_ALIASES: Record<string, string> = {
@@ -559,15 +566,15 @@ export const SEASON_COLLECTIONS: Record<string, SeasonCollectionDef> = {
     // Skins aprovadas em 18/10; temas e conteúdo futuro continuam independentes.
     zenite_1_2027: {
         id: 'zenite_1_2027', name: 'Zênite I',
-        slots: { skin: 'item_skin_zenite_1_2027', border: 'item_border_zenite_1_2027', banner: 'item_banner_zenite_1_2027', insignia: 'insignia_season_zenite_1_2027', ui_skin: null },
+        slots: { skin: 'item_skin_zenite_1_2027', border: 'item_border_zenite_1_2027', banner: 'item_banner_zenite_1_2027', insignia: 'insignia_season_zenite_1_2027', ui_skin: 'ZENITE_I' },
     },
     eclipse_1_2027: {
         id: 'eclipse_1_2027', name: 'Eclipse I',
-        slots: { skin: 'item_skin_eclipse_1_2027', border: 'item_border_eclipse_1_2027', banner: 'item_banner_eclipse_1_2027', insignia: 'insignia_season_eclipse_1_2027', ui_skin: null },
+        slots: { skin: 'item_skin_eclipse_1_2027', border: 'item_border_eclipse_1_2027', banner: 'item_banner_eclipse_1_2027', insignia: 'insignia_season_eclipse_1_2027', ui_skin: 'ECLIPSE_I' },
     },
     egide_1_2027: {
         id: 'egide_1_2027', name: 'Égide I',
-        slots: { skin: 'item_skin_egide_1_2027', border: 'item_border_egide_1_2027', banner: 'item_banner_egide_1_2027', insignia: 'insignia_season_egide_1_2027', ui_skin: null },
+        slots: { skin: 'item_skin_egide_1_2027', border: 'item_border_egide_1_2027', banner: 'item_banner_egide_1_2027', insignia: 'insignia_season_egide_1_2027', ui_skin: 'EGIDE_I' },
     },
     aurora_1_2026: {
         id: 'aurora_1_2026',
@@ -583,7 +590,7 @@ export const SEASON_COLLECTIONS: Record<string, SeasonCollectionDef> = {
     },
     zenite_2_2027: {
         id: 'zenite_2_2027', name: 'Zênite II',
-        slots: { skin: 'item_skin_zenite_2_2027', border: null, banner: null, insignia: null, ui_skin: null },
+        slots: { skin: 'item_skin_zenite_2_2027', border: 'item_border_zenite_2_2027', banner: 'item_banner_zenite_2_2027', insignia: 'insignia_season_zenite_2_2027', ui_skin: 'ZENITE_II' },
     },
     genesis_legacy: {
         id: 'genesis_legacy',

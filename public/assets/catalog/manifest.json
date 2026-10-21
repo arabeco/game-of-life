@@ -1,6 +1,6 @@
 {
-  "totalFiles": 245,
-  "totalBytes": 16807565,
+  "totalFiles": 248,
+  "totalBytes": 16986665,
   "assets": [
     {
       "path": "aurora_i.png",
@@ -573,9 +573,34 @@
       "sha256": "f5c7fd28a4a4be194a34a6a80eacb149fac1308775ec52d5462b7d4194d46731"
     },
     {
+      "path": "avatars/SKIN_SEASON_AURORA_II.png",
+      "bytes": 126691,
+      "sha256": "7f20d1fadb931c78698fe4d2602c97ca463cbab50e0c11d08a64cad096a615aa"
+    },
+    {
       "path": "avatars/SKIN_SEASON_CRIADOR.png",
       "bytes": 36153,
       "sha256": "368aacabe1691e632cb153b2e36767b5b20e977e4f8f422287f3948e6d7af5de"
+    },
+    {
+      "path": "avatars/SKIN_SEASON_ECLIPSE_I.png",
+      "bytes": 116773,
+      "sha256": "828b7e056196452deaaea1711379e989337f25a0f7c0ea8311b17562c8f4e4c1"
+    },
+    {
+      "path": "avatars/SKIN_SEASON_EGIDE_I.png",
+      "bytes": 114758,
+      "sha256": "23e89059097d30827f12b981f0d65671a14f3ad5d8e707f7e9a52f1403099935"
+    },
+    {
+      "path": "avatars/SKIN_SEASON_ZENITE_I.png",
+      "bytes": 120247,
+      "sha256": "b13081039863a5633f7d63f354ef131371eacbd8b439ae90ede2ee5106d86f11"
+    },
+    {
+      "path": "avatars/SKIN_SEASON_ZENITE_II.png",
+      "bytes": 114003,
+      "sha256": "4a52e6deef03d582999f89cee6a26b652e7673474f02382e424e046ad4610ea0"
     },
     {
       "path": "avatars/SKIN_T1_CACADOR.png",
@@ -933,6 +958,11 @@
       "sha256": "766ccfc3a64a69309e65a0baf8d52f42a0620d3855a7364765b7deef1e9c0830"
     },
     {
+      "path": "interface/banner-zenite-ii.webp",
+      "bytes": 35488,
+      "sha256": "a6bc5a15030e6fc40fd56c416c3f95f9676bfeb1b983cf7f0bdf9513c5bc9631"
+    },
+    {
       "path": "interface/bau_comum.webp",
       "bytes": 100286,
       "sha256": "40038f0a8605f3d257ab1d9b394e4efdf9bdf3351151acc80109d1cbcc248195"
@@ -1088,6 +1118,11 @@
       "sha256": "65f70f5318ffce2d33f5d2ebd4af05a8e798b5613a04e20efcfb613b9d8826ce"
     },
     {
+      "path": "interface/borda-zenite-ii.webp",
+      "bytes": 81610,
+      "sha256": "fd1d8987d231a1e3e0f435dd102444f79a78211741188c890fb43caba4be7c78"
+    },
+    {
       "path": "interface/insignia_ciclo_bronze.webp",
       "bytes": 117780,
       "sha256": "3c9ad0a72438c31b2bfd7ac5bfe1fd9503bbb8644e9b705a2c71e7cea5c5a86f"
@@ -1183,6 +1218,11 @@
       "sha256": "5e804629a01cba29900c7c335c9cc67d6b6589e8e4d30bd48af2bec855f5b1f8"
     },
     {
+      "path": "interface/insignia-zenite-ii.webp",
+      "bytes": 62002,
+      "sha256": "7de58d8ebe30b88c33478afb0c52fe0f07782e60b338c63d15a09ed2b8f8e0f8"
+    },
+    {
       "path": "interface/recompensa_geral.webp",
       "bytes": 76628,
       "sha256": "c92693f73ea3d591169421ae6f909ef9a69c1a26937a160aa3b1dd1f48725e11"
@@ -1201,31 +1241,6 @@
       "path": "void.png",
       "bytes": 89349,
       "sha256": "84d502ae75b2cad476b4a7d634c3e724abef11fd25f730397b149f9815bc35fd"
-    },
-    {
-      "path": "avatars/SKIN_SEASON_AURORA_II.png",
-      "bytes": 126691,
-      "sha256": "7f20d1fadb931c78698fe4d2602c97ca463cbab50e0c11d08a64cad096a615aa"
-    },
-    {
-      "path": "avatars/SKIN_SEASON_ECLIPSE_I.png",
-      "bytes": 116773,
-      "sha256": "828b7e056196452deaaea1711379e989337f25a0f7c0ea8311b17562c8f4e4c1"
-    },
-    {
-      "path": "avatars/SKIN_SEASON_EGIDE_I.png",
-      "bytes": 114758,
-      "sha256": "23e89059097d30827f12b981f0d65671a14f3ad5d8e707f7e9a52f1403099935"
-    },
-    {
-      "path": "avatars/SKIN_SEASON_ZENITE_I.png",
-      "bytes": 120247,
-      "sha256": "b13081039863a5633f7d63f354ef131371eacbd8b439ae90ede2ee5106d86f11"
-    },
-    {
-      "path": "avatars/SKIN_SEASON_ZENITE_II.png",
-      "bytes": 114003,
-      "sha256": "4a52e6deef03d582999f89cee6a26b652e7673474f02382e424e046ad4610ea0"
     }
   ]
 }

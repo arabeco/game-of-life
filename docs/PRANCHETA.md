@@ -485,3 +485,10 @@ AAB 1.0.113 gerado, manifesto e assinatura verificados; build completo, dois typ
 - Plano grátis tem 0 vagas, Premium tem 2 e Platinum tem 5; uma vaga extra custa 50 ouro. O dono da vaga é um único participante; em mentoria, quem oferece o acompanhamento. Vínculos encerrados ou vencidos liberam a vaga.
 - Vínculos mostra `Vagas livres: X / Y` e botão `Comprar vaga · 50 ouro`. Convite de mentoria não cobra mais o orientado; no aceite ele usa uma vaga do mentor. Convites pendentes permanecem pendentes se a vaga estiver cheia.
 - Benefício incluído no catálogo de Premium/Platinum do app e na landing `glyph-landing/descubra.html`. Código local, validado por TypeScript e `sql:checa`; falta checkpoint/commit e AAB 115.
+
+### 21/10 — Recado do Codex: coleções das temporadas futuras concluídas localmente
+
+- Zênite I, Eclipse I, Égide I e Zênite II agora têm, no código local, a regra completa de coleção: skin, borda, banner, insígnia e tema; cada temporada recebeu três jornadas que entregam Baús Míticos e um selo final que entrega insígnia + tema.
+- Zênite II ganhou suas três artes faltantes (moldura, banner e insígnia) em `public/assets/catalog/interface/`. As coleções permanecem futuras e desligadas; nada foi antecipado para jogadores.
+- Nova migração preparada e validada, ainda **não executada**: `supabase/migrations/20261021110000_future_season_collections.sql`. Ela cadastra os quatro temas e as três peças de Zênite II com `is_live_in_game = false`.
+- Revisão visual local aberta em `output/temporadas-2027-completa/revisao.html`. TypeScript, `test:item-art` e `sql:checa` passaram. Sem commit, AAB, push ou execução remota nesta rodada.

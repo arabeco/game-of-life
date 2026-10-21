@@ -426,13 +426,12 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
                                 <SocialCard
                                     key={invite.id}
                                     profile={senderProfile}
-                                    subtitle={`Convite de ${relationLabel(invite.linkType).toLowerCase()}`}
+                                    subtitle={`${senderProfile.nickname} quer iniciar uma ${relationLabel(invite.linkType).toLowerCase()}`}
                                     badges={
                                         <>
                                             <span className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] ${relationBadgeClass(invite.linkType)}`}>
                                                 {relationLabel(invite.linkType)}
                                             </span>
-                                            {relationshipBadgesForProfile(senderProfile.id)}
                                         </>
                                     }
                                     onClick={() => setSelectedProfile(senderProfile)}
@@ -507,13 +506,12 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
                                 <SocialCard
                                     key={invite.id}
                                     profile={recipientProfile}
-                                    subtitle={`${relationLabel(invite.linkType)} aguardando aceite`}
+                                    subtitle={`Aguardando ${recipientProfile.nickname} aceitar`}
                                     badges={
                                         <>
                                             <span className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] ${relationBadgeClass(invite.linkType)}`}>
                                                 {relationLabel(invite.linkType)}
                                             </span>
-                                            {relationshipBadgesForProfile(recipientProfile.id)}
                                         </>
                                     }
                                     onClick={() => setSelectedProfile(recipientProfile)}

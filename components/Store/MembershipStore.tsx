@@ -85,7 +85,7 @@ export const MembershipStore: React.FC<{ scrollRequest?: { section: string; nonc
         <div className="space-y-6 animate-fade-in pb-8">
             <GlassCard id="gold-store-premium" className="relative overflow-hidden border-[var(--ui-border-accent-soft)]">
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-yellow-900/20 via-yellow-500/5 to-transparent" />
-                <div className="relative z-10 grid gap-5 p-5 md:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)_auto] md:items-center">
+                <div className="relative z-10 grid gap-4 p-4 md:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)_auto] md:items-center">
                     <div className="min-w-0">
                         <div className="flex items-center gap-3">
                             <div className="rounded-full border border-[var(--ui-border-accent)] bg-[var(--ui-core-surface-strong-bg)] p-3 shadow-[0_0_20px_var(--ui-button-primary-glow)]">
@@ -97,8 +97,8 @@ export const MembershipStore: React.FC<{ scrollRequest?: { section: string; nonc
                         </div>
 
                         <div className="mt-3">
-                            <h2 className="text-xl font-black uppercase tracking-[0.06em] text-[color:var(--ui-card-text)]">Premium 30 dias</h2>
-                            <p className="mt-1 max-w-[26rem] text-sm leading-relaxed text-[color:var(--ui-card-text-soft)]">
+                            <h2 className="text-lg font-black uppercase tracking-[0.05em] text-[color:var(--ui-card-text)]">Premium · 30 dias</h2>
+                            <p className="mt-1 max-w-[26rem] text-[13px] leading-snug text-[color:var(--ui-card-text-soft)]">
                                 30 dias de acesso, mais alcance no Oráculo e mais fôlego nas arenas.
                             </p>
                             <div className="mt-3 flex flex-wrap gap-2">
@@ -116,9 +116,9 @@ export const MembershipStore: React.FC<{ scrollRequest?: { section: string; nonc
                         {[premiumBenefitLeft, premiumBenefitRight].map((column, columnIndex) => (
                             <div key={`premium-col-${columnIndex}`} className="space-y-2">
                                 {column.map((benefit) => (
-                                    <div key={benefit} className="flex min-h-[38px] items-center gap-2 rounded-xl border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-2.5 py-2">
+                                    <div key={benefit} className="flex min-h-[34px] items-center gap-1.5 rounded-lg border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-2 py-1.5">
                                         <CheckIcon className="h-3.5 w-3.5 shrink-0 text-green-400" />
-                                        <span className="text-[11px] leading-snug text-[color:var(--ui-card-text-soft)]">{benefit}</span>
+                                        <span className="text-[10px] leading-tight text-[color:var(--ui-card-text-soft)]">{benefit}</span>
                                     </div>
                                 ))}
                             </div>
@@ -150,7 +150,7 @@ export const MembershipStore: React.FC<{ scrollRequest?: { section: string; nonc
 
             <GlassCard id="gold-store-platinum" className="relative overflow-hidden border-[var(--ui-border-accent)]">
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,244,206,0.18),transparent_56%),linear-gradient(135deg,rgba(186,144,255,0.12),transparent_46%)]" />
-                <div className="relative z-10 grid gap-5 p-5 md:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)_auto] md:items-center">
+                <div className="relative z-10 grid gap-4 p-4 md:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)_auto] md:items-center">
                     <div className="min-w-0">
                         <div className="flex items-center gap-3">
                             <div className="rounded-full border border-white/20 bg-white/10 p-3 shadow-[0_0_26px_rgba(240,218,160,0.2)]">
@@ -162,8 +162,8 @@ export const MembershipStore: React.FC<{ scrollRequest?: { section: string; nonc
                         </div>
 
                         <div className="mt-3">
-                            <h2 className="text-xl font-black uppercase tracking-[0.06em] text-[color:var(--ui-card-text)]">Platinum 30 dias</h2>
-                            <p className="mt-1 max-w-[26rem] text-sm leading-relaxed text-[color:var(--ui-card-text-soft)]">
+                            <h2 className="text-lg font-black uppercase tracking-[0.05em] text-[color:var(--ui-card-text)]">Platinum · 30 dias</h2>
+                            <p className="mt-1 max-w-[26rem] text-[13px] leading-snug text-[color:var(--ui-card-text-soft)]">
                                 O pacote mais alto: leva tudo do Premium e empurra identidade, vitrine e legado para o patamar máximo.
                             </p>
                             <div className="mt-3 flex flex-wrap gap-2">
@@ -181,9 +181,9 @@ export const MembershipStore: React.FC<{ scrollRequest?: { section: string; nonc
                         {[platinumBenefitLeft, platinumBenefitRight].map((column, columnIndex) => (
                             <div key={`platinum-col-${columnIndex}`} className="space-y-2">
                                 {column.map((benefit) => (
-                                    <div key={benefit} className="flex min-h-[38px] items-center gap-2 rounded-xl border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-2.5 py-2">
+                                    <div key={benefit} className="flex min-h-[34px] items-center gap-1.5 rounded-lg border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-2 py-1.5">
                                         <CheckIcon className="h-3.5 w-3.5 shrink-0 text-green-400" />
-                                        <span className="text-[11px] leading-snug text-[color:var(--ui-card-text-soft)]">{benefit}</span>
+                                        <span className="text-[10px] leading-tight text-[color:var(--ui-card-text-soft)]">{benefit}</span>
                                     </div>
                                 ))}
                             </div>

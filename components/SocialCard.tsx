@@ -34,10 +34,10 @@ export const SocialCard: React.FC<{
                 <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.8)_0%,rgba(0,0,0,0.3)_100%)]" />
             </div>
 
-            <div className="relative z-10 flex h-full items-center space-x-3 px-3 py-0.5">
+            <div className="relative z-10 flex h-full items-center gap-3 px-3 py-2">
                 <UserAvatar avatarUrl={profile.avatarUrl} nickname={profile.nickname} className="w-12 h-12" isOnline={false} level={profile.level} borderId={profile.border} />
 
-                <div className="flex-1 min-w-0 flex flex-col justify-center -space-y-0.5">
+                <div className="min-w-0 flex-1 flex flex-col justify-center">
                     <h3 className="social-card-title flex min-w-0 items-center gap-1 font-bold text-lg text-white leading-tight">
                         <span className="truncate">{profile.nickname}</span>
                         {temCoroa && <CrownIcon className="h-4 w-4 flex-shrink-0 text-yellow-400 drop-shadow-[0_0_4px_rgba(234,179,8,0.6)]" />}
@@ -60,7 +60,7 @@ export const SocialCard: React.FC<{
                     )}
                 </div>
 
-                <div className="flex flex-col items-end justify-center text-right pr-2 flex-shrink-0">
+                <div className="flex max-w-[7.75rem] flex-col items-end justify-center text-right pr-1 shrink-0">
                     <span className="social-card-kicker text-[9px] font-bold text-gray-500 uppercase tracking-widest opacity-60 mb-0.5">
                         {/* O GRUPO PERDIA A VAGA PARA UMA INFORMACAO REPETIDA.
                             Quem tem vinculo tem subtitulo, e o subtitulo dizia o
@@ -69,7 +69,7 @@ export const SocialCard: React.FC<{
                             repeticao. O grupo vem primeiro: ele so existe aqui. */}
                         {profile.clanName ? 'GRUPO' : (subtitle ? 'INFO' : '')}
                     </span>
-                    <div className="social-card-meta text-[10px] text-gray-300 flex items-center gap-1 opacity-90 bg-black/20 px-1.5 py-0.5 rounded-md border border-white/5">
+                    <div className="social-card-meta max-w-full text-[10px] text-gray-300 flex items-center gap-1 opacity-90 bg-black/20 px-1.5 py-0.5 rounded-md border border-white/5">
                         {profile.clanName ? (
                             <>
                                 {profile.clanIcon && <ClanEmblem value={profile.clanIcon} className="h-4 w-4 text-xs" />}

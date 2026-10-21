@@ -1682,6 +1682,22 @@ body {
   -webkit-backdrop-filter: blur(14px) !important;
 }
 
+/* Ouro em tema escuro precisa de grafite por baixo: a variacao marrom sobre
+   marrom reduzia a leitura justamente em solicitacoes e confirmacoes. */
+body[data-skin="GOLD"] .ui-modal-panel.glass-card,
+html[data-skin="GOLD"] .ui-modal-panel.glass-card {
+  background: linear-gradient(180deg, #181a1f 0%, #0b0d10 100%) !important;
+  border-color: rgba(226, 193, 111, .42) !important;
+  box-shadow: 0 24px 80px rgba(0,0,0,.7), 0 0 0 1px rgba(255,238,184,.06) !important;
+}
+
+body[data-skin="GOLD"] .ui-modal-panel .luxe-button-secondary,
+html[data-skin="GOLD"] .ui-modal-panel .luxe-button-secondary {
+  background: #252a31 !important;
+  border-color: rgba(255,255,255,.2) !important;
+  color: #f4f1e9 !important;
+}
+
 .action-dialog .action-dialog-header {
   background: linear-gradient(180deg, rgba(255,255,255,.045), transparent);
 }

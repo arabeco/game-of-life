@@ -182,6 +182,7 @@ public class GlyphDayWidgetProvider extends AppWidgetProvider {
                     JSONArray cores = b.optJSONArray("cores");
                     dados.blocos.add(new GlyphDayPaint.Bloco(
                             b.optString("nome", "Ação"),
+                            b.optString("arena", "Sem arena"),
                             b.optString("icone", "•"),
                             b.optInt("inicio", 0),
                             b.optInt("duracao", 30),

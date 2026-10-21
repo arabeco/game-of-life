@@ -26,6 +26,7 @@ import { EmojiGlyph } from './EmojiGlyph';
 import { SKINS_DATA, BORDERS_DATA, MOODS_DATA } from '../constants';
 import { getNotificationPriority } from '../constants/oracleNotificationPolicy';
 import { OracleSpeakerMark, type OracleSpeakerTone } from './OracleSpeakerMark';
+import { useGardenBasket } from '../hooks/useGardenBasket';
 
 interface RestScreenProps {
     onClose: () => void;
@@ -113,6 +114,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                 ? 'info'
                 : 'neutral';
     const oracleBadgeClass = 'border-red-100/80 bg-red-500 text-white shadow-[0_0_12px_rgba(239,68,68,0.55)]';
+    const gardenBasket = useGardenBasket(userProfile.id, tasks.filter(task => task.completed).length);
 
     const deepWorkOptions = ['15', '20', '25', '30', '40', '45', '50', '60', '90', '120'];
     const currentActionSessionTask = actionSession?.taskId ? tasks.find(task => task.id === actionSession.taskId) : null;
@@ -1126,6 +1128,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                                     </svg>
                                 )}
                                 <span className="text-[1.05rem] leading-none">🌿</span>
+                                {gardenBasket.deliveries.length > 0 && <span aria-label="Presente aguardando no jardim" className="absolute right-0.5 top-0.5 h-2.5 w-2.5 rounded-full border border-[#18130a] bg-amber-300 shadow-[0_0_8px_rgba(251,191,36,.95)]" />}
                             </div>
                             <span className="text-[8px] font-black text-gray-500 uppercase tracking-tighter group-hover:text-white transition-colors">Jardim</span>
                         </button>

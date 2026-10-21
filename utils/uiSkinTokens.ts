@@ -15,6 +15,10 @@ const UI_SKIN_ACCENTS: Record<string, string> = {
   VOID: '#f1edff',
   GENESIS: '#7c43c2',
   ITEM_THEME_NEBULOSA: '#8db8ff',
+  ZENITE_I: '#e6b85c',
+  ECLIPSE_I: '#b78bbd',
+  EGIDE_I: '#8db9db',
+  ZENITE_II: '#d17d35',
 };
 
 const UI_SKIN_BUTTON_GRADIENTS: Record<string, string> = {
@@ -28,6 +32,10 @@ const UI_SKIN_BUTTON_GRADIENTS: Record<string, string> = {
   VOID: 'linear-gradient(135deg, #120815 0%, #2a1336 50%, #120815 100%)',
   GENESIS: 'linear-gradient(135deg, #241033 0%, #5b2b84 50%, #241033 100%)',
   ITEM_THEME_NEBULOSA: 'linear-gradient(135deg, #0c1026 0%, #253c7a 34%, #6f58ff 62%, #7ee7ff 100%)',
+  ZENITE_I: 'linear-gradient(135deg, #3d250d 0%, #d9a844 48%, #fff1be 100%)',
+  ECLIPSE_I: 'linear-gradient(135deg, #130f1a 0%, #4e294f 48%, #b78bbd 100%)',
+  EGIDE_I: 'linear-gradient(135deg, #0a1c31 0%, #3e759c 48%, #d8efff 100%)',
+  ZENITE_II: 'linear-gradient(135deg, #21130d 0%, #9d4f25 46%, #f0b34c 100%)',
 };
 
 const hexToRgb = (hex: string): RGB => {

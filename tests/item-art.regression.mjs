@@ -263,20 +263,19 @@ const naPasta = (relativo) => fs.existsSync(path.join(root, 'public', relativo.r
         daColecao(season).filter((quest) => quest.reward_type === 'chest').map((quest) => quest.id));
     assert.equal(
         pagamComBau.length,
-        6,
+        18,
         `mudou quantas quests de temporada pagam bau em vez da peca (${pagamComBau.length}): ${pagamComBau.join(', ')}`,
     );
 
-    // E quem tem chave de colecao precisa das cinco pecas. A lista abaixo e a
-    // espera visivel: quando a arte entrar, tire daqui e o teste passa a cobrar.
-    // Skins aprovadas em 18/10/2026; ainda faltam temas/quests e demais peças de Zênite II.
-    // Os SQLs de cadastro mantêm as peças futuras desligadas no servidor.
-    const incompletasConhecidas = { zenite_1_2027: 4, eclipse_1_2027: 4, egide_1_2027: 4, zenite_2_2027: 1 };
-    for (const chave of Object.keys(incompletasConhecidas)) {
+    // Toda temporada que ja tem calendario e colecao declarada tem as cinco
+    // pecas e as tres jornadas. Nada futuro entra incompleto no cliente.
+    const colecoesFuturas = ['zenite_1_2027', 'eclipse_1_2027', 'egide_1_2027', 'zenite_2_2027'];
+    for (const chave of colecoesFuturas) {
         const temporada = todas.find(season => season.seasonKey === chave);
         assert.ok(temporada, `${chave} sem calendario`);
-        assert.equal(daColecao(temporada).length, 0, `${chave}: completar colecao antes de ativar quests`);
+        assert.equal(daColecao(temporada).length, MISSOES_POR_TEMPORADA, `${chave}: deve ter as 3 jornadas`);
     }
+
     const porChave = {};
     for (const item of ITEMS_DB) {
         // `isLegacyRetired` sao as versoes antigas que foram substituidas — a
@@ -289,13 +288,7 @@ const naPasta = (relativo) => fs.existsSync(path.join(root, 'public', relativo.r
         }
     }
     for (const [chave, quantas] of Object.entries(porChave)) {
-        const esperado = incompletasConhecidas[chave] ?? PECAS_POR_TEMPORADA.length;
-        assert.equal(
-            quantas,
-            esperado,
-            `${chave} tem ${quantas} pecas; a regra pede ${PECAS_POR_TEMPORADA.length}` +
-            (incompletasConhecidas[chave] ? ' (esta na lista de espera com ' + esperado + ')' : ''),
-        );
+        assert.equal(quantas, PECAS_POR_TEMPORADA.length, `${chave} tem ${quantas} pecas; a regra pede ${PECAS_POR_TEMPORADA.length}`);
     }
 }
 

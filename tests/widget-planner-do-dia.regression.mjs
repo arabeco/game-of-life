@@ -40,6 +40,7 @@ const { blocos, tempoRegistradoMin, diaComecaEm } = montarPlannerDoWidget({ task
 
 assert.equal(diaComecaEm, 4 * 60, 'o dia do planner comeca as 04:00');
 assert.deepEqual(blocos.map((b) => b.nome), ['Treino de força', 'Fechar capítulo', 'Socializar', 'Treino de força']);
+assert.deepEqual(blocos.map((b) => b.arena), ['Corpo', 'Corpo', 'Quests - Season Genesis', 'Corpo']);
 assert.deepEqual(blocos.map((b) => b.inicio), [3 * 60, 8 * 60, 16 * 60, 21 * 60], 'inicio em minutos desde as 04:00; a 01:00 do dia seguinte fica no fim');
 assert.deepEqual(blocos.map((b) => b.duracao), [60, 15, 30, 30]);
 assert.deepEqual(blocos.map((b) => b.feita), [true, false, false, false]);
@@ -75,6 +76,7 @@ const pincel = ler('android/app/src/main/java/life/glyph/app/GlyphDayPaint.java'
 assert.match(pincel, /PX_POR_MINUTO = 0\.35f/, 'o planner do widget nao usa a escala do zoom 1');
 assert.match(pincel, /static Bitmap resumo\(/);
 assert.match(pincel, /static Bitmap planner\(/);
+assert.match(pincel, /bloco\.arena/, 'a agenda do widget nao mostra de qual arena vem a acao');
 const manifesto = ler('android/app/src/main/AndroidManifest.xml');
 assert.doesNotMatch(manifesto, /GlyphBayWidgetService/, 'o servico da lista de concluir ainda esta no manifesto');
 console.log('Widget do dia: vitrine com Resumo e Planner, sem concluir e sem login.');

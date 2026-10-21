@@ -14,6 +14,7 @@ import { getArenaDomainFlags, hasScheduledTime } from './taskDomain.js';
  */
 export interface BlocoDoWidget {
     nome: string;
+    arena: string;
     icone: string;
     inicio: number;
     duracao: number;
@@ -68,6 +69,7 @@ export function montarPlannerDoWidget({ tasks, actions, arenas, dataOperacional 
             const duracao = Number.isFinite(task.duration) && task.duration > 0 ? task.duration : (acao?.duration || 30);
             return {
                 nome: acao?.name || 'Ação',
+                arena: acao ? (arenaPorId.get(acao.arenaId)?.name || 'Sem arena') : 'Sem arena',
                 icone: acao?.icon || '•',
                 inicio: getTaskDisplayStartTime(task, dataOperacional) - OPERATIONAL_DAY_START_MINUTE,
                 duracao,

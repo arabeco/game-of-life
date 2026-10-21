@@ -115,7 +115,7 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 
 ## Arte
 
-- [ ] Completar o conteúdo das temporadas futuras antes de ativá-las *(outra IA (Codex))* — 13/10 (Codex): Zênite I, Eclipse I e Égide I ainda precisam de tema e jornadas (as skins já entraram no 115); Zênite II segue em proposta. 21/10: o Afonso vai passar para o Codex.
+- [ ] Temporadas futuras: rodar o SQL das coleções e commitar *(outra IA (Codex))* — 21/10 (Codex), local e sem commit: Zênite I, Eclipse I, Égide I e Zênite II com a coleção completa (skin, borda, banner, insígnia e tema), três jornadas cada (Baús Míticos) e um selo final (insígnia + tema). Zênite II ganhou moldura, banner e insígnia. Tudo desligado (temporadas futuras). Falta o Afonso rodar supabase/migrations/20261021110000_future_season_collections.sql (cadastra os 4 temas e as 3 peças de Zênite II com is_live_in_game = false) e o Codex commitar. Revisão visual em output/temporadas-2027-completa/revisao.html.
 
 <details><summary>Feitos (9)</summary>
 

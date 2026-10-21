@@ -980,46 +980,16 @@ const App: React.FC = () => {
         document.documentElement.setAttribute('data-skin', skin);
     }, [bootVisuals]);
 
-    useEffect(() => {
-        const root = document.documentElement;
-        let hasOrientation = false;
-        let mouseListener: ((event: MouseEvent) => void) | null = null;
-
-        const updateTilt = (x: number, y: number) => {
-            root.style.setProperty('--tilt-x', x.toFixed(2));
-            root.style.setProperty('--tilt-y', y.toFixed(2));
-        };
-
-        const handleOrientation = (event: DeviceOrientationEvent) => {
-            if (event.gamma === null || event.beta === null) return;
-            hasOrientation = true;
-            const x = Math.max(-18, Math.min(18, event.gamma));
-            const y = Math.max(-18, Math.min(18, event.beta));
-            updateTilt(x, y);
-        };
-
-        const attachMouseFallback = () => {
-            mouseListener = (event: MouseEvent) => {
-                const centerX = window.innerWidth / 2;
-                const centerY = window.innerHeight / 2;
-                const x = ((event.clientX - centerX) / centerX) * 10;
-                const y = ((event.clientY - centerY) / centerY) * 10;
-                updateTilt(x, y);
-            };
-            window.addEventListener('mousemove', mouseListener, { passive: true });
-        };
-
-        window.addEventListener('deviceorientation', handleOrientation, true);
-        const fallbackTimer = window.setTimeout(() => {
-            if (!hasOrientation) attachMouseFallback();
-        }, 800);
-
-        return () => {
-            window.removeEventListener('deviceorientation', handleOrientation, true);
-            window.clearTimeout(fallbackTimer);
-            if (mouseListener) window.removeEventListener('mousemove', mouseListener);
-        };
-    }, []);
+    /*
+     * SEM SENSOR DE MOVIMENTO (21/10/2026, achado do Afonso).
+     *
+     * Aqui o app escutava o deviceorientation o tempo todo e reescrevia
+     * --tilt-x / --tilt-y no <html> a cada leitura. Variavel CSS no topo e
+     * herdada pela pagina inteira: cada mexida do celular recalculava o estilo
+     * de tudo, e o planner tremia. Ninguem lia essas variaveis — o efeito de
+     * inclinacao ja tinha sido desligado (ArenaCard com transform none). Se um
+     * dia voltar, que seja num elemento so, e nunca no <html>.
+     */
 
     return (
         <>

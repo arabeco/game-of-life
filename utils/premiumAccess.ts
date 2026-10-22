@@ -6,6 +6,7 @@ type PremiumLikeProfile = {
   premiumExpiresAt?: string | null;
   subscriptionTier?: SubscriptionTier | string | null;
   legacyProjectionSceneCredits?: number | null;
+  legacyProjectionSceneFreeClaimedAt?: string | null;
 };
 
 const PREMIUM_CYCLE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -104,6 +105,10 @@ export const getLegacyProjectionScenePrice = (
   profile?: PremiumLikeProfile | null,
   basePrice: number = 50,
 ): number => {
+  // A primeira cena é a porta compartilhável do Legado; não cobra para alguém
+  // descobrir se quer usar o produto. Variações posteriores conservam preço e
+  // descontos de assinatura.
+  if (!profile?.legacyProjectionSceneFreeClaimedAt) return 0;
   if (hasLegacyProjectionSceneCredit(profile)) return 0;
   const tier = getActiveSubscriptionTier(profile);
   if (!tier) return basePrice;

@@ -25,7 +25,6 @@ interface LegacyProjectionModalProps {
     /** Ausente = o seletor de cor nao aparece (ex.: placa de outra pessoa). */
     onChangePlaqueColor?: (colorId: string) => void;
     sovereignName: string;
-    isPremium: boolean;
     showLayoutEditors?: boolean;
     fallbackIdentity?: ReportIdentitySnapshot;
     onClose: () => void;
@@ -85,7 +84,6 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
     plaqueColorId,
     onChangePlaqueColor,
     sovereignName,
-    isPremium,
     showLayoutEditors = false,
     fallbackIdentity,
     onClose,
@@ -96,7 +94,7 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
     sceneGoldCost = LEGACY_SCENE_GOLD_COST,
     onPurchaseProjection,
     sceneButtonLabel = 'Gerar a cena',
-    confirmKickerLabel = 'Legado premium',
+    confirmKickerLabel = 'Seu legado',
     confirmTitle = 'Gerar a cena do legado?',
     confirmDescription = 'Escolha a pele de fundo da projeção. A placa e a timeline serão abertas sobre esse ambiente.',
     confirmButtonLabel = 'Gerar a cena',
@@ -176,12 +174,8 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
     }, []);
 
     const handlePromptProjection = () => {
-        if (!isPremium) {
-            onToast('Abrir a projecao completa do legado e um recurso premium.');
-            return;
-        }
         if (summary.totalCycles === 0) {
-            onToast('Feche pelo menos um ciclo para abrir o legado.');
+            onToast('Você precisa fechar pelo menos 1 ciclo antes de criar sua cena do legado.', 'info');
             return;
         }
         setShowProjectionConfirm(true);
@@ -336,12 +330,9 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
                             <button
                                 type="button"
                                 onClick={handlePromptProjection}
-                                disabled={!isPremium || summary.totalCycles === 0}
-                                className={`min-w-[248px] rounded-full px-6 py-3 text-xs font-black uppercase tracking-[0.24em] ${isPremium && summary.totalCycles > 0 ? 'luxe-skin-button' : 'cursor-not-allowed border border-white/10 bg-white/5 text-gray-500'}`}
+                                className={`min-w-[248px] rounded-full px-6 py-3 text-xs font-black uppercase tracking-[0.24em] ${summary.totalCycles > 0 ? 'luxe-skin-button' : 'cursor-pointer border border-white/10 bg-white/5 text-gray-500 hover:border-white/20'}`}
                             >
-                                {!isPremium ? (
-                                    'Legado premium'
-                                ) : summary.totalCycles === 0 ? (
+                                {summary.totalCycles === 0 ? (
                                     'Feche 1 ciclo'
                                 ) : (
                                     <span className="flex flex-col items-center gap-1 leading-none">

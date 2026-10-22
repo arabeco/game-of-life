@@ -38,7 +38,7 @@ export const GOLD_PREMIUM_PRODUCT = {
         'Fundos premium de perfil e ativos',
         'Oráculo: todos os tons de fala',
         'Oráculo: escolha os temas e peça card na hora',
-        'Cena do legado com 50% off',
+        'Cenas extras do legado com 50% off',
         '2 vagas de vínculos ativos',
     ],
 } as const;
@@ -52,7 +52,7 @@ export const GOLD_PLATINUM_PRODUCT = {
     benefits: [
         'Todas as vantagens do Premium',
         'Até 30 arenas no total (incluindo arquivadas)',
-        'Cena do legado com 70% off',
+        'Cenas extras do legado com 70% off',
         'Campanhas com 20% off',
         'Todos os planos de fundo e aparências premium',
         '5 vagas de vínculos ativos',
@@ -80,7 +80,9 @@ export const GOLD_BOOST_PRODUCTS = [
     },
 ] as const;
 
-export const GOLD_CLAN_CREATION_COST = 100;
+// Um clã é o início da camada social: convite, missão e retorno coletivo.
+// A criação não pode exigir ouro; as proteções contra abuso vivem no servidor.
+export const GOLD_CLAN_CREATION_COST = 0;
 
 export const ACTIVE_GOLD_ITEM_PRICE_BY_ID = {
     item_skin_1_003: 15,

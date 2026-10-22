@@ -1579,7 +1579,7 @@ const GM_PREMIUM_ACTIVE_BENEFITS = [
   { label: 'Capacidade', value: 'Até 20 arenas no total (incluindo arquivadas)', tone: 'gold' as const },
   { label: 'Personalização', value: 'Fundos premium de perfil', tone: 'violet' as const },
   { label: 'Oráculo', value: 'Todos os tons de fala liberados', tone: 'cyan' as const },
-  { label: 'Legado', value: 'Cena do legado com 50% de desconto', tone: 'violet' as const },
+  { label: 'Legado', value: 'Cenas extras com 50% de desconto', tone: 'violet' as const },
 ];
 
 const GM_PLATINUM_ACTIVE_BENEFITS = [
@@ -1588,7 +1588,7 @@ const GM_PLATINUM_ACTIVE_BENEFITS = [
   { label: 'Campanhas', value: 'Campanhas com 20% off', tone: 'gold' as const },
   { label: 'Personalização', value: 'Todos os fundos e aparências premium', tone: 'violet' as const },
   { label: 'Oráculo', value: 'Todos os tons de fala liberados', tone: 'cyan' as const },
-  { label: 'Legado', value: 'Cena do legado com 70% de desconto', tone: 'violet' as const },
+  { label: 'Legado', value: 'Cenas extras com 70% de desconto', tone: 'violet' as const },
 ];
 
 const buildMembershipRewardMockPayload = (tier: 'premium' | 'platinum'): RewardModalPayload => {
@@ -1704,7 +1704,6 @@ const LegacyPreviewButton: React.FC = () => {
                 <LegacyProjectionModal
                     eras={mockEras}
                     sovereignName={GM_SHOWCASE_SOVEREIGN_NAME}
-                    isPremium={true}
                     showLayoutEditors
                     fallbackIdentity={GM_SHOWCASE_IDENTITY}
                     sceneGoldCost={null}

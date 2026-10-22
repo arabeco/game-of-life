@@ -20,7 +20,7 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isConfirmingDebit, setIsConfirmingDebit] = useState(false);
-    const canAffordClanCreation = (userProfile.wallet?.gold || 0) >= GOLD_CLAN_CREATION_COST;
+    const canAffordClanCreation = GOLD_CLAN_CREATION_COST <= 0 || (userProfile.wallet?.gold || 0) >= GOLD_CLAN_CREATION_COST;
 
     const performSave = async () => {
         if (!name.trim()) {
@@ -55,7 +55,11 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
             }));
             return;
         }
-        setIsConfirmingDebit(true);
+        if (GOLD_CLAN_CREATION_COST > 0) {
+            setIsConfirmingDebit(true);
+            return;
+        }
+        await performSave();
     };
 
     const handleConfirmDebit = async () => {
@@ -70,8 +74,8 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                     <GlassCard variant="gold" className="m-4 w-full max-w-md space-y-4 rounded-3xl" onClick={(e) => e.stopPropagation()}>
                         <h2 className="text-center text-lg font-bold uppercase tracking-wider">Criar Grupo</h2>
                         <div className="flex flex-col items-center space-y-4">
-                            <div className="rounded-full border border-yellow-500/20 bg-yellow-500/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-yellow-300">
-                                {`Criacao institucional - ${GOLD_CLAN_CREATION_COST} ouro`}
+                            <div className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-emerald-200">
+                                {GOLD_CLAN_CREATION_COST > 0 ? `Criação institucional · ${GOLD_CLAN_CREATION_COST} ouro` : 'Criação gratuita'}
                             </div>
                             <ClanEmblem value={icon} className="h-24 w-24 rounded-[26px] border border-amber-200/25 bg-black/30 p-2 text-5xl shadow-xl" />
                             <div className="w-full space-y-3">
@@ -126,9 +130,11 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                                     </div>
                                 </div>
                                 <div className={`rounded-2xl border px-3 py-2 text-center text-xs ${canAffordClanCreation ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300' : 'border-rose-500/20 bg-rose-500/10 text-rose-300'}`}>
-                                    {canAffordClanCreation
-                                        ? `Saldo ok para abrir o grupo. Debito: ${GOLD_CLAN_CREATION_COST} ouro.`
-                                        : `Saldo insuficiente. Criar grupo custa ${GOLD_CLAN_CREATION_COST} ouro.`}
+                                    {GOLD_CLAN_CREATION_COST <= 0
+                                        ? 'Abra o grupo e convide quem constrói junto com você.'
+                                        : canAffordClanCreation
+                                            ? `Saldo ok para abrir o grupo. Débito: ${GOLD_CLAN_CREATION_COST} ouro.`
+                                            : `Saldo insuficiente. Criar grupo custa ${GOLD_CLAN_CREATION_COST} ouro.`}
                                 </div>
                             </div>
                         </div>
@@ -140,7 +146,7 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                                 disabled={isSubmitting}
                                 className="inline-flex w-full items-center justify-center gap-1.5 luxe-bico py-2 luxe-skin-button disabled:cursor-not-allowed disabled:opacity-50"
                             >
-                                {isSubmitting ? 'CRIANDO...' : <><span>Criar</span><span className="text-[11px] leading-none">{'\u{1FA99}'}</span><span>{GOLD_CLAN_CREATION_COST}</span></>}
+                                {isSubmitting ? 'CRIANDO...' : GOLD_CLAN_CREATION_COST > 0 ? <><span>Criar</span><span className="text-[11px] leading-none">{'\u{1FA99}'}</span><span>{GOLD_CLAN_CREATION_COST}</span></> : 'Criar grupo'}
                             </button>
                         </div>
                     </GlassCard>

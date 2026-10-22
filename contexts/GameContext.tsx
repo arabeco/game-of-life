@@ -517,6 +517,7 @@ const DEFAULT_USER_PROFILE: UserProfile = {
     betaRewardShownAt: null,
     betaRewardPayload: null,
     legacyProjectionSceneCredits: 0,
+    legacyProjectionSceneFreeClaimedAt: null,
     campaignQuizFreeCredits: 0,
     campaignQuizMediumCredits: 0,
     expBoostMultiplier: null,
@@ -5597,6 +5598,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         isPremium: normalizedPremium,
                         subscriptionTier: role === 'admin' || role === 'gm' ? 'platinum' : subscriptionTier,
                         legacyProjectionSceneCredits: Math.max(0, Number(camelProfile.legacyProjectionSceneCredits || 0)),
+                        legacyProjectionSceneFreeClaimedAt: camelProfile.legacyProjectionSceneFreeClaimedAt || null,
                         campaignQuizFreeCredits: Math.max(0, Number(camelProfile.campaignQuizFreeCredits || 0)),
                         campaignQuizMediumCredits: Math.max(0, Number(camelProfile.campaignQuizMediumCredits || 0)),
                         skin: normalizedSkin,
@@ -14108,7 +14110,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 setClan(prev => (prev && prev.id === clanId) ? { ...prev, backgroundUrl: clanDetails.backgroundUrl } : prev);
             }
         }
-        showToast(`Grupo criado com sucesso. ${GOLD_CLAN_CREATION_COST} ouro debitados.`, 'success');
+        showToast(
+            GOLD_CLAN_CREATION_COST > 0
+                ? `Grupo criado com sucesso. ${GOLD_CLAN_CREATION_COST} ouro debitados.`
+                : 'Grupo criado com sucesso.',
+            'success',
+        );
         return true;
     };
 

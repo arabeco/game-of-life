@@ -171,7 +171,7 @@ export const MembershipStore: React.FC<{ scrollRequest?: { section: string; nonc
                                     {isPlatinum ? premiumBadgeLabel : '30 dias'}
                                 </span>
                                 <span className="rounded-full border border-amber-200/18 bg-amber-200/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-amber-100">
-                                    Legado com 70% off
+                                    Cenas extras do legado · 70% off
                                 </span>
                             </div>
                         </div>

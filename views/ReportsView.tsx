@@ -2348,6 +2348,7 @@ export const ReportsView: React.FC<{
         const debitedGold = Number((data as any)?.cost_gold ?? legacyProjectionSceneGoldCost);
         const nextGold = Number((data as any)?.new_gold ?? Math.max(0, currentGold - debitedGold));
         const creditsRemaining = Math.max(0, Number((data as any)?.legacy_projection_scene_credits_remaining ?? (userProfile.legacyProjectionSceneCredits || 0)));
+        const firstFreeClaimedAt = (data as any)?.legacy_projection_scene_free_claimed_at ?? userProfile.legacyProjectionSceneFreeClaimedAt ?? null;
         updateUserProfile({
             wallet: {
                 ...(userProfile.wallet || { fragments: 0 }),
@@ -2355,11 +2356,14 @@ export const ReportsView: React.FC<{
                 fragments: Number(userProfile.wallet?.fragments || 0),
             },
             legacyProjectionSceneCredits: creditsRemaining,
+            legacyProjectionSceneFreeClaimedAt: firstFreeClaimedAt,
         });
         showToast(
             debitedGold > 0
                 ? `Cena do legado liberada. ${debitedGold} ouro debitados.`
-                : 'Cena do legado liberada. Crédito platinum consumido.',
+                : (data as any)?.legacy_projection_scene_first_free_applied
+                    ? 'Sua primeira cena do legado foi liberada.'
+                    : 'Cena do legado liberada. Crédito platinum consumido.',
             'success',
         );
         return true;
@@ -3458,7 +3462,6 @@ export const ReportsView: React.FC<{
                     fallbackIdentity={legacyFallbackIdentity}
                     onToast={showToast}
                     onClose={() => setShowLegacyProjectionModal(false)}
-                    isPremium={hasPremiumAccess(userProfile)}
                     sceneGoldCost={legacyProjectionSceneGoldCost}
                     onPurchaseProjection={handleUnlockLegacyProjectionScene}
                     onOpenCycle={handleOpenLegacyCycle}

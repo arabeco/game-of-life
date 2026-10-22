@@ -835,6 +835,7 @@ const mapDbProfileToUserProfile = (row: any): UserProfile => {
         premiumExpiresAt: row.premium_expires_at ?? row.premiumExpiresAt ?? null,
         subscriptionTier: row.subscription_tier ?? row.subscriptionTier ?? ((row.is_premium ?? row.isPremium) ? 'premium' : null),
         legacyProjectionSceneCredits: row.legacy_projection_scene_credits ?? row.legacyProjectionSceneCredits ?? 0,
+        legacyProjectionSceneFreeClaimedAt: row.legacy_projection_scene_free_claimed_at ?? row.legacyProjectionSceneFreeClaimedAt ?? null,
         campaignQuizFreeCredits: row.campaign_quiz_free_credits ?? row.campaignQuizFreeCredits ?? 0,
         campaignQuizMediumCredits: row.campaign_quiz_medium_credits ?? row.campaignQuizMediumCredits ?? 0,
         completedSeasonMissions: Array.isArray(row.completed_season_missions) ? row.completed_season_missions : [],

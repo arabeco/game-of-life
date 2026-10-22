@@ -553,6 +553,8 @@ export interface UserProfile {
   betaRewardShownAt?: string;
   betaRewardPayload?: RewardModalPayload | null;
   legacyProjectionSceneCredits?: number;
+  /** Quando existe, a primeira cena gratuita já foi usada. */
+  legacyProjectionSceneFreeClaimedAt?: string | null;
   campaignQuizFreeCredits?: number;
   campaignQuizMediumCredits?: number;
   expBoostMultiplier?: number | null;

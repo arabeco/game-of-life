@@ -499,4 +499,5 @@ AAB 1.0.113 gerado, manifesto e assinatura verificados; build completo, dois typ
 - [x] Planner: ordem de execução ganhou a leitura por emoji, nome, arena, duração e horário; ação futura pode ser arrastada sem disparar erro de conclusão.
 - [x] Jardim Zen: entrar não abre mais o editor; Editar abre o modo de manipular itens, e Expandir abre a aba. Loja separa Ver peças/Ver composição dos botões de compra com ouro ou fragmentos.
 - [x] Maestria: cartão externo visual com índice dentro do pentágono e textura; tela interna concentra o botão Luxe Avaliar. O desenho mostra o limite máximo em traço discreto.
+- [x] Social e Legado: criar/entrar em clã não cobra ouro; primeira cena do Legado é grátis para cada conta, sem exigir Premium. Cenas extras preservam 50% off no Premium e 70% off no Platinum. Afonso confirmou a migration `20261022120000_cla_e_primeira_cena_gratis.sql` executada.
 - [ ] Fazer checkpoint/commit do lote de 22/10 e então incluir tudo no AAB 116. As prévias e testes locais não substituem a conferência Android.

@@ -82,7 +82,7 @@
       benefits: [
         'Até 20 arenas no total (incluindo arquivadas) (vs 10 no plano base)',
         'Fundos premium de perfil',
-        'Cena do legado com 50% off',
+        'Cenas extras do legado com 50% off',
         'Oráculo: todos os tons de fala',
         'Oráculo: escolha os temas e peça card na hora',
         '2 vagas de vínculos ativos',
@@ -95,7 +95,7 @@
       benefits: [
         'Todas as vantagens do Premium',
         'Até 30 arenas no total (incluindo arquivadas)',
-        'Cena do legado com 70% off',
+        'Cenas extras do legado com 70% off',
         'Campanhas com 20% off',
         'Todos os planos de fundo',
         '5 vagas de vínculos ativos',

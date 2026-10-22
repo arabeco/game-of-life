@@ -11,7 +11,7 @@ import { SYSTEM_CHALLENGES, AVAILABLE_SYSTEM_CHALLENGES, DIAS_NO_APP_META, DIAS_
 import { GM_SEASON_MISSIONS } from '../constants/seasonContent';
 import { PRODUCT_FEATURES } from '../constants/featureFlags';
 import { ArenaPactBalloon, ArenaPactProposal } from '../components/ArenaPactBalloon';
-import { SegredosSection } from '../components/SegredosSection';
+import { ConquistasSection } from '../components/ConquistasSection';
 import { rotuloDaMissao } from '../utils/missaoDoCla';
 
 type SelectableQuest = SeasonQuest | SystemChallenge;
@@ -894,8 +894,8 @@ export const SeasonView: React.FC = () => {
                 </div>
             )}
 
-            {/* Segredos vale para a vida toda: aparece com ou sem temporada. */}
-            <SegredosSection />
+            {/* Conquistas valem para a vida toda: aparecem com ou sem temporada. */}
+            <ConquistasSection />
 
             {selectedAutomaticMission && (
                 <MissionDetailModal

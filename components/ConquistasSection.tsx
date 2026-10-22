@@ -7,14 +7,15 @@ import { ItemArt } from './ItemArt';
 import { ChevronDownIcon } from './Icons';
 
 /**
- * MISSOES → SEGREDOS.
+ * MISSOES → CONQUISTAS (chamava "Segredos" ate 22/10/2026; virou o mesmo nome
+ * do modal "Conquista secreta" e do relatorio do ciclo).
  *
  * A contagem ("3 de 20") e as regras que a pessoa ja achou, com a frase e o
  * premio. As que faltam nao aparecem — nem como ???, decidido em 06/10/2026: o
  * numero ja diz que existe mais, e a lista nao precisa repetir isso vinte vezes.
  * Vale para a vida toda, por isso nao mora na lista da temporada.
  */
-export const SegredosSection: React.FC = () => {
+export const ConquistasSection: React.FC = () => {
     const { userProfile } = useGame();
     const [aberto, setAberto] = useState(false);
     const descobertas = lerDescobertas(userProfile.completedSeasonMissions);
@@ -31,7 +32,7 @@ export const SegredosSection: React.FC = () => {
                 className="flex w-full items-baseline gap-2 px-1 py-1 text-left disabled:cursor-default"
             >
                 <span className="text-sm" aria-hidden="true">{temLista ? '\u{1F513}' : '\u{1F512}'}</span>
-                <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/62">Segredos</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/62">Conquistas</span>
                 <span className="text-[9px] font-bold text-white/28">{achadas.length} de {REGRAS_DE_DESBLOQUEIO.length}</span>
                 {temLista && (
                     <ChevronDownIcon

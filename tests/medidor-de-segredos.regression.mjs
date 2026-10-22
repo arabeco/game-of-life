@@ -175,15 +175,19 @@ console.log('ok - as vinte regras, cada limiar na beira');
     console.log('ok - a conferencia pergunta, decide no medidor, entrega e espera o relatorio');
 }
 
-// ------------------------- 9. Segredos: a contagem e so as descobertas
+// ------------------------- 9. Conquistas: a contagem e so as descobertas
+// (Chamava "Segredos"; virou "Conquistas" em 22/10/2026, o mesmo nome do modal
+// "Conquista secreta" e do relatorio do ciclo.)
 {
     const { readFileSync, existsSync } = await import('node:fs');
-    const caminhoDaSecao = join(raiz, 'components/SegredosSection.tsx');
-    assert.ok(existsSync(caminhoDaSecao), 'a secao Segredos nao existe');
+    const caminhoDaSecao = join(raiz, 'components/ConquistasSection.tsx');
+    assert.ok(existsSync(caminhoDaSecao), 'a secao Conquistas nao existe');
     // Sem comentarios: um trecho citado num comentario nao e codigo vivo.
     const secao = readFileSync(caminhoDaSecao, 'utf8')
         .replace(/\/\*[\s\S]*?\*\//g, '')
         .replace(/(^|[^:])\/\/.*$/gm, '$1');
+    assert.match(secao, />Conquistas</, 'a secao nao se chama Conquistas na tela');
+    assert.doesNotMatch(secao, />Segredos</, 'a secao ainda se chama Segredos na tela');
     assert.match(secao, /lerDescobertas\(/, 'Segredos le as descobertas de outro lugar');
     // Decidido em 06/10/2026: as que faltam nao aparecem, nem como ???. A secao
     // mostra a contagem ("3 de 20") e so as descobertas.
@@ -194,7 +198,7 @@ console.log('ok - as vinte regras, cada limiar na beira');
     assert.doesNotMatch(secao, /regra\.condicao/, 'Segredos nao pode dar dica da condicao');
     const temporada = readFileSync(join(raiz, 'views/SeasonView.tsx'), 'utf8');
     const semTemporada = temporada.indexOf('{!activeSeason && (');
-    assert.ok(semTemporada > 0 && temporada.indexOf('<SegredosSection />') > semTemporada,
+    assert.ok(semTemporada > 0 && temporada.indexOf('<ConquistasSection />') > semTemporada,
         'Segredos tem de aparecer com ou sem temporada ativa');
     console.log('ok - Segredos mostra a contagem e so o que ja foi achado');
 }

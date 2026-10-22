@@ -271,9 +271,9 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
         const now = new Date();
         const todayString = getLocalDateString(now);
         if (task.date > todayString && !task.completed) {
-            // O proprio toggleTaskCompletion vai dar o aviso em toast. Aqui so abortamos a visual.
-            toggleTaskCompletion(task.id);
-            return;
+            // Amanhã não conclui nem exibe erro durante o gesto: permanece pega
+            // para a pessoa poder seguir movendo a tarefa.
+            return false;
         }
 
         setIsHolding(true);
@@ -449,12 +449,14 @@ const UnscheduledTaskCard: React.FC<{
     compact?: boolean;
     draggable?: boolean;
     executionCard?: boolean;
+    executionPosition?: number;
+    getArenaName?: (action?: Action) => string;
     isDragTarget?: boolean;
     onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void;
     onTaskClick: (task: ScheduledTask) => void;
     onComplete: (actionId: string, taskId?: string) => void;
     onToggleTask?: (taskId: string) => void;
-}> = ({ task, action, compact = false, draggable = true, executionCard = false, isDragTarget = false, onCustomDragStart, onTaskClick, onComplete, onToggleTask }) => {
+}> = ({ task, action, compact = false, draggable = true, executionCard = false, executionPosition, getArenaName, isDragTarget = false, onCustomDragStart, onTaskClick, onComplete, onToggleTask }) => {
     const { getActionBackgroundStyle, toggleTaskCompletion } = useGame();
     const cardRef = useRef<HTMLDivElement>(null);
     const [isHolding, setIsHolding] = useState(false);
@@ -467,6 +469,7 @@ const UnscheduledTaskCard: React.FC<{
     const timeLabel = isScheduled
         ? `${String(Math.floor(task.startTime / 60)).padStart(2, '0')}:${String(task.startTime % 60).padStart(2, '0')}`
         : 'sem horário';
+    const arenaName = getArenaName?.(action) || 'Sem arena';
 
     const shouldUseActionSkin = Boolean(executionCard && action);
     const cardStyle = {
@@ -512,8 +515,9 @@ const UnscheduledTaskCard: React.FC<{
         const now = new Date();
         const todayString = getLocalDateString(now);
         if (task.date > todayString && !task.completed) {
-            completeLikePlanner();
-            return;
+            // A lista de execução segue a mesma regra da grade: amanhã só pega
+            // para rearranjar; não dispara a tentativa bloqueada de concluir.
+            return false;
         }
 
         setIsHolding(true);
@@ -575,26 +579,23 @@ const UnscheduledTaskCard: React.FC<{
             ref={cardRef}
             {...longPressEvents}
             data-execution-task-id={executionCard ?task.id : undefined}
-            className={`group relative select-none overflow-hidden border shadow-[0_16px_35px_rgba(0,0,0,0.24)] backdrop-blur-md transition-all duration-200${erguido ? ' planner-erguido' : ''} hover:border-white/18 active:scale-[0.99] ${shouldUseActionSkin ?'border-white/15 text-white' : 'bg-[linear-gradient(135deg,rgba(255,255,255,0.055),rgba(255,255,255,0.018)_54%,rgba(0,0,0,0.28))] hover:bg-white/[0.055]'} ${isDragTarget ?'ring-1 ring-[var(--skin-accent-color)]/70 shadow-[0_0_28px_rgba(250,204,21,0.12)]' : ''} ${task.completed ?'opacity-82' : ''} ${compact ?'rounded-[18px] px-2.5 py-1.5' : 'rounded-[22px] px-4 py-3'}`}
+            className={`group relative select-none overflow-hidden border shadow-[0_10px_22px_rgba(0,0,0,0.20)] backdrop-blur-md transition-all duration-200${erguido ? ' planner-erguido' : ''} hover:border-white/24 active:scale-[0.99] ${shouldUseActionSkin ?'border-white/18 text-white' : 'bg-[linear-gradient(135deg,rgba(255,255,255,0.055),rgba(255,255,255,0.018)_54%,rgba(0,0,0,0.28))] hover:bg-white/[0.055]'} ${isDragTarget ?'ring-1 ring-[var(--skin-accent-color)]/70 shadow-[0_0_28px_rgba(250,204,21,0.12)]' : ''} ${task.completed ?'opacity-70' : ''} ${executionCard ?'rounded-[12px] px-2 py-2' : compact ?'rounded-[18px] px-2.5 py-1.5' : 'rounded-[22px] px-4 py-3'}`}
             style={cardStyle}
         >
             {!shouldUseActionSkin && <div className="absolute inset-y-0 left-0 w-1 opacity-60" style={backgroundStyle} />}
             {shouldUseActionSkin && <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(2,6,23,0.10),rgba(2,6,23,0.30)_74%)]" />}
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_14%_0%,rgba(255,255,255,0.13),transparent_34%)] opacity-70" />
-            <div className={`absolute inset-0 border-2 transition-all ${compact ?'rounded-[18px]' : 'rounded-[22px]'} ${task.completed ?'border-white/25 shadow-[0_0_14px_rgba(255,255,255,0.08)]' : 'border-dashed border-gray-600'}`} />
+            <div className={`absolute inset-0 border transition-all ${executionCard ?'rounded-[12px]' : compact ?'rounded-[18px]' : 'rounded-[22px]'} ${task.completed ?'border-emerald-200/32 shadow-[0_0_14px_rgba(255,255,255,0.08)]' : executionCard ?'border-white/18' : 'border-dashed border-gray-600'}`} />
             {task.completed && <div className="absolute inset-0 bg-emerald-300/[0.035]" />}
-            <div className={`relative z-10 flex items-center ${compact ?'gap-2' : 'gap-3'}`}>
-                <div className={`flex shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-black/28 ${compact ?'h-8 w-8' : 'h-11 w-11'}`}>
+            <div className={`relative z-10 flex items-center ${executionCard ?'gap-2.5' : compact ?'gap-2' : 'gap-3'}`}>
+                {executionCard && <div className="w-5 shrink-0 text-right text-[10px] font-black tabular-nums text-white/46">{String(executionPosition || 0).padStart(2, '0')}</div>}
+                <div className={`flex shrink-0 items-center justify-center rounded-xl border border-white/10 bg-black/28 ${executionCard || compact ?'h-8 w-8' : 'h-11 w-11'}`}>
                     <EmojiGlyph symbol={action?.icon || '\u{1F4DD}'} size="action" className="text-white" />
                 </div>
                 <div className="min-w-0 flex-1">
-                    <div className={`${compact ?'text-[12px]' : 'text-[13px]'} truncate font-black uppercase tracking-[0.08em] text-white [text-shadow:0_1px_6px_rgba(2,6,23,0.82)]`}>{action?.name || 'Ação sem vínculo'}</div>
-                    <div className={`${compact ?'mt-0 text-[8px]' : 'mt-0.5 text-[10px]'} flex items-center gap-2 font-bold uppercase tracking-[0.14em] text-white/52`}>
-                        <span className={task.completed ?'text-emerald-200/70' : ''}>{stateLabel}</span>
-                        <span className="h-1 w-1 rounded-full bg-white/18" />
-                        <span>{task.duration || action?.duration || 30} min</span>
-                        <span className="h-1 w-1 rounded-full bg-white/18" />
-                        <span>{timeLabel}</span>
+                    <div className={`${executionCard ?'text-[12px] font-extrabold tracking-[0.02em]' : compact ?'text-[12px] font-black uppercase tracking-[0.08em]' : 'text-[13px] font-black uppercase tracking-[0.08em]'} truncate text-white [text-shadow:0_1px_6px_rgba(2,6,23,0.82)]`}>{action?.name || 'Ação sem vínculo'}</div>
+                    <div className={`${executionCard ?'mt-0 text-[9px] normal-case tracking-normal' : compact ?'mt-0 text-[8px] uppercase tracking-[0.14em]' : 'mt-0.5 text-[10px] uppercase tracking-[0.14em]'} flex items-center gap-1.5 font-bold text-white/60`}>
+                        {executionCard ? <><span className="truncate">{arenaName}</span><span className="h-1 w-1 shrink-0 rounded-full bg-white/22" /><span className="shrink-0">{task.duration || action?.duration || 30} min</span>{isScheduled && <><span className="h-1 w-1 shrink-0 rounded-full bg-white/22" /><span className="shrink-0">{timeLabel}</span></>}</> : <><span className={task.completed ?'text-emerald-200/70' : ''}>{stateLabel}</span><span className="h-1 w-1 rounded-full bg-white/18" /><span>{task.duration || action?.duration || 30} min</span><span className="h-1 w-1 rounded-full bg-white/18" /><span>{timeLabel}</span></>}
                     </div>
                 </div>
                 {executionCard ?(
@@ -634,21 +635,23 @@ const PlannerSimpleList: React.FC<{
     date: string;
     tasks: ScheduledTask[];
     getActionById: (id: string) => Action | undefined;
+    getArenaName: (action?: Action) => string;
     executionDropTarget: ExecutionDropTarget;
     onComplete: (actionId: string, taskId?: string) => void;
     onToggleTask: (taskId: string) => void;
     onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void;
     onTaskClick: (task: ScheduledTask) => void;
     compactEmpty?: boolean;
-}> = ({ date, tasks, getActionById, executionDropTarget, onComplete, onToggleTask, onCustomDragStart, onTaskClick, compactEmpty = false }) => {
+}> = ({ date, tasks, getActionById, getArenaName, executionDropTarget, onComplete, onToggleTask, onCustomDragStart, onTaskClick, compactEmpty = false }) => {
     const showDropAt = (index: number) => executionDropTarget?.date === date && executionDropTarget.index === index;
 
     return (
         <div
-            className={`${compactEmpty ? 'min-h-[88px] rounded-[20px] p-2' : 'min-h-[240px] rounded-[28px] p-3'} space-y-2 border border-dashed border-white/10 bg-black/12`}
+            className={`${compactEmpty ? 'min-h-[88px] rounded-[14px] p-2' : 'min-h-[240px] rounded-[16px] p-3'} space-y-2 border border-white/10 bg-black/12`}
             data-testid="planner-simple-list"
             data-execution-date={date}
         >
+            {!compactEmpty && <div className="flex items-center justify-between px-1 pb-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/48"><span>Ordem de execução</span><span>{tasks.length} ações</span></div>}
             {tasks.length > 0 ? (
                 <>
                     {tasks.map((task, index) => (
@@ -662,6 +665,8 @@ const PlannerSimpleList: React.FC<{
                                 compact
                                 draggable
                                 executionCard
+                                executionPosition={index + 1}
+                                getArenaName={getArenaName}
                                 isDragTarget={showDropAt(index)}
                                 onCustomDragStart={onCustomDragStart}
                                 onTaskClick={onTaskClick}
@@ -696,12 +701,13 @@ const PlannerSimpleWeek: React.FC<{
     dates: string[];
     tasksByDate: Record<string, ScheduledTask[]>;
     getActionById: (id: string) => Action | undefined;
+    getArenaName: (action?: Action) => string;
     executionDropTarget: ExecutionDropTarget;
     onComplete: (actionId: string, taskId?: string) => void;
     onToggleTask: (taskId: string) => void;
     onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void;
     onTaskClick: (task: ScheduledTask) => void;
-}> = ({ dates, tasksByDate, getActionById, executionDropTarget, onComplete, onToggleTask, onCustomDragStart, onTaskClick }) => {
+}> = ({ dates, tasksByDate, getActionById, getArenaName, executionDropTarget, onComplete, onToggleTask, onCustomDragStart, onTaskClick }) => {
     const today = getOperationalDateString();
 
     return (
@@ -723,6 +729,7 @@ const PlannerSimpleWeek: React.FC<{
                             date={date}
                             tasks={tasksByDate[date] || []}
                             getActionById={getActionById}
+                            getArenaName={getArenaName}
                             executionDropTarget={executionDropTarget}
                             onComplete={onComplete}
                             onToggleTask={onToggleTask}
@@ -899,6 +906,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
     const isSimpleList = userProfile.plannerViewMode === 'list';
     const plannerArenaOptions = useMemo(() => assets.flatMap(asset => asset.arenas || []), [assets]);
+    const getArenaName = useCallback((action?: Action) => plannerArenaOptions.find(arena => arena.id === action?.arenaId)?.name || 'Sem arena', [plannerArenaOptions]);
     const defaultPlannerArenaId = plannerArenaOptions.find(arena => arena.id !== 'arena_outros')?.id || plannerArenaOptions[0]?.id || '';
     const [isAdvancedPlannerMatrixEnabled, setIsAdvancedPlannerMatrixEnabled] = useState(() => {
         try {
@@ -2334,6 +2342,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                             date={selectedOperationalDateString}
                             tasks={executionTasksByDate[selectedOperationalDateString] || []}
                             getActionById={getActionById}
+                            getArenaName={getArenaName}
                             executionDropTarget={executionDropTarget}
                             onComplete={(actionId, taskId) => scheduleAndCompleteNow(actionId, taskId)}
                             onToggleTask={(taskId) => toggleTaskCompletion(taskId)}
@@ -2347,6 +2356,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                                 dates={simpleWeekDates}
                                 tasksByDate={executionTasksByDate}
                                 getActionById={getActionById}
+                                getArenaName={getArenaName}
                                 executionDropTarget={executionDropTarget}
                                 onComplete={(actionId, taskId) => scheduleAndCompleteNow(actionId, taskId)}
                                 onToggleTask={(taskId) => toggleTaskCompletion(taskId)}

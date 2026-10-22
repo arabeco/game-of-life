@@ -27,7 +27,6 @@ import { RewardPackModal } from '../components/RewardPackModal';
 import { buildRedeemRewardPayload } from '../utils/redeemRewardPresentation';
 import { getRewardEmblemUrl, getRewardToneRgb } from '../constants/rewardEmblems';
 import type { RewardModalPayload } from '../types';
-import { MASTERY_TOTAL_MAX_LEVEL, getMasteryIndexFromAssets } from '../constants/lifeAreas';
 import { clearSupabaseSessionStorage, signOutAndClearSupabaseSession } from '../utils/authSession';
 import { getActiveSubscriptionTier, getPremiumDaysRemaining, hasPlatinumAccess, hasPremiumAccess, isStaffRole } from '../utils/premiumAccess';
 import { getMoneyCheckoutSalesCopy } from '../utils/billingRuntime';
@@ -1825,8 +1824,6 @@ const GeralTab: React.FC = () => {
     const expToNextRank = expForNextRank - expForCurrentRank;
     const progressPercentage = expToNextRank > 0 ? (progressInRank / expToNextRank) * 100 : 100;
 
-    const masteryIndex = getMasteryIndexFromAssets(assets);
-
     useEffect(() => {
         // Listener for Tutorial Mastery Quiz Trigger (Step 11)
         const handleOpenMastery = () => {
@@ -1848,54 +1845,15 @@ const GeralTab: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            <button
-                type="button"
-                id="mastery-sliders-button"
-                onClick={() => setShowMastery(true)}
-                className="block w-full text-left"
-            >
-                <GlassCard variant="neutral" className="relative overflow-hidden border-[var(--skin-accent-color)]/18 p-4 transition-all duration-300 hover:border-[var(--skin-accent-color)]/38 hover:bg-white/[0.03] hover:shadow-[0_0_24px_var(--sephirot-glow-color-soft)]">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(201,168,76,0.18),transparent_42%),linear-gradient(135deg,rgba(255,255,255,0.05),transparent_48%)] pointer-events-none" />
-                    <div className="relative grid grid-cols-[minmax(0,1fr)_8.75rem] items-center gap-3">
-                        <div className="min-w-0 space-y-2">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <span className="rounded-full border border-[var(--skin-accent-color)]/25 bg-[var(--skin-accent-color)]/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.2em] text-[var(--ui-text-accent)]">
-                                    Maestria
-                                </span>
-                            </div>
-                            <div>
-                                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">Índice Glyph</div>
-                                <div className="mt-1 flex items-end gap-2">
-                                    <span className="text-4xl font-black leading-none text-white">{masteryIndex}</span>
-                                    <span className="pb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ui-text-accent)]">/{MASTERY_TOTAL_MAX_LEVEL}</span>
-                                </div>
-                            </div>
-                            {/*
-                              * O BOTAO DE COMECAR A AVALIACAO.
-                              *
-                              * Aqui havia uma pilula "EDITAR NIVEL" com cara de
-                              * botao e uma frase pedindo "toque aqui para ajustar
-                              * seu nivel por area" — duas coisas dizendo o que um
-                              * botao diria sozinho. Pedido em 05/10/2026: "algo
-                              * como Calibrar ou Avaliar, no nosso estilo".
-                              *
-                              * E um <span> com a pele de botao, e nao um <button>:
-                              * o card INTEIRO ja e o botao, e botao dentro de botao
-                              * e HTML invalido. Tocar em qualquer parte do card
-                              * abre a maestria, como antes; o bico so diz onde.
-                              */}
-                            <span className="luxe-skin-button luxe-bico inline-flex items-center justify-center px-8 py-2.5 text-[10px] font-black uppercase tracking-[0.26em]">
-                                Avaliar
-                            </span>
-                        </div>
-                        <div className="flex justify-end">
-                            <div className="flex h-[8.75rem] w-[8.75rem] items-center justify-center rounded-[1.6rem] border border-[var(--skin-accent-color)]/16 bg-[#101720] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                                <div className="h-[7.5rem] w-[7.5rem]">
-                                    <Suspense fallback={<div className="h-full w-full rounded-full bg-white/5" />}>
-                                        <AssetPentagon assets={assets} size="100%" showCentralLevel={false} />
-                                    </Suspense>
-                                </div>
-                            </div>
+            <button type="button" id="mastery-sliders-button" onClick={() => setShowMastery(true)} className="block w-full text-left">
+                <GlassCard variant="neutral" className="mastery-entry-card relative min-h-[13rem] overflow-hidden border-[var(--skin-accent-color)]/18 p-3 transition-all duration-300 hover:border-[var(--skin-accent-color)]/38 hover:bg-white/[0.03] hover:shadow-[0_0_24px_var(--sephirot-glow-color-soft)]">
+                    <div className="mastery-entry-glow pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(201,168,76,0.18),transparent_48%),linear-gradient(135deg,rgba(255,255,255,0.05),transparent_48%)]" />
+                    <div className="mastery-entry-content relative flex h-full flex-col items-center justify-center">
+                        <span className="mb-1 text-[9px] font-black uppercase tracking-[0.28em] text-[var(--ui-text-accent)]">Maestria</span>
+                        <div className="h-[10.4rem] w-[10.4rem]">
+                            <Suspense fallback={<div className="h-full w-full rounded-full bg-white/5" />}>
+                                <AssetPentagon assets={assets} size="100%" />
+                            </Suspense>
                         </div>
                     </div>
                 </GlassCard>

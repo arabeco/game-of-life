@@ -1,6 +1,6 @@
 # Prancheta do Glyph
 
-Cópia da prancheta do Afonso (artefato no claude.ai: https://claude.ai/artifact/99dQUHcbX6dy4dcAuu2Dx6), regravada pelo Claude em **21/10/2026**, já com a consolidação do Codex de 13 e 14/10. **11 abertos de 103** (92 feitos).
+Cópia da prancheta do Afonso (artefato no claude.ai: https://claude.ai/artifact/99dQUHcbX6dy4dcAuu2Dx6), reconciliada localmente em **22/10/2026**. Os recados históricos não entram na soma da prancheta online; use as pendências marcadas abaixo como estado atual.
 
 **Uma lista só:** a fonte é a prancheta online, e este arquivo é regravado a partir dela. Não edite as listas abaixo; para avisar algo, escreva em "Recados da outra IA", no fim: o Claude lê e passa para a prancheta.
 
@@ -10,7 +10,7 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 
 ## Lançamento
 
-- [ ] AAB 116: gerar e subir na Play (build de lançamento) *(Afonso)* — O 115 (gerado em 20/10, SHA-256 43752d3f…) saiu com dois problemas já corrigidos no git: a grade das arenas cortando as bordas (efb7d7c) e o planner tremendo com o sensor de movimento (57de1f4). O 116 junta essas duas correções, o widget do planner novo do Codex (falta o commit dele) e o resto do trabalho dele que estava solto na pasta. Depois, conferir no celular a mentoria, o jardim e as arenas e promover para Produção.
+- [ ] AAB 116: gerar e subir na Play (build de lançamento) *(Afonso)* — O 115 (gerado em 20/10, SHA-256 43752d3f…) saiu com dois problemas já corrigidos no git: a grade das arenas cortando as bordas (efb7d7c) e o planner tremendo com o sensor de movimento (57de1f4). O 116 junta essas duas correções, o widget do planner novo (afa4317) e o lote visual/local abaixo, que ainda precisa de checkpoint. Depois, conferir no celular a mentoria, o jardim e as arenas e promover para Produção.
 
 <details><summary>Feitos (15)</summary>
 
@@ -48,7 +48,7 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 - [x] Botão do ciclo no planner e na ArenaView: commitar *(Claude)* — Commitado em 09/10 (fb05e4e).
 - [x] Missão de temporada, de clã e campanha contam só para o bem no ciclo *(Claude)* — 19/10 (1a5b3a8): entram como prometido = feito, só com o que caiu dentro do ciclo. O que faltou não pesa; o feito vale como ação, dia ativo e horas na nota. Não viram meta a selar. Quem faz só campanha deixa de ficar com 0%. Ciclos fechados não mudam. Antes, nem as missões ajudavam na nota de verdade (o bônus delas só alimentava a nota antiga). Vai no próximo AAB. A leitura do ciclo do Oráculo também foi ajustada: só vale depois de republicar a função oracle.
 - [x] Modal de arena e de ação: conferir no aparelho (Codex integrou) *(outra IA (Codex))* — 16/10 (Codex): integrados no código ActionModal, ArenaDetailModal, ArenaCard e NewArenaModal, com quatro abas (Geral, Contexto, Checklist, Mídia), slider de duração por etapas com campo numérico, rolagem interna no texto e no checklist e botões dourados. A agenda nova respeita as repetições e o fim do ciclo. Falta conferir na tela: tamanhos, teclado e cortes (o navegador dele não abriu o arquivo). Está na planilha do Luigi como M13. 16/10 (Claude): botões − e + nas Repetições (prop comBotoes no StyledRangeInput, estilo .action-step em components/action-layout.css, teste acao-repeticoes-mais-menos). Ficou sem commit porque se apoia no ActionModal novo do Codex, que ainda não foi commitado: entra junto no commit dele.
-- [x] Refinar o widget do planner *(outra IA (Codex))* — 21/10: feito pelo Codex (GlyphDayPaint, GlyphDayWidgetProvider, utils/widgetPlanner.ts) e aprovado pelo Afonso. O teste widget-planner-do-dia passa. Ainda sem commit; entra no AAB 116.
+- [x] Refinar o widget do planner *(outra IA (Codex))* — 21/10: feito pelo Codex (GlyphDayPaint, GlyphDayWidgetProvider, utils/widgetPlanner.ts), aprovado pelo Afonso e commitado em afa4317. O teste widget-planner-do-dia passa. Entra no AAB 116.
 - [x] Widget (rótulo do dia): fechar a mudança e o teste *(Claude)* — Ok do Afonso em 10/10.
 - [x] Editor do Soberano: fechar a mudança e o teste *(Claude)* — Ok do Afonso em 10/10. O teste luz-e-placa-do-soberano ainda acusa o slot do artefato fora do lugar.
 - [x] AAB 110 *(Afonso)* — 12/10: AAB 110 gerado pelo Codex (6b33f9a) em android/app/build/outputs/bundle/release/Glyph-1.0.110-110.aab, com tudo até o cartão do ciclo mais baixo (329d540). Falta subir no Play.
@@ -115,7 +115,7 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 
 ## Arte
 
-- [ ] Temporadas futuras: rodar o SQL das coleções e commitar *(outra IA (Codex))* — 21/10 (Codex), local e sem commit: Zênite I, Eclipse I, Égide I e Zênite II com a coleção completa (skin, borda, banner, insígnia e tema), três jornadas cada (Baús Míticos) e um selo final (insígnia + tema). Zênite II ganhou moldura, banner e insígnia. Tudo desligado (temporadas futuras). Falta o Afonso rodar supabase/migrations/20261021110000_future_season_collections.sql (cadastra os 4 temas e as 3 peças de Zênite II com is_live_in_game = false) e o Codex commitar. Revisão visual em output/temporadas-2027-completa/revisao.html.
+- [x] Temporadas futuras: rodar o SQL das coleções e commitar *(outra IA (Codex))* — 21/10: Zênite I, Eclipse I, Égide I e Zênite II com a coleção completa (skin, borda, banner, insígnia e tema), três jornadas cada (Baús Míticos) e um selo final (insígnia + tema). Zênite II ganhou moldura, banner e insígnia. Tudo segue desligado para jogadores. Afonso confirmou a migração 20261021110000_future_season_collections.sql executada; código e artes foram commitados em afa4317. Revisão visual em output/temporadas-2027-completa/revisao.html.
 
 <details><summary>Feitos (9)</summary>
 
@@ -139,7 +139,7 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 
 ## Git
 
-- [ ] Republicar a função oracle (limpar os tokens do Supabase antes) *(Afonso)* — 19/10: o login do CLI falhou porque a conta chegou a 20 tokens pessoais (cada login das IAs cria um). Apagar os velhos em supabase.com/dashboard/account/tokens, depois npx supabase login e npx supabase functions deploy oracle --project-ref klmsdcncmhtgnlcejzdi. Serve para a leitura do ciclo do Oráculo seguir a regra nova de missão e campanha (1a5b3a8); o app já está certo no 114.
+- [x] Republicar a função oracle *(Codex)* — 22/10: publicada com sucesso no projeto klmsdcncmhtgnlcejzdi. A leitura do ciclo do Oráculo agora leva a regra nova de missão e campanha (1a5b3a8), que já estava correta no app. Token temporário de deploy removido do ambiente local após a publicação.
 
 <details><summary>Feitos (2)</summary>
 
@@ -151,7 +151,7 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 ## Opcionais e expansão
 
 - [ ] Site: banner de cookie (opcional) *(outra IA (Codex))* — 13/10: o site não tem rastreador (nem Analytics, nem pixel); só guarda o que é do funcionamento. Pela LGPD isso não pede banner, só menção na Política de Privacidade. Volta se entrar analytics no site.
-- [ ] Criar campanha para outra pessoa (como era o Codex) *(Afonso)* — 15/10: ideia do Afonso. Alguém monta uma campanha (arenas, ações, plano de dias) e manda para outro jogador, como os manuscritos do Codex por @nickname. O código do Codex está guardado (migração 20260313_add_codex_forge_library.sql); dá para reaproveitar.
+- [x] Entregar campanha para outra pessoa pela mentoria *(Codex)* — mentor monta a campanha no sandbox, entrega ao mentorado e ele aceita ou recusa; depois pode editar os próprios horários. Implementado pelo fluxo de forja `forge_mentor_codex_for_pupil` e pelos slots de mentoria. O envio aberto por `@nickname`, sem vínculo de mentoria, continua uma expansão separada se um dia fizer sentido.
 - [ ] Tag ou link de perfil para adicionar amigo (depois) *(Afonso)* — 12/10: código/link do perfil para adicionar sem buscar o nome. 13/10: o Codex já fez Copiar nickname e o cartão compartilhado com “Me adicione no Glyph!”; o link direto segue como expansão.
 - [ ] Feed: ordem do Reino (depois) *(Afonso)* — 12/10: o feed tem duas abas sem repetição (Aliados = você e amigos; Reino = o resto), commit 8ce20b6. Depois: quem é do seu clã e não é amigo ganha preferência no Reino, e um filtro para não floodar quando houver gente. Atenção: o app baixa só os 80 posts mais novos de todos; com muita gente pública, posts de amigos podem sumir do Aliados.
 
@@ -396,7 +396,7 @@ Afonso confirmou a execução de sql/temporadas-2027-artes.sql e pediu commit, p
 ### 15/10 — Auditoria das Edge Functions (Codex)
 - [x] Corrigir leitura pública do segredo interno: SQL 20261015200000 aplicado; segredo rotacionado e sincronizado. Leitura anônima agora 401; autenticação do webhook reconferida sem envio.
 - [x] Mercado Pago: segredo `MERCADO_PAGO_WEBHOOK_SECRET` cadastrado pelo Afonso e presença confirmada em 16/10. Evento fictício sem assinatura retornou `Invalid signature`, antes de consultar pagamentos. Ainda falta confirmar uma notificação legítima assinada pelo Mercado Pago; este teste não comprova igualdade do segredo nem compra real.
-- [ ] Limpeza de segredos: auditoria das nove funções publicadas em 16/10 não encontrou referências a `OPENROUTER_API_KEY` ou `OPENROUTER_MODEL`. Candidatos à remoção; nenhum segredo foi apagado. Demais configurações personalizadas têm referências no código publicado; manter os segredos padrão do Supabase.
+- [x] Limpeza de segredos: auditoria das nove funções publicadas em 16/10 não encontrou referências a `OPENROUTER_API_KEY` ou `OPENROUTER_MODEL`. Afonso confirmou a remoção dos dois segredos; as demais configurações personalizadas têm referências no código publicado e foram mantidas.
 - [x] Widget: arenas arquivadas e bloqueios de campanha — widget-action v4 publicado; teste real na conta descartável confirmou recusas e liberação após pré-requisito. Sem teste de gesto/layout no aparelho.
 - Push: duas inscrições ativas sem erro; envio registrado em 15/10 às 14h40. Histórico enviado não comprova exibição no aparelho. Auditoria: docs/2026-10-15-auditoria-edge-functions.md.
 
@@ -439,7 +439,7 @@ Afonso confirmou a execução de sql/temporadas-2027-artes.sql e pediu commit, p
 - Afonso delimitou esta rodada à cesta; fragmentos diários do Painel ficam para depois. Implementados 5–15 fragmentos por entrega e 5% de chance de o cálculo passar de 15, entregando um baú Comum em substituição.
 - Uma entrega a cada 3–5 dias ativos, no máximo um avanço por dia; duas entregas guardadas, sem expiração. Estado e recompensa no servidor, coleta idempotente por ID. Nenhum preço da loja/forja mudou.
 - Cesta fora da areia, aviso no perfil e atalho acessível. Visitantes não veem/coletam. Layout e desenhos existentes preservados. Tamanhos e guia permanecem pendentes como propostas.
-- SQL para Afonso executar: supabase/migrations/20261017210000_garden_basket.sql. Compilado com sql:checa e executado em teste PGlite; NÃO aplicado remotamente e nenhuma service-role usada.
+- SQL 20261017210000_garden_basket.sql confirmado executado pelo Afonso. Compilado com sql:checa e executado em teste PGlite; a confirmação remota registrada aqui vem do Afonso.
 - TypeScript, build do jardim, build principal, regressão SQL da cesta, terreno e areia passaram. Navegador validou demonstração isolada (sem crédito real), visita e erro de coleta. Sem AAB nem subida de versão.
 - Detalhes: docs/2026-10-17-jardim-cesta-implementacao.md. Prévia: output/garden-basket/index.html.
 
@@ -451,7 +451,7 @@ Afonso confirmou a execução de sql/temporadas-2027-artes.sql e pediu commit, p
 - Afonso aprovou sete expansões sequenciais por 80/140/220/320/450/650/900 fragmentos. Original/Amplo preservados; compra permanente, sem mover peças/desenhos. Implementação local e testes PostgreSQL passaram.
 - Regra final do Painel: 1 fragmento por 50 EXP crua, piso inteiro, teto 15; ao abrir o dia encerrado. Sem média pessoal, 12 na média ou mínimo de 8 (proposta rejeitada). Comprovante único e linha quadrada no estilo de recompensa.
 - Biblioteca: 315 emojis, busca em português e Todos; seletor nativo acima dos modais. Guia versão 2 com personalização atualizada.
-- SQL combinado para Afonso aplicar: sql/2026-10-18-jardim-fragmentos.sql (cesta pendente + expansões + Painel). NÃO aplicado remotamente; sem AAB, subida de versão ou publicação.
+- SQL de jardim/fragmentos confirmado executado pelo Afonso: 20261017210000_garden_basket, 20261017220000_garden_expansions e 20261017230000_daily_fragments. Sem AAB, subida de versão ou publicação nesta rodada.
 - Evidências e decisões: docs/2026-10-17-retomada-jardim-painel-emojis.md. Prévia isolada: output/garden-retomada/index.html.
 
 ### 18/10 — Próxima revisão visual: Campanhas e miniaturas da loja
@@ -486,9 +486,17 @@ AAB 1.0.113 gerado, manifesto e assinatura verificados; build completo, dois typ
 - Vínculos mostra `Vagas livres: X / Y` e botão `Comprar vaga · 50 ouro`. Convite de mentoria não cobra mais o orientado; no aceite ele usa uma vaga do mentor. Convites pendentes permanecem pendentes se a vaga estiver cheia.
 - Benefício incluído no catálogo de Premium/Platinum do app e na landing `glyph-landing/descubra.html`. Código local, validado por TypeScript e `sql:checa`; falta checkpoint/commit e AAB 115.
 
-### 21/10 — Recado do Codex: coleções das temporadas futuras concluídas localmente
+### 21/10 — Recado do Codex: coleções das temporadas futuras concluídas
 
 - Zênite I, Eclipse I, Égide I e Zênite II agora têm, no código local, a regra completa de coleção: skin, borda, banner, insígnia e tema; cada temporada recebeu três jornadas que entregam Baús Míticos e um selo final que entrega insígnia + tema.
 - Zênite II ganhou suas três artes faltantes (moldura, banner e insígnia) em `public/assets/catalog/interface/`. As coleções permanecem futuras e desligadas; nada foi antecipado para jogadores.
-- Nova migração preparada e validada, ainda **não executada**: `supabase/migrations/20261021110000_future_season_collections.sql`. Ela cadastra os quatro temas e as três peças de Zênite II com `is_live_in_game = false`.
-- Revisão visual local aberta em `output/temporadas-2027-completa/revisao.html`. TypeScript, `test:item-art` e `sql:checa` passaram. Sem commit, AAB, push ou execução remota nesta rodada.
+- Migração `supabase/migrations/20261021110000_future_season_collections.sql` executada pelo Afonso. Ela cadastra os quatro temas e as três peças de Zênite II com `is_live_in_game = false`.
+- Revisão visual local aberta em `output/temporadas-2027-completa/revisao.html`. TypeScript, `test:item-art` e `sql:checa` passaram. Commit afa4317; sem AAB ou publicação nesta rodada.
+
+### 22/10 — Feito localmente; falta checkpoint para o AAB 116
+
+- [x] Campanhas e arenas: cartão de campanha compacto alinhado à miniatura de arena; percentual no mesmo rodapé, arenas internas na faixa de ações e gradiente formado pelas arenas. Prévia local atualizada.
+- [x] Planner: ordem de execução ganhou a leitura por emoji, nome, arena, duração e horário; ação futura pode ser arrastada sem disparar erro de conclusão.
+- [x] Jardim Zen: entrar não abre mais o editor; Editar abre o modo de manipular itens, e Expandir abre a aba. Loja separa Ver peças/Ver composição dos botões de compra com ouro ou fragmentos.
+- [x] Maestria: cartão externo visual com índice dentro do pentágono e textura; tela interna concentra o botão Luxe Avaliar. O desenho mostra o limite máximo em traço discreto.
+- [ ] Fazer checkpoint/commit do lote de 22/10 e então incluir tudo no AAB 116. As prévias e testes locais não substituem a conferência Android.

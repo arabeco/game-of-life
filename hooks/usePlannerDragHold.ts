@@ -58,7 +58,7 @@ interface PlannerDragHoldOptions {
     /** Comecou a arrastar. Sem ele, a peca nao pega — so toca e segura. */
     onDrag?: (event: MouseEvent | TouchEvent) => void;
     /** O dedo ficou parado depois de pegar: comeca a encher a conclusao. */
-    onHoldStart?: () => void;
+    onHoldStart?: () => boolean | void;
     /** O enchimento parou antes do fim — soltou ou passou a arrastar. */
     onHoldCancel?: () => void;
     dragThreshold?: number;
@@ -83,8 +83,11 @@ export const usePlannerDragHold = ({
             ? () => {
                 // A peca desce ANTES de encher: subida e enchimento nao podem
                 // aparecer juntos, senao os dois gestos voltam a se confundir.
+                // Quando a peca ainda nao pode ser concluida, ela fica pega:
+                // assim o mesmo toque longo pode seguir para o arrasto.
+                const started = onHoldStart();
+                if (started === false) return false;
                 setErguido(false);
-                onHoldStart();
             }
             : undefined,
         onLongPressCancel: onHoldCancel,

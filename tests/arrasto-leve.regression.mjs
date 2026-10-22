@@ -31,9 +31,18 @@ assert.match(planner, /armDelay: onDrag \? PLANNER_PEGAR_MS : undefined,/,
     'o pegar deixou de existir para quem arrasta');
 assert.match(planner, /delay: PLANNER_SEGURAR_MS,/, 'a conclusao voltou a comecar no mesmo tempo do pegar');
 // A peca desce antes de encher: subir e encher nunca aparecem juntos.
-assert.match(planner, /onLongPress: onHoldStart\s*\?\s*\(\) => \{[\s\S]{0,260}setErguido\(false\);\s*onHoldStart\(\);/,
-    'a peca deixou de descer antes de comecar a encher — os dois gestos voltam a se confundir');
+assert.match(planner, /const started = onHoldStart\(\);[\s\S]{0,160}if \(started === false\) return false;[\s\S]{0,100}setErguido\(false\);/,
+    'a peca deixou de distinguir a tarefa futura: ela precisa ficar pega para arrastar, e descer só ao iniciar o enchimento');
 console.log('ok - pegar aos 240ms; concluir so com o dedo parado ate 640ms');
+assert.match(gesto, /const holdStarted = onLongPress\?\.\(e\);[\s\S]{0,760}holdStarted === false[\s\S]{0,240}state\.current = 'armed';/,
+    'uma tarefa futura voltou a sair do estado pega e não pode mais virar arrasto depois do hold');
+for (const arquivo of ['views/PlannerView.tsx', 'components/WeeklyPlannerGrid.tsx']) {
+    const fonte = ler(arquivo);
+    assert.match(fonte, /task\.date > (todayString|getLocalDateString\(\)) && !task\.completed[\s\S]{0,260}return false;/,
+        `${arquivo}: a tarefa futura voltou a tentar concluir em vez de ficar pronta para arrastar`);
+}
+console.log('ok - tarefa futura fica pega para arrastar e não chama a conclusão bloqueada');
+
 
 // Concluir segurando: 2,0s no planner e 1,3s na baia, no total. Pedido em
 // 05/10/2026, medido na bancada: 2016ms e 1322ms.

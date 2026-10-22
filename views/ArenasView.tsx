@@ -1782,17 +1782,18 @@ export const ArenasView: React.FC = () => {
                 style={{ touchAction: 'pan-x pan-y', backgroundImage: getCampaignGradient(campaignArenas) }}
             >
                 <div className="campaign-overview-heading">
-                    <span className="campaign-overview-icon"><SharedCodexCoverArt cover={campaignCover} title={campaign.title} emojiSize="arena" backgroundClassName="flex items-center justify-center" /></span><span className="campaign-overview-title-wrap"><h3 className={`arena-title arena-title-text arena-title-readable arena-thumb-title arena-thumb-title--plain w-full text-center line-clamp-2 ${campaign.title.length > 18 ? 'text-[5.9px]' : campaign.title.length > 14 ? 'text-[6.1px]' : campaign.title.length > 10 ? 'text-[6.35px]' : campaign.title.length > 8 ? 'text-[6.65px]' : 'text-[6.95px]'}`}>{campaign.title}</h3></span>
+                    <span className="campaign-overview-icon"><SharedCodexCoverArt cover={campaignCover} title={campaign.title} emojiSize="arena" backgroundClassName="flex items-center justify-center" /></span>
+                    <span className="campaign-overview-title-wrap"><h3 className={`arena-title arena-title-text arena-title-readable arena-thumb-title arena-thumb-title--plain w-full text-center line-clamp-2 ${campaign.title.length > 18 ? 'text-[5.9px]' : campaign.title.length > 14 ? 'text-[6.1px]' : campaign.title.length > 10 ? 'text-[6.35px]' : campaign.title.length > 8 ? 'text-[6.65px]' : 'text-[6.95px]'}`}>{campaign.title}</h3></span>
+                    {phaseCount > 1 && <span className="campaign-overview-phase-count">{phaseCount} fases</span>}
                 </div>
                 <div className="campaign-overview-arenas" tabIndex={0} role="region" aria-label={`Arenas de ${campaign.title}; role para ver todas`} onMouseDown={event => event.stopPropagation()} onTouchStart={event => event.stopPropagation()} onClick={event => event.stopPropagation()} onKeyDown={event => event.stopPropagation()}>
                     <CampaignArenaStack arenas={campaignArenas} size="xs" maxVisible={campaignArenas.length} campaign={campaign} arenaStates={arenaStates} />
                 </div>
-                <div className="campaign-overview-meta">{campaignArenas.length} arenas · {phaseCount} {phaseCount === 1 ? 'fase' : 'fases'}</div>
                 <div className="campaign-overview-footer">
+                    <span className="campaign-overview-progress-value">{progressSummary.progressPercent}%</span>
                     <div className="campaign-overview-track" role="progressbar" title="Progresso total da campanha" aria-label={`Progresso total de ${campaign.title}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progressSummary.progressPercent}>
                         <div className={progressFillClass} style={{ width: `${progressSummary.progressPercent}%` }} />
                     </div>
-                    <span>{progressSummary.progressPercent}%</span>
                 </div>
             </div>
         );

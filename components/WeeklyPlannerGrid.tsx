@@ -3,7 +3,7 @@
 import React, { useRef } from 'react';
 import { Action, ScheduledTask } from '../types';
 import { EmojiGlyph } from './EmojiGlyph';
-import { useGame } from '../contexts/GameContext';
+import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { DropIndicator } from './DropIndicator';
 import { usePlannerDragHold, PLANNER_ENCHER_MS, DESMARCAR_ENCHER_MS } from '../hooks/usePlannerDragHold';
 import { CheckCircleIcon } from './Icons';
@@ -79,6 +79,10 @@ const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: 
 
     const handleLongPress = () => {
         if (isTransitioning) return;
+        if (task.date > getLocalDateString() && !task.completed) {
+            // Mantém a tarefa futura pega para arrastar. Não tenta concluir.
+            return false;
+        }
         setIsHolding(true);
         setIsTransitioning(true);
         if (completionTimeout.current) clearTimeout(completionTimeout.current);

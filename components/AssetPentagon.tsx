@@ -158,6 +158,7 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
         labelHalo="rgba(6,7,9,0.82)"
         labelSize={3.6}
         labelOffset={destacarPontas ? 13 : 8}
+        maxOutlineColor="rgba(224, 204, 150, 0.26)"
         series={[{
           id: 'area-levels',
           activeIndex: activeAreaId ? chartAreas.findIndex(({ area }) => area.id === activeAreaId) : undefined,

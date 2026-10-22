@@ -92,6 +92,8 @@ interface SvgRadarChartProps {
   legendAccentColor?: string;
   /** Distancia do nome da area ate a borda. Sobe quando os numeros saem para fora. */
   labelOffset?: number;
+  /** Linha externa do radar, usada quando o maximo precisa ficar legivel. */
+  maxOutlineColor?: string;
 }
 
 const CHART_SIZE = 100;
@@ -150,6 +152,7 @@ export const SvgRadarChart: React.FC<SvgRadarChartProps> = ({
   showLegend = false,
   legendAccentColor = 'rgba(255,255,255,0.7)',
   labelOffset = 8,
+  maxOutlineColor,
 }) => {
   const total = labels.length;
   // Os aneis dividem o que RESTA acima da base: abaixo dela nao ha degrau
@@ -162,7 +165,8 @@ export const SvgRadarChart: React.FC<SvgRadarChartProps> = ({
   return (
     <div className={className} style={{ height }}>
       <svg viewBox={`0 0 ${CHART_SIZE} ${CHART_SIZE}`} className="w-full h-full overflow-visible">
-        {gridLevels.map((level) => {
+        {gridLevels.map((level, index) => {
+          const isOuterLimit = index === gridLevels.length - 1;
           const points = labels
             .map((_, index) => {
               const point = getPoint(index, total, RADIUS * level);
@@ -174,8 +178,8 @@ export const SvgRadarChart: React.FC<SvgRadarChartProps> = ({
               key={level}
               points={points}
               fill="none"
-              stroke="rgba(255,255,255,0.08)"
-              strokeWidth="0.35"
+              stroke={isOuterLimit ? (maxOutlineColor || 'rgba(255,255,255,0.08)') : 'rgba(255,255,255,0.08)'}
+              strokeWidth={isOuterLimit && maxOutlineColor ? '0.55' : '0.35'}
             />
           );
         })}

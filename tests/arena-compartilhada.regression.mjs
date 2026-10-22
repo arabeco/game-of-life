@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describeArenaProgress } from '../utils/arenaProgressPresentation.ts';
 
-/** ARENA COMPARTILHADA SEM % E SEM OSCILAR (12/10/2026). */
+/** ARENA COMPARTILHADA E MINIATURAS NUMA MEDIDA SO (12/10/2026, 22/10/2026). */
 const ler = (c) => readFileSync(new URL(`../${c}`, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 const acoes = [{ id: 'a', actionType: 'Ação Recorrente' }];
 
@@ -15,6 +15,9 @@ console.log('ok - a arena da missao de cla mostra 7/20');
 const cartao = ler('components/ArenaCard.tsx');
 assert.match(cartao, /const progress = calculatedProgress\.progressPercent;/, 'o cartao voltou a misturar o numero de fora com o proprio');
 assert.match(cartao, /forceSharedPool: isExplicitSharedArena\(arena\) \? undefined : false/, 'o pool do par voltou a ligar sozinho');
+assert.match(cartao, /const progressDescription = isCompactThumbnail && hasMeasurableProgress/, 'miniaturas voltaram a misturar contagem de acoes com a porcentagem das campanhas');
+assert.match(cartao, /label: `\$\{Math\.round\(progress\)\}%`/, 'miniaturas de arena precisam exibir a mesma porcentagem da campanha');
+assert.match(cartao, /h-\[1\.06rem\] w-full" aria-label="Sem meta definida"/, 'arena sem meta precisa reservar a altura da barra para nao baixar as acoes');
 assert.match(cartao, /hasClanMission=\{isClanQuestArena\}/);
 const lista = ler('views/ArenasView.tsx');
 assert.match(lista, /forceSharedPool: isExplicitSharedArena\(arena\) \? undefined : false/);

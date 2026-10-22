@@ -407,7 +407,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     // outro, e o rotulo caia para % porque os dois nao batiam.
     const progress = calculatedProgress.progressPercent;
     const hasMeasurableProgress = calculatedProgress.hasMeasurableProgress;
-    const progressDescription = describeArenaProgress(actions, calculatedProgress, progress);
+    const detailedProgressDescription = describeArenaProgress(actions, calculatedProgress, progress);
 
     const getIcon = () => {
         return <EmojiGlyph symbol={arena.icon || '\u{1F3DB}\uFE0F'} size="arena" className="text-white" />;
@@ -435,6 +435,16 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
 
     const isOverview = variant === 'overview';
     const isCompactThumbnail = variant === 'overview' || variant === 'compact';
+    // A grade precisa falar uma lingua so: campanha ja mostra percentual e a
+    // miniatura de arena tambem. A contagem (4/15, por exemplo) continua nos
+    // detalhes e nos avisos, onde ha espaco para explicar o denominador.
+    const progressDescription = isCompactThumbnail && hasMeasurableProgress
+        ? {
+            label: `${Math.round(progress)}%`,
+            accessibleLabel: `${Math.round(progress)}% concluído`,
+            remaining: null,
+        }
+        : detailedProgressDescription;
     const plasmaEnabled = (oraclePreferences?.animationsEnabled ?? true) && !prefersReducedMotion && !disableAnimatedBackground;
     const visibleMilestones = isCompactThumbnail ? milestoneActions.slice(0, 1) : milestoneActions;
     const visibleBronzeActions = isCompactThumbnail ? bronzeActions.slice(0, 3) : bronzeActions;
@@ -715,7 +725,9 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                         </div>
                     </div>
                 ) : isCompactThumbnail ? (
-                    <div className="h-[0.32rem] w-full" aria-label="Sem meta definida" />
+                    // A lacuna da barra e proposital: a fileira de acoes nao
+                    // pode descer quando a arena so contem acoes livres.
+                    <div className="h-[1.06rem] w-full" aria-label="Sem meta definida" />
                 ) : (
                     <div className="mt-0.5 w-full rounded-full border border-white/8 bg-black/18 px-2 py-1 text-center text-[8px] font-black uppercase tracking-[0.12em] text-white/38">
                         Sem meta definida

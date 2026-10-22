@@ -52,13 +52,14 @@
 .glyph-garden .zen3d-subheader .zen-luxe-button{width:auto;min-width:76px;margin-right:10px;font-size:11px}.glyph-garden .zen3d-subheader>span{flex:1;min-width:0}
 
 /* The scene fills the screen; navigation floats above it. */
-.glyph-garden .garden-floating-entry{position:absolute;z-index:3;top:max(12px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left))}
-.glyph-garden .garden-floating-entry button{min-height:44px;background:var(--garden-panel-strong);color:var(--garden-text)!important;border:1px solid var(--garden-line-soft);backdrop-filter:blur(12px);box-shadow:0 4px 18px #0003}
+.glyph-garden .garden-floating-entry{position:absolute;z-index:3;top:max(12px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));display:flex;gap:6px}
+.glyph-garden .garden-floating-entry button{min-height:44px;padding:0 14px;background:var(--garden-panel-strong);color:var(--garden-text)!important;border:1px solid var(--garden-line-soft);backdrop-filter:blur(12px);box-shadow:0 4px 18px #0003}
+.glyph-garden .garden-floating-entry button[aria-pressed=true]{background:var(--garden-active);border-color:var(--garden-line);color:var(--garden-accent)!important}
 .glyph-garden .zen3d-notice{top:68px;left:16px;right:16px;max-width:480px}
 .glyph-garden .zen3d-notice:empty{display:none}
 .glyph-garden .garden-editor-actions{display:flex;gap:6px;justify-content:flex-end;align-items:center;margin-bottom:6px}
 .glyph-garden .garden-editor-actions button{min-height:36px;padding:0 14px;font-size:11px;border-radius:10px;background:var(--garden-control)}
-.glyph-garden .sand-tools.is-collapsed .garden-editor-actions{display:none}
+.glyph-garden .sand-tools.is-collapsed .garden-editor-actions,.glyph-garden .sand-tools.is-collapsed .sand-modes{display:none}
 .glyph-garden .garden-layout-panel{max-height:38dvh;overflow:auto;overscroll-behavior:contain}
 .glyph-garden .sand-tools.is-collapsed .garden-layout-panel{display:none}
 .glyph-garden .garden-layout-panel .inventory-filters{position:sticky;top:0;background:var(--garden-panel-strong);z-index:1}
@@ -80,6 +81,17 @@
 .glyph-garden .garden-model-card .base-mini{flex:0 0 50px;height:65px;margin:0}
 .glyph-garden .garden-model-card b{display:block;font-size:12px}.glyph-garden .garden-model-card small{display:block;font-size:10px;color:var(--garden-muted);margin-top:5px;line-height:1.4}.glyph-garden .garden-model-card em{display:block;font-size:10px;font-style:normal;margin-top:8px}
 .glyph-garden .garden-layout-panel .atmosphere-panel{max-height:none;overflow:visible}
+.glyph-garden .garden-shop-actions{display:flex;align-items:center;gap:7px;margin-top:9px;flex-wrap:wrap}
+.glyph-garden .garden-secondary-button{min-height:34px!important;padding:0 11px!important;border:1px solid var(--garden-line-soft)!important;border-radius:9px!important;background:transparent!important;color:var(--garden-muted)!important;font-size:10px!important;font-weight:700!important}
+.glyph-garden .garden-secondary-button:hover:not(:disabled){color:var(--garden-text)!important;background:var(--garden-control)!important}
+.glyph-garden .garden-buy-button{display:inline-flex!important;align-items:center;justify-content:center;gap:5px;min-height:34px!important;padding:0 12px!important;font-size:10px!important;white-space:nowrap}
+.glyph-garden .garden-buy-button b{font-size:11px;line-height:1}
+.glyph-garden .garden-buy-button img{filter:drop-shadow(0 1px 1px #5b420d55)}
+.glyph-garden .garden-size-card{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:57px;padding:8px 9px;border:1px solid var(--garden-line-soft);border-radius:10px;background:var(--garden-control)}
+.glyph-garden .garden-size-card.is-current{border-color:var(--garden-line);box-shadow:inset 0 0 0 1px var(--garden-line);background:var(--garden-active)}
+.glyph-garden .garden-size-card>div:first-child{min-width:0}.glyph-garden .garden-size-card b{display:block;font-size:11px}.glyph-garden .garden-size-card small{display:block;margin-top:3px;font-size:9px;color:var(--garden-muted);line-height:1.25}
+.glyph-garden .garden-size-actions{flex:0 0 auto;display:flex;align-items:center}.glyph-garden .garden-size-locked{padding-right:3px!important;text-transform:uppercase;letter-spacing:.08em}
+.glyph-garden .garden-model-card>span:last-child{flex:1;min-width:0}.glyph-garden .garden-model-card .garden-secondary-button,.glyph-garden .garden-model-card .garden-buy-button{margin-top:9px}
 @media(max-height:540px){.glyph-garden .garden-layout-panel{max-height:30dvh}.glyph-garden .garden-editor-actions{position:absolute;top:6px;right:12px}.glyph-garden .sand-tools{padding-top:6px}}
 
 .glyph-garden .garden-sky-info{padding:12px 8px 18px;text-align:center}

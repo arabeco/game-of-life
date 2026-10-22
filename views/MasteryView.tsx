@@ -220,19 +220,22 @@ export const MasteryView: React.FC<{ onClose?: () => void; embedded?: boolean }>
                 <div className="mastery-quiz-panel">
                     <div className="mastery-quiz-panel-inner mastery-quiz-inline">
                         <div className="mastery-quiz-stable-summary">
-                                <button type="button" className="mastery-quiz-pentagon-frame mastery-quiz-pentagon-trigger" onClick={() => { if (!isAssessmentActive) startAssessment(); }} aria-label="Abrir perguntas da avaliação" aria-expanded={isAssessmentActive}>
+                                <div className="mastery-quiz-pentagon-frame">
                                     <div className="mastery-quiz-pentagon-square">
                                         <Suspense fallback={<div className="h-full w-full rounded-[1.4rem] bg-white/5" />}>
-                                            <AssetPentagon assets={assets} tempLevels={isAssessmentActive && preview?.assetId === currentAsset.id ? { ...tempLevels, [currentAsset.id]: preview.level } : tempLevels} centralStyle="plain" destacarPontas={isAssessmentActive} activeAreaId={isAssessmentActive ? currentAsset.id : undefined} size="100%" />
+                                            <AssetPentagon assets={assets} tempLevels={isAssessmentActive && preview?.assetId === currentAsset.id ? { ...tempLevels, [currentAsset.id]: preview.level } : tempLevels} destacarPontas={isAssessmentActive} activeAreaId={isAssessmentActive ? currentAsset.id : undefined} size="100%" />
                                         </Suspense>
                                     </div>
-                                </button>
+                                </div>
 
                         </div>
                         {!isAssessmentActive && <div className="flex justify-center pb-2"><ProgressRecognitionBadge value={masteryRecognition} context="Maestria" /></div>}
                         <div className="mastery-quiz-lower">
                             {!isAssessmentActive ? <>
-                                <p className="mastery-quiz-start-hint">{isMasteryLocked ? `Nova avaliação em ${remainingHours}h` : 'Toque no pentágono para avaliar suas cinco áreas.'}</p>
+                                <button type="button" onClick={startAssessment} className="luxe-skin-button luxe-bico mx-auto block px-10 py-3 text-[10px] font-black uppercase tracking-[0.26em]">
+                                    Avaliar
+                                </button>
+                                {isMasteryLocked && <p className="mastery-quiz-start-hint">Nova avaliação em {remainingHours}h</p>}
                                 {podePublicarMaestria && (
                                     <button type="button" onClick={() => void publicarMaestria()} className="luxe-skin-button mx-auto mt-3 block px-5 py-2 text-xs font-bold">
                                         Publicar nos Feitos

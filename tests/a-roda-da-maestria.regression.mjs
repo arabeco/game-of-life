@@ -145,13 +145,14 @@ assert.doesNotMatch(helper, /^\s*background: /m,
     'o atalho `background` voltou ao helper — ele zera o background-clip a cada troca de faixa, e o numero vira um bloco branco');
 console.log('ok - a tinta usa backgroundImage, e trocar de faixa nao apaga o recorte');
 
-// E o anel NAO voltou: a peca de luxo pedida era a dos degraus da roda, nao um
-// aro no centro do pentagono.
+// O centro usa a mesma insígnia que sobe de acabamento com a maestria. Assim o
+// cartão de entrada e a tela aberta mostram a evolução, sem inventar um aro.
 const mastery = readFileSync(new URL('../views/MasteryView.tsx', import.meta.url), 'utf8');
 assert.doesNotMatch(pentagono, /'anel'/, 'o modo anel voltou ao pentagono');
 assert.doesNotMatch(badge, /mastery-badge--anel/, 'o CSS do anel voltou');
-assert.match(mastery, /centralStyle="plain"/, 'a tela de avaliacao deixou de pedir o numero sem peca');
-console.log('ok - o centro do pentagono e so o numero');
+assert.doesNotMatch(mastery, /centralStyle="plain"/, 'a tela aberta voltou a esconder a insígnia evolutiva');
+assert.match(mastery, /<AssetPentagon assets=\{assets\}[\s\S]*?size="100%"/, 'a tela aberta deixou de usar o pentagono real');
+console.log('ok - o centro do pentagono mostra a insígnia evolutiva');
 
 // ================================ 5. a escada dos selos se ve rolando
 //
@@ -188,36 +189,28 @@ assert.match(selo, /color-mix\(in srgb, var\(--liga\) calc\(6% \+ var\(--nobreza
     'o miolo do selo deixou de ser escuro — o numero perde contraste no meio da escada');
 console.log('ok - o miolo continua escuro, e o numero legivel em toda a escada');
 
-// ================== 6. o botao de comecar mora ANTES da avaliacao, no Perfil
-//
-// O card de Maestria no Perfil tinha uma pilula "EDITAR NIVEL" com cara de
-// botao e a frase "toque aqui para ajustar seu nivel por area". Pedido em
-// 05/10/2026: "algo como Calibrar ou Avaliar, no nosso estilo" — e logo
-// corrigido: "o botao era ANTES de entrar, nao depois que ja entra na
-// avaliacao". Uma primeira tentativa poe o botao dentro da tela de avaliacao, e
-// teria deixado dois "Avaliar" seguidos.
+// ================== 6. o cartao abre; o botao Avaliar mora na tela interna
 const perfil = readFileSync(new URL('../views/SettingsView.tsx', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+const telaMaestria = readFileSync(new URL('../views/MasteryView.tsx', import.meta.url), 'utf8');
 const cardDaMaestria = perfil.slice(
     perfil.indexOf('id="mastery-sliders-button"'),
     perfil.indexOf('</button>', perfil.indexOf('id="mastery-sliders-button"')),
 );
 assert.ok(cardDaMaestria.length > 400, 'o card de maestria do Perfil mudou de forma');
-assert.match(cardDaMaestria, /className="luxe-skin-button luxe-bico[^"]*">\s*Avaliar\s*<\/span>/,
-    'o botao Avaliar sumiu do card de maestria, ou perdeu o bico');
-assert.doesNotMatch(cardDaMaestria, /Editar nível/, 'a pilula "Editar nivel" voltou ao card');
-assert.doesNotMatch(cardDaMaestria, /Toque aqui para ajustar/,
-    'a frase "toque aqui" voltou, dizendo o que o botao ja diz');
-// O card inteiro ja e um <button>: um segundo <button> dentro dele e HTML
-// invalido. O Avaliar tem a pele de botao, mas e <span>.
-// Comentarios saem antes da busca: o proprio comentario do card explica que ele
-// "nao e um <button>", e esse texto nao e marcacao.
+assert.doesNotMatch(cardDaMaestria, /Avaliar/, 'o botao Avaliar ficou no cartao de entrada em vez de dentro da Maestria');
+assert.doesNotMatch(cardDaMaestria, /Índice Glyph/, 'o indice voltou a repetir fora do pentagono');
+// O card inteiro ja e um <button>; ele e uma peca visual unica, sem controles
+// concorrentes dentro dele.
 const cardSemComentarios = cardDaMaestria.replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
 assert.doesNotMatch(cardSemComentarios.slice(cardSemComentarios.indexOf('className=')), /<button[\s>]/,
     'nasceu um botao dentro do botao do card');
-console.log('ok - o Avaliar mora no card do Perfil, antes de entrar');
+assert.match(cardDaMaestria, /<AssetPentagon assets=\{assets\} size="100%" \/>/,
+    'o cartao de entrada voltou a esconder o indice de dentro do pentagono');
+assert.match(telaMaestria, /className="luxe-skin-button luxe-bico mx-auto block[^\"]*">\s*Avaliar\s*<\/button>/,
+    'o botao Luxe Avaliar nao foi para dentro da tela de Maestria');
+console.log('ok - o cartao so abre a Maestria; Avaliar mora dentro dela');
 
-// E a tela de avaliacao NAO ganhou um segundo Avaliar.
-const telaMaestria = readFileSync(new URL('../views/MasteryView.tsx', import.meta.url), 'utf8');
+// A tela nao recebe uma segunda variante escondida do mesmo botao.
 assert.doesNotMatch(telaMaestria, /mastery-quiz-avaliar/,
     'a tela de avaliacao ganhou um segundo botao Avaliar — o primeiro ja esta no Perfil');
 console.log('ok - dentro da avaliacao nao ha um segundo Avaliar');

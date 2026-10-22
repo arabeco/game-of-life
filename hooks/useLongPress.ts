@@ -5,7 +5,7 @@ import { lockTouchHoldSelection } from '../utils/touchHoldSelection';
 import { maoEntrouNaTela, maoSaiuDaTela } from '../utils/oracleSpeech';
 
 interface LongPressOptions {
-    onLongPress?: (event: React.MouseEvent | React.TouchEvent) => void;
+    onLongPress?: (event: React.MouseEvent | React.TouchEvent) => boolean | void;
     onLongPressCancel?: () => void;
     onLongPressRelease?: () => void;
     onClick?: (event: React.MouseEvent | React.TouchEvent) => void;
@@ -245,7 +245,14 @@ export const useLongPress = (options: LongPressOptions) => {
                 : state.current === 'pending';
             if (podeSegurar) {
                 state.current = 'longpress';
-                onLongPress?.(e);
+                const holdStarted = onLongPress?.(e);
+                // Algumas pecas (por exemplo, tarefas de amanha) nao podem ser
+                // concluidas ainda. Elas continuam "pegas" para arrastar, em vez
+                // de tentar concluir e mostrar um erro enquanto o dedo se move.
+                if (holdStarted === false) {
+                    state.current = 'armed';
+                    return;
+                }
                 // DO NOT remove move listeners. This allows `handleMove` to still
                 // detect a drag and cancel the long press if needed.
             }

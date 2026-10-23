@@ -39,11 +39,13 @@ Até o Afonso aprovar, tudo é feito numa **cópia** do site (como o Codex fazia
 - **Grupo.** O app já chama de "Grupo" (sobrou um "clã" solto no app, que dá para padronizar). O site ainda fala "clã": trocar para "Grupo".
 - **Vínculos**
 - **Loja**
+- **Missões da temporada e insígnias** (lembrado em 23/10): no app a Temporada fica em Mundo; as missões dão insígnias e itens da coleção.
 
 ### 5. Config — "Configure seu personagem"
 
 - **Mostrar:** o **print do pentágono**, não o de montar, com a opção **AVALIAR**. Ao clicar, a pessoa vai para a **página separada** de fazer a avaliação (ver abaixo).
 - **Patentes.**
+- **Legado** (lembrado em 23/10): os ciclos guardados, a placa de cada um e a apresentação do Legado. "O que você viveu fica."
 
 ---
 
@@ -67,6 +69,10 @@ Até o Afonso aprovar, tudo é feito numa **cópia** do site (como o Codex fazia
 - Continuam existindo, mas **escondidas**: link dentro das outras páginas ou no rodapé, não no menu.
 
 ---
+
+## Como mostrar (decidido em 23/10)
+
+**Mostrar como é no app, nunca imitar.** Cada passo usa a peça real do app: capturada das bancadas (`tools/*.html`, que desenham os componentes de verdade com dados de exemplo) ou dos prints do app. Desenho feito à mão não entra, porque quem chega no app encontraria tudo diferente.
 
 ## Decidido em 23/10 (respostas do Afonso)
 

@@ -26,12 +26,12 @@ Até o Afonso aprovar, tudo é feito numa **cópia** do site (como o Codex fazia
 ### 2. Arenas — "Crie suas arenas"
 
 - **Mostrar:** em vez do print da tela com as arenas no grid, **as arenas soltas, empilhadas lado a lado**. Só o item arena, como peça, fora do grid.
-- **2b. Talvez:** "cadastre ações dentro das arenas".
+- **2b.** "cadastre ações dentro das arenas".
 
 ### 3. Planner — "Complete as ações"
 
 - **Mostrar:** completar as ações.
-- **Depois:** "acumule experiência", talvez com o **Painel Diário**.
+- **Depois:** "acumule experiência", com o **Painel Diário**.
 
 ### 4. Mundo — "Compartilhe seu mundo"
 
@@ -68,12 +68,13 @@ Até o Afonso aprovar, tudo é feito numa **cópia** do site (como o Codex fazia
 
 ---
 
-## Em aberto (para o Afonso decidir)
+## Decidido em 23/10 (respostas do Afonso)
 
-1. **"Opinião" e "Waitlist"**, que hoje estão no menu de cima: somem, viram parte da Home ou vão para o rodapé?
-2. **Nome da aba 5:** no celular o site diz "Config" e no computador "Progresso". O roteiro usa Config, como o app. Unificar?
-3. **2b (ações dentro das arenas)** e **o Painel Diário no Planner** entram ou ficam de fora?
-4. **Prints novos com uma conta viva** (o Afonso tira no celular). Servem para o site e para a Play.
+1. **Opinião** fica no topo, separada das abas. No celular, também em cima, pequena.
+2. **Waitlist** não foi citada: sai do menu no lançamento (confirmar).
+3. **Aba 5 se chama Config** no celular e no computador.
+4. **Entram** o 2b (cadastrar ações dentro das arenas) e o **Painel Diário** no Planner.
+5. **Prints com conta viva** ficam para depois. Agora o foco é o **MVP e os textos**: montar com mockups e os prints que já existem.
 
 ## O que precisa existir para montar
 

@@ -1,4 +1,3 @@
-import { getCampaignGradient } from '../../utils/arenaTones';
 ﻿import React, { useEffect, useMemo, useState } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import '../campaign-plate.css';
@@ -8,7 +7,6 @@ import { CampaignsCodex } from '../CampaignsCodex';
 import { ConfirmationModal } from '../ConfirmationModal';
 import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../../utils/codexPreview';
 import { getCampaignPriceForProfile } from '../../utils/premiumAccess';
-import { CampaignArenaStack } from '../CampaignArenaStack';
 import { CodexCoverArt as SharedCodexCoverArt } from '../CodexCoverArt';
 import { ASSET_ACCENT_COLORS } from '../../constants/assetVisuals';
 
@@ -390,17 +388,10 @@ export const CodexStore: React.FC = () => {
                 </div>
 
                 {filteredEntries.length > 0 ? (
-                    <div className="campaign-store-grid grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="campaign-store-grid grid grid-cols-2 gap-3">
                         {filteredEntries.map(({ codex, template, preview, coverVisual, actionCount, goldPrice, listPrice, isFree }) => {
-                            /*
-                             * A COR DA CAMPANHA VEM DAS ARENAS QUE ELA REUNE.
-                             *
-                             * Nao ha paleta nova a inventar nem escolha a pedir: arena ja
-                             * tem `assetId`, e `ASSET_ACCENT_COLORS` e a MESMA fonte que
-                             * pinta os Feitos. Assim a familia fecha — a placa e pintada
-                             * pelo patamar, o Feito pela arena, e a campanha pelas arenas
-                             * que ela junta. Sem nenhuma declarada, cai num aco neutro.
-                             */
+                            // A loja vende uma campanha como item de catálogo. A composição
+                            // compacta com arenas pertence somente à ArenaView, depois da instalação.
                             const arenaComCor = preview.arenas.find((arena) => arena.assetId && ASSET_ACCENT_COLORS[arena.assetId as keyof typeof ASSET_ACCENT_COLORS]);
                             const tomDaCampanha = (arenaComCor?.assetId && ASSET_ACCENT_COLORS[arenaComCor.assetId as keyof typeof ASSET_ACCENT_COLORS]) || '#687380';
                             const ownedCodex = userCodexes.find((userCodex) => userCodex.catalog_id === codex.id || userCodex.name === codex.title) || null;
@@ -410,8 +401,8 @@ export const CodexStore: React.FC = () => {
                             return (
                                 <div
                                     key={codex.id}
-                                    className="campaign-store-card relative flex flex-col gap-2 p-3"
-                                    style={{ '--campaign-accent': tomDaCampanha, backgroundImage: getCampaignGradient(preview.arenas) } as React.CSSProperties}
+                                    className="campaign-store-card relative flex flex-col gap-2 p-2"
+                                    style={{ '--campaign-accent': tomDaCampanha } as React.CSSProperties}
                                 >
                                     <div className="relative z-10 flex h-full flex-col gap-2">
                                         <button
@@ -419,38 +410,31 @@ export const CodexStore: React.FC = () => {
                                             onClick={() => setCampaignPreview(preview)}
                                             className="campaign-store-preview flex flex-1 flex-col text-left"
                                         >
-                                            <div className="flex items-start gap-2 px-2 pt-2">
+                                            <div className="flex items-start gap-2 px-1 pt-1">
                                                 <div
-                                                    className="relative h-9 w-9 shrink-0 overflow-hidden rounded-sm"
+                                                    className="campaign-store-cover relative h-10 w-10 shrink-0 overflow-hidden rounded-lg"
                                                     style={{ background: `linear-gradient(160deg, ${tomDaCampanha}2e, rgba(0,0,0,0.35))` }}
                                                 >
                                                     <SharedCodexCoverArt cover={coverVisual} title={codex.title} emojiSize="cover-sm" />
                                                 </div>
-                                                <div
-                                                    className="campaign-tile-title min-w-0 flex-1"
-                                                >
-                                                    {codex.title}
+                                                <div className="min-w-0 flex-1 pt-0.5">
+                                                    <div className="campaign-store-title line-clamp-2">{codex.title}</div>
+                                                    <div className="mt-1 text-[8px] font-black uppercase tracking-[0.12em] text-white/42">
+                                                        Campanha
+                                                    </div>
                                                 </div>
                                             </div>
 
-                                            <div className="px-2 pt-3 text-[12px] leading-relaxed text-white/70">
+                                            <div className="line-clamp-2 px-1 pt-2 text-[10px] leading-snug text-white/58">
                                                 {codex.description || template.description}
                                             </div>
 
-                                            <div className="mt-auto space-y-1.5 px-2 pb-2 pt-2.5">
-                                                <CampaignArenaStack arenas={preview.arenas} actions={preview.actions} size="xs" />
-
-                                                <div
-                                                    className="flex items-baseline gap-1 pt-1 text-[8.5px] font-black uppercase tracking-[0.14em] text-white/34"
-                                                    style={{ borderTop: `1px solid ${tomDaCampanha}22` }}
-                                                >
-                                                    <span className="text-[11px] leading-none text-white/80">{codex.duration_days}</span>
-                                                    <span>dias</span>
-                                                    <span className="px-1 text-white/20">·</span>
-                                                    <span className="text-[11px] leading-none text-white/80">{actionCount}</span>
-                                                    <span>{actionCount === 1 ? 'ação' : 'ações'}</span>
-                                                    <span> · {preview.arenas.length} {preview.arenas.length === 1 ? 'arena' : 'arenas'}</span>
-                                                </div>
+                                            <div className="campaign-store-meta mt-auto flex flex-wrap gap-x-1.5 gap-y-0.5 px-1 pb-1 pt-2 text-[8px] font-black uppercase tracking-[0.11em] text-white/42">
+                                                <span>{codex.duration_days} {codex.duration_days === 1 ? 'dia' : 'dias'}</span>
+                                                <span aria-hidden>•</span>
+                                                <span>{preview.arenas.length} {preview.arenas.length === 1 ? 'arena' : 'arenas'}</span>
+                                                <span aria-hidden>•</span>
+                                                <span>{actionCount} {actionCount === 1 ? 'ação' : 'ações'}</span>
                                             </div>
                                         </button>
 
@@ -459,7 +443,7 @@ export const CodexStore: React.FC = () => {
                                             aparece inteira — quanto era, quanto e, e por que. */}
                                         {!isFree && !isOwned && !isInstalled && listPrice > goldPrice && (
                                             <div
-                                                className="flex items-center justify-center gap-1.5 rounded-md px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em]"
+                                                className="campaign-store-discount flex items-center justify-center gap-1 rounded-md px-1.5 py-1 text-[7px] font-black uppercase tracking-[0.1em]"
                                                 style={{ background: `${tomDaCampanha}18`, color: `${tomDaCampanha}` }}
                                             >
                                                 <span className="text-white/40 line-through">{listPrice}</span>
@@ -467,9 +451,9 @@ export const CodexStore: React.FC = () => {
                                             </div>
                                         )}
 
-                                        <div className="flex items-center justify-between gap-2 border-t border-white/6 pt-1.5">
+                                        <div className="border-t border-white/6 pt-2">
                                             {isInstalled ? (
-                                                <div className="inline-flex h-9 flex-1 items-center justify-center gap-1 rounded-sm border border-green-500/30 bg-green-500/12 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.14em] text-green-400">
+                                                <div className="inline-flex h-8 w-full items-center justify-center gap-1 rounded-xl border border-green-500/30 bg-green-500/12 px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em] text-green-400">
                                                     <CheckIcon className="h-3 w-3" />
                                                     No app
                                                 </div>
@@ -478,7 +462,7 @@ export const CodexStore: React.FC = () => {
                                                     type="button"
                                                     onClick={() => { void installCodex(ownedCodex.id); }}
                                                     disabled={purchasing === codex.id}
-                                                    className="inline-flex h-9 flex-1 items-center justify-center gap-1 rounded-sm border border-white/10 bg-white/5 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.14em] text-white/82 transition-all hover:border-[var(--skin-accent-color)]/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                                                    className="inline-flex h-8 w-full items-center justify-center gap-1 rounded-xl border border-white/10 bg-white/5 px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em] text-white/82 transition-all hover:border-[var(--skin-accent-color)]/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
                                                     Instalar
                                                 </button>
@@ -490,7 +474,7 @@ export const CodexStore: React.FC = () => {
                                                     data-price={goldPrice}
                                                     onClick={() => handlePurchase(codex.id)}
                                                     disabled={!!purchasing}
-                                                    className="luxe-skin-button inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-sm px-3 text-[10px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-50"
+                                                    className="luxe-skin-button inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-xl px-2 text-[10px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
                                                     {/*
                                                       * NO BOTAO, SO O NUMERO E O OURO.

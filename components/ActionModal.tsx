@@ -138,6 +138,7 @@ const ACTION_DURATION_OPTIONS = [
     150, 180, 210, 240,
     300, 360, 420, 480,
 ];
+const OCCURRENCE_REMINDER_OPTIONS = [5, 10, 15, 30, 60];
 
 const formatDurationLabel = (value: number) => {
     const safeValue = Math.max(0, Math.round(value));
@@ -320,6 +321,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     }, [action, currentTask, tasks]);
     const canStartNow = mode === 'view' && !isPreview && Boolean(startNowTask);
     const [editableTaskDuration, setEditableTaskDuration] = useState<number>(currentTask?.duration || action?.duration || 60);
+    const [instanceNote, setInstanceNote] = useState(currentTask?.instanceNote || '');
+    const inheritedReminderMinutes = Number(action?.context?.schedule?.notifyBeforeMinutes) || null;
+    const [instanceReminderEnabled, setInstanceReminderEnabled] = useState(Boolean(currentTask?.reminderEnabled ?? inheritedReminderMinutes));
+    const [instanceReminderMinutes, setInstanceReminderMinutes] = useState<number>(currentTask?.reminderMinutes || inheritedReminderMinutes || 15);
+    const [instanceReminderTouched, setInstanceReminderTouched] = useState(false);
     const [editScope, setEditScope] = useState<EditScope>(hasTaskInstanceContext ? 'instance' : 'action');
     const startNowDurationMinutes = startNowTask?.duration || currentTask?.duration || action?.duration || 60;
 
@@ -736,7 +742,12 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                     updateTask(taskId, {
                         date: resolvedOccurrence?.date || (selectedDate ? getLocalDateString(selectedDate) : currentTask.date),
                         duration: editableTaskDuration,
-                        startTime: resolvedOccurrence?.startTime ?? nextTaskStartTime
+                        startTime: resolvedOccurrence?.startTime ?? nextTaskStartTime,
+                        instanceNote: instanceNote.trim() || null,
+                        ...(instanceReminderTouched ? {
+                            reminderEnabled: instanceReminderEnabled,
+                            reminderMinutes: instanceReminderEnabled ? instanceReminderMinutes : null,
+                        } : {}),
                     });
                     showToast('Ocorrência atualizada.', 'success');
                 } else if (isNew && typeof addAction === 'function') {
@@ -1084,6 +1095,28 @@ export const ActionModal: React.FC<ActionModalProps> = ({
         showToast('Lembrete de 15 min ativado.', 'success');
     };
 
+    const handleInstanceReminderToggle = async () => {
+        if (instanceReminderEnabled) {
+            setInstanceReminderEnabled(false);
+            setInstanceReminderTouched(true);
+            return;
+        }
+        if (!startTime || startTime === 'Sem Horário') {
+            showToast('Defina um horário antes de adicionar um lembrete.', 'warning');
+            return;
+        }
+        const permission = await requestLocalNotificationPermission();
+        if (permission !== 'granted') {
+            showToast('Para lembrar esta ocorrência, permita notificações neste aparelho.', 'warning');
+            return;
+        }
+        if (!oraclePreferences?.pushEnabled) {
+            await updateOraclePreferences({ pushEnabled: true });
+        }
+        setInstanceReminderEnabled(true);
+        setInstanceReminderTouched(true);
+    };
+
     const canUseReminderToggle = !isEditingTaskInstance
         && !!startTime
         && startTime !== 'Sem Horário'
@@ -1108,6 +1141,10 @@ export const ActionModal: React.FC<ActionModalProps> = ({
             setStartTime(getStartTimeLabel(currentTask.startTime) || 'Sem Horário');
             setSelectedDate(getTaskDateValue(currentTask.date));
             setEditableTaskDuration(currentTask.duration || nextAction?.duration || 60);
+            setInstanceNote(currentTask.instanceNote || '');
+            setInstanceReminderEnabled(Boolean(currentTask.reminderEnabled ?? inheritedReminderMinutes));
+            setInstanceReminderMinutes(currentTask.reminderMinutes || inheritedReminderMinutes || 15);
+            setInstanceReminderTouched(false);
             setIsTimePickerOpen(false);
             setIsDatePickerOpen(false);
             return;
@@ -1147,6 +1184,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({
         setActiveTab('basic');
         setAdvancedSubTab('media');
         setEditableTaskDuration(currentTask?.duration || nextAction?.duration || 60);
+        setInstanceNote(currentTask?.instanceNote || '');
+        const nextInheritedReminderMinutes = Number(nextAction?.context?.schedule?.notifyBeforeMinutes) || null;
+        setInstanceReminderEnabled(Boolean(currentTask?.reminderEnabled ?? nextInheritedReminderMinutes));
+        setInstanceReminderMinutes(currentTask?.reminderMinutes || nextInheritedReminderMinutes || 15);
+        setInstanceReminderTouched(false);
     };
 
     useEffect(() => {
@@ -1154,7 +1196,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
         const shouldBlockInitialEdit = !isNew && initialMode === 'edit' && defaultScope === 'action' && isLockedFromSource;
         setMode(isNew ?'edit' : (shouldBlockInitialEdit ?'view' : initialMode));
         resetFromAction(action, defaultScope);
-    }, [action?.id, arenaId, currentTask?.id, currentTask?.date, currentTask?.duration, currentTask?.startTime, hasTaskInstanceContext, initialMode, isLockedFromSource]);
+    }, [action?.id, arenaId, currentTask?.id, currentTask?.date, currentTask?.duration, currentTask?.startTime, currentTask?.instanceNote, currentTask?.reminderEnabled, currentTask?.reminderMinutes, hasTaskInstanceContext, initialMode, isLockedFromSource]);
 
     useEffect(() => {
         if (isEditingTaskInstance && activeTab === 'advanced') {
@@ -1389,6 +1431,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     const plannerOccurrenceLabel = currentTask?.date
         ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(getTaskDateValue(currentTask.date) || new Date())
         : null;
+    const saveOccurrenceNote = () => {
+        if (!currentTask || typeof updateTask !== 'function') return;
+        updateTask(currentTask.id, { instanceNote: instanceNote.trim() || null });
+        showToast('Anotação salva nesta ocorrência.', 'success');
+    };
 
     return (
         <>
@@ -1511,7 +1558,21 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                 {mode === 'view' && displayAction ?(
                                     // VIEW MODE CONTENT
                                     <>
-                                        {/* Desc Only (Title moved to Header) - Expandable */}
+                                        {/* A ocorrência ganha contexto aqui: é uma nota rápida, não edição da ação-base. */}
+                                        {hasTaskInstanceContext ? (
+                                            <div className="w-full px-2">
+                                                <label htmlFor="occurrence-note-quick" className="ml-1 text-[9px] font-black uppercase tracking-[0.18em] text-white/48">Anotação desta ocorrência</label>
+                                                <textarea
+                                                    id="occurrence-note-quick"
+                                                    value={instanceNote}
+                                                    onChange={(event) => setInstanceNote(event.target.value.slice(0, 140))}
+                                                    maxLength={140}
+                                                    rows={2}
+                                                    placeholder="Escreva uma anotação"
+                                                    className="mt-1.5 w-full resize-none rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs leading-relaxed text-white outline-none transition-colors placeholder:text-white/28 focus:border-[var(--skin-accent-color)]/50 focus:bg-black/28"
+                                                />
+                                            </div>
+                                        ) : (
                                         <div className="space-y-2 w-full text-center mb-4 px-2">
                                             <div className="relative">
                                                 <input type="checkbox" id="desc-expand" className="peer hidden" />
@@ -1528,17 +1589,23 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                 )}
                                             </div>
                                         </div>
+                                        )}
 
                                         <div className="reference-action-summary">
                                             <div className="reference-stat"><strong>{formatDurationLabel(effectiveDuration)}</strong><small>por vez</small></div>
                                             {displayAction.actionType === 'Ação Recorrente' && <div className="reference-stat"><strong>{displayAction.repetitions}</strong><small>repetições</small></div>}
                                         </div>
                                         <p className="reference-action-kind">{displayActionTypeLabel} · {displayDifficultyLabel || difficultyLabels[displayDifficulty]}</p>
+                                        {!isPreview && hasTaskInstanceContext && canStartNow && (
+                                            <button type="button" onClick={handleStartMission} className="mt-1 text-[10px] font-black uppercase tracking-[0.14em] text-white/42 transition-colors hover:text-[var(--skin-accent-color)]">
+                                                ▷ Começar agora
+                                            </button>
+                                        )}
                                     </>
                                 ) : (
                                     // EDIT MODE CONTENT (Form)
                                     <div className={`action-edit-form w-full space-y-3 ${hasTaskInstanceContext ? "action-occurrence-form" : ""}`}>
-                                        {hasTaskInstanceContext && (
+                                        {hasTaskInstanceContext && !isEditingTaskInstance && (
                                             <div className="rounded-[22px] border border-[var(--skin-accent-color)]/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(0,0,0,0.18))] p-3 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
                                                 <div className="flex gap-2">
                                                     <button
@@ -1584,39 +1651,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
                                         {isEditingTaskInstance ? (
                                             <>
-                                                <ActionSectionCard title="Ocorrência" subtitle="Você está ajustando só este item do Planner.">
-                                                    <div className="flex items-center gap-3 rounded-[18px] border border-white/8 bg-black/20 px-4 py-4">
-                                                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--skin-accent-color)]/20 bg-[var(--skin-accent-color)]/10">
-                                                            <EmojiGlyph symbol={action?.icon || '📝'} size="action" className="text-white" />
-                                                        </div>
-                                                        <div className="min-w-0 flex-1">
-                                                            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/45">Planner</div>
-                                                            <div className="mt-1 truncate text-sm font-bold text-white">{action?.name || 'Ocorrência'}</div>
-                                                            <div className="mt-1 text-[11px] uppercase tracking-[0.14em] text-white/50">
-                                                                {plannerOccurrenceLabel || 'Sem data'}{startTime ?` • ${startTime}` : ''}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    {!isLockedFromSource && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={requestActionBaseEdit}
-                                                            className="w-full rounded-[18px] border border-[var(--skin-accent-color)]/20 bg-[var(--skin-accent-color)]/8 px-4 py-3 text-left transition-colors hover:bg-[var(--skin-accent-color)]/12"
-                                                        >
-                                                            <div className="flex items-center justify-between gap-3">
-                                                                <div>
-                                                                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--skin-accent-color)]/90">
-                                                                        Mudar tipo da ação
-                                                                    </div>
-                                                                    <div className="mt-1 text-[12px] leading-relaxed text-white/68">
-                                                                        Abra a ação base para trocar recorrente, compromisso, marco ou livre.
-                                                                    </div>
-                                                                </div>
-                                                                <ChevronRightIcon className="h-4 w-4 shrink-0 text-white/44" />
-                                                            </div>
-                                                        </button>
-                                                    )}
-
+                                                <ActionSectionCard title="Duração">
                                                     <StyledRangeInput
                                                         label="Duração desta ocorrência"
                                                         value={editableTaskDuration}
@@ -1630,7 +1665,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                     />
                                                 </ActionSectionCard>
 
-                                                <ActionSectionCard title="Agenda" subtitle="Ajuste data e horário desta ocorrência sem mexer na ação base.">
+                                                <ActionSectionCard title="Agenda">
                                                     <div>
                                                         <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Data desta ocorrência</label>
                                                         <button onClick={() => setIsDatePickerOpen(true)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/8">
@@ -1654,7 +1689,35 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                             </div>
                                                         )}
                                                     </div>
+                                                    <div className="rounded-xl border border-white/8 bg-black/20 px-3 py-3">
+                                                        <label className="flex cursor-pointer items-center justify-between gap-3">
+                                                            <span className="text-xs font-semibold text-white/80">Lembrar esta ocorrência</span>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={instanceReminderEnabled}
+                                                                onChange={() => { void handleInstanceReminderToggle(); }}
+                                                                className="h-4 w-4 accent-[var(--skin-accent-color)]"
+                                                            />
+                                                        </label>
+                                                        {instanceReminderEnabled && (
+                                                            <div className="mt-3 border-t border-white/8 pt-3">
+                                                                <div className="text-[10px] font-black uppercase tracking-[0.14em] text-white/42">Quanto antes?</div>
+                                                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                                                    {OCCURRENCE_REMINDER_OPTIONS.map((minutes) => (
+                                                                        <button key={minutes} type="button" onClick={() => { setInstanceReminderMinutes(minutes); setInstanceReminderTouched(true); }} className={`rounded-lg border px-2.5 py-1.5 text-[10px] font-black transition-colors ${instanceReminderMinutes === minutes ? 'border-[var(--skin-accent-color)]/55 bg-[var(--skin-accent-color)]/16 text-[var(--skin-accent-color)]' : 'border-white/10 bg-black/20 text-white/55 hover:text-white'}`}>
+                                                                            {minutes} min
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </ActionSectionCard>
+                                                {!isLockedFromSource && (
+                                                    <button type="button" onClick={requestActionBaseEdit} className="flex w-full items-center justify-center gap-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white/45 transition-colors hover:text-[var(--skin-accent-color)]">
+                                                        Editar ação-base <ChevronRightIcon className="h-3.5 w-3.5" />
+                                                    </button>
+                                                )}
                                             </>
                                         ) : (
                                             <>
@@ -1944,7 +2007,13 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                     </div>
 
                     {mode === 'view' && <footer className="reference-footer action-view-footer">
-                        {!isPreview && canStartNow ? <div className="reference-execution-buttons">
+                        {hasTaskInstanceContext && !isPreview ? <div className="reference-execution-buttons">
+                            <button ref={saveButtonRef} onClick={() => { saveOccurrenceNote(); onClose(); }} className="reference-primary">OK</button>
+                            {canStartNow && <button onMouseDown={handleCompleteNowStart} onMouseUp={clearCompleteNowHold} onMouseLeave={clearCompleteNowHold} onTouchStart={handleCompleteNowStart} onTouchEnd={clearCompleteNowHold} onTouchCancel={clearCompleteNowHold} onContextMenu={e => e.preventDefault()} className="reference-complete" style={{touchAction:'none',userSelect:'none',WebkitTouchCallout:'none'} as React.CSSProperties}>
+                                <span>{completeNowTriggered ? 'Concluindo' : isCompletingNowHold ? `Segurando… ${Math.round(completeNowHoldProgress)}%` : 'Segure 1s para concluir'}</span>
+                                <i style={{width:`${completeNowHoldProgress}%`}} />
+                            </button>}
+                        </div> : !isPreview && canStartNow ? <div className="reference-execution-buttons">
                             <button ref={saveButtonRef} onClick={handleStartMission} className="reference-primary"><PlayIcon className="w-4 h-4" />Começar agora</button>
                             <button onMouseDown={handleCompleteNowStart} onMouseUp={clearCompleteNowHold} onMouseLeave={clearCompleteNowHold} onTouchStart={handleCompleteNowStart} onTouchEnd={clearCompleteNowHold} onTouchCancel={clearCompleteNowHold} onContextMenu={e => e.preventDefault()} className="reference-complete" style={{touchAction:'none',userSelect:'none',WebkitTouchCallout:'none'} as React.CSSProperties}>
                                 <span>{completeNowTriggered ? 'Concluindo' : isCompletingNowHold ? `Segurando… ${Math.round(completeNowHoldProgress)}%` : 'Segure 1s para concluir'}</span>

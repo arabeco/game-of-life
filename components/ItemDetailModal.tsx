@@ -283,7 +283,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
     };
 
     const isInsignia = currentItem.category === 'insignia' || currentItem.category === 'insignias';
-    const nomeDeRevelacao = `${ITEM_CATEGORY_LABEL[currentItem.category] || 'Item'} · ${currentItem.name}`;
+    const categoriaDaRevelacao = ITEM_CATEGORY_LABEL[currentItem.category] || 'Item';
 
     return (
         <Portal>
@@ -314,8 +314,8 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
 
                 {focusMode && (
                     <div className="z-10 w-full text-center">
-                        <h2 className="reward-title-metal text-[25px] font-black uppercase leading-none tracking-[0.17em] drop-shadow-lg">
-                            {duplicataDeBau ? 'Você já possui' : 'Item recebido!'}
+                        <h2 className="reward-title-metal line-clamp-2 text-[23px] font-black uppercase leading-[1.04] tracking-[0.12em] drop-shadow-lg">
+                            {currentItem.name}
                         </h2>
                     </div>
                 )}
@@ -354,7 +354,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                     )}
                     {focusMode && (
                         <div className="text-[11px] font-black uppercase tracking-[0.16em] text-white/78">
-                            {nomeDeRevelacao}
+                            {categoriaDaRevelacao}
                         </div>
                     )}
                     <div className="flex justify-center">

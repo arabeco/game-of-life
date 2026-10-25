@@ -11,6 +11,7 @@ import { isTaskInPool } from '../utils/taskDomain.js';
 import { hasPremiumAccess } from '../utils/premiumAccess';
 import { getOracleFeedQuotaStatus } from '../utils/oracleFeedUtils';
 import { getNotificationBody, getNotificationTitle, getOracleChatNotificationsForProfile } from '../constants/oracleNotificationPolicy';
+import { AttentionBadge } from './AttentionBadge';
 import { APP_NAVIGATE_EVENT, type AppNavigatePayload } from '../utils/arenaAttention';
 import { PLANNER_OPEN_ACTION_MODAL_EVENT } from '../utils/restScreenActionSession';
 import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
@@ -737,7 +738,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
             const next = event.key === 'ArrowRight' ? (index+1)%tabs.length : event.key === 'ArrowLeft' ? (index+tabs.length-1)%tabs.length : event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length-1 : -1;
             if (next < 0) return;
             event.preventDefault(); setSection(tabs[next].id); document.getElementById(`oracle-tab-${tabs[next].id}`)?.focus();
-          }} onClick={() => setSection(id)}><Icon size={15} aria-hidden="true" className="shrink-0" />{label}{section !== id && secoesNaoLidas.has(id) && <span aria-label="novo" className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--skin-accent-color)]" />}</button>)}
+          }} onClick={() => setSection(id)}><Icon size={15} aria-hidden="true" className="shrink-0" />{label}{section !== id && <AttentionBadge count={secoesNaoLidas.has(id) ? 1 : 0} compact label={`Há novidade em ${label}`} className="ml-0.5" />}</button>)}
         </div>
         {section === 'guidance' && <div className="shrink-0 px-4 pt-3">
           <button id="oracle-read-my-day" onClick={handleReadMyDay} className="min-h-14 w-full rounded-xl border border-white/10 bg-white/5 p-3 text-left"><span className="block text-xs font-bold">Ler meu ciclo e arenas</span><span className="text-[11px] text-white/50">Seu progresso nas arenas, com ou sem ciclo</span></button>

@@ -661,6 +661,11 @@ export interface ScheduledTask {
   userId?: string | null;
   createdAt?: string;
   executionOrder?: number | null;
+  /** Contexto opcional desta ocorrência, sem alterar a ação-base. */
+  instanceNote?: string | null;
+  /** Lembrete local desta ocorrência; null preserva a regra da ação-base. */
+  reminderEnabled?: boolean | null;
+  reminderMinutes?: number | null;
 }
 
 export interface ChecklistItem {

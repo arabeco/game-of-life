@@ -27,6 +27,7 @@ import { SKINS_DATA, BORDERS_DATA, MOODS_DATA } from '../constants';
 import { getNotificationPriority } from '../constants/oracleNotificationPolicy';
 import { OracleSpeakerMark, type OracleSpeakerTone } from './OracleSpeakerMark';
 import { useGardenBasket } from '../hooks/useGardenBasket';
+import { AttentionBadge } from './AttentionBadge';
 
 interface RestScreenProps {
     onClose: () => void;
@@ -113,7 +114,6 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
             : oracleUnreadCount > 0
                 ? 'info'
                 : 'neutral';
-    const oracleBadgeClass = 'border-red-100/80 bg-red-500 text-white shadow-[0_0_12px_rgba(239,68,68,0.55)]';
     const gardenBasket = useGardenBasket(userProfile.id, tasks.filter(task => task.completed).length);
 
     const deepWorkOptions = ['15', '20', '25', '30', '40', '45', '50', '60', '90', '120'];
@@ -1112,7 +1112,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                             className="restscreen-quick-button flex min-h-[4rem] min-w-[3.75rem] touch-manipulation flex-col items-center justify-center gap-1.5 group active:scale-95 transition-transform relative"
                             aria-label="Abrir jardim"
                         >
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center border border-white/10 bg-black/40 backdrop-blur-sm shadow-lg group-hover:border-[var(--skin-accent-color)]/50 transition-colors relative overflow-hidden ${actionProgress?.id === 'garden' ? 'scale-110 border-[var(--skin-accent-color)]' : ''}`}>
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center border border-white/10 bg-black/40 backdrop-blur-sm shadow-lg group-hover:border-[var(--skin-accent-color)]/50 transition-colors relative overflow-visible ${actionProgress?.id === 'garden' ? 'scale-110 border-[var(--skin-accent-color)]' : ''}`}>
                                 {actionProgress?.id === 'garden' && (
                                     <svg className="absolute inset-0 -rotate-90 w-full h-full pointer-events-none" viewBox="0 0 100 100">
                                         <circle
@@ -1128,7 +1128,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                                     </svg>
                                 )}
                                 <span className="text-[1.05rem] leading-none">🌿</span>
-                                {gardenBasket.deliveries.length > 0 && <span aria-label="Presente aguardando no jardim" className="absolute right-0.5 top-0.5 h-2.5 w-2.5 rounded-full border border-[#18130a] bg-amber-300 shadow-[0_0_8px_rgba(251,191,36,.95)]" />}
+                                <AttentionBadge count={gardenBasket.deliveries.length} label="Presente aguardando no jardim" className="absolute -right-1 -top-1 z-20" />
                             </div>
                             <span className="text-[8px] font-black text-gray-500 uppercase tracking-tighter group-hover:text-white transition-colors">Jardim</span>
                         </button>
@@ -1235,11 +1235,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                                     pulse={oracleUnreadCount > 0}
                                     className={`transition-transform group-hover:scale-105 ${actionProgress?.id === 'real_oracle' ? 'scale-110' : ''}`}
                                 />
-                                {oracleUnreadCount > 0 && (
-                                    <span className={`absolute -right-1 -top-1 z-20 flex h-5 min-w-5 items-center justify-center rounded-full border px-1 text-[9px] font-black leading-none ${oracleBadgeClass}`}>
-                                        {oracleUnreadCount > 9 ? '9+' : oracleUnreadCount}
-                                    </span>
-                                )}
+                                <AttentionBadge count={oracleUnreadCount} label={`${oracleUnreadCount} novidade${oracleUnreadCount === 1 ? '' : 's'} no Oráculo`} className="absolute -right-1 -top-1 z-20" />
                             </div>
                             <span className="text-[8px] font-black text-gray-500 uppercase tracking-tighter group-hover:text-white transition-colors">Oráculo</span>
                         </button>

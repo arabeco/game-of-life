@@ -4,7 +4,7 @@ import { maoEntrouNaTela, maoSaiuDaTela } from '../utils/oracleSpeech';
 import { FloatingActionDock } from '../components/FloatingActionDock';
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon, PlusIcon, SquareCheckIcon, PanelIcon, ZapIcon } from '../components/Icons';
-import { History as HistoryIcon, Search as SearchIcon } from 'lucide-react';
+import { Bell, History as HistoryIcon, Search as SearchIcon } from 'lucide-react';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { useConfirmation } from '../hooks/useConfirmation';
 import { Action, ScheduledTask, DayOfWeek, Arena, DailyCommitment, SeasonQuest, ActionType, PlannerMatrixQuadrant, Report } from '../types';
@@ -229,6 +229,14 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
 
     const backgroundStyle = action ?getActionBackgroundStyle(action.id) : { background: 'var(--asset-grad-default)' };
     const isMilestone = action?.actionType === 'Marco';
+    const isFreeAction = action?.actionType === 'Livre';
+    const instanceNote = task.instanceNote?.trim();
+    const hasReminder = task.reminderEnabled === false
+        ? false
+        : task.reminderEnabled === true
+            ? true
+            : Number(action?.context?.schedule?.notifyBeforeMinutes) > 0;
+    const milestoneClipPath = 'polygon(5.5% 0%, 94.5% 0%, 100% 50%, 94.5% 100%, 5.5% 100%, 0% 50%)';
     const standardTaskContentStyle = {
         color: '#f8fafc',
         textShadow: '0 1px 6px rgba(2, 6, 23, 0.82)',
@@ -336,27 +344,18 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
             <div
                 ref={taskRef}
                 {...longPressEvents}
-                className={`absolute left-0 right-1 cursor-pointer select-none flex items-center justify-center${erguido ? ' planner-erguido' : ''}`}
+                className={`absolute left-0 right-1 cursor-pointer select-none${erguido ? ' planner-erguido' : ''}`}
                 style={{ top: `${top}px`, height: `${height}px`, touchAction: 'pan-y' }}
             >
-                {/*
-                  * O losango vestia o gradiente do ativo e uma borda cinza
-                  * tracejada — a MESMA borda de qualquer tarefa. A forma dizia
-                  * "isto fecha um trecho" e a cor dizia "mais do mesmo". Agora
-                  * ele usa o ouro de marco e o halo do bloco MARCO do index.css,
-                  * o mesmo que a bay usa, para ser reconhecido como um objeto so
-                  * nos dois lugares.
-                  */}
-                <div className="relative w-full h-full marco-halo-wrap">
-                    <div className="marco-losango absolute inset-0 w-full h-full" />
-                    {task.completed && <div className="absolute inset-0" style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)', background: 'linear-gradient(135deg, rgba(255,255,255,0.34), rgba(255,255,255,0.08) 58%, rgba(8,12,20,0.22) 100%)' }} />}
-                    <div className="marco-borda-interna absolute inset-0" />
-                    {task.completed && <div className="absolute right-2 top-2 z-20 flex h-5 w-5 items-center justify-center rounded-full border border-white/20 bg-black/28 text-white shadow-[0_0_8px_rgba(255,255,255,0.12)]"><SquareCheckIcon className="h-3 w-3 text-emerald-300 drop-shadow-[0_0_4px_rgba(52,211,153,0.55)]" /></div>}
-                    <div className="relative z-10 w-full h-full flex flex-col items-center justify-center text-center p-1 text-[#241a07]">
-                        <EmojiGlyph symbol={action?.icon || "🏁"} size="milestone" className="drop-shadow-[0_1px_1px_rgba(253,241,196,0.6)]" />
-                        <div className="text-xs font-black truncate max-w-full px-1 drop-shadow-[0_1px_1px_rgba(253,241,196,0.5)]">{action?.name}</div>
+                <div className="relative h-full w-full text-white shadow-[0_0_10px_rgba(0,0,0,0.28)]" style={{ ...backgroundStyle, clipPath: milestoneClipPath }}>
+                    <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.10),rgba(10,14,23,0.12)_48%,rgba(0,0,0,0.22))]" style={{ clipPath: milestoneClipPath }} />
+                    {task.completed && <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.25),rgba(255,255,255,0.04)_58%,rgba(8,12,20,0.18))]" style={{ clipPath: milestoneClipPath }} />}
+                    <div className="relative z-10 flex h-full min-w-0 items-center gap-2 px-2">
+                        <div className="flex h-6 w-6 shrink-0 items-center justify-center"><EmojiGlyph symbol={action?.icon || "🏁"} size="milestone" className="text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.78)]" /></div>
+                        <div className="min-w-0 flex-1 text-left"><div className="truncate text-xs font-black leading-tight">{action?.name}</div>{instanceNote && height >= 42 * scaleFactor && <div className="mt-0.5 truncate text-[10px] font-medium text-white/80">{instanceNote}</div>}</div>
+                        {task.completed ? <div className="shrink-0 flex h-5 w-5 items-center justify-center rounded-full border border-white/35 bg-black/22 text-white"><SquareCheckIcon className="h-3 w-3 text-emerald-100" /></div> : hasReminder && <div aria-label="Lembrete ativo" className="shrink-0 flex h-5 w-5 items-center justify-center rounded-full border border-white/22 bg-black/24 text-amber-100"><Bell className="h-3 w-3" /></div>}
                     </div>
-                    {isHolding && (<div className="absolute inset-0 bg-black/50 animate-pulse" style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}><div className={`h-full w-full ${task.completed ?'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`} style={{ animationDuration: `${task.completed ? DESMARCAR_ENCHER_MS : PLANNER_ENCHER_MS}ms` }}></div></div>)}
+                    {isHolding && (<div className="absolute inset-0 animate-pulse bg-black/50" style={{ clipPath: milestoneClipPath }}><div className={`h-full w-full ${task.completed ?'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`} style={{ animationDuration: `${task.completed ? DESMARCAR_ENCHER_MS : PLANNER_ENCHER_MS}ms` }}></div></div>)}
                     {showSparkles && <Sparkles />}
                 </div>
                 <style>{`@keyframes fill { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0% 0 0 0); } } @keyframes unfill { from { clip-path: inset(0% 0 0 0); } to { clip-path: inset(100% 0 0 0); } }`}</style>
@@ -370,29 +369,29 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
         <div
             ref={taskRef}
             {...longPressEvents}
-            className={`absolute left-0 right-1 cursor-pointer select-none overflow-hidden rounded-2xl${erguido ? ' planner-erguido' : ''}`}
+            className={`absolute left-0 right-1 cursor-pointer select-none overflow-hidden ${isFreeAction ? 'rounded-full' : 'rounded-xl'}${erguido ? ' planner-erguido' : ''}`}
             style={{ top: `${top}px`, height: `${height}px`, minHeight: `${30 * scaleFactor}px`, touchAction: 'pan-y' }}
         >
             <div
-                className={`h-full w-full rounded-2xl text-left relative overflow-hidden transition-all ${task.completed ?'font-bold' : ''}`}
-                style={standardTaskContentStyle}
+                className={`h-full w-full ${isFreeAction ? 'rounded-full' : 'rounded-xl'} text-left relative overflow-hidden transition-all ${task.completed ?'font-bold' : ''} ${isFreeAction ?`free-action-shell free-action-outline ${task.completed ? '' : 'free-action-shell--scheduled'}` : ''}`}
+                style={isFreeAction ? { ...standardTaskContentStyle, '--free-action-bg': backgroundStyle.background } as React.CSSProperties : standardTaskContentStyle}
             >
                 <div
-                    className="absolute inset-[2px] rounded-[14px]"
+                    className={`absolute inset-[2px] ${isFreeAction ?'rounded-full opacity-0' : 'rounded-[10px]'}`}
                     style={backgroundStyle}
                 />
                 <div
-                    className="absolute inset-[2px] rounded-[14px]"
+                    className={`absolute inset-[2px] ${isFreeAction ?'rounded-full' : 'rounded-[10px]'}`}
                     style={{ background: 'linear-gradient(135deg, rgba(2,6,23,0.1), rgba(2,6,23,0.28) 74%)' }}
                 />
-                <div className={`absolute inset-[2px] rounded-[14px] transition-opacity duration-300 ${task.completed ?'opacity-100' : 'opacity-0'}`} style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.05) 62%, rgba(0,0,0,0.16) 100%)' }}></div>
-                <div className={`absolute inset-0 border-2 rounded-2xl transition-all ${task.completed ?'border-white/25 shadow-[0_0_14px_rgba(255,255,255,0.08)]' : 'border-dashed border-gray-600'}`}></div>
+                <div className={`absolute inset-[2px] ${isFreeAction ?'rounded-full' : 'rounded-[10px]'} transition-opacity duration-300 ${task.completed ?'opacity-100' : 'opacity-0'}`} style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.05) 62%, rgba(0,0,0,0.16) 100%)' }}></div>
+                <div className={`absolute inset-0 border-2 ${isFreeAction ?`rounded-full ${task.completed ? 'border-white/25 shadow-[0_0_14px_rgba(255,255,255,0.08)]' : 'border-white/36 border-dashed'}` : task.completed ?'rounded-xl border-white/25 shadow-[0_0_14px_rgba(255,255,255,0.08)]' : 'rounded-xl border-dashed border-gray-500/80'}`}></div>
                 <div className="relative z-10 flex h-full min-w-0 items-center space-x-2 p-2">
                     <div className="text-lg shrink-0"><EmojiGlyph symbol={action?.icon || '\u{1F4DD}'} size="action" className="text-white" /></div>
-                    <div className="text-sm font-semibold truncate min-w-0 flex-1 text-white">{action?.name}</div>
-                    {task.completed && <div className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-black/28 text-white shadow-[0_0_8px_rgba(255,255,255,0.12)]"><SquareCheckIcon className="h-3.5 w-3.5 text-emerald-300 drop-shadow-[0_0_4px_rgba(52,211,153,0.55)]" /></div>}
+                    <div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold text-white">{action?.name}</div>{instanceNote && height >= 42 * scaleFactor && <div className="mt-0.5 truncate text-[10px] font-medium leading-tight text-white/78">{instanceNote}</div>}</div>
+                    {task.completed ? <div className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-black/28 text-white shadow-[0_0_8px_rgba(255,255,255,0.12)]"><SquareCheckIcon className="h-3.5 w-3.5 text-emerald-300 drop-shadow-[0_0_4px_rgba(52,211,153,0.55)]" /></div> : hasReminder && <div aria-label="Lembrete ativo" className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-black/28 text-amber-100 shadow-[0_0_8px_rgba(251,191,36,0.16)]"><Bell className="h-3.5 w-3.5" /></div>}
                 </div>
-                {isHolding && (<div className="absolute inset-0 animate-pulse bg-black/50 rounded-2xl"><div className={`h-full w-full ${task.completed ?'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`} style={{ animationDuration: `${task.completed ? DESMARCAR_ENCHER_MS : PLANNER_ENCHER_MS}ms` }}></div></div>)}
+                {isHolding && (<div className={`absolute inset-0 animate-pulse bg-black/50 ${isFreeAction ?'rounded-full' : 'rounded-xl'}`}><div className={`h-full w-full ${task.completed ?'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`} style={{ animationDuration: `${task.completed ? DESMARCAR_ENCHER_MS : PLANNER_ENCHER_MS}ms` }}></div></div>)}
                 {showSparkles && <Sparkles />}
             </div>
             <style>{`@keyframes fill { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0% 0 0 0); } } @keyframes unfill { from { clip-path: inset(0% 0 0 0); } to { clip-path: inset(100% 0 0 0); } }`}</style>

@@ -1490,6 +1490,9 @@ export const createTaskDomain = ({
         if (updates.duration !== undefined) payload.duration = updates.duration;
         if (updates.completed !== undefined) payload.completed = updates.completed;
         if (updates.executionOrder !== undefined) payload.execution_order = updates.executionOrder;
+        if (updates.instanceNote !== undefined) payload.instance_note = updates.instanceNote;
+        if (updates.reminderEnabled !== undefined) payload.reminder_enabled = updates.reminderEnabled;
+        if (updates.reminderMinutes !== undefined) payload.reminder_minutes = updates.reminderMinutes;
         if (Object.keys(payload).length === 0) return;
 
         supabase.from('scheduled_tasks')

@@ -108,7 +108,7 @@ export const DailyPanelBoard: React.FC<DailyPanelBoardProps> = ({
     const pending = Math.max(0, total - completed);
 
     return (
-        <div className="daily-board" aria-label={`Painel do dia ${dateLabel}`}>
+        <div className={`daily-board ${isToday ? 'is-today' : 'is-closed-day'}`} aria-label={`Painel do dia ${dateLabel}`}>
             <header className="daily-board-head">
                 <div className="daily-board-when">
                     <span className="daily-board-eyebrow">{isToday ? 'Andamento de hoje' : 'Como o dia fechou'}</span>

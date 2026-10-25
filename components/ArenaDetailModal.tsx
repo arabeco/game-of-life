@@ -766,13 +766,15 @@ export const ArenaDetailModal: React.FC<{
                             <div className="arena-actions-list" aria-label="Ações da arena">
                                 {allActions.map(action => {
                                     const actionProgress = calculateArenaProgress({ arena, actions: [action], tasks: tasksForCounts, clanQuests: [], getClanQuestProgress, getSharedActionPoolProgress, forceSharedPool });
+                                    const isMilestoneAction = action.actionType === 'Marco';
+                                    const isFreeAction = action.actionType === 'Livre';
                                     const completed = action.actionType === 'Livre'
                                         ? tasksForCounts.filter(task => task.actionId === action.id && task.completed).length
                                         : actionProgress.totalCompleted;
                                     const countLabel = isClanQuestArena ? 'Clã' : action.actionType === 'Livre' ? `${completed} feitas` : `${completed} / ${actionProgress.totalPlanned}`;
                                     return <button key={action.id} className="arena-action-row" onClick={()=>openActionDetails(action)}>
-                                        <span className="arena-action-tile" style={getActionBackgroundStyle(action.id)}><EmojiGlyph symbol={action.icon || '📝'} size="picker" /></span>
-                                        <span className="arena-action-copy"><strong>{action.name}</strong><small>{action.duration} min · {action.actionType === 'Ação Recorrente' ? 'recorrente' : action.actionType.toLowerCase()}</small>{!isClanQuestArena && actionProgress.hasMeasurableProgress && <span className="reference-line-progress"><i style={{width: `${Math.min(100,actionProgress.progressPercent)}%`}} /></span>}</span>
+                                        <span className={`arena-action-tile ${isMilestoneAction ? 'arena-action-tile--milestone' : isFreeAction ? 'free-action-shell free-action-outline arena-action-tile--free' : ''}`} style={isFreeAction ? { '--free-action-bg': getActionBackgroundStyle(action.id).background } as React.CSSProperties : getActionBackgroundStyle(action.id)}><EmojiGlyph symbol={action.icon || (isMilestoneAction ? '🏁' : '📝')} size="picker" /></span>
+                                        <span className="arena-action-copy"><strong>{action.name}</strong><small>{action.duration} min · {action.actionType === 'Ação Recorrente' ? 'recorrente' : isMilestoneAction ? 'objetivo único' : <b className="action-type--free">LIVRE</b>}</small>{!isClanQuestArena && actionProgress.hasMeasurableProgress && <span className="reference-line-progress"><i style={{width: `${Math.min(100,actionProgress.progressPercent)}%`}} /></span>}</span>
                                         <span className="reference-action-count">{countLabel}<span>›</span></span>
                                     </button>;
                                 })}

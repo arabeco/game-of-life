@@ -175,6 +175,7 @@ const ActionIcon: React.FC<{
     const isClanQuest = !!clanQuest;
     const isSeasonQuest = normalizedArena.includes('quests - season');
     const displayIcon = action.icon || '\u{1F3DB}\uFE0F';
+    const isFreeAction = action.actionType === 'Livre';
 
     const currentProgress = clanQuest ? getClanQuestProgress(clanQuest.id) : 0;
     const target = clanQuest?.requirements?.clanGoal || clanQuest?.goal_value || 50;
@@ -205,10 +206,11 @@ const ActionIcon: React.FC<{
             onDragStart={onDragStart}
             onDragOver={onDragOver}
             onDrop={onDrop}
-            style={backgroundStyle} 
-            className={`${compact ? 'w-[1.32rem] h-[1.32rem] rounded-[6px]' : 'w-6 h-6 rounded-md'} border ${isDragOver ? 'border-white scale-110' : 'border-[var(--accent-bronze)]'} flex items-center justify-center flex-shrink-0 relative overflow-visible transition-all cursor-grab active:cursor-grabbing`}
+            style={isFreeAction ? { '--free-action-bg': backgroundStyle.background } as React.CSSProperties : backgroundStyle}
+            className={`${compact ? 'w-[1.32rem] h-[1.32rem] rounded-[6px]' : 'w-6 h-6 rounded-md'} ${isFreeAction ? 'free-action-shell free-action-outline rounded-full' : 'border border-[var(--accent-bronze)]'} ${isDragOver ? 'border-white scale-110' : ''} flex items-center justify-center flex-shrink-0 relative overflow-visible transition-all cursor-grab active:cursor-grabbing`}
         >
             {renderIcon()}
+            {isFreeAction && <span aria-hidden className={`${compact ? '-right-1 -bottom-1 h-2.5 w-2.5 text-[7px]' : '-right-1.5 -bottom-1.5 h-3.5 w-3.5 text-[9px]'} absolute z-20 flex items-center justify-center rounded-full border border-slate-100/70 bg-[#151c25] font-black leading-none text-slate-100 shadow-[0_1px_5px_rgba(0,0,0,.6)]`}>∞</span>}
             {surfaceBadge && !compact && (
                 <span className={`pointer-events-none absolute -bottom-2 left-1/2 z-20 -translate-x-1/2 rounded-full border px-1 py-[1px] text-[6px] font-black uppercase leading-none tracking-[0.06em] shadow-[0_3px_8px_rgba(0,0,0,0.35)] ${getActionSurfaceBadgeClassName(surfaceBadge.tone)}`}>
                     {surfaceBadge.label}

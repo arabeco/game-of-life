@@ -13,7 +13,7 @@
 
 type Resposta = { data: any; error: any };
 
-export const COLUNAS_DA_TAREFA = 'id, action_id, date, start_time, duration, completed, completed_at, created_at, execution_order';
+export const COLUNAS_DA_TAREFA = 'id, action_id, date, start_time, duration, completed, completed_at, created_at, execution_order, instance_note, reminder_enabled, reminder_minutes';
 export const COLUNAS_DO_INVENTARIO = 'id, item_id, acquired_at, is_equipped';
 
 const tentar = (consulta: () => PromiseLike<Resposta>) => Promise.resolve()

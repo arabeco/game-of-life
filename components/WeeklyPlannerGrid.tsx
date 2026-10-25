@@ -7,6 +7,7 @@ import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { DropIndicator } from './DropIndicator';
 import { usePlannerDragHold, PLANNER_ENCHER_MS, DESMARCAR_ENCHER_MS } from '../hooks/usePlannerDragHold';
 import { CheckCircleIcon } from './Icons';
+import { Bell } from 'lucide-react';
 import { OPERATIONAL_DAY_START_MINUTE, formatLocalDateString, formatOperationalHourLabel, getOperationalDateString, getOperationalDisplayMinutes, getOperationalHourTicks, getTaskDisplayStartTime, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 
 interface WeeklyPlannerGridProps {
@@ -76,6 +77,14 @@ const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: 
     }, []);
 
     const backgroundStyle = action ? getActionBackgroundStyle(action.id) : { background: 'var(--asset-grad-default)' };
+    const isMilestone = action?.actionType === 'Marco';
+    const isFreeAction = action?.actionType === 'Livre';
+    const hasReminder = task.reminderEnabled === false
+        ? false
+        : task.reminderEnabled === true
+            ? true
+            : Number(action?.context?.schedule?.notifyBeforeMinutes) > 0;
+    const milestoneClipPath = 'polygon(13% 0%, 87% 0%, 100% 50%, 87% 100%, 13% 100%, 0% 50%)';
 
     const handleLongPress = () => {
         if (isTransitioning) return;
@@ -143,23 +152,28 @@ const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: 
             {...longPressEvents}
         >
             <div 
-                className={`relative h-full p-1 flex items-center justify-center text-center overflow-hidden border-l-2 border-[var(--bronze)] rounded-r-lg ${task.completed ? 'text-white/80' : 'text-white'}`}
-                style={backgroundStyle}
+                className={`relative h-full p-1 flex items-center justify-center text-center ${isMilestone ? 'overflow-visible text-white shadow-[0_0_8px_rgba(227,194,90,0.18)]' : isFreeAction ? `free-action-shell free-action-outline overflow-hidden rounded-full text-white ${task.completed ? '' : 'free-action-shell--scheduled'}` : `overflow-hidden rounded-lg border ${task.completed ? 'border-white/25 text-white/80' : 'border-dashed border-gray-500/80 text-white'}`}`}
+                style={isFreeAction ? { '--free-action-bg': backgroundStyle.background } as React.CSSProperties : isMilestone ? { clipPath: milestoneClipPath, background: backgroundStyle.background } : backgroundStyle}
             >
-                <div className={`absolute inset-0 transition-opacity duration-300 ${task.completed ? 'opacity-100' : 'opacity-0'}`} style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.04) 68%, rgba(3,7,18,0.14) 100%)' }}></div>
-                <div className={`absolute inset-0 transition-all duration-300 rounded-r-lg ${task.completed ? 'shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18),0_0_12px_rgba(255,255,255,0.08)]' : ''}`}></div>
+                {isMilestone && <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.10),rgba(10,14,23,0.12)_48%,rgba(0,0,0,0.22))]" style={{ clipPath: milestoneClipPath }} />}
+                <div className={`absolute inset-0 transition-opacity duration-300 ${task.completed ? 'opacity-100' : 'opacity-0'}`} style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.04) 68%, rgba(3,7,18,0.14) 100%)', ...(isMilestone ? { clipPath: milestoneClipPath } : {}) }}></div>
+                <div className={`absolute inset-0 transition-all duration-300 ${isFreeAction ?'rounded-full' : isMilestone ?'' : 'rounded-lg'} ${task.completed ? 'shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18),0_0_12px_rgba(255,255,255,0.08)]' : ''}`} style={isMilestone ? { clipPath: milestoneClipPath } : undefined}></div>
 
                 <div className="text-xl z-10">
-                    <EmojiGlyph symbol={action?.icon || '\u{1F4DD}'} size="action" className="text-white" />
+                    <EmojiGlyph symbol={action?.icon || (isMilestone ? '🏁' : '\u{1F4DD}')} size={isMilestone ? 'milestone' : 'action'} className="text-white" />
                 </div>
-                {task.completed && (
+                {task.completed ? (
                     <div className="absolute right-1 top-1 z-20 flex h-4.5 w-4.5 items-center justify-center rounded-full border border-white/20 bg-black/28 text-white shadow-[0_0_8px_rgba(255,255,255,0.12)]">
                         <CheckCircleIcon className="h-3 w-3 text-emerald-300 drop-shadow-[0_0_4px_rgba(52,211,153,0.55)]" />
+                    </div>
+                ) : hasReminder && (
+                    <div aria-label="Lembrete ativo" className="absolute right-1 top-1 z-20 flex h-4.5 w-4.5 items-center justify-center rounded-full border border-white/20 bg-black/28 text-amber-100 shadow-[0_0_8px_rgba(251,191,36,0.16)]">
+                        <Bell className="h-3 w-3" />
                     </div>
                 )}
 
                 {isHolding && (
-                    <div className="absolute inset-0 animate-pulse bg-black/50 rounded-r-lg">
+                    <div className={`absolute inset-0 animate-pulse bg-black/50 ${isFreeAction ? 'rounded-full' : isMilestone ? '' : 'rounded-lg'}`} style={isMilestone ? { clipPath: milestoneClipPath } : undefined}>
                         <div className={`h-full w-full ${task.completed ? 'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`} style={{ animationDuration: `${task.completed ? DESMARCAR_ENCHER_MS : PLANNER_ENCHER_MS}ms` }}></div>
                     </div>
                 )}

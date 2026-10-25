@@ -9,7 +9,9 @@ import { GM_SEASON_MISSIONS } from '../constants/seasonContent';
 import { buildSeasonFromConfig, getEraCalendarYears, getNextSeasonConfig, getSeasonConfigById, isGenesisSeason, resolveSeasonArchiveLogEntry, resolveSeasonBackgroundUrl, resolveSeasonLoreText } from '../utils/seasonPresentation';
 import { calculateArenaProgress } from '../utils/progressUtils';
 import { REWARD_PLATE_VIEWPORT_STYLE } from '../constants/rewardPlateStyles';
-import { getChestDisplayName } from '../constants/rarityVisuals';
+import { getChestDisplayName, getRarityVisual } from '../constants/rarityVisuals';
+import { resolveItemDef } from '../constants/items';
+import { ItemArt } from './ItemArt';
 
 const DetailModalShell: React.FC<{
     title: string;
@@ -253,16 +255,70 @@ export const QuestDetailModal: React.FC<{
     );
 };
 
+const MissionRewardPreview: React.FC<{ mission: SeasonMission }> = ({ mission }) => {
+    const rewardItemIds = Array.from(new Set([
+        ...(mission.reward_type === 'item_id' && typeof mission.reward_value === 'string' ? [mission.reward_value] : []),
+        ...(mission.reward_item_ids || []),
+    ]));
+    const rewardItems = rewardItemIds
+        .map((itemId) => resolveItemDef(itemId))
+        .filter((item): item is NonNullable<ReturnType<typeof resolveItemDef>> => Boolean(item));
+    const xp = mission.reward_type === 'exp'
+        ? Math.max(0, Number(mission.reward_value || 0))
+        : Math.max(0, Number(mission.reward_exp || 0));
+
+    return (
+        <section className="overflow-hidden rounded-[18px] border border-amber-300/20 bg-[linear-gradient(135deg,rgba(177,128,38,.14),rgba(12,13,16,.94)_54%,rgba(4,5,7,.98))] p-3 text-left shadow-[inset_0_1px_rgba(255,255,255,.05)]">
+            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-amber-200">
+                <span>Recompensas</span>
+                <span className="h-px flex-1 bg-amber-200/20" />
+            </div>
+            {rewardItems.length > 0 ? (
+                <div className={`mt-3 grid gap-2 ${rewardItems.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                    {rewardItems.map((item) => {
+                        const rarity = getRarityVisual(item.rarity);
+                        return (
+                            <div key={item.id} className="grid h-[58px] grid-cols-[40px_minmax(0,1fr)] items-center gap-2 border bg-black/30 p-2" style={{ borderColor: `rgba(${rarity.rgb},.42)`, borderLeft: `3px solid rgba(${rarity.rgb},.88)` }}>
+                                <div className="grid h-10 w-10 place-items-center overflow-hidden" style={{ background: `radial-gradient(circle at 35% 25%, rgba(${rarity.rgb},.25), #08090c 74%)`, border: `1px solid rgba(${rarity.rgb},.45)` }}>
+                                    <ItemArt itemId={item.id} src={item.imageUrl} alt={item.name} icon={item.icon} category={item.category} className="h-full w-full" imgClassName="h-full w-full object-contain" iconClassName="text-xl" />
+                                </div>
+                                <div className="min-w-0">
+                                    <div className="line-clamp-2 text-[10px] font-black leading-[1.14] text-white">{item.name}</div>
+                                    <div className="mt-1 text-[7px] font-black uppercase tracking-[0.14em]" style={{ color: rarity.hex }}>{rarity.label}</div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            ) : (
+                <div className="mt-2 text-sm font-bold text-white/72">{xp > 0 ? `+${xp} XP` : 'Recompensa da temporada'}</div>
+            )}
+            {xp > 0 && rewardItems.length > 0 && (
+                <div className="mt-3 flex items-center gap-2 border-t border-white/8 pt-2 text-[10px] font-black uppercase tracking-[0.14em] text-white/66">
+                    <span className="grid h-6 w-6 place-items-center border border-white/10 bg-black/30 text-[12px]">✦</span>
+                    +{xp} XP
+                </div>
+            )}
+        </section>
+    );
+};
+
 export const MissionDetailModal: React.FC<{
     mission: SeasonMission;
     progress: number;
     isCompleted: boolean;
     onClose: () => void;
-}> = ({ mission, progress, isCompleted, onClose }) => (
+}> = ({ mission, progress, isCompleted, onClose }) => {
+    const seasonConfig = getSeasonConfigById(mission.season_id);
+    const artUrl = mission.artUrl || (seasonConfig
+        ? resolveSeasonBackgroundUrl(buildSeasonFromConfig(seasonConfig))
+        : undefined);
+
+    return (
     <DetailModalShell
         title={mission.title}
         icon={mission.icon}
-        artUrl={mission.artUrl}
+        artUrl={artUrl}
         description={mission.description}
         badge={mission.type === 'clan' ? 'Missão do grupo' : 'Missão da temporada'}
         progress={progress}
@@ -277,12 +333,10 @@ export const MissionDetailModal: React.FC<{
             </button>
         )}
     >
-        <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-3 text-center">
-            <div className="text-[10px] font-black uppercase tracking-[0.16em] text-white/48">Recompensa</div>
-            <div className="mt-1 text-lg font-black text-white">+{mission.reward_value}</div>
-        </div>
+        <MissionRewardPreview mission={mission} />
     </DetailModalShell>
-);
+    );
+};
 
 const CompactSeasonEntryCard: React.FC<{
     title: string;

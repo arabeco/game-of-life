@@ -76,7 +76,11 @@ const pincel = ler('android/app/src/main/java/life/glyph/app/GlyphDayPaint.java'
 assert.match(pincel, /PX_POR_MINUTO = 0\.35f/, 'o planner do widget nao usa a escala do zoom 1');
 assert.match(pincel, /static Bitmap resumo\(/);
 assert.match(pincel, /static Bitmap planner\(/);
-assert.match(pincel, /bloco\.arena/, 'a agenda do widget nao mostra de qual arena vem a acao');
+assert.match(provedor, /b\.optString\("arena", "Sem arena"\)/, 'o snapshot do widget deixou de levar a arena da ação');
+assert.match(pincel, /float topo = \(bloco\.inicio - inicio\) \* porMinuto/, 'o widget deixou de posicionar blocos pelo horário proporcional');
+assert.match(pincel, /Math\.max\(34 \* porMinuto, bloco\.duracao \* porMinuto\)/, 'ações curtas perderam o piso mínimo para emoji e nome');
+assert.match(pincel, /if \(caixa\.height\(\) < 9 \* d\) return/, 'ações curtas voltaram a perder texto cedo demais');
+assert.doesNotMatch(pincel, /desenharAgenda/, 'o widget voltou para a lista fixa em vez da timeline');
 const manifesto = ler('android/app/src/main/AndroidManifest.xml');
 assert.doesNotMatch(manifesto, /GlyphBayWidgetService/, 'o servico da lista de concluir ainda esta no manifesto');
 console.log('Widget do dia: vitrine com Resumo e Planner, sem concluir e sem login.');

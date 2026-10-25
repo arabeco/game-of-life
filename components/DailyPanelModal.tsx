@@ -12,7 +12,7 @@ export const DailyPanelModal: React.FC<{ onClose: () => void; selectedDate?: str
     return (
         <Portal>
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
-                <GlassCard variant="neutral" className="daily-review-modal w-full max-w-md m-4 rounded-3xl flex flex-col h-[min(760px,90dvh)] overflow-hidden" onClick={e => e.stopPropagation()}>
+                <GlassCard variant="neutral" className={`daily-review-modal ${date < today ? 'is-closed-day' : 'is-today'} w-full max-w-md m-4 rounded-3xl flex flex-col h-[min(760px,90dvh)] overflow-hidden`} onClick={e => e.stopPropagation()}>
                     <div className="relative flex items-center justify-center p-4 border-b border-white/10 shrink-0">
                         <div className="flex items-center space-x-2">
                             <LightbulbIcon className="w-6 h-6 accent-text" />

@@ -2219,8 +2219,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 if (task.completed || !Number.isFinite(task.startTime) || task.startTime < 0) continue;
 
                 const action = actionById.get(task.actionId);
-                const reminderMinutes = action?.context?.schedule?.notifyBeforeMinutes;
-                if (!action || reminderMinutes !== 15) continue;
+                const inheritedReminderMinutes = action?.context?.schedule?.notifyBeforeMinutes;
+                const reminderMinutes = task.reminderEnabled === false
+                    ? null
+                    : task.reminderEnabled === true
+                        ? (task.reminderMinutes ?? 15)
+                        : inheritedReminderMinutes;
+                if (!action || !Number.isFinite(reminderMinutes) || Number(reminderMinutes) <= 0) continue;
 
                 const taskStartAt = buildTaskDateTime(task.date, task.startTime);
                 if (!taskStartAt) continue;
@@ -2239,7 +2244,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 const arena = arenaById.get(action.arenaId);
                 const hasAlreadyStarted = now >= taskStartAt.getTime();
                 const delivered = await showLocalNotification({
-                    title: hasAlreadyStarted ? `Agora: ${action.name}` : `Em 15 min: ${action.name}`,
+                    title: hasAlreadyStarted ? `Agora: ${action.name}` : `Em ${reminderMinutes} min: ${action.name}`,
                     body: hasAlreadyStarted
                         ? (arena ? `${arena.icon} ${arena.name} já começou.` : 'Sua ação já começou.')
                         : (arena ? `${arena.icon} ${arena.name} começa as ${formatReminderClock(taskStartAt)}.` : `Sua ação começa as ${formatReminderClock(taskStartAt)}.`),

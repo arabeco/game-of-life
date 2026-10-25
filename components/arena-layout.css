@@ -3,7 +3,12 @@
 .arena-actions-list{max-height:186px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;min-height:0;flex:0 1 auto}.arena-actions-list::-webkit-scrollbar,.arena-about::-webkit-scrollbar{display:none}
 .arena-action-row{height:62px;width:100%;display:flex;align-items:center;gap:12px;border-bottom:1px solid #ffffff10;padding:7px 2px;text-align:left}
 .arena-action-tile{height:44px;width:44px;flex:none;border-radius:10px;border:1px solid color-mix(in srgb,var(--arena-accent) 65%,#c6ab77);display:grid;place-items:center;overflow:hidden}
+.arena-action-tile--milestone{border:1px solid #fff0b0;border-radius:7px;transform:rotate(45deg);background:var(--marco-grad);box-shadow:0 0 12px rgba(227,194,90,.34),inset 0 1px rgba(255,255,255,.5)}
+.arena-action-tile--milestone .emoji-glyph{transform:rotate(-45deg)}
+.arena-action-tile--free{border-radius:999px!important;overflow:visible}
 .arena-action-copy{min-width:0;flex:1}.arena-action-copy strong{display:block;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.arena-action-copy small{font-size:10px;color:#aaa;display:block;margin-top:4px}
+.arena-action-copy .action-type--free{display:inline-flex;align-items:center;margin-left:2px;border-radius:999px;padding:1px 5px;font-size:8px;font-weight:900;letter-spacing:.1em;line-height:1.2}
+.arena-action-copy .action-type--free{border:1px solid rgba(218,226,238,.28);background:rgba(190,202,219,.1);color:rgba(220,228,239,.84)}
 .arena-action-add{width:36px;height:36px;border:1px dashed #ffffff48;border-radius:9px;display:grid;place-items:center;margin-left:6px;flex:none;color:var(--skin-accent-color)}
 .arena-actions-empty{font-size:12px;text-align:center;color:#aaa;padding:14px}
 .arena-about{min-height:0;max-height:280px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}.arena-about p,.arena-about textarea{max-height:72px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;resize:none;font-size:12px;overflow-wrap:anywhere}.arena-about input{font-size:17px!important}

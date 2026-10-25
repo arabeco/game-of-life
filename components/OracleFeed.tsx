@@ -5,6 +5,7 @@ import { XIcon, SparklesIcon, MessageIcon, TrashIcon } from './Icons';
 import { Notification, OracleMode } from '../types';
 import { Portal } from './Portal';
 import { CodexClaimModal } from './CodexClaimModal';
+import { AttentionBadge } from './AttentionBadge';
 import { APP_NAVIGATE_EVENT, type AppNavigatePayload } from '../utils/arenaAttention';
 import {
     getNotificationBody,
@@ -88,7 +89,7 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab: ini
                             >
                                 <SparklesIcon className="w-4 h-4" />
                                 <span className="text-[10px] font-bold tracking-wider">CONVERSAR</span>
-                                {unreadChat && activeTab !== 'chat' && <div className="w-2 h-2 rounded-full bg-amber-400 ml-1" />}
+                                {activeTab !== 'chat' && <AttentionBadge count={unreadChat ? 1 : 0} compact label="Há novidade no Oráculo" className="ml-1" />}
                             </button>
 
                             <button
@@ -97,12 +98,7 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab: ini
                             >
                                 <MessageIcon className="w-4 h-4" />
                                 <span className="text-[10px] font-bold tracking-wider">ALERTAS</span>
-                                {unreadRequests > 0 && (
-                                    <span className="absolute top-1 right-1 flex h-2 w-2">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                                    </span>
-                                )}
+                                <AttentionBadge count={unreadRequests} compact label={`${unreadRequests} alerta${unreadRequests === 1 ? '' : 's'} novo${unreadRequests === 1 ? '' : 's'}`} className="absolute right-1 top-1" />
                             </button>
                         </div>
                         <button aria-label="Fechar"

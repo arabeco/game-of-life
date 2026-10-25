@@ -69,6 +69,12 @@
     0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
+/* A forma continua dizendo "Livre"; o tracejado diz que esta ocorrência ainda
+   está agendada. Ao concluir, a classe some e a borda volta a ser contínua. */
+.free-action-shell--scheduled {
+  border-style: dashed !important;
+}
+
 .free-action-chip {
   background: rgba(190, 202, 219, 0.12);
   border: 1px solid rgba(176, 190, 208, 0.28);

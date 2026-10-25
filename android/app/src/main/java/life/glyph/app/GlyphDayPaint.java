@@ -163,95 +163,71 @@ final class GlyphDayPaint {
     static Bitmap planner(float d, int largura, int altura, List<Bloco> blocos, int agora, int diaComecaEm) {
         Bitmap bitmap = Bitmap.createBitmap(Math.max(1, largura), Math.max(1, altura), Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
-        Paint fundo = new Paint(Paint.ANTI_ALIAS_FLAG);
-        fundo.setColor(Color.parseColor("#0b0e13"));
-        canvas.drawRect(0, 0, largura, altura, fundo);
+        float porMinuto = PX_POR_MINUTO * d;
+        float calha = 34 * d;
 
-        TextPaint titulo = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        titulo.setColor(OURO_CLARO);
-        titulo.setTextSize(Math.min(10 * d, altura * .12f));
-        titulo.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
-        titulo.setLetterSpacing(.14f);
-        canvas.drawText("PLANNER DE HOJE", 7 * d, Math.max(12 * d, titulo.getTextSize() + 3 * d), titulo);
+        // A escala e fixa como no Planner. Quando nao cabe o dia inteiro, a
+        // janela se concentra uma hora antes de agora, em vez de achatar os
+        // blocos e perder a leitura das acoes curtas.
+        float minutosVisiveis = altura / porMinuto;
+        float inicio = Math.max(0, Math.min(agora - 60, MINUTOS_DO_DIA - minutosVisiveis));
+        if (minutosVisiveis >= MINUTOS_DO_DIA) inicio = 0;
 
-        ArrayList<Bloco> agenda = new ArrayList<>(blocos);
-        Collections.sort(agenda, Comparator.comparingInt(bloco -> bloco.inicio));
-        if (agenda.isEmpty()) {
+        // As horas e as linhas.
+        Paint linha = new Paint(Paint.ANTI_ALIAS_FLAG);
+        linha.setColor(Color.argb(0x18, 255, 255, 255));
+        linha.setStrokeWidth(Math.max(1f, d * 0.75f));
+        TextPaint hora = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        hora.setColor(Color.argb(0x73, 255, 255, 255));
+        hora.setTextSize(9 * d);
+        hora.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
+        for (int m = 0; m <= MINUTOS_DO_DIA; m += 60) {
+            float y = (m - inicio) * porMinuto;
+            if (y < -1 || y > altura + 1) continue;
+            canvas.drawLine(calha, y, largura, y, linha);
+            int relogio = ((diaComecaEm + m) / 60) % 24;
+            String rotulo = (relogio < 10 ? "0" : "") + relogio + ":00";
+            float base = Math.max(hora.getTextSize(), Math.min(altura - 2 * d, y + hora.getTextSize() * 0.35f));
+            canvas.drawText(rotulo, 2 * d, base, hora);
+        }
+
+        if (blocos.isEmpty()) {
             TextPaint vazio = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             vazio.setColor(TEXTO_SUAVE);
             vazio.setTextSize(11 * d);
             vazio.setTypeface(Typeface.create(Typeface.SERIF, Typeface.ITALIC));
             vazio.setTextAlign(Paint.Align.CENTER);
-            canvas.drawText("Nada no planner hoje.", largura / 2f, altura / 2f, vazio);
-            return bitmap;
+            canvas.drawText("Nada no planner hoje.", calha + (largura - calha) / 2f, altura / 2f, vazio);
         }
 
-        float topo = Math.max(18 * d, titulo.getTextSize() + 8 * d);
-        float margem = 5 * d;
-        int quantidade = Math.min(4, agenda.size());
-        float espaco = Math.max(3 * d, altura * .025f);
-        float linhaAltura = Math.max(28 * d, Math.min(45 * d, (altura - topo - margem - espaco * (quantidade - 1)) / quantidade));
-        for (int index = 0; index < quantidade; index++) {
-            Bloco bloco = agenda.get(index);
-            float y = topo + index * (linhaAltura + espaco);
-            desenharAgenda(canvas, d, new RectF(margem, y, largura - margem, Math.min(altura - margem, y + linhaAltura)), bloco, diaComecaEm, agora);
+        float x0 = calha + 4 * d;
+        float x1 = largura - 2 * d;
+        for (Bloco bloco : blocos) {
+            float topo = (bloco.inicio - inicio) * porMinuto;
+            if (bloco.marco) {
+                float alto = Math.max(15 * porMinuto, bloco.duracao * porMinuto);
+                if (topo + alto < 0 || topo > altura) continue;
+                marco(canvas, d, new RectF(x0, topo, x1, topo + alto), bloco);
+            } else {
+                // A faixa continua proporcional depois de 34 minutos. O piso
+                // so garante espaço físico para emoji e nome em ações curtas;
+                // sem ele 15 min viravam só uma linha colorida no widget.
+                float alto = Math.max(34 * porMinuto, bloco.duracao * porMinuto);
+                if (topo + alto < 0 || topo > altura) continue;
+                tarefa(canvas, d, new RectF(x0, topo, x1, topo + alto), bloco);
+            }
         }
-        if (agenda.size() > quantidade) {
-            TextPaint mais = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            mais.setColor(Color.argb(0xb8, 211, 198, 168));
-            mais.setTextSize(8 * d);
-            mais.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
-            mais.setTextAlign(Paint.Align.RIGHT);
-            canvas.drawText("+" + (agenda.size() - quantidade) + " ações", largura - 7 * d, altura - 4 * d, mais);
+
+        // A linha de agora.
+        float yAgora = (agora - inicio) * porMinuto;
+        if (yAgora >= 0 && yAgora <= altura) {
+            Paint agoraTinta = new Paint(Paint.ANTI_ALIAS_FLAG);
+            agoraTinta.setColor(OURO_CLARO);
+            agoraTinta.setStrokeWidth(1.5f * d);
+            canvas.drawLine(calha, yAgora, largura, yAgora, agoraTinta);
+            canvas.drawCircle(calha, yAgora, 3 * d, agoraTinta);
         }
         return bitmap;
-    }
-
-    private static void desenharAgenda(Canvas canvas, float d, RectF caixa, Bloco bloco, int diaComecaEm, int agora) {
-        Paint fundo = new Paint(Paint.ANTI_ALIAS_FLAG);
-        fundo.setColor(bloco.feita ? Color.argb(0xd8, 19, 28, 29) : Color.argb(0xf0, 20, 24, 32));
-        canvas.drawRoundRect(caixa, 7 * d, 7 * d, fundo);
-        Paint faixa = new Paint(Paint.ANTI_ALIAS_FLAG);
-        faixa.setShader(new LinearGradient(caixa.left, caixa.top, caixa.left, caixa.bottom, bloco.corA, bloco.corB, Shader.TileMode.CLAMP));
-        canvas.drawRoundRect(new RectF(caixa.left, caixa.top, caixa.left + 4 * d, caixa.bottom), 4 * d, 4 * d, faixa);
-
-        int relogioMin = (diaComecaEm + bloco.inicio) % MINUTOS_DO_DIA;
-        String horario = String.format("%02d:%02d", relogioMin / 60, relogioMin % 60);
-        TextPaint hora = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        hora.setColor(bloco.inicio <= agora && agora < bloco.inicio + bloco.duracao ? OURO_CLARO : Color.parseColor("#b8bdc7"));
-        hora.setTextSize(Math.min(10 * d, caixa.height() * .28f));
-        hora.setTypeface(Typeface.create(Typeface.MONOSPACE, Typeface.BOLD));
-        canvas.drawText(horario, caixa.left + 9 * d, caixa.centerY() + hora.getTextSize() * .34f, hora);
-
-        float emojiX = caixa.left + 46 * d;
-        Paint selo = new Paint(Paint.ANTI_ALIAS_FLAG);
-        selo.setColor(Color.argb(0x2e, 255, 255, 255));
-        canvas.drawCircle(emojiX, caixa.centerY(), Math.min(12 * d, caixa.height() * .34f), selo);
-        TextPaint emoji = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        emoji.setTextSize(Math.min(17 * d, caixa.height() * .55f));
-        canvas.drawText(bloco.icone, emojiX - emoji.measureText(bloco.icone) / 2f, caixa.centerY() + emoji.getTextSize() * .34f, emoji);
-
-        float direita = caixa.right - 8 * d;
-        if (bloco.feita) {
-            TextPaint check = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            check.setColor(Color.parseColor("#6ee7b7"));
-            check.setTextSize(Math.min(15 * d, caixa.height() * .46f));
-            check.setTypeface(Typeface.DEFAULT_BOLD);
-            canvas.drawText("✓", direita - check.measureText("✓"), caixa.centerY() + check.getTextSize() * .34f, check);
-            direita -= check.measureText("✓") + 7 * d;
-        }
-        TextPaint nome = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        nome.setColor(Color.WHITE);
-        nome.setTextSize(Math.min(12 * d, caixa.height() * .32f));
-        nome.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
-        CharSequence texto = TextUtils.ellipsize(bloco.nome, nome, Math.max(0, direita - (emojiX + 17 * d)), TextUtils.TruncateAt.END);
-        canvas.drawText(texto, 0, texto.length(), emojiX + 17 * d, caixa.centerY() - 2 * d, nome);
-        TextPaint detalhe = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        detalhe.setColor(Color.argb(0xb8, 211, 198, 168));
-        detalhe.setTextSize(Math.min(8 * d, caixa.height() * .22f));
-        detalhe.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
-        CharSequence contexto = TextUtils.ellipsize(bloco.arena + " · " + bloco.duracao + " min" + (bloco.marco ? " · MARCO" : ""), detalhe, Math.max(0, direita - (emojiX + 17 * d)), TextUtils.TruncateAt.END);
-        canvas.drawText(contexto, 0, contexto.length(), emojiX + 17 * d, caixa.centerY() + detalhe.getTextSize() + 2 * d, detalhe);
     }
 
     private static void tarefa(Canvas canvas, float d, RectF caixa, Bloco bloco) {
@@ -289,12 +265,15 @@ final class GlyphDayPaint {
         RectF bordaCaixa = new RectF(caixa.left + d, caixa.top + d, caixa.right - d, caixa.bottom - d);
         canvas.drawRoundRect(bordaCaixa, raio, raio, borda);
 
-        if (caixa.height() < 12 * d) return;
+        // O piso da timeline já dá ~12dp. Nessa altura ainda cabem emoji e
+        // texto pequeno; o antigo corte em 12dp fazia sumirem justamente as
+        // ações abaixo de meia hora.
+        if (caixa.height() < 9 * d) return;
         canvas.save();
         canvas.clipRect(dentro);
         float meio = caixa.centerY();
         TextPaint icone = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        icone.setTextSize(Math.min(16 * d, caixa.height() * 0.62f));
+        icone.setTextSize(Math.min(15 * d, Math.max(9 * d, caixa.height() * 0.72f)));
         float xTexto = dentro.left + 6 * d;
         Paint seloDoEmoji = new Paint(Paint.ANTI_ALIAS_FLAG);
         seloDoEmoji.setColor(Color.argb(0x35, 255, 255, 255));
@@ -324,7 +303,7 @@ final class GlyphDayPaint {
         // O nome e conteudo do planner, nao legenda da cor. Mantem pelo menos
         // 11sp quando a altura deixa, para o widget continuar sendo lido de
         // relance em vez de virar uma grade de faixas coloridas.
-        nome.setTextSize(Math.min(13 * d, Math.max(11 * d, caixa.height() * 0.5f)));
+        nome.setTextSize(Math.min(13 * d, Math.max(9 * d, caixa.height() * 0.64f)));
         nome.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
         nome.setShadowLayer(3 * d, 0, d, Color.argb(0xd1, 2, 6, 23));
         CharSequence cabe = TextUtils.ellipsize(bloco.nome, nome, Math.max(0, direita - xTexto), TextUtils.TruncateAt.END);

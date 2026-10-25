@@ -46,8 +46,14 @@ assert.match(seasonDetail, /Como concluir/);
 // mudanca de distancia de discordarem. O que este teste guarda e o que sempre
 // quis guardar — que o resumo chega ao modal — agora pela fonte unica.
 assert.match(seasonDetail, /const rewardLabel = rewardChest \? getChestDisplayName\(rewardChest\)/);
-assert.match(seasonDetail, /import \{ getChestDisplayName \}/);
+assert.match(seasonDetail, /import \{ getChestDisplayName, getRarityVisual \}/);
 assert.match(seasonDetail, /rewardSummary/);
+// Selo de temporada entrega itens reais (insígnia e tema), então o detalhe não
+// pode despejar o id técnico de reward_value na tela.
+assert.match(seasonDetail, /const MissionRewardPreview/);
+assert.match(seasonDetail, /resolveItemDef\(itemId\)/);
+assert.match(seasonDetail, /reward_item_ids/);
+assert.doesNotMatch(seasonDetail, /<div className="mt-1 text-lg font-black text-white">\+\{mission\.reward_value\}<\/div>/);
 assert.doesNotMatch(seasonDetail, />Aceitar missao</);
 assert.doesNotMatch(seasonDetail, /RESGATAR RECOMPENSA/i);
 assert.doesNotMatch(seasonView, /RESGATAR RECOMPENSA/i);

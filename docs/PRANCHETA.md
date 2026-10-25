@@ -1,18 +1,18 @@
 # Prancheta do Glyph
 
-Cópia da prancheta do Afonso (artefato no claude.ai: https://claude.ai/artifact/99dQUHcbX6dy4dcAuu2Dx6), reconciliada localmente em **22/10/2026**. Os recados históricos não entram na soma da prancheta online; use as pendências marcadas abaixo como estado atual.
+Cópia da prancheta do Afonso (artefato no claude.ai: https://claude.ai/artifact/99dQUHcbX6dy4dcAuu2Dx6), regravada pelo Claude em **25/10/2026**, já com a consolidação do Codex de 13 e 14/10. **7 abertos de 109** (102 feitos).
 
 **Uma lista só:** a fonte é a prancheta online, e este arquivo é regravado a partir dela. Não edite as listas abaixo; para avisar algo, escreva em "Recados da outra IA", no fim: o Claude lê e passa para a prancheta.
 
-**Pronto no código não é distribuído:** o AAB 111 tem o checkpoint ce54428 (12/10). Tudo de 13/10 em diante, do Claude e do Codex, vai no 112.
+**Pronto no código não é distribuído:** o último AAB gerado de propósito é o 115 (20/10). Tudo o que veio depois, do Claude e do Codex, vai no 116, que precisa ser gerado de novo a partir do main atual.
 
 Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 
 ## Lançamento
 
-- [ ] AAB 116: gerar e subir na Play (build de lançamento) *(Afonso)* — O 115 (gerado em 20/10, SHA-256 43752d3f…) saiu com dois problemas já corrigidos no git: a grade das arenas cortando as bordas (efb7d7c) e o planner tremendo com o sensor de movimento (57de1f4). O 116 junta essas duas correções, o widget do planner novo (afa4317) e o lote visual/local abaixo, que ainda precisa de checkpoint. Depois, conferir no celular a mentoria, o jardim e as arenas e promover para Produção.
+- [ ] AAB 116: gerar e subir na Play (build de lançamento) *(Afonso)* — O 115 (20/10, SHA-256 43752d3f…) saiu com dois problemas já corrigidos: grade das arenas (efb7d7c) e planner tremendo com o sensor (57de1f4). 25/10: a versão já está em 1.0.116 e há um app-release.aab de 25/10 09:26, mas ele foi gerado ANTES dos commits do catálogo de emojis (8f36e79) e do widget que imita o planner (c6eb60e). O 116 de lançamento precisa ser gerado de novo a partir do main atual (inclui o lote de 22/10 em 703a84e/170605c, o planner de 25/10 em 9b745db, o widget e os emojis). Gerar só quando o Afonso pedir. Depois: conferir no celular mentoria, jardim, arenas, planner (lembrete e nota por ocorrência) e o widget, e promover para Produção.
 
-<details><summary>Feitos (15)</summary>
+<details><summary>Feitos (16)</summary>
 
 - [x] Conta nova travava no cadastro (idade não salvava) e o Sair da conta não saía — achado do Luigi *(Afonso)* — 18/10: causa achada e corrigida pelo Claude (a5da99e). O upsert do perfil mandava ouro, fragmentos, carteira, baús e premium, que desde 23/09 não aceitam escrita do app; o banco recusava a linha inteira e a conta nova ficava sem perfil. O Sair da conta do primeiro acesso usava o logout cru, que o celular desfaz. SQL 20261018100000 no banco (o Codex conferiu em 18/10): o 112 já cadastra; o Luigi só precisa fechar e abrir o app. O app corrigido e o Sair da conta estão no 113.
 - [x] Idade mínima nos Termos *(outra IA (Codex))* — Publicado (Codex). Reconferido em 13/10 no HTML público: 13 anos, com autorização do responsável para menores de 18.
@@ -29,6 +29,7 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 - [x] Site: revisar contadores, Termos, prints e posts e publicar *(outra IA (Codex))* — Landing a294b4b publicada (Codex). Reconferido em 13/10: Home, Termos, script.js, Novidades e exclusao.html no ar. O pedido de exclusão pelo site segue à parte.
 - [x] Rodar a migração 20261002140000_public_landing_stats_v2.sql (totais do site) *(Afonso)* — 12/10: já estava rodada (Afonso); o Codex reconferiu: get_landing_stats_v2 responde 200.
 - [x] Rodar a migração 20261012160000_landing_stats_include_gm.sql (contadores do site contam os perfis gm) *(Afonso)* — 12/10 (Codex): o filtro role='user' deixava de fora 2 perfis gm, 32 arenas e 332 ações concluídas. Esperado depois: 5 perfis, 38 arenas, 336 ações. Não precisa de AAB.
+- [x] Site novo no roteiro do Afonso, com as peças reais do app *(Claude)* — 23–25/10, publicado no glyph-landing (b7ea772 e 83517cc). Home em 3 telas com ímã (topo, as 5 áreas interativas, novidades e comentários) e cada aba em 2 telas com destaques reais do app; Funcionalidades em grade com filtro; página Premium com os planos oficiais; Waitlist fora de todas as páginas; fundo na cor da aba; Home na barra de baixo. Comentários: formulário grava em testimonials_feedback e só aparece com is_approved = true (testado de ponta a ponta; o de teste já foi apagado). Selos oficiais do Google Play e da App Store prontos e desligados: no lançamento, GLYPH_NA_LOJA = true em mvp.js (e conferir o link play.google.com/store/apps/details?id=life.glyph.app); GLYPH_NA_APP_STORE só quando houver app na App Store. Faltam prints: por dentro de um ativo, cadastro de ação, Vínculos e modal de conquista secreta.
 
 </details>
 
@@ -36,7 +37,7 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 
 - [ ] Campanha por mentoria e vagas de vínculos: conferir no aparelho *(outra IA (Codex))* — Commit aa22424 (Codex), no AAB 115. Mentor forja campanha em sandbox para a pessoa aceitar ou recusar; vagas: grátis 0, Premium 2, Platinum 5, extra 50 de ouro. 21/10: o Afonso confirmou que é para pagar mesmo, inclusive parceria. Falta ver funcionando no celular.
 
-<details><summary>Feitos (47)</summary>
+<details><summary>Feitos (51)</summary>
 
 - [x] AAB 112 (só quando o Afonso pedir) *(Afonso)* — Superado pelo 113 e pelo 114 (20/10).
 - [x] Diário sem internet: texto sumia quando a rede voltava — achado do Luigi *(Claude)* — 18/10 (ae96664 + 5d1ff65, vão no 113): falha de leitura era tratada como página vazia, e com a rede oscilando a entrada nova era gravada sozinha por cima da página (o texto antigo sumia); o editor abria a página em branco sem rede e o Voltar saía sem esperar gravar; a bolinha do humor mudava antes de gravar e voltava. Agora: sem ler não grava; o editor avisa "Sem internet" e mantém o texto; e o Registrar sem internet manda a entrada para uma FILA no aparelho, que sai sozinha quando a rede volta (ao abrir o app, ao voltar do fundo, a cada minuto), na ordem e uma vez. Planilha do Luigi (M6) e SMOKETEST atualizados.
@@ -51,8 +52,12 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 - [x] Refinar o widget do planner *(outra IA (Codex))* — 21/10: feito pelo Codex (GlyphDayPaint, GlyphDayWidgetProvider, utils/widgetPlanner.ts), aprovado pelo Afonso e commitado em afa4317. O teste widget-planner-do-dia passa. Entra no AAB 116.
 - [x] Widget (rótulo do dia): fechar a mudança e o teste *(Claude)* — Ok do Afonso em 10/10.
 - [x] Editor do Soberano: fechar a mudança e o teste *(Claude)* — Ok do Afonso em 10/10. O teste luz-e-placa-do-soberano ainda acusa o slot do artefato fora do lugar.
+- [x] Lote de 22/10: campanhas e arenas, ordem do planner, Jardim Zen e Maestria *(outra IA (Codex))* — Codex, commit 703a84e: cartão de campanha compacto alinhado à miniatura de arena (percentual no rodapé, arenas internas na faixa, gradiente das arenas); ordem de execução do planner com emoji, nome, arena, duração e horário, e ação futura arrastável sem erro de conclusão; Jardim Zen entra sem abrir o editor (Editar e Expandir separados; loja separa ver de comprar); Maestria com índice dentro do pentágono e o Avaliar na tela interna. Falta conferir no aparelho, no 116.
 - [x] AAB 110 *(Afonso)* — 12/10: AAB 110 gerado pelo Codex (6b33f9a) em android/app/build/outputs/bundle/release/Glyph-1.0.110-110.aab, com tudo até o cartão do ciclo mais baixo (329d540). Falta subir no Play.
+- [x] Planner de 25/10: lembrete e nota por ocorrência, Marco hexágono, Livre pílula *(outra IA (Codex))* — Codex, commit 9b745db. Cada ocorrência pode ter nota própria (até 140 caracteres) e lembrete próprio; Marco vira hexágono na cor da arena, ação Livre vira pílula tracejada enquanto agendada, sininho em quem tem lembrete. SQL 20261025120000 e 20261025130000 no banco (conferido pela chave pública em 25/10: as colunas instance_note, reminder_enabled e reminder_minutes existem). Falta conferir no aparelho, no 116.
 - [x] Amigos, clã, parceria e mensagens sem perfil (fantasma / desconhecido) *(Claude)* — Consertado no código (commit c52de66). Causa: a migração de 29/09 fechou a leitura do perfil dos outros.
+- [x] Widget do dia imita o planner de 25/10 *(Claude)* — 25/10 (c6eb60e): o widget passou a desenhar Marco como hexágono na cor da arena, ação Livre como pílula e o sininho de lembrete, com a mesma regra do planner; cantos iguais aos do planner. Teste widget-planner-do-dia cobre e passa; Java compila. Não visto na tela: entra no 116.
+- [x] Catálogo de emojis com ~90 opções por área *(outra IA (Codex))* — 25/10: troca começada pelo Codex (que acabou os tokens no meio), conferida e commitada pelo Claude (8f36e79). Sem repetidos nem emoji quebrado; teste da busca passa. Os emojis novos aparecem na grade; só os que já tinham palavras cadastradas são achados pela busca.
 - [x] Rodar a migração 20261009090000_cartoes_publicos_em_lote.sql *(Afonso)* — Rodado em 09/10. Chega no celular com o AAB 109 (ou no site publicado).
 - [x] Toast do baú: só "+1 baú raro", sem "adicionado" *(Claude)* — Commit d9b1bc9. Vale para o modal de recompensa e o fim de ciclo.
 - [x] Missão individual: conferir se completa sozinha ao cumprir e se fecha sozinha no fim do prazo *(Claude)* — Comportamento atual (desde b3f19de, 09/10 à noite): ao cumprir, a individual ESPERA na aba Missão, com aviso do Oráculo e bolinha, e a pessoa recebe lá. O recebimento sozinho (8763253, 09/10 de manhã) foi desfeito. Fecha sozinha no fim do prazo nos tipos que têm prazo (volume e primeira).
@@ -115,9 +120,7 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 
 ## Arte
 
-- [x] Temporadas futuras: rodar o SQL das coleções e commitar *(outra IA (Codex))* — 21/10: Zênite I, Eclipse I, Égide I e Zênite II com a coleção completa (skin, borda, banner, insígnia e tema), três jornadas cada (Baús Míticos) e um selo final (insígnia + tema). Zênite II ganhou moldura, banner e insígnia. Tudo segue desligado para jogadores. Afonso confirmou a migração 20261021110000_future_season_collections.sql executada; código e artes foram commitados em afa4317. Revisão visual em output/temporadas-2027-completa/revisao.html.
-
-<details><summary>Feitos (9)</summary>
+<details><summary>Feitos (10)</summary>
 
 - [x] Borda Soberano no app e no banco (SQL rodado) *(Claude)*
 - [x] Commitar a conversão para WEBP (borda e catálogo) *(Claude)* — Commitado em 09/10 (d1c53b3).
@@ -128,21 +131,28 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 - [x] Skin Chuva mudou de arquivo e o teste do catálogo acusa *(Claude)* — Fica. O teste acusava só a lista de tamanhos, desatualizada desde a arte das mãos de 23/09 (15 roupas). Lista atualizada em 10/10 (52d3592); encaixe conferido nos 4 corpos.
 - [x] Gerar as artes das próximas temporadas *(outra IA (Codex))* — 12 peças de Zênite I, Eclipse I, Égide I e Aurora II integradas (Codex), no AAB 111. Falta o conteúdo das temporadas (skin, tema e jornadas) antes de ativá-las.
 - [x] Skins das temporadas integradas *(outra IA (Codex))* — Commit aa22424 (Codex), SQL rodado pelo Afonso em 20/10, no AAB 115.
+- [x] Temporadas futuras: coleções completas *(outra IA (Codex))* — 21/10 (Codex): Zênite I, Eclipse I, Égide I e Zênite II com a coleção completa (skin, borda, banner, insígnia e tema), três jornadas cada (Baús Míticos) e um selo final. Zênite II ganhou moldura, banner e insígnia. Tudo desligado para jogadores. SQL 20261021110000 executado pelo Afonso; commit afa4317.
 
 </details>
 
 ## Marketing
 
-- [ ] Criar códigos de resgate novos *(Afonso)* — 10/10: cofre em sql/cofre-de-cupons.sql — PRIMEIRALUZ100, CANDEIA50, FAGULHA30, VIGILIA20 e ZERODAY0 (Genesis secreto, prêmio a decidir), todos desligados. Rever prêmios e soltar um por vez.
-- [ ] Segredos no marketing *(Afonso)*
 - [ ] Artes para Instagram e TikTok *(artista)*
-
-## Git
-
-- [x] Republicar a função oracle *(Codex)* — 22/10: publicada com sucesso no projeto klmsdcncmhtgnlcejzdi. A leitura do ciclo do Oráculo agora leva a regra nova de missão e campanha (1a5b3a8), que já estava correta no app. Token temporário de deploy removido do ambiente local após a publicação.
 
 <details><summary>Feitos (2)</summary>
 
+- [x] Criar códigos de resgate novos *(Afonso)* — 22/10: não vão sair códigos novos. Os do cofre (sql/cofre-de-cupons.sql) ficam desligados por enquanto.
+- [x] Segredos no marketing *(Afonso)* — 22/10: não precisa; as missões secretas já cumprem esse papel.
+
+</details>
+
+## Git
+
+- [ ] Lembretes: tirar da chave pública a função que enfileira avisos *(outra IA (Codex))* — 25/10 (Claude): a função enqueue_due_action_reminder_notifications, da migração 20261025130000, é security definer e não tem revoke; a chave pública do site consegue chamá-la (respondeu 0 sem erro). Hoje ela só enfileira lembretes que já venceram, então o risco é baixo, mas o certo é revoke execute de anon e authenticated e deixar só o agendador. Precisa de um SQL novo para o Afonso rodar.
+
+<details><summary>Feitos (3)</summary>
+
+- [x] Republicar a função oracle *(outra IA (Codex))* — 22/10 (Codex): publicada no projeto klmsdcncmhtgnlcejzdi. A leitura do ciclo do Oráculo agora segue a regra nova de missão e campanha (1a5b3a8). Token temporário de deploy removido do ambiente local.
 - [x] Subir os commits para o GitHub *(Claude)* — 46 commits no GitHub em 09/10.
 - [x] Limpeza restrita do banco (backups vazios, user_assets, handle_new_user) *(outra IA (Codex))* — 12/10: Afonso rodou 20261011180000. Pentágono e slots preservados. Não ampliar sem comprovar desuso.
 
@@ -151,12 +161,12 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 ## Opcionais e expansão
 
 - [ ] Site: banner de cookie (opcional) *(outra IA (Codex))* — 13/10: o site não tem rastreador (nem Analytics, nem pixel); só guarda o que é do funcionamento. Pela LGPD isso não pede banner, só menção na Política de Privacidade. Volta se entrar analytics no site.
-- [x] Entregar campanha para outra pessoa pela mentoria *(Codex)* — mentor monta a campanha no sandbox, entrega ao mentorado e ele aceita ou recusa; depois pode editar os próprios horários. Implementado pelo fluxo de forja `forge_mentor_codex_for_pupil` e pelos slots de mentoria. O envio aberto por `@nickname`, sem vínculo de mentoria, continua uma expansão separada se um dia fizer sentido.
 - [ ] Tag ou link de perfil para adicionar amigo (depois) *(Afonso)* — 12/10: código/link do perfil para adicionar sem buscar o nome. 13/10: o Codex já fez Copiar nickname e o cartão compartilhado com “Me adicione no Glyph!”; o link direto segue como expansão.
 - [ ] Feed: ordem do Reino (depois) *(Afonso)* — 12/10: o feed tem duas abas sem repetição (Aliados = você e amigos; Reino = o resto), commit 8ce20b6. Depois: quem é do seu clã e não é amigo ganha preferência no Reino, e um filtro para não floodar quando houver gente. Atenção: o app baixa só os 80 posts mais novos de todos; com muita gente pública, posts de amigos podem sumir do Aliados.
 
-<details><summary>Feitos (1)</summary>
+<details><summary>Feitos (2)</summary>
 
+- [x] Entregar campanha para outra pessoa pela mentoria *(outra IA (Codex))* — Codex: o mentor monta a campanha no sandbox e entrega ao mentorado, que aceita ou recusa e depois pode editar os próprios horários (forge_mentor_codex_for_pupil e vagas de mentoria). O envio aberto por @nickname, sem vínculo de mentoria, fica como expansão separada se um dia fizer sentido.
 - [x] Jardim: cesta, tamanhos, guia — e fragmentos no Painel Diário (Codex, numa rodada só) *(outra IA (Codex))* — 18/10: no AAB 113 (228ba7f, Codex): saquinho do jardim, 7 expansões por fragmento, guia ilustrado, fragmentos do Painel Diário (1 por 50 EXP crua, até 15), busca de emojis e tons por arena. Os SQLs estão no banco (o Claude conferiu as tabelas em 18/10). Falta só ver no aparelho.
 
 </details>

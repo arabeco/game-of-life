@@ -1,6 +1,6 @@
 # Prancheta do Glyph
 
-Cópia da prancheta do Afonso (artefato no claude.ai: https://claude.ai/artifact/99dQUHcbX6dy4dcAuu2Dx6), regravada pelo Claude em **25/10/2026**, já com a consolidação do Codex de 13 e 14/10. **7 abertos de 109** (102 feitos).
+Cópia da prancheta do Afonso (artefato no claude.ai: https://claude.ai/artifact/99dQUHcbX6dy4dcAuu2Dx6), regravada pelo Claude em **25/10/2026**, já com a consolidação do Codex de 13 e 14/10. **7 abertos de 110** (103 feitos).
 
 **Uma lista só:** a fonte é a prancheta online, e este arquivo é regravado a partir dela. Não edite as listas abaixo; para avisar algo, escreva em "Recados da outra IA", no fim: o Claude lê e passa para a prancheta.
 
@@ -11,6 +11,7 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 ## Lançamento
 
 - [ ] AAB 116: gerar e subir na Play (build de lançamento) *(Afonso)* — O 115 (20/10, SHA-256 43752d3f…) saiu com dois problemas já corrigidos: grade das arenas (efb7d7c) e planner tremendo com o sensor (57de1f4). 25/10: a versão já está em 1.0.116 e há um app-release.aab de 25/10 09:26, mas ele foi gerado ANTES dos commits do catálogo de emojis (8f36e79) e do widget que imita o planner (c6eb60e). O 116 de lançamento precisa ser gerado de novo a partir do main atual (inclui o lote de 22/10 em 703a84e/170605c, o planner de 25/10 em 9b745db, o widget e os emojis). Gerar só quando o Afonso pedir. Depois: conferir no celular mentoria, jardim, arenas, planner (lembrete e nota por ocorrência) e o widget, e promover para Produção.
+- [ ] Ligar o código de lançamento PRIMEIRALUZ100 no dia do lançamento *(Afonso)* — 25/10: prêmio trocado para 1 baú Raro (sem ouro), 100 vagas, 1 por pessoa; SQL 20261025140000 rodado (a função vagas_do_codigo responde e não mostra código desligado). O site tem a página recompensas.html com o contador ao vivo, que só aparece com o código ligado. No dia: update public.reward_codes set is_active = true, starts_at = now(), updated_at = now() where code = 'PRIMEIRALUZ100';
 
 <details><summary>Feitos (16)</summary>
 
@@ -148,13 +149,12 @@ Auditoria do Codex: [conciliação de 13/10](2026-10-13-auditoria-prancheta.md).
 
 ## Git
 
-- [ ] Lembretes: tirar da chave pública a função que enfileira avisos *(outra IA (Codex))* — 25/10 (Claude): a função enqueue_due_action_reminder_notifications, da migração 20261025130000, é security definer e não tem revoke; a chave pública do site consegue chamá-la (respondeu 0 sem erro). Hoje ela só enfileira lembretes que já venceram, então o risco é baixo, mas o certo é revoke execute de anon e authenticated e deixar só o agendador. Precisa de um SQL novo para o Afonso rodar.
-
-<details><summary>Feitos (3)</summary>
+<details><summary>Feitos (4)</summary>
 
 - [x] Republicar a função oracle *(outra IA (Codex))* — 22/10 (Codex): publicada no projeto klmsdcncmhtgnlcejzdi. A leitura do ciclo do Oráculo agora segue a regra nova de missão e campanha (1a5b3a8). Token temporário de deploy removido do ambiente local.
 - [x] Subir os commits para o GitHub *(Claude)* — 46 commits no GitHub em 09/10.
 - [x] Limpeza restrita do banco (backups vazios, user_assets, handle_new_user) *(outra IA (Codex))* — 12/10: Afonso rodou 20261011180000. Pentágono e slots preservados. Não ampliar sem comprovar desuso.
+- [x] Lembretes: tirar da chave pública a função que enfileira avisos *(Claude)* — 25/10: resolvido. SQL 20261025150000_lembretes_so_pelo_agendador.sql escrito pelo Claude e rodado pelo Afonso (anon false, authenticated false, service_role true). Conferido com a chave pública: agora responde 401 permission denied. Os lembretes continuam saindo pelo agendador do banco (glyph-enqueue-action-reminders), que não depende desse grant.
 
 </details>
 

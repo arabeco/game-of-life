@@ -456,3 +456,6 @@ create table if not exists public.oracle_messages (id uuid primary key, user_id 
 create table if not exists public.friend_requests (id uuid primary key, sender_id uuid, recipient_id uuid, status text);
 create table if not exists public.seasons (id text primary key, name text);
 create table if not exists public.season_missions (id text primary key, season_id text, title text);
+
+-- Lembretes de acao (20260330170000 / 20261025130000): so a assinatura, para checar os revokes.
+create or replace function public.enqueue_due_action_reminder_notifications() returns integer language sql as $$ select 0 $$;

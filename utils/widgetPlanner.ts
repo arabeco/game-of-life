@@ -20,6 +20,10 @@ export interface BlocoDoWidget {
     duracao: number;
     feita: boolean;
     marco: boolean;
+    /** Acao Livre: o planner desenha como pilula. */
+    livre: boolean;
+    /** Tem lembrete; o planner mostra o sininho enquanto nao foi feita. */
+    lembrete: boolean;
     cores: [string, string];
 }
 
@@ -75,6 +79,12 @@ export function montarPlannerDoWidget({ tasks, actions, arenas, dataOperacional 
                 duracao,
                 feita: Boolean(task.completed),
                 marco: acao?.actionType === 'Marco',
+                livre: acao?.actionType === 'Livre',
+                // A mesma regra do PlannerView: o lembrete da ocorrencia manda;
+                // sem ele, vale o aviso configurado na acao.
+                lembrete: task.reminderEnabled === false
+                    ? false
+                    : task.reminderEnabled === true || Number(acao?.context?.schedule?.notifyBeforeMinutes) > 0,
                 cores: coresDoBloco(acao ? arenaPorId.get(acao.arenaId) : undefined),
             };
         })

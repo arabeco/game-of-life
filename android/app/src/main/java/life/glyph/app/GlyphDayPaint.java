@@ -36,7 +36,9 @@ import java.util.List;
  *
  * Os blocos copiam o PlannerView: degrade da area, pelicula escura, borda
  * tracejada cinza no que falta e branca no que foi feito, icone e nome, e o
- * check verde. Marco e o losango dourado.
+ * check verde. Desde 25/10, como o planner: Marco e um hexagono na cor da
+ * arena, acao Livre e uma pilula (tracejada branca enquanto agendada) e quem
+ * tem lembrete e ainda nao foi feito mostra o sininho no lugar do check.
  */
 final class GlyphDayPaint {
     /** A mesma escala do zoom 1 do app (PLANNER_ZOOM_FACTORS[1], em dp por minuto). */
@@ -55,10 +57,13 @@ final class GlyphDayPaint {
         final int duracao;
         final boolean feita;
         final boolean marco;
+        final boolean livre;
+        final boolean lembrete;
         final int corA;
         final int corB;
 
-        Bloco(String nome, String arena, String icone, int inicio, int duracao, boolean feita, boolean marco, int corA, int corB) {
+        Bloco(String nome, String arena, String icone, int inicio, int duracao, boolean feita, boolean marco,
+                boolean livre, boolean lembrete, int corA, int corB) {
             this.nome = nome;
             this.arena = arena;
             this.icone = icone;
@@ -66,6 +71,8 @@ final class GlyphDayPaint {
             this.duracao = duracao;
             this.feita = feita;
             this.marco = marco;
+            this.livre = livre;
+            this.lembrete = lembrete;
             this.corA = corA;
             this.corB = corB;
         }
@@ -205,9 +212,10 @@ final class GlyphDayPaint {
         for (Bloco bloco : blocos) {
             float topo = (bloco.inicio - inicio) * porMinuto;
             if (bloco.marco) {
-                float alto = Math.max(15 * porMinuto, bloco.duracao * porMinuto);
+                // Com nome e icone dentro, o marco usa o mesmo piso das tarefas.
+                float alto = Math.max(34 * porMinuto, bloco.duracao * porMinuto);
                 if (topo + alto < 0 || topo > altura) continue;
-                marco(canvas, d, new RectF(x0, topo, x1, topo + alto), bloco);
+                hexagono(canvas, d, new RectF(x0, topo, x1, topo + alto), bloco);
             } else {
                 // A faixa continua proporcional depois de 34 minutos. O piso
                 // so garante espaço físico para emoji e nome em ações curtas;
@@ -231,10 +239,11 @@ final class GlyphDayPaint {
     }
 
     private static void tarefa(Canvas canvas, float d, RectF caixa, Bloco bloco) {
-        float raio = Math.min(16 * d, caixa.height() / 2f);
+        // rounded-xl do planner (12/10 dp); a acao Livre e pilula inteira.
+        float raio = bloco.livre ? caixa.height() / 2f : Math.min(12 * d, caixa.height() / 2f);
         RectF dentro = new RectF(caixa.left + 2 * d, caixa.top + 2 * d, caixa.right - 2 * d, caixa.bottom - 2 * d);
         if (dentro.height() <= 0) dentro = new RectF(caixa);
-        float raioDentro = Math.min(14 * d, dentro.height() / 2f);
+        float raioDentro = bloco.livre ? dentro.height() / 2f : Math.min(10 * d, dentro.height() / 2f);
 
         Paint cor = new Paint(Paint.ANTI_ALIAS_FLAG);
         cor.setShader(new LinearGradient(dentro.left, dentro.top, dentro.right, dentro.bottom, bloco.corA, bloco.corB, Shader.TileMode.CLAMP));
@@ -259,12 +268,18 @@ final class GlyphDayPaint {
         if (bloco.feita) {
             borda.setColor(Color.argb(0x40, 255, 255, 255));
         } else {
-            borda.setColor(Color.parseColor("#4b5563"));
+            // Livre agendada: tracejado branco; as outras: o cinza de sempre.
+            borda.setColor(bloco.livre ? Color.argb(0x5c, 255, 255, 255) : Color.argb(0xcc, 0x6b, 0x72, 0x80));
             borda.setPathEffect(new DashPathEffect(new float[] { 4 * d, 3 * d }, 0));
         }
         RectF bordaCaixa = new RectF(caixa.left + d, caixa.top + d, caixa.right - d, caixa.bottom - d);
         canvas.drawRoundRect(bordaCaixa, raio, raio, borda);
 
+        conteudo(canvas, d, caixa, dentro, bloco);
+    }
+
+    /** Icone, nome e, na direita, o check (feita) ou o sininho (lembrete). */
+    private static void conteudo(Canvas canvas, float d, RectF caixa, RectF dentro, Bloco bloco) {
         // O piso da timeline já dá ~12dp. Nessa altura ainda cabem emoji e
         // texto pequeno; o antigo corte em 12dp fazia sumirem justamente as
         // ações abaixo de meia hora.
@@ -283,18 +298,23 @@ final class GlyphDayPaint {
         xTexto += seloRaio * 2 + 6 * d;
 
         float direita = dentro.right - 6 * d;
-        if (bloco.feita && caixa.height() >= 16 * d) {
+        boolean comSino = !bloco.feita && bloco.lembrete;
+        if ((bloco.feita || comSino) && caixa.height() >= 16 * d) {
             float r = Math.min(9 * d, caixa.height() / 2f - 2 * d);
             float cx = dentro.right - 4 * d - r;
             Paint circulo = new Paint(Paint.ANTI_ALIAS_FLAG);
             circulo.setColor(Color.argb(0x47, 0, 0, 0));
             canvas.drawCircle(cx, meio, r, circulo);
-            TextPaint check = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            check.setColor(Color.parseColor("#6ee7b7"));
-            check.setTextSize(r * 1.3f);
-            check.setTypeface(Typeface.DEFAULT_BOLD);
-            check.setTextAlign(Paint.Align.CENTER);
-            canvas.drawText("✓", cx, meio + check.getTextSize() * 0.36f, check);
+            if (bloco.feita) {
+                TextPaint check = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+                check.setColor(Color.parseColor("#6ee7b7"));
+                check.setTextSize(r * 1.3f);
+                check.setTypeface(Typeface.DEFAULT_BOLD);
+                check.setTextAlign(Paint.Align.CENTER);
+                canvas.drawText("✓", cx, meio + check.getTextSize() * 0.36f, check);
+            } else {
+                sininho(canvas, d, cx, meio, r);
+            }
             direita = cx - r - 4 * d;
         }
 
@@ -311,34 +331,63 @@ final class GlyphDayPaint {
         canvas.restore();
     }
 
-    private static void marco(Canvas canvas, float d, RectF caixa, Bloco bloco) {
-        Path losango = new Path();
-        losango.moveTo(caixa.centerX(), caixa.top);
-        losango.lineTo(caixa.right, caixa.centerY());
-        losango.lineTo(caixa.centerX(), caixa.bottom);
-        losango.lineTo(caixa.left, caixa.centerY());
-        losango.close();
+    /** O sininho do lembrete (o Bell do lucide, em ambar claro), dentro do circulo de raio r. */
+    private static void sininho(Canvas canvas, float d, float cx, float cy, float r) {
+        float s = r * 0.62f;
+        Paint traco = new Paint(Paint.ANTI_ALIAS_FLAG);
+        traco.setStyle(Paint.Style.STROKE);
+        traco.setStrokeWidth(Math.max(1f, 1.3f * d));
+        traco.setStrokeCap(Paint.Cap.ROUND);
+        traco.setStrokeJoin(Paint.Join.ROUND);
+        traco.setColor(Color.parseColor("#fef3c7"));
+        Path sino = new Path();
+        sino.moveTo(cx - s, cy + s * 0.45f);
+        sino.lineTo(cx - s * 0.72f, cy + s * 0.1f);
+        sino.lineTo(cx - s * 0.72f, cy - s * 0.25f);
+        sino.cubicTo(cx - s * 0.72f, cy - s * 0.95f, cx + s * 0.72f, cy - s * 0.95f, cx + s * 0.72f, cy - s * 0.25f);
+        sino.lineTo(cx + s * 0.72f, cy + s * 0.1f);
+        sino.lineTo(cx + s, cy + s * 0.45f);
+        sino.close();
+        canvas.drawPath(sino, traco);
+        canvas.drawLine(cx - s * 0.28f, cy + s * 0.8f, cx + s * 0.28f, cy + s * 0.8f, traco);
+    }
 
-        Paint ouro = new Paint(Paint.ANTI_ALIAS_FLAG);
-        ouro.setShader(new LinearGradient(caixa.left, caixa.top, caixa.right, caixa.bottom,
-                new int[] { Color.parseColor("#fbe7a6"), Color.parseColor("#d9b45a"), Color.parseColor("#a77d2c") },
-                new float[] { 0f, 0.5f, 1f }, Shader.TileMode.CLAMP));
-        ouro.setShadowLayer(6 * d, 0, 0, comAlfa(OURO, 0x99));
-        canvas.drawPath(losango, ouro);
+    /**
+     * Marco: o hexagono do PlannerView (cantos cortados em 5,5% da largura),
+     * na cor da arena, com a mesma pelicula, icone, nome e check/sininho.
+     */
+    private static void hexagono(Canvas canvas, float d, RectF caixa, Bloco bloco) {
+        float corte = Math.min(caixa.width() * 0.055f, caixa.height() / 2f);
+        Path forma = new Path();
+        forma.moveTo(caixa.left + corte, caixa.top);
+        forma.lineTo(caixa.right - corte, caixa.top);
+        forma.lineTo(caixa.right, caixa.centerY());
+        forma.lineTo(caixa.right - corte, caixa.bottom);
+        forma.lineTo(caixa.left + corte, caixa.bottom);
+        forma.lineTo(caixa.left, caixa.centerY());
+        forma.close();
+
+        Paint cor = new Paint(Paint.ANTI_ALIAS_FLAG);
+        cor.setShader(new LinearGradient(caixa.left, caixa.top, caixa.right, caixa.bottom, bloco.corA, bloco.corB, Shader.TileMode.CLAMP));
+        cor.setShadowLayer(5 * d, 0, 0, Color.argb(0x47, 0, 0, 0));
+        canvas.drawPath(forma, cor);
+
+        Paint pelicula = new Paint(Paint.ANTI_ALIAS_FLAG);
+        pelicula.setShader(new LinearGradient(caixa.left, caixa.top, caixa.right, caixa.bottom,
+                new int[] { Color.argb(0x1a, 255, 255, 255), Color.argb(0x1f, 10, 14, 23), Color.argb(0x38, 0, 0, 0) },
+                new float[] { 0f, 0.48f, 1f }, Shader.TileMode.CLAMP));
+        canvas.drawPath(forma, pelicula);
+
         if (bloco.feita) {
             Paint feita = new Paint(Paint.ANTI_ALIAS_FLAG);
-            feita.setColor(Color.argb(0x45, 255, 255, 255));
-            canvas.drawPath(losango, feita);
+            feita.setShader(new LinearGradient(caixa.left, caixa.top, caixa.right, caixa.bottom,
+                    new int[] { Color.argb(0x40, 255, 255, 255), Color.argb(0x0a, 255, 255, 255), Color.argb(0x2e, 8, 12, 20) },
+                    new float[] { 0f, 0.58f, 1f }, Shader.TileMode.CLAMP));
+            canvas.drawPath(forma, feita);
         }
 
-        if (caixa.height() < 14 * d) return;
-        TextPaint nome = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        nome.setColor(Color.parseColor("#241a07"));
-        nome.setTextSize(Math.min(11 * d, caixa.height() * 0.4f));
-        nome.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
-        nome.setTextAlign(Paint.Align.CENTER);
-        String texto = bloco.icone + " " + bloco.nome;
-        CharSequence cabe = TextUtils.ellipsize(texto, nome, caixa.width() * 0.5f, TextUtils.TruncateAt.END);
-        canvas.drawText(cabe, 0, cabe.length(), caixa.centerX(), caixa.centerY() + nome.getTextSize() * 0.35f, nome);
+        RectF dentro = new RectF(caixa.left + corte, caixa.top + 2 * d, caixa.right - corte, caixa.bottom - 2 * d);
+        if (dentro.height() <= 0) dentro = new RectF(caixa);
+        conteudo(canvas, d, caixa, dentro, bloco);
     }
 }

@@ -188,6 +188,8 @@ public class GlyphDayWidgetProvider extends AppWidgetProvider {
                             b.optInt("duracao", 30),
                             b.optBoolean("feita", false),
                             b.optBoolean("marco", false),
+                            b.optBoolean("livre", false),
+                            b.optBoolean("lembrete", false),
                             cor(cores, 0, "#2f3a46"),
                             cor(cores, 1, "#1f2730")));
                 }

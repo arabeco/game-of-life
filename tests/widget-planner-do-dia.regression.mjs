@@ -83,4 +83,30 @@ assert.match(pincel, /if \(caixa\.height\(\) < 9 \* d\) return/, 'ações curtas
 assert.doesNotMatch(pincel, /desenharAgenda/, 'o widget voltou para a lista fixa em vez da timeline');
 const manifesto = ler('android/app/src/main/AndroidManifest.xml');
 assert.doesNotMatch(manifesto, /GlyphBayWidgetService/, 'o servico da lista de concluir ainda esta no manifesto');
+// ---------------------------------------------------------------- o widget imita o planner de 25/10
+// O planner passou a desenhar Marco como hexagono na cor da arena, Livre como
+// pilula (tracejada enquanto agendada) e o sininho em quem tem lembrete e ainda
+// nao foi feito. O widget recebe isso pronto e desenha igual.
+{
+  const acoes = [
+    { id: 'a-livre', name: 'Ler', icon: '📖', arenaId: 'ar-corpo', actionType: 'Livre', context: { schedule: { notifyBeforeMinutes: 10 } } },
+    { id: 'a-rotina', name: 'Treino', icon: '🏋️', arenaId: 'ar-corpo', actionType: 'Rotina' },
+  ];
+  const tarefas = [
+    { id: 'l1', actionId: 'a-livre', date: HOJE, startTime: 8 * 60, duration: 30, completed: false },
+    { id: 'l2', actionId: 'a-rotina', date: HOJE, startTime: 9 * 60, duration: 30, completed: false, reminderEnabled: true },
+    { id: 'l3', actionId: 'a-livre', date: HOJE, startTime: 10 * 60, duration: 30, completed: false, reminderEnabled: false },
+    { id: 'l4', actionId: 'a-rotina', date: HOJE, startTime: 11 * 60, duration: 30, completed: false },
+  ];
+  const { blocos: b } = montarPlannerDoWidget({ tasks: tarefas, actions: acoes, arenas, dataOperacional: HOJE });
+  assert.deepEqual(b.map((x) => x.livre), [true, false, true, false], 'o bloco nao diz se a acao e Livre');
+  assert.deepEqual(b.map((x) => x.lembrete), [true, true, false, false], 'o bloco nao diz se tem lembrete (mesma regra do planner)');
+  assert.match(provedor, /b\.optBoolean\("livre", false\)/, 'o widget nao le o Livre do snapshot');
+  assert.match(provedor, /b\.optBoolean\("lembrete", false\)/, 'o widget nao le o lembrete do snapshot');
+  assert.doesNotMatch(pincel, /Path losango/, 'o Marco do widget ainda e o losango dourado');
+  assert.match(pincel, /hexagono\(/, 'o Marco do widget nao e o hexagono do planner');
+  assert.match(pincel, /bloco\.livre/, 'o widget nao desenha a pilula da acao Livre');
+  assert.match(pincel, /sininho\(/, 'o widget nao desenha o sininho de lembrete');
+  console.log('ok - widget com hexagono de marco, pilula de Livre e sininho de lembrete');
+}
 console.log('Widget do dia: vitrine com Resumo e Planner, sem concluir e sem login.');

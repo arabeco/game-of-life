@@ -293,12 +293,12 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_border_t1_aprendiz', name: 'Aprendiz', category: 'border', tier: 1, rarity: 'common', icon: '🎓', imageUrl: `${INTERFACE_BASE_URL}/borda_t1_aprendiz.png`, isRankExclusive: true },
 
     // T2
-    { id: 'item_border_1_002', name: 'Disciplinado', category: 'border', tier: 2, rarity: 'uncommon', icon: '📘', imageUrl: `${INTERFACE_BASE_URL}/borda_disciplinado.png`, isRuleExclusive: true },
-    { id: 'item_border_2_001', name: 'Popular', category: 'border', tier: 2, rarity: 'uncommon', icon: '🌟', imageUrl: `${INTERFACE_BASE_URL}/borda_popular.png`, isRuleExclusive: true },
-    { id: 'item_border_t2_veterano', name: 'Veterano', category: 'border', tier: 2, rarity: 'uncommon', icon: '🎖️', imageUrl: `${INTERFACE_BASE_URL}/borda_t2_veterano.png`, isRuleExclusive: true },
+    { id: 'item_border_1_002', name: 'Disciplinado', category: 'border', tier: 4, rarity: 'epic', icon: '📘', imageUrl: `${INTERFACE_BASE_URL}/borda_disciplinado.png`, isRuleExclusive: true },
+    { id: 'item_border_2_001', name: 'Popular', category: 'border', tier: 3, rarity: 'rare', icon: '🌟', imageUrl: `${INTERFACE_BASE_URL}/borda_popular.png`, isRuleExclusive: true },
+    { id: 'item_border_t2_veterano', name: 'Veterano', category: 'border', tier: 3, rarity: 'rare', icon: '🎖️', imageUrl: `${INTERFACE_BASE_URL}/borda_t2_veterano.png`, isRuleExclusive: true },
 
     // T3
-    { id: 'item_border_3_001', name: 'Imparável', category: 'border', tier: 3, rarity: 'rare', icon: '🚀', imageUrl: `${INTERFACE_BASE_URL}/borda_imparavel.png`, isRuleExclusive: true },
+    { id: 'item_border_3_001', name: 'Imparável', category: 'border', tier: 4, rarity: 'epic', icon: '🚀', imageUrl: `${INTERFACE_BASE_URL}/borda_imparavel.png`, isRuleExclusive: true },
     { id: 'item_border_t3_mistico', name: 'Místico', category: 'border', tier: 3, rarity: 'rare', icon: '🔮', imageUrl: `${INTERFACE_BASE_URL}/borda_t3_mistico.png`, isRuleExclusive: true },
     { id: 'item_border_t4_oraculo', name: 'Oráculo', category: 'border', tier: 3, rarity: 'rare', icon: '👁️', imageUrl: `${INTERFACE_BASE_URL}/borda_t4_oraculo.png`, isRuleExclusive: true },
     { id: 'item_border_vanguarda_01', name: 'Borda Vanguarda', category: 'border', tier: 3, rarity: 'rare', icon: '🛡️', imageUrl: `${INTERFACE_BASE_URL}/borda_vanguarda.png`, isRankExclusive: true },
@@ -325,12 +325,12 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_banner_t1_aprendiz', name: 'Aprendiz', category: 'banner', tier: 1, rarity: 'common', icon: '🎓', imageUrl: `${INTERFACE_BASE_URL}/banner_t1_aprendiz.png`, isRankExclusive: true },
 
     // T2
-    { id: 'item_banner_disciplinado', name: 'Disciplinado', category: 'banner', tier: 2, rarity: 'uncommon', icon: '📘', imageUrl: `${INTERFACE_BASE_URL}/banner_disciplinado.png`, isRuleExclusive: true },
-    { id: 'item_banner_popular', name: 'Popular', category: 'banner', tier: 2, rarity: 'uncommon', icon: '🌟', imageUrl: `${INTERFACE_BASE_URL}/banner_popular.png`, isRuleExclusive: true },
-    { id: 'item_banner_t2_veterano', name: 'Veterano', category: 'banner', tier: 2, rarity: 'uncommon', icon: '🎖️', imageUrl: `${INTERFACE_BASE_URL}/banner_t2_veterano.png`, isRuleExclusive: true },
+    { id: 'item_banner_disciplinado', name: 'Disciplinado', category: 'banner', tier: 4, rarity: 'epic', icon: '📘', imageUrl: `${INTERFACE_BASE_URL}/banner_disciplinado.png`, isRuleExclusive: true },
+    { id: 'item_banner_popular', name: 'Popular', category: 'banner', tier: 3, rarity: 'rare', icon: '🌟', imageUrl: `${INTERFACE_BASE_URL}/banner_popular.png`, isRuleExclusive: true },
+    { id: 'item_banner_t2_veterano', name: 'Veterano', category: 'banner', tier: 3, rarity: 'rare', icon: '🎖️', imageUrl: `${INTERFACE_BASE_URL}/banner_t2_veterano.png`, isRuleExclusive: true },
 
     // T3
-    { id: 'item_banner_imparavel', name: 'Imparável', category: 'banner', tier: 3, rarity: 'rare', icon: '🚀', imageUrl: `${INTERFACE_BASE_URL}/banner_imparavel.png`, isRuleExclusive: true },
+    { id: 'item_banner_imparavel', name: 'Imparável', category: 'banner', tier: 4, rarity: 'epic', icon: '🚀', imageUrl: `${INTERFACE_BASE_URL}/banner_imparavel.png`, isRuleExclusive: true },
     { id: 'item_banner_t3_mistico', name: 'Místico', category: 'banner', tier: 3, rarity: 'rare', icon: '🔮', imageUrl: `${INTERFACE_BASE_URL}/banner_t3_mistico.png`, isRuleExclusive: true },
     { id: 'item_banner_t4_oraculo', name: 'Oráculo', category: 'banner', tier: 3, rarity: 'rare', icon: '👁️', imageUrl: `${INTERFACE_BASE_URL}/banner_t4_oraculo.png`, isRuleExclusive: true },
     { id: 'item_banner_vanguarda_01', name: 'Banner Vanguarda', category: 'banner', tier: 3, rarity: 'rare', icon: '🚀', imageUrl: `${INTERFACE_BASE_URL}/banner_vanguarda.png`, isRankExclusive: true },

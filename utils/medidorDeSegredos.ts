@@ -1,4 +1,4 @@
-import { REGRAS_DE_DESBLOQUEIO, type CondicaoDeDesbloqueio, type RegraDeDesbloqueio } from '../constants/desbloqueiosPorRegra';
+import { REGRAS_DE_DESBLOQUEIO, expDaRegra, type CondicaoDeDesbloqueio, type RegraDeDesbloqueio } from '../constants/desbloqueiosPorRegra';
 import { LIFE_AREAS } from '../constants/lifeAreas';
 import { resolveItemDef } from '../constants/items';
 
@@ -13,6 +13,9 @@ export { REGRAS_DE_DESBLOQUEIO };
  */
 
 export const MARCA_DE_SEGREDO = 'segredo:';
+/** EXP do segredo ja pago. Separado da descoberta porque as regras antigas
+ *  foram descobertas antes de dar EXP (26/10/2026) e pagam depois. */
+export const MARCA_DE_EXP_DO_SEGREDO = 'segredo-exp:';
 
 export interface CicloFechadoResumo {
     fim: string;
@@ -35,6 +38,11 @@ export interface FatosDeSegredo {
     competicoesVencidas: number;
     missoesDoOraculo: number;
     mentoriasAteOFim: number;
+    /** 26/10/2026. Faltam em quem ainda nao rodou a migracao: contam como zero. */
+    diasEntrePrimeiraEUltimaAcao?: number;
+    maiorRepeticaoDeAcao?: number;
+    diasComMaisDe350Exp?: number;
+    arenasConcluidasComMeta?: number;
     ciclos: CicloFechadoResumo[];
 }
 
@@ -95,6 +103,17 @@ export const condicaoCumprida = (condicao: CondicaoDeDesbloqueio, fatos: FatosDe
             return fatos.diasSeguidosComCincoAreas >= condicao.dias;
         case 'ciclo_com_nota':
             return ciclos.some((c) => notaAlcanca(c.nota, condicao.nota));
+        case 'dias_entre_primeira_e_ultima_acao':
+            return Number(fatos.diasEntrePrimeiraEUltimaAcao || 0) >= condicao.dias;
+        case 'mesma_acao_repetida':
+            return Number(fatos.maiorRepeticaoDeAcao || 0) >= condicao.vezes;
+        case 'ciclos_longos':
+            return ciclos.filter((c) => Number(c.dias) >= condicao.diasMinimos).length >= condicao.quantos;
+        case 'arenas_com_meta_concluidas':
+            return Number(fatos.arenasConcluidasComMeta || 0) >= condicao.quantas;
+        case 'dias_com_exp':
+            // A leitura do banco ja vem com o corte de 350; outro corte pediria outra leitura.
+            return condicao.exp === 350 && Number(fatos.diasComMaisDe350Exp || 0) >= condicao.dias;
         default:
             return false;
     }
@@ -106,6 +125,17 @@ export const lerDescobertas = (marcas?: string[] | null): Set<string> => new Set
         .filter((marca) => typeof marca === 'string' && marca.startsWith(MARCA_DE_SEGREDO))
         .map((marca) => marca.slice(MARCA_DE_SEGREDO.length)),
 );
+
+/** As regras cujo EXP ja foi pago, lidas das marcas `segredo-exp:<id>`. */
+export const lerExpPago = (marcas?: string[] | null): Set<string> => new Set(
+    (marcas || [])
+        .filter((marca) => typeof marca === 'string' && marca.startsWith(MARCA_DE_EXP_DO_SEGREDO))
+        .map((marca) => marca.slice(MARCA_DE_EXP_DO_SEGREDO.length)),
+);
+
+/** Descobertas que ainda nao pagaram EXP: as de antes de 26/10/2026. */
+export const expPendente = (regras: RegraDeDesbloqueio[], descobertas: Set<string>, pagos: Set<string>) =>
+    regras.filter((regra) => descobertas.has(regra.id) && !pagos.has(regra.id));
 
 /**
  * O que destravou agora: cumprida, ainda nao descoberta, e com o premio inteiro
@@ -144,7 +174,7 @@ export const montarModalDeSegredos = (regras: RegraDeDesbloqueio[], entrega?: { 
             : `${regras.length} segredos descobertos. Eles estão em Missões, em Segredos.`,
         icon: '\u{1F513}',
         reward: {
-            exp: 0,
+            exp: regras.reduce((soma, regra) => soma + expDaRegra(regra), 0),
             items: itens,
             ownedItems: entrega?.ownedItems || [],
             convertedItems: entrega?.convertedItems || [],

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { supabase } from '../supabaseClient';
-import { REGRAS_DE_DESBLOQUEIO } from '../constants/desbloqueiosPorRegra';
+import { REGRAS_DE_DESBLOQUEIO, expDaRegra, type RegraDeDesbloqueio } from '../constants/desbloqueiosPorRegra';
 import { isItemCatalogVisible, resolveItemDef } from '../constants/items';
 import type { UnlockCategory, UserUnlocks } from '../types';
-import { MARCA_DE_SEGREDO, lerDescobertas, montarModalDeSegredos, novasConquistas, type FatosDeSegredo } from '../utils/medidorDeSegredos';
+import { MARCA_DE_EXP_DO_SEGREDO, MARCA_DE_SEGREDO, expPendente, lerDescobertas, lerExpPago, montarModalDeSegredos, novasConquistas, type FatosDeSegredo } from '../utils/medidorDeSegredos';
 import { EVENTO_DE_SEGREDO, criarFilaDeSegredos, regraEscutaEvento, type EventoDeSegredo } from '../utils/eventosDeSegredos';
 
 const CATEGORIA_DE_DESBLOQUEIO: Record<string, UnlockCategory> = { border: 'borders', banner: 'banners', skin: 'skins' };
@@ -29,6 +29,27 @@ export const useConquistasSecretas = ({ pausado }: { pausado: boolean }) => {
         const itensEntregues = new Set<string>();
         const vigente = () => !encerrado && api.current.userProfile.id === userId;
         const descobertas = () => new Set([...lerDescobertas(api.current.userProfile.completedSeasonMissions), ...descobertasSessao]);
+        const expPagoSessao = new Set<string>();
+        const pagos = () => new Set([...lerExpPago(api.current.userProfile.completedSeasonMissions), ...expPagoSessao]);
+        const somaDeExp = (regras: RegraDeDesbloqueio[]) => regras.reduce((soma, regra) => soma + expDaRegra(regra), 0);
+
+        // EXP dos segredos (26/10/2026). As regras descobertas antes disso
+        // pagam aqui, uma vez, sem modal: o modal delas ja passou.
+        const pagarAtrasados = async () => {
+            const atrasadas = expPendente(REGRAS_DE_DESBLOQUEIO, descobertas(), pagos());
+            if (!atrasadas.length) return;
+            const soma = somaDeExp(atrasadas);
+            const perfil = api.current.userProfile;
+            await api.current.updateUserProfile({
+                nobility: { ...perfil.nobility, exp: (perfil.nobility?.exp || 0) + soma },
+                completedSeasonMissions: Array.from(new Set([
+                    ...(perfil.completedSeasonMissions || []),
+                    ...atrasadas.map(regra => MARCA_DE_EXP_DO_SEGREDO + regra.id),
+                ])),
+            });
+            atrasadas.forEach(regra => expPagoSessao.add(regra.id));
+            if (soma > 0) api.current.showToast(`Segredos já descobertos agora dão EXP: +${soma.toLocaleString('pt-BR')}.`, 'success');
+        };
 
         // Mentoria vence pelo relógio, sem depender de tocar em uma tela.
         // Só busca o próximo prazo, sem carregar arenas/páginas ou polling contínuo.
@@ -46,6 +67,8 @@ export const useConquistasSecretas = ({ pausado }: { pausado: boolean }) => {
         };
 
         const fila = criarFilaDeSegredos(async eventos => {
+            if (!vigente()) return;
+            if (eventos.has('recuperacao')) await pagarAtrasados();
             if (!vigente()) return;
             const regras = REGRAS_DE_DESBLOQUEIO.filter(r => regraEscutaEvento(r.condicao, eventos) && !descobertas().has(r.id));
             if (!regras.length) return;
@@ -93,14 +116,17 @@ export const useConquistasSecretas = ({ pausado }: { pausado: boolean }) => {
                 }
                 await api.current.updateUserProfile({
                     unlockedItems: desbloqueios,
+                    nobility: { ...perfil.nobility, exp: (perfil.nobility?.exp || 0) + somaDeExp(novas) },
                     completedSeasonMissions: Array.from(new Set([
                         ...(perfil.completedSeasonMissions || []),
                         ...Array.from(descobertasSessao, id => MARCA_DE_SEGREDO + id),
                         ...novas.map(regra => MARCA_DE_SEGREDO + regra.id),
+                        ...Array.from(expPagoSessao, id => MARCA_DE_EXP_DO_SEGREDO + id),
+                        ...novas.map(regra => MARCA_DE_EXP_DO_SEGREDO + regra.id),
                     ])),
                 });
                 if (!vigente()) return;
-                novas.forEach(regra => descobertasSessao.add(regra.id));
+                novas.forEach(regra => { descobertasSessao.add(regra.id); expPagoSessao.add(regra.id); });
                 setModais(prev => [...prev, { userId, modal: montarModalDeSegredos(novas, entrega) }]);
             }
             if (eventos.has('recuperacao') || eventos.has('vinculo')) await agendarMentoria();

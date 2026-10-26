@@ -30,6 +30,14 @@ import type { LifeAreaId } from './lifeAreas';
  *
  * Peca de regra sai SO pela regra: `isRuleExclusive` no catalogo a tira da
  * loja, do bau e da forja. O tests/regras-de-desbloqueio guarda isso.
+ *
+ * Em 26/10/2026 (decidido com o Afonso) vieram as de MEIO E FIM DE JOGO: treze
+ * novas, e EXP em todas, pela raridade (EXP_POR_RARIDADE). Quatro pares sairam
+ * de missoes pequenas e foram para as grandes do mesmo tema, levando o nome e
+ * subindo de raridade: Popular (5 -> 10 amigos), Veterano (3 meses -> 1 ano),
+ * Disciplinado (1 ciclo A -> 100 dias fortes) e Imparavel (30 -> 100 dias
+ * seguidos). As pequenas mantem o id — a condicao e a mesma, entao quem ja a
+ * cumpriu continua com ela — e passam a dar so EXP, com nome novo.
  */
 
 /**
@@ -79,16 +87,40 @@ export type CondicaoDeDesbloqueio =
     /** N dias seguidos com acao concluida nas cinco areas. */
     | { tipo: 'dias_seguidos_com_as_cinco_areas'; dias: number }
     /** Um ciclo que selou esta nota, ou acima. */
-    | { tipo: 'ciclo_com_nota'; nota: 'A' | 'S' | 'SS' | 'SSS' };
+    | { tipo: 'ciclo_com_nota'; nota: 'A' | 'S' | 'SS' | 'SSS' }
+    /** N dias entre a primeira e a ultima acao concluida. Esperar sem jogar
+     *  nao conta: a ultima acao tem de existir. */
+    | { tipo: 'dias_entre_primeira_e_ultima_acao'; dias: number }
+    /** A MESMA acao (mesmo id) concluida N vezes. Copiar a arena recomeca. */
+    | { tipo: 'mesma_acao_repetida'; vezes: number }
+    /** N ciclos fechados com pelo menos `diasMinimos` dias cada. */
+    | { tipo: 'ciclos_longos'; quantos: number; diasMinimos: number }
+    /** N arenas concluidas com meta final. */
+    | { tipo: 'arenas_com_meta_concluidas'; quantas: number }
+    /** N dias em que o fecho do dia depositou mais de `exp` de EXP. */
+    | { tipo: 'dias_com_exp'; dias: number; exp: number };
+
+export type RaridadeDaRegra = 'comum' | 'incomum' | 'raro' | 'epico' | 'lendario';
+
+/** O EXP de cada missao secreta vem da raridade dela (26/10/2026). */
+export const EXP_POR_RARIDADE: Record<RaridadeDaRegra, number> = {
+    comum: 1000,
+    incomum: 3000,
+    raro: 5000,
+    epico: 10000,
+    lendario: 20000,
+};
 
 export interface RegraDeDesbloqueio {
     /** O que fica gravado como `segredo:<id>` no perfil. Nunca muda: trocar o id
      *  de uma regra ja descoberta faria ela ser descoberta de novo. */
     id: string;
-    /** O nome do premio: a borda e o banner do par, ou a roupa. */
+    /** O nome da missao: o do par ou da roupa, quando ela da um. */
     nome: string;
-    /** O par, ou a roupa sozinha. */
+    /** O par, a roupa sozinha, ou nada (missao so de EXP). */
     itens: string[];
+    /** A dificuldade, que decide o EXP (EXP_POR_RARIDADE). */
+    raridade: RaridadeDaRegra;
     condicao: CondicaoDeDesbloqueio;
     /** O que o modal diz quando cumpre. Frase curta, no que a pessoa fez — nao
      *  no que o sistema registrou. */
@@ -102,29 +134,33 @@ export const REGRAS_DE_DESBLOQUEIO: RegraDeDesbloqueio[] = [
         // utils/cycleGrade.js —, entao a regra pede as duas coisas. Decidido em
         // 06/10/2026.
         id: 'disciplinado',
-        nome: 'Disciplinado',
-        itens: ['item_border_1_002', 'item_banner_disciplinado'],
+        nome: 'Primeiro Selo',
+        itens: [],
+        raridade: 'incomum',
         condicao: { tipo: 'ciclo_sem_falha', notaMinima: 'A' },
         frase: 'Feche um ciclo com nota A ou mais, sem deixar nenhuma ação para trás',
     },
     {
         id: 'popular',
-        nome: 'Popular',
-        itens: ['item_border_2_001', 'item_banner_popular'],
+        nome: 'Enturmado',
+        itens: [],
+        raridade: 'incomum',
         condicao: { tipo: 'amizades', quantas: 5 },
         frase: 'Faça cinco amizades no Glyph',
     },
     {
         id: 'veterano',
-        nome: 'Veterano',
-        itens: ['item_border_t2_veterano', 'item_banner_t2_veterano'],
+        nome: 'Estações',
+        itens: [],
+        raridade: 'incomum',
         condicao: { tipo: 'ciclos_em_meses_distintos', quantos: 3 },
         frase: 'Feche ciclos em três meses diferentes',
     },
     {
         id: 'imparavel',
-        nome: 'Imparável',
-        itens: ['item_border_3_001', 'item_banner_imparavel'],
+        nome: 'Constante',
+        itens: [],
+        raridade: 'raro',
         condicao: { tipo: 'sequencia_de_dias', dias: 30 },
         frase: 'Conclua ações em trinta dias seguidos',
     },
@@ -134,6 +170,7 @@ export const REGRAS_DE_DESBLOQUEIO: RegraDeDesbloqueio[] = [
         id: 'mistico',
         nome: 'Místico',
         itens: ['item_border_t3_mistico', 'item_banner_t3_mistico'],
+        raridade: 'raro',
         condicao: { tipo: 'arenas_da_area_no_ciclo', area: 'proposito', quantas: 2 },
         frase: 'Feche duas arenas de Propósito no mesmo ciclo',
     },
@@ -141,6 +178,7 @@ export const REGRAS_DE_DESBLOQUEIO: RegraDeDesbloqueio[] = [
         id: 'transcendente',
         nome: 'Transcendente',
         itens: ['item_border_t3_transcendente', 'item_banner_t4_transcendente'],
+        raridade: 'epico',
         condicao: { tipo: 'ciclo_com_volume', acoes: 100, conclusaoMinima: 90 },
         frase: 'Planeje cem ações num ciclo e conclua noventa por cento delas',
     },
@@ -148,6 +186,7 @@ export const REGRAS_DE_DESBLOQUEIO: RegraDeDesbloqueio[] = [
         id: 'celestial',
         nome: 'Celestial',
         itens: ['item_border_t4_celestial', 'item_banner_t4_celestial'],
+        raridade: 'epico',
         condicao: { tipo: 'arena_em_cada_area_no_ciclo' },
         frase: 'Feche uma arena em cada uma das cinco áreas, no mesmo ciclo',
     },
@@ -155,6 +194,7 @@ export const REGRAS_DE_DESBLOQUEIO: RegraDeDesbloqueio[] = [
         id: 'guardia',
         nome: 'Guardiã',
         itens: ['item_border_t4_guardia', 'item_banner_t4_guardia'],
+        raridade: 'epico',
         condicao: { tipo: 'mentorias_concluidas', quantas: 2 },
         frase: 'Leve duas mentorias até o fim',
     },
@@ -162,6 +202,7 @@ export const REGRAS_DE_DESBLOQUEIO: RegraDeDesbloqueio[] = [
         id: 'oraculo',
         nome: 'Oráculo',
         itens: ['item_border_t4_oraculo', 'item_banner_t4_oraculo'],
+        raridade: 'raro',
         condicao: { tipo: 'missoes_individuais', quantas: 2 },
         frase: 'Cumpra duas missões individuais do Oráculo',
     },
@@ -169,6 +210,7 @@ export const REGRAS_DE_DESBLOQUEIO: RegraDeDesbloqueio[] = [
         id: 'lenda-viva',
         nome: 'Lenda Viva',
         itens: ['item_border_4_001', 'item_banner_lendaviva'],
+        raridade: 'epico',
         condicao: { tipo: 'acoes_concluidas', quantas: 1000 },
         frase: 'Conclua mil ações',
     },
@@ -178,6 +220,7 @@ export const REGRAS_DE_DESBLOQUEIO: RegraDeDesbloqueio[] = [
         id: 'escriba',
         nome: 'Escriba',
         itens: ['item_skin_1_012'],
+        raridade: 'comum',
         condicao: { tipo: 'paginas_do_diario', quantas: 10 },
         frase: 'Escreva dez páginas no seu diário',
     },
@@ -185,6 +228,7 @@ export const REGRAS_DE_DESBLOQUEIO: RegraDeDesbloqueio[] = [
         id: 'maratona',
         nome: 'Maratona',
         itens: ['item_skin_2_010'],
+        raridade: 'incomum',
         condicao: { tipo: 'dia_com_acoes', quantas: 12 },
         frase: 'Conclua doze ações num dia só',
     },
@@ -192,6 +236,7 @@ export const REGRAS_DE_DESBLOQUEIO: RegraDeDesbloqueio[] = [
         id: 'anciao',
         nome: 'Ancião',
         itens: ['item_skin_3_009'],
+        raridade: 'raro',
         condicao: { tipo: 'ciclos_fechados', quantos: 12 },
         frase: 'Feche doze ciclos',
     },
@@ -199,6 +244,7 @@ export const REGRAS_DE_DESBLOQUEIO: RegraDeDesbloqueio[] = [
         id: 'campeao',
         nome: 'Campeão',
         itens: ['item_skin_4_005'],
+        raridade: 'epico',
         condicao: { tipo: 'competicoes_vencidas', quantas: 3 },
         frase: 'Vença três competições',
     },
@@ -207,6 +253,7 @@ export const REGRAS_DE_DESBLOQUEIO: RegraDeDesbloqueio[] = [
         id: 'imperador',
         nome: 'Imperador',
         itens: ['item_skin_5_003'],
+        raridade: 'lendario',
         condicao: { tipo: 'acoes_concluidas', quantas: 5000 },
         frase: 'Conclua cinco mil ações',
     },
@@ -214,6 +261,7 @@ export const REGRAS_DE_DESBLOQUEIO: RegraDeDesbloqueio[] = [
         id: 'sereno',
         nome: 'Sereno',
         itens: ['item_border_t2_sereno', 'item_banner_t2_sereno'],
+        raridade: 'incomum',
         condicao: { tipo: 'dias_de_humor', dias: 30 },
         frase: 'Registre seu humor em trinta dias',
     },
@@ -221,6 +269,7 @@ export const REGRAS_DE_DESBLOQUEIO: RegraDeDesbloqueio[] = [
         id: 'alvorada',
         nome: 'Alvorada',
         itens: ['item_border_t3_alvorada', 'item_banner_t3_alvorada'],
+        raridade: 'raro',
         condicao: { tipo: 'acoes_antes_das_sete_numa_semana', quantas: 10 },
         frase: 'Conclua dez ações antes das sete, numa semana só',
     },
@@ -228,6 +277,7 @@ export const REGRAS_DE_DESBLOQUEIO: RegraDeDesbloqueio[] = [
         id: 'prisma',
         nome: 'Prisma',
         itens: ['item_border_t3_prisma', 'item_banner_t3_prisma'],
+        raridade: 'raro',
         condicao: { tipo: 'dias_seguidos_com_as_cinco_areas', dias: 14 },
         frase: 'Toque as cinco áreas por catorze dias seguidos',
     },
@@ -236,6 +286,7 @@ export const REGRAS_DE_DESBLOQUEIO: RegraDeDesbloqueio[] = [
         id: 'profeta',
         nome: 'Profeta',
         itens: ['item_border_t4_profeta', 'item_banner_t4_profeta'],
+        raridade: 'epico',
         condicao: { tipo: 'missoes_individuais', quantas: 5 },
         frase: 'Cumpra cinco missões individuais do Oráculo',
     },
@@ -243,8 +294,117 @@ export const REGRAS_DE_DESBLOQUEIO: RegraDeDesbloqueio[] = [
         id: 'pedra-da-lua',
         nome: 'Pedra da Lua',
         itens: ['item_border_t5_pedra_da_lua', 'item_banner_t5_pedra_da_lua'],
+        raridade: 'lendario',
         condicao: { tipo: 'ciclo_com_nota', nota: 'SSS' },
         frase: 'Feche um ciclo com nota SSS',
+    },
+
+    // --- MEIO E FIM DE JOGO (26/10/2026) ---
+    // Os quatro pares que vieram das pequenas, com o nome junto.
+    {
+        id: 'popular-de-verdade',
+        nome: 'Popular',
+        itens: ['item_border_2_001', 'item_banner_popular'],
+        raridade: 'raro',
+        condicao: { tipo: 'amizades', quantas: 10 },
+        frase: 'Tenha dez amizades no Glyph',
+    },
+    {
+        id: 'veterano-de-um-ano',
+        nome: 'Veterano',
+        itens: ['item_border_t2_veterano', 'item_banner_t2_veterano'],
+        raridade: 'raro',
+        condicao: { tipo: 'dias_entre_primeira_e_ultima_acao', dias: 365 },
+        frase: 'Conclua ações com um ano de distância entre a primeira e a última',
+    },
+    {
+        id: 'disciplinado-cem-dias',
+        nome: 'Disciplinado',
+        itens: ['item_border_1_002', 'item_banner_disciplinado'],
+        raridade: 'epico',
+        condicao: { tipo: 'dias_com_exp', dias: 100, exp: 350 },
+        frase: 'Feche cem dias com mais de 350 de EXP',
+    },
+    {
+        id: 'imparavel-cem-dias',
+        nome: 'Imparável',
+        itens: ['item_border_3_001', 'item_banner_imparavel'],
+        raridade: 'epico',
+        condicao: { tipo: 'sequencia_de_dias', dias: 100 },
+        frase: 'Conclua ações em cem dias seguidos',
+    },
+    // As novas, so EXP.
+    {
+        id: 'cronista',
+        nome: 'Cronista',
+        itens: [],
+        raridade: 'incomum',
+        condicao: { tipo: 'ciclos_longos', quantos: 10, diasMinimos: 7 },
+        frase: 'Feche dez ciclos de sete dias ou mais',
+    },
+    {
+        id: 'inabalavel',
+        nome: 'Inabalável',
+        itens: [],
+        raridade: 'raro',
+        condicao: { tipo: 'sequencia_de_dias', dias: 50 },
+        frase: 'Conclua ações em cinquenta dias seguidos',
+    },
+    {
+        id: 'ritual',
+        nome: 'Ritual',
+        itens: [],
+        raridade: 'raro',
+        condicao: { tipo: 'mesma_acao_repetida', vezes: 100 },
+        frase: 'Conclua a mesma ação cem vezes',
+    },
+    {
+        id: 'trofeus',
+        nome: 'Troféus',
+        itens: [],
+        raridade: 'raro',
+        condicao: { tipo: 'arenas_com_meta_concluidas', quantas: 5 },
+        frase: 'Conclua cinco arenas com meta final',
+    },
+    {
+        id: 'mil-e-um',
+        nome: 'Mil e Um',
+        itens: [],
+        raridade: 'epico',
+        condicao: { tipo: 'acoes_concluidas', quantas: 2000 },
+        frase: 'Conclua duas mil ações',
+    },
+    {
+        id: 'liturgia',
+        nome: 'Liturgia',
+        itens: [],
+        raridade: 'epico',
+        condicao: { tipo: 'mesma_acao_repetida', vezes: 250 },
+        frase: 'Conclua a mesma ação duzentas e cinquenta vezes',
+    },
+    {
+        id: 'galeria',
+        nome: 'Galeria',
+        itens: [],
+        raridade: 'epico',
+        condicao: { tipo: 'arenas_com_meta_concluidas', quantas: 10 },
+        frase: 'Conclua dez arenas com meta final',
+    },
+    {
+        id: 'era',
+        nome: 'Era',
+        itens: [],
+        raridade: 'lendario',
+        condicao: { tipo: 'ciclos_longos', quantos: 50, diasMinimos: 7 },
+        frase: 'Feche cinquenta ciclos de sete dias ou mais',
+    },
+    {
+        id: 'fornalha',
+        nome: 'Fornalha',
+        itens: [],
+        raridade: 'lendario',
+        condicao: { tipo: 'dias_com_exp', dias: 200, exp: 350 },
+        frase: 'Feche duzentos dias com mais de 350 de EXP',
     },
 ];
 
@@ -256,6 +416,9 @@ export const REGRAS_DE_DESBLOQUEIO: RegraDeDesbloqueio[] = [
  * faria a lista de regras mentir sobre o proprio tamanho.
  */
 export const ITENS_DA_VANGUARDA = ['item_border_vanguarda_01', 'item_banner_vanguarda_01'];
+
+/** O EXP que a regra paga. */
+export const expDaRegra = (regra: Pick<RegraDeDesbloqueio, 'raridade'>): number => EXP_POR_RARIDADE[regra.raridade] || 0;
 
 /** Todo item que alguma regra libera, para quem precisa so da lista. */
 export const ITENS_LIBERADOS_POR_REGRA = new Set(

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useGame } from '../contexts/GameContext';
-import { REGRAS_DE_DESBLOQUEIO } from '../constants/desbloqueiosPorRegra';
+import { REGRAS_DE_DESBLOQUEIO, expDaRegra } from '../constants/desbloqueiosPorRegra';
 import { resolveItemDef } from '../constants/items';
 import { lerDescobertas } from '../utils/medidorDeSegredos';
 import { ItemArt } from './ItemArt';
@@ -51,6 +51,11 @@ export const ConquistasSection: React.FC = () => {
                                 <p className="text-[9px] leading-snug text-white/48">{regra.frase}</p>
                             </div>
                             <div className="flex shrink-0 gap-1">
+                                {regra.itens.length === 0 && (
+                                    <span className="flex h-8 items-center rounded-md border border-amber-200/20 bg-amber-300/10 px-2 text-[10px] font-bold text-amber-100/85">
+                                        +{(expDaRegra(regra) / 1000).toLocaleString('pt-BR')} mil EXP
+                                    </span>
+                                )}
                                 {regra.itens.map((itemId) => {
                                     const def = resolveItemDef(itemId);
                                     return (

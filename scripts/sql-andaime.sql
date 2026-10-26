@@ -459,3 +459,14 @@ create table if not exists public.season_missions (id text primary key, season_i
 
 -- Lembretes de acao (20260330170000 / 20261025130000): so a assinatura, para checar os revokes.
 create or replace function public.enqueue_due_action_reminder_notifications() returns integer language sql as $$ select 0 $$;
+
+-- 20261026150000_missoes_secretas_meio_e_fim: meta final da arena e o deposito do dia.
+alter table public.arenas add column if not exists final_goal text;
+alter table public.arenas add column if not exists completed_at timestamptz;
+create table if not exists public.daily_commitments (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid,
+  date date,
+  stage text default 'planning',
+  exp_deposited integer
+);

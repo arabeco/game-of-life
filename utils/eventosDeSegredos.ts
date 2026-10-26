@@ -10,6 +10,8 @@ const EVENTOS: Record<CondicaoDeDesbloqueio['tipo'], EventoDeSegredo> = {
     acoes_antes_das_sete_numa_semana: 'acao', dias_seguidos_com_as_cinco_areas: 'acao',
     paginas_do_diario: 'diario', dias_de_humor: 'humor', amizades: 'amizade',
     mentorias_concluidas: 'vinculo', competicoes_vencidas: 'vinculo', missoes_individuais: 'missao',
+    dias_entre_primeira_e_ultima_acao: 'acao', mesma_acao_repetida: 'acao', dias_com_exp: 'acao',
+    ciclos_longos: 'ciclo', arenas_com_meta_concluidas: 'acao',
 };
 export const regraEscutaEvento = (condicao: CondicaoDeDesbloqueio, eventos: ReadonlySet<EventoDeSegredo>) =>
     eventos.has('recuperacao') || eventos.has(EVENTOS[condicao.tipo]);

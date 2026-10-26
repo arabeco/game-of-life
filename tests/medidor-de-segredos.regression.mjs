@@ -79,7 +79,44 @@ assert.equal(cumpre('popular', { amizades: 5 }), true);
 assert.equal(cumpre('popular', { amizades: 4 }), false);
 assert.equal(cumpre('guardia', { mentoriasAteOFim: 2 }), true);
 assert.equal(cumpre('guardia', { mentoriasAteOFim: 1 }), false);
-console.log('ok - as vinte regras, cada limiar na beira');
+// 26/10/2026: as de meio e fim de jogo, e os quatro pares que mudaram de missao.
+assert.equal(cumpre('popular-de-verdade', { amizades: 10 }), true);
+assert.equal(cumpre('popular-de-verdade', { amizades: 9 }), false);
+assert.equal(cumpre('veterano-de-um-ano', { diasEntrePrimeiraEUltimaAcao: 365 }), true);
+assert.equal(cumpre('veterano-de-um-ano', { diasEntrePrimeiraEUltimaAcao: 364 }), false);
+assert.equal(cumpre('veterano-de-um-ano', {}), false, 'sem a leitura nova (migracao nao rodada) nao dispara');
+assert.equal(cumpre('disciplinado-cem-dias', { diasComMaisDe350Exp: 100 }), true);
+assert.equal(cumpre('disciplinado-cem-dias', { diasComMaisDe350Exp: 99 }), false);
+assert.equal(cumpre('fornalha', { diasComMaisDe350Exp: 200 }), true);
+assert.equal(cumpre('fornalha', { diasComMaisDe350Exp: 199 }), false);
+assert.equal(cumpre('imparavel-cem-dias', { maiorSequencia: 100 }), true);
+assert.equal(cumpre('imparavel-cem-dias', { maiorSequencia: 99 }), false);
+assert.equal(cumpre('inabalavel', { maiorSequencia: 50 }), true);
+assert.equal(cumpre('inabalavel', { maiorSequencia: 49 }), false);
+assert.equal(cumpre('ritual', { maiorRepeticaoDeAcao: 100 }), true);
+assert.equal(cumpre('ritual', { maiorRepeticaoDeAcao: 99 }), false);
+assert.equal(cumpre('liturgia', { maiorRepeticaoDeAcao: 250 }), true);
+assert.equal(cumpre('liturgia', { maiorRepeticaoDeAcao: 249 }), false);
+assert.equal(cumpre('trofeus', { arenasConcluidasComMeta: 5 }), true);
+assert.equal(cumpre('trofeus', { arenasConcluidasComMeta: 4 }), false);
+assert.equal(cumpre('galeria', { arenasConcluidasComMeta: 10 }), true);
+assert.equal(cumpre('galeria', { arenasConcluidasComMeta: 9 }), false);
+assert.equal(cumpre('mil-e-um', { acoesConcluidas: 2000 }), true);
+assert.equal(cumpre('mil-e-um', { acoesConcluidas: 1999 }), false);
+assert.equal(cumpre('cronista', { ciclos: Array.from({ length: 10 }, () => ciclo({ dias: 7 })) }), true);
+assert.equal(cumpre('cronista', { ciclos: [...Array.from({ length: 9 }, () => ciclo({ dias: 7 })), ciclo({ dias: 6 })] }), false, 'ciclo de 6 dias nao conta');
+assert.equal(cumpre('era', { ciclos: Array.from({ length: 50 }, () => ciclo({ dias: 14 })) }), true);
+assert.equal(cumpre('era', { ciclos: Array.from({ length: 49 }, () => ciclo({ dias: 14 })) }), false);
+console.log('ok - as trinta e tres regras, cada limiar na beira');
+
+// EXP das descobertas antigas: paga uma vez, so das descobertas.
+{
+    const { expPendente, lerExpPago, MARCA_DE_EXP_DO_SEGREDO } = await import(pathToFileURL(arquivo).href);
+    const marcas = [MARCA_DE_SEGREDO + 'disciplinado', MARCA_DE_SEGREDO + 'veterano', MARCA_DE_EXP_DO_SEGREDO + 'veterano'];
+    const pendentes = expPendente(REGRAS_DE_DESBLOQUEIO, lerDescobertas(marcas), lerExpPago(marcas)).map((r) => r.id);
+    assert.deepEqual(pendentes, ['disciplinado'], 'so a descoberta sem EXP pago fica pendente');
+    console.log('ok - o EXP das descobertas antigas paga uma vez');
+}
 
 // ---------------------------- 2. sem arte nao dispara; descoberta nao repete
 {
@@ -105,17 +142,24 @@ console.log('ok - as vinte regras, cada limiar na beira');
 
 // --------------------------- 4. varias de uma vez viram um modal so
 {
-    const uma = montarModalDeSegredos([regra('disciplinado')]);
+    const uma = montarModalDeSegredos([regra('disciplinado-cem-dias')]);
     assert.equal(uma.secreta, true);
     assert.equal(uma.title, 'Disciplinado');
-    assert.equal(uma.frase, regra('disciplinado').frase);
-    assert.deepEqual(uma.reward.items, regra('disciplinado').itens);
+    assert.equal(uma.frase, regra('disciplinado-cem-dias').frase);
+    assert.deepEqual(uma.reward.items, regra('disciplinado-cem-dias').itens);
+    assert.equal(uma.reward.exp, 10000, 'epica paga 10 mil');
 
-    const duas = montarModalDeSegredos([regra('disciplinado'), regra('veterano')]);
+    const duas = montarModalDeSegredos([regra('disciplinado-cem-dias'), regra('veterano-de-um-ano')]);
     assert.equal(duas.title, 'Disciplinado · Veterano');
     assert.match(duas.frase, /2 segredos/);
     assert.equal(duas.reward.items.length, 4);
-    assert.equal(duas.id, 'segredo:disciplinado+veterano', 'o id e o que a fila usa para nao repetir');
+    assert.equal(duas.reward.exp, 15000);
+    assert.equal(duas.id, 'segredo:disciplinado-cem-dias+veterano-de-um-ano', 'o id e o que a fila usa para nao repetir');
+
+    const soExp = montarModalDeSegredos([regra('disciplinado')]);
+    assert.equal(soExp.title, 'Primeiro Selo', 'a pequena manteve o id e ganhou nome novo');
+    assert.deepEqual(soExp.reward.items, [], 'a pequena passou a dar so EXP');
+    assert.equal(soExp.reward.exp, 3000);
     console.log('ok - um modal so, com todos os premios');
 }
 

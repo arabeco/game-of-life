@@ -37,7 +37,7 @@ const empacota = async (entrada, nome) => {
 
 const { ITEMS_DB, isChestEligibleItem } = await empacota('constants/items.ts', 'regras-items.mjs');
 const { RANK_REWARDS } = await empacota('constants/nobility.ts', 'regras-nobility.mjs');
-const { REGRAS_DE_DESBLOQUEIO, ITENS_DA_VANGUARDA, ITENS_LIBERADOS_POR_REGRA } =
+const { REGRAS_DE_DESBLOQUEIO, ITENS_DA_VANGUARDA, ITENS_LIBERADOS_POR_REGRA, EXP_POR_RARIDADE } =
     await empacota('constants/desbloqueiosPorRegra.ts', 'regras-desbloqueio.mjs');
 
 const noStarter = (() => {
@@ -103,7 +103,8 @@ const daVanguarda = new Set(ITENS_DA_VANGUARDA);
 {
     const vistos = new Map();
     for (const regra of REGRAS_DE_DESBLOQUEIO) {
-        assert.ok(regra.itens.length > 0, `a regra ${regra.nome} nao libera nada`);
+        // Desde 26/10/2026 uma regra pode dar so EXP; mas toda regra paga EXP.
+        assert.ok(EXP_POR_RARIDADE[regra.raridade] > 0, `a regra ${regra.nome} nao paga EXP`);
         assert.ok(regra.frase.trim().length > 0, `a regra ${regra.nome} nao tem frase para o modal`);
         for (const id of regra.itens) {
             const dono = vistos.get(id);
@@ -154,8 +155,12 @@ const daVanguarda = new Set(ITENS_DA_VANGUARDA);
             assert.ok(!naLoja.has(id), `${id} continua na lista da loja`);
             assert.equal(isChestEligibleItem(def), false, `${id} ainda cai de bau`);
         }
+        if (!defs.length) continue;
         const raridades = new Set(defs.map((d) => d.rarity));
         assert.equal(raridades.size, 1, `${regra.nome}: o par tem raridades diferentes (${[...raridades].join(', ')})`);
+        // A peca tem a raridade da missao que a da (26/10/2026).
+        const daMissao = { comum: 'common', incomum: 'uncommon', raro: 'rare', epico: 'epic', lendario: 'legendary' }[regra.raridade];
+        assert.equal([...raridades][0], daMissao, `${regra.nome}: a peca e ${[...raridades][0]}, a missao e ${regra.raridade}`);
     }
 }
 
@@ -164,11 +169,13 @@ const daVanguarda = new Set(ITENS_DA_VANGUARDA);
 // O id e o que fica gravado em `segredo:<id>` no perfil. Trocar o id de uma
 // regra ja descoberta faria ela voltar a ser descoberta.
 {
-    assert.equal(REGRAS_DE_DESBLOQUEIO.length, 20, 'sao vinte regras');
+    assert.equal(REGRAS_DE_DESBLOQUEIO.length, 33, 'sao trinta e tres regras (20 + 13 de 26/10/2026)');
     const ids = REGRAS_DE_DESBLOQUEIO.map((r) => r.id);
     assert.equal(new Set(ids).size, ids.length, 'duas regras com o mesmo id');
     for (const id of ids) assert.match(String(id), /^[a-z]+(-[a-z]+)*$/, `id fora do formato: ${id}`);
     const skins = REGRAS_DE_DESBLOQUEIO.filter((r) => r.itens.length === 1).map((r) => r.nome).sort();
+    const soExp = REGRAS_DE_DESBLOQUEIO.filter((r) => r.itens.length === 0).length;
+    assert.equal(soExp, 13, 'as quatro pequenas e as nove novas dao so EXP');
     assert.deepEqual(skins, ['Ancião', 'Campeão', 'Escriba', 'Imperador', 'Maratona'], 'mudou quem da skin');
 }
 

@@ -206,6 +206,10 @@ export interface Arena {
   // Codex Fields
   originCodexId?: string;
   codexLevel?: number; // 1, 2, 3...
+
+  // Meta final opcional e a data em que a arena foi concluida (utils/arenaFinalizada.ts).
+  finalGoal?: string | null;
+  completedAt?: string | null;
 }
 
 export interface ArenaFolder {

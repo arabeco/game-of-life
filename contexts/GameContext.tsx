@@ -1,3 +1,4 @@
+import { copiaDaArena, tarefasQueParam } from '../utils/arenaFinalizada';
 import { habitosConsolidados } from '../utils/habitosConsolidados';
 import type { DailyFragmentReceipt } from '../components/DailyFragmentReward';
 import { GARDEN_BASKET_CHANGED, type GardenBasketReceipt } from '../services/gardenBasket';
@@ -938,8 +939,10 @@ export interface GameContextType {
     receberPremioDeConvite: (marco: MarcoDeConvite, onReward?: (payload: RewardModalPayload) => void) => Promise<boolean>;
     /** `substituir` troca o pacto ativo pelo novo, encerrando o anterior. */
     claimArenaPact: () => Promise<void>;
-    addArena: (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb?: boolean, opcoes?: { missao?: boolean }) => Promise<Arena>;
-    updateArena: (arenaId: string, arenaData: Partial<Pick<Arena, 'assetId' | 'name' | 'description' | 'icon' | 'folderId' | 'isArchived' | 'priority'>>) => void;
+    addArena: (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb?: boolean, opcoes?: { missao?: boolean; vagaGarantida?: boolean }) => Promise<Arena>;
+    concluirArena: (arenaId: string, opcoes?: { copiar?: boolean }) => Promise<{ ok: boolean; copiaId?: string }>;
+    reabrirArena: (arenaId: string) => boolean;
+    updateArena: (arenaId: string, arenaData: Partial<Pick<Arena, 'assetId' | 'name' | 'description' | 'icon' | 'folderId' | 'isArchived' | 'priority' | 'finalGoal' | 'completedAt'>>) => void;
     deleteArena: (arenaId: string, options?: { force?: boolean }) => void;
     createArenaFolder: (name: string, icon: string, assetId?: string) => Promise<ArenaFolder | null>;
     updateArenaFolder: (folderId: string, data: Partial<ArenaFolder>) => Promise<void>;
@@ -11356,10 +11359,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     // acao com sourceQuestId. Ver utils/arenaCapacity.ts.
     const arenasDeMissao = (): Set<string> => new Set(actions.filter((acao) => acao.sourceQuestId).map((acao) => acao.arenaId));
     const capacidadeDeArenas = () => getArenaCapacitySummary(assetsRef.current, userProfile, arenasDeMissao());
-    const addArena = async (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb: boolean = false, opcoes?: { missao?: boolean }): Promise<Arena> => {
+    const addArena = async (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb: boolean = false, opcoes?: { missao?: boolean; vagaGarantida?: boolean }): Promise<Arena> => {
         const willStartArchived = arenaData.isArchived ?? false;
         const capacity = capacidadeDeArenas();
-        if (!opcoes?.missao && !willStartArchived && capacity.isAtLimit) {
+        if (!opcoes?.missao && !opcoes?.vagaGarantida && !willStartArchived && capacity.isAtLimit) {
             const message = buildArenaLimitMessage(capacity);
             showToast(message, 'warning');
             throw new Error(message);
@@ -11408,7 +11411,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
     };
 
-    const updateArena = (arenaId: string, arenaData: Partial<Pick<Arena, 'assetId' | 'name' | 'description' | 'icon' | 'folderId' | 'isArchived' | 'priority'>>) => {
+    const updateArena = (arenaId: string, arenaData: Partial<Pick<Arena, 'assetId' | 'name' | 'description' | 'icon' | 'folderId' | 'isArchived' | 'priority' | 'finalGoal' | 'completedAt'>>) => {
         const currentArena = assetsRef.current.flatMap(asset => asset.arenas).find(arena => arena.id === arenaId);
         if (currentArena?.isArchived && arenaData.isArchived === false && !arenasDeMissao().has(arenaId)) {
             const capacity = capacidadeDeArenas();
@@ -11926,6 +11929,52 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 return { ...asset, arenas: newArenas };
             });
         });
+    };
+
+    /*
+     * CONCLUIR A ARENA (26/10/2026). A meta final foi alcancada: a arena fica na
+     * grade com a estrela ate a pessoa guarda-la nas Finalizadas, sai do limite,
+     * e as acoes param (as pendentes de hoje em diante saem do planner; o feito
+     * fica). "Concluir e criar copia" abre uma arena igual, com a meta em
+     * branco, para a pessoa editar o que quiser. Arena de missao nao conclui.
+     */
+    const concluirArena = async (arenaId: string, opcoes?: { copiar?: boolean }): Promise<{ ok: boolean; copiaId?: string }> => {
+        const arena = assetsRef.current.flatMap(asset => asset.arenas).find(candidate => candidate.id === arenaId);
+        if (!arena || arena.completedAt || arenasDeMissao().has(arenaId)) return { ok: false };
+        const acoesDaArena = actions.filter(acao => acao.arenaId === arenaId);
+        updateArena(arenaId, { completedAt: new Date().toISOString() });
+        const paradas = new Set(tarefasQueParam({ tasks, actionIds: acoesDaArena.map(acao => acao.id), hoje: getTodayString() }));
+        if (paradas.size) {
+            setTasks(prev => prev.filter(task => !paradas.has(task.id)));
+            if (getSupabaseUserId()) {
+                const { error } = await supabase.from('scheduled_tasks').delete().in('id', [...paradas]);
+                if (error) console.error('Supabase: tarefas da arena concluida:', error.message);
+            }
+        }
+        showToast(paradas.size ? `Arena concluída. ${paradas.size} ${paradas.size === 1 ? 'ação pendente saiu' : 'ações pendentes saíram'} do planner.` : 'Arena concluída.', 'success');
+        if (!opcoes?.copiar) return { ok: true };
+        try {
+            const { arena: dados, acoes } = copiaDaArena(arena, acoesDaArena);
+            const copia = await addArena(arena.assetId, dados as Omit<Arena, 'id' | 'assetId' | 'actionIds'>, false, { vagaGarantida: true });
+            for (const acao of acoes) await addAction({ ...acao, arenaId: copia.id } as Omit<Action, 'id'>);
+            showToast(`Cópia criada: "${copia.name}". Edite o que quiser.`, 'info');
+            return { ok: true, copiaId: copia.id };
+        } catch {
+            showToast('A arena foi concluída, mas a cópia não foi criada.', 'error');
+            return { ok: true };
+        }
+    };
+
+    /** Reabrir uma finalizada: precisa de vaga, e ela volta sem a estrela. */
+    const reabrirArena = (arenaId: string): boolean => {
+        const capacity = capacidadeDeArenas();
+        if (capacity.isAtLimit) {
+            showToast(buildArenaLimitMessage(capacity), 'warning');
+            return false;
+        }
+        updateArena(arenaId, { completedAt: null, isArchived: false });
+        showToast('Arena reaberta. As ações voltam a valer no planner.', 'success');
+        return true;
     };
 
     const deleteArena = async (arenaId: string, _options?: { force?: boolean }) => {
@@ -15692,6 +15741,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     return (
         <GameContext.Provider value={{
             session,
+            concluirArena, reabrirArena,
             getSharedActionPoolProgress, isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, sequenceItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, upcomingCycle, dailyCommitment, judgedOperationalDates, judgedTaskIdsByDate, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, grantInventoryItem, acceptSeasonQuest,
             abortSeasonQuest,
             missoesDoCla, missoesDeClaAtivas, atualizarMissaoDoCla, entrarNaMissaoDoCla, receberPremioDaMissaoDoCla, humorDoCla, carregarHumorDoCla, autoresDoFeed,

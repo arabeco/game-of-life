@@ -15,13 +15,16 @@ export const buildCycleCommitment = ({ actions, arenas, tasks, startDate, endDat
   startDate: string;
   endDate: string;
 }) => {
-  const activeArenaIds = new Set(arenas.filter(arena => !arena.isArchived).map(arena => arena.id));
+  // Arena finalizada entra mesmo depois de guardada nas Finalizadas (arquivada):
+  // o que foi feito nela continua valendo no ciclo.
+  const finalizadaIds = new Set(arenas.filter(arena => Boolean(arena.completedAt)).map(arena => arena.id));
+  const activeArenaIds = new Set(arenas.filter(arena => !arena.isArchived || finalizadaIds.has(arena.id)).map(arena => arena.id));
   const activeActions = actions.filter(action => activeArenaIds.has(action.arenaId) || Boolean(action.originCodexId));
   const activeActionIds = new Set(activeActions.map(action => action.id));
   const cycleTasks = [...new Map(tasks.filter(task => activeActionIds.has(task.actionId)
     && task.date >= startDate && task.date <= endDate).map(task => [task.id, task])).values()];
   const questIds = new Set(activeActions.filter(action => isCycleQuestAction(action, arenas)).map(action => action.id));
-  const plannedActions = activeActions.filter(action => action.actionType !== 'Livre' && !questIds.has(action.id) && !action.originCodexId);
+  const plannedActions = activeActions.filter(action => action.actionType !== 'Livre' && !questIds.has(action.id) && !action.originCodexId && !finalizadaIds.has(action.arenaId));
   const completedByAction = new Map<string, number>();
   for (const task of cycleTasks) {
     if (task.completed === true) completedByAction.set(task.actionId, (completedByAction.get(task.actionId) || 0) + 1);
@@ -42,9 +45,12 @@ export const buildCycleCommitment = ({ actions, arenas, tasks, startDate, endDat
    * A campanha atravessa ciclos: aqui so conta o que caiu na janela do ciclo;
    * o progresso dela (fases) continua contando a vida toda em outro lugar.
    * `extra` avisa a nota para nao tratar essas arenas como meta a selar.
+   *
+   * ARENA FINALIZADA (26/10/2026) entra do mesmo jeito: a pessoa chegou na
+   * meta antes do fim do ciclo, entao o que faltava nao conta contra ela.
    */
   const extras = activeActions
-    .filter(action => action.actionType !== 'Livre' && (questIds.has(action.id) || Boolean(action.originCodexId)))
+    .filter(action => action.actionType !== 'Livre' && (questIds.has(action.id) || Boolean(action.originCodexId) || finalizadaIds.has(action.arenaId)))
     .map(action => ({ action, planned: completedByAction.get(action.id) || 0, completed: completedByAction.get(action.id) || 0, extra: true }))
     .filter(entry => entry.completed > 0);
   const entries = [...promised, ...extras];

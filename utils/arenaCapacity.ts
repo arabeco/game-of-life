@@ -28,11 +28,12 @@ export const getArenaLimitForProfile = (profile?: UserProfile | null): number =>
 /**
  * Conta so arena ativa: arquivar libera a vaga. Arena de missao (temporada ou
  * cla) fica fora: a missao vem do jogo e nao ocupa o lugar das arenas da
- * pessoa. Campanha conta como qualquer outra. `questArenaIds` sao as arenas
+ * pessoa. Arena finalizada (completedAt) tambem nao ocupa vaga. Campanha conta
+ * como qualquer outra. `questArenaIds` sao as arenas
  * que guardam acao de missao (sourceQuestId).
  */
 export const getArenaCapacitySummary = (assets: Asset[], profile?: UserProfile | null, questArenaIds?: Set<string>): ArenaCapacitySummary => {
-    const total = assets.reduce((sum, asset) => sum + asset.arenas.filter(arena => !arena.isArchived && !questArenaIds?.has(arena.id)).length, 0);
+    const total = assets.reduce((sum, asset) => sum + asset.arenas.filter(arena => !arena.isArchived && !arena.completedAt && !questArenaIds?.has(arena.id)).length, 0);
     const active = assets.reduce((sum, asset) => sum + asset.arenas.filter((arena) => !arena.isArchived).length, 0);
     const limit = getArenaLimitForProfile(profile);
     const remaining = Math.max(0, limit - total);

@@ -1,5 +1,5 @@
-import { Asset, UserProfile } from '../types';
-import { getActiveSubscriptionTier, hasPremiumAccess } from './premiumAccess';
+import type { Asset, UserProfile } from '../types';
+import { getActiveSubscriptionTier, hasPremiumAccess } from './premiumAccess.ts';
 
 // 7 apertava demais quem esta comecando: as cinco areas da vida ja consomem
 // quase tudo antes da pessoa entender o app. 10 deixa espaco para experimentar
@@ -25,8 +25,14 @@ export const getArenaLimitForProfile = (profile?: UserProfile | null): number =>
     return STANDARD_ARENA_LIMIT;
 };
 
-export const getArenaCapacitySummary = (assets: Asset[], profile?: UserProfile | null): ArenaCapacitySummary => {
-    const total = assets.reduce((sum, asset) => sum + asset.arenas.filter(arena => !arena.isArchived).length, 0);
+/**
+ * Conta so arena ativa: arquivar libera a vaga. Arena de missao (temporada ou
+ * cla) fica fora: a missao vem do jogo e nao ocupa o lugar das arenas da
+ * pessoa. Campanha conta como qualquer outra. `questArenaIds` sao as arenas
+ * que guardam acao de missao (sourceQuestId).
+ */
+export const getArenaCapacitySummary = (assets: Asset[], profile?: UserProfile | null, questArenaIds?: Set<string>): ArenaCapacitySummary => {
+    const total = assets.reduce((sum, asset) => sum + asset.arenas.filter(arena => !arena.isArchived && !questArenaIds?.has(arena.id)).length, 0);
     const active = assets.reduce((sum, asset) => sum + asset.arenas.filter((arena) => !arena.isArchived).length, 0);
     const limit = getArenaLimitForProfile(profile);
     const remaining = Math.max(0, limit - total);

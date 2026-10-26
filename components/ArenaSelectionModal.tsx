@@ -13,12 +13,13 @@ interface ArenaSelectionModalProps {
 }
 
 export const ArenaSelectionModal: React.FC<ArenaSelectionModalProps> = ({ currentArenaId, selectedArenaId, onSelect, onClose }) => {
-    const { assets, addArena, userProfile, showToast } = useGame();
+    const { assets, actions, addArena, userProfile, showToast } = useGame();
     const [isCreating, setIsCreating] = useState(false);
     const [newArenaName, setNewArenaName] = useState('');
     const [selectedAssetId, setSelectedAssetId] = useState(assets[0]?.id || 'geral');
     const [newArenaIcon] = useState('🏟️');
-    const arenaCapacity = getArenaCapacitySummary(assets, userProfile);
+    // Arenas de missao nao contam no limite (utils/arenaCapacity.ts).
+    const arenaCapacity = getArenaCapacitySummary(assets, userProfile, new Set(actions.filter((acao) => acao.sourceQuestId).map((acao) => acao.arenaId)));
     const canCreateArena = !arenaCapacity.isAtLimit;
     const activeArenaId = currentArenaId || selectedArenaId || '';
 

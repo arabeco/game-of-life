@@ -80,7 +80,7 @@
       name: 'Premium (30 dias)',
       cost: 200,
       benefits: [
-        'Até 20 arenas no total (incluindo arquivadas) (vs 10 no plano base)',
+        'Até 20 arenas ativas (vs 10 no plano base); arquivadas e de missão não contam',
         'Fundos premium de perfil',
         'Cenas extras do legado com 50% off',
         'Oráculo: todos os tons de fala',
@@ -94,7 +94,7 @@
       cost: 500,
       benefits: [
         'Todas as vantagens do Premium',
-        'Até 30 arenas no total (incluindo arquivadas)',
+        'Até 30 arenas ativas; arquivadas e de missão não contam',
         'Cenas extras do legado com 70% off',
         'Campanhas com 20% off',
         'Todos os planos de fundo',

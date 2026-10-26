@@ -938,7 +938,7 @@ export interface GameContextType {
     receberPremioDeConvite: (marco: MarcoDeConvite, onReward?: (payload: RewardModalPayload) => void) => Promise<boolean>;
     /** `substituir` troca o pacto ativo pelo novo, encerrando o anterior. */
     claimArenaPact: () => Promise<void>;
-    addArena: (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb?: boolean) => Promise<Arena>;
+    addArena: (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb?: boolean, opcoes?: { missao?: boolean }) => Promise<Arena>;
     updateArena: (arenaId: string, arenaData: Partial<Pick<Arena, 'assetId' | 'name' | 'description' | 'icon' | 'folderId' | 'isArchived' | 'priority'>>) => void;
     deleteArena: (arenaId: string, options?: { force?: boolean }) => void;
     createArenaFolder: (name: string, icon: string, assetId?: string) => Promise<ArenaFolder | null>;
@@ -8028,7 +8028,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const baseCampaignPriorityOrder = campaigns.filter(c => (c.priority ?? 'media') === 'media').length;
         const previousCycleArenaIds = activeCycle ?[...activeCycle.arenaIds] : null;
         const requestedArenaCount = template.levels.length;
-        const arenaCapacity = getArenaCapacitySummary(assetsRef.current, userProfile);
+        const arenaCapacity = capacidadeDeArenas();
 
         emitArenaAttention({
             arenaIds: [],
@@ -11352,10 +11352,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         arenaToneCountersRef.current.values[normalizeLifeAreaId(assetId)] = sequence + 1;
         return sequence;
     };
-    const addArena = async (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb: boolean = false): Promise<Arena> => {
+    // Arena de missao (temporada ou cla) nao conta no limite: e a que guarda
+    // acao com sourceQuestId. Ver utils/arenaCapacity.ts.
+    const arenasDeMissao = (): Set<string> => new Set(actions.filter((acao) => acao.sourceQuestId).map((acao) => acao.arenaId));
+    const capacidadeDeArenas = () => getArenaCapacitySummary(assetsRef.current, userProfile, arenasDeMissao());
+    const addArena = async (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb: boolean = false, opcoes?: { missao?: boolean }): Promise<Arena> => {
         const willStartArchived = arenaData.isArchived ?? false;
-        const capacity = getArenaCapacitySummary(assetsRef.current, userProfile);
-        if (!willStartArchived && capacity.isAtLimit) {
+        const capacity = capacidadeDeArenas();
+        if (!opcoes?.missao && !willStartArchived && capacity.isAtLimit) {
             const message = buildArenaLimitMessage(capacity);
             showToast(message, 'warning');
             throw new Error(message);
@@ -11406,8 +11410,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const updateArena = (arenaId: string, arenaData: Partial<Pick<Arena, 'assetId' | 'name' | 'description' | 'icon' | 'folderId' | 'isArchived' | 'priority'>>) => {
         const currentArena = assetsRef.current.flatMap(asset => asset.arenas).find(arena => arena.id === arenaId);
-        if (currentArena?.isArchived && arenaData.isArchived === false) {
-            const capacity = getArenaCapacitySummary(assetsRef.current, userProfile);
+        if (currentArena?.isArchived && arenaData.isArchived === false && !arenasDeMissao().has(arenaId)) {
+            const capacity = capacidadeDeArenas();
             if (capacity.isAtLimit) {
                 showToast(buildArenaLimitMessage(capacity), 'warning');
                 return;
@@ -12743,7 +12747,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     description: quest.description || 'Missão de clã',
                     icon: quest.actionTemplate.icon || '\u{1F91D}',
                     priority: 'alta',
-                }),
+                }, false, { missao: true }),
                 desarquivarArena: (arena) => updateArena(arena.id, { isArchived: false }),
                 rearquivarArena: (arena) => updateArena(arena.id, { isArchived: true }),
                 criarAcao: (arena) => addAction({
@@ -12815,7 +12819,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 description: quest.description || 'Missao de temporada',
                 icon: quest.actionTemplate.icon || '\u{1F4DD}',
                 priority: 'alta' // Destaque para missões ativas
-            });
+            }, false, { missao: true });
 
             // Persistência Manual
         }

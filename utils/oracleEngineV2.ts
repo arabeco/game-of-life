@@ -33,6 +33,12 @@ export function readingFacts(s: Scope): ReadingFacts {
 export function openingFacts(s: Scope, lastOpen: string | null): OpeningFacts {
   const activeIds = new Set(s.actions.filter(a => s.arenas.some(r => r.id === a.arenaId && !r.isArchived)).map(a => a.id));
   const tasks = unique(s.tasks).filter(t => activeIds.has(t.actionId));
+  const arenaProgress = s.arenas.filter(arena => !arena.isArchived && !isSharedArena(arena)).flatMap(arena => {
+    const arenaActions = s.actions.filter(action => action.arenaId === arena.id);
+    if (arenaActions.some(action => isCycleQuestAction(action, s.arenas))) return [];
+    const progress = calculateArenaProgress({ arena, actions: arenaActions, tasks });
+    return [{ id: arena.id, name: arena.name, completed: progress.totalCompleted, target: progress.totalPlanned }];
+  });
   const today = tasks.filter(t => taskMatchesOperationalDate(t, s.today));
   // Count available action TYPES, never call the stock a list of obligations.
   const poolScope = s.activeCycle ? tasks.filter(t => t.date >= s.activeCycle!.startDate && t.date <= s.activeCycle!.endDate) : today;
@@ -51,7 +57,7 @@ export function openingFacts(s: Scope, lastOpen: string | null): OpeningFacts {
       const expected = Math.round(ritmoEsperado(dayNumber, totalDays));
       const delta = percent - expected;
       const pace = delta >= 10 ? 'adiantado' : delta >= -10 ? 'no_ritmo' : delta >= -25 ? 'atrasado' : 'critico';
-      const focusArenas = arenas
+      const focusArenas = arenaProgress
         .map((arena) => ({ ...arena, percent: arena.target > 0 ? Math.round((arena.completed / arena.target) * 100) : 0 }))
         .filter((arena) => arena.target > 0 && arena.completed < arena.target)
         .map((arena) => ({ ...arena, delta: arena.percent - expected }))

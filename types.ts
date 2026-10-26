@@ -911,6 +911,8 @@ export interface Report {
     timeElapsedPct?: number;
     paceDeltaPct?: number;
     top3Actions?: { name: string; count: number }[];
+    /** Acoes feitas 6+ dias por semana com 90%+ no ciclo (utils/habitosConsolidados). */
+    habitosConsolidados?: { nome: string; icone: string; dias: number }[];
     weeklyAtlas?: ReportAtlasWeek[];
     /** Arenas com todas as acoes cumpridas no ciclo, por area. Le-se nas
      *  regras secretas Mistico e Celestial. Ciclos antigos nao tem. */

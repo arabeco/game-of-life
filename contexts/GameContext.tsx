@@ -1,3 +1,4 @@
+import { habitosConsolidados } from '../utils/habitosConsolidados';
 import type { DailyFragmentReceipt } from '../components/DailyFragmentReward';
 import { GARDEN_BASKET_CHANGED, type GardenBasketReceipt } from '../services/gardenBasket';
 import { getArenaActionGradient, nextArenaToneSequence } from '../utils/arenaTones.ts';
@@ -3187,6 +3188,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 timeElapsedPct: typeof rawMetrics.timeElapsedPct === 'number' ? rawMetrics.timeElapsedPct : undefined,
                 paceDeltaPct: typeof rawMetrics.paceDeltaPct === 'number' ? rawMetrics.paceDeltaPct : undefined,
                 top3Actions: Array.isArray(rawMetrics.top3Actions) ? rawMetrics.top3Actions : [],
+                habitosConsolidados: Array.isArray(rawMetrics.habitosConsolidados) ? rawMetrics.habitosConsolidados : [],
                 weeklyAtlas: Array.isArray(rawMetrics.weeklyAtlas) ? rawMetrics.weeklyAtlas : [],
                 atlasSnapshotVersion: rawMetrics.atlasSnapshotVersion === 1 || rawMetrics.atlasSnapshotVersion === 2
                     ? rawMetrics.atlasSnapshotVersion
@@ -10377,6 +10379,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 maxStreak,
                 bestDay,
                 bestDayCount,
+                habitosConsolidados: habitosConsolidados({ tasks: cycleTasks, actions: currentActions, inicio: startDate, fim: endDate }),
                 daysWithoutCompletion,
                 executionRatePct,
                 timeElapsedPct,

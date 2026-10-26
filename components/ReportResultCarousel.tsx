@@ -472,6 +472,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
      */
     const renderMarksSlide = () => {
         const acabamento = getPlateFinish(notaDoRelatorio);
+        const habitos = Array.isArray(metrics.habitosConsolidados) ? metrics.habitosConsolidados : [];
         const diaDePico = melhorDia && (metrics.bestDayCount || 0) > 0
             ? `${melhorDia} · ${metrics.bestDayCount} ${(metrics.bestDayCount || 0) === 1 ? 'entrega' : 'entregas'}`
             : null;
@@ -488,7 +489,13 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 texto: `${metrics.arenasInvolved || 0} ${(metrics.arenasInvolved || 0) === 1 ? 'arena entrou' : 'arenas entraram'} no seu território.`,
                 valor: `${metrics.arenasInvolved || 0}`,
             },
-        ].slice(0, 3);
+            // O que virou habito: feito 6+ dias por semana com 90%+ (utils/habitosConsolidados).
+            ...(habitos.length ? [{
+                titulo: 'Hábitos consolidados',
+                texto: habitos.map((h) => `${h.icone} ${h.nome}`).join(' · '),
+                valor: `${habitos.length}`,
+            }] : []),
+        ].slice(0, 4);
 
         return (
             <SlideCartaz

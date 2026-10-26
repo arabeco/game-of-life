@@ -32,6 +32,7 @@ import { supabase } from '../supabaseClient';
 import { getActionSurfaceBadgeClassName, resolveActionSurfaceBadge } from '../utils/actionSurfaceBadges';
 import { filterTasksAfterFreeProgressReset } from '../utils/freeProgressScope';
 import { LIFE_AREAS } from '../constants/lifeAreas';
+import { getArenaCapacitySummary } from '../utils/arenaCapacity';
 
 const hexToRgb = (hex: string) => {
     const trimmed = hex.trim();
@@ -94,6 +95,25 @@ export const ArenasView: React.FC = () => {
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
     const { isBuilderMode } = useCodexBuilder();
     const campaigns = useMemo(() => allCampaigns.filter(c => c.status === 'active'), [allCampaigns]);
+    const arenaCapacity = useMemo(
+        () => getArenaCapacitySummary(
+            assets,
+            userProfile,
+            new Set(actions.filter((action) => action.sourceQuestId).map((action) => action.arenaId)),
+        ),
+        [actions, assets, userProfile],
+    );
+    const arenaCapacityRate = arenaCapacity.limit > 0 ? arenaCapacity.total / arenaCapacity.limit : 0;
+    const arenaCapacityTone = arenaCapacityRate >= 1
+        ? 'border-rose-400/45 bg-rose-500/12 text-rose-200'
+        : arenaCapacityRate >= 0.75
+            ? 'border-amber-300/35 bg-amber-400/10 text-amber-100'
+            : 'border-white/10 bg-black/25 text-white/48';
+    const arenaCapacityTitle = arenaCapacityRate >= 1
+        ? `Limite de arenas atingido: ${arenaCapacity.total} de ${arenaCapacity.limit}. Arquive/finalize ou renove para criar outra.`
+        : arenaCapacityRate >= 0.75
+            ? `Você está perto do limite: ${arenaCapacity.total} de ${arenaCapacity.limit} arenas.`
+            : `${arenaCapacity.total} de ${arenaCapacity.limit} arenas usadas.`;
     const [selectedArenaId, setSelectedArenaId] = useState<string | null>(null);
     const [sharedLinkedArenas, setSharedLinkedArenas] = useState<LinkedRelationshipArena[]>([]);
     const [selectedSharedArenaDetail, setSelectedSharedArenaDetail] = useState<{
@@ -2785,17 +2805,27 @@ export const ArenasView: React.FC = () => {
                     )}
                 </div>
 
+                <FloatingActionDock side="left">
+                    <span
+                        className={`inline-flex h-10 items-center rounded-lg border px-3 text-[11px] font-black uppercase tracking-[0.1em] shadow-lg shadow-black/35 backdrop-blur-sm ${arenaCapacityTone}`}
+                        title={arenaCapacityTitle}
+                        aria-label={arenaCapacityTitle}
+                    >
+                        <span className="mr-1.5 text-white/52">Arenas</span>
+                        <span className="tabular-nums">{arenaCapacity.total}/{arenaCapacity.limit}</span>
+                    </span>
+                </FloatingActionDock>
                 <FloatingActionDock>
-                <button
-                    ref={fabRef}
-                    id="new-action-button"
-                    data-onboarding-id="new-arena-button"
-                    aria-label="Nova arena"
-                    onClick={handleOpenCreateArena}
-                    className={`w-12 h-12 rounded-full luxe-skin-button flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform ${isCreateArenaFabHidden ? 'opacity-0 pointer-events-none' : ''}`}
-                >
-                    <PlusIcon className="w-6 h-6 text-black" />
-                </button>
+                    <button
+                        ref={fabRef}
+                        id="new-action-button"
+                        data-onboarding-id="new-arena-button"
+                        aria-label="Nova arena"
+                        onClick={handleOpenCreateArena}
+                        className={`w-12 h-12 rounded-full luxe-skin-button flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform ${isCreateArenaFabHidden ? 'opacity-0 pointer-events-none' : ''}`}
+                    >
+                        <PlusIcon className="w-6 h-6 text-black" />
+                    </button>
                 </FloatingActionDock>
             </div>
             {selectedArena && (

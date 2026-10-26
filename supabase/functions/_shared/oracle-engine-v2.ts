@@ -53,7 +53,19 @@ export function selectSpeech(candidates: Candidate[], channel: Channel, presence
 const voice = (tone: Voice, lines: Record<Voice, string>) => lines[tone] || lines.neutro;
 const actions = (n: number) => `${n} ${n === 1 ? 'ação' : 'ações'}`;
 const left = (n: number) => n === 1 ? 'Falta 1 para completar a meta.' : `Faltam ${n} para completar a meta.`;
-export interface OpeningFacts { completed: number; queued: number; stock: number; returned: boolean }
+export interface OpeningFacts {
+  completed: number;
+  queued: number;
+  stock: number;
+  returned: boolean;
+  /** A leitura da manhã mede ações previstas, prazo e as arenas que ficaram para trás — sem mandar a pessoa executar nada. */
+  cycle?: {
+    percent: number;
+    daysLeft: number;
+    pace: 'adiantado' | 'no_ritmo' | 'atrasado' | 'critico';
+    focusArenas: string[];
+  };
+}
 export function openingCandidates(f: OpeningFacts, tone: Voice, day: string): Candidate[] {
   const candidates: Candidate[] = [];
   const add = (subject: string, score: number, lines: Record<Voice, string>) => candidates.push({ subject, score, id: subject === 'return' ? `opening:${day}:return` : `opening:${day}:${subject}:${f.completed}:${f.queued}:${f.stock}`, text: voice(tone, lines) });
@@ -81,6 +93,35 @@ export function openingCandidates(f: OpeningFacts, tone: Voice, day: string): Ca
     reflexivo: 'Entre as opções do estoque, qual combina com o seu momento?',
     calmo: 'Seu estoque guarda possibilidades. Não é uma lista de dívidas para hoje.',
   });
+  if (f.cycle) {
+    const dias = f.cycle.daysLeft === 1 ? '1 dia' : `${f.cycle.daysLeft} dias`;
+    const arenas = f.cycle.focusArenas.join(' e ');
+    const leituraDasArenas = !arenas
+      ? ''
+      : f.cycle.focusArenas.length === 1
+        ? ` ${arenas} é a parte do ciclo que ficou mais para trás.`
+        : ` ${arenas} são as duas partes que mais ficaram para trás.`;
+    const estado = f.cycle.pace;
+    const lines: Record<Voice, string> = estado === 'adiantado' ? {
+      neutro: `Você está indo bem no ciclo: ${f.cycle.percent}% das ações, com ${dias} pela frente.${leituraDasArenas}`,
+      coach: `O ciclo está bem encaminhado: ${f.cycle.percent}% das ações e ${dias} pela frente.${leituraDasArenas}`,
+      reflexivo: `${f.cycle.percent}% das ações e ${dias} pela frente. O que você quer ver ganhar espaço até o fim?${leituraDasArenas}`,
+      calmo: `Seu ciclo está indo bem: ${f.cycle.percent}% das ações e ${dias} ainda abertos.${leituraDasArenas}`,
+    } : estado === 'no_ritmo' ? {
+      neutro: `Seu ciclo está no ritmo: ${f.cycle.percent}% das ações, com ${dias} restantes.${leituraDasArenas}`,
+      coach: `O ciclo segue de pé: ${f.cycle.percent}% das ações e ${dias} restantes.${leituraDasArenas}`,
+      reflexivo: `${f.cycle.percent}% das ações, ${dias} restantes. O que merece lugar no tempo que falta?${leituraDasArenas}`,
+      calmo: `${f.cycle.percent}% das ações e ${dias} restantes. O ciclo segue no seu tempo.${leituraDasArenas}`,
+    } : {
+      neutro: `Seu ciclo está em ${f.cycle.percent}% das ações, com ${dias} restantes.${leituraDasArenas}`,
+      coach: `Ainda há ${dias} neste ciclo. Ele está em ${f.cycle.percent}% das ações.${leituraDasArenas}`,
+      reflexivo: `Faltam ${dias}; o ciclo está em ${f.cycle.percent}% das ações. O que dessas frentes ainda importa para você?${leituraDasArenas}`,
+      calmo: `Ainda há ${dias} neste ciclo. ${f.cycle.percent}% das ações já estão registradas.${leituraDasArenas}`,
+    };
+    // Leitura do ciclo ganha de uma saudação genérica, mas nunca de voltar ao
+    // app depois de dias: retorno é um acontecimento mais humano que placar.
+    if (!f.returned) add(`cycle_${estado}`, estado === 'critico' ? 68 : 62, lines);
+  }
   if (!f.completed && !f.queued && !f.stock) add('open', 20, {
     neutro: 'Hoje ainda não há registros nem ações na lista do planner.',
     coach: 'Seu dia está aberto. Você pode começar por uma ação das suas arenas.',

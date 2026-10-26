@@ -59,9 +59,9 @@ export default function SandExperiment({skinId='BASIC',theme='dark'}:GardenMenuP
   const [environment,setEnvironment]=useState<EnvironmentId>(initial?.environment??'mist');
   const [atmosphere,setAtmosphere]=useState<AtmosphereId>(initial?.atmosphere??'morning');
   const lighting=useGardenTime(account?.previewHour);
-  // O jardim sempre abre para observar. Só o dono pode trocar para 'build'
-  // pelo botão Editar; visitantes permanecem em exploração.
-  const [mode,setMode]=useState<GardenMode>('explore'),[tool,setTool]=useState<SandTool>('rake');
+  // O jardim abre como uma vista geral, de cima. Ela nao e o editor nem a
+  // caminhada: sao duas escolhas claras nos controles superiores.
+  const [mode,setMode]=useState<GardenMode>('overview'),[tool,setTool]=useState<SandTool>('rake');
   const [settings,setSettings]=useState<RakeSettings>({style:1,spacing:1,pressure:1}),[sand,setSand]=useState(initial?.sand??1),[options,setOptions]=useState(false);
   const [view,setView]=useState(VIEW),[undo,setUndo]=useState(false);
   const [artifacts,setArtifacts]=useState<PlacedArtifact[]>(initial?.artifacts??[]),[draft,setDraft]=useState<PlacedArtifact|null>(null),[selected,setSelected]=useState<string|null>(null),[gallery,setGallery]=useState(false),[artNotice,setArtNotice]=useState('Escolha uma arte para o canto superior.');
@@ -159,7 +159,7 @@ export default function SandExperiment({skinId='BASIC',theme='dark'}:GardenMenuP
       </Canvas>
     </div>
     {pendingModel&&<ModelChangeDialog terrain={terrain} id={pendingModel} onCancel={()=>setPendingModel(null)} onApply={applyModel}/>}
-    {!readOnly&&<div className="garden-floating-entry" role="group" aria-label="Modo do jardim"><button className="zen3d-enter" aria-pressed={mode==='explore'} onClick={e=>{enterGarden();e.currentTarget.blur();}}>Entrar</button><button className="zen3d-edit" aria-pressed={mode==='build'} onClick={e=>{enterEdit();e.currentTarget.blur();}}>Editar</button></div>}
+    {!readOnly&&<div className="garden-floating-entry" role="group" aria-label="Modo do jardim"><button className="zen3d-enter" aria-pressed={mode==='explore'} onClick={e=>{enterGarden();e.currentTarget.blur();}}>Entrar</button><button className="zen3d-enter" aria-pressed={mode==='build'} onClick={e=>{enterEdit();e.currentTarget.blur();}}>Editar</button></div>}
     {!readOnly&&account?.basket&&<button ref={pouchTarget} className="garden-pouch-target" onClick={account.basket.open} aria-label={account.basket.score!==null?'Abrir saquinho do jardim: presente disponível':'Abrir saquinho do jardim: vazio'}/>}
 
     {legacy&&<aside className="zen3d-help garden-legacy-detail" role="dialog" aria-label="Placa do Legado"><button className="zen3d-close" aria-label="Fechar placa" onClick={()=>setLegacy(false)}>×</button><h2>Placa do Legado</h2>{account?.legacyPlaque?<img src={account.legacyPlaque.image} alt="Placa atual do Legado" style={{width:'100%',borderRadius:6}}/>:<p>A placa está sendo preparada. Reabra o jardim se ela não aparecer.</p>}</aside>}
@@ -191,6 +191,6 @@ export default function SandExperiment({skinId='BASIC',theme='dark'}:GardenMenuP
         </div>}
         {clear&&<div className="sand-clear"><span>Alisar toda a areia?</span><button onClick={()=>{actions.current?.clear();setClear(false);}}>Alisar tudo</button><button onClick={()=>setClear(false)}>Cancelar</button></div>}
       </section>
-    </>:<><span className="zen3d-reticle"/><Joystick motion={motion} wake={()=>wake.current()}/><div className="zen3d-look-hint"><span>Arraste para olhar</span></div>{!readOnly&&<span className="zen3d-explore-caption">Seu gesto continua aqui.</span>}</>}
+    </>:mode==='explore'?<><span className="zen3d-reticle"/><Joystick motion={motion} wake={()=>wake.current()}/><div className="zen3d-look-hint"><span>Arraste para olhar</span></div>{!readOnly&&<span className="zen3d-explore-caption">Seu gesto continua aqui.</span>}</>:<div className="garden-overview-hint">Vista geral do seu jardim</div>}
   </main>;
 }

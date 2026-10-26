@@ -234,28 +234,19 @@ assert.ok(
   'so grava na memoria o que ele de fato falou',
 );
 
-// --- perguntar push nao pode queimar o campo antes de perguntar ----------
-// onboardingPushPromptedAt era gravado ANTES da chamada. Qualquer falha no meio
-// calava o aparelho para sempre — e o unico outro caminho para ligar push era o
-// modal de preferencias, que desenhava vazio ate a 1.0.69.
+// --- push so pode nascer da escolha no onboarding ------------------------
+// O prompt automático pós-onboarding dividia a decisão em duas telas e podia
+// aparecer mesmo depois de a pessoa ter dito que não queria avisos. Agora a
+// escolha e o gesto que chama o Android vivem no mesmo clique de Concluir.
 const blocoPush = authenticatedApp.slice(
-  authenticatedApp.indexOf('const permission = await getAppPushPermission();'),
+  authenticatedApp.indexOf('const handleCompleteOnboarding'),
   authenticatedApp.indexOf('handleCloseVanguardWelcome'),
 );
-assert.ok(
-  blocoPush.indexOf('await requestAppPushPermission()') < blocoPush.indexOf('onboardingPushPromptedAt: new Date()'),
-  'a marca de "ja perguntei" so entra depois de perguntar',
-);
-assert.match(blocoPush, /nextPermission !== 'unsupported'/, 'falha nao conta como resposta');
-
-// Pergunta UMA VEZ. Quem disse nao nao e perguntado de novo: insistir a cada
-// abertura, ou a cada dia, e assedio. O caminho para mudar de ideia e Ajustes, e
-// o unico momento em que da para dizer isso e na propria recusa.
-assert.match(
-  authenticatedApp,
-  /if \(userProfile\.onboardingPushPromptedAt\) return;/,
-  'respondeu uma vez, nao pergunta mais',
-);
+assert.match(blocoPush, /if \(answers\.wantsPush\)/, 'push depende da escolha explícita no onboarding');
+assert.match(blocoPush, /requestAppPushPermission\(\)/, 'a escolha positiva abre a permissão do aparelho');
+assert.match(blocoPush, /onboardingPushPromptedAt: answeredAt/, 'a resposta fica marcada para não virar um segundo prompt');
+assert.match(blocoPush, /presenceLevel: answers\.presenceLevel/, 'a presença escolhida nasce junto com o onboarding');
+assert.doesNotMatch(authenticatedApp, /const permission = await getAppPushPermission\(\)/, 'não sobra pedido automático ao abrir o app');
 assert.match(blocoPush, /Ajustes > Or[aá]culo & Alertas/, 'a recusa precisa dizer onde ligar depois');
 
 

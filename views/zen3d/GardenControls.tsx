@@ -6,7 +6,7 @@ export interface Motion { x:number;y:number }
 export interface GardenView { angle:number;zoom:number;x:number;z:number }
 export function GardenCamera({gestureOwner,mode,objects,motion,view,onView,gesture,buildNavigation=true,sandEditing=false}: {gestureOwner?:MutableRefObject<'sand'|'camera'|null>;buildNavigation?:boolean;sandEditing?:boolean;mode:GardenMode;objects:GardenObject[];motion:MutableRefObject<Motion>;view:GardenView;onView:(change:(v:GardenView)=>GardenView)=>void;gesture:MutableRefObject<boolean>}) {
   const {camera,set,gl,invalidate,size}=useThree();
-  const cameras=useMemo(()=>({ build:new OrthographicCamera(-6,6,10,-10,.1,100),explore:new PerspectiveCamera(62,1,.08,100) }),[]);
+  const cameras=useMemo(()=>({ build:new OrthographicCamera(-6,6,10,-10,.1,100),overview:new OrthographicCamera(-6,6,10,-10,.1,100),explore:new PerspectiveCamera(62,1,.08,100) }),[]);
   const keys=useRef(new Set<string>()),look=useRef({yaw:0,pitch:-.07});
   const lastMode=useRef<GardenMode|null>(null);
   const collisions=useMemo(()=>({all:collisionCircles(objects),dry:collisionCircles(objects.filter(o=>!isWater(o.type)))}),[objects]);
@@ -14,8 +14,8 @@ export function GardenCamera({gestureOwner,mode,objects,motion,view,onView,gestu
   const latestObjects=useRef(objects);latestObjects.current=objects;
   useLayoutEffect(()=>{
     const aspect=size.width/size.height;
-    if(mode==='build') {
-      const c=cameras.build;
+    if(mode==='build'||mode==='overview') {
+      const c=cameras[mode];
       const halfWidth=aspect<1?Math.max(GARDEN_X+.75,GARDEN_Z*aspect+.8)*view.zoom:Math.max(10.3,GARDEN_Z+1)*aspect*view.zoom;
       const halfHeight=halfWidth/aspect;
       c.left=-halfWidth;c.right=halfWidth;c.top=halfHeight;c.bottom=-halfHeight;
@@ -29,7 +29,7 @@ export function GardenCamera({gestureOwner,mode,objects,motion,view,onView,gestu
     invalidate();
   },[mode,view,size.width,size.height,cameras,camera,set,invalidate]);
   useEffect(()=>{
-    if(mode!=='build'||!buildNavigation)return;
+    if((mode!=='build'&&mode!=='overview')||!buildNavigation)return;
     const canvas=gl.domElement,pointers=new Map<number,{x:number;y:number;startX:number;startY:number}>();
     let distance=0,angle=0;
     const ray=new Raycaster(),uv=new Vector2(),plane=new Plane(new Vector3(0,1,0),-.045);

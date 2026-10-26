@@ -52,9 +52,10 @@
 .glyph-garden .zen3d-subheader .zen-luxe-button{width:auto;min-width:76px;margin-right:10px;font-size:11px}.glyph-garden .zen3d-subheader>span{flex:1;min-width:0}
 
 /* The scene fills the screen; navigation floats above it. */
-.glyph-garden .garden-floating-entry{position:absolute;z-index:3;top:max(12px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));display:flex;gap:6px}
-.glyph-garden .garden-floating-entry button{min-height:44px;padding:0 14px;background:var(--garden-panel-strong);color:var(--garden-text)!important;border:1px solid var(--garden-line-soft);backdrop-filter:blur(12px);box-shadow:0 4px 18px #0003}
+.glyph-garden .garden-floating-entry{position:absolute;z-index:3;top:max(12px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));display:flex;gap:7px}
+.glyph-garden .garden-floating-entry button{min-height:44px;padding:0 15px;border-radius:12px!important;background:var(--garden-panel-strong);color:var(--garden-text)!important;border:1px solid var(--garden-line-soft);backdrop-filter:blur(12px);box-shadow:0 4px 18px #0003}
 .glyph-garden .garden-floating-entry button[aria-pressed=true]{background:var(--garden-active);border-color:var(--garden-line);color:var(--garden-accent)!important}
+.glyph-garden .garden-overview-hint{position:absolute;z-index:2;left:50%;bottom:max(18px,env(safe-area-inset-bottom));transform:translateX(-50%);padding:9px 13px;border:1px solid var(--garden-line-soft);border-radius:9px;background:color-mix(in srgb,var(--garden-panel-strong) 88%,transparent);color:var(--garden-muted);font-size:10px;letter-spacing:.08em;box-shadow:0 5px 18px #0004;pointer-events:none}
 .glyph-garden .zen3d-notice{top:68px;left:16px;right:16px;max-width:480px}
 .glyph-garden .zen3d-notice:empty{display:none}
 .glyph-garden .garden-editor-actions{display:flex;gap:6px;justify-content:flex-end;align-items:center;margin-bottom:6px}

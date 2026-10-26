@@ -35,7 +35,7 @@ import {
     buildOnboardingStartPatch,
     shouldAutoStartOnboarding,
 } from '../utils/firstUseOnboarding';
-import { getAppPushPermission, requestAppPushPermission } from '../utils/pushRuntime';
+import { requestAppPushPermission } from '../utils/pushRuntime';
 import { APP_NAVIGATE_EVENT, AppNavigatePayload } from '../utils/arenaAttention';
 import { cicloVenceu } from '../utils/operationalDay.js';
 import {
@@ -2009,16 +2009,43 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
     }, [updateUserProfile, userProfile]);
 
     const handleCompleteOnboarding = useCallback((acceptedSystemChallenges: string[], answers: OnboardingAnswers) => {
+        const answeredAt = new Date().toISOString();
         updateUserProfile({
             ...buildOnboardingCompletePatch(userProfile),
             acceptedSystemChallenges,
             onboardingPurpose: answers.purpose,
+            // A escolha agora acontece DENTRO do onboarding. A marca impede que
+            // uma segunda rotina abra outro prompt depois que a pessoa respondeu.
+            onboardingPushPromptedAt: answeredAt,
         });
-        // A presenca do Oraculo deixou de ser perguntada aqui: ela ja existe em
-        // Ajustes > Oraculo & Alertas, nasce num padrao razoavel, e NAO e o
-        // consentimento de push — quem decide isso e o pedido de permissao do
-        // sistema, que este mesmo arquivo dispara logo depois do onboarding.
-        // Nome e faixa etária são confirmados antes do balão, nos campos do perfil.
+        // Este chamado nasce diretamente do toque em "Concluir", para que o
+        // Android reconheça o gesto. Nao existe mais um pedido automático quando
+        // a pessoa abre o app depois do onboarding.
+        if (answers.wantsPush) {
+            setOnboardingPushBusy(true);
+            void requestAppPushPermission().then(async (permission) => {
+                if (permission === 'granted') {
+                    await updateOraclePreferences({ presenceLevel: answers.presenceLevel, pushEnabled: true, notificationsEnabled: true });
+                    showToast('Avisos no aparelho ativados.', 'success');
+                } else if (permission === 'denied') {
+                    await updateOraclePreferences({ presenceLevel: answers.presenceLevel, pushEnabled: false, notificationsEnabled: true });
+                    showToast('Tudo bem. Você pode ligar avisos depois em Ajustes > Oráculo & Alertas.', 'info');
+                } else {
+                    await updateOraclePreferences({ presenceLevel: answers.presenceLevel, pushEnabled: false, notificationsEnabled: true });
+                }
+            }).catch(() => {
+                // Falha técnica não vira consentimento e não impede concluir o guia.
+                void updateOraclePreferences({ presenceLevel: answers.presenceLevel, pushEnabled: false, notificationsEnabled: true });
+                showToast('Não foi possível ativar avisos agora. Você pode tentar depois em Ajustes.', 'warning');
+            }).finally(() => setOnboardingPushBusy(false));
+        } else {
+            void updateOraclePreferences({
+                presenceLevel: answers.presenceLevel,
+                notificationsEnabled: true,
+                // Nao herda acidentalmente um estado local antigo numa conta nova.
+                pushEnabled: false,
+            });
+        }
         setFirstUseOnboardingActive(false);
         window.setTimeout(() => {
             window.dispatchEvent(new CustomEvent('tutorialNavigate', {
@@ -2033,70 +2060,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                 showToast('Missão aceita. Ela já esta acompanhando seu progresso.', 'success');
             }
         }, 120);
-    }, [showToast, updateUserProfile, userProfile]);
-
-    useEffect(() => {
-        if (!isProfileLoaded || showTerms) return;
-        if (userProfile.id === 'placeholder_user') return;
-        // Pergunta UMA VEZ, logo depois do onboarding. Quem disser nao nao e
-        // perguntado de novo — o caminho para mudar de ideia e Ajustes.
-        //
-        // O bug nao era a marca existir, era ela ser gravada ANTES de chamar
-        // requestAppPushPermission: app morto no meio, erro engolido virando
-        // 'unsupported' ou prompt do sistema nao aparecendo queimavam o campo sem
-        // que ninguem tivesse sido perguntado. E o unico outro caminho para ligar
-        // push era o modal de preferencias do Oraculo, que desenhava vazio ate a
-        // 1.0.69 — as duas portas fechadas ao mesmo tempo.
-        //
-        // A correcao e a ORDEM, nao a frequencia: a marca entra depois da
-        // resposta, e so quando houve resposta.
-        if (userProfile.onboardingPushPromptedAt) return;
-        if (isFirstUseOnboardingActive) return;
-        if (shouldHoldVanguardWelcome) return;
-
-        let cancelled = false;
-
-        (async () => {
-            const permission = await getAppPushPermission();
-            if (cancelled || permission !== 'prompt') return;
-
-            setOnboardingPushBusy(true);
-            try {
-                const nextPermission = await requestAppPushPermission();
-                if (cancelled) return;
-                // A marca entra DEPOIS, e so quando o sistema respondeu de
-                // verdade: 'unsupported' e falha, nao resposta, e queimar o campo
-                // por causa dela era o que deixava o aparelho mudo para sempre.
-                if (nextPermission !== 'unsupported') {
-                    updateUserProfile({ onboardingPushPromptedAt: new Date().toISOString() });
-                }
-                if (nextPermission === 'granted') {
-                    await updateOraclePreferences({ pushEnabled: true });
-                    showToast('Push ativado. O Oráculo já pode te acompanhar fora da tela.', 'success');
-                } else if (nextPermission === 'denied') {
-                    // Nao insiste depois. Quem quiser ligar depois precisa saber
-                    // onde, e este e o unico momento em que da para dizer.
-                    showToast('Tudo bem. Se mudar de ideia, e em Ajustes > Oráculo & Alertas.', 'warning');
-                }
-            } finally {
-                if (!cancelled) setOnboardingPushBusy(false);
-            }
-        })();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [
-        isFirstUseOnboardingActive,
-        isProfileLoaded,
-        shouldHoldVanguardWelcome,
-        showTerms,
-        showToast,
-        updateOraclePreferences,
-        updateUserProfile,
-        userProfile.id,
-        userProfile.onboardingPushPromptedAt,
-    ]);
+    }, [showToast, updateOraclePreferences, updateUserProfile, userProfile]);
 
     const handleCloseVanguardWelcome = useCallback(() => {
         showToast(buildVanguardRewardsToast(userProfile.vanguardWelcomePayload), 'success');

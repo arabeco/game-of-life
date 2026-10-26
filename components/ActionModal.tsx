@@ -826,7 +826,12 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                     }
 
                     await scheduleTasks(nextAction);
-                    showToast('Ação atualizada.', 'success');
+                    showToast(
+                        scheduleChanged
+                            ? 'Agenda atualizada. As conclusões anteriores foram preservadas.'
+                            : 'Ação atualizada.',
+                        'success'
+                    );
                 }
                 if (isDetachedCollaborativeArena) {
                     await Promise.resolve(onCollaborativeRefresh?.());

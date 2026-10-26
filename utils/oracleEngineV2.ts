@@ -5,6 +5,7 @@ import { buildCycleCommitment, isCycleQuestAction } from './cycleCommitment.ts';
 import { isSharedArena, isTaskInPool } from './taskDomain.js';
 import { getOperationalDateString, taskMatchesOperationalDate } from './operationalDay.js';
 import { isActionInPactScope, measurePactProgress, resolvePactArena, type ArenaPact } from './arenaPacts.ts';
+import { ritmoEsperado } from '../supabase/functions/_shared/oracle-cycle-reading.ts';
 import { openingCandidates, reactionCandidates, selectSpeech, type Channel, type OpeningFacts, type ReadingFacts, type Spoken, type Voice, type Candidate } from '../supabase/functions/_shared/oracle-engine-v2.ts';
 export { ORACLE_ENGINE_V2 } from '../supabase/functions/_shared/oracle-engine-v2.ts';
 export type { Candidate } from '../supabase/functions/_shared/oracle-engine-v2.ts';
@@ -40,8 +41,34 @@ export function openingFacts(s: Scope, lastOpen: string | null): OpeningFacts {
     const used = poolScope.filter(t => t.actionId === a.id && (t.completed || !isTaskInPool(t) || t.executionOrder != null)).length;
     return used < Math.max(1, a.repetitions || 1);
   }).length;
+  let cycle: OpeningFacts['cycle'];
+  if (s.activeCycle && s.activeCycle.startDate <= s.today && s.activeCycle.endDate >= s.today) {
+    const commitment = buildCycleCommitment({ ...s, tasks, startDate: s.activeCycle.startDate, endDate: s.activeCycle.endDate });
+    if (commitment.plannedCount > 0) {
+      const totalDays = Math.max(1, Math.round((Date.parse(s.activeCycle.endDate) - Date.parse(s.activeCycle.startDate)) / 86400000) + 1);
+      const dayNumber = Math.max(1, Math.min(totalDays, Math.round((Date.parse(s.today) - Date.parse(s.activeCycle.startDate)) / 86400000) + 1));
+      const percent = Math.round(commitment.progressPercent);
+      const expected = Math.round(ritmoEsperado(dayNumber, totalDays));
+      const delta = percent - expected;
+      const pace = delta >= 10 ? 'adiantado' : delta >= -10 ? 'no_ritmo' : delta >= -25 ? 'atrasado' : 'critico';
+      const focusArenas = arenas
+        .map((arena) => ({ ...arena, percent: arena.target > 0 ? Math.round((arena.completed / arena.target) * 100) : 0 }))
+        .filter((arena) => arena.target > 0 && arena.completed < arena.target)
+        .map((arena) => ({ ...arena, delta: arena.percent - expected }))
+        .filter((arena) => arena.delta <= -10)
+        .sort((left, right) => left.delta - right.delta || left.name.localeCompare(right.name))
+        .slice(0, 2)
+        .map((arena) => arena.name);
+      cycle = {
+        percent,
+        daysLeft: Math.max(0, Math.round((Date.parse(s.activeCycle.endDate) - Date.parse(s.today)) / 86400000)),
+        pace,
+        focusArenas,
+      };
+    }
+  }
   return { completed: today.filter(t => t.completed).length, queued: today.filter(t => !t.completed && (!isTaskInPool(t) || t.executionOrder != null)).length,
-    stock, returned: Boolean(lastOpen && (Date.parse(s.today) - Date.parse(lastOpen)) / 86400000 >= 3) };
+    stock, returned: Boolean(lastOpen && (Date.parse(s.today) - Date.parse(lastOpen)) / 86400000 >= 3), cycle };
 }
 
 const key = (userId: string) => `glyph:oracle-v2:${userId}`;

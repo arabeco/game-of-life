@@ -15,7 +15,8 @@ const nicknameDisponivel = async (nome: string): Promise<boolean | null> => {
   const { data, error } = await supabase.rpc('nickname_disponivel', { p_nome: nome });
   return error || typeof data !== 'boolean' ? null : data;
 };
-import type { OnboardingPurpose } from '../types';
+import type { OnboardingPurpose, OraclePresenceLevel } from '../types';
+import { ORACLE_PRESENCE_ORDER, ORACLE_PRESENCE_RULES } from '../constants/oraclePresencePolicy';
 
 type AppView = 'assets' | 'arenas' | 'planner' | 'social' | 'settings' | 'reports';
 
@@ -40,6 +41,8 @@ type StepDef = {
 
 export type OnboardingAnswers = {
   purpose: OnboardingPurpose | null;
+  presenceLevel: OraclePresenceLevel;
+  wantsPush: boolean;
 };
 
 // Depois da apresentação do perfil, o propósito adapta o balão do guia.
@@ -97,6 +100,8 @@ export const FirstUseOnboardingOverlay: React.FC<{
   const [createdArenaId, setCreatedArenaId] = useState<string | null>(null);
   const [purpose, setPurpose] = useState<OnboardingPurpose | null>(null);
   const [selectedMissionIds, setSelectedMissionIds] = useState<string[]>([]);
+  const [presenceLevel, setPresenceLevel] = useState<OraclePresenceLevel>(2);
+  const [wantsPush, setWantsPush] = useState(false);
   const autoAdvanceStepRef = useRef<string | null>(null);
   const currentStepRef = useRef<StepDef | undefined>(undefined);
   const isTypingRef = useRef(false);
@@ -214,6 +219,12 @@ export const FirstUseOnboardingOverlay: React.FC<{
       title: 'Quer uma missão para começar?',
       text: 'Escolha uma ou nenhuma. Ela apenas acompanha o que você fizer e pode ser abandonada depois.',
       navigation: { view: 'assets', showReports: false, showRestScreen: false, showArenaId: null },
+    },
+    {
+      id: 'oracle-presence',
+      title: 'Como você quer que o Oráculo apareça?',
+      text: 'Escolha o espaço que ele ocupa na sua rotina. Avisos no aparelho são opcionais e você pode mudar tudo depois.',
+      navigation: { view: 'planner', showReports: false, showRestScreen: false, showArenaId: null },
     },
     {
       id: 'finish',
@@ -533,7 +544,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
 
     if (step.final) {
       clearOnboardingProgress(userProfile.id);
-      onComplete(selectedMissionIds, { purpose });
+      onComplete(selectedMissionIds, { purpose, presenceLevel, wantsPush });
       return;
     }
 
@@ -739,6 +750,46 @@ export const FirstUseOnboardingOverlay: React.FC<{
                           : 'border-white/8 bg-transparent text-white/38 hover:text-white/65'}`}
                       >
                         Nenhuma por enquanto
+                      </button>
+                    </div>
+                  )}
+
+                  {step.id === 'oracle-presence' && (
+                    <div className="mt-3 space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        {ORACLE_PRESENCE_ORDER.map((level) => {
+                          const option = ORACLE_PRESENCE_RULES[level];
+                          const selected = presenceLevel === level;
+                          return (
+                            <button
+                              key={level}
+                              type="button"
+                              onClick={() => setPresenceLevel(level)}
+                              className={`rounded-xl border px-3 py-2.5 text-left transition active:scale-[0.99] ${selected
+                                ? 'border-[#f3d48a]/65 bg-[#f3d48a]/14 text-[#fff0c7]'
+                                : 'border-white/10 bg-white/[0.035] text-white/74 hover:border-[#f3d48a]/30'}`}
+                            >
+                              <span className="block text-[10px] font-black uppercase tracking-[0.12em]">{option.label}</span>
+                              <span className="mt-1 block text-[9px] leading-snug text-white/48">{option.caption}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setWantsPush((current) => !current)}
+                        aria-pressed={wantsPush}
+                        className={`flex w-full items-center justify-between gap-3 rounded-xl border px-3 py-2.5 text-left transition ${wantsPush
+                          ? 'border-emerald-300/55 bg-emerald-300/10 text-emerald-50'
+                          : 'border-white/10 bg-white/[0.035] text-white/70 hover:border-white/22'}`}
+                      >
+                        <span>
+                          <span className="block text-[10px] font-black uppercase tracking-[0.12em]">Avisos no aparelho</span>
+                          <span className="mt-1 block text-[9px] leading-snug text-white/48">{wantsPush ? 'Vamos pedir a permissão do Android ao concluir.' : 'As mensagens continuam dentro do app.'}</span>
+                        </span>
+                        <span className={`flex h-5 w-9 shrink-0 items-center rounded-full border p-0.5 transition ${wantsPush ? 'border-emerald-200/75 bg-emerald-300/30 justify-end' : 'border-white/18 bg-black/25 justify-start'}`}>
+                          <span className="h-3.5 w-3.5 rounded-full bg-white shadow" />
+                        </span>
                       </button>
                     </div>
                   )}

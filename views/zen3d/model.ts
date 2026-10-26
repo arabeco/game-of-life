@@ -3,7 +3,11 @@ export type ObjectKind = 'strata-stone' | 'wood-walkway' | 'fern' | 'low-lantern
 export type Category = 'Pedras' | 'Caminhos' | 'Água' | 'Plantas' | 'Luz';
 export interface GardenObject { id: string; type: ObjectKind; position: [number, number, number]; rotation: number; variant: number; fixed?: boolean; kit?: KitId }
 export interface GardenLayout { version: 2; objects: GardenObject[] }
-export type GardenMode = 'build' | 'explore';
+/**
+ * `overview` e a vista inicial: permite olhar o jardim inteiro sem abrir
+ * nenhuma ferramenta. Construir e entrar nele continuam escolhas explicitas.
+ */
+export type GardenMode = 'overview' | 'build' | 'explore';
 export type BuildTool = 'select' | 'move' | ObjectKind;
 export interface StonePiece { x: number; z: number; sx: number; sy: number; sz: number; yaw: number }
 export interface Circle { x: number; z: number; radius: number }

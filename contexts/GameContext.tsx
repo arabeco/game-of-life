@@ -1,4 +1,4 @@
-import { copiaDaArena, tarefasQueParam } from '../utils/arenaFinalizada';
+import { copiaDaArena, diasAteConcluir, tarefasQueParam } from '../utils/arenaFinalizada';
 import { habitosConsolidados } from '../utils/habitosConsolidados';
 import type { DailyFragmentReceipt } from '../components/DailyFragmentReward';
 import { GARDEN_BASKET_CHANGED, type GardenBasketReceipt } from '../services/gardenBasket';
@@ -11942,7 +11942,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const arena = assetsRef.current.flatMap(asset => asset.arenas).find(candidate => candidate.id === arenaId);
         if (!arena || arena.completedAt || arenasDeMissao().has(arenaId)) return { ok: false };
         const acoesDaArena = actions.filter(acao => acao.arenaId === arenaId);
-        updateArena(arenaId, { completedAt: new Date().toISOString() });
+        const concluidaEm = new Date().toISOString();
+        updateArena(arenaId, { completedAt: concluidaEm });
         const paradas = new Set(tarefasQueParam({ tasks, actionIds: acoesDaArena.map(acao => acao.id), hoje: getTodayString() }));
         if (paradas.size) {
             setTasks(prev => prev.filter(task => !paradas.has(task.id)));
@@ -11952,6 +11953,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
         }
         showToast(paradas.size ? `Arena concluída. ${paradas.size} ${paradas.size === 1 ? 'ação pendente saiu' : 'ações pendentes saíram'} do planner.` : 'Arena concluída.', 'success');
+        // O modal de parabens e o mesmo dos feitos: compartilhar no Mundo so se a pessoa quiser.
+        const idsDasAcoes = new Set(acoesDaArena.map(acao => acao.id));
+        const feitas = tasks.filter(task => task.completed && idsDasAcoes.has(task.actionId));
+        setAchievementUnlocked({
+            type: 'ARENA_COMPLETED',
+            data: {
+                name: arena.name, icon: arena.icon, assetId: arena.assetId, metaFinal: arena.finalGoal,
+                actionCount: acoesDaArena.length, deliveries: feitas.length,
+                minutes: feitas.reduce((soma, task) => soma + (Number(task.duration) || 0), 0),
+                days: new Set(feitas.map(task => task.date)).size,
+                diasAteConcluir: diasAteConcluir({ createdAt: arena.createdAt, completedAt: concluidaEm }),
+            },
+        });
         if (!opcoes?.copiar) return { ok: true };
         try {
             const { arena: dados, acoes } = copiaDaArena(arena, acoesDaArena);

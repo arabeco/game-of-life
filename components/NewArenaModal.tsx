@@ -54,6 +54,7 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
     const { addArena, assets, showToast, userProfile, getNextArenaToneSequence } = useGame();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
+    const [metaFinal, setMetaFinal] = useState('');
     const [assetId, setAssetId] = useState(
         initialAssetId && isLifeAreaId(initialAssetId) ? initialAssetId : LIFE_AREA_IDS[0],
     );
@@ -101,6 +102,8 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
                 name,
                 description: finalDescription,
                 icon: defaultIcon,
+                // Meta final e opcional; so vai ao banco quando a pessoa escreveu uma.
+                ...(metaFinal.trim() ? { finalGoal: metaFinal.trim() } : {}),
             });
 
             showToast('Arena criada.', 'success');
@@ -161,6 +164,7 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
                                 <span className={!selectedAsset ? 'text-gray-400' : ''}>{selectedAssetLabel || 'Selecione a área'}</span>
                                 <ChevronRightIcon className="w-5 h-5 text-gray-400" />
                             </button></> : <label className="reference-field"><span>O que você quer construir?</span><textarea id="new-arena-description-input" maxLength={1000} value={description} onChange={e => setDescription(e.target.value)} rows={3} /></label>}
+                            {creationTab === 'intention' && <label className="reference-field"><span>Meta final <small className="text-white/45">(opcional)</small></span><input id="new-arena-final-goal-input" maxLength={140} value={metaFinal} onChange={e => setMetaFinal(e.target.value)} placeholder="Onde esta arena termina" /><small className="mt-1 block text-[11px] leading-snug text-white/55">Com meta, a arena tem um fim: quando você chegar nela, conclui a arena e ela vai para as Finalizadas. Sem meta, a arena segue pelas repetições das ações.</small></label>}
                         </div>
                         <footer className="reference-footer"><button id="new-arena-submit-button" onClick={handleSave} disabled={!canCreateArena} className="reference-primary luxe-skin-button luxe-brilho">Criar arena</button></footer>
                     </ReferencePlate>

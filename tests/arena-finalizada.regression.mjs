@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { getArenaCapacitySummary } from '../utils/arenaCapacity.ts';
 import { buildCycleCommitment } from '../utils/cycleCommitment.ts';
-import { tarefasQueParam, copiaDaArena } from '../utils/arenaFinalizada.ts';
+import { tarefasQueParam, copiaDaArena, diasAteConcluir } from '../utils/arenaFinalizada.ts';
 
 /**
  * ARENA FINALIZADA (26/10/2026, decidido com o Afonso).
@@ -62,4 +62,9 @@ assert.equal(acoes.length, 1);
 assert.equal(acoes[0].name, 'Programar');
 assert.equal(acoes[0].repetitions, 10);
 assert.equal('id' in acoes[0] || 'arenaId' in acoes[0], false, 'a copia da acao nao leva id nem arena antigos');
-console.log('Arena finalizada: limite, ciclo, acoes que param e copia conferidos.');
+// quanto tempo levou: da criacao ate a conclusao, em dias (no minimo 1)
+assert.equal(diasAteConcluir({ createdAt: '2026-09-08T10:00:00Z', completedAt: '2026-10-20T15:00:00Z' }), 43);
+assert.equal(diasAteConcluir({ createdAt: '2026-10-20T08:00:00Z', completedAt: '2026-10-20T20:00:00Z' }), 1, 'concluida no mesmo dia conta 1');
+assert.equal(diasAteConcluir({ completedAt: '2026-10-20T20:00:00Z' }), null, 'sem data de criacao nao inventa');
+console.log('ok - tempo ate concluir em dias');
+console.log('Arena finalizada: limite, ciclo, acoes que param, copia e tempo conferidos.');

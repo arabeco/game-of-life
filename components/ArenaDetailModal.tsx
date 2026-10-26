@@ -1,3 +1,4 @@
+import { diasAteConcluir } from '../utils/arenaFinalizada';
 import { getArenaTone, getArenaActionGradient } from '../utils/arenaTones.ts';
 import { getTaskMinutes } from '../utils/taskExp';
 import { ReferencePlate } from './ReferencePlate';
@@ -167,21 +168,22 @@ export const ArenaDetailModal: React.FC<{
     const { getActionsForArena, assets, updateArena, deleteArena, removeRelationshipArenaShare, tasks, activeCycle, activeArenaPact, freeProgressResetAt, getActionBackgroundStyle, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants, joinClanMission, getClanQuestsForArena, seasonQuests, setArenaAsShared, clan, userProfile, enrichedClanMembers, getSharedActionPoolProgress, showToast, userCodexes } = useGame();
     const [actionModalState, setActionModalState] = useState<{ action: Action | null, mode: 'view' | 'edit', key: string } | null>(null);
     const [isEditing, setIsEditing] = useState(false);
-    const [editableArena, setEditableArena] = useState({ assetId: arena.assetId, name: arena.name, description: arena.description, icon: arena.icon });
+    const [editableArena, setEditableArena] = useState({ assetId: arena.assetId, name: arena.name, description: arena.description, icon: arena.icon, finalGoal: arena.finalGoal || '' });
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
     const [isLinkingObserver, setIsLinkingObserver] = useState(false);
     const [isRelationshipHubOpen, setRelationshipHubOpen] = useState(false);
     const [arenaTab, setArenaTab] = useState<'actions' | 'about'>('actions');
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+    const [confirmarConclusao, setConfirmarConclusao] = useState(false);
     const newActionRef = useRef<HTMLButtonElement>(null);
     const [currentLinkType, setCurrentLinkType] = useState<string | null>(linkedRelationshipType);
     const [currentCollaborativeRole, setCurrentCollaborativeRole] = useState<'mentor' | 'pupil' | null>(collaborativeRole);
     const [selectionType, setSelectionType] = useState<'mentoria' | 'competicao' | 'parceria'>('mentoria');
 
     useEffect(() => {
-        setEditableArena({ assetId: arena.assetId, name: arena.name, description: arena.description, icon: arena.icon });
+        setEditableArena({ assetId: arena.assetId, name: arena.name, description: arena.description, icon: arena.icon, finalGoal: arena.finalGoal || '' });
         setIsEditing(false);
-    }, [arena.id, arena.assetId, arena.name, arena.description, arena.icon]);
+    }, [arena.id, arena.assetId, arena.name, arena.description, arena.icon, arena.finalGoal]);
 
     useEffect(() => {
         const fetchLinkType = async () => {
@@ -227,6 +229,7 @@ export const ArenaDetailModal: React.FC<{
     const isCompetitionLinkedArena = effectiveRelationshipType === 'competicao';
     const isPupilMentorshipArena = isMentorshipLinkedArena && effectiveCollaborativeRole === 'pupil';
     const isReadOnlyArena = readOnly || previewMode || isCompetitionLinkedArena || !localArenaExists;
+    const { concluirArena, reabrirArena } = useGame();
     const activeAssetId = isEditing ? editableArena.assetId : arena.assetId;
     const parentAsset = assets.find(a => a.id === activeAssetId);
     const formatAssetLabel = (assetId: string, assetName: string) => assetId === 'geral' ? 'OUTROS / SIDEQUEST' : assetName;
@@ -431,7 +434,11 @@ export const ArenaDetailModal: React.FC<{
                 await Promise.resolve(onLinkedArenaRefresh?.());
                 window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
             } else {
-                updateArena(arena.id, nextArenaData);
+                const metaEditada = editableArena.finalGoal.trim();
+                updateArena(arena.id, {
+                    ...nextArenaData,
+                    ...(metaEditada !== (arena.finalGoal || '') ? { finalGoal: metaEditada || null } : {}),
+                });
             }
 
             showToast('Arena atualizada.', 'success');
@@ -593,7 +600,7 @@ export const ArenaDetailModal: React.FC<{
                             <div className="reference-arena-tools">
                                 {/* Allow editing for flexible arenas or if user is the Mentor */}
                                 {!isReadOnlyArena && (!isArenaEditLocked || isEditing || effectiveRelationshipType === 'mentoria') && (
-                                    <button aria-label={isEditing ? 'Cancelar edição da arena' : 'Editar arena'} onClick={() => { if (isEditing) { setEditableArena({...arena}); setIsEditing(false); setArenaTab('actions'); } else { handleEditToggle(); setArenaTab('about'); } }} className="reference-corner reference-edit">
+                                    <button aria-label={isEditing ? 'Cancelar edição da arena' : 'Editar arena'} onClick={() => { if (isEditing) { setEditableArena({ assetId: arena.assetId, name: arena.name, description: arena.description, icon: arena.icon, finalGoal: arena.finalGoal || '' }); setIsEditing(false); setArenaTab('actions'); } else { handleEditToggle(); setArenaTab('about'); } }} className="reference-corner reference-edit">
                                         {isEditing ? <span>←</span> : <EditIcon className="w-4 h-4" />}
                                     </button>
                                 )}
@@ -700,6 +707,35 @@ export const ArenaDetailModal: React.FC<{
                             />
                         )}
 
+                        {/* META FINAL (26/10/2026): concluir, ou o estado de concluida. */}
+                        {!isEditing && !arena.completedAt && arena.finalGoal && !isReadOnlyArena && !isArenaDeJornada && (
+                            <div className="arena-meta-bloco">
+                                <p><span>Meta final</span>{arena.finalGoal}</p>
+                                <button type="button" className="luxe-skin-button" onClick={() => setConfirmarConclusao(true)}>⭐ Concluir arena</button>
+                            </div>
+                        )}
+                        {!isEditing && arena.completedAt && (
+                            <div className="arena-meta-bloco arena-meta-bloco--concluida">
+                                <p className="arena-meta-concluida-data">⭐ Concluída em {new Date(arena.completedAt).toLocaleDateString('pt-BR')}{(() => { const d = diasAteConcluir(arena); return d ? ` · levou ${d} ${d === 1 ? 'dia' : 'dias'}` : ''; })()}</p>
+                                {arena.finalGoal && <p><span>Meta final</span>{arena.finalGoal}</p>}
+                                {!isReadOnlyArena && <div className="arena-meta-acoes">
+                                    {!arena.isArchived && <button type="button" className="luxe-skin-button" onClick={() => { updateArena(arena.id, { isArchived: true }); showToast('Arena guardada nas Finalizadas.', 'success'); onClose(); }}>Guardar nas Finalizadas</button>}
+                                    <button type="button" className="luxe-button-secondary" onClick={() => { if (reabrirArena(arena.id)) onClose(); }}>Reabrir</button>
+                                </div>}
+                            </div>
+                        )}
+                        {confirmarConclusao && (
+                            <div className="arena-confirmar-conclusao" role="dialog" aria-modal="true" aria-labelledby="arena-concluir-titulo">
+                                <div>
+                                    <h3 id="arena-concluir-titulo">Concluir "{arena.name}"?</h3>
+                                    <p>A meta "{arena.finalGoal}" foi alcançada. A arena sai do dia a dia: as ações pendentes saem do planner, ela deixa de ocupar vaga e fica com a estrela até você guardá-la nas Finalizadas. Dá para reabrir depois.</p>
+                                    <button type="button" className="luxe-skin-button" onClick={async () => { setConfirmarConclusao(false); const r = await concluirArena(arena.id); if (r.ok) onClose(); }}>Concluir</button>
+                                    <button type="button" className="luxe-button-secondary" onClick={async () => { setConfirmarConclusao(false); const r = await concluirArena(arena.id, { copiar: true }); if (r.ok) onClose(); }}>Concluir e criar cópia</button>
+                                    <button type="button" className="arena-confirmar-cancelar" onClick={() => setConfirmarConclusao(false)}>Cancelar</button>
+                                </div>
+                            </div>
+                        )}
+
                         <nav className="reference-tabs arena-detail-tabs" aria-label="Abas da arena">
                             <button aria-pressed={arenaTab === 'actions' && !isEditing} onClick={()=>setArenaTab('actions')} disabled={isEditing}>Ações</button>
                             <button aria-pressed={arenaTab === 'about' || isEditing} onClick={()=>setArenaTab('about')}>Sobre</button>
@@ -714,6 +750,13 @@ export const ArenaDetailModal: React.FC<{
                                         maxLength={1000}
                                         aria-label="Descrição da arena"
                                     /></label>
+                                    {!arena.completedAt && !isArenaDeJornada && <label className="reference-field w-full text-left"><span>Meta final <small className="text-white/45">(opcional)</small></span><input
+                                        value={editableArena.finalGoal}
+                                        onChange={(e) => setEditableArena(prev => ({ ...prev, finalGoal: e.target.value }))}
+                                        maxLength={140}
+                                        placeholder="Onde esta arena termina"
+                                        aria-label="Meta final da arena"
+                                    /><small className="mt-1 block text-[11px] leading-snug text-white/55">Com meta, a arena tem um fim: quando você chegar nela, conclui a arena. Sem meta, ela segue pelas repetições das ações.</small></label>}
                                     <div className="reference-field w-full text-left">
                                         <label className="block text-[10px] font-bold uppercase tracking-[0.22em] text-gray-400 mb-2">
                                             Área da vida
@@ -732,7 +775,10 @@ export const ArenaDetailModal: React.FC<{
                                     </div>
                                 </>
                             ) : (
-                                <p className="text-sm text-gray-500 pt-1">{arena.description || 'Sem descrição.'}</p>
+                                <>
+                                    <p className="text-sm text-gray-500 pt-1">{arena.description || 'Sem descrição.'}</p>
+                                    {arena.finalGoal && <p className="arena-meta-final"><span>Meta final</span>{arena.finalGoal}</p>}
+                                </>
                             )}
                         </div>
 

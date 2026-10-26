@@ -24,9 +24,17 @@ export function tarefasQueParam({ tasks, actionIds, hoje }: {
         .map((t) => t.id);
 }
 
+/** Quanto tempo a arena levou da criacao ate a conclusao, em dias (no minimo 1). */
+export function diasAteConcluir(arena?: Pick<Arena, 'createdAt' | 'completedAt'> | null): number | null {
+    if (!arena?.createdAt || !arena?.completedAt) return null;
+    const ms = Date.parse(arena.completedAt) - Date.parse(arena.createdAt);
+    if (!Number.isFinite(ms)) return null;
+    return Math.max(1, Math.ceil(ms / 86400000));
+}
+
 /** "Concluir e criar copia": uma arena igual, com a meta em branco, e as acoes dela. */
 export function copiaDaArena(arena: Arena, actions: Action[]) {
-    const { id: _id, actionIds: _ids, completedAt: _c, finalGoal: _m, isArchived: _a, ...resto } = arena;
+    const { id: _id, actionIds: _ids, completedAt: _c, finalGoal: _m, isArchived: _a, createdAt: _criada, ...resto } = arena;
     const novaArena = { ...resto, finalGoal: '', completedAt: null, isArchived: false };
     const acoes = actions
         .filter((acao) => acao.arenaId === arena.id)

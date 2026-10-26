@@ -75,6 +75,11 @@ const getAchievementDetails = (type: FeedEventType, data: any) => {
             // que a pessoa fez. Os dias ja vinham no evento e nao apareciam em
             // lugar nenhum; aqui eles cabem sem disputar espaco com os cartoes.
             const dias = Math.max(0, Number(data.days || 0));
+            // Arena com meta final (26/10/2026): a comemoracao e da meta.
+            if (data.metaFinal) {
+                const levou = Number(data.diasAteConcluir || 0);
+                return { title: 'Meta concluída!', subtitle: data.name, icon: data.icon || '⭐', message: levou > 0 ? `"${data.metaFinal}" · em ${levou} ${levou === 1 ? 'dia' : 'dias'}` : `"${data.metaFinal}"` };
+            }
             return {
                 title: 'Arena concluída!',
                 subtitle: data.name,
@@ -415,7 +420,8 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
          * tras deixou de ter assunto: subir de patente ou fechar um relatorio nao
          * esvazia o lugar onde a pessoa estava.
          */
-        if (isArenaComplete && typeof window !== 'undefined') {
+        // A arena com meta final continua na grade, com a estrela: nao sai da tela.
+        if (isArenaComplete && !achievement.data.metaFinal && typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent<AppNavigatePayload>(
                 APP_NAVIGATE_EVENT,
                 { detail: { view: 'planner' } },

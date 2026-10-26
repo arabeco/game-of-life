@@ -915,8 +915,10 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                 {hubTab === 'library' && libraryEntries.length === 0 && <p className="text-sm text-white/50">Suas campanhas adquiridas ficam aqui para instalar quando quiser.</p>}
                                 {hubTab === 'history' && <div className="space-y-2">
                                     {campaigns.filter(c => c.status !== 'active').map(c => <details key={c.id} className="rounded-sm border border-white/10 p-3">
-                                        <summary className="cursor-pointer text-sm">{c.title} · {c.status === 'completed' ? 'Concluída' : 'Arquivada'}</summary>
+                                        <summary className="cursor-pointer text-sm">{c.status === 'completed' && <span aria-label="Campanha concluída">⭐ </span>}{c.title} · {c.status === 'completed' ? 'Concluída' : 'Arquivada'}</summary>
                                         <p className="text-xs text-white/50">{c.completedAt ? new Date(c.completedAt).toLocaleDateString('pt-BR') : ''} · {Number(c.resultSnapshot?.completedRepetitions ?? 0)} repetições registradas</p>
+                                        {/* Refazer: instala de novo pela biblioteca, igualzinha, sem mexer nesta. */}
+                                        <p className="text-xs text-white/50">Para fazer de novo, abra pela biblioteca: ela começa igualzinha, e esta fica guardada como está.</p>
                                         <button className="text-xs text-[var(--skin-accent-color)]" onClick={() => setHubTab('library')}>Ver na biblioteca</button>
                                     </details>)}
                                     {!campaigns.some(c => c.status !== 'active') && <p className="text-sm text-white/50">As tentativas concluídas ou arquivadas aparecerão aqui.</p>}

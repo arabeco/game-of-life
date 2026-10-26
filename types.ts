@@ -209,6 +209,7 @@ export interface Arena {
 
   // Meta final opcional e a data em que a arena foi concluida (utils/arenaFinalizada.ts).
   finalGoal?: string | null;
+  createdAt?: string;
   completedAt?: string | null;
 }
 

@@ -1,3 +1,4 @@
+import { diasAteConcluir } from '../utils/arenaFinalizada';
 import { getCampaignGradient } from '../utils/arenaTones';
 import { campaignAwareTasks } from '../utils/campaignScope';
 ﻿import { FloatingActionDock } from '../components/FloatingActionDock';
@@ -317,11 +318,13 @@ export const ArenasView: React.FC = () => {
         boxShadow: '0 10px 18px rgba(0,0,0,0.26), inset 0 1px 0 rgba(255,255,255,0.08)',
     };
     
-    const allArenas = getArenas().filter(a => (showArchived || !a.isArchived));
+    // A grade mostra so as ativas (concluidas incluidas, com a estrela). As guardadas
+    // aparecem no painel de Arquivadas e Finalizadas, aberto pelo botao do arquivo.
+    const allArenas = getArenas().filter(a => !a.isArchived);
     const rootArenas = allArenas
         .filter(a => !a.folderId && !allCampaignArenaIds.includes(a.id))
         .sort((a, b) => (a.order || 0) - (b.order || 0));
-    const selectedArena = allArenas.find(a => a.id === selectedArenaId);
+    const selectedArena = getArenas().find(a => a.id === selectedArenaId);
     const selectedFolder = arenaFolders.find(f => f.id === selectedFolderId);
     const selectedCampaign = campaigns.find(c => c.id === selectedCampaignId);
     const openCampaignFolder = campaigns.find(c => c.id === openCampaignFolderId);
@@ -2039,6 +2042,7 @@ export const ArenasView: React.FC = () => {
                     />
                 )}
                 <div className={`relative transition-transform duration-200 ${options.showInsertionIndicator && isDragOver ? (dragOverSide === 'left' ? 'translate-x-1' : '-translate-x-1') : ''}`}>
+                    <div className={arena.completedAt ? 'arena-concluida-wrap' : undefined}>
                     <ArenaCard
                         arena={arena}
                         assetName={options.assetName}
@@ -2050,6 +2054,9 @@ export const ArenasView: React.FC = () => {
                         variant="overview"
                         highlightPhase={arenaHighlightPhase}
                     />
+                    {/* Concluida (meta final): opaca e com a estrela ate ir para as Finalizadas. */}
+                    {arena.completedAt && <span className="arena-concluida-estrela" aria-label="Arena concluída">⭐</span>}
+                    </div>
                     {isSelectedForCampaign && !isBlocked && (
                         <div className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full border border-[var(--skin-accent-color)]/50 bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)] shadow-[0_0_12px_rgba(212,175,55,0.2)]">
                             <CheckIcon className="h-3.5 w-3.5" />
@@ -2482,6 +2489,45 @@ export const ArenasView: React.FC = () => {
                         )}
                     </div>
                 )}
+
+                {showArchived && (() => {
+                    // ARQUIVADAS E FINALIZADAS (26/10/2026). Finalizadas sao as que
+                    // chegaram na meta final: ficam como trofeus. Nenhuma das duas
+                    // ocupa vaga; reabrir qualquer uma precisa de vaga livre.
+                    const guardadas = getArenas().filter(a => a.isArchived && !allCampaignArenaIds.includes(a.id));
+                    const finalizadas = guardadas.filter(a => a.completedAt).sort((a, b) => String(b.completedAt).localeCompare(String(a.completedAt)));
+                    const arquivadas = guardadas.filter(a => !a.completedAt);
+                    return (
+                        <section className="arenas-guardadas" aria-label="Arenas guardadas">
+                            <h3>Finalizadas <small>{finalizadas.length}</small></h3>
+                            {finalizadas.length ? (
+                                <div className="arenas-guardadas-lista">
+                                    {finalizadas.map(a => {
+                                        const dias = diasAteConcluir(a);
+                                        return (
+                                            <button key={a.id} type="button" className="arena-guardada arena-guardada--finalizada" onClick={() => setSelectedArenaId(a.id)}>
+                                                <span className="arena-guardada-icone" aria-hidden>{a.icon}</span>
+                                                <span className="arena-guardada-texto"><b>{a.name}</b>{a.finalGoal && <small>{a.finalGoal}</small>}<small className="arena-guardada-data">Concluída em {new Date(String(a.completedAt)).toLocaleDateString('pt-BR')}{dias ? ` · ${dias} ${dias === 1 ? 'dia' : 'dias'}` : ''}</small></span>
+                                                <span className="arena-guardada-estrela" aria-hidden>⭐</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            ) : <p className="arenas-guardadas-vazio">Quando uma arena chegar na meta final, ela fica aqui.</p>}
+                            <h3>Arquivadas <small>{arquivadas.length}</small></h3>
+                            {arquivadas.length ? (
+                                <div className="arenas-guardadas-lista">
+                                    {arquivadas.map(a => (
+                                        <button key={a.id} type="button" className="arena-guardada" onClick={() => setSelectedArenaId(a.id)}>
+                                            <span className="arena-guardada-icone" aria-hidden>{a.icon}</span>
+                                            <span className="arena-guardada-texto"><b>{a.name}</b></span>
+                                        </button>
+                                    ))}
+                                </div>
+                            ) : <p className="arenas-guardadas-vazio">Nenhuma arena arquivada.</p>}
+                        </section>
+                    );
+                })()}
 
                 <div id="arenas-container" className={arenaPresentationMode === 'list' ? 'space-y-4' : 'space-y-8'}>
                     {arenasViewMode === 'free' && (

@@ -13,3 +13,28 @@
 .arena-actions-empty{font-size:12px;text-align:center;color:#aaa;padding:14px}
 .arena-about{min-height:0;max-height:280px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}.arena-about p,.arena-about textarea{max-height:72px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;resize:none;font-size:12px;overflow-wrap:anywhere}.arena-about input{font-size:17px!important}
 @media(max-height:620px){.arena-actions-list{max-height:150px}.arena-about{max-height:210px}}
+/* Meta final da arena (26/10/2026): o bloco de concluir, o estado de concluida e a confirmacao. */
+.arena-meta-final{margin:8px 0 0;font-size:12px;color:#e8dcc0;text-align:center}.arena-meta-final span,.arena-meta-bloco p span{display:block;font-size:9px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:var(--skin-accent-color);margin-bottom:2px}
+.arena-meta-bloco{display:grid;gap:8px;margin:8px 0 6px;padding:10px 12px;border-radius:12px;border:1px solid color-mix(in srgb,var(--skin-accent-color) 35%,transparent);background:color-mix(in srgb,var(--skin-accent-color) 8%,transparent);text-align:center}
+.arena-meta-bloco p{margin:0;font-size:13px;color:#f1e7cf;overflow-wrap:anywhere}
+.arena-meta-bloco button{min-height:36px;border-radius:10px;font-size:12px;font-weight:800;letter-spacing:.08em}
+.arena-meta-bloco--concluida{border-color:rgba(246,223,160,.55);background:rgba(246,223,160,.07)}
+.arena-meta-concluida-data{font-size:11px!important;color:rgba(241,231,207,.62)!important}
+.arena-meta-acoes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.arena-confirmar-conclusao{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:20px;background:rgba(0,0,0,.72)}
+.arena-confirmar-conclusao>div{width:min(100%,360px);display:grid;gap:10px;padding:20px;border-radius:16px;border:1px solid rgba(246,223,160,.4);background:#14110c;text-align:center}
+.arena-confirmar-conclusao h3{margin:0;font-size:17px;color:#f6dfa0}.arena-confirmar-conclusao p{margin:0 0 4px;font-size:12.5px;line-height:1.5;color:rgba(241,231,207,.78)}
+.arena-confirmar-conclusao button{min-height:40px;border-radius:12px;font-size:12px;font-weight:800;letter-spacing:.08em}
+.arena-confirmar-cancelar{background:none;border:0;color:rgba(241,231,207,.6);text-decoration:underline}
+/* Arena concluida na grade: opaca, com a estrela grande no meio. */
+.arena-concluida-wrap{position:relative}.arena-concluida-wrap>*:first-child{opacity:.42;filter:saturate(.6)}
+.arena-concluida-estrela{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;font-size:34px;filter:drop-shadow(0 0 10px rgba(246,223,160,.7));z-index:5}
+/* Painel de Arquivadas e Finalizadas. */
+.arenas-guardadas{display:grid;gap:8px;margin:4px 0 18px;padding:12px;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.28)}
+.arenas-guardadas h3{display:flex;align-items:baseline;gap:6px;margin:6px 0 0;font-size:11px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:var(--skin-accent-color)}.arenas-guardadas h3 small{color:rgba(255,255,255,.45);font-size:10px}
+.arenas-guardadas-lista{display:grid;gap:6px}
+.arena-guardada{display:grid;grid-template-columns:32px minmax(0,1fr) auto;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);text-align:left;color:#eee}
+.arena-guardada--finalizada{border-color:rgba(246,223,160,.35);background:rgba(246,223,160,.06)}
+.arena-guardada-icone{font-size:20px;text-align:center}.arena-guardada-texto{display:grid;min-width:0}.arena-guardada-texto b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.arena-guardada-texto small{font-size:11px;color:rgba(241,231,207,.72);overflow-wrap:anywhere}.arena-guardada-data{color:rgba(255,255,255,.45)!important}
+.arena-guardada-estrela{font-size:18px;filter:drop-shadow(0 0 6px rgba(246,223,160,.6))}
+.arenas-guardadas-vazio{margin:0;font-size:12px;color:rgba(255,255,255,.45)}

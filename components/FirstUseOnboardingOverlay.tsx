@@ -147,7 +147,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     {
       id: 'arena-save',
       title: 'Crie a arena',
-      text: 'Isso basta por enquanto. Os detalhes podem ser ajustados quando fizerem falta.',
+      text: 'Isso basta por enquanto. Se a arena tiver um fim, dá para pôr uma meta final (opcional): quando chegar nela, é você mesmo quem conclui a arena.',
       targetSelector: '#new-arena-submit-button',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: null },
       hideNext: true,

@@ -424,13 +424,15 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     const visibleRelationshipType = PRODUCT_FEATURES.relationshipCompetition || effectiveLinkType !== 'competicao'
         ? effectiveLinkType
         : null;
-    const hasArenaStatusTags = Boolean(visibleRelationshipType || hasPersonalPact || isSeasonQuestArena || isClanQuestArena);
+    const hasFinalGoal = Boolean(arena.finalGoal && !arena.completedAt);
+    const hasArenaStatusTags = Boolean(visibleRelationshipType || hasPersonalPact || isSeasonQuestArena || isClanQuestArena || hasFinalGoal);
     const renderArenaStatusTags = (compact = false) => (
         <ArenaStatusTags
             relationshipType={visibleRelationshipType}
             hasPersonalPact={hasPersonalPact}
             hasSeasonMission={isSeasonQuestArena}
             hasClanMission={isClanQuestArena}
+            hasFinalGoal={hasFinalGoal}
             compact={compact}
         />
     );

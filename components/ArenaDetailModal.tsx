@@ -24,6 +24,7 @@ import { EmojiGlyph } from './EmojiGlyph';
 import { ConnectionsModal } from './ConnectionsModal';
 import { PRODUCT_FEATURES } from '../constants/featureFlags';
 import { ArenaStatusTags } from './ArenaStatusTags';
+import { HoldToConfirmButton } from './HoldToConfirmButton';
 
 const hexToRgb = (hex: string) => {
     const trimmed = hex.trim();
@@ -711,7 +712,7 @@ export const ArenaDetailModal: React.FC<{
                         {!isEditing && !arena.completedAt && arena.finalGoal && !isReadOnlyArena && !isArenaDeJornada && (
                             <div className="arena-meta-bloco">
                                 <p><span>Meta final</span>{arena.finalGoal}</p>
-                                <button type="button" className="luxe-skin-button" onClick={() => setConfirmarConclusao(true)}>⭐ Concluir arena</button>
+                                <HoldToConfirmButton className="luxe-skin-button" onConfirm={() => setConfirmarConclusao(true)}>⭐ Concluir arena</HoldToConfirmButton>
                             </div>
                         )}
                         {!isEditing && arena.completedAt && (

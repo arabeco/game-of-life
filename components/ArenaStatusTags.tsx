@@ -7,6 +7,8 @@ interface ArenaStatusTagsProps {
     hasPersonalPact?: boolean;
     hasSeasonMission?: boolean;
     hasClanMission?: boolean;
+    /** Arena com meta final ainda nao concluida (26/10/2026). */
+    hasFinalGoal?: boolean;
     compact?: boolean;
     className?: string;
 }
@@ -23,6 +25,7 @@ export const ArenaStatusTags: React.FC<ArenaStatusTagsProps> = ({
     hasPersonalPact = false,
     hasSeasonMission = false,
     hasClanMission = false,
+    hasFinalGoal = false,
     compact = false,
     className = '',
 }) => {
@@ -42,6 +45,9 @@ export const ArenaStatusTags: React.FC<ArenaStatusTagsProps> = ({
     );
 
     const tags = [
+        hasFinalGoal
+            ? seal('Meta final', 'border-yellow-200/55 bg-yellow-400/22 text-yellow-100', <span className={`${compact ? 'text-[8px]' : 'text-[11px]'} leading-none`} aria-hidden="true">★</span>)
+            : null,
         hasPersonalPact
             ? seal('Pacto do Oráculo', 'border-amber-200/50 bg-amber-500/25 text-amber-100', <FocusIcon className={icon} />)
             : null,

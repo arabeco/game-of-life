@@ -44,9 +44,14 @@ let falaGuardada: OracleSpeechPayload | null = null;
 let timerDeSaida: ReturnType<typeof setTimeout> | null = null;
 let ultimoGesto = -Infinity;
 
-/** O tempo entre soltar e falar. Curto para nao parecer atraso, longo o
- *  bastante para o proximo gesto comecar antes e adiar de novo. */
+/**
+ * A fala volta logo depois de o usuario soltar a tela. Se ele emendar outra
+ * acao, a reacao pendente e descartada: comentario de uma tarefa anterior nao
+ * merece atrasar nem reaparecer por cima da proxima.
+ */
 const RESPIRO_APOS_SOLTAR_MS = 650;
+
+const respiroDa = (_payload: OracleSpeechPayload) => RESPIRO_APOS_SOLTAR_MS;
 
 const despachar = (payload: OracleSpeechPayload) => {
   window.dispatchEvent(new CustomEvent<OracleSpeechPayload>(ORACLE_SPEECH_EVENT, { detail: payload }));
@@ -58,9 +63,28 @@ const cancelarSaida = () => {
   timerDeSaida = null;
 };
 
+/** Agenda a ultima fala depois do intervalo apropriado desde o ultimo gesto. */
+const agendarFalaGuardada = () => {
+  cancelarSaida();
+  const pendente = falaGuardada;
+  if (!pendente || maosNaTela > 0) return;
+  const espera = Math.max(0, respiroDa(pendente) - (Date.now() - ultimoGesto));
+  timerDeSaida = setTimeout(() => {
+    timerDeSaida = null;
+    const proxima = falaGuardada;
+    falaGuardada = null;
+    if (proxima && maosNaTela === 0) despachar(proxima);
+  }, espera);
+};
+
 /** Chamado quando um toque ou clique comeca. */
 export const maoEntrouNaTela = () => {
-  if (maosNaTela === 0 && typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(ORACLE_GESTURE_START_EVENT));
+  if (maosNaTela === 0) {
+    // A proxima acao e mais importante que um comentario que ainda nem chegou.
+    // O evento abaixo tambem fecha imediatamente uma fala ja visivel.
+    if (falaGuardada?.kind === 'reacao') falaGuardada = null;
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(ORACLE_GESTURE_START_EVENT));
+  }
   maosNaTela += 1;
   cancelarSaida();
 };
@@ -71,31 +95,17 @@ export const maoSaiuDaTela = () => {
   ultimoGesto = Date.now();
   if (maosNaTela > 0 || !falaGuardada) return;
 
-  cancelarSaida();
-  timerDeSaida = setTimeout(() => {
-    timerDeSaida = null;
-    const pendente = falaGuardada;
-    falaGuardada = null;
-    if (pendente && maosNaTela === 0) despachar(pendente);
-  }, RESPIRO_APOS_SOLTAR_MS);
+  agendarFalaGuardada();
 };
 
 /** Aberturas e reações pertencem ao momento, sem persistência ou rede. */
 export const emitOracleSpeech = (payload: OracleSpeechPayload) => {
   if (typeof window === 'undefined' || !payload.message?.trim()) return;
-  if (maosNaTela > 0 || Date.now() - ultimoGesto < RESPIRO_APOS_SOLTAR_MS) {
+  if (maosNaTela > 0 || Date.now() - ultimoGesto < respiroDa(payload)) {
     // Discovery never replaces a reaction already waiting for the hand to leave.
     if (payload.discovery && falaGuardada?.kind === 'reacao') return;
     falaGuardada = payload;
-    if (maosNaTela === 0) {
-      cancelarSaida();
-      timerDeSaida = setTimeout(() => {
-        timerDeSaida = null;
-        const pendente = falaGuardada;
-        falaGuardada = null;
-        if (pendente && maosNaTela === 0) despachar(pendente);
-      }, RESPIRO_APOS_SOLTAR_MS - (Date.now() - ultimoGesto));
-    }
+    if (maosNaTela === 0) agendarFalaGuardada();
     return;
   }
   cancelarSaida();

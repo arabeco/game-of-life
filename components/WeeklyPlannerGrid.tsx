@@ -60,20 +60,10 @@ const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: 
     const taskRef = React.useRef<HTMLDivElement>(null);
     const completionTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    React.useEffect(() => {
-        const el = taskRef.current;
-        if (!el) return;
-        const preventScroll = (e: TouchEvent) => {
-            // Se o usuário está segurando (para drag ou long press), impedimos o scroll
-            if (e.cancelable) e.preventDefault();
-        };
-        el.addEventListener('touchmove', preventScroll, { passive: false });
-        return () => {
-            el.removeEventListener('touchmove', preventScroll);
-            if (completionTimeout.current) {
-                clearTimeout(completionTimeout.current);
-            }
-        };
+    React.useEffect(() => () => {
+        if (completionTimeout.current) {
+            clearTimeout(completionTimeout.current);
+        }
     }, []);
 
     const backgroundStyle = action ? getActionBackgroundStyle(action.id) : { background: 'var(--asset-grad-default)' };

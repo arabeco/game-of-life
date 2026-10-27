@@ -1,6 +1,6 @@
 import { expandedDrawingBounds, drawingRect, type DrawingBounds } from './gardenTerrain';
 import { gardenSurface } from './gardenSurface';
-import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { CanvasTexture, Color, LinearFilter, Plane, Raycaster, SRGBColorSpace, Vector2, Vector3 } from 'three';
 import { chaseFactor, roundedCorner } from './sandSmoothing';
@@ -9,11 +9,16 @@ import { GARDEN_X, GARDEN_Z, inGarden, type GardenObject } from './model';
 import { useQualityLibrary } from './QualityGardenObjects';
 
 export type SandTool = 'rake'|'smooth'|'camera'|'artifacts'|'bases' | 'decor' | 'shop';
-export interface SandActions { bounds:DrawingBounds; clear:()=>void; undo:()=>void; snapshot:()=>{color:string;height:string} }
+export interface SandActions { bounds:DrawingBounds; clear:()=>void; undo:()=>void; redo:()=>void; snapshot:()=>{color:string;height:string} }
+/** O que da para voltar e avancar na areia agora. */
+export interface SandHistoryState { voltar:boolean; avancar:boolean }
+// Voltar e avancar (27/10/2026): cada passo guarda as duas texturas inteiras,
+// uns 4 MB. Cinco passos para cada lado e o teto que nao pesa no celular.
+const PASSOS=5;
 const W=512,H=1024;
 const referenceColor=new Color('#d9cdb0');
 // Fixed-size texture memory: no mesh subdivision, stroke list, or growing history.
-export function SandSurface({gestureOwner,tool,settings,sandColor,enabled,actions,onChange,initialDrawing,drawingBounds,onReady,onLoadError}:{gestureOwner:MutableRefObject<'sand'|'camera'|null>;onReady?:(ready:boolean)=>void;onLoadError?:(message:string)=>void;initialDrawing?:{color:string;height:string};drawingBounds?:DrawingBounds;tool:SandTool;settings:RakeSettings;sandColor:string;enabled:boolean;objects:GardenObject[];actions:MutableRefObject<SandActions|null>;onChange:(undo:boolean)=>void}) {
+export function SandSurface({gestureOwner,tool,settings,sandColor,enabled,actions,onChange,initialDrawing,drawingBounds,onReady,onLoadError}:{gestureOwner:MutableRefObject<'sand'|'camera'|null>;onReady?:(ready:boolean)=>void;onLoadError?:(message:string)=>void;initialDrawing?:{color:string;height:string};drawingBounds?:DrawingBounds;tool:SandTool;settings:RakeSettings;sandColor:string;enabled:boolean;objects:GardenObject[];actions:MutableRefObject<SandActions|null>;onChange:(state:SandHistoryState)=>void}) {
   const {gl,camera,invalidate}=useThree();
   const quality=useQualityLibrary();
   const bounds=useMemo(()=>expandedDrawingBounds(drawingBounds,{x:GARDEN_X,z:GARDEN_Z}),[]);
@@ -49,12 +54,17 @@ export function SandSurface({gestureOwner,tool,settings,sandColor,enabled,action
     Promise.all([load(initialDrawing.color),load(initialDrawing.height)]).then(([c,h])=>{if(cancelled)return;const source=drawingBounds??bounds,r=drawingRect(source,bounds,W,H);assets.c.drawImage(c,r.x,r.y,r.width,r.height);assets.h.drawImage(h,r.x,r.y,r.width,r.height);drawingChanged.current=source.x!==bounds.x||source.z!==bounds.z;dirty.current=true;setRestored(true);invalidate();}).catch(()=>{if(!cancelled)onLoadError?.('Não foi possível restaurar a areia salva. Reabra o jardim; seu desenho não foi alterado.');});
     return()=>{cancelled=true;};
   },[initialDrawing,drawingBounds,bounds,assets,invalidate,onLoadError]);
-  const history=useRef<{color:ImageData;height:ImageData}|null>(null);
+  const history=useRef<{voltar:{color:ImageData;height:ImageData}[];avancar:{color:ImageData;height:ImageData}[]}>({voltar:[],avancar:[]});
+  const capture=useCallback(()=>({color:assets.c.getImageData(0,0,W,H),height:assets.h.getImageData(0,0,W,H)}),[assets]);
+  const report=useCallback(()=>onChange({voltar:history.current.voltar.length>0,avancar:history.current.avancar.length>0}),[onChange]);
+  // Um gesto novo guarda o antes e apaga o que dava para avancar.
+  const remember=useCallback(()=>{drawingChanged.current=true;const h=history.current;h.voltar.push(capture());if(h.voltar.length>PASSOS)h.voltar.shift();h.avancar=[];report();},[capture,report]);
   useEffect(()=>{
-    const save=()=>{drawingChanged.current=true;history.current={color:assets.c.getImageData(0,0,W,H),height:assets.h.getImageData(0,0,W,H)};onChange(true);};
-    actions.current={bounds,snapshot:()=>{if(!restored)throw Error('A areia salva ainda não pôde ser carregada. Reabra o jardim.');if(!drawingChanged.current&&initialDrawing)return initialDrawing;return {color:assets.color.toDataURL('image/png'),height:assets.height.toDataURL('image/png')};},clear:()=>{save();assets.c.putImageData(assets.base,0,0);assets.h.fillStyle='#808080';assets.h.fillRect(0,0,W,H);dirty.current=true;invalidate();},undo:()=>{if(!history.current)return;assets.c.putImageData(history.current.color,0,0);assets.h.putImageData(history.current.height,0,0);history.current=null;onChange(false);dirty.current=true;invalidate();}};
+    const save=remember;
+    const apply=(from:'voltar'|'avancar',to:'voltar'|'avancar')=>{const h=history.current,step=h[from].pop();if(!step)return;h[to].push(capture());if(h[to].length>PASSOS)h[to].shift();assets.c.putImageData(step.color,0,0);assets.h.putImageData(step.height,0,0);drawingChanged.current=true;report();dirty.current=true;invalidate();};
+    actions.current={bounds,snapshot:()=>{if(!restored)throw Error('A areia salva ainda não pôde ser carregada. Reabra o jardim.');if(!drawingChanged.current&&initialDrawing)return initialDrawing;return {color:assets.color.toDataURL('image/png'),height:assets.height.toDataURL('image/png')};},clear:()=>{save();assets.c.putImageData(assets.base,0,0);assets.h.fillStyle='#808080';assets.h.fillRect(0,0,W,H);dirty.current=true;invalidate();},undo:()=>apply('voltar','avancar'),redo:()=>apply('avancar','voltar')};
     return()=>{actions.current=null;};
-  },[assets,actions,invalidate,onChange,restored,initialDrawing,bounds]);
+  },[assets,actions,invalidate,remember,capture,report,restored,initialDrawing,bounds]);
   useEffect(()=>{
     if(!enabled||!restored||tool==='camera')return;
     const canvas=gl.domElement,ray=new Raycaster(),uv=new Vector2(),plane=new Plane(new Vector3(0,1,0),-.045);
@@ -68,7 +78,7 @@ export function SandSurface({gestureOwner,tool,settings,sandColor,enabled,action
       if(!p||!inGarden(p.x,p.z,margin+.1))return null;
       return new Vector2((p.x/bounds.x*.5+.5)*W,(p.z/bounds.z*.5+.5)*H);
     };
-    const save=()=>{if(saved)return;saved=true;drawingChanged.current=true;history.current={color:assets.c.getImageData(0,0,W,H),height:assets.h.getImageData(0,0,W,H)};onChange(true);};
+    const save=()=>{if(saved)return;saved=true;remember();};
     const line=(ctx:CanvasRenderingContext2D,a:Vector2,b:Vector2,n:Vector2,offset:number,width:number,color:string)=>{ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(a.x+(normal??n).x*offset,a.y+(normal??n).y*offset);ctx.lineTo(b.x+n.x*offset,b.y+n.y*offset);ctx.stroke();};
     const paint=(p:Vector2)=>{
       if(tool==='smooth') {save();for(const [ctx,color] of [[assets.c,'#d9cdb0'],[assets.h,'#808080']] as const){const fade=ctx.createRadialGradient(p.x,p.y,7,p.x,p.y,16);fade.addColorStop(0,color);fade.addColorStop(1,color+'00');ctx.fillStyle=fade;ctx.beginPath();ctx.arc(p.x,p.y,16,0,Math.PI*2);ctx.fill();}mark();return;}
@@ -128,7 +138,7 @@ export function SandSurface({gestureOwner,tool,settings,sandColor,enabled,action
     };
     canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',move);canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);canvas.addEventListener('lostpointercapture',end);window.addEventListener('blur',reset);document.addEventListener('visibilitychange',reset);
     return()=>{reset();document.removeEventListener('visibilitychange',reset);canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);canvas.removeEventListener('pointerup',end);canvas.removeEventListener('pointercancel',end);canvas.removeEventListener('lostpointercapture',end);window.removeEventListener('blur',reset);};
-  },[gestureOwner,enabled,restored,tool,settings,gl,camera,assets,invalidate,onChange]);
+  },[gestureOwner,enabled,restored,tool,settings,gl,camera,assets,invalidate,remember]);
   useFrame(()=>{if(dirty.current){assets.map.needsUpdate=true;assets.bump.needsUpdate=true;dirty.current=false;}});
   useEffect(()=>()=>{assets.map.dispose();assets.bump.dispose();},[assets]);
   return <mesh position={[0,.045,0]} rotation={[-Math.PI/2,0,0]} geometry={geometry} receiveShadow>

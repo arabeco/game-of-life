@@ -320,6 +320,26 @@ export const ActionModal: React.FC<ActionModalProps> = ({
         return tasks.find(task => task.actionId === action.id && task.date === today && !task.completed) || null;
     }, [action, currentTask, tasks]);
     const canStartNow = mode === 'view' && !isPreview && Boolean(startNowTask);
+    // Concluir a leitura pelo leitor: a ocorrencia aberta (se ainda pendente), a de
+    // hoje, ou uma nova na hora do toque (scheduleAndCompleteNow decide).
+    const [concluindoLeitura, setConcluindoLeitura] = useState(false);
+    const tarefaDaLeitura = currentTask && !currentTask.completed ? currentTask : startNowTask;
+    const podeConcluirLeitura = mode === 'view' && !isPreview && !disableAuthoring && Boolean(action) && !(currentTask?.completed);
+    const concluirLeitura = async () => {
+        if (!action || concluindoLeitura) return;
+        setConcluindoLeitura(true);
+        try {
+            await scheduleAndCompleteNow(action.id, tarefaDaLeitura?.id);
+            showToast('Leitura concluída.', 'success');
+            setIsBriefingReaderOpen(false);
+            onClose();
+        } catch (error) {
+            console.error('Error completing reading:', error);
+            showToast('Não foi possível concluir a leitura.', 'error');
+        } finally {
+            setConcluindoLeitura(false);
+        }
+    };
     const [editableTaskDuration, setEditableTaskDuration] = useState<number>(currentTask?.duration || action?.duration || 60);
     const [instanceNote, setInstanceNote] = useState(currentTask?.instanceNote || '');
     const inheritedReminderMinutes = Number(action?.context?.schedule?.notifyBeforeMinutes) || null;
@@ -2193,6 +2213,21 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                         <ChevronRightIcon className="h-4 w-4" />
                                     </button>
                                 </div>
+                                {/* CONCLUIR AO TERMINAR DE LER (27/10/2026): na ultima pagina. Se a
+                                    acao esta marcada no planner, conclui naquele horario; se esta no
+                                    estoque, entra no planner na hora do toque, ja concluida. */}
+                                {podeConcluirLeitura && briefingPageIndex >= briefingPages.length - 1 && (
+                                    <div className="mt-4 flex justify-center">
+                                        <button
+                                            type="button"
+                                            disabled={concluindoLeitura}
+                                            onClick={() => void concluirLeitura()}
+                                            className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#6f5a31]/60 bg-[#3f2b13] px-6 text-xs font-black uppercase tracking-[0.18em] text-[#f5e6c4] shadow-[0_8px_20px_rgba(63,43,19,0.35)] transition-colors hover:bg-[#523a1b] disabled:opacity-60"
+                                        >
+                                            {concluindoLeitura ? 'Concluindo…' : 'Concluir leitura'}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

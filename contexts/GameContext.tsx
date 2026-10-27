@@ -1133,7 +1133,7 @@ export interface GameContextType {
     claimCodexShare: (input: { token?: string; shareId?: string }) => Promise<boolean>;
     declineCodexShare: (shareId: string) => Promise<boolean>;
     /** `opcoes.agendarEm`: data de inicio para agendar tudo; `null` = instalar sem agendar. Sem opcoes, o modelo com agenda pergunta antes. */
-    installCodex: (userCodexId: string, source?: UserCodex, opcoes?: { agendarEm: string | null }) => Promise<void>;
+    installCodex: (userCodexId: string, source?: UserCodex, opcoes?: { agendarEm: string | null; diasDaSemana?: DayOfWeek[] }) => Promise<void>;
     duplicateUserCodexToRecipient: (codexId: string, recipientId: string, relationshipLinkId?: string | null) => Promise<boolean>;
     createMentorCodexForRecipient: (recipientId: string, codex: { name: string; description?: string; template: any }, relationshipLinkId?: string | null) => Promise<boolean>;
 
@@ -8005,7 +8005,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return true;
     };
 
-    const installCodex = async (userCodexId: string, source?: UserCodex, opcoes?: { agendarEm: string | null }) => {
+    const installCodex = async (userCodexId: string, source?: UserCodex, opcoes?: { agendarEm: string | null; diasDaSemana?: DayOfWeek[] }) => {
         const userId = getSupabaseUserId();
         if (!userId) return;
 
@@ -8177,7 +8177,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 arenaConfig[arenaIds[index]] = {
                     isLocked: prerequisites.length > 0, isHidden: level.isHidden || false, phase: level.phase, prerequisiteArenaIds: prerequisites,
                     // A fase 1 comeca no dia escolhido; as outras, no dia depois de abrir.
-                    ...(agendarEm ? { agenda: { automatica: true, ...(index === 0 ? { inicio: agendarEm } : {}) } } : {}),
+                    ...(agendarEm ? { agenda: { automatica: true, ...(opcoes?.diasDaSemana?.length ? { diasDaSemana: opcoes.diasDaSemana } : {}), ...(index === 0 ? { inicio: agendarEm } : {}) } } : {}),
                 };
             });
 
@@ -8237,7 +8237,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 void (async () => {
                     for (const acao of acoesDaFase) {
                         const hora = horarioSugerido(acao);
-                        for (const data of datasDaAcao(inicio, acao.context?.schedule?.diasDaFase)) {
+                        for (const data of datasDaAcao(inicio, acao.context?.schedule?.diasDaFase, agenda.diasDaSemana)) {
                             if (jaTem.has(`${acao.id}_${data}`)) continue;
                             await scheduleTask(acao, data, hora);
                         }

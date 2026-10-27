@@ -254,7 +254,7 @@ export interface Campaign {
     prerequisiteArenaIds?: string[]; // IDs of arenas that must be cleared to unlock this one
     phase?: number;
     /** Agenda da fase (27/10/2026): agendar sozinho, a partir de quando, e se ja foi. */
-    agenda?: { automatica: boolean; inicio?: string; feita?: boolean };
+    agenda?: { automatica: boolean; inicio?: string; feita?: boolean; diasDaSemana?: DayOfWeek[] };
   }>;
   priority?: 'alta' | 'media' | 'baixa';
   type?: 'sequential' | 'parallel';

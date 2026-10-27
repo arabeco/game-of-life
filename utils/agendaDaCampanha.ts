@@ -37,9 +37,42 @@ const somarDias = (data: string, dias: number): string => {
     return d.toISOString().slice(0, 10);
 };
 
-/** As datas de uma acao, a partir do inicio da fase. */
-export const datasDaAcao = (inicioDaFase: string, dias?: unknown): string[] =>
-    diasValidos(dias).map((d) => somarDias(inicioDaFase, d - 1));
+const SEMANA = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
+const diaDaSemana = (data: string) => {
+    const [ano, mes, dia] = data.slice(0, 10).split('-').map(Number);
+    return SEMANA[new Date(Date.UTC(ano, mes - 1, dia)).getUTCDay()];
+};
+/** Sem escolha (ou lista vazia), todos os dias valem. */
+const permite = (diasDaSemana?: string[] | null) => {
+    const escolhidos = new Set((diasDaSemana || []).filter((d) => SEMANA.includes(d)));
+    return (data: string) => escolhidos.size === 0 || escolhidos.has(diaDaSemana(data));
+};
+
+/** O primeiro dia permitido a partir de `data` (ela mesma, se valer). */
+export const primeiroDiaPermitido = (data: string, diasDaSemana?: string[] | null): string => {
+    const vale = permite(diasDaSemana);
+    let atual = data.slice(0, 10);
+    for (let i = 0; i < 7 && !vale(atual); i += 1) atual = somarDias(atual, 1);
+    return atual;
+};
+
+/**
+ * As datas de uma acao, a partir do inicio da fase. Com dias da semana
+ * escolhidos (27/10/2026), o "dia N" e o N-esimo dia PERMITIDO: quem tira o
+ * domingo de folga nao recebe nada no domingo, e a campanha so anda um dia.
+ */
+export const datasDaAcao = (inicioDaFase: string, dias?: unknown, diasDaSemana?: string[] | null): string[] => {
+    const vale = permite(diasDaSemana);
+    const quero = diasValidos(dias);
+    if (!quero.length) return [];
+    const datas: string[] = [];
+    let atual = primeiroDiaPermitido(inicioDaFase, diasDaSemana);
+    for (let n = 1; n <= quero[quero.length - 1]; n += 1) {
+        if (quero.includes(n)) datas.push(atual);
+        do { atual = somarDias(atual, 1); } while (!vale(atual));
+    }
+    return datas;
+};
 
 /** O modelo traz agenda se alguma acao diz o dia dela. */
 export const modeloTemAgenda = (template?: { levels?: { actions?: { dias?: unknown }[] }[] } | null): boolean =>

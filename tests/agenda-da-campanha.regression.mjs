@@ -24,3 +24,18 @@ assert.equal(modeloTemAgenda({ levels: [{ actions: [{ name: 'a' }] }] }), false)
 assert.equal(modeloTemAgenda({ levels: [{ actions: [{ name: 'a' }] }, { actions: [{ name: 'b', dias: [2] }] }] }), true);
 assert.equal(inicioDaFaseQueAbriu('2026-10-31'), '2026-11-01', 'fase que abriu comeca no dia seguinte');
 console.log('Agenda da campanha: datas, horarios e fases conferidos.');
+
+// DIAS DA SEMANA (27/10/2026): a pessoa escolhe em que dias quer fazer; o "dia N"
+// da fase passa a ser o N-esimo dia permitido. Domingo de folga nao recebe nada.
+{
+  const { datasDaAcao: datas, primeiroDiaPermitido } = await import('../utils/agendaDaCampanha.ts');
+  const semDomingo = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
+  // 2026-10-31 e sabado; 11-01 domingo; 11-02 segunda.
+  assert.deepEqual(datas('2026-10-31', [1, 2, 3], semDomingo), ['2026-10-31', '2026-11-02', '2026-11-03'], 'pula o domingo');
+  assert.deepEqual(datas('2026-11-01', [1], semDomingo), ['2026-11-02'], 'comecar num domingo de folga cai na segunda');
+  assert.deepEqual(datas('2026-10-27', [1, 2], ['SEG', 'QUA', 'SEX']), ['2026-10-28', '2026-10-30'], 'so seg, qua e sex');
+  assert.deepEqual(datas('2026-10-27', [1, 3]), ['2026-10-27', '2026-10-29'], 'sem escolha, todos os dias (como antes)');
+  assert.deepEqual(datas('2026-10-27', [1], []), ['2026-10-27'], 'lista vazia vale como todos os dias');
+  assert.equal(primeiroDiaPermitido('2026-11-01', semDomingo), '2026-11-02');
+  console.log('ok - os dias escolhidos da semana mandam na agenda');
+}

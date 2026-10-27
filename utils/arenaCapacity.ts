@@ -1,4 +1,4 @@
-import type { Asset, UserProfile } from '../types';
+import type { Asset, Campaign, UserCodex, UserProfile } from '../types';
 import { getActiveSubscriptionTier, hasPremiumAccess } from './premiumAccess.ts';
 
 // 7 apertava demais quem esta comecando: as cinco areas da vida ja consomem
@@ -28,12 +28,20 @@ export const getArenaLimitForProfile = (profile?: UserProfile | null): number =>
 /**
  * Conta so arena ativa: arquivar libera a vaga. Arena de missao (temporada ou
  * cla) fica fora: a missao vem do jogo e nao ocupa o lugar das arenas da
- * pessoa. Arena finalizada (completedAt) tambem nao ocupa vaga. Campanha conta
- * como qualquer outra. `questArenaIds` sao as arenas
- * que guardam acao de missao (sourceQuestId).
+ * pessoa. Arena finalizada (completedAt) tambem nao ocupa vaga. `questArenaIds`
+ * sao as arenas que guardam acao de missao (sourceQuestId).
+ *
+ * Campanha (27/10/2026): a da loja ou dada por mentor ocupa UMA vaga, quantas
+ * fases (arenas) tiver — `gruposQueContamUma`, de gruposQueContamUmaVaga. A
+ * que a pessoa monta para si, ou ganha de amigo, conta uma vaga por arena.
  */
-export const getArenaCapacitySummary = (assets: Asset[], profile?: UserProfile | null, questArenaIds?: Set<string>): ArenaCapacitySummary => {
-    const total = assets.reduce((sum, asset) => sum + asset.arenas.filter(arena => !arena.isArchived && !arena.completedAt && !questArenaIds?.has(arena.id)).length, 0);
+export const getArenaCapacitySummary = (assets: Asset[], profile?: UserProfile | null, questArenaIds?: Set<string>, gruposQueContamUma?: string[][]): ArenaCapacitySummary => {
+    const ocupando = new Set(assets.flatMap(asset => asset.arenas.filter(arena => !arena.isArchived && !arena.completedAt && !questArenaIds?.has(arena.id)).map(arena => arena.id)));
+    let total = ocupando.size;
+    for (const grupo of gruposQueContamUma || []) {
+        const ativas = grupo.filter(id => ocupando.has(id)).length;
+        if (ativas > 1) total -= ativas - 1;
+    }
     const active = assets.reduce((sum, asset) => sum + asset.arenas.filter((arena) => !arena.isArchived).length, 0);
     const limit = getArenaLimitForProfile(profile);
     const remaining = Math.max(0, limit - total);
@@ -49,6 +57,19 @@ export const getArenaCapacitySummary = (assets: Asset[], profile?: UserProfile |
         isPlatinum,
         isAtLimit: total >= limit,
     };
+};
+
+/** As campanhas ativas que ocupam uma vaga so: vindas da loja ou de mentor. */
+export const gruposQueContamUmaVaga = (
+    campaigns: Pick<Campaign, 'status' | 'sourceCodexId' | 'arenaIds'>[],
+    userCodexes: Pick<UserCodex, 'id' | 'catalog_id' | 'source_type' | 'mentor_relationship_link_id'>[],
+): string[][] => {
+    const daLojaOuMentor = new Set(userCodexes
+        .filter(codex => Boolean(codex.catalog_id) || codex.source_type === 'catalog' || Boolean(codex.mentor_relationship_link_id))
+        .map(codex => codex.id));
+    return campaigns
+        .filter(campaign => campaign.status === 'active' && campaign.sourceCodexId && daLojaOuMentor.has(campaign.sourceCodexId) && (campaign.arenaIds?.length || 0) > 0)
+        .map(campaign => [...campaign.arenaIds]);
 };
 
 export const buildArenaLimitMessage = (

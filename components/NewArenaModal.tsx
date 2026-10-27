@@ -11,7 +11,7 @@ import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import { Portal } from './Portal';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 import { suggestEmojiForLabel } from '../utils/suggestEmojiForLabel';
-import { buildArenaLimitMessage, getArenaCapacitySummary } from '../utils/arenaCapacity';
+import { buildArenaLimitMessage } from '../utils/arenaCapacity';
 import { isLifeAreaId, LIFE_AREAS, LIFE_AREA_IDS } from '../constants/lifeAreas';
 
 interface NewArenaModalProps {
@@ -51,7 +51,7 @@ const AssetSelectionModal: React.FC<{ onSelect: (assetId: LifeAreaId) => void; o
 };
 
 export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAssetId, isOpen, onClose, onArenaCreated, initialRelationship }) => {
-    const { addArena, assets, showToast, userProfile, getNextArenaToneSequence } = useGame();
+    const { addArena, assets, showToast, userProfile, getNextArenaToneSequence, capacidadeDasArenas } = useGame();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [metaFinal, setMetaFinal] = useState('');
@@ -80,7 +80,7 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
 
     const [creationTab, setCreationTab] = useState<'general' | 'intention'>('general');
     if (!isOpen) return null;
-    const arenaCapacity = getArenaCapacitySummary(assets, userProfile);
+    const arenaCapacity = capacidadeDasArenas;
     const canCreateArena = !arenaCapacity.isAtLimit;
 
     const handleSave = async () => {

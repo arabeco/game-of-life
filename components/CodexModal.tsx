@@ -13,7 +13,7 @@ import { buildCodexTemplateFromDraft, type CodexCampaignPreview } from '../utils
 import { suggestEmojiForLabel } from '../utils/suggestEmojiForLabel';
 import { EmojiGlyph } from './EmojiGlyph';
 import { supabase } from '../supabaseClient';
-import { buildArenaLimitMessage, getArenaCapacitySummary } from '../utils/arenaCapacity';
+import { buildArenaLimitMessage } from '../utils/arenaCapacity';
 
 type CodexDraft = {
   id: string;
@@ -77,7 +77,7 @@ export const CodexModal: React.FC<{
   relationshipLinkId?: string | null;
   onDelivered?: () => void;
 }> = ({ onClose, recipientId, recipientName, relationshipLinkId = null, onDelivered }) => {
-  const { installCodex, refreshCodexes, assets, addArena, addAction, scheduleMultipleTasks, createMentorCodexForRecipient, userProfile } = useGame();
+  const { installCodex, refreshCodexes, assets, addArena, addAction, scheduleMultipleTasks, createMentorCodexForRecipient, userProfile, capacidadeDasArenas } = useGame();
   const { confirm, confirmationElement } = useConfirmation();
   const isMentorDraftMode = Boolean(recipientId);
   const draftStorageKey = isMentorDraftMode
@@ -513,7 +513,7 @@ export const CodexModal: React.FC<{
       confirmLabel: 'INSTALAR',
     }))) return;
 
-    const arenaCapacity = getArenaCapacitySummary(assets, userProfile);
+    const arenaCapacity = capacidadeDasArenas;
     if (arenaCapacity.total + activeCodex.arenas.length > arenaCapacity.limit) {
       setStatus(buildArenaLimitMessage(arenaCapacity, { requestedArenaCount: activeCodex.arenas.length }));
       return;

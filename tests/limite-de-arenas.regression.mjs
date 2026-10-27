@@ -6,7 +6,8 @@ import { getArenaCapacitySummary, STANDARD_ARENA_LIMIT } from '../utils/arenaCap
  *
  * Conta so arena ativa. Arquivar libera a vaga; desarquivar com o limite cheio
  * e barrado (no GameContext, com aviso). Arena de campanha conta como qualquer
- * outra. Arena de missao (temporada ou cla) NAO conta: a missao vem do jogo,
+ * outra aqui; a da loja ou de mentor vale uma vaga so (campanha-conta-uma-vaga).
+ * Arena de missao (temporada ou cla) NAO conta: a missao vem do jogo,
  * e nao pode ser barrada nem ocupar o lugar das arenas da pessoa.
  */
 const arena = (id, extra = {}) => ({ id, name: id, isArchived: false, actionIds: [], ...extra });

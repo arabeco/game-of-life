@@ -59,7 +59,7 @@ import { useOperationalDate } from '../hooks/useOperationalDate';
 import { formatLocalDateString, getOperationalDateString as getOperationalDateStringValue, getTaskOperationalDateString, shiftLocalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 import { getCycleXpBonusRate, hasPremiumAccess, isPremiumActive, normalizeSubscriptionTier } from '../utils/premiumAccess';
 import { MASTERY_AREA_MAX_LEVEL, toMasteryIndex } from '../constants/lifeAreas';
-import { buildArenaLimitMessage, getArenaCapacitySummary } from '../utils/arenaCapacity';
+import { buildArenaLimitMessage, getArenaCapacitySummary, gruposQueContamUmaVaga, type ArenaCapacitySummary } from '../utils/arenaCapacity';
 import { resolveUiSkinId } from '../utils/uiSkinTokens';
 import { emitArenaAttention } from '../utils/arenaAttention';
 import { emitAppSensoryCue } from '../utils/sensoryCue';
@@ -942,6 +942,8 @@ export interface GameContextType {
     addArena: (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb?: boolean, opcoes?: { missao?: boolean; vagaGarantida?: boolean }) => Promise<Arena>;
     concluirArena: (arenaId: string, opcoes?: { copiar?: boolean }) => Promise<{ ok: boolean; copiaId?: string }>;
     reabrirArena: (arenaId: string) => boolean;
+    /** O limite de arenas como o jogo conta: missao fora, campanha da loja/mentor = 1 vaga. */
+    capacidadeDasArenas: ArenaCapacitySummary;
     updateArena: (arenaId: string, arenaData: Partial<Pick<Arena, 'assetId' | 'name' | 'description' | 'icon' | 'folderId' | 'isArchived' | 'priority' | 'finalGoal' | 'completedAt'>>) => void;
     deleteArena: (arenaId: string, options?: { force?: boolean }) => void;
     createArenaFolder: (name: string, icon: string, assetId?: string) => Promise<ArenaFolder | null>;
@@ -8030,7 +8032,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const baseCampaignOrder = campaigns.length;
         const baseCampaignPriorityOrder = campaigns.filter(c => (c.priority ?? 'media') === 'media').length;
         const previousCycleArenaIds = activeCycle ?[...activeCycle.arenaIds] : null;
-        const requestedArenaCount = template.levels.length;
+        // Da loja ou de mentor: a campanha inteira ocupa UMA vaga (27/10/2026).
+        const contaComoUmaVaga = Boolean(codex.catalog_id) || codex.source_type === 'catalog' || Boolean(codex.mentor_relationship_link_id);
+        const requestedArenaCount = contaComoUmaVaga ? 1 : template.levels.length;
         const arenaCapacity = capacidadeDeArenas();
 
         emitArenaAttention({
@@ -8109,7 +8113,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     priority: 'media',
                     order: baseArenaOrder + index,
                     priorityOrder: index
-                });
+                }, false, { vagaGarantida: contaComoUmaVaga && index > 0 });
 
                 createdArenaIds.push(createdArena.id);
                 arenaIds.push(createdArena.id);
@@ -11358,7 +11362,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     // Arena de missao (temporada ou cla) nao conta no limite: e a que guarda
     // acao com sourceQuestId. Ver utils/arenaCapacity.ts.
     const arenasDeMissao = (): Set<string> => new Set(actions.filter((acao) => acao.sourceQuestId).map((acao) => acao.arenaId));
-    const capacidadeDeArenas = () => getArenaCapacitySummary(assetsRef.current, userProfile, arenasDeMissao());
+    const capacidadeDeArenas = () => getArenaCapacitySummary(assetsRef.current, userProfile, arenasDeMissao(), gruposQueContamUmaVaga(campaigns, userCodexes));
+    // A mesma conta para as telas, sem esperar o ref: uma fonte so para o limite.
+    const capacidadeDasArenas = useMemo(
+        () => getArenaCapacitySummary(assets, userProfile, new Set(actions.filter((acao) => acao.sourceQuestId).map((acao) => acao.arenaId)), gruposQueContamUmaVaga(campaigns, userCodexes)),
+        [assets, userProfile, actions, campaigns, userCodexes],
+    );
     const addArena = async (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb: boolean = false, opcoes?: { missao?: boolean; vagaGarantida?: boolean }): Promise<Arena> => {
         const willStartArchived = arenaData.isArchived ?? false;
         const capacity = capacidadeDeArenas();
@@ -15755,7 +15764,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     return (
         <GameContext.Provider value={{
             session,
-            concluirArena, reabrirArena,
+            concluirArena, reabrirArena, capacidadeDasArenas,
             getSharedActionPoolProgress, isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, sequenceItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, upcomingCycle, dailyCommitment, judgedOperationalDates, judgedTaskIdsByDate, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, grantInventoryItem, acceptSeasonQuest,
             abortSeasonQuest,
             missoesDoCla, missoesDeClaAtivas, atualizarMissaoDoCla, entrarNaMissaoDoCla, receberPremioDaMissaoDoCla, humorDoCla, carregarHumorDoCla, autoresDoFeed,

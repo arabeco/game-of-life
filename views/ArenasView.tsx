@@ -32,7 +32,6 @@ import { supabase } from '../supabaseClient';
 import { getActionSurfaceBadgeClassName, resolveActionSurfaceBadge } from '../utils/actionSurfaceBadges';
 import { filterTasksAfterFreeProgressReset } from '../utils/freeProgressScope';
 import { LIFE_AREAS } from '../constants/lifeAreas';
-import { getArenaCapacitySummary } from '../utils/arenaCapacity';
 
 const hexToRgb = (hex: string) => {
     const trimmed = hex.trim();
@@ -88,21 +87,14 @@ type ArenaAttentionState = {
 };
 
 export const ArenasView: React.FC = () => {
-    const { getArenas, assets, actions, tasks, addArena, updateArena, addAction, arenaFolders, createArenaFolder, moveArenaToFolder, reorderArena, reorderEntity, reorderEntityPriority, campaigns: allCampaigns, addCampaign, updateCampaign, deleteCampaign, activeCycle, freeProgressResetAt, resetFreeProgress, arenasViewMode, setArenasViewMode, userProfile, getClanQuestProgress, getClanQuestsForArena, getSharedActionPoolProgress, userCodexes, installCodex, missoesDeClaAtivas, atualizarMissaoDoCla } = useGame();
+    const { getArenas, assets, actions, tasks, addArena, updateArena, addAction, arenaFolders, createArenaFolder, moveArenaToFolder, reorderArena, reorderEntity, reorderEntityPriority, campaigns: allCampaigns, addCampaign, updateCampaign, deleteCampaign, activeCycle, freeProgressResetAt, resetFreeProgress, arenasViewMode, setArenasViewMode, userProfile, getClanQuestProgress, getClanQuestsForArena, getSharedActionPoolProgress, userCodexes, installCodex, missoesDeClaAtivas, atualizarMissaoDoCla, capacidadeDasArenas } = useGame();
     // Abrir as arenas reconta a missao de cla: o que o grupo marcou aparece aqui.
     useEffect(() => {
         missoesDeClaAtivas.forEach((quest) => { void atualizarMissaoDoCla(quest.id); });
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
     const { isBuilderMode } = useCodexBuilder();
     const campaigns = useMemo(() => allCampaigns.filter(c => c.status === 'active'), [allCampaigns]);
-    const arenaCapacity = useMemo(
-        () => getArenaCapacitySummary(
-            assets,
-            userProfile,
-            new Set(actions.filter((action) => action.sourceQuestId).map((action) => action.arenaId)),
-        ),
-        [actions, assets, userProfile],
-    );
+    const arenaCapacity = capacidadeDasArenas;
     const arenaCapacityRate = arenaCapacity.limit > 0 ? arenaCapacity.total / arenaCapacity.limit : 0;
     const arenaCapacityTone = arenaCapacityRate >= 1
         ? 'border-rose-400/45 bg-rose-500/12 text-rose-200'

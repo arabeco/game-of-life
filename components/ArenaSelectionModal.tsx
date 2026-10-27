@@ -3,7 +3,7 @@ import { useGame } from '../contexts/GameContext';
 import { GlassCard } from './GlassCard';
 import { CheckIcon, PlusIcon, XIcon } from './Icons';
 import { Portal } from './Portal';
-import { buildArenaLimitMessage, getArenaCapacitySummary } from '../utils/arenaCapacity';
+import { buildArenaLimitMessage } from '../utils/arenaCapacity';
 
 interface ArenaSelectionModalProps {
     currentArenaId?: string;
@@ -13,13 +13,13 @@ interface ArenaSelectionModalProps {
 }
 
 export const ArenaSelectionModal: React.FC<ArenaSelectionModalProps> = ({ currentArenaId, selectedArenaId, onSelect, onClose }) => {
-    const { assets, actions, addArena, userProfile, showToast } = useGame();
+    const { assets, addArena, showToast, capacidadeDasArenas } = useGame();
     const [isCreating, setIsCreating] = useState(false);
     const [newArenaName, setNewArenaName] = useState('');
     const [selectedAssetId, setSelectedAssetId] = useState(assets[0]?.id || 'geral');
     const [newArenaIcon] = useState('🏟️');
-    // Arenas de missao nao contam no limite (utils/arenaCapacity.ts).
-    const arenaCapacity = getArenaCapacitySummary(assets, userProfile, new Set(actions.filter((acao) => acao.sourceQuestId).map((acao) => acao.arenaId)));
+    // O limite como o jogo conta (missao fora, campanha da loja = 1 vaga).
+    const arenaCapacity = capacidadeDasArenas;
     const canCreateArena = !arenaCapacity.isAtLimit;
     const activeArenaId = currentArenaId || selectedArenaId || '';
 

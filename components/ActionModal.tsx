@@ -2077,9 +2077,6 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                 <button type="button" onClick={alternarLeitorEscuro} aria-label={leitorEscuro ? 'Modo claro' : 'Modo escuro'} title={leitorEscuro ? 'Modo claro' : 'Modo escuro'} className="leitor-botao flex h-11 w-11 items-center justify-center rounded-full border border-[#8a6b38]/35 bg-white/35 text-lg text-[#4b3318] transition-colors hover:bg-white/55">
                                     {leitorEscuro ? '☀️' : '🌙'}
                                 </button>
-                                <div className="leitor-botao rounded-full border border-[#8a6b38]/30 bg-white/30 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[#6d532b]">
-                                    Página {briefingPageIndex + 1}/{briefingPages.length}
-                                </div>
                                 <button
                                     type="button"
                                     onClick={() => setIsBriefingReaderOpen(false)}
@@ -2192,6 +2189,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                         {paragraph}
                                                     </p>
                                                 ))}
+                                        </div>
+                                        {/* Numero da pagina embaixo a direita, como em livro (27/10/2026). */}
+                                        <div className="leitor-rotulo mt-4 text-right font-serif text-[13px] italic text-[#7d6237]" aria-label={`Página ${briefingPageIndex + 1} de ${briefingPages.length}`}>
+                                            {briefingPageIndex + 1}
+                                            <span className="opacity-60"> / {briefingPages.length}</span>
                                         </div>
                                     </div>
                                 </div>

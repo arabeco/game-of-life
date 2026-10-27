@@ -83,6 +83,8 @@ export const LeitorDoDiario: React.FC<{ entradas: EntradaDoDiario[]; pagina: num
                                     </article>
                                 );
                             })}
+                            {/* Numero da pagina embaixo a direita, como em livro. */}
+                            <div className="leitor-rotulo mt-3 text-right font-serif text-[13px] italic text-[#7d6237]">{pagina}</div>
                         </div>
                     </div>
                 </div>

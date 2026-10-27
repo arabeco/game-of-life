@@ -30,7 +30,7 @@ import { Sanctuary, ENVIRONMENTS, type EnvironmentId } from './Sanctuary';
 import { GardenBorder } from './GardenBorder';
 import { WaterGarden } from './WaterGarden';
 import { LegacyStone } from './LegacyStone';
-import { SandSurface, type SandActions, type SandHistoryState, type SandTool } from './SandSurface';
+import { SandSurface, PASSOS_DA_AREIA, type SandActions, type SandTool } from './SandSurface';
 import { SAND_COLORS, RAKE_STYLES, RAKE_PRESSURES, RAKE_SPACINGS, type RakeSettings } from './sandOptions';
 import type { GardenMode, GardenObject } from './model';
 
@@ -63,8 +63,7 @@ export default function SandExperiment({skinId='BASIC',theme='dark'}:GardenMenuP
   // caminhada: sao duas escolhas claras nos controles superiores.
   const [mode,setMode]=useState<GardenMode>('overview'),[tool,setTool]=useState<SandTool>('rake');
   const [settings,setSettings]=useState<RakeSettings>({style:1,spacing:1,pressure:1}),[sand,setSand]=useState(initial?.sand??1),[options,setOptions]=useState(false);
-  const SEM_HISTORICO:SandHistoryState={voltar:false,avancar:false};
-  const [view,setView]=useState(VIEW),[undo,setUndo]=useState<SandHistoryState>(SEM_HISTORICO);
+  const [view,setView]=useState(VIEW);
   const [artifacts,setArtifacts]=useState<PlacedArtifact[]>(initial?.artifacts??[]),[draft,setDraft]=useState<PlacedArtifact|null>(null),[selected,setSelected]=useState<string|null>(null),[gallery,setGallery]=useState(false),[artNotice,setArtNotice]=useState('Escolha uma arte para o canto superior.');
   const decor=useDecoration(objects,setObjects,[...reserved,...artifacts.map(artifactObstacle)],kit,id=>{decor.cancel();setTool('artifacts');chooseArtifact(id);},()=>{gesture.current=false;setTool('decor');setDraft(null);setSelected(null);});
   const displayedObjects=decor.draft?[...objects.filter(o=>o.id!==decor.draft!.id),decor.draft]:objects;
@@ -86,6 +85,38 @@ export default function SandExperiment({skinId='BASIC',theme='dark'}:GardenMenuP
   const gestureOwner=useRef<'sand'|'camera'|null>(null);
   const actions=useRef<SandActions|null>(null),gesture=useRef(false),motion=useRef<Motion>({x:0,y:0}),wake=useRef(()=>{});
   const onView=useCallback((fn:(v:GardenView)=>GardenView)=>setView(fn),[]);
+  /*
+   * VOLTAR E AVANCAR (27/10/2026): um historico so para o jardim todo. Cada
+   * traco na areia e cada mudanca de peca (colocar, mover, girar, remover,
+   * artes) e um passo. O passo de areia guarda so a marca — a imagem fica na
+   * propria areia, que segura cinco; peca guarda a lista de antes, que e leve.
+   */
+  type Passo='areia'|{objects:GardenObject[];artifacts:PlacedArtifact[]};
+  const historico=useRef<{voltar:Passo[];avancar:Passo[]}>({voltar:[],avancar:[]});
+  const [,redesenhar]=useState(0);
+  const pecasAntes=useRef({objects,artifacts});
+  const semRegistro=useRef(false);
+  const empilhar=(lista:Passo[],passo:Passo)=>{
+    lista.push(passo);
+    if(passo==='areia'&&lista.filter(p=>p==='areia').length>PASSOS_DA_AREIA)lista.splice(lista.indexOf('areia'),1);
+    if(lista.length>30)lista.shift();
+  };
+  // `trocaAsPecas`: a troca de modelo refaz as pecas, e isso nao e um passo.
+  const zerarHistorico=(trocaAsPecas=false)=>{historico.current={voltar:[],avancar:[]};semRegistro.current=trocaAsPecas;redesenhar(v=>v+1);};
+  useEffect(()=>{
+    const antes=pecasAntes.current;
+    if(antes.objects===objects&&antes.artifacts===artifacts)return;
+    pecasAntes.current={objects,artifacts};
+    if(semRegistro.current){semRegistro.current=false;return;}
+    const h=historico.current;empilhar(h.voltar,antes);h.avancar=[];redesenhar(v=>v+1);
+  },[objects,artifacts]);
+  const andar=(de:'voltar'|'avancar',para:'voltar'|'avancar')=>{
+    const h=historico.current,passo=h[de].pop();if(!passo)return;
+    decor.cancel();setDraft(null);setSelected(null);setClear(false);
+    if(passo==='areia'){if(de==='voltar')actions.current?.undo();else actions.current?.redo();empilhar(h[para],'areia');}
+    else{empilhar(h[para],{objects,artifacts});semRegistro.current=true;setObjects(passo.objects);setArtifacts(passo.artifacts);}
+    redesenhar(v=>v+1);
+  };
   const changeBase=(id:BaseId)=>{if(ownsBase(account,id))setPendingModel(id);};
   const changeTerrain=(next:GardenTerrain)=>{
     if(readOnly||!sandReady||saving||next.shape===terrain.shape&&next.size===terrain.size)return;
@@ -98,7 +129,7 @@ export default function SandExperiment({skinId='BASIC',theme='dark'}:GardenMenuP
       setDrawingSource({drawing:actions.current.snapshot(),bounds:actions.current.bounds});
     } catch(e){setSaveNotice(e instanceof Error?e.message:'Aguarde a areia carregar.');return;}
     configureGarden(bounds.x,bounds.z,bounds.roundness);setTerrain(next);setSandReady(false);
-    decor.cancel();setDraft(null);setSelected(null);setUndo(SEM_HISTORICO);setView(VIEW);setSceneRevision(v=>v+1);
+    decor.cancel();setDraft(null);setSelected(null);zerarHistorico();setView(VIEW);setSceneRevision(v=>v+1);
     gesture.current=false;gestureOwner.current=null;motion.current={x:0,y:0};
   };
   const applyModel=()=>{
@@ -109,14 +140,14 @@ export default function SandExperiment({skinId='BASIC',theme='dark'}:GardenMenuP
     }
     configureGarden(next.x,next.z,next.roundness);setBase(pendingModel);
     setObjects(templateObjects(pendingModel,finish,kit));setDrawingSource({drawing:undefined,bounds:next});
-    decor.cancel();setDraft(null);setSelected(null);setView(VIEW);setUndo(SEM_HISTORICO);setClear(false);setOptions(false);
+    decor.cancel();setDraft(null);setSelected(null);setView(VIEW);zerarHistorico(true);setClear(false);setOptions(false);
     setPendingModel(null);setSandReady(false);setSceneRevision(v=>v+1);setDrawerCollapsed(true);gesture.current=false;
     gestureOwner.current=null;motion.current={x:0,y:0};markChanged();
   };
   const composition=useMemo(()=>JSON.stringify({base,terrain,objects,artifacts,sand,environment,atmosphere}),[base,terrain,objects,artifacts,sand,environment,atmosphere]);
   const previousComposition=useRef(composition);
   useEffect(()=>{if(previousComposition.current!==composition){previousComposition.current=composition;markChanged();}},[composition,markChanged]);
-  const onSandChange=useCallback((state:SandHistoryState)=>{setUndo(state);markChanged();},[markChanged]);
+  const onSandChange=useCallback((_estado:unknown,origem:'gesto'|'historico')=>{if(origem==='gesto'){const h=historico.current;empilhar(h.voltar,'areia');h.avancar=[];redesenhar(v=>v+1);}markChanged();},[markChanged]);
   const enterGarden=()=>{if(readOnly)return;decor.cancel();setMode('explore');setClear(false);setHelp(false);setOptions(false);setDraft(null);setSelected(null);setGallery(false);setLegacy(false);motion.current={x:0,y:0};};
   const enterEdit=()=>{if(readOnly)return;decor.cancel();setMode('build');setTool('decor');setDrawerCollapsed(true);setClear(false);setHelp(false);setOptions(false);setDraft(null);setSelected(null);setGallery(false);setLegacy(false);motion.current={x:0,y:0};};
   const versaoSalva=useRef(0);
@@ -186,10 +217,10 @@ export default function SandExperiment({skinId='BASIC',theme='dark'}:GardenMenuP
         <button className="another-piece" aria-label="Adicionar outra peça" onClick={()=>{if(tool==='decor')decor.repeat();else if(activeArt)chooseArtifact(activeArt.artifact);}}>+</button></div>
       </div>}
       <section className={`sand-tools ${drawerCollapsed?'is-collapsed':''} ${itemSelected?'is-editing':''}`} aria-label="Ferramentas de edição"><button className="drawer-toggle" aria-expanded={!drawerCollapsed} onClick={()=>setDrawerCollapsed(v=>!v)}>{drawerCollapsed?'⌃ Expandir edição':'⌄ Recolher edição'}</button>
-        <div className="garden-editor-actions"><button className="zen-luxe-button" disabled={saving||!sandReady||!!decor.draft||!!draft||!account} onClick={saveGarden}>{saving?'Salvando…':'Salvar'}</button><button aria-label="Como usar o jardim" onClick={openGuide}>?</button></div>
+        <div className="garden-editor-actions"><button className="garden-historico" aria-label="Voltar" title="Voltar" disabled={!historico.current.voltar.length||!sandReady} onClick={()=>andar('voltar','avancar')}>←</button><button className="garden-historico" aria-label="Avançar" title="Avançar" disabled={!historico.current.avancar.length||!sandReady} onClick={()=>andar('avancar','voltar')}>→</button><button className="zen-luxe-button" disabled={saving||!sandReady||!!decor.draft||!!draft||!account} onClick={saveGarden}>{saving?'Salvando…':'Salvar'}</button><button aria-label="Como usar o jardim" onClick={openGuide}>?</button></div>
         <div className="sand-modes">{([['rake','Areia'],['decor','Itens'],['bases','Jardim'],['shop','Loja']] as const).map(([id,label])=><button key={id} aria-pressed={tool===id||(id==='rake'&&tool==='smooth')||(id==='decor'&&tool==='artifacts')} onClick={()=>{setDrawerCollapsed(false);if(tool===id&&!itemSelected)return;decor.cancel();setTool(id);setClear(false);setOptions(false);setDraft(null);setSelected(null);setGallery(false);}}>{label}</button>)}</div>
         {(tool==='rake'||tool==='smooth')&&<div className="sand-action-toggle"><button aria-pressed={tool==='rake'} onClick={()=>setTool('rake')}>✏️ Desenhar</button><button aria-pressed={tool==='smooth'} onClick={()=>setTool('smooth')}>🧹 Alisar</button></div>}
-        {(tool==='rake'||tool==='smooth')&&<div className="sand-options"><button className="sand-customize" aria-expanded={options} onClick={()=>setOptions(v=>!v)}><i style={{background:SAND_COLORS[sand].color}}/>Opções <span>{options?'⌄':'⌃'}</span></button><button className="sand-historico" aria-label="Voltar o último traço" title="Voltar" disabled={!undo.voltar} onClick={()=>actions.current?.undo()}>←</button><button className="sand-historico" aria-label="Avançar o traço desfeito" title="Avançar" disabled={!undo.avancar} onClick={()=>actions.current?.redo()}>→</button><button onClick={()=>setClear(v=>!v)}>Limpar</button></div>}
+        {(tool==='rake'||tool==='smooth')&&<div className="sand-options"><button className="sand-customize" aria-expanded={options} onClick={()=>setOptions(v=>!v)}><i style={{background:SAND_COLORS[sand].color}}/>Opções <span>{options?'⌄':'⌃'}</span></button><button onClick={()=>setClear(v=>!v)}>Limpar</button></div>}
         {tool==='shop'&&<KitShop onModel={changeBase}/>}
         {tool==='bases'&&<GardenLayoutPanel base={base} terrain={terrain} onTerrain={changeTerrain} onModel={changeBase} disabled={!sandReady||saving} environment={environment} onEnvironment={setEnvironment} atmosphere={atmosphere} onAtmosphere={setAtmosphere} timeLabel={lighting.label}/>}
         {(tool==='decor'||tool==='artifacts')&&!activeArt&&decor.panel}

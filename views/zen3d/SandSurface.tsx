@@ -14,11 +14,12 @@ export interface SandActions { bounds:DrawingBounds; clear:()=>void; undo:()=>vo
 export interface SandHistoryState { voltar:boolean; avancar:boolean }
 // Voltar e avancar (27/10/2026): cada passo guarda as duas texturas inteiras,
 // uns 4 MB. Cinco passos para cada lado e o teto que nao pesa no celular.
-const PASSOS=5;
+export const PASSOS_DA_AREIA=5;
+const PASSOS=PASSOS_DA_AREIA;
 const W=512,H=1024;
 const referenceColor=new Color('#d9cdb0');
 // Fixed-size texture memory: no mesh subdivision, stroke list, or growing history.
-export function SandSurface({gestureOwner,tool,settings,sandColor,enabled,actions,onChange,initialDrawing,drawingBounds,onReady,onLoadError}:{gestureOwner:MutableRefObject<'sand'|'camera'|null>;onReady?:(ready:boolean)=>void;onLoadError?:(message:string)=>void;initialDrawing?:{color:string;height:string};drawingBounds?:DrawingBounds;tool:SandTool;settings:RakeSettings;sandColor:string;enabled:boolean;objects:GardenObject[];actions:MutableRefObject<SandActions|null>;onChange:(state:SandHistoryState)=>void}) {
+export function SandSurface({gestureOwner,tool,settings,sandColor,enabled,actions,onChange,initialDrawing,drawingBounds,onReady,onLoadError}:{gestureOwner:MutableRefObject<'sand'|'camera'|null>;onReady?:(ready:boolean)=>void;onLoadError?:(message:string)=>void;initialDrawing?:{color:string;height:string};drawingBounds?:DrawingBounds;tool:SandTool;settings:RakeSettings;sandColor:string;enabled:boolean;objects:GardenObject[];actions:MutableRefObject<SandActions|null>;onChange:(state:SandHistoryState,origem:'gesto'|'historico')=>void}) {
   const {gl,camera,invalidate}=useThree();
   const quality=useQualityLibrary();
   const bounds=useMemo(()=>expandedDrawingBounds(drawingBounds,{x:GARDEN_X,z:GARDEN_Z}),[]);
@@ -56,12 +57,12 @@ export function SandSurface({gestureOwner,tool,settings,sandColor,enabled,action
   },[initialDrawing,drawingBounds,bounds,assets,invalidate,onLoadError]);
   const history=useRef<{voltar:{color:ImageData;height:ImageData}[];avancar:{color:ImageData;height:ImageData}[]}>({voltar:[],avancar:[]});
   const capture=useCallback(()=>({color:assets.c.getImageData(0,0,W,H),height:assets.h.getImageData(0,0,W,H)}),[assets]);
-  const report=useCallback(()=>onChange({voltar:history.current.voltar.length>0,avancar:history.current.avancar.length>0}),[onChange]);
+  const report=useCallback((origem:'gesto'|'historico')=>onChange({voltar:history.current.voltar.length>0,avancar:history.current.avancar.length>0},origem),[onChange]);
   // Um gesto novo guarda o antes e apaga o que dava para avancar.
-  const remember=useCallback(()=>{drawingChanged.current=true;const h=history.current;h.voltar.push(capture());if(h.voltar.length>PASSOS)h.voltar.shift();h.avancar=[];report();},[capture,report]);
+  const remember=useCallback(()=>{drawingChanged.current=true;const h=history.current;h.voltar.push(capture());if(h.voltar.length>PASSOS)h.voltar.shift();h.avancar=[];report('gesto');},[capture,report]);
   useEffect(()=>{
     const save=remember;
-    const apply=(from:'voltar'|'avancar',to:'voltar'|'avancar')=>{const h=history.current,step=h[from].pop();if(!step)return;h[to].push(capture());if(h[to].length>PASSOS)h[to].shift();assets.c.putImageData(step.color,0,0);assets.h.putImageData(step.height,0,0);drawingChanged.current=true;report();dirty.current=true;invalidate();};
+    const apply=(from:'voltar'|'avancar',to:'voltar'|'avancar')=>{const h=history.current,step=h[from].pop();if(!step)return;h[to].push(capture());if(h[to].length>PASSOS)h[to].shift();assets.c.putImageData(step.color,0,0);assets.h.putImageData(step.height,0,0);drawingChanged.current=true;report('historico');dirty.current=true;invalidate();};
     actions.current={bounds,snapshot:()=>{if(!restored)throw Error('A areia salva ainda não pôde ser carregada. Reabra o jardim.');if(!drawingChanged.current&&initialDrawing)return initialDrawing;return {color:assets.color.toDataURL('image/png'),height:assets.height.toDataURL('image/png')};},clear:()=>{save();assets.c.putImageData(assets.base,0,0);assets.h.fillStyle='#808080';assets.h.fillRect(0,0,W,H);dirty.current=true;invalidate();},undo:()=>apply('voltar','avancar'),redo:()=>apply('avancar','voltar')};
     return()=>{actions.current=null;};
   },[assets,actions,invalidate,remember,capture,report,restored,initialDrawing,bounds]);

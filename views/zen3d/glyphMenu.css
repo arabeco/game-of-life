@@ -127,5 +127,5 @@
 .glyph-garden .garden-floating-entry .garden-concluir{background-image:linear-gradient(180deg,#ffffff59 0%,#ffffff00 38%),var(--garden-metal);color:var(--garden-metal-text)!important;border-color:var(--garden-line)}
 .glyph-garden .garden-mode-chip{position:absolute;z-index:3;top:max(12px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));display:flex;align-items:center;gap:6px;min-height:44px;max-width:calc(100% - 170px);padding:0 13px;border-radius:12px;background:var(--garden-panel-strong);color:var(--garden-text);border:1px solid var(--garden-line-soft);backdrop-filter:blur(12px);box-shadow:0 4px 18px #0003;font-size:12px;font-weight:700;line-height:1.15}
 .glyph-garden .garden-mode-chip[data-modo=rake],.glyph-garden .garden-mode-chip[data-modo=smooth]{border-color:var(--garden-line);color:var(--garden-accent)}
-.glyph-garden .sand-options .sand-historico{min-width:44px;font-size:18px;font-weight:800;line-height:1}
-.glyph-garden .sand-options .sand-historico:disabled{opacity:.35}
+.glyph-garden .garden-editor-actions .garden-historico{min-width:40px;font-size:18px;font-weight:800;line-height:1}
+.glyph-garden .garden-editor-actions .garden-historico:disabled{opacity:.35}

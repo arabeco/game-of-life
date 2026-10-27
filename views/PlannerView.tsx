@@ -4,7 +4,8 @@ import { maoEntrouNaTela, maoSaiuDaTela } from '../utils/oracleSpeech';
 import { FloatingActionDock } from '../components/FloatingActionDock';
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon, PlusIcon, SquareCheckIcon, PanelIcon, ZapIcon } from '../components/Icons';
-import { Bell, History as HistoryIcon, Search as SearchIcon } from 'lucide-react';
+import { Bell, FileText, History as HistoryIcon, Image as ImageIcon, ListChecks, Search as SearchIcon } from 'lucide-react';
+import { conteudoDaAcao, temConteudo } from '../utils/conteudoDaAcao';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { useConfirmation } from '../hooks/useConfirmation';
 import { Action, ScheduledTask, DayOfWeek, Arena, DailyCommitment, SeasonQuest, ActionType, PlannerMatrixQuadrant, Report } from '../types';
@@ -231,6 +232,16 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
     const isMilestone = action?.actionType === 'Marco';
     const isFreeAction = action?.actionType === 'Livre';
     const instanceNote = task.instanceNote?.trim();
+    // Iconezinho de conteudo (27/10/2026): aula, checklist ou midia dentro da acao.
+    const conteudo = conteudoDaAcao(action);
+    const rotuloDoConteudo = [conteudo.texto && 'aula', conteudo.checklist && 'checklist', conteudo.midia && 'mídia'].filter(Boolean).join(', ');
+    const iconesDoConteudo = temConteudo(conteudo) ? (
+        <span className="flex shrink-0 items-center gap-0.5 text-white/72" aria-label={`Tem ${rotuloDoConteudo}`} title={`Tem ${rotuloDoConteudo}`}>
+            {conteudo.texto && <FileText className="h-3 w-3" aria-hidden="true" />}
+            {conteudo.checklist && <ListChecks className="h-3 w-3" aria-hidden="true" />}
+            {conteudo.midia && <ImageIcon className="h-3 w-3" aria-hidden="true" />}
+        </span>
+    ) : null;
     const hasReminder = task.reminderEnabled === false
         ? false
         : task.reminderEnabled === true
@@ -353,6 +364,7 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
                     <div className="relative z-10 flex h-full min-w-0 items-center gap-2 px-2">
                         <div className="flex h-6 w-6 shrink-0 items-center justify-center"><EmojiGlyph symbol={action?.icon || "🏁"} size="milestone" className="text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.78)]" /></div>
                         <div className="flex min-w-0 flex-1 items-baseline gap-1.5 text-left"><span className="max-w-full shrink-0 truncate text-xs font-black leading-tight">{action?.name}</span>{instanceNote && <span className="min-w-0 truncate text-[10px] font-medium text-white/80">· {instanceNote}</span>}</div>
+                        {iconesDoConteudo}
                         {task.completed ? <div className="shrink-0 flex h-5 w-5 items-center justify-center rounded-full border border-white/35 bg-black/22 text-white"><SquareCheckIcon className="h-3 w-3 text-emerald-100" /></div> : hasReminder && <div aria-label="Lembrete ativo" className="shrink-0 flex h-5 w-5 items-center justify-center rounded-full border border-white/22 bg-black/24 text-amber-100"><Bell className="h-3 w-3" /></div>}
                     </div>
                     {isHolding && (<div className="absolute inset-0 animate-pulse bg-black/50" style={{ clipPath: milestoneClipPath }}><div className={`h-full w-full ${task.completed ?'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`} style={{ animationDuration: `${task.completed ? DESMARCAR_ENCHER_MS : PLANNER_ENCHER_MS}ms` }}></div></div>)}
@@ -390,6 +402,7 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
                     <div className="text-lg shrink-0"><EmojiGlyph symbol={action?.icon || '\u{1F4DD}'} size="action" className="text-white" /></div>
                     {/* A anotacao vai AO LADO do nome (27/10/2026): embaixo, numa acao fina, ela nem aparecia. */}
                     <div className="flex min-w-0 flex-1 items-baseline gap-1.5"><span className="max-w-full shrink-0 truncate text-sm font-semibold text-white">{action?.name}</span>{instanceNote && <span className="min-w-0 truncate text-[11px] font-medium leading-tight text-white/78">· {instanceNote}</span>}</div>
+                    {iconesDoConteudo}
                     {task.completed ? <div className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-black/28 text-white shadow-[0_0_8px_rgba(255,255,255,0.12)]"><SquareCheckIcon className="h-3.5 w-3.5 text-emerald-300 drop-shadow-[0_0_4px_rgba(52,211,153,0.55)]" /></div> : hasReminder && <div aria-label="Lembrete ativo" className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-black/28 text-amber-100 shadow-[0_0_8px_rgba(251,191,36,0.16)]"><Bell className="h-3.5 w-3.5" /></div>}
                 </div>
                 {isHolding && (<div className={`absolute inset-0 animate-pulse bg-black/50 ${isFreeAction ?'rounded-full' : 'rounded-xl'}`}><div className={`h-full w-full ${task.completed ?'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`} style={{ animationDuration: `${task.completed ? DESMARCAR_ENCHER_MS : PLANNER_ENCHER_MS}ms` }}></div></div>)}

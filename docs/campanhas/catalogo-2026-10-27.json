@@ -1,0 +1,3541 @@
+[
+ {
+  "id": "8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b08",
+  "title": "Bussola Nutricional (Basico)",
+  "description": "Entenda sua base alimentar sem culpa e comece a observar o que entra no sistema.",
+  "price_brl": 0.0,
+  "is_premium": false,
+  "cover_image": "🥗",
+  "author_name": "Soberano System",
+  "duration_days": 7,
+  "created_at": "2026-03-24T02:19:37.934101+00:00",
+  "template": {
+   "id": "8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b08",
+   "tags": [
+    "fisico",
+    "aprendizado",
+    "nutricao",
+    "alimentacao",
+    "clareza"
+   ],
+   "price": 0,
+   "title": "Bussola Nutricional (Basico)",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Microaula de Nutricao Basica",
+     "actions": [
+      {
+       "icon": "📘",
+       "name": "Taxa Metabólica Basal",
+       "context": {
+        "timeOfDay": "afternoon",
+        "energyLevel": "medium"
+       },
+       "briefing": "\r\nA taxa metabólica basal (TMB) é a quantidade de calorias que seu corpo precisa para funcionar em repouso absoluto — respirar, bombear sangue, manter a temperatura, sustentar os órgãos. É o seu gasto mínimo de energia, antes de qualquer movimento ou atividade.\r\n\r\nA maioria das pessoas nunca parou para calcular isso e por isso vive no escuro nutricional. Come por hábito, por ansiedade ou por impulso — sem saber se está acima, abaixo ou na faixa certa do que o corpo precisa. Sem essa referência, qualquer mudança alimentar é tentativa e erro no escuro.\r\n\r\nO erro mais comum é achar que comer menos é sempre melhor. Muita gente corta calorias abaixo da própria TMB sem saber, e o corpo responde com fadiga, queda de rendimento e dificuldade para perder gordura de verdade. Comer menos do que o corpo precisa para sobreviver é diferente de comer menos do que você gasta.\r\n\r\nA regra simples é: descubra sua TMB, multiplique pelo seu nível de atividade e você tem seu gasto diário real. A partir daí, você decide com consciência — não com achismo.\r\n\r\nAgora faça a próxima ação para fixar isso na prática: registre tudo que você comeu hoje e compare com sua TMB estimada.\r\n",
+       "duration": 15,
+       "actionType": "Compromisso",
+       "difficulty": 1,
+       "description": "Leia a aula na aba Anotação e marque ao terminar.",
+       "repetitions": 1
+      }
+     ],
+     "description": "Primeiro aprenda o conceito. Depois observe sua realidade."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Observacao guiada",
+     "actions": [
+      {
+       "icon": "📋",
+       "name": "Mapear tudo que comeu em um dia",
+       "context": {
+        "timeOfDay": "night",
+        "energyLevel": "low"
+       },
+       "briefing": "Aplicacao: registre horario, o que comeu, quanto comeu e como estava se sentindo. Se conseguir, note tambem o contexto: estava com pressa, cansado, ansioso, com fome real ou so no automatico? O objetivo nao e montar dieta. E descobrir padroes. Clareza vem antes de disciplina.",
+       "duration": 15,
+       "preFlight": [
+        "Bloco de notas",
+        "Fotos das refeicoes se ajudar"
+       ],
+       "actionType": "Compromisso",
+       "difficulty": 1,
+       "description": "Anote um dia inteiro de alimentacao sem julgar, editar ou tentar parecer melhor.",
+       "repetitions": 1
+      }
+     ],
+     "description": "Aplique a microaula olhando para um dia real de alimentacao."
+    }
+   ],
+   "coverImage": "🥗",
+   "description": "Entenda sua base alimentar sem culpa e comece a observar o que entra no sistema.",
+   "campaignType": "aprendizado",
+   "durationDays": 7,
+   "campaignTheme": "nutricao",
+   "primaryAssetId": "fisico"
+  },
+  "tags": [
+   "fisico",
+   "aprendizado",
+   "nutricao",
+   "alimentacao",
+   "clareza"
+  ],
+  "price_gold": 0,
+  "price_fragments": 22
+ },
+ {
+  "id": "8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b07",
+  "title": "Diario de Bordo (Journaling)",
+  "description": "Aprenda o minimo do journaling e transforme o dia em material de clareza.",
+  "price_brl": 0.0,
+  "is_premium": false,
+  "cover_image": "📓",
+  "author_name": "Soberano System",
+  "duration_days": 7,
+  "created_at": "2026-03-24T02:19:37.934101+00:00",
+  "template": {
+   "id": "8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b07",
+   "tags": [
+    "consciencia",
+    "aprendizado",
+    "psicologia",
+    "journaling",
+    "clareza"
+   ],
+   "price": 0,
+   "title": "Diario de Bordo (Journaling)",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Microaula de Journaling",
+     "actions": [
+      {
+       "icon": "📘",
+       "name": "Journaling Básico",
+       "context": {
+        "timeOfDay": "afternoon",
+        "energyLevel": "medium"
+       },
+       "briefing": "\r\nJournaling é o hábito de registrar pensamentos, decisões e percepções por escrito, de forma regular. Não é um diário sentimental nem uma tarefa escolar — é uma ferramenta de processamento mental. Quando você escreve o que está na cabeça, você para de carregar aquilo em loop e começa a enxergar com mais clareza.\r\n\r\nO erro mais comum é achar que precisa escrever certo, bonito ou muito. A maioria das pessoas trava antes de começar porque espera inspiração ou o momento perfeito. O journaling que funciona é o feio, o curto, o honesto — 3 linhas escritas todo dia valem mais do que 3 páginas escritas uma vez por mês.\r\n\r\nA regra simples é: escreva pelo menos 1 parágrafo sobre o seu dia, sem filtro e sem reler na hora. Pode ser o que aconteceu, o que você sentiu, o que te incomodou ou o que você decidiu. O objetivo não é produzir um texto — é deixar o pensamento sair da cabeça e ganhar forma.\r\n\r\nCom o tempo, o journaling vira um espelho. Você começa a perceber padrões: o que drena sua energia, o que te motiva, onde você age diferente do que pensa. Esse nível de autoconhecimento não aparece só pensando — ele aparece quando você escreve e relê.\r\n\r\nAgora faça a próxima ação para fixar isso na prática.\r\n",
+       "duration": 15,
+       "actionType": "Compromisso",
+       "difficulty": 1,
+       "description": "Leia a aula na aba Anotação e marque ao terminar.",
+       "repetitions": 1
+      }
+     ],
+     "description": "Primeiro entenda o mecanismo. Depois use a escrita como ferramenta."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Aplicacao guiada",
+     "actions": [
+      {
+       "icon": "✍️",
+       "name": "Escrever 1 paragrafo sobre o dia atual",
+       "context": {
+        "timeOfDay": "night",
+        "energyLevel": "low"
+       },
+       "briefing": "Aplicacao: use um formato de tres linhas. 1) Hoje aconteceu... 2) Isso me fez sentir... 3) Amanha eu quero... Nao corrija, nao floreie e nao tente parecer profundo. O objetivo aqui e treinar honestidade e observacao. Quanto mais simples e verdadeiro, melhor.",
+       "duration": 10,
+       "preFlight": [
+        "Caderno ou app de notas",
+        "Um lugar minimamente silencioso"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 1,
+       "description": "Registre o que marcou o dia, o que pesou e o que quer carregar para amanha.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB",
+        "DOM"
+       ],
+       "scheduledStartTime": 1260
+      }
+     ],
+     "description": "Agora use a ferramenta em um formato curto e simples."
+    }
+   ],
+   "coverImage": "📓",
+   "description": "Aprenda o minimo do journaling e transforme o dia em material de clareza.",
+   "campaignType": "aprendizado",
+   "durationDays": 7,
+   "campaignTheme": "psicologia",
+   "primaryAssetId": "consciencia"
+  },
+  "tags": [
+   "consciencia",
+   "aprendizado",
+   "psicologia",
+   "journaling",
+   "clareza"
+  ],
+  "price_gold": 0,
+  "price_fragments": 22
+ },
+ {
+  "id": "8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b01",
+  "title": "Foco Basico (Anti-Distracao)",
+  "description": "Instale uma semana de blindagem contra ruido e recupere janelas reais de foco.",
+  "price_brl": 0.0,
+  "is_premium": false,
+  "cover_image": "🎯",
+  "author_name": "Soberano System",
+  "duration_days": 7,
+  "created_at": "2026-03-24T02:19:37.934101+00:00",
+  "template": {
+   "id": "8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b01",
+   "tags": [
+    "espaco-mental",
+    "pratica",
+    "produtividade",
+    "foco",
+    "anti-distracao"
+   ],
+   "price": 0,
+   "title": "Foco Basico (Anti-Distracao)",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Blindagem do Ambiente",
+     "actions": [
+      {
+       "icon": "🧱",
+       "name": "Instalar bloqueador de sites",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "medium"
+       },
+       "briefing": "Foco nao nasce no heroismo. Ele nasce quando o ruido perde acesso facil a voce.",
+       "duration": 15,
+       "preFlight": [
+        "Celular por perto",
+        "Notebook aberto",
+        "Lista dos sites mais usados"
+       ],
+       "actionType": "Compromisso",
+       "difficulty": 1,
+       "description": "Escolha um bloqueador simples e monte uma lista minima de sites que roubam seu foco.",
+       "repetitions": 1
+      }
+     ],
+     "description": "Remova o atrito digital antes de pedir profundidade da mente."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Blocos de Profundidade",
+     "actions": [
+      {
+       "icon": "📵",
+       "name": "Bloco de foco sem interrupção",
+       "context": {
+        "timeOfDay": "afternoon",
+        "energyLevel": "medium"
+       },
+       "briefing": "Distração não é falta de força de vontade. É o ambiente vencendo você. Cada notificação, cada aba aberta, cada mensagem não lida é uma demanda competindo pela sua atenção — e o cérebro não consegue ignorar isso. O bloco de foco não é sobre se forçar mais. É sobre criar as condições para que o foco aconteça naturalmente.",
+       "duration": 30,
+       "preFlight": [
+        "Modo aviao",
+        "Cronometro",
+        "Uma tarefa definida"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 2,
+       "description": "Afaste o celular e complete uma meia hora de concentracao sem notificacoes.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX"
+       ],
+       "scheduledStartTime": 840
+      },
+      {
+       "icon": "⏳",
+       "name": "Bloco de 60 min focado",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "high"
+       },
+       "briefing": "Distração não é falta de força de vontade. É o ambiente vencendo você. Cada notificação, cada aba aberta, cada mensagem não lida é uma demanda competindo pela sua atenção — e o cérebro não consegue ignorar isso. O bloco de foco não é sobre se forçar mais. É sobre criar as condições para que o foco aconteça naturalmente.",
+       "duration": 60,
+       "preFlight": [
+        "Janela de tempo livre",
+        "Meta unica",
+        "Agua por perto"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 3,
+       "description": "Escolha uma unica tarefa relevante e sustente sessenta minutos inteiros de foco.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "QUA",
+        "SEX"
+       ],
+       "scheduledStartTime": 540
+      }
+     ],
+     "description": "Testes curtos e longos para ensinar o sistema a sustentar concentracao."
+    }
+   ],
+   "coverImage": "🎯",
+   "description": "Instale uma semana de blindagem contra ruido e recupere janelas reais de foco.",
+   "campaignType": "pratica",
+   "durationDays": 7,
+   "campaignTheme": "produtividade",
+   "primaryAssetId": "espaco-mental"
+  },
+  "tags": [
+   "espaco-mental",
+   "pratica",
+   "produtividade",
+   "foco",
+   "anti-distracao"
+  ],
+  "price_gold": 0,
+  "price_fragments": 22
+ },
+ {
+  "id": "8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b05",
+  "title": "Fundamentos da Calistenia",
+  "description": "Mapeie sua base corporal e execute um primeiro treino tecnico de calistenia.",
+  "price_brl": 0.0,
+  "is_premium": false,
+  "cover_image": "🤸",
+  "author_name": "Soberano System",
+  "duration_days": 7,
+  "created_at": "2026-03-24T02:19:37.934101+00:00",
+  "template": {
+   "id": "8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b05",
+   "tags": [
+    "fisico",
+    "pratica",
+    "exercicio",
+    "calistenia",
+    "base"
+   ],
+   "price": 0,
+   "title": "Fundamentos da Calistenia",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Diagnostico corporal",
+     "actions": [
+      {
+       "icon": "💪",
+       "name": "Teste de flexoes maximas",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "medium"
+       },
+       "briefing": "O ponto de partida importa mais do que parecer forte no primeiro dia.",
+       "duration": 10,
+       "actionType": "Compromisso",
+       "difficulty": 2,
+       "description": "Conte quantas repeticoes limpas voce consegue fazer sem roubar tecnica.",
+       "repetitions": 1
+      },
+      {
+       "icon": "🦵",
+       "name": "Teste de agachamentos",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "medium"
+       },
+       "briefing": "Seu corpo da sinais claros quando a base ainda precisa de ajuste.",
+       "duration": 10,
+       "actionType": "Compromisso",
+       "difficulty": 2,
+       "description": "Faça uma serie limpa e observe estabilidade, ritmo e respiracao.",
+       "repetitions": 1
+      }
+     ],
+     "description": "Veja sua base real antes de tentar forcar volume."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Circuito de entrada",
+     "actions": [
+      {
+       "icon": "🏋️",
+       "name": "Trio fundamental do dia",
+       "context": {
+        "timeOfDay": "afternoon",
+        "energyLevel": "high"
+       },
+       "briefing": "Flexão, agachamento e prancha não são exercícios básicos porque são fáceis. São básicos porque são completos. Eles treinam empurrar, dobrar e estabilizar — os três padrões de movimento que o corpo humano usa em quase tudo. Dominar a forma nesses três exercícios antes de avançar para qualquer outra coisa é o que separa progressão real de lesão acumulada.",
+       "duration": 20,
+       "preFlight": [
+        "Espaco livre",
+        "Cronometro",
+        "Apoio estavel para inclinacao"
+       ],
+       "actionType": "Compromisso",
+       "difficulty": 3,
+       "description": "Complete um circuito com flexoes inclinadas, agachamentos e prancha.",
+       "repetitions": 1
+      }
+     ],
+     "description": "Monte um treino simples para ensinar forma, ritmo e constancia."
+    }
+   ],
+   "coverImage": "🤸",
+   "description": "Mapeie sua base corporal e execute um primeiro treino tecnico de calistenia.",
+   "campaignType": "pratica",
+   "durationDays": 7,
+   "campaignTheme": "exercicio",
+   "primaryAssetId": "fisico"
+  },
+  "tags": [
+   "fisico",
+   "pratica",
+   "exercicio",
+   "calistenia",
+   "base"
+  ],
+  "price_gold": 0,
+  "price_fragments": 22
+ },
+ {
+  "id": "8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b04",
+  "title": "HIIT Express (Queima Rapida)",
+  "description": "Tres treinos curtos e intensos para elevar pulso, calor e disposicao em duas semanas.",
+  "price_brl": 0.0,
+  "is_premium": false,
+  "cover_image": "🔥",
+  "author_name": "Soberano System",
+  "duration_days": 14,
+  "created_at": "2026-03-24T02:19:37.934101+00:00",
+  "template": {
+   "id": "8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b04",
+   "tags": [
+    "fisico",
+    "pratica",
+    "exercicio",
+    "hiit",
+    "energia"
+   ],
+   "price": 0,
+   "title": "HIIT Express (Queima Rapida)",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Aquecimento e gatilho",
+     "actions": [
+      {
+       "icon": "⚡",
+       "name": "Aquecimento de 5 minutos",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "medium"
+       },
+       "briefing": "Aquecimento curto evita que o treino nasca travado e reduz risco de lesao.",
+       "duration": 5,
+       "preFlight": [
+        "Espaco livre",
+        "Agua por perto"
+       ],
+       "actionType": "Compromisso",
+       "difficulty": 1,
+       "description": "Mobilidade, corrida parada e respiracao mais ativa para subir o corpo.",
+       "repetitions": 1
+      }
+     ],
+     "description": "Prepare o corpo para intensidade sem entrar frio demais."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Tres disparos",
+     "actions": [
+      {
+       "icon": "🏃",
+       "name": "Treino HIIT 1",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "high"
+       },
+       "briefing": "Intensidade curta supera duração longa quando o objetivo é ativar o metabolismo e manter a consistência. 20 minutos de esforço real produzem mais resposta fisiológica do que 1 hora de ritmo confortável. O protocolo é fixo para eliminar a decisão — você não pensa no que fazer, só faz.",
+       "duration": 15,
+       "actionType": "Compromisso",
+       "difficulty": 3,
+       "description": "15 minutos alternando explosao e descanso curto.",
+       "repetitions": 1
+      },
+      {
+       "icon": "🔥",
+       "name": "Treino HIIT 2 ou 3",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "high"
+       },
+       "briefing": "O corpo se adapta rápido. O que foi desafiador na semana 1 se torna confortável na semana 2 — e confortável não gera evolução. Adicionar 1 rodada em 2 exercícios não parece muito. É o suficiente para manter o estímulo acima do limiar de adaptação.",
+       "duration": 15,
+       "preFlight": [
+        "Timer pronto",
+        "Roupa leve",
+        "Descanso de um dia entre treinos"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 4,
+       "description": "Repita mais dois disparos em dias alternados na mesma janela da semana.",
+       "repetitions": 2,
+       "scheduledDays": [
+        "SEG",
+        "QUA",
+        "SEX"
+       ],
+       "scheduledStartTime": 420
+      }
+     ],
+     "description": "Treinos curtos, alternados e sem enrolacao."
+    }
+   ],
+   "coverImage": "🔥",
+   "description": "Tres treinos curtos e intensos para elevar pulso, calor e disposicao em duas semanas.",
+   "campaignType": "pratica",
+   "durationDays": 14,
+   "campaignTheme": "exercicio",
+   "primaryAssetId": "fisico"
+  },
+  "tags": [
+   "fisico",
+   "pratica",
+   "exercicio",
+   "hiit",
+   "energia"
+  ],
+  "price_gold": 0,
+  "price_fragments": 34
+ },
+ {
+  "id": "8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b02",
+  "title": "Manha Energetica",
+  "description": "Ajuste a partida do dia para acordar com mais energia, hidratacao e luz.",
+  "price_brl": 0.0,
+  "is_premium": false,
+  "cover_image": "🌅",
+  "author_name": "Soberano System",
+  "duration_days": 7,
+  "created_at": "2026-03-24T02:19:37.934101+00:00",
+  "template": {
+   "id": "8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b02",
+   "tags": [
+    "fisico",
+    "pratica",
+    "bem-estar",
+    "manha",
+    "energia"
+   ],
+   "price": 0,
+   "title": "Manha Energetica",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Partida Limpa",
+     "actions": [
+      {
+       "icon": "⏰",
+       "name": "Acordar no primeiro alarme",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "low"
+       },
+       "briefing": "A primeira decisao do dia define o tom das proximas.",
+       "duration": 2,
+       "actionType": "Acao Recorrente",
+       "difficulty": 3,
+       "description": "Levante no primeiro toque sem negociar com a cama.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB",
+        "DOM"
+       ],
+       "scheduledStartTime": 420
+      },
+      {
+       "icon": "💧",
+       "name": "Hidratação antes de qualquer coisa",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "low"
+       },
+       "briefing": "Você passa 6 a 8 horas sem água enquanto dorme. O corpo acorda em déficit hídrico leve — e esse déficit afeta concentração, humor e disposição antes mesmo de você perceber. Um copo de água antes do café, antes do celular, antes de qualquer coisa, é a intervenção mais simples e mais ignorada para começar o dia com o sistema funcionando.",
+       "duration": 5,
+       "preFlight": [
+        "Garrafa cheia",
+        "Agua ao lado da cama ou pia livre"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 1,
+       "description": "Hidrate o corpo antes de cafe, tela ou conversa.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB",
+        "DOM"
+       ],
+       "scheduledStartTime": 425
+      }
+     ],
+     "description": "Ative o corpo assim que o dia comecar."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Ritmo Solar",
+     "actions": [
+      {
+       "icon": "☀️",
+       "name": "5 min de luz solar ou ar livre",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "medium"
+       },
+       "briefing": "Luz cedo ajuda a regular energia, humor e a hora certa de sentir sono a noite.",
+       "duration": 5,
+       "actionType": "Acao Recorrente",
+       "difficulty": 1,
+       "description": "Leve o corpo para a varanda, rua ou janela aberta e deixe a manha entrar.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB",
+        "DOM"
+       ],
+       "scheduledStartTime": 435
+      }
+     ],
+     "description": "Use luz e ar livre para acordar de verdade."
+    }
+   ],
+   "coverImage": "🌅",
+   "description": "Ajuste a partida do dia para acordar com mais energia, hidratacao e luz.",
+   "campaignType": "pratica",
+   "durationDays": 7,
+   "campaignTheme": "bem_estar",
+   "primaryAssetId": "fisico"
+  },
+  "tags": [
+   "fisico",
+   "pratica",
+   "bem-estar",
+   "manha",
+   "energia"
+  ],
+  "price_gold": 0,
+  "price_fragments": 22
+ },
+ {
+  "id": "8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b03",
+  "title": "Manutencao da Base (Casa)",
+  "description": "Arrume o minimo vital da casa para reduzir ruido mental e atrito diario.",
+  "price_brl": 0.0,
+  "is_premium": false,
+  "cover_image": "🧹",
+  "author_name": "Soberano System",
+  "duration_days": 7,
+  "created_at": "2026-03-24T02:19:37.934101+00:00",
+  "template": {
+   "id": "8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b03",
+   "tags": [
+    "espaco-mental",
+    "manutencao",
+    "autocuidado",
+    "casa",
+    "ordem"
+   ],
+   "price": 0,
+   "title": "Manutencao da Base (Casa)",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Acordar sem caos",
+     "actions": [
+      {
+       "icon": "🛏️",
+       "name": "Arrumar a cama ao levantar",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "low"
+       },
+       "briefing": "A cama pronta vira um sinal silencioso de que o dia ja comecou em ordem.",
+       "duration": 5,
+       "actionType": "Acao Recorrente",
+       "difficulty": 1,
+       "description": "Estique, alinhe e feche a cama antes de sair do quarto.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB",
+        "DOM"
+       ],
+       "scheduledStartTime": 430
+      }
+     ],
+     "description": "Deixe o quarto entregar a primeira sensacao de ordem do dia."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Mesa sem ruido",
+     "actions": [
+      {
+       "icon": "🧼",
+       "name": "Reset de 10 minutos",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "medium"
+       },
+       "briefing": "Ambiente desorganizado não é só estético. É carga cognitiva constante — cada objeto fora do lugar é um pensamento aberto que o cérebro processa em segundo plano sem você perceber. 10 minutos de organização por dia não limpam a casa. Eles mantêm o ambiente abaixo do limiar de caos que drena energia mental.",
+       "duration": 10,
+       "preFlight": [
+        "Saco de lixo ou pano",
+        "Um destino para os objetos soltos"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 2,
+       "description": "Remova copos, cabos soltos, lixo visual e coisas que nao pertencem ao campo.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX"
+       ],
+       "scheduledStartTime": 500
+      }
+     ],
+     "description": "Limpe o centro de operacao para facilitar foco e execucao."
+    }
+   ],
+   "coverImage": "🧹",
+   "description": "Arrume o minimo vital da casa para reduzir ruido mental e atrito diario.",
+   "campaignType": "manutencao",
+   "durationDays": 7,
+   "campaignTheme": "autocuidado",
+   "primaryAssetId": "espaco-mental"
+  },
+  "tags": [
+   "espaco-mental",
+   "manutencao",
+   "autocuidado",
+   "casa",
+   "ordem"
+  ],
+  "price_gold": 0,
+  "price_fragments": 22
+ },
+ {
+  "id": "8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b06",
+  "title": "Motor de Produtividade",
+  "description": "Configure o dia para proteger prioridade, entrega e ritmo de trabalho.",
+  "price_brl": 0.0,
+  "is_premium": false,
+  "cover_image": "🛠️",
+  "author_name": "Soberano System",
+  "duration_days": 7,
+  "created_at": "2026-03-24T02:19:37.934101+00:00",
+  "template": {
+   "id": "8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b06",
+   "tags": [
+    "trabalho",
+    "pratica",
+    "produtividade",
+    "execucao",
+    "prioridade"
+   ],
+   "price": 0,
+   "title": "Motor de Produtividade",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Vespera util",
+     "actions": [
+      {
+       "icon": "📝",
+       "name": "Lista de 3 - não mais",
+       "context": {
+        "timeOfDay": "night",
+        "energyLevel": "low"
+       },
+       "briefing": "Lista longa é ilusão de produtividade. Com 15 itens, o cérebro não prioriza — ele escolhe o mais fácil e chama de trabalho. 3 tarefas forçam a decisão real: o que importa hoje? O que, se feito, faz o dia valer a pena independente do resto? Essa pergunta é mais difícil do que parece — e é exatamente por isso que funciona.",
+       "duration": 10,
+       "actionType": "Acao Recorrente",
+       "difficulty": 1,
+       "description": "Na noite anterior, escreva as tres entregas que mais importam.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "DOM",
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI"
+       ],
+       "scheduledStartTime": 1260
+      }
+     ],
+     "description": "Prepare o terreno no dia anterior para reduzir dispersao no dia seguinte."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Golpe principal",
+     "actions": [
+      {
+       "icon": "🚀",
+       "name": "Executar a tarefa #1 antes do meio-dia",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "high"
+       },
+       "briefing": "A energia boa do inicio do dia precisa ir para a frente, nao para o periferico.",
+       "duration": 60,
+       "preFlight": [
+        "Tarefa #1 definida",
+        "Agenda limpa no inicio da manha"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 3,
+       "description": "Pegue a primeira prioridade e avance nela antes de abrir o resto do ruido.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX"
+       ],
+       "scheduledStartTime": 540
+      }
+     ],
+     "description": "Proteja a tarefa numero um antes que o resto tome o dia."
+    }
+   ],
+   "coverImage": "🛠️",
+   "description": "Configure o dia para proteger prioridade, entrega e ritmo de trabalho.",
+   "campaignType": "pratica",
+   "durationDays": 7,
+   "campaignTheme": "produtividade",
+   "primaryAssetId": "trabalho"
+  },
+  "tags": [
+   "trabalho",
+   "pratica",
+   "produtividade",
+   "execucao",
+   "prioridade"
+  ],
+  "price_gold": 0,
+  "price_fragments": 22
+ },
+ {
+  "id": "8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b09",
+  "title": "Radar Financeiro",
+  "description": "Ganhe visibilidade rapida do dinheiro que entra, sai e vaza.",
+  "price_brl": 0.0,
+  "is_premium": false,
+  "cover_image": "📊",
+  "author_name": "Soberano System",
+  "duration_days": 7,
+  "created_at": "2026-03-24T02:19:37.934101+00:00",
+  "template": {
+   "id": "8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b09",
+   "tags": [
+    "financas",
+    "manutencao",
+    "estrategia",
+    "dinheiro",
+    "clareza"
+   ],
+   "price": 0,
+   "title": "Radar Financeiro",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Ver o fluxo",
+     "actions": [
+      {
+       "icon": "🧾",
+       "name": "Anotar todos os gastos de um unico dia",
+       "context": {
+        "timeOfDay": "evening",
+        "energyLevel": "medium"
+       },
+       "briefing": "O primeiro ganho financeiro e perceber padroes que estavam invisiveis.",
+       "duration": 15,
+       "preFlight": [
+        "App de notas ou planilha",
+        "Extrato ou historico do dia"
+       ],
+       "actionType": "Compromisso",
+       "difficulty": 1,
+       "description": "Registre tudo que saiu, do cafe ao aplicativo, sem tentar filtrar nada.",
+       "repetitions": 1
+      }
+     ],
+     "description": "Tire o dinheiro do escuro nem que seja por um unico dia."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Cortar o vazamento",
+     "actions": [
+      {
+       "icon": "💳",
+       "name": "Cancelar 1 assinatura inutil ou definir limite no cartao",
+       "context": {
+        "timeOfDay": "afternoon",
+        "energyLevel": "medium"
+       },
+       "briefing": "Controle financeiro cresce quando uma decisao sai da ideia e vira regra.",
+       "duration": 20,
+       "actionType": "Compromisso",
+       "difficulty": 2,
+       "description": "Escolha uma unica trava concreta para parar ou conter um vazamento.",
+       "repetitions": 1
+      }
+     ],
+     "description": "Uma decisao pequena ja muda a sensacao de controle."
+    }
+   ],
+   "coverImage": "📊",
+   "description": "Ganhe visibilidade rapida do dinheiro que entra, sai e vaza.",
+   "campaignType": "manutencao",
+   "durationDays": 7,
+   "campaignTheme": "estrategia",
+   "primaryAssetId": "financas"
+  },
+  "tags": [
+   "financas",
+   "manutencao",
+   "estrategia",
+   "dinheiro",
+   "clareza"
+  ],
+  "price_gold": 0,
+  "price_fragments": 22
+ },
+ {
+  "id": "8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b10",
+  "title": "Sincronia de Rede",
+  "description": "Reative a rede e tire uma conexao do limbo com intencao.",
+  "price_brl": 0.0,
+  "is_premium": false,
+  "cover_image": "🤝",
+  "author_name": "Soberano System",
+  "duration_days": 7,
+  "created_at": "2026-03-24T02:19:37.934101+00:00",
+  "template": {
+   "id": "8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b10",
+   "tags": [
+    "conexoes",
+    "pratica",
+    "socializacao",
+    "network",
+    "presenca"
+   ],
+   "price": 0,
+   "title": "Sincronia de Rede",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Reabrir o canal",
+     "actions": [
+      {
+       "icon": "💬",
+       "name": "Contato intencional do dia",
+       "context": {
+        "timeOfDay": "afternoon",
+        "energyLevel": "medium"
+       },
+       "briefing": "A maioria das redes se mantém por acaso — uma mensagem aqui, um like ali. Relacionamentos de valor precisam de atenção intencional. Não frequência, não quantidade. Intenção. Uma pergunta genuína vale mais do que dez \"oi sumido\" porque ela sinaliza presença real, não obrigação social.",
+       "duration": 10,
+       "actionType": "Compromisso",
+       "difficulty": 2,
+       "description": "Envie uma mensagem curta, humana e sem pedir nada em troca.",
+       "repetitions": 1
+      }
+     ],
+     "description": "Volte a existir no radar de alguem com uma mensagem real."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Tornar real",
+     "actions": [
+      {
+       "icon": "📞",
+       "name": "Marcar uma interacao real ou call",
+       "context": {
+        "timeOfDay": "evening",
+        "energyLevel": "medium"
+       },
+       "briefing": "Relacao fortalece quando sai da intencao solta e ganha data.",
+       "duration": 15,
+       "preFlight": [
+        "Uma proposta simples",
+        "Dois horarios possiveis"
+       ],
+       "actionType": "Compromisso",
+       "difficulty": 2,
+       "description": "Convide para um cafe, videochamada, treino ou qualquer encontro curto e concreto.",
+       "repetitions": 1
+      }
+     ],
+     "description": "Converta a conversa em interacao marcada."
+    }
+   ],
+   "coverImage": "🤝",
+   "description": "Reative a rede e tire uma conexao do limbo com intencao.",
+   "campaignType": "pratica",
+   "durationDays": 7,
+   "campaignTheme": "socializacao",
+   "primaryAssetId": "conexoes"
+  },
+  "tags": [
+   "conexoes",
+   "pratica",
+   "socializacao",
+   "network",
+   "presenca"
+  ],
+  "price_gold": 0,
+  "price_fragments": 22
+ },
+ {
+  "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c04",
+  "title": "Controle de Impulsos",
+  "description": "Gestao de gastos e decisoes no automatico para enxergar o padrao antes de cortar.",
+  "price_brl": 5.0,
+  "is_premium": false,
+  "cover_image": "💸",
+  "author_name": "Soberano System",
+  "duration_days": 7,
+  "created_at": "2026-03-25T18:30:43.729762+00:00",
+  "template": {
+   "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c04",
+   "tags": [
+    "financas",
+    "basico",
+    "aprendizado",
+    "estrategia",
+    "gastos",
+    "impulso"
+   ],
+   "price": 50,
+   "title": "Controle de Impulsos",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Leitura de Base",
+     "actions": [
+      {
+       "icon": "📘",
+       "name": "O gasto que voce nao ve",
+       "context": {
+        "timeOfDay": "afternoon",
+        "energyLevel": "medium"
+       },
+       "briefing": "\r\nGastos impulsivos raramente parecem impulsos no momento.\r\n[[page]]\r\nA compra por impulso tem uma narrativa. \"Estava em promoção.\" \"Eu mereço.\" \"Vou usar muito.\" \"Era só R$30.\" Cada uma dessas frases é real no momento em que é pensada — o problema é que elas são produzidas pelo mesmo sistema que está tomando a decisão, então parecem racionais quando não são. O impulso não se apresenta como impulso. Ele se apresenta como bom senso.\r\n[[page]]\r\nPor baixo de quase todo gasto impulsivo existe um gatilho emocional.\r\n\r\nTédio, ansiedade, frustração, celebração, insegurança — emoções geram desconforto, e o consumo oferece alívio rápido. A compra ativa o sistema de recompensa do cérebro de forma imediata e previsível. O problema é que esse alívio dura minutos, e o gasto dura meses no extrato. Com o tempo, o padrão se automatiza: emoção desconfortável -> compra -> alívio temporário -> culpa -> nova emoção desconfortável. O ciclo se fecha e recomeça.\r\n[[page]]\r\nO gasto invisível não é o maior. É o mais frequente.\r\n\r\nAssinaturas esquecidas, compras pequenas que não parecem contar, conveniências que viram hábito — esses gastos nunca são o problema isoladamente. O problema é que eles não são percebidos como decisões. Eles acontecem no piloto automático, fora do campo de consciência onde qualquer avaliação real poderia ocorrer. Você não decide gastar. Você simplesmente gasta.\r\n[[page]]\r\nO primeiro passo não é cortar. É ver.\r\n\r\nNão existe controle real sobre o que não é percebido. Antes de qualquer planilha, antes de qualquer meta de economia, é preciso tornar o invisível visível — registrar o que acontece, quando acontece e o que estava sendo sentido antes de acontecer. Esse registro não é punição. É o único jeito de trabalhar com dados reais em vez de suposições sobre o próprio comportamento financeiro.\r\n",
+       "duration": 15,
+       "actionType": "Compromisso",
+       "difficulty": 1,
+       "description": "Leia a aula na aba Anotacao e marque quando terminar.",
+       "repetitions": 1
+      }
+     ],
+     "description": "Veja o gasto invisivel antes de tentar controlar tudo."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Diagnostico do Impulso",
+     "actions": [
+      {
+       "icon": "📝",
+       "name": "Registro do impulso do dia",
+       "context": {
+        "timeOfDay": "night",
+        "energyLevel": "low"
+       },
+       "briefing": "\r\nRegistrar não é julgar. É observar.\r\n[[page]]\r\nDurante 7 dias, toda vez que você gastar dinheiro — ou sentir vontade de gastar e não gastar — anote. O valor, o que foi, e em uma linha: o que você estava sentindo antes. Não precisa ser preciso. \"Estava entediado.\" \"Tinha acabado de ter uma reunião ruim.\" \"Estava feliz e queria comemorar.\" Qualquer coisa que captura o estado emocional anterior ao gasto.\r\n[[page]]\r\nA classificação vem depois, não antes.\r\n\r\nAo registrar, não tente decidir na hora se foi impulso ou intenção. Só anote. A classificação acontece no final do dia, quando você olha para os registros com distância emocional. Impulso é o gasto que você não teria feito se tivesse esperado 24 horas. Intenção é o gasto que você teria feito de qualquer forma. Essa distinção, feita com calma, é mais honesta do que qualquer julgamento feito no momento da compra.\r\n[[page]]\r\nAo final de 7 dias, o padrão aparece sozinho.\r\n\r\nVocê não precisa analisar. Só precisa olhar. Em que situações você gasta sem pensar? Que tipo de gasto se repete? Que valor médio tem o impulso típico? Essas perguntas não têm resposta certa — têm a sua resposta, que é a única que importa para mudar o comportamento.\r\n",
+       "duration": 10,
+       "preFlight": [
+        "Bloco de notas",
+        "Honestidade sem culpa"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 1,
+       "description": "Anote 1 gasto ou vontade de gastar e classifique: impulso ou intencao.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB",
+        "DOM"
+       ],
+       "scheduledStartTime": 1260
+      }
+     ],
+     "description": "Observe a vontade de gastar sem tentar corrigir antes da hora."
+    }
+   ],
+   "coverImage": "💸",
+   "description": "Gestao de gastos e decisoes no automatico para enxergar o padrao antes de cortar.",
+   "campaignTier": "basico",
+   "campaignType": "aprendizado",
+   "durationDays": 7,
+   "campaignTheme": "estrategia",
+   "primaryAssetId": "financas"
+  },
+  "tags": [
+   "financas",
+   "basico",
+   "aprendizado",
+   "estrategia",
+   "gastos",
+   "impulso"
+  ],
+  "price_gold": 50,
+  "price_fragments": 22
+ },
+ {
+  "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c03",
+  "title": "Corpo em Movimento",
+  "description": "Anti-sedentarismo para quem trabalha sentado, com movimento que cabe no dia real.",
+  "price_brl": 5.0,
+  "is_premium": false,
+  "cover_image": "🚶",
+  "author_name": "Soberano System",
+  "duration_days": 7,
+  "created_at": "2026-03-25T18:30:43.729762+00:00",
+  "template": {
+   "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c03",
+   "tags": [
+    "fisico",
+    "basico",
+    "pratica",
+    "exercicio",
+    "movimento",
+    "sedentarismo"
+   ],
+   "price": 50,
+   "title": "Corpo em Movimento",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Quebra de Inercia",
+     "actions": [
+      {
+       "icon": "⏰",
+       "name": "Alerta de movimento",
+       "context": {
+        "timeOfDay": "afternoon",
+        "energyLevel": "medium"
+       },
+       "briefing": "O corpo humano não foi projetado para ficar parado por horas. Cada 90 minutos sentado sem movimento comprime discos, reduz circulação e aumenta tensão muscular de forma acumulativa. O alerta não é sobre fitness — é sobre manutenção básica de um sistema que precisa se mover para funcionar bem.",
+       "duration": 5,
+       "preFlight": [
+        "Alarme ou lembrete",
+        "Espaco minimo para levantar"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 1,
+       "description": "A cada 90 minutos sentado: levante e faca 10 agachamentos ou 2 minutos de caminhada.",
+       "repetitions": 4,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX"
+       ],
+       "scheduledStartTime": 600
+      }
+     ],
+     "description": "Tire o corpo do modo cadeira ao longo do dia."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Fechamento do Corpo",
+     "actions": [
+      {
+       "icon": "🧘",
+       "name": "Sequência de 5 minutos antes de dormir",
+       "context": {
+        "timeOfDay": "night",
+        "energyLevel": "low"
+       },
+       "briefing": "O dia comprime o corpo. Postura curvada, tensão acumulada, articulações travadas. 5 minutos de mobilidade antes de dormir não são alongamento opcional — são a manutenção que permite que o corpo recupere durante o sono em vez de gastar energia processando tensão.",
+       "duration": 5,
+       "preFlight": [
+        "Espaco no chao",
+        "Roupa confortavel"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 1,
+       "description": "Antes de dormir, execute 3 alongamentos fixos do protocolo.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB",
+        "DOM"
+       ],
+       "scheduledStartTime": 1290
+      }
+     ],
+     "description": "Solte as travas do dia antes de dormir."
+    }
+   ],
+   "coverImage": "🚶",
+   "description": "Anti-sedentarismo para quem trabalha sentado, com movimento que cabe no dia real.",
+   "campaignTier": "basico",
+   "campaignType": "pratica",
+   "durationDays": 7,
+   "campaignTheme": "exercicio",
+   "primaryAssetId": "fisico"
+  },
+  "tags": [
+   "fisico",
+   "basico",
+   "pratica",
+   "exercicio",
+   "movimento",
+   "sedentarismo"
+  ],
+  "price_gold": 50,
+  "price_fragments": 22
+ },
+ {
+  "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c10",
+  "title": "Criatividade em Sprint",
+  "description": "Desbloqueio criativo com metodo para sair do branco e entrar em movimento em minutos.",
+  "price_brl": 5.0,
+  "is_premium": false,
+  "cover_image": "⚡",
+  "author_name": "Soberano System",
+  "duration_days": 7,
+  "created_at": "2026-03-25T18:30:43.729762+00:00",
+  "template": {
+   "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c10",
+   "tags": [
+    "consciencia",
+    "basico",
+    "pratica",
+    "produtividade",
+    "criatividade",
+    "sprint"
+   ],
+   "price": 50,
+   "title": "Criatividade em Sprint",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Leitura de Base",
+     "actions": [
+      {
+       "icon": "📘",
+       "name": "Criatividade nao e inspiracao - e pressao",
+       "context": {
+        "timeOfDay": "afternoon",
+        "energyLevel": "medium"
+       },
+       "briefing": "",
+       "duration": 15,
+       "actionType": "Compromisso",
+       "difficulty": 1,
+       "description": "Leia a aula na aba Anotacao e marque quando terminar.",
+       "repetitions": 1
+      }
+     ],
+     "description": "Quebre o mito da inspiracao perfeita."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Sprint Criativo",
+     "actions": [
+      {
+       "icon": "✍️",
+       "name": "Sprint de 15 minutos",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "medium"
+       },
+       "briefing": "Criatividade sem prazo vira procrastinação com boa desculpa. O prazo curto não mata a criatividade — ele mata o perfeccionismo que impede de começar. 15 minutos com temporizador ativo produzem mais material bruto do que 2 horas de \"quando eu estiver inspirado\". O que sair não precisa ser bom. Precisa existir.",
+       "duration": 15,
+       "preFlight": [
+        "Problema criativo aberto",
+        "Cronometro em 15 minutos"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 2,
+       "description": "Escolha 1 problema criativo aberto e produza por 15 minutos sem filtrar.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB",
+        "DOM"
+       ],
+       "scheduledStartTime": 600
+      }
+     ],
+     "description": "Produza sem filtrar por uma janela curta e real."
+    }
+   ],
+   "coverImage": "⚡",
+   "description": "Desbloqueio criativo com metodo para sair do branco e entrar em movimento em minutos.",
+   "campaignTier": "basico",
+   "campaignType": "pratica",
+   "durationDays": 7,
+   "campaignTheme": "produtividade",
+   "primaryAssetId": "consciencia"
+  },
+  "tags": [
+   "consciencia",
+   "basico",
+   "pratica",
+   "produtividade",
+   "criatividade",
+   "sprint"
+  ],
+  "price_gold": 50,
+  "price_fragments": 22
+ },
+ {
+  "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c06",
+  "title": "Detox Digital",
+  "description": "Reducao de tela e ruido mental sem drama e sem cortar tudo de vez.",
+  "price_brl": 5.0,
+  "is_premium": false,
+  "cover_image": "📵",
+  "author_name": "Soberano System",
+  "duration_days": 7,
+  "created_at": "2026-03-25T18:30:43.729762+00:00",
+  "template": {
+   "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c06",
+   "tags": [
+    "espaco-mental",
+    "basico",
+    "manutencao",
+    "psicologia",
+    "tela",
+    "scroll"
+   ],
+   "price": 50,
+   "title": "Detox Digital",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Leitura de Base",
+     "actions": [
+      {
+       "icon": "📘",
+       "name": "O que o scroll faz com o seu cerebro",
+       "context": {
+        "timeOfDay": "afternoon",
+        "energyLevel": "medium"
+       },
+       "briefing": "",
+       "duration": 15,
+       "actionType": "Compromisso",
+       "difficulty": 1,
+       "description": "Leia a aula na aba Anotacao e marque quando terminar.",
+       "repetitions": 1
+      }
+     ],
+     "description": "Entenda o custo real do scroll infinito."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Janela Sem Tela",
+     "actions": [
+      {
+       "icon": "🧘",
+       "name": "Janela livre de tela",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "medium"
+       },
+       "briefing": "A tela não precisa estar na sua frente para ocupar sua cabeça. O hábito de checar cria um estado de alerta constante — mesmo sem notificação, o cérebro antecipa. Uma janela diária sem tela não é descanso passivo. É a interrupção do ciclo de antecipação que mantém o sistema nervoso em estado de vigília permanente.",
+       "duration": 30,
+       "preFlight": [
+        "Horario escolhido",
+        "Celular longe"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 1,
+       "description": "Defina 1 periodo do dia sem tela por pelo menos 30 minutos.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB",
+        "DOM"
+       ],
+       "scheduledStartTime": 480
+      }
+     ],
+     "description": "Recupere um intervalo limpo no seu dia."
+    }
+   ],
+   "coverImage": "📵",
+   "description": "Reducao de tela e ruido mental sem drama e sem cortar tudo de vez.",
+   "campaignTier": "basico",
+   "campaignType": "manutencao",
+   "durationDays": 7,
+   "campaignTheme": "psicologia",
+   "primaryAssetId": "espaco-mental"
+  },
+  "tags": [
+   "espaco-mental",
+   "basico",
+   "manutencao",
+   "psicologia",
+   "tela",
+   "scroll"
+  ],
+  "price_gold": 50,
+  "price_fragments": 22
+ },
+ {
+  "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c08",
+  "title": "Estoicismo Aplicado",
+  "description": "Filosofia pratica no cotidiano com 1 principio por dia, sem floreio.",
+  "price_brl": 5.0,
+  "is_premium": false,
+  "cover_image": "🏛️",
+  "author_name": "Soberano System",
+  "duration_days": 7,
+  "created_at": "2026-03-25T18:30:43.729762+00:00",
+  "template": {
+   "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c08",
+   "tags": [
+    "consciencia",
+    "basico",
+    "aprendizado",
+    "psicologia",
+    "estoicismo",
+    "principios"
+   ],
+   "price": 50,
+   "title": "Estoicismo Aplicado",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Principio do Dia",
+     "actions": [
+      {
+       "icon": "📘",
+       "name": "Principio do dia",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "medium"
+       },
+       "briefing": "\r\nD1 — O Controle\r\n[[page]]\r\nExiste uma linha que divide tudo na sua vida em dois lados.\r\n\r\nDe um lado: o que depende de você. Seus pensamentos, suas escolhas, suas respostas, seus esforços. Do outro lado: tudo o mais. O que as pessoas pensam de você, o resultado das suas decisões, o clima, o trânsito, a economia, o comportamento dos outros. Os estoicos chamavam essa divisão de dicotomia do controle — e consideravam a confusão entre os dois lados a principal fonte de sofrimento humano.\r\n[[page]]\r\nO problema não é que coisas ruins acontecem. É que gastamos energia tentando controlar o que não controlamos.\r\n\r\nVocê se preocupa com a opinião do seu chefe sobre uma apresentação que já foi entregue. Você rumina sobre uma conversa que já aconteceu. Você anseia por um resultado que depende de dez variáveis fora do seu alcance. Toda essa energia gasta no lado errado da linha não muda nada no mundo externo — só drena o que você tinha disponível para o que realmente depende de você.\r\n[[page]]\r\nIdentificar o lado da linha onde cada coisa está não é resignação. É precisão.\r\n\r\nQuando você para e pergunta \"isso depende de mim?\" antes de gastar energia em qualquer coisa, duas coisas acontecem. O que está fora do seu controle perde o poder de te paralisar — porque você conscientemente escolhe não investir ali. E o que está dentro do seu controle recebe atenção total — porque é o único lugar onde seu esforço produz resultado real.\r\n[[page]]\r\nA prática não elimina o desconforto. Ela redireciona onde você coloca o peso.\r\n[[page]]\r\nD2 — A Adversidade\r\n[[page]]\r\nOs estoicos não acreditavam em evitar dificuldade. Acreditavam em usá-la.\r\n\r\nPara Marco Aurélio, Sêneca e Epicteto — três homens que viveram sob perseguição, exílio e escravidão — a adversidade não era o oposto do crescimento. Era o instrumento dele. O obstáculo não estava no caminho. O obstáculo era o caminho. Essa inversão não é otimismo forçado. É uma conclusão prática sobre como o caráter humano se desenvolve.\r\n[[page]]\r\nNinguém se torna resiliente em condições confortáveis.\r\n\r\nTolerância à frustração, capacidade de continuar sob pressão, clareza de valores quando tudo está difícil — essas qualidades não aparecem porque você as deseja. Aparecem porque foram testadas e você escolheu continuar. A adversidade é o único ambiente onde esse teste pode acontecer. Evitá-la sistematicamente não é prudência — é a garantia de que você nunca vai descobrir do que é capaz.\r\n[[page]]\r\nA pergunta estoica diante de qualquer dificuldade é sempre a mesma: o que isso me permite praticar?\r\n\r\nPaciência. Criatividade. Humildade. Persistência. Cada obstáculo específico convoca uma virtude específica — e a virtude só se desenvolve quando é convocada de verdade, não em simulação. A adversidade é o único teste que conta.\r\n[[page]]\r\nIsso não significa que dificuldade não dói. Significa que a dor pode ter direção.\r\n[[page]]\r\nD3 — O Tempo\r\n[[page]]\r\nVocê age como se tivesse tempo sobrando. Os estoicos agiam como se não tivessem.\r\n\r\nSêneca escreveu que o problema não é termos pouco tempo — é desperdiçarmos muito do que temos. A vida é longa o suficiente para quase tudo que importa, se usada com intenção. O que a encurta não é o calendário. É a atenção dividida, o adiamento crônico e a ilusão de que o momento certo está sempre à frente.\r\n[[page]]\r\nA morte não é o tema estoico favorito por morbidez. É por clareza.\r\n\r\nA prática do memento mori — lembrar que você vai morrer — não foi criada para deprimir. Foi criada para calibrar. Quando você tem consciência real da finitude, as decisões sobre onde colocar atenção e energia mudam. O que você estava tolerando por preguiça se torna inaceitável. O que você estava adiando por medo se torna urgente. A perspectiva da morte não paralisa — ela prioriza.\r\n[[page]]\r\nViver bem não é viver muito. É viver com presença no que está acontecendo agora.\r\n\r\nO passado não existe mais. O futuro ainda não existe. O único lugar onde qualquer coisa real pode acontecer é o momento presente — e é exatamente o lugar onde a maioria das pessoas menos está. Pensar no passado, antecipar o futuro, planejar, ruminar, imaginar — tudo isso tem seu lugar. Mas quando ocupa o espaço do presente de forma crônica, a vida passa sem ser vivida.\r\n[[page]]\r\nD4 — A Virtude\r\n[[page]]\r\nPara os estoicos, virtude não era um conceito moral abstrato. Era uma habilidade prática.\r\n\r\nCoragem, justiça, temperança e sabedoria — as quatro virtudes cardinais do estoicismo — não eram qualidades que você tinha ou não tinha. Eram capacidades que se desenvolviam com prática deliberada, da mesma forma que um músculo se desenvolve com treino. Você não era corajoso ou covarde por natureza. Você praticava coragem ou evitava situações que a exigiam.\r\n[[page]]\r\nA virtude era o único bem real porque era o único bem que não podia ser tirado de você.\r\n\r\nRiqueza, reputação, saúde, relacionamentos — tudo isso pode ser perdido por circunstâncias fora do seu controle. Sua forma de responder ao que acontece com você nunca pode ser tirada sem a sua permissão. É por isso que Epicteto, que foi escravo, escrevia sobre liberdade com mais autoridade do que a maioria dos homens livres. Ele entendia que a liberdade real não estava nas correntes — estava em como ele escolhia responder a elas.\r\n[[page]]\r\nPraticar virtude não é ser perfeito. É fazer a escolha certa uma vez a mais do que você teria feito ontem.\r\n[[page]]\r\nD5 — O Julgamento\r\n[[page]]\r\nVocê não reage às coisas. Você reage à sua interpretação das coisas.\r\n\r\nEpicteto dizia que os homens não são perturbados pelos eventos, mas pelas opiniões que formam sobre os eventos. Um engarrafamento não é estressante — a ideia de que seu tempo está sendo desperdiçado é que produz o stress. Uma crítica não é dolorosa — a interpretação de que ela ameaça sua imagem é que dói. O evento é neutro. O julgamento é seu.\r\n[[page]]\r\nIsso tem uma implicação prática enorme: você pode mudar como se sente sem mudar o que acontece.\r\n\r\nNão por negação — os estoicos eram realistas, não ingênuos. Mas por revisão do julgamento. Antes de reagir a qualquer coisa, existe um espaço — pequeno, mas real — entre o estímulo e a resposta. Nesse espaço está a sua liberdade. A prática estoica é expandir esse espaço: perceber o julgamento antes de agir a partir dele.\r\n[[page]]\r\nA pergunta que expande esse espaço é simples: isso é tão grave quanto parece agora?\r\n\r\nNa maioria das vezes, a resposta honesta é não.\r\n[[page]]\r\nD6 — A Comunidade\r\n[[page]]\r\nOs estoicos acreditavam que o ser humano não existe isolado. Existe em relação.\r\n\r\nMarco Aurélio escrevia repetidamente sobre a interdependência humana — a ideia de que cada pessoa é parte de um sistema maior, e que agir bem dentro desse sistema não é altruísmo. É a função natural de quem entende onde está. Você foi formado por outros. Você será lembrado pelo que fez pelos outros. Ignorar isso não é independência — é uma forma de desorientação.\r\n[[page]]\r\nMas comunidade estoica não é conformidade. É responsabilidade.\r\n\r\nFazer parte de um grupo, de uma família, de uma sociedade, não significa abrir mão dos próprios valores para agradar. Significa contribuir com o que você tem de melhor para o sistema do qual faz parte — e manter seus princípios mesmo quando o grupo pressiona na direção oposta. O estoico não segue a multidão. Mas também não vive para se distinguir dela. Vive para servir ao que é genuinamente bom.\r\n[[page]]\r\nA pergunta estoica sobre qualquer relação é: o que eu devo a essa pessoa como ser humano? Não como resultado, não como troca — como dever.\r\n[[page]]\r\nD7 — O Caráter\r\n[[page]]\r\nCaráter não é o que você mostra quando está sendo observado. É o que você faz quando não está.\r\n\r\nOs estoicos tinham pouco interesse em reputação e muito interesse em caráter — porque entendiam que reputação é o que os outros pensam de você, e caráter é o que você realmente é. A distância entre os dois é a medida da sua integridade. Construir reputação sem caráter é construir sobre areia — funciona enquanto as circunstâncias colaboram, e desmorona quando param de colaborar.\r\n[[page]]\r\nCaráter se revela sob pressão, não sob conforto.\r\n\r\nÉ fácil ser generoso quando está sobrando. É fácil ser paciente quando nada está testando sua paciência. É fácil manter princípios quando mantê-los não custa nada. O estoicismo não tinha interesse nessa versão de virtude — ela não conta porque não foi testada. O que conta é como você age quando está cansado, quando está com raiva, quando ninguém está olhando e quando a escolha certa é a mais difícil.\r\n[[page]]\r\nAo final desse ciclo de 7 dias, a pergunta não é o que você aprendeu sobre estoicismo. É o que você fez diferente por causa disso.\r\n",
+       "duration": 10,
+       "actionType": "Acao Recorrente",
+       "difficulty": 1,
+       "description": "Leia o principio do dia na aba Anotacao e marque quando terminar.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB",
+        "DOM"
+       ],
+       "scheduledStartTime": 420
+      }
+     ],
+     "description": "Receba 1 principio por dia e leve isso para a vida real."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Auditoria do Dia",
+     "actions": [
+      {
+       "icon": "📝",
+       "name": "Auditoria do dia pelo principio",
+       "context": {
+        "timeOfDay": "night",
+        "energyLevel": "low"
+       },
+       "briefing": "\r\nO princípio lido hoje não é teoria. É uma lente.\r\n[[page]]\r\nAo final do dia, você vai olhar para o que aconteceu através dessa lente específica — não para todos os seus problemas, não para sua vida inteira. Para um momento. Uma situação. Uma decisão. Algo do dia de hoje que o princípio ilumina de uma forma que você não teria visto sem ele.\r\n[[page]]\r\nO formato é fixo e leva menos de 5 minutos.\r\n\r\nTrês perguntas, três respostas curtas. O que aconteceu — descreva o momento sem julgamento, só os fatos. Como o princípio do dia se aplica a esse momento — não o que você deveria ter feito, o que o princípio diria sobre o que aconteceu. E o que você faria diferente com essa perspectiva — uma ação concreta, não uma intenção vaga.\r\n[[page]]\r\nA honestidade aqui vale mais do que a resposta certa.\r\n\r\nVocê não está sendo avaliado. Está construindo um registro real do que acontece quando você tenta aplicar uma ideia filosófica à vida real — e isso inclui os dias em que não conseguiu, os dias em que o princípio não ajudou e os dias em que você agiu exatamente contra o que acabou de ler. Esses registros são os mais valiosos.\r\n",
+       "duration": 10,
+       "preFlight": [
+        "1 situacao real do dia",
+        "3 linhas honestas"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 2,
+       "description": "Escreva 3 linhas: o que aconteceu, como o principio se aplicaria e o que voce fara diferente.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB",
+        "DOM"
+       ],
+       "scheduledStartTime": 1260
+      }
+     ],
+     "description": "Aplique o principio em 1 situacao concreta do seu dia."
+    }
+   ],
+   "coverImage": "🏛️",
+   "description": "Filosofia pratica no cotidiano com 1 principio por dia, sem floreio.",
+   "campaignTier": "basico",
+   "campaignType": "aprendizado",
+   "durationDays": 7,
+   "campaignTheme": "psicologia",
+   "primaryAssetId": "consciencia"
+  },
+  "tags": [
+   "consciencia",
+   "basico",
+   "aprendizado",
+   "psicologia",
+   "estoicismo",
+   "principios"
+  ],
+  "price_gold": 50,
+  "price_fragments": 22
+ },
+ {
+  "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c02",
+  "title": "Leitura Ativa",
+  "description": "Habito de leitura com retencao real para absorver de verdade o que voce le.",
+  "price_brl": 5.0,
+  "is_premium": false,
+  "cover_image": "📚",
+  "author_name": "Soberano System",
+  "duration_days": 7,
+  "created_at": "2026-03-25T18:30:43.729762+00:00",
+  "template": {
+   "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c02",
+   "tags": [
+    "consciencia",
+    "basico",
+    "aprendizado",
+    "produtividade",
+    "leitura",
+    "retencao"
+   ],
+   "price": 50,
+   "title": "Leitura Ativa",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Leitura de Base",
+     "actions": [
+      {
+       "icon": "📘",
+       "name": "Por que voce esquece o que le",
+       "context": {
+        "timeOfDay": "afternoon",
+        "energyLevel": "medium"
+       },
+       "briefing": "\r\nO problema não é memória. É método.\r\n[[page]]\r\nA maioria das pessoas lê de forma passiva — os olhos percorrem as linhas, as palavras fazem sentido no momento, e duas semanas depois sobra só uma impressão vaga do que o livro era \"sobre\". Isso não é falha de inteligência. É o resultado de um processo de leitura que nunca foi projetado para reter, só para avançar.\r\n[[page]]\r\nO cérebro retém o que reconstrói, não o que absorve.\r\n\r\nQuando você lê sem interagir com o texto — sem parar, sem questionar, sem conectar com o que já sabe — o conteúdo passa pelo processamento de curto prazo e não chega à memória de longo prazo. É o mesmo mecanismo que faz você esquecer o nome de alguém segundos depois de ser apresentado: a informação entrou, mas não teve âncora suficiente para fixar.\r\n[[page]]\r\nSublinhar não resolve. Na maioria das vezes, piora.\r\n\r\nSublinhar dá a sensação de estar aprendendo sem o trabalho real de aprender. Você marca a frase porque ela parece importante — mas o cérebro não processou por que ela é importante, nem como ela se conecta ao resto. Releituras de trechos sublinhados produzem a ilusão de familiaridade, que o cérebro confunde com compreensão. Não é a mesma coisa.\r\n[[page]]\r\nA técnica que funciona é a da reconstrução.\r\n\r\nAo final de cada sessão de leitura — não do livro inteiro, da sessão — feche o livro e escreva com suas próprias palavras a ideia principal que ficou. Uma ideia. Não um resumo, não bullet points, não transcrição. A ideia que o seu cérebro escolheu reter quando você não podia mais olhar para o texto. Esse processo de reconstrução é o que move a informação do processamento passivo para a memória ativa — e é o que faz a diferença entre ler e aprender.\r\n",
+       "duration": 15,
+       "actionType": "Compromisso",
+       "difficulty": 1,
+       "description": "Leia a aula na aba Anotacao e marque quando terminar.",
+       "repetitions": 1
+      }
+     ],
+     "description": "Entenda por que tanta leitura evapora rapido."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Retencao em Campo",
+     "actions": [
+      {
+       "icon": "📝",
+       "name": "Sessao de 20 minutos com metodo",
+       "context": {
+        "timeOfDay": "night",
+        "energyLevel": "medium"
+       },
+       "briefing": "\r\n20 minutos é suficiente quando o processo é certo.\r\n[[page]]\r\nA maioria das pessoas acredita que precisa de longos blocos de tempo para ler de forma produtiva. Não precisa. 20 minutos de leitura ativa produzem mais retenção do que 2 horas de leitura passiva — porque o que determina o aprendizado não é o tempo gasto, é o que o cérebro faz com o conteúdo durante e depois da leitura.\r\n[[page]]\r\nO protocolo é simples e não negocia.\r\n\r\nLeia por 20 minutos sem interrupção — sem celular, sem notificação, sem pausas para checar qualquer coisa. Quando o tempo acabar, feche o livro ou vire a tela. Não vale \"só mais um parágrafo\". O encerramento deliberado é parte do método — ele sinaliza ao cérebro que chegou a hora de consolidar o que foi lido.\r\n[[page]]\r\nEntão escreva. Com suas palavras. Sem olhar para o texto.\r\n\r\nUma ideia. Pode ser uma frase, pode ser um parágrafo. O critério não é tamanho — é que seja genuinamente sua reconstrução do que ficou, não uma transcrição do que você lembra ter lido. Se você não consegue escrever nada sem olhar para o texto, isso é um dado importante: significa que a leitura foi passiva. Sem julgamento — só observação. Na próxima sessão, leia menos e processe mais.\r\n",
+       "duration": 20,
+       "preFlight": [
+        "Livro atual",
+        "Caneta ou notas",
+        "Ambiente sem notificacao"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 2,
+       "description": "Leia 20 minutos e registre com suas palavras 1 ideia que ficou.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB",
+        "DOM"
+       ],
+       "scheduledStartTime": 1260
+      }
+     ],
+     "description": "Leia menos no automatico e retenha mais no fim da sessao."
+    }
+   ],
+   "coverImage": "📚",
+   "description": "Habito de leitura com retencao real para absorver de verdade o que voce le.",
+   "campaignTier": "basico",
+   "campaignType": "aprendizado",
+   "durationDays": 7,
+   "campaignTheme": "produtividade",
+   "primaryAssetId": "consciencia"
+  },
+  "tags": [
+   "consciencia",
+   "basico",
+   "aprendizado",
+   "produtividade",
+   "leitura",
+   "retencao"
+  ],
+  "price_gold": 50,
+  "price_fragments": 22
+ },
+ {
+  "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c09",
+  "title": "Mobilidade e Flexibilidade",
+  "description": "Corpo funcional alem da academia com movimento que previne e recupera.",
+  "price_brl": 5.0,
+  "is_premium": false,
+  "cover_image": "🤸",
+  "author_name": "Soberano System",
+  "duration_days": 7,
+  "created_at": "2026-03-25T18:30:43.729762+00:00",
+  "template": {
+   "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c09",
+   "tags": [
+    "fisico",
+    "basico",
+    "pratica",
+    "exercicio",
+    "mobilidade",
+    "flexibilidade"
+   ],
+   "price": 50,
+   "title": "Mobilidade e Flexibilidade",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Mobilidade Matinal",
+     "actions": [
+      {
+       "icon": "🧘",
+       "name": "Sequência de mobilidade de 10 minutos",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "medium"
+       },
+       "briefing": "Mobilidade não é o mesmo que flexibilidade. Flexibilidade é o quanto um músculo alonga passivamente. Mobilidade é o quanto uma articulação se move com controle. É a mobilidade que protege de lesão e mantém o corpo funcional ao longo dos anos — não a capacidade de fazer o spagat.",
+       "duration": 10,
+       "preFlight": [
+        "Espaco minimo",
+        "Chao livre"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 1,
+       "description": "10 minutos ao acordar com rotacao de quadril, abertura de ombros e mobilizacao de coluna.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB",
+        "DOM"
+       ],
+       "scheduledStartTime": 420
+      }
+     ],
+     "description": "Acorde o corpo com um protocolo simples e funcional."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Ponto de Tensao",
+     "actions": [
+      {
+       "icon": "🎯",
+       "name": "Ponto de tensao do dia",
+       "context": {
+        "timeOfDay": "night",
+        "energyLevel": "low"
+       },
+       "briefing": "Tensão muscular é o registro físico do dia. Onde você carregou peso, onde ficou parado, onde segurou o stress — tudo aparece no corpo. Identificar e liberar o ponto de tensão diário não é spa. É manutenção do sistema que você usa para fazer tudo.",
+       "duration": 10,
+       "preFlight": [
+        "Perceber a tensao principal do corpo"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 1,
+       "description": "Identifique onde o corpo travou hoje e faca o alongamento especifico indicado para essa regiao.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB",
+        "DOM"
+       ],
+       "scheduledStartTime": 1260
+      }
+     ],
+     "description": "Ataque a regiao do corpo que mais acumulou rigidez no dia."
+    }
+   ],
+   "coverImage": "🤸",
+   "description": "Corpo funcional alem da academia com movimento que previne e recupera.",
+   "campaignTier": "basico",
+   "campaignType": "pratica",
+   "durationDays": 7,
+   "campaignTheme": "exercicio",
+   "primaryAssetId": "fisico"
+  },
+  "tags": [
+   "fisico",
+   "basico",
+   "pratica",
+   "exercicio",
+   "mobilidade",
+   "flexibilidade"
+  ],
+  "price_gold": 50,
+  "price_fragments": 22
+ },
+ {
+  "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c05",
+  "title": "Presenca Real",
+  "description": "Qualidade nos vinculos proximos para estar de verdade quando esta com alguem.",
+  "price_brl": 5.0,
+  "is_premium": false,
+  "cover_image": "🤝",
+  "author_name": "Soberano System",
+  "duration_days": 7,
+  "created_at": "2026-03-25T18:30:43.729762+00:00",
+  "template": {
+   "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c05",
+   "tags": [
+    "conexoes",
+    "basico",
+    "pratica",
+    "socializacao",
+    "presenca",
+    "relacoes"
+   ],
+   "price": 50,
+   "title": "Presenca Real",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Leitura de Base",
+     "actions": [
+      {
+       "icon": "📘",
+       "name": "A diferenca entre estar junto e estar presente",
+       "context": {
+        "timeOfDay": "afternoon",
+        "energyLevel": "medium"
+       },
+       "briefing": "",
+       "duration": 15,
+       "actionType": "Compromisso",
+       "difficulty": 1,
+       "description": "Leia a aula na aba Anotacao e marque quando terminar.",
+       "repetitions": 1
+      }
+     ],
+     "description": "Diferencie presenca fisica de presenca real."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Presenca Intencional",
+     "actions": [
+      {
+       "icon": "🫱",
+       "name": "Janela de presenca intencional",
+       "context": {
+        "timeOfDay": "evening",
+        "energyLevel": "medium"
+       },
+       "briefing": "Estar no mesmo espaço que alguém e estar presente com alguém são coisas completamente diferentes. O celular não precisa estar na mão para dividir a atenção — ele só precisa estar visível. Escolher 1 interação por dia para estar de verdade não é romantismo. É uma decisão sobre o que você valoriza o suficiente para dar atenção real.",
+       "duration": 15,
+       "preFlight": [
+        "Uma interacao real",
+        "Celular longe da mao"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 1,
+       "description": "Escolha 1 interacao do dia e mantenha o celular virado para baixo ou fora do bolso.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB",
+        "DOM"
+       ],
+       "scheduledStartTime": 1140
+      }
+     ],
+     "description": "Leve a atencao inteira para 1 encontro real por dia."
+    }
+   ],
+   "coverImage": "🤝",
+   "description": "Qualidade nos vinculos proximos para estar de verdade quando esta com alguem.",
+   "campaignTier": "basico",
+   "campaignType": "pratica",
+   "durationDays": 7,
+   "campaignTheme": "socializacao",
+   "primaryAssetId": "conexoes"
+  },
+  "tags": [
+   "conexoes",
+   "basico",
+   "pratica",
+   "socializacao",
+   "presenca",
+   "relacoes"
+  ],
+  "price_gold": 50,
+  "price_fragments": 22
+ },
+ {
+  "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c01",
+  "title": "Sono de Elite",
+  "description": "Protocolo de recuperacao noturna para dormir melhor sem mudar sua rotina toda.",
+  "price_brl": 5.0,
+  "is_premium": false,
+  "cover_image": "🌙",
+  "author_name": "Soberano System",
+  "duration_days": 7,
+  "created_at": "2026-03-25T18:30:43.729762+00:00",
+  "template": {
+   "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c01",
+   "tags": [
+    "fisico",
+    "basico",
+    "aprendizado",
+    "bem-estar",
+    "sono",
+    "recuperacao"
+   ],
+   "price": 50,
+   "title": "Sono de Elite",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Leitura de Base",
+     "actions": [
+      {
+       "icon": "📘",
+       "name": "Por que voce acorda cansado",
+       "context": {
+        "timeOfDay": "evening",
+        "energyLevel": "medium"
+       },
+       "briefing": "\r\nO sono não é um estado uniforme. Enquanto você dorme, o corpo passa por ciclos de aproximadamente 90 minutos, alternando entre sono leve, sono profundo e sono REM. O problema não é só a quantidade de horas — é onde dentro desse ciclo o alarme te acorda. Ser arrancado do sono profundo produz aquela sensação de peso e desorientação que dura horas, independente de ter dormido 7 ou 9 horas. Você não acorda cansado porque dormiu pouco. Muitas vezes acorda cansado porque acordou na hora errada.\r\n[[page]]\r\nO segundo fator é o cortisol. Esse hormônio, que deveria subir naturalmente ao amanhecer para te preparar para o dia, tem seu ritmo sabotado por luz artificial, telas à noite e horários irregulares de sono. Quando o cortisol não sobe no momento certo, o corpo não completa a transição do sono para o estado de alerta — e você passa as primeiras horas do dia lutando contra a biologia em vez de trabalhar com ela.\r\n[[page]]\r\nO terceiro fator, e o mais ignorado, é a temperatura. O corpo precisa reduzir sua temperatura central para entrar em sono profundo. Quarto quente, coberta pesada demais, banho quente imediatamente antes de dormir — tudo isso atrasa a entrada no sono profundo e reduz o tempo total de recuperação real, mesmo que você passe 8 horas na cama.\r\n[[page]]\r\nVocê não precisa de suplemento, de app de monitoramento ou de rotina perfeita para dormir melhor. Precisa entender o que está sabotando o que já deveria acontecer naturalmente — e remover esses obstáculos um por um.\r\n",
+       "duration": 15,
+       "actionType": "Compromisso",
+       "difficulty": 1,
+       "description": "Leia a aula na aba Anotacao e marque quando terminar.",
+       "repetitions": 1
+      }
+     ],
+     "description": "Entenda o que destrava ou sabota sua recuperacao noturna."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Aplicacao Noturna",
+     "actions": [
+      {
+       "icon": "📝",
+       "name": "Protocolo de desaceleracao",
+       "context": {
+        "timeOfDay": "night",
+        "energyLevel": "low"
+       },
+       "briefing": "\r\nSeu sistema nervoso não tem um botão de desligar. Ele precisa de uma rampa de descida — um conjunto de sinais ambientais e comportamentais que avisem ao corpo que o dia acabou e que é seguro soltar a guarda. Sem essa rampa, você deita, fecha os olhos e a cabeça continua em modo de execução.\r\n[[page]]\r\nO protocolo é simples: 30 minutos antes de dormir, tela desligada ou em modo noturno com brilho mínimo. Luz do ambiente reduzida — trocar o teto por um abajur ou deixar só a luz do corredor já faz diferença mensurável. Uma anotação rápida do que ficou aberto no dia — não para resolver, mas para retirar da memória ativa e colocar em algum lugar físico. E temperatura do quarto mais baixa do que você acha que precisa. Esses quatro elementos, juntos, constroem a rampa de descida que o corpo precisa para entrar em sono profundo mais rápido e permanecer mais tempo nele.\r\n",
+       "duration": 30,
+       "preFlight": [
+        "Luz baixa",
+        "Celular fora da mao",
+        "Caderno ou notas"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 1,
+       "description": "30 minutos antes de dormir: tela desligada, luz baixa e 1 anotacao do dia.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB",
+        "DOM"
+       ],
+       "scheduledStartTime": 1320
+      }
+     ],
+     "description": "Desacelere o sistema antes de dormir."
+    }
+   ],
+   "coverImage": "🌙",
+   "description": "Protocolo de recuperacao noturna para dormir melhor sem mudar sua rotina toda.",
+   "campaignTier": "basico",
+   "campaignType": "aprendizado",
+   "durationDays": 7,
+   "campaignTheme": "bem_estar",
+   "primaryAssetId": "fisico"
+  },
+  "tags": [
+   "fisico",
+   "basico",
+   "aprendizado",
+   "bem-estar",
+   "sono",
+   "recuperacao"
+  ],
+  "price_gold": 50,
+  "price_fragments": 22
+ },
+ {
+  "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c07",
+  "title": "Voz e Presenca",
+  "description": "Comunicacao e expressao pessoal para falar com clareza e ser ouvido de verdade.",
+  "price_brl": 5.0,
+  "is_premium": false,
+  "cover_image": "🎙️",
+  "author_name": "Soberano System",
+  "duration_days": 7,
+  "created_at": "2026-03-25T18:30:43.729762+00:00",
+  "template": {
+   "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c07",
+   "tags": [
+    "conexoes",
+    "basico",
+    "pratica",
+    "socializacao",
+    "comunicacao",
+    "clareza"
+   ],
+   "price": 50,
+   "title": "Voz e Presenca",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Leitura de Base",
+     "actions": [
+      {
+       "icon": "📘",
+       "name": "Por que algumas pessoas sao ouvidas e outras nao",
+       "context": {
+        "timeOfDay": "afternoon",
+        "energyLevel": "medium"
+       },
+       "briefing": "",
+       "duration": 15,
+       "actionType": "Compromisso",
+       "difficulty": 1,
+       "description": "Leia a aula na aba Anotacao e marque quando terminar.",
+       "repetitions": 1
+      }
+     ],
+     "description": "Veja o que faz alguem ser ouvido de verdade."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Sintese em Campo",
+     "actions": [
+      {
+       "icon": "✍️",
+       "name": "Síntese de 2 frases",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "medium"
+       },
+       "briefing": "Clareza não é talento de comunicação. É trabalho de pensamento feito antes de falar. Quem fala muito sem dizer nada geralmente ainda está descobrindo o que quer dizer enquanto fala. Escrever em 2 frases antes de comunicar não é limitação — é o processo de separar o que importa do que é ruído.",
+       "duration": 10,
+       "preFlight": [
+        "Tema que voce vai comunicar",
+        "2 frases escritas antes"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 2,
+       "description": "Escolha 1 ideia que voce precisa comunicar hoje e escreva em 2 frases antes de falar.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB",
+        "DOM"
+       ],
+       "scheduledStartTime": 540
+      }
+     ],
+     "description": "Treine clareza antes de abrir a boca."
+    }
+   ],
+   "coverImage": "🎙️",
+   "description": "Comunicacao e expressao pessoal para falar com clareza e ser ouvido de verdade.",
+   "campaignTier": "basico",
+   "campaignType": "pratica",
+   "durationDays": 7,
+   "campaignTheme": "socializacao",
+   "primaryAssetId": "conexoes"
+  },
+  "tags": [
+   "conexoes",
+   "basico",
+   "pratica",
+   "socializacao",
+   "comunicacao",
+   "clareza"
+  ],
+  "price_gold": 50,
+  "price_fragments": 22
+ },
+ {
+  "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42d10",
+  "title": "Expressao Criativa",
+  "description": "Desenvolver uma linguagem propria com arte, escrita ou forma como ferramenta de identidade.",
+  "price_brl": 10.0,
+  "is_premium": false,
+  "cover_image": "🎨",
+  "author_name": "Soberano System",
+  "duration_days": 14,
+  "created_at": "2026-03-25T18:30:58.788203+00:00",
+  "template": {
+   "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42d10",
+   "tags": [
+    "consciencia",
+    "medio",
+    "pratica",
+    "expressao",
+    "criatividade",
+    "identidade"
+   ],
+   "price": 100,
+   "title": "Expressao Criativa",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Leitura de Base",
+     "actions": [
+      {
+       "icon": "📘",
+       "name": "Semana 1: Expressao nao e talento - e pratica / Semana 2: Encontrar sua voz",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "medium"
+       },
+       "briefing": "",
+       "duration": 15,
+       "actionType": "Acao Recorrente",
+       "difficulty": 1,
+       "description": "Leia a aula da semana na aba Anotacao e marque quando terminar.",
+       "repetitions": 2,
+       "scheduledDays": [
+        "SEG"
+       ],
+       "scheduledStartTime": 540
+      }
+     ],
+     "description": "Tire a criatividade do pedestal e jogue ela para a pratica."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Pratica e Reflexao",
+     "actions": [
+      {
+       "icon": "🎨",
+       "name": "Sessao diaria de 20 minutos",
+       "context": {
+        "timeOfDay": "afternoon",
+        "energyLevel": "medium"
+       },
+       "briefing": "Adultos param de criar porque passam a julgar antes de produzir. A régua de qualidade aparece antes do rascunho, e o rascunho nunca sai. 20 minutos por dia no seu meio escolhido com a única regra de não parar antes do tempo — isso não é aula de arte. É retreinamento do hábito de criar sem permissão.",
+       "duration": 20,
+       "preFlight": [
+        "Meio escolhido: escrita, desenho, musica ou fotografia"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 2,
+       "description": "Escolha o meio no inicio do ciclo e pratique 20 minutos por dia sem objetivo de resultado.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB",
+        "DOM"
+       ],
+       "scheduledStartTime": 1020
+      },
+      {
+       "icon": "📝",
+       "name": "O que saiu hoje",
+       "context": {
+        "timeOfDay": "night",
+        "energyLevel": "low"
+       },
+       "briefing": "",
+       "duration": 5,
+       "actionType": "Acao Recorrente",
+       "difficulty": 1,
+       "description": "Registre em 1 linha o que foi criado ou tentado, sem julgar a qualidade.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB",
+        "DOM"
+       ],
+       "scheduledStartTime": 1260
+      }
+     ],
+     "description": "Produza um pouco por dia e observe o rastro da sua propria voz."
+    }
+   ],
+   "coverImage": "🎨",
+   "description": "Desenvolver uma linguagem propria com arte, escrita ou forma como ferramenta de identidade.",
+   "campaignTier": "medio",
+   "campaignType": "pratica",
+   "durationDays": 14,
+   "campaignTheme": "expressao",
+   "primaryAssetId": "consciencia"
+  },
+  "tags": [
+   "consciencia",
+   "medio",
+   "pratica",
+   "expressao",
+   "criatividade",
+   "identidade"
+  ],
+  "price_gold": 100,
+  "price_fragments": 34
+ },
+ {
+  "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42d08",
+  "title": "Construcao de Cla",
+  "description": "Criar ou fortalecer seu circulo de alto nivel, porque quem esta ao seu redor define seu teto.",
+  "price_brl": 15.0,
+  "is_premium": false,
+  "cover_image": "🛡️",
+  "author_name": "Soberano System",
+  "duration_days": 14,
+  "created_at": "2026-03-25T18:30:58.788203+00:00",
+  "template": {
+   "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42d08",
+   "tags": [
+    "conexoes",
+    "medio",
+    "pratica",
+    "socializacao",
+    "cla",
+    "vinculos"
+   ],
+   "price": 150,
+   "title": "Construcao de Cla",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Leitura de Base",
+     "actions": [
+      {
+       "icon": "📘",
+       "name": "Semana 1: Voce e a media dos 5 / Semana 2: Como nutrir vinculos sem forcar",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "medium"
+       },
+       "briefing": "",
+       "duration": 15,
+       "actionType": "Acao Recorrente",
+       "difficulty": 1,
+       "description": "Leia a aula da semana na aba Anotacao e marque quando terminar.",
+       "repetitions": 2,
+       "scheduledDays": [
+        "SEG"
+       ],
+       "scheduledStartTime": 480
+      }
+     ],
+     "description": "Entenda o peso do ambiente social no seu padrao."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Mapa e Acao",
+     "actions": [
+      {
+       "icon": "🗺️",
+       "name": "Mapa de vinculos e acao intencional",
+       "context": {
+        "timeOfDay": "afternoon",
+        "energyLevel": "medium"
+       },
+       "briefing": "Você não escolhe conscientemente quem está ao seu redor — na maioria das vezes isso acontece por conveniência, proximidade ou acaso. O mapa de vínculos não é sobre cortar pessoas. É sobre enxergar com clareza quem está realmente no seu campo de influência e o que cada relação produz em você.\r\n\r\nRelacionamentos de alto valor não se constroem com grandes gestos — se constroem com contato consistente e genuíno. Uma mensagem real, um reconhecimento, uma indicação sem interesse imediato. Feito todos os dias durante 14 dias, isso não é networking. É construção de clã.",
+       "duration": 15,
+       "preFlight": [
+        "Lista dos contatos frequentes",
+        "Uma acao concreta por dia"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 2,
+       "description": "Semana 1: liste seus 10 contatos mais frequentes. Semana 2: 1 acao intencional por dia em direcao a quem energiza.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB",
+        "DOM"
+       ],
+       "scheduledStartTime": 1080
+      },
+      {
+       "icon": "📝",
+       "name": "Qualidade do vinculo do dia",
+       "context": {
+        "timeOfDay": "night",
+        "energyLevel": "low"
+       },
+       "briefing": "",
+       "duration": 5,
+       "actionType": "Acao Recorrente",
+       "difficulty": 1,
+       "description": "Registre se houve 1 troca de valor real hoje e qual foi.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB",
+        "DOM"
+       ],
+       "scheduledStartTime": 1260
+      }
+     ],
+     "description": "Veja quem sustenta ou drena sua energia social e aja em cima disso."
+    }
+   ],
+   "coverImage": "🛡️",
+   "description": "Criar ou fortalecer seu circulo de alto nivel, porque quem esta ao seu redor define seu teto.",
+   "campaignTier": "medio",
+   "campaignType": "pratica",
+   "durationDays": 14,
+   "campaignTheme": "socializacao",
+   "primaryAssetId": "conexoes"
+  },
+  "tags": [
+   "conexoes",
+   "medio",
+   "pratica",
+   "socializacao",
+   "cla",
+   "vinculos"
+  ],
+  "price_gold": 150,
+  "price_fragments": 34
+ },
+ {
+  "id": "7f31c3d8-7a9a-4d4e-9b36-4f79a5f42a01",
+  "title": "Despertar de Ferro",
+  "description": "Treino estruturado com progressao real para acumular forca semana a semana.",
+  "price_brl": 20.0,
+  "is_premium": false,
+  "cover_image": "🏋️",
+  "author_name": "Soberano System",
+  "duration_days": 14,
+  "created_at": "2026-03-16T20:51:54.761639+00:00",
+  "template": {
+   "id": "7f31c3d8-7a9a-4d4e-9b36-4f79a5f42a01",
+   "tags": [
+    "fisico",
+    "medio",
+    "pratica",
+    "exercicio",
+    "forca",
+    "progressao"
+   ],
+   "price": 200,
+   "title": "Despertar de Ferro",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Fundamento da Progressao",
+     "actions": [
+      {
+       "icon": "📘",
+       "name": "Semana 1: Por que progressao bate intensidade / Semana 2: Recuperacao e treino",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "medium"
+       },
+       "briefing": "",
+       "duration": 15,
+       "actionType": "Acao Recorrente",
+       "difficulty": 1,
+       "description": "Leia a aula da semana na aba Anotacao e marque quando terminar.",
+       "repetitions": 2,
+       "scheduledDays": [
+        "SEG"
+       ],
+       "scheduledStartTime": 420
+      }
+     ],
+     "description": "Entenda por que progresso sustentado vence intensidade solta."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Treino e Registro",
+     "actions": [
+      {
+       "icon": "🏋️",
+       "name": "Treino do dia - serie progressiva",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "high"
+       },
+       "briefing": "Força não é sobre se machucar. É sobre aplicar estímulo suficiente para que o corpo entenda que precisa se adaptar — e depois descansar para que essa adaptação aconteça. O protocolo progressivo faz esse cálculo por você: semana 1 estabelece a base, semana 2 aumenta o estímulo. Sem improvisação, sem ego, sem lesão.",
+       "duration": 35,
+       "preFlight": [
+        "Espaco livre",
+        "Carga ou peso corporal",
+        "Agua por perto"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 3,
+       "description": "Protocolo de 4 exercicios compostos. Semana 1 com volume base. Semana 2 com +1 serie por exercicio.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX"
+       ],
+       "scheduledStartTime": 420
+      },
+      {
+       "icon": "📝",
+       "name": "Log de carga e sensacao",
+       "context": {
+        "timeOfDay": "night",
+        "energyLevel": "low"
+       },
+       "briefing": "",
+       "duration": 5,
+       "preFlight": [
+        "Bloco de notas ou campo rapido"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 1,
+       "description": "Anote o que foi feito, a carga usada e como o corpo respondeu no dia.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX"
+       ],
+       "scheduledStartTime": 1260
+      }
+     ],
+     "description": "Aplique o protocolo e acompanhe o que seu corpo esta construindo."
+    }
+   ],
+   "coverImage": "🏋️",
+   "description": "Treino estruturado com progressao real para acumular forca semana a semana.",
+   "campaignTier": "medio",
+   "campaignType": "pratica",
+   "durationDays": 14,
+   "campaignTheme": "exercicio",
+   "primaryAssetId": "fisico"
+  },
+  "tags": [
+   "fisico",
+   "medio",
+   "pratica",
+   "exercicio",
+   "forca",
+   "progressao"
+  ],
+  "price_gold": 200,
+  "price_fragments": 34
+ },
+ {
+  "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42d09",
+  "title": "Financas com Intencao",
+  "description": "Organizar o dinheiro como quem constroi patrimonio, nao como quem apaga incendio.",
+  "price_brl": 20.0,
+  "is_premium": false,
+  "cover_image": "📈",
+  "author_name": "Soberano System",
+  "duration_days": 14,
+  "created_at": "2026-03-25T18:30:58.788203+00:00",
+  "template": {
+   "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42d09",
+   "tags": [
+    "financas",
+    "medio",
+    "manutencao",
+    "estrategia",
+    "patrimonio",
+    "direcao"
+   ],
+   "price": 200,
+   "title": "Financas com Intencao",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Leitura de Base",
+     "actions": [
+      {
+       "icon": "📘",
+       "name": "Semana 1: A diferenca entre controlar e construir / Semana 2: O primeiro passo do patrimonio",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "medium"
+       },
+       "briefing": "",
+       "duration": 15,
+       "actionType": "Acao Recorrente",
+       "difficulty": 1,
+       "description": "Leia a aula da semana na aba Anotacao e marque quando terminar.",
+       "repetitions": 2,
+       "scheduledDays": [
+        "SEG"
+       ],
+       "scheduledStartTime": 480
+      }
+     ],
+     "description": "Saia da logica de apagar incendio e entre em construcao intencional."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Mapa e Decisao",
+     "actions": [
+      {
+       "icon": "🧭",
+       "name": "Construcao do mapa financeiro",
+       "context": {
+        "timeOfDay": "afternoon",
+        "energyLevel": "medium"
+       },
+       "briefing": "",
+       "duration": 20,
+       "preFlight": [
+        "Entradas",
+        "Saidas fixas",
+        "Saidas variaveis"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 2,
+       "description": "Semana 1: mapear entradas e saidas. Semana 2: definir 1 meta com valor e prazo e criar a arena correspondente.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "QUA",
+        "SEX"
+       ],
+       "scheduledStartTime": 1140
+      },
+      {
+       "icon": "📝",
+       "name": "Decisao financeira do dia",
+       "context": {
+        "timeOfDay": "night",
+        "energyLevel": "low"
+       },
+       "briefing": "",
+       "duration": 5,
+       "actionType": "Acao Recorrente",
+       "difficulty": 1,
+       "description": "Registre 1 decisao financeira do dia e se ela foi intencional ou automatica.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB",
+        "DOM"
+       ],
+       "scheduledStartTime": 1260
+      }
+     ],
+     "description": "Mapeie seu dinheiro e registre as escolhas do ciclo."
+    }
+   ],
+   "coverImage": "📈",
+   "description": "Organizar o dinheiro como quem constroi patrimonio, nao como quem apaga incendio.",
+   "campaignTier": "medio",
+   "campaignType": "manutencao",
+   "durationDays": 14,
+   "campaignTheme": "estrategia",
+   "primaryAssetId": "financas"
+  },
+  "tags": [
+   "financas",
+   "medio",
+   "manutencao",
+   "estrategia",
+   "patrimonio",
+   "direcao"
+  ],
+  "price_gold": 200,
+  "price_fragments": 34
+ },
+ {
+  "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42e05",
+  "title": "Maestria Financeira",
+  "description": "Construcao de patrimonio com intencao para sair do controle e entrar no crescimento real.",
+  "price_brl": 30.0,
+  "is_premium": false,
+  "cover_image": "🏦",
+  "author_name": "Soberano System",
+  "duration_days": 21,
+  "created_at": "2026-03-25T18:38:59.006852+00:00",
+  "template": {
+   "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42e05",
+   "tags": [
+    "financas",
+    "avancado",
+    "aprendizado",
+    "estrategia",
+    "patrimonio",
+    "crescimento"
+   ],
+   "price": 300,
+   "title": "Maestria Financeira",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Leitura do Construtor",
+     "actions": [
+      {
+       "icon": "📘",
+       "name": "Leitura estrutural do patrimonio",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "medium"
+       },
+       "briefing": "\r\nSemana 1 — A mentalidade do construtor vs a do consumidor\r\n[[page]]\r\nA diferença entre quem acumula patrimônio e quem não acumula raramente é renda.\r\n\r\nÉ mentalidade. Duas pessoas com o mesmo salário, na mesma cidade, com as mesmas despesas fixas — uma constrói patrimônio ao longo dos anos e a outra não. A diferença não está na planilha. Está na forma como cada uma interpreta o papel do dinheiro na própria vida. Uma vê dinheiro como recurso para consumir. A outra vê como ferramenta para construir.\r\n[[page]]\r\nO consumidor otimiza para o presente. O construtor otimiza para o sistema.\r\n\r\nO consumidor pensa em como o dinheiro vai melhorar sua vida agora — o jantar, a viagem, o produto, o conforto imediato. O construtor pensa em como o dinheiro pode trabalhar para gerar mais dinheiro — como cada real alocado hoje muda as opções disponíveis daqui a 5, 10, 20 anos. Nenhum dos dois é errado em abstrato. O problema é quando a mentalidade do consumidor opera de forma exclusiva e inconsciente, sem nenhum espaço para a lógica do construtor.\r\n[[page]]\r\nSua relação psicológica com dinheiro foi formada antes que você tivesse escolha.\r\n\r\nO que seus pais diziam sobre dinheiro. Se havia escassez ou abundância na infância. As primeiras experiências de ganhar, perder ou não ter. Tudo isso criou crenças que operam em segundo plano toda vez que você toma uma decisão financeira — e que frequentemente contradizem o que você racionalmente sabe que deveria fazer. Entender de onde vêm essas crenças não resolve tudo, mas torna visível o que estava operando no escuro.\r\n[[page]]\r\nEste Codex não começa com planilha. Começa com a pergunta: qual é a sua história com dinheiro?\r\n[[page]]\r\nSemana 2 — Os instrumentos básicos de crescimento\r\n[[page]]\r\nTrês conceitos mudam tudo quando realmente entram na prática: reserva, alocação e juros compostos.\r\n\r\nA reserva de emergência não é investimento. É proteção. Sem ela, qualquer imprevisto — carro, saúde, demissão — se transforma em dívida. E dívida é o oposto de construção de patrimônio: ela toma dinheiro do futuro para pagar o presente. A reserva existe para que imprevistos sejam inconvenientes, não catástrofes. O tamanho ideal é entre 3 e 6 meses das suas despesas fixas mensais, em algo líquido e seguro.\r\n[[page]]\r\nAlocação é a decisão de para onde o dinheiro vai antes de ter a chance de ir para outro lugar.\r\n\r\nO erro mais comum é gastar o que sobra e guardar o que sobrar depois. Não sobra. O modelo que funciona é o inverso: ao receber, separa primeiro o que vai para reserva ou investimento — mesmo que seja pouco — e vive com o que resta. Essa inversão simples muda o comportamento financeiro mais do que qualquer corte de gasto, porque remove a decisão do momento em que o dinheiro está disponível e a tentação é maior.\r\n[[page]]\r\nJuros compostos são a única força no universo financeiro que trabalha para você enquanto você dorme.\r\n\r\nR$200 por mês investidos a uma taxa de 10% ao ano durante 20 anos se transformam em aproximadamente R$150.000. O mesmo valor guardado embaixo do colchão se transforma em R$48.000. A diferença de R$102.000 não veio de trabalho extra — veio do tempo e da consistência. O segredo dos juros compostos não é o rendimento. É começar cedo e não interromper.\r\n[[page]]\r\nO instrumento mais poderoso não é o melhor investimento. É a consistência no mais simples.\r\n[[page]]\r\nSemana 3 — Patrimônio como projeto de vida\r\n[[page]]\r\nDinheiro é uma ferramenta. A pergunta mais importante não é quanto você tem — é para que você está construindo.\r\n\r\nPessoas que acumulam patrimônio sem propósito claro frequentemente chegam a um ponto de saturação onde mais dinheiro não produz mais satisfação — porque nunca foi definido o suficiente. Pessoas que constroem com propósito claro sabem quando chegaram, sabem o que fazer com o que construíram e sentem o progresso ao longo do caminho, não só no destino.\r\n[[page]]\r\nLiberdade financeira não é riqueza. É escolha.\r\n\r\nO objetivo real do patrimônio não é um número no extrato. É a capacidade de dizer não ao que não quer e sim ao que quer — sem que a decisão seja determinada pelo dinheiro. Pode ser trabalhar menos. Pode ser mudar de carreira sem medo. Pode ser suportar um período de transição sem entrar em pânico. O patrimônio compra opções. E opções são o que liberdade real significa na prática.\r\n[[page]]\r\nA meta financeira que funciona é a que está conectada a algo concreto e pessoal.\r\n\r\nNão \"quero ter dinheiro\" — isso é intenção vaga. \"Quero ter reserva suficiente para ficar 6 meses sem renda se precisar mudar de emprego\" é uma meta. \"Quero investir R$500 por mês até ter R$100.000 para dar entrada em um imóvel em 8 anos\" é uma meta. Específica, com valor, com prazo e com significado pessoal claro. Esse tipo de meta resiste aos meses ruins porque tem uma razão concreta por trás.\r\n[[page]]\r\nAo final deste ciclo você vai ter um sistema, uma meta e um primeiro movimento real. Isso já é mais do que a maioria das pessoas tem.\r\n",
+       "duration": 15,
+       "actionType": "Acao Recorrente",
+       "difficulty": 2,
+       "description": "Leia o texto da semana na aba Anotacao e marque quando terminar.",
+       "repetitions": 3,
+       "scheduledDays": [
+        "SEG"
+       ],
+       "scheduledStartTime": 480
+      }
+     ],
+     "description": "Troque a mentalidade do consumidor pela do construtor de patrimonio."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Sistema e Lente",
+     "actions": [
+      {
+       "icon": "🏦",
+       "name": "Construcao do sistema financeiro pessoal",
+       "context": {
+        "timeOfDay": "afternoon",
+        "energyLevel": "medium"
+       },
+       "briefing": "\r\nSemana 1 — Mapeamento do território real.\r\n\r\nAntes de qualquer decisão, você precisa saber onde está. Liste tudo: entradas mensais reais, despesas fixas, despesas variáveis médias e dívidas ativas com juros e parcelas. Não o que você acha que gasta — o que o extrato mostra. Esse mapeamento vai revelar pelo menos uma surpresa. Sempre revela. O objetivo não é se sentir mal com o que encontrar. É trabalhar com dados reais em vez de suposições.\r\n[[page]]\r\nSemana 2 — Definição da meta de 12 meses.\r\n\r\nCom o mapa em mãos, defina 1 meta financeira concreta para os próximos 12 meses. Ela precisa ter valor específico, prazo definido e significado pessoal claro — não pode ser vaga. Depois, defina a estratégia: quanto vai separar por mês, onde vai guardar ou investir e o que vai ajustar nos gastos para viabilizar. Crie a Arena de Finanças no Glyph com as ações mensais derivadas dessa meta.\r\n[[page]]\r\nSemana 3 — Sistema de alocação.\r\n\r\nImplemente o modelo de alocação antes do gasto: defina qual percentual ou valor fixo vai para reserva ou investimento assim que o dinheiro entrar. Automatize se possível — transferência programada, débito automático. O que é automático não depende de força de vontade. E força de vontade é o recurso mais escasso que existe quando o salário cai na conta.\r\n",
+       "duration": 20,
+       "preFlight": [
+        "Ativos",
+        "Dividas",
+        "Fluxo mensal real"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 3,
+       "description": "S1: mapear patrimonio atual. S2: meta de 12 meses. S3: criar arena de financas no Glyph.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "QUA",
+        "SEX"
+       ],
+       "scheduledStartTime": 1140
+      },
+      {
+       "icon": "📝",
+       "name": "Decisao financeira do dia pela lente do construtor",
+       "context": {
+        "timeOfDay": "night",
+        "energyLevel": "low"
+       },
+       "briefing": "\r\nUma pergunta ao final de cada dia.\r\n[[page]]\r\nHouve alguma decisão financeira hoje — grande ou pequena? Se sim: estava alinhada com a meta de 12 meses que você definiu? Sim, parcialmente ou não. Uma linha sobre o que foi a decisão e como ela se encaixa ou não no sistema que você está construindo.\r\n[[page]]\r\nO registro diário não é para criar culpa. É para criar consciência.\r\n\r\nA maioria das decisões financeiras ruins não são tomadas por falta de conhecimento. São tomadas no automático, sem perceber que uma decisão está sendo tomada. O registro força a percepção — e percepção é o primeiro passo para qualquer mudança real de comportamento. Ao final de 21 dias o padrão entre intenção e comportamento real aparece com clareza que nenhuma autoavaliação subjetiva consegue produzir.\r\n",
+       "duration": 5,
+       "actionType": "Acao Recorrente",
+       "difficulty": 2,
+       "description": "Registre se a decisao financeira do dia estava alinhada com a meta de 12 meses.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB",
+        "DOM"
+       ],
+       "scheduledStartTime": 1260
+      }
+     ],
+     "description": "Mapeie o sistema financeiro real e avalie o comportamento pela meta."
+    },
+    {
+     "level": 3,
+     "title": "Fase 3: Primeiro Movimento Real",
+     "actions": [
+      {
+       "icon": "🏁",
+       "name": "Primeiro movimento real",
+       "context": {
+        "timeOfDay": "afternoon",
+        "energyLevel": "medium"
+       },
+       "briefing": "\r\nEsta semana você vai executar 1 ação financeira concreta e nova.\r\n[[page]]\r\nAbrir uma conta de investimento que ainda não abriu. Fazer o primeiro aporte — qualquer valor. Cancelar uma assinatura que existe no débito automático há meses sem uso real. Quitar uma dívida pequena que ficou parada. Fazer uma transferência programada automática para reserva. O que for — desde que seja a primeira vez que você faz essa ação específica.\r\n[[page]]\r\nPequeno e real vale mais do que grande e imaginário.\r\n\r\nR$50 investidos hoje valem mais do que R$5.000 planejados para o mês que vem. O primeiro movimento quebra a inércia — e inércia financeira é o maior obstáculo para a maioria das pessoas, não falta de conhecimento ou de dinheiro. Depois do primeiro movimento, o segundo é sempre mais fácil.\r\n[[page]]\r\nRegistre no Legado como Marco financeiro.\r\n\r\nO que foi a ação. Quanto envolveu. O que significa para você. Não pelo tamanho — pela decisão consciente que representa. Esse é o registro do momento em que você parou de planejar e começou a construir.\r\n",
+       "duration": 20,
+       "preFlight": [
+        "Movimento escolhido",
+        "Valor ou acao definida",
+        "Registro do marco preparado"
+       ],
+       "actionType": "Compromisso",
+       "difficulty": 4,
+       "description": "Abra conta de investimento, faca o primeiro aporte ou quite 1 divida pequena pela primeira vez.",
+       "repetitions": 1
+      }
+     ],
+     "description": "Execute um marco financeiro concreto que inaugure seu novo padrao."
+    }
+   ],
+   "coverImage": "🏦",
+   "description": "Construcao de patrimonio com intencao para sair do controle e entrar no crescimento real.",
+   "campaignTier": "avancado",
+   "campaignType": "aprendizado",
+   "durationDays": 21,
+   "campaignTheme": "estrategia",
+   "primaryAssetId": "financas"
+  },
+  "tags": [
+   "financas",
+   "avancado",
+   "aprendizado",
+   "estrategia",
+   "patrimonio",
+   "crescimento"
+  ],
+  "price_gold": 300,
+  "price_fragments": 42
+ },
+ {
+  "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42e04",
+  "title": "Lideranca sem Cargo",
+  "description": "Influencia, decisao e responsabilidade para liderar antes de ter o titulo.",
+  "price_brl": 35.0,
+  "is_premium": false,
+  "cover_image": "🧭",
+  "author_name": "Soberano System",
+  "duration_days": 21,
+  "created_at": "2026-03-25T18:38:59.006852+00:00",
+  "template": {
+   "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42e04",
+   "tags": [
+    "trabalho",
+    "avancado",
+    "aprendizado",
+    "estrategia",
+    "lideranca",
+    "influencia"
+   ],
+   "price": 350,
+   "title": "Lideranca sem Cargo",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Leitura de Lideranca",
+     "actions": [
+      {
+       "icon": "📘",
+       "name": "Leitura estrutural da lideranca",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "medium"
+       },
+       "briefing": "",
+       "duration": 15,
+       "actionType": "Acao Recorrente",
+       "difficulty": 2,
+       "description": "Leia o texto da semana na aba Anotacao e marque quando terminar.",
+       "repetitions": 3,
+       "scheduledDays": [
+        "SEG"
+       ],
+       "scheduledStartTime": 480
+      }
+     ],
+     "description": "Entenda como lideres reais se movem antes de receber autoridade formal."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Pratica e Reflexo",
+     "actions": [
+      {
+       "icon": "🧭",
+       "name": "Pratica de lideranca do dia",
+       "context": {
+        "timeOfDay": "afternoon",
+        "energyLevel": "medium"
+       },
+       "briefing": "",
+       "duration": 15,
+       "preFlight": [
+        "Situacao real",
+        "Disposicao para assumir responsabilidade"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 3,
+       "description": "S1: onde voce poderia ter liderado. S2: 1 acao intencional de influencia. S3: 1 decisao dificil pendente.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX"
+       ],
+       "scheduledStartTime": 1020
+      },
+      {
+       "icon": "📝",
+       "name": "Quem voce moveu hoje",
+       "context": {
+        "timeOfDay": "night",
+        "energyLevel": "low"
+       },
+       "briefing": "",
+       "duration": 5,
+       "actionType": "Acao Recorrente",
+       "difficulty": 2,
+       "description": "Registre se alguma pessoa, projeto ou situacao avancou por sua iniciativa.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB",
+        "DOM"
+       ],
+       "scheduledStartTime": 1260
+      }
+     ],
+     "description": "Exerga onde faltou lideranca, aja e meca o que sua iniciativa moveu."
+    },
+    {
+     "level": 3,
+     "title": "Fase 3: Iniciativa Propria",
+     "actions": [
+      {
+       "icon": "🏁",
+       "name": "Projeto de iniciativa propria",
+       "context": {
+        "timeOfDay": "afternoon",
+        "energyLevel": "high"
+       },
+       "briefing": "",
+       "duration": 30,
+       "preFlight": [
+        "Iniciativa definida",
+        "Primeiro passo claro",
+        "Responsavel assumido por voce"
+       ],
+       "actionType": "Compromisso",
+       "difficulty": 5,
+       "description": "Proponha e execute 1 iniciativa pequena, mas real, no trabalho ou comunidade.",
+       "repetitions": 1
+      }
+     ],
+     "description": "Proponha e execute algo real sem ter sido solicitado."
+    }
+   ],
+   "coverImage": "🧭",
+   "description": "Influencia, decisao e responsabilidade para liderar antes de ter o titulo.",
+   "campaignTier": "avancado",
+   "campaignType": "aprendizado",
+   "durationDays": 21,
+   "campaignTheme": "estrategia",
+   "primaryAssetId": "trabalho"
+  },
+  "tags": [
+   "trabalho",
+   "avancado",
+   "aprendizado",
+   "estrategia",
+   "lideranca",
+   "influencia"
+  ],
+  "price_gold": 350,
+  "price_fragments": 42
+ },
+ {
+  "id": "7f31c3d8-7a9a-4d4e-9b36-4f79a5f42a04",
+  "title": "Logistica de Vanguarda",
+  "description": "Reduzir a carga cognitiva atraves da ordem externa impecavel.",
+  "price_brl": 350.0,
+  "is_premium": false,
+  "cover_image": "🛡️",
+  "author_name": "Soberano System",
+  "duration_days": 7,
+  "created_at": "2026-03-16T20:51:54.761639+00:00",
+  "template": {
+   "id": "7f31c3d8-7a9a-4d4e-9b36-4f79a5f42a04",
+   "tags": [
+    "ordem",
+    "logistica",
+    "ambiente",
+    "planejamento"
+   ],
+   "price": 350,
+   "title": "Logistica de Vanguarda",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Limpeza de Deck",
+     "actions": [
+      {
+       "icon": "🧹",
+       "name": "Limpeza de Deck",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "low"
+       },
+       "briefing": "Mesa limpa, mente limpa.",
+       "duration": 15,
+       "preFlight": [
+        "Lixo removido",
+        "Cabos alinhados",
+        "Superficie limpa"
+       ],
+       "actionType": "Ação Recorrente",
+       "difficulty": 2,
+       "description": "Organizacao fisica do campo de trabalho imediato.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX"
+       ],
+       "scheduledStartTime": 480
+      }
+     ],
+     "description": "Organize o campo imediato para reduzir friccao operacional."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Planejamento de Batalha",
+     "actions": [
+      {
+       "icon": "🗺️",
+       "name": "Planejamento de Batalha (Domingo)",
+       "context": {
+        "timeOfDay": "evening",
+        "energyLevel": "medium"
+       },
+       "briefing": "Venca a semana antes dela comecar.",
+       "duration": 30,
+       "preFlight": [
+        "Agenda aberta",
+        "3 prioridades definidas",
+        "Blocos livres revisados"
+       ],
+       "actionType": "Ação Recorrente",
+       "difficulty": 4,
+       "description": "Mapear compromissos e definir as 3 campanhas prioritarias.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "DOM"
+       ],
+       "scheduledStartTime": 1080
+      }
+     ],
+     "description": "Mapeie compromissos e entre na semana com direcao clara."
+    }
+   ],
+   "coverImage": "🛡️",
+   "description": "Reduzir a carga cognitiva atraves da ordem externa impecavel.",
+   "durationDays": 7
+  },
+  "tags": [
+   "ordem",
+   "logistica",
+   "ambiente",
+   "planejamento"
+  ],
+  "price_gold": 350,
+  "price_fragments": 22
+ },
+ {
+  "id": "7f31c3d8-7a9a-4d4e-9b36-4f79a5f42a02",
+  "title": "Reset Dopaminergico",
+  "description": "Eliminar o brain fog e estabilizar a energia via biohacking alimentar.",
+  "price_brl": 350.0,
+  "is_premium": false,
+  "cover_image": "⚗️",
+  "author_name": "Soberano System",
+  "duration_days": 14,
+  "created_at": "2026-03-16T20:51:54.761639+00:00",
+  "template": {
+   "id": "7f31c3d8-7a9a-4d4e-9b36-4f79a5f42a02",
+   "tags": [
+    "clareza",
+    "nutricao",
+    "jejum",
+    "biohacking"
+   ],
+   "price": 350,
+   "title": "Reset Dopaminergico",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Alquimia Matinal",
+     "actions": [
+      {
+       "icon": "🍋",
+       "name": "Alquimia Matinal (Shot)",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "low"
+       },
+       "briefing": "Sua primeira medicina do dia. Ative o corpo antes do ruido entrar.",
+       "duration": 3,
+       "preFlight": [
+        "Limao",
+        "Curcuma",
+        "Gengibre",
+        "Pimenta preta"
+       ],
+       "actionType": "Ação Recorrente",
+       "difficulty": 1,
+       "description": "Limao, curcuma, gengibre e pimenta preta.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB",
+        "DOM"
+       ],
+       "scheduledStartTime": 390
+      }
+     ],
+     "description": "Abra o dia com um ritual biologico de clareza e ativacao."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Jejum de Soberano",
+     "actions": [
+      {
+       "icon": "⏳",
+       "name": "Jejum de Soberano (16h)",
+       "context": {
+        "timeOfDay": "night",
+        "energyLevel": "medium"
+       },
+       "briefing": "O silencio digestivo gera clareza mental e reduz o arrasto dopaminergico.",
+       "duration": 16,
+       "preFlight": [
+        "Agua",
+        "Sais",
+        "Janela alimentar definida"
+       ],
+       "actionType": "Ação Recorrente",
+       "difficulty": 5,
+       "description": "Protocolo de hidratacao e sais durante a janela de jejum.",
+       "repetitions": 1
+      }
+     ],
+     "description": "Use o silencio digestivo para recuperar foco, estabilidade e energia limpa."
+    }
+   ],
+   "coverImage": "⚗️",
+   "description": "Eliminar o brain fog e estabilizar a energia via biohacking alimentar.",
+   "durationDays": 14
+  },
+  "tags": [
+   "clareza",
+   "nutricao",
+   "jejum",
+   "biohacking"
+  ],
+  "price_gold": 350,
+  "price_fragments": 34
+ },
+ {
+  "id": "7f31c3d8-7a9a-4d4e-9b36-4f79a5f42a05",
+  "title": "Construção de Identidade",
+  "description": "Identidade e propósito para definir quem você está se tornando e construir compromisso real com isso.",
+  "price_brl": 40.0,
+  "is_premium": false,
+  "cover_image": "👑",
+  "author_name": "Soberano System",
+  "duration_days": 21,
+  "created_at": "2026-03-16T20:51:54.761639+00:00",
+  "template": {
+   "id": "7f31c3d8-7a9a-4d4e-9b36-4f79a5f42a05",
+   "tags": [
+    "proposito",
+    "avancado",
+    "aprendizado",
+    "estrategia",
+    "identidade",
+    "soberania"
+   ],
+   "price": 400,
+   "title": "Construção de Identidade",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Leitura Estrutural",
+     "actions": [
+      {
+       "icon": "📘",
+       "name": "Leitura estrutural do pacto",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "medium"
+       },
+       "briefing": "\r\nSemana 1 — A maioria vive o roteiro de outro\r\n[[page]]\r\nVocê não escolheu a maioria das coisas que acredita.\r\n\r\nSeus valores foram herdados da família, da escola, da religião, da cultura onde cresceu. Suas metas foram moldadas pelo que as pessoas ao seu redor consideravam sucesso. Sua ideia de quem você deveria ser foi construída por comparação — com irmãos, colegas, figuras públicas, personagens de ficção. Tudo isso aconteceu antes que você tivesse ferramentas para questionar qualquer coisa.\r\n[[page]]\r\nIsso não é culpa de ninguém. É o processo padrão de socialização humana.\r\n\r\nO problema não é ter sido influenciado — isso é inevitável. O problema é nunca ter parado para auditar o que foi instalado. Muitas pessoas chegam aos 30, 40, 50 anos perseguindo objetivos que nunca escolheram conscientemente, evitando coisas que nunca decidiram evitar, e vivendo de acordo com uma versão de sucesso que pertence a outra pessoa.\r\n[[page]]\r\nA sensação de vazio que vem com conquistas externas geralmente tem essa origem.\r\n\r\nVocê bate a meta. Consegue o cargo. Compra o apartamento. E a satisfação dura menos do que esperava — porque a meta não era sua de verdade. Era a meta que fazia sentido para o roteiro que você estava seguindo sem perceber. Não é ingratidão. É desalinhamento entre o que você construiu e quem você realmente é.\r\n[[page]]\r\nEste Codex começa com uma pergunta simples e desconfortável: o que você quer de verdade, se ninguém estiver olhando?\r\n[[page]]\r\nSemana 2 — Construindo a identidade deliberada\r\n[[page]]\r\nIdentidade não é algo que você descobre. É algo que você decide e constrói.\r\n\r\nA ideia de que existe um \"eu verdadeiro\" esperando para ser encontrado é romântica mas imprecisa. O que existe é um conjunto de valores, comportamentos e padrões que você escolhe ou herda — e que, com o tempo, se tornam quem você é. A diferença entre uma identidade herdada e uma identidade deliberada é simples: uma aconteceu com você, a outra foi construída por você.\r\n[[page]]\r\nValores reais se revelam nas decisões difíceis, não nas declarações fáceis.\r\n\r\nTodo mundo diz que valoriza família, saúde e honestidade. Mas o que você faz quando esses valores entram em conflito com conveniência, dinheiro ou aprovação social? É nesse momento que os valores reais aparecem — não os que você declara, os que você age. Mapear essa distância entre o que você diz valorizar e o que seus comportamentos revelam que você valoriza é o trabalho central desta semana.\r\n[[page]]\r\nConstruir identidade deliberada não é criar uma persona. É eliminar o que não é você.\r\n\r\nO processo é mais de remoção do que de adição. Você não precisa inventar quem quer ser do zero — precisa identificar o que foi instalado sem escolha e decidir conscientemente o que fica e o que vai. O que sobra depois dessa auditoria é mais próximo do que você realmente é do que qualquer coisa que você tentaria construir partindo do zero.\r\n[[page]]\r\nAo final desta semana você terá 3 princípios. Não regras, não metas — princípios. As ideias que guiam suas decisões quando não há manual de instrução.\r\n[[page]]\r\nSemana 3 — O compromisso com quem você decidiu ser\r\n[[page]]\r\nSaber quem você quer ser e agir como essa pessoa são dois processos completamente diferentes.\r\n\r\nA maioria das pessoas tem clareza suficiente sobre seus valores quando pensa com calma. O problema é que a vida não acontece com calma. Acontece com pressão, cansaço, tentação e circunstâncias que não pedem licença. É nesses momentos que a identidade ou se ancora ou se dissolve — e a diferença entre as duas é o quanto o compromisso foi tornado explícito e concreto antes da pressão aparecer.\r\n[[page]]\r\nUm compromisso vago não resiste a uma situação específica.\r\n\r\n\"Quero ser mais disciplinado\" não te ajuda quando são 23h e você está cansado e a decisão difícil está na sua frente. \"Meu princípio é: quando estou cansado é quando mais preciso confiar no sistema\" — isso ajuda. A especificidade do compromisso é o que determina se ele funciona sob pressão ou só em condições ideais.\r\n[[page]]\r\nO manifesto pessoal que você vai escrever esta semana não é para mostrar para ninguém.\r\n\r\nÉ um documento interno. Uma declaração de quem você decidiu ser, escrita por você, para você, no momento em que tinha clareza suficiente para fazê-lo — para ser lida nos momentos em que a clareza vai embora. Não precisa ser longo. Precisa ser honesto e específico o suficiente para ser útil quando você mais precisar dele.\r\n[[page]]\r\nIdentidade construída sem compromisso explícito é intenção. Com compromisso, é arquitetura.\r\n",
+       "duration": 15,
+       "actionType": "Acao Recorrente",
+       "difficulty": 2,
+       "description": "Leia o texto da semana na aba Anotacao e marque quando terminar.",
+       "repetitions": 3,
+       "scheduledDays": [
+        "SEG"
+       ],
+       "scheduledStartTime": 480
+      }
+     ],
+     "description": "Desmonte identidades herdadas e comece a construir a sua."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Construir e Alinhar",
+     "actions": [
+      {
+       "icon": "✍️",
+       "name": "Construcao do manifesto pessoal",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "high"
+       },
+       "briefing": "\r\nSemana 1 — Auditoria de valores.\r\n\r\nListe 10 valores que você diria que são seus. Depois, para cada um, responda honestamente: esse valor foi escolhido ou herdado? Você age de acordo com ele quando custa algo? Se a resposta for não para as duas perguntas, ele provavelmente não é um valor real — é uma aspiração. Separe os dois. O que sobrar na coluna dos valores reais é o material com que você vai trabalhar.\r\n[[page]]\r\nSemana 2 — Os 3 princípios.\r\n\r\nA partir dos valores reais identificados na semana 1, escreva 3 princípios que guiam suas decisões. Princípio não é valor — é valor em ação. \"Honestidade\" é um valor. \"Quando tenho que escolher entre ser honesto e ser aprovado, escolho ser honesto\" é um princípio. Cada um dos seus 3 princípios deve ser específico o suficiente para ser útil em uma situação real.\r\n[[page]]\r\nSemana 3 — O manifesto.\r\n\r\nCom os princípios escritos, redija o manifesto. Formato livre — pode ser um parágrafo, pode ser uma lista, pode ser uma carta para você mesmo. O critério é um só: ao ler, você reconhece a pessoa descrita ali como quem você quer ser — não como quem você acha que deveria ser aos olhos dos outros. Ao final, esse documento entra no Legado do ciclo.\r\n",
+       "duration": 20,
+       "preFlight": [
+        "Silencio",
+        "Caderno aberto",
+        "Coragem para cortar o que nao e seu"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 4,
+       "description": "S1: valores reais vs herdados. S2: 3 principios. S3: redigir o Pacto.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "QUA",
+        "SEX"
+       ],
+       "scheduledStartTime": 420
+      },
+      {
+       "icon": "📝",
+       "name": "Alinhamento do dia",
+       "context": {
+        "timeOfDay": "night",
+        "energyLevel": "low"
+       },
+       "briefing": "\r\nUma pergunta. Todo dia. Menos de 1 minuto.\r\n[[page]]\r\nAs decisões que você tomou hoje estavam alinhadas com os princípios que você escreveu? Sim, parcialmente ou não. Se parcialmente ou não — uma linha sobre o que desalinhou. Não para se punir. Para ver o padrão.\r\n[[page]]\r\nO registro diário de alinhamento é o que transforma o manifesto de documento em bússola.\r\n\r\nSem esse registro, o manifesto vira mais um texto bonito que você escreveu e esqueceu. Com ele, você tem 21 dias de dados reais sobre a distância entre quem você declarou ser e como você age sob as condições reais da sua vida. Esse gap é o trabalho. Não é fracasso — é o mapa.\r\n",
+       "duration": 5,
+       "actionType": "Acao Recorrente",
+       "difficulty": 2,
+       "description": "Registre se as decisoes de hoje estavam alinhadas com quem voce declarou ser.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB",
+        "DOM"
+       ],
+       "scheduledStartTime": 1260
+      }
+     ],
+     "description": "Escreva principios, manifesto e veja se o dia honrou isso."
+    },
+    {
+     "level": 3,
+     "title": "Fase 3: Decisao pelo Pacto",
+     "actions": [
+      {
+       "icon": "🏁",
+       "name": "Decisao pelo pacto",
+       "context": {
+        "timeOfDay": "afternoon",
+        "energyLevel": "high"
+       },
+       "briefing": "\r\nEsta semana você vai tomar 1 decisão difícil usando exclusivamente os princípios escritos.\r\n[[page]]\r\nNão a decisão mais conveniente. Não a mais popular. A decisão que seus princípios apontam — mesmo que seja desconfortável, mesmo que ninguém entenda, mesmo que você prefira não ter que tomá-la. Pode ser no trabalho, nas relações, nas finanças, no tempo. O tamanho não importa. O que importa é que seja real e que seja difícil.\r\n[[page]]\r\nRegistre a decisão e o raciocínio.\r\n\r\nO que era a situação. Qual princípio se aplicava. O que você decidiu. E como foi. Esse registro entra no Legado como Marco de identidade — não porque foi perfeito, mas porque foi consciente.\r\n",
+       "duration": 20,
+       "preFlight": [
+        "1 decisao dificil real",
+        "Principios escritos na mao"
+       ],
+       "actionType": "Compromisso",
+       "difficulty": 5,
+       "description": "Tome 1 decisao dificil da semana usando exclusivamente os principios escritos no ciclo.",
+       "repetitions": 1
+      }
+     ],
+     "description": "Teste seu pacto numa escolha dificil e registre isso como marco."
+    }
+   ],
+   "coverImage": "👑",
+   "description": "Identidade e propósito para definir quem você está se tornando e construir compromisso real com isso.",
+   "campaignTier": "avancado",
+   "campaignType": "aprendizado",
+   "durationDays": 21,
+   "campaignTheme": "estrategia",
+   "primaryAssetId": "proposito"
+  },
+  "tags": [
+   "proposito",
+   "avancado",
+   "aprendizado",
+   "estrategia",
+   "identidade",
+   "soberania"
+  ],
+  "price_gold": 400,
+  "price_fragments": 42
+ },
+ {
+  "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42e03",
+  "title": "Corpo de Elite",
+  "description": "Protocolo completo de composicao corporal com forca, mobilidade e recuperacao integrados.",
+  "price_brl": 40.0,
+  "is_premium": false,
+  "cover_image": "💪",
+  "author_name": "Soberano System",
+  "duration_days": 21,
+  "created_at": "2026-03-25T18:38:59.006852+00:00",
+  "template": {
+   "id": "9f31c3d8-7a9a-4d4e-9b36-4f79a5f42e03",
+   "tags": [
+    "fisico",
+    "avancado",
+    "pratica",
+    "exercicio",
+    "composicao",
+    "recuperacao"
+   ],
+   "price": 400,
+   "title": "Corpo de Elite",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Leitura dos Pilares",
+     "actions": [
+      {
+       "icon": "📘",
+       "name": "Leitura estrutural do corpo funcional",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "medium"
+       },
+       "briefing": "",
+       "duration": 15,
+       "actionType": "Acao Recorrente",
+       "difficulty": 2,
+       "description": "Leia o texto da semana na aba Anotacao e marque quando terminar.",
+       "repetitions": 3,
+       "scheduledDays": [
+        "SEG"
+       ],
+       "scheduledStartTime": 420
+      }
+     ],
+     "description": "Aprenda o sistema que integra treino, mobilidade e recuperacao."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Protocolo e Triangulo",
+     "actions": [
+      {
+       "icon": "💪",
+       "name": "Treino do dia - protocolo integrado",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "high"
+       },
+       "briefing": "Um corpo funcional não é construído só com treino de força. Força sem mobilidade cria rigidez. Treino sem recuperação cria desgaste. O protocolo integra os três — dias de força, dias de mobilidade e dias de recuperação ativa — porque é a combinação que produz resultado sustentável, não o volume isolado.",
+       "duration": 40,
+       "preFlight": [
+        "Agua",
+        "Espaco livre",
+        "Disposicao para seguir o protocolo do dia"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 4,
+       "description": "Cada dia traz treino de forca, mobilidade ou recuperacao ativa com progressao por semana.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB"
+       ],
+       "scheduledStartTime": 420
+      },
+      {
+       "icon": "📝",
+       "name": "Triangulo do dia",
+       "context": {
+        "timeOfDay": "night",
+        "energyLevel": "low"
+       },
+       "briefing": "Treino, sono e alimentação são um sistema. Otimizar um e ignorar os outros dois limita o resultado dos três. O triângulo diário não é burocracia — é o dado mínimo necessário para entender qual pilar está puxando o sistema para baixo.",
+       "duration": 5,
+       "actionType": "Acao Recorrente",
+       "difficulty": 2,
+       "description": "Registre treino feito, qualidade do sono e alimentacao intencional.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB",
+        "DOM"
+       ],
+       "scheduledStartTime": 1260
+      }
+     ],
+     "description": "Treine o sistema e acompanhe os tres sinais do dia."
+    },
+    {
+     "level": 3,
+     "title": "Fase 3: Benchmark Pessoal",
+     "actions": [
+      {
+       "icon": "🏁",
+       "name": "Benchmark pessoal",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "high"
+       },
+       "briefing": "",
+       "duration": 20,
+       "preFlight": [
+        "Cronometro",
+        "Espaco livre",
+        "Medicao anotada"
+       ],
+       "actionType": "Compromisso",
+       "difficulty": 4,
+       "description": "Teste flexoes, prancha e 1 exercicio escolhido no inicio e no fim do ciclo.",
+       "repetitions": 1
+      }
+     ],
+     "description": "Meca sua evolucao real e transforme isso em dado de legado."
+    }
+   ],
+   "coverImage": "💪",
+   "description": "Protocolo completo de composicao corporal com forca, mobilidade e recuperacao integrados.",
+   "campaignTier": "avancado",
+   "campaignType": "pratica",
+   "durationDays": 21,
+   "campaignTheme": "exercicio",
+   "primaryAssetId": "fisico"
+  },
+  "tags": [
+   "fisico",
+   "avancado",
+   "pratica",
+   "exercicio",
+   "composicao",
+   "recuperacao"
+  ],
+  "price_gold": 400,
+  "price_fragments": 42
+ },
+ {
+  "id": "7f31c3d8-7a9a-4d4e-9b36-4f79a5f42a03",
+  "title": "Foco Blindado",
+  "description": "Deep Work de alto nivel para construir a capacidade de trabalho concentrado por longos periodos.",
+  "price_brl": 50.0,
+  "is_premium": false,
+  "cover_image": "🧠",
+  "author_name": "Soberano System",
+  "duration_days": 21,
+  "created_at": "2026-03-16T20:51:54.761639+00:00",
+  "template": {
+   "id": "7f31c3d8-7a9a-4d4e-9b36-4f79a5f42a03",
+   "tags": [
+    "espaco-mental",
+    "avancado",
+    "pratica",
+    "produtividade",
+    "deep-work",
+    "foco"
+   ],
+   "price": 500,
+   "title": "Foco Blindado",
+   "author": "Soberano System",
+   "levels": [
+    {
+     "level": 1,
+     "title": "Fase 1: Fundamento do Foco",
+     "actions": [
+      {
+       "icon": "📘",
+       "name": "Leitura estrutural do foco",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "medium"
+       },
+       "briefing": "",
+       "duration": 15,
+       "actionType": "Acao Recorrente",
+       "difficulty": 2,
+       "description": "Leia o texto da semana na aba Anotacao e marque quando terminar.",
+       "repetitions": 3,
+       "scheduledDays": [
+        "SEG"
+       ],
+       "scheduledStartTime": 420
+      }
+     ],
+     "description": "Entenda por que o foco profundo virou recurso raro."
+    },
+    {
+     "level": 2,
+     "title": "Fase 2: Sessao e Auditoria",
+     "actions": [
+      {
+       "icon": "🎯",
+       "name": "Sessao de Deep Focus no app",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "high"
+       },
+       "briefing": "",
+       "duration": 90,
+       "preFlight": [
+        "1 tarefa declarada",
+        "Ambiente configurado",
+        "Celular fora do alcance"
+       ],
+       "actionType": "Acao Recorrente",
+       "difficulty": 4,
+       "description": "S1: 45 min. S2: 60 min. S3: 90 min com revisao de qualidade ao final.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX"
+       ],
+       "scheduledStartTime": 540
+      },
+      {
+       "icon": "📝",
+       "name": "Auditoria de interferencia",
+       "context": {
+        "timeOfDay": "night",
+        "energyLevel": "low"
+       },
+       "briefing": "",
+       "duration": 5,
+       "actionType": "Acao Recorrente",
+       "difficulty": 2,
+       "description": "Registre em 1 linha o que interrompeu ou tentou interromper sua sessao.",
+       "repetitions": 1,
+       "scheduledDays": [
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX"
+       ],
+       "scheduledStartTime": 1260
+      }
+     ],
+     "description": "Treine foco progressivo e registre o que tenta invadir sua sessao."
+    },
+    {
+     "level": 3,
+     "title": "Fase 3: Marco de Profundidade",
+     "actions": [
+      {
+       "icon": "🏁",
+       "name": "Dia de trabalho profundo completo",
+       "context": {
+        "timeOfDay": "morning",
+        "energyLevel": "high"
+       },
+       "briefing": "",
+       "duration": 240,
+       "preFlight": [
+        "Projeto unico definido",
+        "Agenda protegida",
+        "Mensagens silenciadas"
+       ],
+       "actionType": "Compromisso",
+       "difficulty": 5,
+       "description": "Dedique 1 dia do ciclo a 1 unico projeto sem reunioes, mensagens ou redes.",
+       "repetitions": 1
+      }
+     ],
+     "description": "Conquiste um dia inteiro de trabalho profundo e registre isso como marco."
+    }
+   ],
+   "coverImage": "🧠",
+   "description": "Deep Work de alto nivel para construir a capacidade de trabalho concentrado por longos periodos.",
+   "campaignTier": "avancado",
+   "campaignType": "pratica",
+   "durationDays": 21,
+   "campaignTheme": "produtividade",
+   "primaryAssetId": "espaco-mental"
+  },
+  "tags": [
+   "espaco-mental",
+   "avancado",
+   "pratica",
+   "produtividade",
+   "deep-work",
+   "foco"
+  ],
+  "price_gold": 500,
+  "price_fragments": 42
+ }
+]

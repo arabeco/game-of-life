@@ -1,3 +1,4 @@
+import { conteudoDaAcao } from '../utils/conteudoDaAcao';
 import { getArenaTone, getArenaActionGradient } from '../utils/arenaTones.ts';
 import { useScreenIntroTip } from '../hooks/useScreenIntroTip';
 ﻿import React, { useState, useEffect, useRef } from 'react';
@@ -1435,6 +1436,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     const plannerOccurrenceLabel = currentTask?.date
         ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(getTaskDateValue(currentTask.date) || new Date())
         : null;
+    const conteudoDaAba = conteudoDaAcao(displayAction);
     const saveOccurrenceNote = () => {
         if (!currentTask || typeof updateTask !== 'function') return;
         updateTask(currentTask.id, { instanceNote: instanceNote.trim() || null });
@@ -1543,13 +1545,16 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                         {([
                             ['basic', 'Geral', true],
                             ['context', 'Contexto', mode === 'edit' || !!displayAction?.description || !!displayAction?.context || displayAction?.scheduledStartTime != null],
-                            ['note', 'Checklist', mode === 'edit' || !!displayAction?.briefing || !!displayAction?.preFlight?.length],
+                            // A aula mora aqui: com texto, a aba se chama Anotacao (e o nome que as campanhas usam).
+                            ['note', mode === 'edit' || displayAction?.briefing?.trim() ? 'Anotação' : 'Checklist', mode === 'edit' || !!displayAction?.briefing || !!displayAction?.preFlight?.length],
                             // Midia so vem pronta, de campanha (27/10/2026): a acao pessoal nao anexa nada.
                             ['media', 'Mídia', !!displayAction?.assets?.length],
                         ] as const).filter(([key, , visible]) => visible && (!isEditingTaskInstance || key === 'basic')).map(([key, title]) => (
                             <button key={key} aria-pressed={key === 'basic' ? activeTab === 'basic' : activeTab === 'advanced' && advancedSubTab === key}
                                 onClick={() => { setActiveTab(key === 'basic' ? 'basic' : 'advanced'); if (key !== 'basic') setAdvancedSubTab(key); setSchedulePanelOpen(false); }}>
                                 {title}
+                                {/* Pontinho: esta aba tem conteudo para ver (27/10/2026). */}
+                                {mode === 'view' && ((key === 'note' && (conteudoDaAba.texto || conteudoDaAba.checklist)) || (key === 'media' && conteudoDaAba.midia)) && <i className="action-tab-dot" aria-label="tem conteúdo" />}
                             </button>
                         ))}
                     </nav>

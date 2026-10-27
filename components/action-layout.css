@@ -38,3 +38,5 @@
 @media(max-height:700px){.action-edit-form>*+*{margin-top:7px!important}.action-identity{gap:5px}.action-general .action-emoji-button{width:40px;height:40px}.action-general .action-name-input{height:32px}.action-edit-form>button{padding:8px}.action-general .action-range{margin-top:0}}
 /* - e + das repeticoes (16/10): alvo de dedo do mesmo tamanho do numero. */
 .action-step{width:30px;height:30px;border:1px solid #ffffff25;border-radius:5px;background:#07080a;color:var(--action-accent,#eee);font-size:17px;font-weight:700;line-height:1;display:grid;place-items:center;touch-action:manipulation}.action-step:disabled{opacity:.3}.action-step:not(:disabled):active{background:#ffffff14}
+/* Aba com conteudo (aula, checklist, midia): um pontinho no acento (27/10/2026). */
+.action-main-tabs .action-tab-dot{display:inline-block;width:5px;height:5px;margin-left:4px;vertical-align:middle;border-radius:50%;background:var(--action-accent,#d4af37);box-shadow:0 0 6px var(--action-accent,#d4af37)}

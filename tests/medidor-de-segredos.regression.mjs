@@ -147,19 +147,19 @@ console.log('ok - as trinta e tres regras, cada limiar na beira');
     assert.equal(uma.title, 'Disciplinado');
     assert.equal(uma.frase, regra('disciplinado-cem-dias').frase);
     assert.deepEqual(uma.reward.items, regra('disciplinado-cem-dias').itens);
-    assert.equal(uma.reward.exp, 10000, 'epica paga 10 mil');
+    assert.equal(uma.reward.exp, 3000, 'epica paga 3 mil (27/10/2026)');
 
     const duas = montarModalDeSegredos([regra('disciplinado-cem-dias'), regra('veterano-de-um-ano')]);
     assert.equal(duas.title, 'Disciplinado · Veterano');
     assert.match(duas.frase, /2 segredos/);
     assert.equal(duas.reward.items.length, 4);
-    assert.equal(duas.reward.exp, 15000);
+    assert.equal(duas.reward.exp, 4000);
     assert.equal(duas.id, 'segredo:disciplinado-cem-dias+veterano-de-um-ano', 'o id e o que a fila usa para nao repetir');
 
     const soExp = montarModalDeSegredos([regra('disciplinado')]);
     assert.equal(soExp.title, 'Primeiro Selo', 'a pequena manteve o id e ganhou nome novo');
     assert.deepEqual(soExp.reward.items, [], 'a pequena passou a dar so EXP');
-    assert.equal(soExp.reward.exp, 3000);
+    assert.equal(soExp.reward.exp, 500);
     console.log('ok - um modal so, com todos os premios');
 }
 

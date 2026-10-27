@@ -102,13 +102,20 @@ export type CondicaoDeDesbloqueio =
 
 export type RaridadeDaRegra = 'comum' | 'incomum' | 'raro' | 'epico' | 'lendario';
 
-/** O EXP de cada missao secreta vem da raridade dela (26/10/2026). */
+/**
+ * O EXP de cada missao secreta vem da raridade dela.
+ *
+ * 27/10/2026: os valores de 26/10 (1/3/5/10/20 mil) pagaram 19 mil de uma vez
+ * ao Afonso — 42% do EXP da conta, e duas patentes num dia. Agora a medida e
+ * o ritmo de quem joga firme (~500 de EXP por dia): incomum vale um dia, raro
+ * dois, epico uma semana, lendario duas. Quem joga menos sente mais.
+ */
 export const EXP_POR_RARIDADE: Record<RaridadeDaRegra, number> = {
-    comum: 1000,
-    incomum: 3000,
-    raro: 5000,
-    epico: 10000,
-    lendario: 20000,
+    comum: 300,
+    incomum: 500,
+    raro: 1000,
+    epico: 3000,
+    lendario: 6000,
 };
 
 export interface RegraDeDesbloqueio {

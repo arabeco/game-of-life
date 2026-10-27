@@ -272,14 +272,15 @@ const JournalTab: React.FC<{ userId: string }> = ({ userId }) => {
                                 return (
                                     <article
                                         key={indice}
-                                        className="relative overflow-hidden border border-white/8 bg-[linear-gradient(90deg,rgba(255,255,255,0.045),#0f1013e0_44%)] px-4 py-3"
+                                        className="relative flex items-center gap-3 overflow-hidden border border-white/8 bg-[linear-gradient(90deg,rgba(255,255,255,0.045),#0f1013e0_44%)] px-4 py-3"
                                     >
+                                        {/* A bolinha do humor ao lado do texto, no meio da altura do card (27/10/2026). */}
+                                        <Bolinha humor={entrada.humor} tamanho={9} />
+                                        <div className="min-w-0 flex-1">
                                         {(entrada.data || entrada.tag || entrada.humor) && (() => {
                                             const Icone = entrada.tag ? ICONE_DA_TAG[entrada.tag] : null;
                                             return (
                                                 <header className="mb-1.5 flex items-center gap-2">
-                                                    {/* A bolinha do humor no lugar da faixa (27/10/2026). */}
-                                                    <Bolinha humor={entrada.humor} tamanho={8} />
                                                     {Icone && (
                                                         <span role="img" aria-label={entrada.tag || ''} title={entrada.tag || ''} className="text-[#d4b062]">
                                                             <Icone className="h-3.5 w-3.5" />
@@ -292,6 +293,7 @@ const JournalTab: React.FC<{ userId: string }> = ({ userId }) => {
                                             );
                                         })()}
                                         <p className="whitespace-pre-wrap font-serif text-[15px] leading-relaxed text-white/88">{entrada.texto || '…'}</p>
+                                        </div>
                                     </article>
                                 );
                             })

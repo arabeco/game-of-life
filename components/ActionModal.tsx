@@ -1,3 +1,5 @@
+import { useLeitorEscuro } from '../utils/leitorEscuro';
+import './leitor.css';
 import { conteudoDaAcao } from '../utils/conteudoDaAcao';
 import { getArenaTone, getArenaActionGradient } from '../utils/arenaTones.ts';
 import { useScreenIntroTip } from '../hooks/useScreenIntroTip';
@@ -323,6 +325,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     // Concluir a leitura pelo leitor: a ocorrencia aberta (se ainda pendente), a de
     // hoje, ou uma nova na hora do toque (scheduleAndCompleteNow decide).
     const [concluindoLeitura, setConcluindoLeitura] = useState(false);
+    const [leitorEscuro, alternarLeitorEscuro] = useLeitorEscuro();
     const tarefaDaLeitura = currentTask && !currentTask.completed ? currentTask : startNowTask;
     const podeConcluirLeitura = mode === 'view' && !isPreview && !disableAuthoring && Boolean(action) && !(currentTask?.completed);
     const concluirLeitura = async () => {
@@ -2050,7 +2053,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
         {isBriefingReaderOpen && briefingPages.length > 0 && (
             <Portal>
                 <div
-                    className="fixed inset-0 z-[10050] bg-black/88 backdrop-blur-md"
+                    className={`fixed inset-0 z-[10050] bg-black/88 backdrop-blur-md ${leitorEscuro ? 'leitor-escuro' : ''}`}
                     onClick={(event) => {
                         if (event.target === event.currentTarget) {
                             setIsBriefingReaderOpen(false);
@@ -2058,26 +2061,29 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                     }}
                 >
                     <div
-                        className="flex h-full w-full flex-col overflow-hidden border-y border-[#6f5a31]/30 bg-[radial-gradient(circle_at_top,_rgba(255,245,214,0.94)_0%,_rgba(245,228,186,0.98)_38%,_rgba(230,206,156,0.98)_100%)] shadow-[0_40px_120px_rgba(0,0,0,0.55)] sm:border sm:border-[#6f5a31]/40 sm:rounded-[2rem]"
+                        className="leitor-papel flex h-full w-full flex-col overflow-hidden border-y border-[#6f5a31]/30 bg-[radial-gradient(circle_at_top,_rgba(255,245,214,0.94)_0%,_rgba(245,228,186,0.98)_38%,_rgba(230,206,156,0.98)_100%)] shadow-[0_40px_120px_rgba(0,0,0,0.55)] sm:border sm:border-[#6f5a31]/40 sm:rounded-[2rem]"
                         onClick={(event) => event.stopPropagation()}
                     >
-                        <div className="flex items-center justify-between border-b border-[#8a6b38]/25 bg-[linear-gradient(180deg,rgba(255,251,234,0.84),rgba(241,219,174,0.78))] px-4 py-4 sm:px-7">
+                        <div className="leitor-topo flex items-center justify-between border-b border-[#8a6b38]/25 bg-[linear-gradient(180deg,rgba(255,251,234,0.84),rgba(241,219,174,0.78))] px-4 py-4 sm:px-7">
                             <div className="min-w-0">
-                                <div className="text-[11px] font-bold uppercase tracking-[0.36em] text-[#7e6234]">
+                                <div className="leitor-rotulo text-[11px] font-bold uppercase tracking-[0.36em] text-[#7e6234]">
                                     Leitura guiada
                                 </div>
-                                <div className="truncate pt-1 text-base font-black uppercase tracking-[0.14em] text-[#3f2b13] sm:text-lg">
+                                <div className="leitor-titulo truncate pt-1 text-base font-black uppercase tracking-[0.14em] text-[#3f2b13] sm:text-lg">
                                     {displayAction?.name || 'Anotação'}
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
-                                <div className="rounded-full border border-[#8a6b38]/30 bg-white/30 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[#6d532b]">
+                                <button type="button" onClick={alternarLeitorEscuro} aria-label={leitorEscuro ? 'Modo claro' : 'Modo escuro'} title={leitorEscuro ? 'Modo claro' : 'Modo escuro'} className="leitor-botao flex h-11 w-11 items-center justify-center rounded-full border border-[#8a6b38]/35 bg-white/35 text-lg text-[#4b3318] transition-colors hover:bg-white/55">
+                                    {leitorEscuro ? '☀️' : '🌙'}
+                                </button>
+                                <div className="leitor-botao rounded-full border border-[#8a6b38]/30 bg-white/30 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[#6d532b]">
                                     Página {briefingPageIndex + 1}/{briefingPages.length}
                                 </div>
                                 <button
                                     type="button"
                                     onClick={() => setIsBriefingReaderOpen(false)}
-                                    className="flex h-11 w-11 items-center justify-center rounded-full border border-[#8a6b38]/35 bg-white/35 text-[#4b3318] transition-colors hover:bg-white/55"
+                                    className="leitor-botao flex h-11 w-11 items-center justify-center rounded-full border border-[#8a6b38]/35 bg-white/35 text-[#4b3318] transition-colors hover:bg-white/55"
                                     aria-label="Fechar leitura"
                                 >
                                     <XIcon className="h-5 w-5" />
@@ -2086,7 +2092,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                         </div>
 
                         <div
-                            className="relative flex-1 overflow-hidden bg-[linear-gradient(180deg,rgba(255,250,235,0.86),rgba(243,224,184,0.92))]"
+                            className="leitor-area relative flex-1 overflow-hidden bg-[linear-gradient(180deg,rgba(255,250,235,0.86),rgba(243,224,184,0.92))]"
                             style={{ touchAction: 'pan-y' }}
                             onPointerDown={(event) => {
                                 briefingReaderPointerStartRef.current = event.clientX;
@@ -2137,7 +2143,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                 type="button"
                                 onClick={() => navigateBriefingPage(briefingPageIndex - 1)}
                                 disabled={briefingPageIndex === 0}
-                                className="absolute inset-y-0 left-0 z-[2] hidden w-[16%] min-w-[3.5rem] items-center justify-start pl-2 text-[#6b522b]/44 transition-opacity hover:text-[#6b522b]/78 disabled:pointer-events-none disabled:opacity-0 sm:flex"
+                                className="leitor-seta absolute inset-y-0 left-0 z-[2] hidden w-[16%] min-w-[3.5rem] items-center justify-start pl-2 text-[#6b522b]/44 transition-opacity hover:text-[#6b522b]/78 disabled:pointer-events-none disabled:opacity-0 sm:flex"
                                 aria-label="Voltar página"
                             >
                                 <ChevronLeftIcon className="h-6 w-6" />
@@ -2146,13 +2152,13 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                 type="button"
                                 onClick={() => navigateBriefingPage(briefingPageIndex + 1)}
                                 disabled={briefingPageIndex >= briefingPages.length - 1}
-                                className="absolute inset-y-0 right-0 z-[2] hidden w-[16%] min-w-[3.5rem] items-center justify-end pr-2 text-[#6b522b]/44 transition-opacity hover:text-[#6b522b]/78 disabled:pointer-events-none disabled:opacity-0 sm:flex"
+                                className="leitor-seta absolute inset-y-0 right-0 z-[2] hidden w-[16%] min-w-[3.5rem] items-center justify-end pr-2 text-[#6b522b]/44 transition-opacity hover:text-[#6b522b]/78 disabled:pointer-events-none disabled:opacity-0 sm:flex"
                                 aria-label="Avançar página"
                             >
                                 <ChevronRightIcon className="h-6 w-6" />
                             </button>
                             <div
-                                className="pointer-events-none absolute inset-0 opacity-60"
+                                className="leitor-enfeite pointer-events-none absolute inset-0 opacity-60"
                                 style={{
                                     backgroundImage: 'linear-gradient(180deg, rgba(136,103,52,0.08) 0, rgba(136,103,52,0.08) 1px, transparent 1px, transparent 34px)',
                                     backgroundSize: '100% 34px',
@@ -2161,19 +2167,19 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                             <div className="relative mx-auto flex h-full w-full max-w-5xl flex-col px-4 py-5 sm:px-8 sm:py-8">
                                 <div className="relative flex-1 overflow-y-auto pr-1">
                                     <div
-                                        className="pointer-events-none absolute inset-x-4 top-4 bottom-[6.2rem] rounded-[1.7rem] border border-[#6c5029]/12 bg-[linear-gradient(180deg,rgba(195,159,97,0.16),rgba(123,89,42,0.06))] shadow-[0_20px_40px_rgba(69,46,17,0.12)] sm:inset-x-10 sm:top-10 sm:bottom-[6.5rem]"
+                                        className="leitor-sombra pointer-events-none absolute inset-x-4 top-4 bottom-[6.2rem] rounded-[1.7rem] border border-[#6c5029]/12 bg-[linear-gradient(180deg,rgba(195,159,97,0.16),rgba(123,89,42,0.06))] shadow-[0_20px_40px_rgba(69,46,17,0.12)] sm:inset-x-10 sm:top-10 sm:bottom-[6.5rem]"
                                         style={briefingPageStackStyle}
                                     />
                                     <div
-                                        className="relative overflow-hidden rounded-[1.6rem] border border-[#7a5e34]/18 bg-[linear-gradient(180deg,rgba(255,253,244,0.8),rgba(248,236,206,0.58))] px-6 py-7 transition-[transform,opacity,filter,box-shadow] duration-300 ease-out will-change-transform sm:px-10 sm:py-10"
+                                        className="leitor-folha relative overflow-hidden rounded-[1.6rem] border border-[#7a5e34]/18 bg-[linear-gradient(180deg,rgba(255,253,244,0.8),rgba(248,236,206,0.58))] px-6 py-7 transition-[transform,opacity,filter,box-shadow] duration-300 ease-out will-change-transform sm:px-10 sm:py-10"
                                         style={briefingPageTurnStyle}
                                     >
                                         <div
                                             className="pointer-events-none absolute inset-y-0 w-20"
                                             style={briefingPageFoldGlowStyle}
                                         />
-                                        <div className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-[linear-gradient(180deg,rgba(255,255,255,0.32),rgba(255,255,255,0))]" />
-                                        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-[linear-gradient(0deg,rgba(104,75,33,0.08),rgba(104,75,33,0))]" />
+                                        <div className="leitor-enfeite pointer-events-none absolute inset-x-0 top-0 h-10 bg-[linear-gradient(180deg,rgba(255,255,255,0.32),rgba(255,255,255,0))]" />
+                                        <div className="leitor-enfeite pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-[linear-gradient(0deg,rgba(104,75,33,0.08),rgba(104,75,33,0))]" />
                                         <div className="rounded-[1.6rem] bg-[linear-gradient(180deg,rgba(255,253,244,0.04),rgba(248,236,206,0))]">
                                             {briefingPages[briefingPageIndex]
                                                 .split(/\n\s*\n/)
@@ -2181,7 +2187,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                 .map((paragraph, index) => (
                                                     <p
                                                         key={`${briefingPageIndex}-${index}`}
-                                                        className="relative mb-5 text-[15px] leading-8 text-[#3d2a14] last:mb-0 sm:text-[17px] sm:leading-9"
+                                                        className="leitor-texto relative mb-5 text-[15px] leading-8 text-[#3d2a14] last:mb-0 sm:text-[17px] sm:leading-9"
                                                     >
                                                         {paragraph}
                                                     </p>
@@ -2200,7 +2206,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                     >
                                         <ChevronLeftIcon className="h-4 w-4" />
                                     </button>
-                                    <div className="text-center text-[11px] font-bold uppercase tracking-[0.28em] text-[#7d6237]">
+                                    <div className="leitor-rotulo text-center text-[11px] font-bold uppercase tracking-[0.28em] text-[#7d6237]">
                                         Toque nas laterais, arraste ou use as setas
                                     </div>
                                     <button

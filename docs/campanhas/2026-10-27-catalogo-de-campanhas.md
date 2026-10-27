@@ -19,7 +19,7 @@ Campos de uma ação e os valores que o app aceita:
 | `icon` | Emoji da ação | 1 emoji |
 | `actionType` | Tipo | `Acao Recorrente` (se repete) ou `Compromisso` (uma vez, com data) |
 | `repetitions` | Quantas vezes conta no ciclo | número |
-| `duration` | Minutos por vez (vira EXP: ~1 por minuto) | número |
+| `duration` | Minutos por vez (vira EXP: ~1 por minuto) | mínimo 15, em passos de 15 (15, 30, 45, 60…) |
 | `difficulty` | Dificuldade | 1 a 5 |
 | `description` | Instrução curta que aparece na ação | 1–2 frases |
 | `briefing` | A aula, na aba Anotação | texto longo, páginas separadas por `[[page]]` |

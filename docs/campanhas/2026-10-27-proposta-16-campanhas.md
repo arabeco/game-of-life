@@ -7,6 +7,7 @@ Rascunho de 27/10/2026. Aqui está a **ideia** de cada campanha: formato, o que 
 - **Fase** = uma arena. A fase seguinte abre quando a anterior termina. A campanha inteira ocupa 1 vaga no limite.
 - **Dia** = o dia dentro da fase (D1, D3…). Ao iniciar, a pessoa escolhe "agendar tudo" e a data de começo.
 - **Aula** = uma ação própria, com texto na aba Anotação (1 a 4 páginas). Cada aula é diferente.
+- **Duração** = no mínimo 15 minutos, em passos de 15 (é como o app anda). O EXP é cerca de 1 por minuto.
 - **Prática** = a ação que a pessoa faz de verdade, com checklist quando ajuda.
 - **Marco** = o fechamento da campanha, algo que fica pronto ou é medido.
 
@@ -47,7 +48,7 @@ As 10 grátis continuam como porta de entrada. As 7 que não entram nesta lista 
 |---|---|---|
 | D1 | Faxina de notificações — checklist: desligar as de redes, deixar só pessoas, tirar apps do início da tela | prática única |
 | D1 | Aula: O que o scroll faz com sua atenção | aula · 2 pág. |
-| D2–D7 | Janela sem tela: 20 min (D2–D3), 30 min (D4–D5), 45 min (D6–D7) | prática diária, 20:00 |
+| D2–D7 | Janela sem tela: 30 min (D2–D3), 45 min (D4–D5), 60 min (D6–D7) | prática diária, 20:00 |
 | D4 | Aula: O custo escondido de cada interrupção | aula · 2 pág. |
 | D7 | Fechamento: o que fiz com o tempo que sobrou | marco |
 

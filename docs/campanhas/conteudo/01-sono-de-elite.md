@@ -16,21 +16,21 @@ Para o Afonso analisar. É o padrão das básicas: depois desta aprovada, as out
 
 | # | Ação | Tipo | Dias | Horário | Duração (vira EXP) |
 |---|---|---|---|---|---|
-| 1 | 📘 Por que você acorda cansado | aula | D1 | 20:30 | 10 min |
-| 2 | 📵 Telas fora do quarto | prática | D1 a D7 | 22:00 | 10 min |
-| 3 | ⏰ Acordar no mesmo horário | prática | D1 a D7 | 07:00 | 5 min |
-| 4 | 💡 A luz da noite | aula | D3 | 20:30 | 10 min |
-| 5 | ☕ Café, álcool e horário | aula | D5 | 20:30 | 10 min |
-| 6 | 🌙 Como dormi esta semana | fechamento | D7 | 21:00 | 5 min |
+| 1 | 📘 Por que você acorda cansado | aula | D1 | 20:30 | 15 min |
+| 2 | 📵 Telas fora do quarto | prática | D1 a D7 | 22:00 | 15 min |
+| 3 | ⏰ Acordar no mesmo horário | prática | D1 a D7 | 07:00 | 15 min |
+| 4 | 💡 A luz da noite | aula | D3 | 20:30 | 15 min |
+| 5 | ☕ Café, álcool e horário | aula | D5 | 20:30 | 15 min |
+| 6 | 🌙 Como dormi esta semana | fechamento | D7 | 21:00 | 15 min |
 
-As durações são curtas de propósito: o EXP é cerca de 1 por minuto, e "deixar o celular fora do quarto" não deve render como uma hora de treino.
+Todas com 15 minutos, o mínimo do app (o editor de duração anda de 15 em 15). O EXP é cerca de 1 por minuto, então "deixar o celular fora do quarto" rende pouco, como deve.
 
 ---
 
 ### 1. 📘 Por que você acorda cansado
 
 - **description:** Leia a aula na aba Anotação e conclua no fim da leitura.
-- **dias:** [1] · **horário:** 20:30 · **duração:** 10 · **dificuldade:** 1 · **momento:** noite, energia baixa
+- **dias:** [1] · **horário:** 20:30 · **duração:** 15 · **dificuldade:** 1 · **momento:** noite, energia baixa
 
 **briefing:**
 
@@ -55,7 +55,7 @@ Nos próximos dias você vai entender cada uma dessas mudanças e senti-las no c
 ### 2. 📵 Telas fora do quarto
 
 - **description:** 45 minutos antes de deitar, o celular vai carregar fora do quarto. Use o tempo para algo sem tela.
-- **dias:** [1, 2, 3, 4, 5, 6, 7] · **horário:** 22:00 · **duração:** 10 · **dificuldade:** 2 · **momento:** noite, energia baixa
+- **dias:** [1, 2, 3, 4, 5, 6, 7] · **horário:** 22:00 · **duração:** 15 · **dificuldade:** 2 · **momento:** noite, energia baixa
 - **checklist:**
   - Celular carregando fora do quarto
   - Luz do quarto mais baixa
@@ -64,7 +64,7 @@ Nos próximos dias você vai entender cada uma dessas mudanças e senti-las no c
 ### 3. ⏰ Acordar no mesmo horário
 
 - **description:** Levante no mesmo horário todos os dias, inclusive no fim de semana. Abra a janela ou acenda a luz logo ao acordar.
-- **dias:** [1, 2, 3, 4, 5, 6, 7] · **horário:** 07:00 (a pessoa troca para o horário dela) · **duração:** 5 · **dificuldade:** 2 · **momento:** manhã, energia baixa
+- **dias:** [1, 2, 3, 4, 5, 6, 7] · **horário:** 07:00 (a pessoa troca para o horário dela) · **duração:** 15 · **dificuldade:** 2 · **momento:** manhã, energia baixa
 - **checklist:**
   - Levantei no horário combinado
   - Luz do dia ou luz acesa nos primeiros minutos
@@ -72,7 +72,7 @@ Nos próximos dias você vai entender cada uma dessas mudanças e senti-las no c
 ### 4. 💡 A luz da noite
 
 - **description:** Leia a aula na aba Anotação e conclua no fim da leitura.
-- **dias:** [3] · **horário:** 20:30 · **duração:** 10 · **dificuldade:** 1 · **momento:** noite, energia baixa
+- **dias:** [3] · **horário:** 20:30 · **duração:** 15 · **dificuldade:** 1 · **momento:** noite, energia baixa
 
 **briefing:**
 
@@ -97,7 +97,7 @@ Se nos primeiros dias você sentir falta do celular, é normal. É justamente es
 ### 5. ☕ Café, álcool e horário
 
 - **description:** Leia a aula na aba Anotação e conclua no fim da leitura.
-- **dias:** [5] · **horário:** 20:30 · **duração:** 10 · **dificuldade:** 1 · **momento:** noite, energia baixa
+- **dias:** [5] · **horário:** 20:30 · **duração:** 15 · **dificuldade:** 1 · **momento:** noite, energia baixa
 
 **briefing:**
 
@@ -122,7 +122,7 @@ Se mesmo assim o sono continuar ruim por semanas — dificuldade de dormir, acor
 ### 6. 🌙 Como dormi esta semana
 
 - **description:** Na anotação desta ocorrência, escreva em uma linha como você acordou nesta semana comparado com antes. Repare no que mudou e no que ainda atrapalha.
-- **dias:** [7] · **horário:** 21:00 · **duração:** 5 · **dificuldade:** 1 · **momento:** noite, energia baixa
+- **dias:** [7] · **horário:** 21:00 · **duração:** 15 · **dificuldade:** 1 · **momento:** noite, energia baixa
 - **checklist:**
   - Acordei melhor, igual ou pior que antes?
   - Qual dos dois hábitos foi mais fácil?

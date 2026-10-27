@@ -1,4 +1,4 @@
-﻿import { CapaDeFundoDaCampanha } from '../CapaDaCampanha';
+﻿import { CapaDeFundoDaCampanha, capaDaCampanha } from '../CapaDaCampanha';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import '../campaign-plate.css';
@@ -187,7 +187,7 @@ export const CodexStore: React.FC = () => {
                 listPrice,
                 isFree: goldPrice <= 0,
                 actionCount: preview.actions.length,
-                coverVisual: codex.cover_image || template.coverImage,
+                coverVisual: capaDaCampanha(codex.id, codex.cover_image || template.coverImage),
                 assetIds,
                 assetLabels,
                 tags,

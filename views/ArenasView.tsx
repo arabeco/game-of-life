@@ -1,3 +1,4 @@
+import { capaDaCampanha } from '../components/CapaDaCampanha';
 import { diasAteConcluir } from '../utils/arenaFinalizada';
 import { getCampaignGradient } from '../utils/arenaTones';
 import { campaignAwareTasks } from '../utils/campaignScope';
@@ -1762,7 +1763,8 @@ export const ArenasView: React.FC = () => {
         const campaignArenas = campaign.arenaIds.map(id => getArenas().find(arena => arena.id === id)).filter((arena): arena is Arena => Boolean(arena));
         const arenaStates = getCampaignArenaStates({ campaign, arenasById, actionsByArena: actionsByArenaRecord, tasks: campaignProgressTasks, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress });
         const phaseCount = new Set(getCampaignArenaPhases(campaignArenas, campaign).values()).size;
-        const campaignCover = userCodexes.find(codex => codex.id === campaign.sourceCodexId)?.template?.coverImage;
+        const codexDaCampanha = userCodexes.find(codex => codex.id === campaign.sourceCodexId);
+        const campaignCover = capaDaCampanha(codexDaCampanha?.catalog_id, codexDaCampanha?.template?.coverImage);
         const progressSummary = getCampaignProgressMetrics(campaign);
         const isDragOver = dragOverId === campaign.id;
         const isDragged = draggedId === campaign.id;

@@ -17,7 +17,7 @@ import { calculateCampaignProgressSummary, getCampaignArenaStates } from '../uti
 import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../utils/codexPreview';
 import { getContentVisualPalette, resolveCampaignVisualFamily } from '../utils/contentCardVisuals';
 import { UserCodex } from '../types';
-import { fundoComCapa } from './CapaDaCampanha';
+import { capaDaCampanha, fundoComCapa } from './CapaDaCampanha';
 import { filterTasksAfterFreeProgressReset } from '../utils/freeProgressScope';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import { gradienteMetalico, tintaMetalicaCom } from './MetalReportCard';
@@ -797,7 +797,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                             previewArenas={libraryPreview.arenas}
                             previewActions={libraryPreview.actions}
                             previewMeta={{
-                                coverImage: libraryPreviewCodex?.template?.coverImage,
+                                coverImage: capaDaCampanha(libraryPreviewCodex?.catalog_id, libraryPreviewCodex?.template?.coverImage),
                                 badgeLabel: 'Guardada',
                                 author: libraryPreviewCodex?.author || 'Autor desconhecido',
                                 note: 'Essa campanha já e sua e pode ser iniciada a qualquer momento.',

@@ -1,3 +1,4 @@
+import { capaDaCampanha } from './CapaDaCampanha';
 import React, { useMemo, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { useConfirmation } from '../hooks/useConfirmation';
@@ -452,7 +453,7 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
           previewArenas={campaignPreview.arenas}
           previewActions={campaignPreview.actions}
           previewMeta={{
-            coverImage: previewCodex?.template?.coverImage,
+            coverImage: capaDaCampanha(previewCodex?.catalog_id, previewCodex?.template?.coverImage),
             badgeLabel: activeTab === 'created' ? 'Forja autoral' : 'Biblioteca',
             author: previewCodex?.author || 'Autor desconhecido',
             note: activeTab === 'created'

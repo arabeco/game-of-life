@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Slot, SlotValue } from '../../types';
 import { WheelPicker } from './WheelPicker';
 import { SliderInput } from './SliderInput';
-import { ImageUploadSlot } from './ImageUploadSlot';
 import { GlassCard } from '../GlassCard';
 import { ChevronRightIcon } from '../Icons';
 import { Portal } from '../Portal';
@@ -70,8 +69,6 @@ export const InputModal: React.FC<InputModalProps> = ({ slot, onClose, onSave })
                 );
             case 'slider':
                 return <SliderInput range={slot.range!} value={currentValue as number} onChange={setCurrentValue} />;
-            case 'image':
-                return <ImageUploadSlot value={currentValue as { imageUrl: string, caption: string; }} onChange={setCurrentValue} />;
             default:
                 return <div>Tipo de input não suportado.</div>;
         }

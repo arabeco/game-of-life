@@ -8,7 +8,6 @@ import { ReferencePlate } from './ReferencePlate';
 import { ChevronLeftIcon, ChevronRightIcon, EditIcon, XIcon, CalendarIcon, Trash2Icon, ClockIcon, PlayIcon, CheckCircleIcon } from './Icons';
 import { IconPickerModal } from './IconPickerModal';
 import { WheelPicker } from './inputs/WheelPicker';
-import { ImageUploadSlot } from './inputs/ImageUploadSlot';
 import { ConfirmationModal } from './ConfirmationModal';
 import { ArenaSelectionModal } from './ArenaSelectionModal';
 import { DatePickerModal } from './DatePickerModal';
@@ -1545,7 +1544,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                             ['basic', 'Geral', true],
                             ['context', 'Contexto', mode === 'edit' || !!displayAction?.description || !!displayAction?.context || displayAction?.scheduledStartTime != null],
                             ['note', 'Checklist', mode === 'edit' || !!displayAction?.briefing || !!displayAction?.preFlight?.length],
-                            ['media', 'Mídia', mode === 'edit' || !!displayAction?.assets?.length],
+                            // Midia so vem pronta, de campanha (27/10/2026): a acao pessoal nao anexa nada.
+                            ['media', 'Mídia', !!displayAction?.assets?.length],
                         ] as const).filter(([key, , visible]) => visible && (!isEditingTaskInstance || key === 'basic')).map(([key, title]) => (
                             <button key={key} aria-pressed={key === 'basic' ? activeTab === 'basic' : activeTab === 'advanced' && advancedSubTab === key}
                                 onClick={() => { setActiveTab(key === 'basic' ? 'basic' : 'advanced'); if (key !== 'basic') setAdvancedSubTab(key); setSchedulePanelOpen(false); }}>
@@ -1965,45 +1965,6 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                 </div>
                                             )}
 
-                                            {mode === 'edit' && canEditAuthorialContent && (
-                                                <div className="space-y-4">
-                                                    <div className="text-xs font-bold text-gray-400 uppercase">Upload de Foto (Anexo)</div>
-                                                    <ImageUploadSlot
-                                                        value={mediaSlot}
-                                                        onChange={(value) => {
-                                                            setMediaSlot(value);
-                                                            if (value.imageUrl) {
-                                                                const title = value.caption?.trim() || 'Mídia Principal';
-                                                                setNewAssetUrl(value.imageUrl);
-                                                                setEditableAction(prev => ({ ...prev, assets: [{ type: 'image', url: value.imageUrl, title }] }));
-                                                            } else {
-                                                                setNewAssetUrl('');
-                                                                setEditableAction(prev => ({ ...prev, assets: [] }));
-                                                            }
-                                                        }}
-                                                    />
-                                                    <div className="space-y-2">
-                                                        <label className="text-xs font-bold text-gray-400 uppercase">URL da Imagem/Vídeo</label>
-                                                        <input
-                                                            type="text"
-                                                            value={newAssetUrl || displayAction?.assets?.find(a => a.type === 'image' || a.type === 'video')?.url || ''}
-                                                            onChange={(e) => {
-                                                                const url = e.target.value;
-                                                                setNewAssetUrl(url);
-                                                                if (url) {
-                                                                    setMediaSlot(prev => ({ ...prev, imageUrl: url }));
-                                                                    const title = mediaSlot.caption?.trim() || 'Mídia Principal';
-                                                                    setEditableAction(prev => ({ ...prev, assets: [{ type: 'image', url, title }] }));
-                                                                } else {
-                                                                    setEditableAction(prev => ({ ...prev, assets: [] }));
-                                                                }
-                                                            }}
-                                                            placeholder="https://..."
-                                                            className="w-full p-3 bg-black/30 border border-white/8 rounded-xl text-xs focus:outline-none focus:border-[var(--skin-accent-color)] text-gray-300 placeholder:text-gray-600"
-                                                        />
-                                                    </div>
-                                                </div>
-                                            )}
                                         </div>
                                     )}
 

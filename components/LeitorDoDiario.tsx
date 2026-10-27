@@ -8,8 +8,9 @@ import type { EntradaDoDiario, TagDoDiario } from '../utils/diario';
  * LER A PAGINA DO DIARIO EM TELA CHEIA (27/10/2026).
  *
  * A pagina inteira no papel do leitor de aula: as entradas empilhadas em
- * cartoes finos, na ordem em que foram escritas, cada um com a faixa na cor do
- * humor e a tag do tipo de escrita. So le; editar continua no botao Editar.
+ * cartoes finos e afundados, na ordem em que foram escritas, cada um com a
+ * bolinha na cor do humor e a tag do tipo de escrita. So le; editar continua
+ * no botao Editar.
  */
 export const corDoHumor = (humor: string | null): string | null =>
     (humor && MOODS_DATA.find((mood) => mood.label === humor)?.trackEnd) || null;
@@ -57,18 +58,19 @@ export const LeitorDoDiario: React.FC<{ entradas: EntradaDoDiario[]; pagina: num
                                 return (
                                     <article
                                         key={indice}
-                                        className="relative overflow-hidden rounded-md border border-[#8a6b38]/20 bg-[rgba(255,252,240,0.55)] py-2.5 pl-4 pr-3"
-                                        style={{ boxShadow: `inset 4px 0 0 ${cor || 'rgba(138,107,56,0.25)'}` }}
+                                        className="relative overflow-hidden rounded-lg bg-[rgba(214,190,140,0.32)] px-3.5 py-2.5"
+                                        style={{ boxShadow: 'inset 0 2px 7px rgba(63,43,19,0.22), inset 0 -1px 3px rgba(255,250,232,0.55), inset 0 0 0 1px rgba(138,107,56,0.14)' }}
                                     >
                                         {(entrada.data || entrada.tag || entrada.humor) && (
-                                            <header className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[#7d6237]">
+                                            <header className="mb-1 flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.14em] text-[#7d6237]">
+                                                {cor && <span role="img" aria-label={`Humor: ${entrada.humor}`} className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ background: cor, boxShadow: `0 0 5px ${cor}99` }} />}
                                                 {Icone && <Icone className="h-3 w-3 shrink-0" />}
                                                 {entrada.tag && <span className="text-[#5c4321]">{entrada.tag}</span>}
                                                 {entrada.tag && (entrada.data || entrada.humor) && <span aria-hidden="true">·</span>}
                                                 <span>{[entrada.data, entrada.humor].filter(Boolean).join(' · ')}</span>
                                             </header>
                                         )}
-                                        <p className="whitespace-pre-wrap font-serif text-[15px] leading-7 text-[#3d2a14]">{entrada.texto || '…'}</p>
+                                        <p className="whitespace-pre-wrap font-serif text-[14px] leading-6 text-[#3d2a14]">{entrada.texto || '…'}</p>
                                     </article>
                                 );
                             })}

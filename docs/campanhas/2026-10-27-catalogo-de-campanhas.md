@@ -28,6 +28,7 @@ Campos de uma ação e os valores que o app aceita:
 | `context.energyLevel` | Energia que pede | `low`, `medium`, `high` |
 | `scheduledDays` | Dias sugeridos | `SEG TER QUA QUI SEX SAB DOM` |
 | `scheduledStartTime` | Hora sugerida | minutos desde 00:00 (420 = 07:00) |
+| `dias` | **Novo (27/10):** em que dia(s) da fase a ação acontece, contando do 1. Ao iniciar, a pessoa escolhe "agendar tudo" e a data; cada ação cai no planner nos dias dela. Use no lugar de `scheduledDays`. | lista, ex.: `[1, 3, 5]` |
 
 Campos da ficha: `price_gold` (preço em ouro, é o que o app cobra), `price_brl` (referência em reais), `price_fragments`, `duration_days`, `tags`, `campaignTier` (`basico`/`medio`/`avancado`), `campaignType` (`aprendizado`/`pratica`/`manutencao`), `campaignTheme`, `primaryAssetId` (área antiga do app).
 
@@ -38,6 +39,8 @@ Regras de montagem:
 - **Cada aula é uma ação própria**, com nome e texto diferentes (`actionType: Compromisso`, `repetitions: 1`). Nunca uma ação só que se repete com "Semana 1 / Semana 2" no nome: cada leitura aparece no planner como uma ação distinta.
 - A aula fica no `briefing` e aparece na aba **Anotação** da ação. No planner, a ação com aula ganha um ícone de texto; com checklist, um ícone de lista; com mídia, um de imagem.
 - Se a `description` mandar ler algo, o `briefing` não pode ficar vazio.
+- A campanha comprada ocupa **uma vaga** no limite de arenas, quantas fases tiver (cada fase vira uma arena). A fase seguinte abre quando a anterior termina.
+- Toda ação deve ter `dias`, para cair sozinha no planner (inclusive marcos e aulas).
 - Mídia (imagem) é escolhida pelo dono do app e vai dentro do pacote do app; não use links externos.
 
 ## Problemas encontrados na varredura

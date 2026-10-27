@@ -7,7 +7,8 @@
   level: number;
   title: string;
   description: string;
-  actions: Omit<Action, 'id' | 'arenaId'>[];
+  /** `dias`: em que dia(s) da fase a acao acontece, contando do 1 (agenda da campanha, 27/10/2026). */
+  actions: (Omit<Action, 'id' | 'arenaId'> & { dias?: number[] })[];
 }
 
 export interface CodexTemplate {
@@ -168,6 +169,8 @@ export interface Action {
     plannerQuadrant?: PlannerMatrixQuadrant;
     schedule?: {
       startsOn?: string;
+      /** Dias da fase em que a acao de campanha acontece (vem de `dias` do modelo). */
+      diasDaFase?: number[];
       limitToRepetitions?: boolean;
       days?: DayOfWeek[];
       startTime?: number;
@@ -250,6 +253,8 @@ export interface Campaign {
     completedActionIds?: string[];
     prerequisiteArenaIds?: string[]; // IDs of arenas that must be cleared to unlock this one
     phase?: number;
+    /** Agenda da fase (27/10/2026): agendar sozinho, a partir de quando, e se ja foi. */
+    agenda?: { automatica: boolean; inicio?: string; feita?: boolean };
   }>;
   priority?: 'alta' | 'media' | 'baixa';
   type?: 'sequential' | 'parallel';

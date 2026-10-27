@@ -1,3 +1,4 @@
+import { EVENTO_AGENDAR_CAMPANHA, datasDaAcao, diasValidos, horarioSugerido, inicioDaFaseQueAbriu, modeloTemAgenda } from '../utils/agendaDaCampanha';
 import { copiaDaArena, diasAteConcluir, tarefasQueParam } from '../utils/arenaFinalizada';
 import { habitosConsolidados } from '../utils/habitosConsolidados';
 import type { DailyFragmentReceipt } from '../components/DailyFragmentReward';
@@ -1131,7 +1132,8 @@ export interface GameContextType {
     getCodexSharePreview: (input: { token?: string; shareId?: string }) => Promise<CodexSharePreview | null>;
     claimCodexShare: (input: { token?: string; shareId?: string }) => Promise<boolean>;
     declineCodexShare: (shareId: string) => Promise<boolean>;
-    installCodex: (userCodexId: string, source?: UserCodex) => Promise<void>;
+    /** `opcoes.agendarEm`: data de inicio para agendar tudo; `null` = instalar sem agendar. Sem opcoes, o modelo com agenda pergunta antes. */
+    installCodex: (userCodexId: string, source?: UserCodex, opcoes?: { agendarEm: string | null }) => Promise<void>;
     duplicateUserCodexToRecipient: (codexId: string, recipientId: string, relationshipLinkId?: string | null) => Promise<boolean>;
     createMentorCodexForRecipient: (recipientId: string, codex: { name: string; description?: string; template: any }, relationshipLinkId?: string | null) => Promise<boolean>;
 
@@ -8003,7 +8005,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return true;
     };
 
-    const installCodex = async (userCodexId: string, source?: UserCodex) => {
+    const installCodex = async (userCodexId: string, source?: UserCodex, opcoes?: { agendarEm: string | null }) => {
         const userId = getSupabaseUserId();
         if (!userId) return;
 
@@ -8015,6 +8017,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
         const template = codex.template;
+        // Modelo com agenda: antes de instalar, a pessoa escolhe se agenda tudo e
+        // quando comeca (AgendarCampanhaModal responde chamando de novo com opcoes).
+        if (!opcoes && modeloTemAgenda(template)) {
+            window.dispatchEvent(new CustomEvent(EVENTO_AGENDAR_CAMPANHA, { detail: { codexId: codex.id, titulo: codex.name || template.title, source } }));
+            return;
+        }
+        const agendarEm = opcoes?.agendarEm || null;
         const catalogRefId = codex.catalog_id || codex.origin_codex_id || codex.id;
         const templateMeta = resolveTemplateCampaignMeta(catalogRefId, template);
         const preferredAssetId = normalizeLifeAreaId(templateMeta.primaryAssetId || 'saude');
@@ -8144,12 +8153,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         repetitions: Number.isFinite(levelAction.repetitions) ?Math.max(1, Math.floor(levelAction.repetitions)) : 1,
                         actionType,
                         difficulty: typeof levelAction.difficulty === 'number' ?levelAction.difficulty : 1,
-                        scheduledDays: Array.isArray(levelAction.scheduledDays) ?levelAction.scheduledDays : undefined,
+                        // Com `dias`, quem agenda e a agenda da campanha, nao o dia da semana.
+                        scheduledDays: diasValidos(levelAction.dias).length ? undefined : (Array.isArray(levelAction.scheduledDays) ?levelAction.scheduledDays : undefined),
                         scheduledStartTime: typeof levelAction.scheduledStartTime === 'number' ?levelAction.scheduledStartTime : undefined,
                         briefing: levelAction.briefing,
                         assets: levelAction.assets,
                         preFlight: levelAction.preFlight,
-                        context: levelAction.context,
+                        context: diasValidos(levelAction.dias).length
+                            ? { ...(levelAction.context || {}), schedule: { ...(levelAction.context?.schedule || {}), diasDaFase: diasValidos(levelAction.dias) } }
+                            : levelAction.context,
                         originCodexId: codex.id,
                     });
 
@@ -8162,7 +8174,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 const prerequisites = Array.isArray(level.prerequisiteLevels)
                     ? level.prerequisiteLevels.map(number => arenaIds[template.levels.findIndex((l, i) => (l.level || i + 1) === number)]).filter(Boolean)
                     : template.executionType === 'parallel' || index === 0 ? [] : [arenaIds[index - 1]];
-                arenaConfig[arenaIds[index]] = { isLocked: prerequisites.length > 0, isHidden: level.isHidden || false, phase: level.phase, prerequisiteArenaIds: prerequisites };
+                arenaConfig[arenaIds[index]] = {
+                    isLocked: prerequisites.length > 0, isHidden: level.isHidden || false, phase: level.phase, prerequisiteArenaIds: prerequisites,
+                    // A fase 1 comeca no dia escolhido; as outras, no dia depois de abrir.
+                    ...(agendarEm ? { agenda: { automatica: true, ...(index === 0 ? { inicio: agendarEm } : {}) } } : {}),
+                };
             });
 
             const createdCampaign = await addCampaign({
@@ -8195,6 +8211,46 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             installingCodexIdsRef.current.delete(codex.id);
         }
     };
+
+    /*
+     * AGENDA DA CAMPANHA (27/10/2026). Fase com agenda automatica que ja abriu e
+     * ainda nao foi agendada: cada acao cai nos dias dela (`diasDaFase`), a
+     * partir do inicio da fase, no horario sugerido. A pessoa muda o horario de
+     * qualquer uma depois. Marca `feita` para nao agendar duas vezes.
+     */
+    const agendaDeFaseEmAndamento = useRef(new Set<string>());
+    useEffect(() => {
+        if (!hasHydratedFromSupabase) return;
+        const blocked = unavailableCampaignArenas(campaigns, allArenas, actions, tasks, activeCycle);
+        for (const campaign of campaigns) {
+            if (campaign.status !== 'active' || !campaign.arenaConfig) continue;
+            for (const arenaId of campaign.arenaIds) {
+                const cfg = campaign.arenaConfig[arenaId];
+                const agenda = cfg?.agenda;
+                if (!cfg || !agenda?.automatica || agenda.feita || blocked.has(arenaId)) continue;
+                const chave = `${campaign.id}:${arenaId}`;
+                if (agendaDeFaseEmAndamento.current.has(chave)) continue;
+                agendaDeFaseEmAndamento.current.add(chave);
+                const inicio = agenda.inicio || inicioDaFaseQueAbriu(getLocalDateString());
+                const acoesDaFase = actions.filter(acao => acao.arenaId === arenaId && diasValidos(acao.context?.schedule?.diasDaFase).length > 0);
+                const jaTem = new Set(tasks.map(task => `${task.actionId}_${task.date}`));
+                void (async () => {
+                    for (const acao of acoesDaFase) {
+                        const hora = horarioSugerido(acao);
+                        for (const data of datasDaAcao(inicio, acao.context?.schedule?.diasDaFase)) {
+                            if (jaTem.has(`${acao.id}_${data}`)) continue;
+                            await scheduleTask(acao, data, hora);
+                        }
+                    }
+                    await updateCampaign(campaign.id, {
+                        arenaConfig: { ...campaign.arenaConfig, [arenaId]: { ...cfg, agenda: { ...agenda, inicio, feita: true } } },
+                    });
+                })()
+                    .catch(error => console.error('Agenda da campanha falhou', error))
+                    .finally(() => agendaDeFaseEmAndamento.current.delete(chave));
+            }
+        }
+    }, [campaigns, actions, tasks, activeCycle?.id, hasHydratedFromSupabase]);
 
     const campaignSchedulingInFlight = useRef(new Set<string>());
     useEffect(() => {

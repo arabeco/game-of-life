@@ -1,4 +1,5 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+﻿import { CapaDeFundoDaCampanha } from '../CapaDaCampanha';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import '../campaign-plate.css';
 import { CheckIcon, FilterIcon } from '../Icons';
@@ -7,7 +8,6 @@ import { CampaignsCodex } from '../CampaignsCodex';
 import { ConfirmationModal } from '../ConfirmationModal';
 import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../../utils/codexPreview';
 import { getCampaignPriceForProfile } from '../../utils/premiumAccess';
-import { CodexCoverArt as SharedCodexCoverArt } from '../CodexCoverArt';
 import { ASSET_ACCENT_COLORS } from '../../constants/assetVisuals';
 
 import {
@@ -404,6 +404,9 @@ export const CodexStore: React.FC = () => {
                                     className="campaign-store-card relative flex flex-col gap-2 p-2"
                                     style={{ '--campaign-accent': tomDaCampanha } as React.CSSProperties}
                                 >
+                                    {/* Capa (27/10/2026): a imagem e o fundo do card, sob um veu escuro.
+                                        Sem imagem, fica o tom da campanha. O emoji saiu: arena e acao ja tem o deles. */}
+                                    <CapaDeFundoDaCampanha cover={coverVisual} tom={tomDaCampanha} />
                                     <div className="relative z-10 flex h-full flex-col gap-2">
                                         <button
                                             type="button"
@@ -411,12 +414,6 @@ export const CodexStore: React.FC = () => {
                                             className="campaign-store-preview flex flex-1 flex-col text-left"
                                         >
                                             <div className="flex items-start gap-2 px-1 pt-1">
-                                                <div
-                                                    className="campaign-store-cover relative h-10 w-10 shrink-0 overflow-hidden rounded-lg"
-                                                    style={{ background: `linear-gradient(160deg, ${tomDaCampanha}2e, rgba(0,0,0,0.35))` }}
-                                                >
-                                                    <SharedCodexCoverArt cover={coverVisual} title={codex.title} emojiSize="cover-sm" />
-                                                </div>
                                                 <div className="min-w-0 flex-1 pt-0.5">
                                                     <div className="campaign-store-title line-clamp-2">{codex.title}</div>
                                                     <div className="mt-1 text-[8px] font-black uppercase tracking-[0.12em] text-white/42">

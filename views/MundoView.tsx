@@ -894,6 +894,7 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
 // --- Main View ---
 
 const MundoView: React.FC<{ requestedTab?: { tab: 'arsenal'; at: number } }> = ({ requestedTab }) => {
+    const { modoEssencial } = useGame();
     const [activeTab, setActiveTab] = useState<'social' | 'hall' | 'loja' | 'temporada' | 'arsenal'>(requestedTab?.tab || 'social');
     useEffect(() => { if (requestedTab) setActiveTab(requestedTab.tab); }, [requestedTab]);
     const [socialSection, setSocialSection] = useState<SocialSection>('people');
@@ -909,8 +910,9 @@ const MundoView: React.FC<{ requestedTab?: { tab: 'arsenal'; at: number } }> = (
             { id: 'temporada', label: 'Temporada', icon: <CalendarIcon className="w-5 h-5" />, tutorialId: 'season-quests' },
         ] as const;
 
-        return allTabs;
-    }, []);
+        // Essencial (27/10/2026): sem inventario (Arsenal) e sem missoes de temporada.
+        return modoEssencial ? allTabs.filter((tab) => tab.id !== 'arsenal' && tab.id !== 'temporada') : allTabs;
+    }, [modoEssencial]);
 
     useEffect(() => {
         if (!tabs.some((tab) => tab.id === activeTab)) {

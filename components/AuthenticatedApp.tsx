@@ -1,3 +1,4 @@
+import { avisoDaConquista } from '../utils/avisoEssencial';
 import { getPendingMembershipPurchase } from '../utils/membershipPurchase';
 import { useEnviarDiarioPendente } from '../hooks/useEnviarDiarioPendente';
 import { speechVisualTone } from '../supabase/functions/_shared/oracle-visual-tone.ts';
@@ -457,7 +458,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
 }) => {
     const { isTutorialActive } = useTutorial();
     const { isBuilderMode, draftName, setDraftName, exitBuilderMode, packDraftToJson } = useCodexBuilder();
-    const { userProfile, activeTheme, notifications, showToast, assets, actions, tasks, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, achievementUnlocked, updateUserProfile, reports, activeArenaPact, arenaPactProgress, missaoIndividualDisponivel, isProfileLoaded, freeProgressResetAt, recordMoodEntry } = useGame();
+    const { userProfile, activeTheme, notifications, showToast, assets, actions, tasks, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, achievementUnlocked, updateUserProfile, reports, activeArenaPact, arenaPactProgress, missaoIndividualDisponivel, isProfileLoaded, freeProgressResetAt, recordMoodEntry, modoEssencial } = useGame();
     // Diario escrito sem internet sai sozinho quando a conexao volta (18/10).
     useEnviarDiarioPendente(userProfile?.id, recordMoodEntry);
     const historyReady = useRef(false);
@@ -1098,7 +1099,8 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
                 }, 520);
             };
             const history = readEngineMemory(userProfile.id);
-            const topics: DiscoveryTopic[] = ['mastery', 'journal', 'relationships', 'campaigns', 'arsenal', 'garden', 'wisdom'];
+            // Essencial (27/10/2026): o Oraculo nao sugere arsenal nem jardim.
+            const topics: DiscoveryTopic[] = (['mastery', 'journal', 'relationships', 'campaigns', 'arsenal', 'garden', 'wisdom'] as DiscoveryTopic[]).filter(topic => !modoEssencial || (topic !== 'arsenal' && topic !== 'garden'));
             const mayDiscover = !isTutorialActive && !!userProfile.onboardingCompletedAt && !arenaPactProgress?.completed
                 && !reports.some(r => r.metrics?.sealedAt ? getOperationalDateString(new Date(r.metrics.sealedAt)) === today : r.endDate === today)
                 && !!ordinary.chosen && ordinary.chosen.score < 30
@@ -1729,7 +1731,15 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         oraclePreferences,
         notifications,
         markNotificationRead,
+        modoEssencial,
     } = useGame();
+    // ESSENCIAL (27/10/2026): o modal de recompensa nao abre; vira uma linha curta.
+    // O premio ja entrou em silencio quando a conquista foi gravada.
+    useEffect(() => {
+        if (!modoEssencial || !achievementUnlocked) return;
+        showToast(avisoDaConquista(achievementUnlocked as { type: string; data?: Record<string, unknown> }), 'success');
+        setAchievementUnlocked(null);
+    }, [modoEssencial, achievementUnlocked]); // eslint-disable-line react-hooks/exhaustive-deps
     /** O presente mais antigo ainda nao aberto — um de cada vez, na ordem em que chegaram. */
     const presenteRecebido = useMemo(
         () => notifications
@@ -2574,6 +2584,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
             <Suspense fallback={null}>
                 <OracleSpeechOverlay discoveryBlocked={Boolean(achievementUnlocked || showTerms || isFirstUseOnboardingActive || claimToken || shouldShowVanguardWelcome || shouldShowPremiumReward || shouldShowBetaReward || shouldShowPremiumRenewalOffer || shouldShowAppBroadcast || isInnerBlockingOverlayVisible || isDeepBlockingOverlayVisible)} />
                 {achievementUnlocked &&
+                    !modoEssencial &&
                     !showTerms &&
                     !isFirstUseOnboardingActive &&
                     !claimToken &&

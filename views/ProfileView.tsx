@@ -467,7 +467,7 @@ export const ShareableProfileCard: React.FC<{
 }
 
 export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile }> = ({ onClose, profile }) => {
-    const { userProfile, assets, friends, inventory, updateUserProfile, clan, clanRanks, getUserPublicData, cycleProgress, showToast, fetchLikesReceived, sendFriendRequest, friendRequestsOutgoing } = useGame();
+    const { userProfile, assets, friends, inventory, updateUserProfile, clan, clanRanks, getUserPublicData, cycleProgress, showToast, fetchLikesReceived, sendFriendRequest, friendRequestsOutgoing, modoEssencial } = useGame();
     const [enviandoPedido, setEnviandoPedido] = useState(false);
     /**
      * `undefined` = ainda buscando; `null` = a base nao conta curtidas; numero =
@@ -1158,7 +1158,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                 onClick={() => setIsAssetsPreviewOpen(true)}
                             />
                         )}
-                        {PRODUCT_FEATURES.personalGarden && canViewGarden && (
+                        {PRODUCT_FEATURES.personalGarden && canViewGarden && !modoEssencial && (
                             <ProfileGardenOrb
                                 ownerId={isOwnProfile ? displayProfile.id : undefined}
                                 onClick={() => setGardenOpen(true)}

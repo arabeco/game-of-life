@@ -40,7 +40,9 @@ const STORE_TABS: Array<{ id: StoreTab; label: string; icon: string }> = [
 const PASSOS_DA_CONTAGEM = 24;
 
 export const StoreTopBar: React.FC<StoreTopBarProps> = ({ activeTab, onTabChange }) => {
-    const { userProfile, showToast } = useGame();
+    const { userProfile, showToast, modoEssencial } = useGame();
+    // Essencial (27/10/2026): sem itens; ficam campanhas, ouro e planos.
+    const abas = modoEssencial ? STORE_TABS.filter((tab) => tab.id !== 'items') : STORE_TABS;
     const { gold, fragments } = userProfile.wallet || { gold: 0, fragments: 0 };
 
     /**
@@ -99,9 +101,9 @@ export const StoreTopBar: React.FC<StoreTopBarProps> = ({ activeTab, onTabChange
     const tabs = (
         <div
             className={`store-subtab-strip grid flex-1 gap-1 ${isCampaignCatalog ? 'rounded-lg bg-black/45 p-1' : 'rounded-xl bg-black/30 p-1'}`}
-            style={{ gridTemplateColumns: `repeat(${STORE_TABS.length}, minmax(0, 1fr))` }}
+            style={{ gridTemplateColumns: `repeat(${abas.length}, minmax(0, 1fr))` }}
         >
-            {STORE_TABS.map((tab) => (
+            {abas.map((tab) => (
                 <button
                     key={tab.id}
                     type="button"

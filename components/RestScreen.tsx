@@ -57,7 +57,8 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         arenaPactProgress,
         notifications,
         activeTheme,
-        showToast
+        showToast,
+        modoEssencial
     } = useGame();
     const masteryIndex = getMasteryIndexFromAssets(assets);
     // O humor NAO vem do contexto — vem do numero cru do perfil, com a mesma
@@ -1102,7 +1103,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
 
                     {/* Quick Indicators Row */}
                     <div className="flex w-full max-w-md items-center justify-center gap-2 sm:gap-3 animate-fade-in delay-500">
-                        {PRODUCT_FEATURES.personalGarden && (
+                        {PRODUCT_FEATURES.personalGarden && !modoEssencial && (
                         <button
                             onMouseDown={() => handleQuickActionStart('garden')}
                             onMouseUp={handleQuickActionEnd}

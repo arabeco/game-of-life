@@ -252,6 +252,15 @@ export const STORAGE_KEY_CAMPAIGNS = 'gol_campaigns_v2';
 export const PROFILE_FLAG_TERMS_ACCEPTED = '__flag_terms_accepted_v1';
 export const PROFILE_FLAG_TERMS_PENDING = '__flag_terms_pending_v1';
 export const PROFILE_FLAG_TUTORIAL_COMPLETED = '__flag_tutorial_completed_v1';
+/**
+ * EXPERIENCIA ESSENCIAL (27/10/2026, com o Afonso). Quem escolhe o Essencial usa
+ * o mesmo Glyph sem a camada de jogo: sem modais de recompensa, inventario,
+ * avatar e skins, jardim, baus e missoes. O progresso por tras e o MESMO — EXP,
+ * ouro e conquistas continuam caindo em silencio, e trocar para Imersivo mostra
+ * tudo. Fica no perfil para valer em qualquer aparelho.
+ */
+export const PROFILE_FLAG_EXPERIENCIA_ESSENCIAL = '__flag_experiencia_essencial_v1';
+export const PROFILE_FLAG_EXPERIENCIA_ESCOLHIDA = '__flag_experiencia_escolhida_v1';
 
 /**
  * A marca do bom-dia carrega a data e e podada: so a ultima fica.
@@ -943,6 +952,11 @@ export interface GameContextType {
     addArena: (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb?: boolean, opcoes?: { missao?: boolean; vagaGarantida?: boolean }) => Promise<Arena>;
     concluirArena: (arenaId: string, opcoes?: { copiar?: boolean }) => Promise<{ ok: boolean; copiaId?: string }>;
     reabrirArena: (arenaId: string) => boolean;
+    /** Experiencia Essencial: o Glyph sem a camada de jogo (mesmo progresso por tras). */
+    modoEssencial: boolean;
+    /** Se a pessoa ja escolheu a experiencia (o onboarding pergunta uma vez). */
+    experienciaEscolhida: boolean;
+    definirExperiencia: (modo: 'essencial' | 'imersivo') => void;
     /** O limite de arenas como o jogo conta: missao fora, campanha da loja/mentor = 1 vaga. */
     capacidadeDasArenas: ArenaCapacitySummary;
     updateArena: (arenaId: string, arenaData: Partial<Pick<Arena, 'assetId' | 'name' | 'description' | 'icon' | 'folderId' | 'isArchived' | 'priority' | 'finalGoal' | 'completedAt'>>) => void;
@@ -9623,6 +9637,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
 
 
+    const modoEssencial = Boolean(userProfile.completedSeasonMissions?.includes(PROFILE_FLAG_EXPERIENCIA_ESSENCIAL));
+    const experienciaEscolhida = Boolean(userProfile.completedSeasonMissions?.includes(PROFILE_FLAG_EXPERIENCIA_ESCOLHIDA));
+    const definirExperiencia = (modo: 'essencial' | 'imersivo') => {
+        const atuais = (userProfile.completedSeasonMissions || []).filter(flag => flag !== PROFILE_FLAG_EXPERIENCIA_ESSENCIAL);
+        updateUserProfile({
+            completedSeasonMissions: Array.from(new Set([
+                ...atuais,
+                PROFILE_FLAG_EXPERIENCIA_ESCOLHIDA,
+                ...(modo === 'essencial' ? [PROFILE_FLAG_EXPERIENCIA_ESSENCIAL] : []),
+            ])),
+        });
+    };
+
     const addProfileFlag = (flag: string) => {
         const completed = userProfile.completedSeasonMissions || [];
         if (completed.includes(flag)) return;
@@ -15820,7 +15847,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     return (
         <GameContext.Provider value={{
             session,
-            concluirArena, reabrirArena, capacidadeDasArenas,
+            concluirArena, reabrirArena, capacidadeDasArenas, modoEssencial, experienciaEscolhida, definirExperiencia,
             getSharedActionPoolProgress, isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, sequenceItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, upcomingCycle, dailyCommitment, judgedOperationalDates, judgedTaskIdsByDate, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, grantInventoryItem, acceptSeasonQuest,
             abortSeasonQuest,
             missoesDoCla, missoesDeClaAtivas, atualizarMissaoDoCla, entrarNaMissaoDoCla, receberPremioDaMissaoDoCla, humorDoCla, carregarHumorDoCla, autoresDoFeed,

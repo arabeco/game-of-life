@@ -1,5 +1,6 @@
 import { useScreenIntroTip } from '../hooks/useScreenIntroTip';
 import React, { useState } from 'react';
+import { useGame } from '../contexts/GameContext';
 import { StoreTopBar, type StoreTab } from '../components/Store/StoreTopBar';
 import { GoldStore } from '../components/Store/GoldStore';
 import { CodexStore } from '../components/Store/CodexStore';
@@ -9,15 +10,16 @@ import { MembershipStore } from '../components/Store/MembershipStore';
 const ALLOWED_TABS: readonly StoreTab[] = ['codexes', 'items', 'store', 'membership'];
 
 export const StoreView: React.FC = () => {
+  const { modoEssencial } = useGame();
   const [activeTab, setActiveTab] = useState<StoreTab>('codexes');
   const [scrollRequest, setScrollRequest] = useState<{ section: string; nonce: number } | null>(null);
 
   const sanitizeTab = React.useCallback((tab?: StoreTab | null): StoreTab => {
-    if (!tab || !ALLOWED_TABS.includes(tab)) {
+    if (!tab || !ALLOWED_TABS.includes(tab) || (modoEssencial && tab === 'items')) {
       return 'codexes';
     }
     return tab;
-  }, []);
+  }, [modoEssencial]);
 
   React.useEffect(() => {
     const safeTab = sanitizeTab(activeTab);

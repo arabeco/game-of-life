@@ -1910,7 +1910,7 @@ const GeralTab: React.FC = () => {
 };
 
 const PreferenciasTab: React.FC = () => {
-    const { userProfile, oraclePreferences, updateOraclePreferences, updateUserProfile, activeTheme, toggleTheme, inventory, setCurrentSkin, showToast, usarCodigoDeConvite } = useGame();
+    const { userProfile, oraclePreferences, updateOraclePreferences, updateUserProfile, activeTheme, toggleTheme, inventory, setCurrentSkin, showToast, usarCodigoDeConvite, modoEssencial, definirExperiencia } = useGame();
     const [modal, setModal] = useState<'oracle' | 'tutorial' | 'privacy' | 'ui' | 'primer' | 'redeem' | null>(null);
     // O resgate termina numa TELA, nao num toast: e a unica hora em que a
     // pessoa digita alguma coisa esperando um premio.
@@ -2090,6 +2090,35 @@ const PreferenciasTab: React.FC = () => {
             <section className="space-y-4">
                 <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest px-1 border-b border-white/5 pb-2">Preferências</h2>
                 <div className="space-y-2">
+                    {/* Experiencia (27/10/2026): Imersivo ou Essencial, trocavel a qualquer hora. */}
+                    <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                                <p className="text-xs font-bold uppercase tracking-widest text-white/80">Experiência</p>
+                                <p className="mt-0.5 text-[11px] leading-snug text-white/45">{modoEssencial ? 'Essencial: metas e resultados, sem recompensas, avatar e jardim.' : 'Imersivo: recompensas, conquistas, avatar e jardim.'}</p>
+                            </div>
+                            <div className="grid shrink-0 grid-cols-2 gap-1 rounded-lg border border-white/10 bg-black/30 p-1" role="group" aria-label="Experiência">
+                                {(['imersivo', 'essencial'] as const).map((modo) => {
+                                    const ligado = (modo === 'essencial') === modoEssencial;
+                                    return (
+                                        <button
+                                            key={modo}
+                                            type="button"
+                                            aria-pressed={ligado}
+                                            onClick={() => {
+                                                if (ligado) return;
+                                                definirExperiencia(modo);
+                                                showToast(modo === 'essencial' ? 'Experiência Essencial ligada. Seu progresso continua todo guardado.' : 'Experiência Imersiva ligada. Suas recompensas estão no Arsenal.', 'success');
+                                            }}
+                                            className={`rounded-md px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.1em] ${ligado ? 'luxe-skin-button' : 'text-white/55'}`}
+                                        >
+                                            {modo === 'essencial' ? 'Essencial' : 'Imersivo'}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
                     <SettingSelector id="interface-settings-selector" label="Interface & Som" value={currentUiSkinName} onClick={() => setModal('ui')} />
                     <div id="oracle-preferences-setting">
                         <SettingSelector label="Oráculo & Alertas" value={activeModeName} onClick={() => setModal('oracle')} />

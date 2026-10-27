@@ -42,7 +42,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     defaultRestScreenOpen = true,
     onRestScreenVisibilityChange,
 }) => {
-    const { userProfile, assets, oracleMessages, notifications, clan, oraclePreferences, arenaPactProgress } = useGame();
+    const { userProfile, assets, oracleMessages, notifications, clan, oraclePreferences, arenaPactProgress, modoEssencial } = useGame();
     const userId = userProfile?.id || '';
     const [isMoodModalOpen, setMoodModalOpen] = useState(false);
     const [feature, setFeature] = useState<DiscoveryTopic | null>(null);
@@ -50,6 +50,8 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     useEffect(() => {
         const openFeature = (event: Event) => {
             const topic = (event as CustomEvent<{ topic: DiscoveryTopic }>).detail?.topic;
+            // Essencial (27/10/2026): sem arsenal e sem jardim.
+            if (modoEssencial && (topic === 'arsenal' || topic === 'garden')) return;
             if (topic === 'arsenal') {
                 window.dispatchEvent(new CustomEvent(APP_NAVIGATE_EVENT, { detail: { view: 'social', mundoTab: 'arsenal' } }));
             } else if (topic === 'campaigns' || topic === 'wisdom') {
@@ -60,7 +62,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
         };
         window.addEventListener('glyph:open-feature', openFeature);
         return () => window.removeEventListener('glyph:open-feature', openFeature);
-    }, []);
+    }, [modoEssencial]);
     useEffect(() => { setFeature(null); setOracleOpen(false); setOracleSection(undefined); }, [userId]);
     const [isOracleOpen, setOracleOpen] = useState(false);
     const [oracleInitialTab, setOracleInitialTab] = useState<'chat' | 'notifications' | 'dms'>('chat');

@@ -1,3 +1,4 @@
+import { EscolhaDeExperiencia } from './EscolhaDeExperiencia';
 import { OnboardingIdentity } from './OnboardingIdentity';
 import { supabase } from '../supabaseClient';
 // Logout intencional: o cru e desfeito no celular, que restaura a sessao do backup.
@@ -89,7 +90,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
   onDismiss: () => void;
   onComplete: (acceptedSystemChallenges: string[], answers: OnboardingAnswers) => void;
 }> = ({ active, onDismiss, onComplete }) => {
-  const { userProfile, assets, actions, tasks, updateUserProfile } = useGame();
+  const { userProfile, assets, actions, tasks, updateUserProfile, experienciaEscolhida, definirExperiencia } = useGame();
   const [identityReady, setIdentityReady] = useState(false);
   const [readyUserId, setReadyUserId] = useState<string | null>(null);
   const [createdActionId, setCreatedActionId] = useState<string | null>(null);
@@ -595,6 +596,8 @@ export const FirstUseOnboardingOverlay: React.FC<{
     updateUserProfile({ nickname, onboardingAgeRange: range });
     setIdentityReady(true);
   }} />;
+  // Depois do nome, a escolha da experiencia (27/10/2026): Imersivo ou Essencial.
+  if (!experienciaEscolhida) return <EscolhaDeExperiencia onEscolher={definirExperiencia} />;
 
   const canAdvance = canAdvanceFromStep(step);
   const padding = step.padding ?? 12;

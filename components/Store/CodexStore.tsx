@@ -12,8 +12,6 @@ import { ASSET_ACCENT_COLORS } from '../../constants/assetVisuals';
 
 import {
     CATEGORY_LABELS,
-    THEME_CATEGORY_ORDER,
-    TYPE_CATEGORY_ORDER,
     resolveTemplateCampaignMeta,
     type CampaignCategoryId,
     type CampaignThemeId,
@@ -68,6 +66,26 @@ const ASSET_FALLBACK_LABELS: Record<string, string> = Object.fromEntries(
     LIFE_AREAS.map((area) => [area.id, area.name]),
 );
 
+/*
+ * FILTRO DA LOJA (27/10/2026, com o Afonso): so area e duracao, sempre a vista.
+ * Tipo, tema e tags continuam no catalogo — servem a busca e a recomendacao do
+ * Oraculo —, mas nao viram filtro. O preco acompanha a duracao.
+ */
+const NOME_CURTO_DA_AREA: Record<string, string> = {
+    proposito: 'Propósito', relacoes: 'Relações', trabalho: 'Trabalho', lazer: 'Lazer', saude: 'Saúde',
+};
+const ICONE_DA_AREA: Record<string, string> = Object.fromEntries(LIFE_AREAS.map((area) => [area.id, area.icon]));
+type Duracao = 'all' | 'rapida' | 'media' | 'longa';
+const DURACOES: Array<{ id: Exclude<Duracao, 'all'>; nome: string; dica: string }> = [
+    { id: 'rapida', nome: 'Rápidas', dica: 'até 7 dias' },
+    { id: 'media', nome: 'Médias', dica: '8 a 14 dias' },
+    { id: 'longa', nome: 'Longas', dica: '15+ dias' },
+];
+const duracaoDe = (dias?: number | null): Exclude<Duracao, 'all'> => {
+    const d = Number(dias) || 0;
+    return d <= 7 ? 'rapida' : d <= 14 ? 'media' : 'longa';
+};
+
 const TAG_THEME_FALLBACK: Array<{ id: CampaignThemeId; keys: string[] }> = [
     { id: 'exercicio', keys: ['fisico', 'movimento', 'explosao', 'treino', 'ativacao'] },
     { id: 'nutricao', keys: ['nutricao', 'jejum', 'alimentacao', 'biohacking'] },
@@ -116,8 +134,9 @@ export const CodexStore: React.FC = () => {
     const [pendingPurchase, setPendingPurchase] = useState<{ id: string; title: string; goldPrice: number } | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedAssetId, setSelectedAssetId] = useState<string>('all');
-    const [selectedCategory, setSelectedCategory] = useState<'all' | CampaignCategoryId>('all');
+    const [duracao, setDuracao] = useState<Duracao>('all');
     const [areFiltersOpen, setFiltersOpen] = useState(false);
+    const activeFilterCount = (selectedAssetId !== 'all' ? 1 : 0) + (duracao !== 'all' ? 1 : 0);
 
 
     const handlePurchase = async (catalogId: string) => {
@@ -226,20 +245,13 @@ export const CodexStore: React.FC = () => {
             label: assets.find((asset) => asset.id === assetId)?.name || ASSET_FALLBACK_LABELS[assetId],
         }))
     ), [assets]);
-    const activeFilterCount = (selectedAssetId !== 'all' ? 1 : 0) + (selectedCategory !== 'all' ? 1 : 0);
-    const activeFilterLabel = [
-        selectedAssetId !== 'all'
-            ? availableAssetFilters.find((asset) => asset.id === selectedAssetId)?.label
-            : null,
-        selectedCategory !== 'all' ? CATEGORY_LABELS[selectedCategory] : null,
-    ].filter(Boolean).join(' / ');
 
     const filteredEntries = useMemo(() => {
         const normalizedQuery = searchQuery.trim().toLowerCase();
 
         return visibleCatalogEntries.filter((entry) => {
             if (selectedAssetId !== 'all' && !entry.assetIds.includes(selectedAssetId)) return false;
-            if (selectedCategory !== 'all' && !entry.filterCategories.includes(selectedCategory)) return false;
+            if (duracao !== 'all' && duracaoDe(entry.codex.duration_days) !== duracao) return false;
             if (!normalizedQuery) return true;
 
             const haystack = [
@@ -257,7 +269,7 @@ export const CodexStore: React.FC = () => {
 
             return haystack.includes(normalizedQuery);
         });
-    }, [searchQuery, selectedAssetId, selectedCategory, visibleCatalogEntries]);
+    }, [searchQuery, selectedAssetId, duracao, visibleCatalogEntries]);
 
     const activePreviewEntry = useMemo(() => {
         if (!campaignPreview) return null;
@@ -304,9 +316,6 @@ export const CodexStore: React.FC = () => {
                                 title="Filtros"
                             >
                                 <FilterIcon className="h-4 w-4" />
-                                {/* O numero de filtros ativos vira marcador no canto: a
-                                    palavra "Filtros · 2" so cabia porque o botao era
-                                    largo, e era o botao largo o problema. */}
                                 {activeFilterCount > 0 && (
                                     <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-sm bg-[var(--skin-accent-color)] px-1 text-[9px] font-black leading-none text-black">
                                         {activeFilterCount}
@@ -315,85 +324,73 @@ export const CodexStore: React.FC = () => {
                             </button>
                         </div>
 
-                        {activeFilterLabel && (
-                            <div className="truncate px-1 text-[9px] font-black uppercase tracking-[0.14em] text-white/45">
-                                Exibindo: {activeFilterLabel}
-                            </div>
-                        )}
-
                         {areFiltersOpen && (
-                            <div className="space-y-3 rounded-sm border border-white/10 bg-black/20 p-3">
-                                <div className="space-y-2">
-                                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Ativo principal</div>
-                                    <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
-                                        <button
-                                            type="button"
-                                            onClick={() => setSelectedAssetId('all')}
-                                            className={`rounded-sm px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] whitespace-nowrap transition-all ${selectedAssetId === 'all' ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
-                                        >
-                                            Todos
-                                        </button>
-                                        {availableAssetFilters.map((asset) => (
-                                            <button
-                                                key={asset.id}
-                                                type="button"
-                                                onClick={() => setSelectedAssetId(asset.id)}
-                                                className={`rounded-sm px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] whitespace-nowrap transition-all ${selectedAssetId === asset.id ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
-                                            >
-                                                {asset.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
+                        <div className="space-y-2.5 rounded-sm border border-white/10 bg-black/20 p-3">
+                        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Área</div>
+                        {/* Area: o icone e o nome curto; acende na cor da area. */}
+                        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filtrar por área">
+                            <button
+                                type="button"
+                                aria-pressed={selectedAssetId === 'all'}
+                                onClick={() => setSelectedAssetId('all')}
+                                className={`shrink-0 rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.12em] transition-colors ${selectedAssetId === 'all' ? 'border-white/40 bg-white/12 text-white' : 'border-white/10 bg-black/20 text-white/55'}`}
+                            >
+                                Todas
+                            </button>
+                            {availableAssetFilters.filter((asset) => NOME_CURTO_DA_AREA[asset.id]).map((asset) => {
+                                const cor = ASSET_ACCENT_COLORS[asset.id as keyof typeof ASSET_ACCENT_COLORS] || '#d5b878';
+                                const ligado = selectedAssetId === asset.id;
+                                return (
+                                    <button
+                                        key={asset.id}
+                                        type="button"
+                                        aria-pressed={ligado}
+                                        onClick={() => setSelectedAssetId(ligado ? 'all' : asset.id)}
+                                        className="flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.1em] transition-colors"
+                                        style={ligado
+                                            ? { borderColor: cor, background: `${cor}2e`, color: '#fff' }
+                                            : { borderColor: 'rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.2)', color: 'rgba(255,255,255,0.55)' }}
+                                    >
+                                        <span aria-hidden="true">{ICONE_DA_AREA[asset.id]}</span>
+                                        {NOME_CURTO_DA_AREA[asset.id]}
+                                    </button>
+                                );
+                            })}
+                        </div>
 
-                                <div className="space-y-2">
-                                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Tipo e tema</div>
-                                    <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
-                                        <button
-                                            type="button"
-                                            onClick={() => setSelectedCategory('all')}
-                                            className={`rounded-sm px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] whitespace-nowrap transition-all ${selectedCategory === 'all' ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
-                                        >
-                                            Todas
-                                        </button>
-
-                                        {TYPE_CATEGORY_ORDER.map((categoryId) => (
-                                            <button
-                                                key={categoryId}
-                                                type="button"
-                                                onClick={() => setSelectedCategory(categoryId)}
-                                                className={`rounded-sm px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] whitespace-nowrap transition-all ${selectedCategory === categoryId ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
-                                            >
-                                                {CATEGORY_LABELS[categoryId]}
-                                            </button>
-                                        ))}
-
-                                        <span className="my-1 w-px shrink-0 rounded-sm bg-white/10" aria-hidden="true" />
-
-                                        {THEME_CATEGORY_ORDER.map((categoryId) => (
-                                            <button
-                                                key={categoryId}
-                                                type="button"
-                                                onClick={() => setSelectedCategory(categoryId)}
-                                                className={`rounded-sm px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] whitespace-nowrap transition-all ${selectedCategory === categoryId ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
-                                            >
-                                                {CATEGORY_LABELS[categoryId]}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
+                        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Duração</div>
+                        {/* Duracao: o preco acompanha. */}
+                        <div className="grid grid-cols-4 gap-1 rounded-xl border border-white/10 bg-black/20 p-1" role="group" aria-label="Filtrar por duração">
+                            {[{ id: 'all' as Duracao, nome: 'Todas', dica: 'qualquer' }, ...DURACOES].map((opcao) => {
+                                const ligado = duracao === opcao.id;
+                                return (
+                                    <button
+                                        key={opcao.id}
+                                        type="button"
+                                        aria-pressed={ligado}
+                                        onClick={() => setDuracao(opcao.id)}
+                                        className={`rounded-lg px-1 py-1.5 text-center transition-colors ${ligado ? 'bg-[var(--skin-accent-color)]/18 text-white shadow-[inset_0_0_0_1px_var(--skin-accent-color)]' : 'text-white/55'}`}
+                                    >
+                                        <span className="block text-[10px] font-black uppercase tracking-[0.08em]">{opcao.nome}</span>
+                                        <span className="block text-[8px] text-white/40">{opcao.dica}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        </div>
                         )}
                     </div>
                 </div>
 
                 {filteredEntries.length > 0 ? (
                     <div className="campaign-store-grid grid grid-cols-2 gap-3">
-                        {filteredEntries.map(({ codex, template, preview, coverVisual, actionCount, goldPrice, listPrice, isFree }) => {
+                        {filteredEntries.map(({ codex, template, preview, coverVisual, actionCount, goldPrice, listPrice, isFree, primaryAssetId }) => {
                             // A loja vende uma campanha como item de catálogo. A composição
                             // compacta com arenas pertence somente à ArenaView, depois da instalação.
                             const arenaComCor = preview.arenas.find((arena) => arena.assetId && ASSET_ACCENT_COLORS[arena.assetId as keyof typeof ASSET_ACCENT_COLORS]);
-                            const tomDaCampanha = (arenaComCor?.assetId && ASSET_ACCENT_COLORS[arenaComCor.assetId as keyof typeof ASSET_ACCENT_COLORS]) || '#687380';
+                            // A cor e o nome vem da AREA principal da campanha (a mesma do filtro).
+                            const areaDaCampanha = (primaryAssetId && ASSET_ACCENT_COLORS[primaryAssetId as keyof typeof ASSET_ACCENT_COLORS]) ? primaryAssetId : arenaComCor?.assetId || '';
+                            const tomDaCampanha = (areaDaCampanha && ASSET_ACCENT_COLORS[areaDaCampanha as keyof typeof ASSET_ACCENT_COLORS]) || '#687380';
                             const ownedCodex = userCodexes.find((userCodex) => userCodex.catalog_id === codex.id || userCodex.name === codex.title) || null;
                             const isOwned = Boolean(ownedCodex);
                             const isInstalled = Boolean(ownedCodex && installedCodexIds.has(ownedCodex.id));
@@ -402,7 +399,7 @@ export const CodexStore: React.FC = () => {
                                 <div
                                     key={codex.id}
                                     className="campaign-store-card relative flex flex-col gap-2 p-2"
-                                    style={{ '--campaign-accent': tomDaCampanha } as React.CSSProperties}
+                                    style={{ '--campaign-accent': tomDaCampanha, borderColor: `${tomDaCampanha}55` } as React.CSSProperties}
                                 >
                                     {/* Capa (27/10/2026): a imagem e o fundo do card, sob um veu escuro.
                                         Sem imagem, fica o tom da campanha. O emoji saiu: arena e acao ja tem o deles. */}
@@ -416,8 +413,10 @@ export const CodexStore: React.FC = () => {
                                             <div className="flex items-start gap-2 px-1 pt-1">
                                                 <div className="min-w-0 flex-1 pt-0.5">
                                                     <div className="campaign-store-title line-clamp-2">{codex.title}</div>
-                                                    <div className="mt-1 text-[8px] font-black uppercase tracking-[0.12em] text-white/42">
-                                                        Campanha
+                                                    {/* A area da campanha, na cor dela (no lugar de "Campanha"). */}
+                                                    <div className="mt-1 flex items-center gap-1 text-[8px] font-black uppercase tracking-[0.12em]" style={{ color: tomDaCampanha }}>
+                                                        <span aria-hidden="true">{ICONE_DA_AREA[areaDaCampanha] || ''}</span>
+                                                        {NOME_CURTO_DA_AREA[areaDaCampanha] || 'Campanha'}
                                                     </div>
                                                 </div>
                                             </div>

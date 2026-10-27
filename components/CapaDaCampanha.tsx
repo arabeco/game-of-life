@@ -52,6 +52,8 @@ export const CapaDeFundoDaCampanha: React.FC<{ cover?: string | null; tom?: stri
                 <div className="h-full w-full" style={{ background: `radial-gradient(circle at 80% 0%, ${tom || '#d5b878'}33, transparent 60%)` }} />
             )}
             <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,11,14,0.35)_0%,rgba(10,11,14,0.78)_55%,rgba(10,11,14,0.94)_100%)]" />
+            {/* O tom da area subindo do pe do card: a loja se le pela cor. */}
+            <div className="absolute inset-0" style={{ background: `linear-gradient(0deg, ${tom || '#d5b878'}40 0%, ${tom || '#d5b878'}14 35%, transparent 65%)` }} />
         </div>
     );
 };

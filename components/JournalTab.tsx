@@ -3,7 +3,7 @@ import { ClockIcon, LightbulbIcon, MoonIcon, PlusIcon, SparklesIcon, TrophyIcon 
 import { MOODS_DATA } from '../constants';
 import { cabecalhoDeHoje, JOURNAL_MAX_CARACTERES, JOURNAL_MAX_PAGINAS, lerPaginaOuFalha, listarPaginas, salvarPagina, type ResumoDePagina } from '../services/JournalService';
 import { TAGS_DO_DIARIO, lerEntradas, periodoDaPagina, type TagDoDiario } from '../utils/diario';
-import { LeitorDoDiario } from './LeitorDoDiario';
+import { ICONE_DA_TAG, LeitorDoDiario, corDoHumor } from './LeitorDoDiario';
 
 
 /**
@@ -23,8 +23,6 @@ import { LeitorDoDiario } from './LeitorDoDiario';
  * a mais nova em cima. "Editar" abre o texto cru, como era. O filtro de tag vale para a
  * lista de paginas e para as entradas da pagina aberta.
  */
-const corDoHumor = (humor: string | null): string | null =>
-    (humor && MOODS_DATA.find((mood) => mood.label === humor)?.trackEnd) || null;
 
 const Bolinha: React.FC<{ humor: string | null; tamanho?: number }> = ({ humor, tamanho = 10 }) => {
     const cor = corDoHumor(humor);
@@ -39,14 +37,6 @@ const Bolinha: React.FC<{ humor: string | null; tamanho?: number }> = ({ humor, 
     );
 };
 
-// O simbolo de cada tag, na cor do humor da entrada.
-const ICONE_DA_TAG: Record<TagDoDiario, React.FC<{ className?: string }>> = {
-    Ideia: LightbulbIcon,
-    'Reflexão': MoonIcon,
-    'Gratidão': SparklesIcon,
-    Conquista: TrophyIcon,
-    Lembrete: ClockIcon,
-};
 
 const JournalTab: React.FC<{ userId: string }> = ({ userId }) => {
     const [paginas, setPaginas] = useState<ResumoDePagina[]>([]);

@@ -3,6 +3,7 @@ import { ClockIcon, LightbulbIcon, MoonIcon, PlusIcon, SparklesIcon, TrophyIcon 
 import { MOODS_DATA } from '../constants';
 import { cabecalhoDeHoje, JOURNAL_MAX_CARACTERES, JOURNAL_MAX_PAGINAS, lerPaginaOuFalha, listarPaginas, salvarPagina, type ResumoDePagina } from '../services/JournalService';
 import { TAGS_DO_DIARIO, lerEntradas, periodoDaPagina, type TagDoDiario } from '../utils/diario';
+import { LeitorDoDiario } from './LeitorDoDiario';
 
 
 /**
@@ -52,6 +53,7 @@ const JournalTab: React.FC<{ userId: string }> = ({ userId }) => {
     const [carregandoIndice, setCarregandoIndice] = useState(true);
     const [aberta, setAberta] = useState<number | null>(null);
     const [editando, setEditando] = useState(false);
+    const [lendo, setLendo] = useState(false);
     const [filtro, setFiltro] = useState<TagDoDiario | null>(null);
     const [texto, setTexto] = useState('');
     const [carregandoPagina, setCarregandoPagina] = useState(false);
@@ -235,9 +237,17 @@ const JournalTab: React.FC<{ userId: string }> = ({ userId }) => {
                         Pronto
                     </button>
                 ) : (
-                    <button type="button" onClick={() => setEditando(true)} disabled={carregandoPagina} className={botaoPequeno}>
-                        Editar
-                    </button>
+                    <span className="flex gap-1.5">
+                        {/* Ler em tela cheia (27/10/2026): o papel do leitor de aula, entrada por entrada. */}
+                        {entradasVisiveis.length > 0 && (
+                            <button type="button" onClick={() => setLendo(true)} disabled={carregandoPagina} className={botaoPequeno}>
+                                Ler
+                            </button>
+                        )}
+                        <button type="button" onClick={() => setEditando(true)} disabled={carregandoPagina} className={botaoPequeno}>
+                            Editar
+                        </button>
+                    </span>
                 )}
             </div>
 
@@ -302,6 +312,9 @@ const JournalTab: React.FC<{ userId: string }> = ({ userId }) => {
                         )}
                     </div>
                 </>
+            )}
+            {lendo && !editando && (
+                <LeitorDoDiario entradas={[...entradasVisiveis].reverse()} pagina={aberta} onFechar={() => setLendo(false)} />
             )}
         </div>
     );

@@ -503,7 +503,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                                 />
                             </div>
 
-                            <div className={`relative z-10 flex min-h-0 flex-1 flex-col ${isCompetitionResult ? 'justify-around' : ''}`}>
+                            <div className={`custom-scrollbar relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto ${isCompetitionResult ? 'justify-around' : ''}`}>
                                 <RewardPackBody
                                     payload={payloadDoFeito}
                                     emblema={seloDaTemporada ? undefined : emblemaDoFeito}

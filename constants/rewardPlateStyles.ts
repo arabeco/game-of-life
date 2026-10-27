@@ -34,13 +34,19 @@ export const REWARD_PLATE_VIEWPORT_STYLE: React.CSSProperties = {
  * A proporção 10:14 dá respiro entre título, prêmio e ação sem virar uma
  * coluna gigante nem depender de uma barra interna.
  */
+const LARGURA_DA_PLACA_DE_CONTEUDO = 'min(368px, calc(100vw - var(--safe-area-left) - var(--safe-area-right) - 32px), calc((100svh - var(--safe-area-top) - var(--safe-area-bottom) - 80px) * 0.7142857))';
+
 export const REWARD_CONTENT_PLATE_VIEWPORT_STYLE: React.CSSProperties = {
     // A largura tambem depende da altura que sobrou entre as areas seguras.
     // Os 80px deixam 40px de ar visual em cima e embaixo. `max-height`
     // sozinho deixa o navegador escolher a largura pela tela e, em alguns
     // Androids, a placa 10:14 nasce colada nas bordas.
-    width: 'min(368px, calc(100vw - var(--safe-area-left) - var(--safe-area-right) - 32px), calc((100svh - var(--safe-area-top) - var(--safe-area-bottom) - 80px) * 0.7142857))',
-    aspectRatio: '10 / 14',
+    width: LARGURA_DA_PLACA_DE_CONTEUDO,
+    // 10:14 e o MINIMO, nao a altura (27/10/2026). Com `aspect-ratio` fixo,
+    // missao com EXP + ouro + insignia e titulo em duas linhas passava da
+    // placa e o item ficava por baixo do Prosseguir. Agora a placa cresce
+    // com o conteudo ate o teto da tela; dali para cima, o corpo rola.
+    minHeight: `min(calc(${LARGURA_DA_PLACA_DE_CONTEUDO} * 1.4), calc(100svh - var(--safe-area-top) - var(--safe-area-bottom) - 80px))`,
     maxHeight: 'calc(100svh - var(--safe-area-top) - var(--safe-area-bottom) - 80px)',
 };
 

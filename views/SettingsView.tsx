@@ -1,3 +1,4 @@
+import { CartaoInstalarNoComputador } from '../components/InstalarNoComputador';
 import { useScreenIntroTip } from '../hooks/useScreenIntroTip';
 import './readability-fixes.css';
 ﻿import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
@@ -2084,6 +2085,7 @@ const PreferenciasTab: React.FC = () => {
 
     return (
         <div className="space-y-8 animate-fade-in pb-10">
+            <CartaoInstalarNoComputador />
             {/* Grupo Geral */}
             <section className="space-y-4">
                 <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest px-1 border-b border-white/5 pb-2">Preferências</h2>

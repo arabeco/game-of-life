@@ -16,6 +16,7 @@ import { TutorialProvider, useTutorial } from '../contexts/TutorialContext';
 import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
 import { useConquistasSecretas } from '../hooks/useConquistasSecretas';
 import { ArenaConfetti } from './ArenaConfetti';
+import { ConviteInstalarNoComputador } from './InstalarNoComputador';
 import { updateInstalledAppBadge } from '../utils/appBadge';
 import { DEFAULT_ORACLE_PRESENCE_LEVEL } from '../utils/oracleFeedUtils';
 import { buildPremiumRewardsToast } from '../utils/premiumRewards';
@@ -2588,6 +2589,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                     />
                 )}
                 <ArenaConfetti burstKey={confettiBurst.key} intense={confettiBurst.intense} />
+                <ConviteInstalarNoComputador pausado={Boolean(achievementUnlocked)} />
                 {toast.visible && (
                     <GoldenToast
                         message={toast.message}

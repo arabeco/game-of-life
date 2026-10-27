@@ -1,5 +1,6 @@
 import React from 'react';
-import { CATALOG_INTERFACE_ROOT } from '../constants/catalogAssets';
+import { CATALOG_AVATAR_ROOT, CATALOG_INTERFACE_ROOT } from '../constants/catalogAssets';
+import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 
 /**
  * COMO VOCE PREFERE EVOLUIR? (27/10/2026, com o Afonso)
@@ -11,36 +12,49 @@ import { CATALOG_INTERFACE_ROOT } from '../constants/catalogAssets';
  */
 type Modo = 'imersivo' | 'essencial';
 
+// Previas com pecas DO GLYPH (o bau, a insignia e um artefato do catalogo; o
+// planner e as barras do ciclo nas cores das areas), nao um painel generico.
 const PreviaImersiva: React.FC = () => (
-    <div className="relative flex h-full items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_50%_60%,rgba(74,222,128,0.28),rgba(8,10,12,0)_60%),linear-gradient(180deg,#0d1612,#06080a)]">
-        <img src={`${CATALOG_INTERFACE_ROOT}/bau_raro.webp`} alt="" className="h-[72%] max-h-40 w-auto object-contain drop-shadow-[0_10px_30px_rgba(74,222,128,0.45)]" />
-        <span className="absolute left-3 top-3 rounded-full border border-emerald-300/40 bg-black/40 px-2 py-0.5 text-[10px] font-black text-emerald-200">+300 EXP</span>
-        <span className="absolute right-3 top-3 rounded-full border border-amber-300/40 bg-black/40 px-2 py-0.5 text-[10px] font-black text-amber-200">🏅 Conquista</span>
-        <div className="absolute inset-x-3 bottom-3 flex justify-center gap-1.5" aria-hidden="true">
-            {['✓', '✓', '★', '✓', '🎁'].map((icone, i) => (
-                <span key={i} className="flex h-6 w-6 items-center justify-center rounded-md border border-emerald-300/30 bg-black/50 text-[11px] text-emerald-200">{icone}</span>
-            ))}
-        </div>
+    <div className="relative flex h-full items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_50%_62%,rgba(243,212,138,0.22),rgba(8,10,12,0)_58%),linear-gradient(180deg,#15110b,#07080a)]">
+        <img src={`${CATALOG_INTERFACE_ROOT}/insignia_missao_prata.webp`} alt="" className="absolute left-[9%] top-[22%] h-14 w-14 -rotate-6 object-contain drop-shadow-[0_6px_14px_rgba(0,0,0,0.7)] md:h-16 md:w-16" />
+        <img src={`${CATALOG_INTERFACE_ROOT}/bau_raro.webp`} alt="" className="relative h-[70%] max-h-36 w-auto object-contain drop-shadow-[0_10px_28px_rgba(243,212,138,0.35)]" />
+        <img src={`${CATALOG_AVATAR_ROOT}/ARTEFATO_T4_DRAGAO_BEBE.png`} alt="" className="absolute right-[8%] top-[18%] h-16 w-16 rotate-6 object-contain drop-shadow-[0_6px_14px_rgba(0,0,0,0.7)] md:h-20 md:w-20" />
+        <span className="absolute bottom-3 left-3 rounded-full border border-[#f3d48a]/40 bg-black/50 px-2 py-0.5 text-[10px] font-black text-[#f6dfab]">+300 EXP</span>
+        <span className="absolute bottom-3 right-3 rounded-full border border-amber-300/40 bg-black/50 px-2 py-0.5 text-[10px] font-black text-amber-200">🪙 +25</span>
     </div>
 );
 
+const AREA = (id: string) => ASSET_ACCENT_COLORS[id as keyof typeof ASSET_ACCENT_COLORS] || '#d5b878';
+const BLOCOS = [
+    { hora: '07:00', nome: 'Treino', icone: '💪', area: 'saude', topo: 4, altura: 26 },
+    { hora: '09:00', nome: 'Foco no projeto', icone: '💼', area: 'trabalho', topo: 34, altura: 34 },
+    { hora: '19:30', nome: 'Leitura', icone: '📘', area: 'proposito', topo: 76, altura: 18 },
+];
+const BARRAS = [['saude', 82], ['trabalho', 64], ['relacoes', 48], ['proposito', 90], ['lazer', 55]] as const;
+
 const PreviaEssencial: React.FC = () => (
-    <div className="flex h-full flex-col gap-2 bg-[linear-gradient(180deg,#101820,#0a0f14)] p-3">
-        <div className="grid grid-cols-3 gap-1.5">
-            {[['Concluídas', '30'], ['Ciclo', '86%'], ['Sequência', '11']].map(([rotulo, valor], i) => (
-                <div key={rotulo} className={`rounded-md border px-2 py-1.5 ${i === 0 ? 'border-amber-300/50 bg-amber-300/15' : 'border-white/10 bg-white/[0.03]'}`}>
-                    <div className="text-[8px] uppercase tracking-[0.1em] text-white/45">{rotulo}</div>
-                    <div className="text-base font-black leading-tight text-white">{valor}</div>
+    <div className="flex h-full gap-3 bg-[linear-gradient(180deg,#11141a,#0a0c10)] p-3">
+        {/* Um dia do planner */}
+        <div className="relative flex-1 overflow-hidden rounded-lg border border-white/8 bg-black/25">
+            {BLOCOS.map((bloco) => (
+                <div
+                    key={bloco.nome}
+                    className="absolute left-1.5 right-1.5 flex items-center gap-1.5 rounded-md px-2"
+                    style={{ top: `${bloco.topo}%`, height: `${bloco.altura}%`, background: `linear-gradient(135deg, ${AREA(bloco.area)}cc, ${AREA(bloco.area)}66)` }}
+                >
+                    <span className="text-[11px]" aria-hidden="true">{bloco.icone}</span>
+                    <span className="truncate text-[10px] font-bold text-white">{bloco.nome}</span>
+                    <span className="ml-auto text-[8px] text-white/70">{bloco.hora}</span>
                 </div>
             ))}
         </div>
-        <svg viewBox="0 0 200 60" className="w-full flex-1" preserveAspectRatio="none" aria-hidden="true">
-            <path d="M0 45 C 25 20, 45 50, 70 30 S 115 10, 140 28 S 180 40, 200 15" fill="none" stroke="#e6c76a" strokeWidth="2.5" />
-            <path d="M0 45 C 25 20, 45 50, 70 30 S 115 10, 140 28 S 180 40, 200 15 V60 H0 Z" fill="rgba(230,199,106,0.12)" />
-        </svg>
-        <div className="space-y-1" aria-hidden="true">
-            {[78, 52, 90].map((largura) => (
-                <div key={largura} className="h-1.5 rounded-full bg-white/8"><div className="h-full rounded-full bg-amber-300/70" style={{ width: `${largura}%` }} /></div>
+        {/* As barras do ciclo, uma por area */}
+        <div className="flex w-[38%] flex-col justify-center gap-1.5">
+            <div className="text-[8px] font-black uppercase tracking-[0.14em] text-white/45">Ciclo · 86%</div>
+            {BARRAS.map(([area, valor]) => (
+                <div key={area} className="h-2 rounded-full bg-white/8">
+                    <div className="h-full rounded-full" style={{ width: `${valor}%`, background: AREA(area) }} />
+                </div>
             ))}
         </div>
     </div>

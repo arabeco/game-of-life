@@ -14,4 +14,6 @@ assert.equal(avisoDaConquista({ type: 'MILESTONE_COMPLETED', data: { name: 'Prim
 assert.equal(avisoDaConquista({ type: 'QUEST_COMPLETED', data: { secreta: true, title: 'Ritual', reward: { exp: 1000, items: ['x'] } } }), 'Conquista: Ritual · +1.000 EXP');
 assert.equal(avisoDaConquista({ type: 'COMPETITION_COMPLETED', data: { title: 'Desafio vencido' } }), 'Desafio vencido');
 assert.equal(avisoDaConquista({ type: 'QUALQUER', data: {} }), 'Concluído.');
+// As missoes iniciais rodam para todo mundo; no Essencial nao se chamam missao.
+assert.equal(avisoDaConquista({ type: 'QUEST_COMPLETED', data: { sobrancelha: 'Missão inicial', title: 'Criar a primeira arena', reward: { exp: 100 } } }), 'Primeiro passo: Criar a primeira arena · +100 EXP');
 console.log('Aviso do Essencial: cada conquista vira uma linha curta.');

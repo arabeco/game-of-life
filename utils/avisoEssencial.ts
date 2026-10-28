@@ -25,6 +25,7 @@ const exp = (data?: Record<string, any> | null) => {
 export const avisoDaConquista = ({ type, data }: Conquista): string => {
     switch (type) {
         case 'QUEST_COMPLETED':
+            if (data?.sobrancelha === 'Missão inicial') return `Primeiro passo: ${data?.title || 'feito'}${exp(data)}`;
             return `${data?.secreta ? 'Conquista' : 'Missão concluída'}: ${data?.title || 'missão'}${exp(data)}`;
         case 'ARENA_COMPLETED':
             return `${data?.metaFinal ? 'Meta concluída' : 'Arena concluída'}: ${data?.name || 'arena'}`;

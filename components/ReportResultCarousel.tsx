@@ -16,7 +16,8 @@ import { resolveItemDef } from '../constants/items';
 import { ChevronLeftIcon, ChevronRightIcon, XIcon, ShareIcon, CheckIcon, CrownIcon, ZapIcon, TrophyIcon, Trash2Icon, RefreshCwIcon } from './Icons';
 import { MetalReportCard, getPlateFinish } from './MetalReportCard';
 import { buildComparisonClosingLine, buildComparisonNarration, buildCycleComparison, isFavourable } from '../utils/cycleComparison';
-import { hasPlatinumAccess } from '../utils/premiumAccess';
+import { hasPremiumAccess } from '../utils/premiumAccess';
+import { sugestaoParaOProximoCiclo } from '../utils/leituraPremium';
 import { exportElementAsImage, shouldPreferNativeShare } from './Share';
 import { ShareChoiceSheet } from './ShareChoiceSheet';
 import './report-ui.css';
@@ -616,12 +617,22 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
      * esvazia a metade que sobra. O caminho de melhorar a comparacao e engorda-la
      * aqui dentro, e nao espalhar pedaco dela pela apresentacao.
      */
-    const isPlatinum = hasPlatinumAccess(userProfile);
+    // OS PLANOS DE 28/10/2026: "Contra voce" e a pagina da Leitura Premium, e
+    // passa a ser do Premium (era do Platinum). Quem nao assina e ja tem ciclo
+    // anterior ve a pagina trancada: o que existe, sem o numero.
+    const leituraLiberada = hasPremiumAccess(userProfile);
     const comparison = useMemo(
-        () => (isPlatinum ? buildCycleComparison(report, reports || []) : null),
-        [isPlatinum, report, reports],
+        () => (leituraLiberada ? buildCycleComparison(report, reports || []) : null),
+        [leituraLiberada, report, reports],
     );
     const showComparisonSlide = Boolean(comparison && comparison.metrics.length > 0);
+    const showComparisonTeaser = !leituraLiberada && (reports || []).length >= 2;
+    const proximoCiclo = sugestaoParaOProximoCiclo({
+        executionRatePct: report.metrics.executionRatePct
+            ?? Math.round((report.metrics.actionsCompleted / Math.max(report.metrics.totalPlannedActions, 1)) * 100),
+        totalDays,
+        daysWithoutCompletion: report.metrics.daysWithoutCompletion,
+    });
     /*
      * A NARRACAO NO LUGAR DO FECHO GENERICO.
      *
@@ -688,7 +699,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
             (metric) => !(Number(metric.current) === 0 && Number(metric.baseline) === 0),
         );
 
-        const legenda = metricas.map((metric) => {
+        const legendaDasMedidas = metricas.map((metric) => {
             const estavel = metric.direction === 'estavel';
             const favoravel = isFavourable(metric);
             const variacao = estavel
@@ -701,6 +712,10 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 tom: (estavel ? 'normal' : favoravel ? 'bom' : 'alerta') as 'normal' | 'bom' | 'alerta',
             };
         });
+        const legenda = [
+            ...legendaDasMedidas,
+            { rotulo: 'Próximo ciclo', valor: proximoCiclo.valor, nota: proximoCiclo.nota, tom: 'normal' as const },
+        ];
 
         return (
             <SlideCartaz
@@ -719,7 +734,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                             boxShadow: `0 0 14px ${skinColor}30`,
                         }}
                     >
-                        Platinum
+                        Premium
                     </span>
                 )}
                 numero={temFila ? `${posicao}º` : `${metricas.length}`}
@@ -731,6 +746,22 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
             />
         );
     };
+
+    /* A pagina da Leitura Premium, trancada: o que existe nela, sem o numero. */
+    const renderComparisonTeaserSlide = () => (
+        <SlideCartaz
+            rank={notaDoRelatorio}
+            titulo="Contra você"
+            numero="✦"
+            rotulo="Leitura Premium"
+            legenda={[
+                { rotulo: 'Posição', valor: '•••', nota: 'entre os seus ciclos fechados' },
+                { rotulo: 'Contra a mediana', valor: '•••', nota: 'execução, carga, presença e sequência' },
+                { rotulo: 'Próximo ciclo', valor: '•••', nota: 'o que ajustar a partir deste' },
+            ]}
+            remate="Compare este ciclo com os seus anteriores e receba a sugestão para o próximo. Disponível no Premium."
+        />
+    );
 
     /*
      * VEREDITO: O CLIMAX, E ELE E UMA LETRA.
@@ -963,7 +994,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         renderTerritorySlide,
         renderMarksSlide,
         renderAchievementsSlide,
-        ...(showComparisonSlide ? [renderComparisonSlide] : []),
+        ...(showComparisonSlide ? [renderComparisonSlide] : showComparisonTeaser ? [renderComparisonTeaserSlide] : []),
         ...(habitos.length > 0 ? [renderHabitsSlide] : []),
         // A placa existente fecha o relatorio: ela ja e o veredito e concentra
         // Rever, Compartilhar e Novo ciclo. Um segundo cartaz de nota antes dela

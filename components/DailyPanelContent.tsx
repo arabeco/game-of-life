@@ -24,7 +24,9 @@ import { getCycleXpBonusRate } from '../utils/premiumAccess';
 import { pickOracleOpeningLine, ORACLE_FREE_TONE } from '../constants/oracleSpeechLibrary';
 import { DEFAULT_ORACLE_PRESENCE_LEVEL, hasSpokenOpeningLineToday, markOpeningLineSpoken } from '../utils/oracleFeedUtils';
 import { getOraclePresenceRules } from '../constants/oraclePresencePolicy';
-import { hasPlatinumAccess, hasPremiumAccess } from '../utils/premiumAccess';
+import { hasPremiumAccess } from '../utils/premiumAccess';
+import { leituraPremiumDoDia, type FeitoDaLeitura } from '../utils/leituraPremium';
+import { LeituraPremiumDoDia } from './LeituraPremiumDoDia';
 
 type DailyActionRow = {
     task: ScheduledTask;
@@ -436,6 +438,61 @@ export const DailyPanelContent: React.FC<{
         }, readingDepth);
     }, [arenaStats, completedRows.length, cyclePattern, rowsDoDia.length, isToday, readingDepth, reports, selectedDate, topArena]);
 
+    /*
+     * A ABA LEITURA (28/10/2026, com o Afonso): o painel ganha "Dia | Leitura".
+     * A leitura e do Premium; quem nao assina ve o que existe ali e o botao
+     * para os planos. As contas so rodam quando a aba esta aberta.
+     */
+    const [aba, setAba] = useState<'dia' | 'leitura'>('dia');
+    const leituraLiberada = hasPremiumAccess(userProfile);
+    const itensDaLeitura = useMemo(() => {
+        if (aba !== 'leitura' || !leituraLiberada) return [];
+        const desde = shiftLocalDateString(selectedDate, -30);
+        const feitos: FeitoDaLeitura[] = [];
+        for (const task of tasks) {
+            if (!task.completed || !task.date || task.date < desde || task.date > selectedDate) continue;
+            const action = actionsById.get(task.actionId);
+            if (!action) continue;
+            const hora = task.completedAt ? new Date(task.completedAt).getHours() : null;
+            feitos.push({
+                data: task.date.slice(0, 10),
+                hora: Number.isFinite(hora) ? hora : null,
+                arenaId: action.arenaId,
+                arenaNome: arenasById.get(action.arenaId)?.name || 'Sem arena',
+            });
+        }
+        const arenasComAcao = arenas
+            .filter((arena) => !arena.isArchived && !arena.completedAt && actions.some((action) => action.arenaId === arena.id))
+            .map((arena) => ({ id: arena.id, nome: arena.name }));
+        const taxas = (reports || [])
+            .map((report) => {
+                const direta = report.metrics?.executionRatePct;
+                if (typeof direta === 'number' && Number.isFinite(direta)) return direta;
+                const feitas = Number(report.metrics?.actionsCompleted || 0);
+                const planejadas = Number(report.metrics?.totalPlannedActions || 0);
+                return planejadas > 0 ? (feitas / planejadas) * 100 : null;
+            })
+            .filter((taxa): taxa is number => typeof taxa === 'number' && Number.isFinite(taxa))
+            .sort((a, b) => a - b);
+        const mediana = taxas.length > 0
+            ? (taxas.length % 2 === 1 ? taxas[(taxas.length - 1) / 2] : (taxas[taxas.length / 2 - 1] + taxas[taxas.length / 2]) / 2)
+            : null;
+        return leituraPremiumDoDia({
+            feitos,
+            hoje: selectedDate,
+            arenas: arenasComAcao,
+            ciclo: cyclePattern ? {
+                feitas: cyclePattern.totalCompleted,
+                planejadas: cyclePattern.totalPlanned,
+                diasPassados: cyclePattern.diasJaVividos,
+                diasTotais: cyclePattern.timing.totalDays,
+                execucaoAtual: cyclePattern.progress,
+                medianaHistorica: mediana,
+                ciclosFechados: taxas.length,
+            } : null,
+        });
+    }, [aba, actions, actionsById, arenas, arenasById, cyclePattern, leituraLiberada, reports, selectedDate, tasks]);
+
     const handleShareImage = () => {
         if (ehHoje) return;
         void shareElementWithFeedback(showToast, 'daily-summary-capture-area', {
@@ -485,6 +542,11 @@ export const DailyPanelContent: React.FC<{
 
     return (
         <div className="daily-review daily-board-layout">
+            <div className="daily-abas" role="group" aria-label="O que ver do dia">
+                <button type="button" aria-pressed={aba === 'dia'} onClick={() => setAba('dia')}>Dia</button>
+                <button type="button" aria-pressed={aba === 'leitura'} onClick={() => setAba('leitura')}>Leitura ✦</button>
+            </div>
+            {aba === 'leitura' ? <LeituraPremiumDoDia itens={itensDaLeitura} liberada={leituraLiberada} /> : (
             <DailyPanelBoard
                 reward={!ehHoje ? <DailyFragmentReward date={selectedDate}/> : undefined}
                 date={selectedDate}
@@ -504,6 +566,7 @@ export const DailyPanelContent: React.FC<{
                 expAverageHint={personalExp ? `Média por dia entre ${personalExp.baselineStart} e ${personalExp.baselineEnd}, incluindo dias sem atividade.${ehHoje ? ' Hoje ainda está em andamento.' : ''}` : undefined}
                 onShare={ehHoje ? undefined : () => setIsShareChoiceOpen(true)}
             />
+            )}
 
             {/*
               * A PLACA DE COMPARTILHAR, FORA DA TELA.

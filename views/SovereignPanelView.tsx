@@ -1584,7 +1584,7 @@ const GM_PREMIUM_ACTIVE_BENEFITS = [
 
 const GM_PLATINUM_ACTIVE_BENEFITS = [
   { label: 'Plano', value: 'Todas as vantagens Premium', tone: 'emerald' as const },
-  { label: 'Capacidade', value: 'Até 30 arenas ativas (arquivadas e de missão não contam)', tone: 'gold' as const },
+  { label: 'Capacidade', value: 'Até 40 arenas ativas (arquivadas e de missão não contam)', tone: 'gold' as const },
   { label: 'Campanhas', value: 'Campanhas com 20% off', tone: 'gold' as const },
   { label: 'Personalização', value: 'Todos os fundos e aparências premium', tone: 'violet' as const },
   { label: 'Oráculo', value: 'Todos os tons de fala liberados', tone: 'cyan' as const },

@@ -24,9 +24,11 @@ const parseIsoDate = (value) => {
  */
 export const dedupeIds = (ids) => Array.from(new Set(ids));
 
+// Leve, media ou alta. O antigo 0 (Lazer) vale como Leve: "nao da EXP" e so a
+// acao Livre (28/10/2026).
 const normalizeActionDifficulty = (value) => {
     const numeric = Number.isFinite(value) ? Number(value) : 2;
-    return Math.min(3, Math.max(0, Math.round(numeric)));
+    return Math.min(3, Math.max(1, Math.round(numeric)));
 };
 
 // EXP = MINUTOS (28/10/2026, com o Afonso). Facil e media valem o tempo; so
@@ -35,8 +37,6 @@ export const EXP_DA_DIFICIL = 1.1;
 
 export const getActionExpMultiplier = (action) => {
     switch (normalizeActionDifficulty(action?.difficulty)) {
-        case 0:
-            return 0;
         case 3:
             return EXP_DA_DIFICIL;
         case 1:

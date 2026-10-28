@@ -370,7 +370,9 @@ create table if not exists public.mood_entries (
 
 create table if not exists public.relationship_competition_challenges (
   id uuid primary key default gen_random_uuid(),
-  winner_user_id uuid
+  winner_user_id uuid,
+  winner_bonus_xp integer,
+  reward_granted_at timestamptz
 );
 
 -- Codigos de resgate (20260420190000_reward_codes_como_o_banco_tem).

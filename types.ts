@@ -146,7 +146,7 @@ export interface Action {
   duration: number; // in minutes
   repetitions: number; // For 'Ação Recorrente'
   actionType: ActionType;
-  difficulty?: number; // 0 to 3 (Descanso, Leve, Media, Alta)
+  difficulty?: number; // 1 a 3 (Leve, Media, Alta); o antigo 0 (Lazer) vale como Leve
   scheduledDays?: DayOfWeek[]; // Days to automatically schedule
   scheduledStartTime?: number; // Time in minutes to automatically schedule
 

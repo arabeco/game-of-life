@@ -199,9 +199,10 @@ const normalizeActionFromDbRow = (row: any): Action => {
     };
 };
 
-const normalizeActionDifficulty = (value?: number | null): 0 | 1 | 2 | 3 => {
+// Leve, media ou alta. O antigo 0 (Lazer) vale como Leve: "nao da EXP" e so a acao Livre.
+const normalizeActionDifficulty = (value?: number | null): 1 | 2 | 3 => {
     const numeric = Number.isFinite(value) ? Number(value) : 2;
-    return Math.min(3, Math.max(0, Math.round(numeric))) as 0 | 1 | 2 | 3;
+    return Math.min(3, Math.max(1, Math.round(numeric))) as 1 | 2 | 3;
 };
 
 const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);

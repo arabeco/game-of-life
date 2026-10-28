@@ -152,9 +152,10 @@ const formatDurationLabel = (value: number) => {
     return `${hours}h ${minutes}min`;
 };
 
-const normalizeActionDifficulty = (value?: number | null): 0 | 1 | 2 | 3 => {
+// Leve, media ou alta. O antigo 0 (Lazer) vale como Leve: "nao da EXP" e so a acao Livre.
+const normalizeActionDifficulty = (value?: number | null): 1 | 2 | 3 => {
     const numeric = Number.isFinite(value) ? Number(value) : 2;
-    return Math.min(3, Math.max(0, Math.round(numeric))) as 0 | 1 | 2 | 3;
+    return Math.min(3, Math.max(1, Math.round(numeric))) as 1 | 2 | 3;
 };
 
 const getClosestSnapIndex = (value: number, snapValues: number[]) => {
@@ -1237,8 +1238,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     const displayActionTypeLabel = displayAction?.actionType === 'Livre'
         ? 'Livre (sem alvo)'
         : (displayAction?.actionType || 'Ação Recorrente');
-    const displayDifficultyLabel = displayDifficulty === 0
-        ? 'LAZER • sem EXP'
+    const displayDifficultyLabel = displayAction?.actionType === 'Livre'
+        ? 'sem EXP'
         : null;
     const displaySurfaceBadge = displayAction ? resolveActionSurfaceBadge(displayAction) : null;
     const briefingPages = React.useMemo(() => paginateBriefing(displayAction?.briefing), [displayAction?.briefing]);
@@ -1255,7 +1256,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     // Merge task duration if editing a specific task
     const effectiveDuration = hasTaskInstanceContext && (mode === 'view' || isEditingTaskInstance) ?currentTask.duration : (displayAction?.duration || 60);
 
-    const difficultyLabels = ['LAZER', 'LEVE', 'MÉDIA', 'ALTA'];
+    const difficultyLabels = ['', 'LEVE', 'MÉDIA', 'ALTA'];
     const week: DayOfWeek[] = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB', 'DOM'];
     const temHorario = Boolean(startTime && startTime !== 'Sem Horário');
 
@@ -1799,7 +1800,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                 </div>
                                                 {editableAction.actionType === 'Livre' && (
                                                     <p className="px-1 text-[11px] leading-relaxed text-white/60">
-                                                        Ação livre não usa repetições. Ela fica pronta para registrar quando quiser, sem cair em horário fixo.
+                                                        Ação livre não usa repetições e não dá EXP: o tempo fica registrado, mas não pontua. Ela fica pronta para registrar quando quiser, sem cair em horário fixo.
                                                     </p>
                                                 )}
 
@@ -1854,7 +1855,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                         {activeTab === 'advanced' && <div className={`action-section action-section-${advancedSubTab}`}>
                             {advancedSubTab === 'context' && <>
                                 {!schedulePanelOpen ? <>
-                                    {mode === 'edit' && canEditExecutionSettings && <StyledRangeInput label="Dificuldade" value={normalizeActionDifficulty(editableAction.difficulty)} min={0} max={3} step={1} unit={difficultyLabels[normalizeActionDifficulty(editableAction.difficulty)]} onChange={value => setEditableAction(p => ({...p, difficulty: value}))} />}
+                                    {mode === 'edit' && canEditExecutionSettings && <StyledRangeInput label="Dificuldade" value={normalizeActionDifficulty(editableAction.difficulty)} min={1} max={3} step={1} unit={difficultyLabels[normalizeActionDifficulty(editableAction.difficulty)]} onChange={value => setEditableAction(p => ({...p, difficulty: value}))} />}
                                     {/* EXP = minutos; so a ALTA multiplica, e avisa (28/10/2026). */}
                                     {mode === 'edit' && canEditExecutionSettings && normalizeActionDifficulty(editableAction.difficulty) === 3 && (
                                         <p className="-mt-1 text-[11px] font-semibold text-amber-200/90">Dificuldade alta: a EXP desta ação vale ×1,1 (cada minuto rende 10% a mais).</p>

@@ -14,6 +14,7 @@ export const EVENTO_TROCAR_EXPERIENCIA = 'glyph:trocar-experiencia';
 export type Experiencia = 'essencial' | 'imersivo';
 
 import { numeroDaPatente, TOTAL_DE_PATENTES } from '../constants/nobility.ts';
+import { REGRAS_DE_DESBLOQUEIO, expDaRegra } from '../constants/desbloqueiosPorRegra.ts';
 
 type Conquista = { type: string; data?: Record<string, any> | null };
 
@@ -22,11 +23,17 @@ const exp = (data?: Record<string, any> | null) => {
     return valor > 0 ? ` · +${valor.toLocaleString('pt-BR')} EXP` : '';
 };
 
-export const avisoDaConquista = ({ type, data }: Conquista): string => {
+/**
+ * `null` = nao avisa. A conquista secreta fica CALADA no Essencial: o EXP e os
+ * itens entram, a marca fica gravada, e quem trocar para o Imersivo encontra
+ * tudo pronto. O EXP que entrou se explica no cartao da patente.
+ */
+export const avisoDaConquista = ({ type, data }: Conquista): string | null => {
     switch (type) {
         case 'QUEST_COMPLETED':
+            if (data?.secreta) return null;
             if (data?.sobrancelha === 'Missão inicial') return `Primeiro passo: ${data?.title || 'feito'}${exp(data)}`;
-            return `${data?.secreta ? 'Conquista' : 'Missão concluída'}: ${data?.title || 'missão'}${exp(data)}`;
+            return `Missão concluída: ${data?.title || 'missão'}${exp(data)}`;
         case 'ARENA_COMPLETED':
             return `${data?.metaFinal ? 'Meta concluída' : 'Arena concluída'}: ${data?.name || 'arena'}`;
         case 'MILESTONE_COMPLETED':
@@ -42,3 +49,14 @@ export const avisoDaConquista = ({ type, data }: Conquista): string => {
             return 'Concluído.';
     }
 };
+
+// A mesma marca de utils/medidorDeSegredos (MARCA_DE_EXP_DO_SEGREDO): o EXP da
+// conquista foi pago. Repetida aqui para o aviso nao puxar o catalogo de itens.
+const MARCA_DO_EXP_PAGO = 'segredo-exp:';
+const EXP_DA_REGRA = new Map(REGRAS_DE_DESBLOQUEIO.map((regra) => [regra.id, expDaRegra(regra)]));
+
+/** O EXP que as conquistas secretas ja pagaram, para o cartao da patente no Essencial. */
+export const expDasConquistasGuardadas = (marcas: readonly string[] | null | undefined): number =>
+    (marcas || []).reduce((soma, marca) => (
+        marca.startsWith(MARCA_DO_EXP_PAGO) ? soma + (EXP_DA_REGRA.get(marca.slice(MARCA_DO_EXP_PAGO.length)) || 0) : soma
+    ), 0);

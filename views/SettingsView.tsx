@@ -13,7 +13,7 @@ import { GlassCard } from '../components/GlassCard';
 import { CodexLibrary } from '../components/CodexLibrary';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { numeroDaPatente, TOTAL_DE_PATENTES } from '../constants/nobility';
-import { EVENTO_TROCAR_EXPERIENCIA, type Experiencia } from '../utils/avisoEssencial';
+import { EVENTO_TROCAR_EXPERIENCIA, expDasConquistasGuardadas, type Experiencia } from '../utils/avisoEssencial';
 import { OracleSettingsModal } from '../components/OracleSettingsModal';
 import { BillingCheckoutGate } from '../components/Store/BillingCheckoutGate';
 import { Capacitor } from '@capacitor/core';
@@ -1874,6 +1874,11 @@ const GeralTab: React.FC = () => {
                     <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
                         <div className="h-full rounded-full bg-[var(--skin-accent-color)]" style={{ width: `${Math.max(0, Math.min(100, progressPercentage))}%` }} />
                     </div>
+                    {/* As conquistas secretas entram caladas no Essencial; aqui o EXP
+                        delas se explica, sem dizer quais sao. */}
+                    {expDasConquistasGuardadas(userProfile.completedSeasonMissions) > 0 && (
+                        <p className="mt-1.5 text-[10px] text-white/40">Inclui {expDasConquistasGuardadas(userProfile.completedSeasonMissions).toLocaleString('pt-BR')} EXP de conquistas guardadas. Elas aparecem no modo Imersivo.</p>
+                    )}
                 </div>
             ) : (
             <GlassCard variant="accent" className="text-center cursor-pointer relative overflow-hidden group shadow-[0_0_20px_var(--sephirot-glow-color-soft)]" onClick={() => setIsHierarchyVisible(true)} id="profile-section">

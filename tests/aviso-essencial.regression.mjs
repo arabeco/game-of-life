@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { avisoDaConquista } from '../utils/avisoEssencial.ts';
+import { avisoDaConquista, expDasConquistasGuardadas } from '../utils/avisoEssencial.ts';
+import { REGRAS_DE_DESBLOQUEIO, expDaRegra } from '../constants/desbloqueiosPorRegra.ts';
 
 /**
  * EXPERIENCIA ESSENCIAL (27/10/2026): o modal de recompensa vira um aviso curto.
@@ -11,7 +12,12 @@ assert.equal(avisoDaConquista({ type: 'ARENA_COMPLETED', data: { name: 'Casa' } 
 assert.equal(avisoDaConquista({ type: 'PLAYER_RANK_UP', data: { id: 'cavaleiro', name: 'Cavaleiro' } }), 'Nova patente: 3 de 10');
 assert.equal(avisoDaConquista({ type: 'REPORT_COMPLETED', data: {} }), 'Ciclo fechado. O relatório está pronto.');
 assert.equal(avisoDaConquista({ type: 'MILESTONE_COMPLETED', data: { name: 'Primeira entrega' } }), 'Marco concluído: Primeira entrega');
-assert.equal(avisoDaConquista({ type: 'QUEST_COMPLETED', data: { secreta: true, title: 'Ritual', reward: { exp: 1000, items: ['x'] } } }), 'Conquista: Ritual · +1.000 EXP');
+// A secreta fica calada no Essencial: entra o EXP, sem aviso (27/10/2026).
+assert.equal(avisoDaConquista({ type: 'QUEST_COMPLETED', data: { secreta: true, title: 'Ritual', reward: { exp: 1000, items: ['x'] } } }), null);
+// ...e o cartao de patente explica o EXP que entrou: soma as conquistas pagas.
+const [a, b] = REGRAS_DE_DESBLOQUEIO;
+assert.equal(expDasConquistasGuardadas([`segredo-exp:${a.id}`, `segredo:${a.id}`, `segredo-exp:${b.id}`, 'outra-flag', 'segredo-exp:nao-existe']), expDaRegra(a) + expDaRegra(b));
+assert.equal(expDasConquistasGuardadas(undefined), 0);
 assert.equal(avisoDaConquista({ type: 'COMPETITION_COMPLETED', data: { title: 'Desafio vencido' } }), 'Desafio vencido');
 assert.equal(avisoDaConquista({ type: 'QUALQUER', data: {} }), 'Concluído.');
 // As missoes iniciais rodam para todo mundo; no Essencial nao se chamam missao.

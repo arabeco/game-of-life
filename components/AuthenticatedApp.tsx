@@ -1765,7 +1765,8 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
     // O premio ja entrou em silencio quando a conquista foi gravada.
     useEffect(() => {
         if (!modoEssencial || !achievementUnlocked) return;
-        showToast(avisoDaConquista(achievementUnlocked as { type: string; data?: Record<string, unknown> }), 'success');
+        const aviso = avisoDaConquista(achievementUnlocked as { type: string; data?: Record<string, unknown> });
+        if (aviso) showToast(aviso, 'success');
         setAchievementUnlocked(null);
     }, [modoEssencial, achievementUnlocked]); // eslint-disable-line react-hooks/exhaustive-deps
     /** O presente mais antigo ainda nao aberto — um de cada vez, na ordem em que chegaram. */

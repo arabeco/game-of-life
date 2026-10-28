@@ -331,7 +331,7 @@ export const ShareableProfileCard: React.FC<{
         .filter((slot): slot is Slot => !!slot && !isWidgetValueEmpty(slot.value));
 
     const renderBackground = () => {
-        return <ProfileBackgroundSurface value={userProfile.backgroundUrl} className="w-full h-full object-cover" alt="" />;
+        return <ProfileBackgroundSurface value={essencial ? undefined : userProfile.backgroundUrl} className="w-full h-full object-cover" alt="" />;
     };
 
     return (
@@ -728,7 +728,8 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
     const clanName = isOwnProfile ? (clan ? clan.name : 'Sem Clã') : (viewedClan ? viewedClan.name : 'Sem Clã');
 
     const renderBackground = () => {
-        return <ProfileBackgroundSurface value={displayProfile.backgroundUrl} className="w-full h-full object-cover" alt="" />;
+        // Essencial: o fundo padrao, sem plano de fundo de item.
+        return <ProfileBackgroundSurface value={modoEssencial ? undefined : displayProfile.backgroundUrl} className="w-full h-full object-cover" alt="" />;
     };
 
     const openExistingAchievements = () => {
@@ -771,7 +772,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                         {/* Layer 1: Background Image/Gradient */}
                         <div className="absolute inset-0 w-full h-full z-0">
                             {renderBackground()}
-                            {isEditing && isOwnProfile && (
+                            {isEditing && isOwnProfile && !modoEssencial && (
                                 <button onClick={() => setBackgroundModalOpen(true)} className="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-bold opacity-0 hover:opacity-100 transition-opacity z-20">
                                     EDITAR PLANO DE FUNDO
                                 </button>
@@ -807,7 +808,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                     >
                                         <ShareIcon className="w-5 h-5 text-gray-300" />
                                     </button>
-                                    {isEditing && isOwnProfile && (
+                                    {isEditing && isOwnProfile && !modoEssencial && (
                                         <button
                                             onClick={() => setBackgroundModalOpen(true)}
                                             className="p-2 rounded-full border border-white/20 bg-black/50 backdrop-blur-sm animate-fade-in"

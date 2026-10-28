@@ -40,7 +40,7 @@ const splitBenefitsIntoColumns = (benefits: readonly string[]) => {
 };
 
 export const MembershipStore: React.FC<{ scrollRequest?: { section: string; nonce: number } | null }> = ({ scrollRequest = null }) => {
-    const { userProfile } = useGame();
+    const { userProfile, modoEssencial } = useGame();
     const [loading] = useState<string | null>(null);
     const [selectedMembership, setSelectedMembership] = useState<MembershipCheckoutState | null>(null);
     const isStaffAccess = isStaffRole(userProfile.role);
@@ -76,8 +76,11 @@ export const MembershipStore: React.FC<{ scrollRequest?: { section: string; nonc
         return '30 dias';
     }, [isPremium, isStaffAccess, premiumDaysRemaining, premiumExpiresLabel]);
 
-    const premiumBenefits = useMemo(() => [...GOLD_PREMIUM_PRODUCT.benefits], []);
-    const platinumBenefits = useMemo(() => [...GOLD_PLATINUM_PRODUCT.benefits], []);
+    // Essencial (27/10/2026): os planos nao prometem aparencia (fundos e
+    // aparencias premium), que esse modo nao mostra.
+    const semAparencia = (lista: readonly string[]) => (modoEssencial ? lista.filter((linha) => !/fundo|aparência/i.test(linha)) : [...lista]);
+    const premiumBenefits = useMemo(() => semAparencia(GOLD_PREMIUM_PRODUCT.benefits), [modoEssencial]);
+    const platinumBenefits = useMemo(() => semAparencia(GOLD_PLATINUM_PRODUCT.benefits), [modoEssencial]);
     const [premiumBenefitLeft, premiumBenefitRight] = useMemo(() => splitBenefitsIntoColumns(premiumBenefits), [premiumBenefits]);
     const [platinumBenefitLeft, platinumBenefitRight] = useMemo(() => splitBenefitsIntoColumns(platinumBenefits), [platinumBenefits]);
 

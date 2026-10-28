@@ -162,6 +162,8 @@ export const StoreTopBar: React.FC<StoreTopBarProps> = ({ activeTab, onTabChange
                         <span className="text-[13px]">{'\u{1FA99}'}</span>
                         {goldNaTela.toLocaleString('pt-BR')}
                     </button>
+                    {/* Essencial: sem fragmentos — eles so servem a itens e baus. */}
+                    {!modoEssencial && <>
                     <span className="h-3 w-px bg-white/10" />
                     <button
                         type="button"
@@ -172,6 +174,7 @@ export const StoreTopBar: React.FC<StoreTopBarProps> = ({ activeTab, onTabChange
                         <span className="text-[13px]">{'\u{1F48E}'}</span>
                         {fragments.toLocaleString('pt-BR')}
                     </button>
+                    </>}
                 </div>
 
                     {tabs}

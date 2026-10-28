@@ -6,6 +6,7 @@ import { useGame } from '../contexts/GameContext';
 import { CrownIcon, XIcon } from './Icons';
 import { UserAvatar } from './UserAvatar';
 import { CanvasAvatar } from './CanvasAvatar';
+import { numeroDaPatente, TOTAL_DE_PATENTES } from '../constants/nobility';
 
 interface ClanMemberCardProps {
     member: EnrichedClanMember;
@@ -66,7 +67,7 @@ export const ClanMemberCard: React.FC<ClanMemberCardProps> = ({ member, isLeader
                 </button>
             )}
             <div className="text-right flex-shrink-0">
-                <p className="font-bold text-sm text-[var(--gold)]">{rank?.name || 'N/A'}</p>
+                <p className="font-bold text-sm text-[var(--gold)]">{modoEssencial && !isOfficeClan ? `${numeroDaPatente(member.nobility?.rankId)} de ${TOTAL_DE_PATENTES}` : (rank?.name || 'N/A')}</p>
                 <p className="text-xs text-gray-500">{isOfficeClan ? 'Cargo' : 'Patente'}</p>
             </div>
         </div>

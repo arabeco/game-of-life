@@ -1,4 +1,4 @@
-import { NobilityRank, UnlockCategory } from '../types';
+import type { NobilityRank, UnlockCategory } from '../types';
 
 /**
  * A escada das dez patentes, ancorada em HORAS.
@@ -43,6 +43,14 @@ export const NOBILITY_RANKS: NobilityRank[] = [
     { id: 'rei', name: 'Rei', levelRequired: 80, expTotalRequired: 660000 },
     { id: 'soberano', name: 'Soberano', levelRequired: 90, expTotalRequired: 1000000 },
 ];
+
+/**
+ * A patente como NUMERO (27/10/2026): no Essencial ela e discreta — "Patente
+ * 3 de 10", sem o nome medieval. Patente desconhecida conta como a primeira.
+ */
+export const numeroDaPatente = (rankId?: string | null): number =>
+    Math.max(1, NOBILITY_RANKS.findIndex((rank) => rank.id === rankId) + 1);
+export const TOTAL_DE_PATENTES = NOBILITY_RANKS.length;
 
 /**
  * Escalada do Soberano 5.0 - todos os itens aqui sao exclusivos de patente.

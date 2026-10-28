@@ -252,7 +252,8 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     const canRenderAvatar = Boolean(avatarUrl && failedAvatarUrl !== avatarUrl);
 
     const currentMood = MOODS_DATA.find(m => userProfile.mood >= m.min && userProfile.mood < m.max) || MOODS_DATA[MOODS_DATA.length - 1];
-    const selectedBorder = [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === userProfile.border);
+    // Essencial: sem borda de item e sem a bolinha de nivel no avatar (27/10/2026).
+    const selectedBorder = modoEssencial ? undefined : [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === userProfile.border);
 
     const renderAvatarContent = () => {
         if (canRenderAvatar && avatarUrl) {
@@ -367,9 +368,11 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                             }
                                         />
                                     </div>
+                                    {!modoEssencial && (
                                     <div className="shell-level-badge absolute top-[3rem] z-[60] group-hover:scale-110" style={{borderColor: 'var(--skin-accent-color)'}} id="oracle-pro-badge">
                                         <span data-testid="header-mastery-index" className="shell-level-text text-[11px] font-black">{masteryIndex}</span>
                                     </div>
+                                    )}
                                 </button>
 
                                 {/* Oracle Button */}

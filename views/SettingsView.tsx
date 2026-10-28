@@ -12,6 +12,7 @@ import { ChevronRightIcon, XIcon, LightbulbIcon, TrashIcon, CheckIcon, SendIcon,
 import { GlassCard } from '../components/GlassCard';
 import { CodexLibrary } from '../components/CodexLibrary';
 import { ConfirmationModal } from '../components/ConfirmationModal';
+import { numeroDaPatente, TOTAL_DE_PATENTES } from '../constants/nobility';
 import { EVENTO_TROCAR_EXPERIENCIA, type Experiencia } from '../utils/avisoEssencial';
 import { OracleSettingsModal } from '../components/OracleSettingsModal';
 import { BillingCheckoutGate } from '../components/Store/BillingCheckoutGate';
@@ -1747,7 +1748,7 @@ const ReportarProblemaModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
 };
 
 const GeralTab: React.FC = () => {
-    const { userProfile, updateUserProfile, nobilityRanks, assets, showToast } = useGame();
+    const { userProfile, updateUserProfile, nobilityRanks, assets, showToast, modoEssencial } = useGame();
     const { isTutorialActive, currentStep } = useTutorial();
     const [nickname, setNickname] = useState(() => userProfile.nickname);
     const [isHierarchyVisible, setIsHierarchyVisible] = useState(false);
@@ -1862,6 +1863,19 @@ const GeralTab: React.FC = () => {
                 </GlassCard>
             </button>
 
+            {/* Essencial (27/10/2026): a patente e um numero discreto, sem o nome
+                medieval e sem a escada de patentes. */}
+            {modoEssencial ? (
+                <div id="profile-section" className="rounded-xl border border-white/10 bg-black/20 p-3">
+                    <div className="flex items-baseline justify-between gap-3">
+                        <span className="text-xs font-bold uppercase tracking-widest text-white/80">Patente {numeroDaPatente(userProfile.nobility.rankId)} de {TOTAL_DE_PATENTES}</span>
+                        <span className="text-[11px] text-white/45">{userProfile.nobility.exp.toLocaleString('pt-BR')} EXP</span>
+                    </div>
+                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+                        <div className="h-full rounded-full bg-[var(--skin-accent-color)]" style={{ width: `${Math.max(0, Math.min(100, progressPercentage))}%` }} />
+                    </div>
+                </div>
+            ) : (
             <GlassCard variant="accent" className="text-center cursor-pointer relative overflow-hidden group shadow-[0_0_20px_var(--sephirot-glow-color-soft)]" onClick={() => setIsHierarchyVisible(true)} id="profile-section">
                 <div className="absolute inset-0 bg-gradient-to-b from-[var(--sephirot-glow-color,rgba(0,0,0,0))] to-black/60 pointer-events-none" />
                 <div className="relative z-10 p-2">
@@ -1879,6 +1893,7 @@ const GeralTab: React.FC = () => {
                     </div>
                 </div>
             </GlassCard>
+            )}
 
 
             <div className="space-y-4">

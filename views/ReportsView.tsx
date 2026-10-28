@@ -737,7 +737,7 @@ export const ReportsView: React.FC<{
         reports, activeCycle, upcomingCycle, startCycle, updateCycle, endCycle, assets, actions,
         applyExp, addChest, addFeedEvent, seasons, userProfile,
         oraclePreferences, showToast, grantInventoryItem, grantUserUnlock, updateUserProfile,
-        deleteCycle, fetchNotifications, openChest, continueFreeProgressFrom
+        deleteCycle, fetchNotifications, openChest, continueFreeProgressFrom, modoEssencial
     } = useGame();
     const [view, setView] = useState<'hub' | 'scanning' | 'results' | 'comparing' | 'reward'>('hub');
     const [isStartingCycle, setIsStartingCycle] = useState(false);
@@ -1474,6 +1474,16 @@ export const ReportsView: React.FC<{
             // que passou para o Arsenal, onde ja funciona e onde a escolha de
             // quando abrir e de quem ganhou.
             setPostCycleChestOpened(true);
+            // Essencial (27/10/2026): sem modal de premio — um aviso com o EXP, e
+            // o relatorio segue. O bau entra em silencio, como os outros.
+            if (modoEssencial) {
+                showToast(rewardState.awardedExp > 0 ? `Ciclo fechado · +${rewardState.awardedExp.toLocaleString('pt-BR')} EXP` : 'Ciclo fechado.', 'success');
+                if (postCycleSequence === 'reward') {
+                    setPostCycleSequence('video');
+                    setView('scanning');
+                }
+                return;
+            }
             setReportRewardPayload(buildCycleRewardPayload({
                 exp: rewardState.awardedExp,
                 fragments: rewardState.awardedFragments,
@@ -1500,6 +1510,8 @@ export const ReportsView: React.FC<{
         openChest,
         showToast,
         selectedReport,
+        modoEssencial,
+        postCycleSequence,
     ]);
 
     /*
@@ -3300,7 +3312,7 @@ export const ReportsView: React.FC<{
                         }}
                         onStartNewCycle={handleStartNewCycleFromResults}
                         onContinueFromHere={isPostCycleFlow ?() => { void handleContinueFromCycleResult(); } : undefined}
-                        chest={isPostCycleFlow ?earnedChest : null}
+                        chest={isPostCycleFlow && !modoEssencial ? earnedChest : null}
                         expGained={isPostCycleFlow ?expGained : undefined}
                         fragmentsGained={isPostCycleFlow ?fragmentsGained : undefined}
                         insignias={isPostCycleFlow ?grantedInsignias : []}

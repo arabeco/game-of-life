@@ -13,6 +13,8 @@
 export const EVENTO_TROCAR_EXPERIENCIA = 'glyph:trocar-experiencia';
 export type Experiencia = 'essencial' | 'imersivo';
 
+import { numeroDaPatente, TOTAL_DE_PATENTES } from '../constants/nobility.ts';
+
 type Conquista = { type: string; data?: Record<string, any> | null };
 
 const exp = (data?: Record<string, any> | null) => {
@@ -29,7 +31,7 @@ export const avisoDaConquista = ({ type, data }: Conquista): string => {
         case 'MILESTONE_COMPLETED':
             return `Marco concluído: ${data?.name || data?.title || 'marco'}`;
         case 'PLAYER_RANK_UP':
-            return `Novo nível: ${data?.name || 'patente'}`;
+            return `Nova patente: ${numeroDaPatente(data?.id)} de ${TOTAL_DE_PATENTES}`;
         case 'REPORT_COMPLETED':
             return 'Ciclo fechado. O relatório está pronto.';
         case 'COMPETITION_COMPLETED':

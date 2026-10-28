@@ -6,6 +6,11 @@ const banco = readFileSync(
   new URL('../supabase/migrations/20260922220000_platinum_paga_o_que_a_tela_mostra.sql', import.meta.url),
   'utf8',
 );
+// Desde 28/10/2026 a tabela de desconto da cena mora nos planos de outubro.
+const bancoDosPlanos = readFileSync(
+  new URL('../supabase/migrations/20261028120000_planos_de_outubro.sql', import.meta.url),
+  'utf8',
+);
 
 /* ==========================================================================
  * A TELA E O BANCO TEM DE COBRAR O MESMO.
@@ -53,10 +58,10 @@ const tabelaDoApp = (nome) => {
 const doApp = tabelaDoApp('LEGACY_PROJECTION_DISCOUNT_BY_TIER');
 
 assert.equal(Object.keys(doApp).length, 2, `esperava premium e platinum, achei ${JSON.stringify(doApp)}`);
-assert.ok(doApp.platinum > doApp.premium, 'o tier de cima tem de descontar MAIS que o de baixo');
+assert.ok(doApp.platinum >= doApp.premium, 'o tier de cima nunca desconta MENOS que o de baixo');
 
 const doBanco = Object.fromEntries(
-  [...banco.slice(banco.indexOf('_desconto_da_cena_do_legado'))
+  [...bancoDosPlanos.slice(bancoDosPlanos.indexOf('_desconto_da_cena_do_legado'))
     .matchAll(/when '(platinum|premium)'\s*then ([\d.]+)/g)]
     .map(([, tier, valor]) => [tier, Number(valor)]),
 );
@@ -91,8 +96,9 @@ for (const tier of ['premium', 'platinum']) {
 
 // Os numeros de hoje, escritos por extenso: se alguem mexer sem querer, o teste
 // diz qual era o combinado.
-assert.equal(precoNoApp(doApp.premium), 25, 'Premium deve pagar 25 pela cena do legado');
-assert.equal(precoNoApp(doApp.platinum), 15, 'Platinum deve pagar 15 pela cena do legado');
+// Planos de 28/10/2026: a cena custa 50 para todos; o Platinum ganha 1 por mes.
+assert.equal(precoNoApp(doApp.premium), 50, 'Premium paga 50 pela cena do legado');
+assert.equal(precoNoApp(doApp.platinum), 50, 'Platinum paga 50 pela cena do legado (e ganha 1 por mes)');
 
 // ---------------------------------------------------------------------------
 // 3. O DEFEITO EXATO NAO VOLTA.

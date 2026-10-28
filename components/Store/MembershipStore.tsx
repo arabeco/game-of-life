@@ -7,6 +7,7 @@ import { CheckIcon, CrownIcon } from '../Icons';
 import { BillingCheckoutGate } from './BillingCheckoutGate';
 import { getActiveSubscriptionTier, getPremiumDaysRemaining, hasPlatinumAccess, hasPremiumAccess, isStaffRole } from '../../utils/premiumAccess';
 import { getMoneyCheckoutSalesCopy } from '../../utils/billingRuntime';
+import { canUseNativeStoreBilling } from '../../utils/nativeBilling';
 
 /**
  * OS PLANOS SAIRAM DA ABA DE OURO.
@@ -34,13 +35,66 @@ type MembershipCheckoutState = {
 
 const formatBrl = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+/**
+ * OS BOTOES DE UM PLANO (28/10/2026): mensal em dinheiro, anual em dinheiro e
+ * mensal em ouro. O anual so aparece no app Android, onde a Play cobra pelo
+ * plano base `anual`; no navegador o checkout e so o mensal.
+ */
+const BotoesDoPlano: React.FC<{
+    produto: typeof GOLD_PREMIUM_PRODUCT | typeof GOLD_PLATINUM_PRODUCT;
+    rotuloMensal: string;
+    desabilitado: boolean;
+    ouroNaCarteira: number;
+    onDinheiro: (id: BillingInternalProductId, valor: number, nome: string) => void;
+    onOuro: () => void;
+    rodape: string;
+}> = ({ produto, rotuloMensal, desabilitado, ouroNaCarteira, onDinheiro, onOuro, rodape }) => {
+    const mostraAnual = canUseNativeStoreBilling();
+    const porMes = produto.priceBrlAnnual / 12;
+    return (
+        <div className="flex min-w-[176px] flex-col items-stretch gap-2">
+            <button
+                onClick={() => onDinheiro(produto.id, produto.priceBrl, produto.name)}
+                disabled={desabilitado}
+                className="luxe-skin-button inline-flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+                <span>{rotuloMensal}</span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-black/15 px-2 py-1 text-[11px]">{formatBrl(produto.priceBrl)}</span>
+            </button>
+            {mostraAnual && (
+                <button
+                    onClick={() => onDinheiro(produto.annualId, produto.priceBrlAnnual, produto.name.replace('30 dias', '12 meses'))}
+                    disabled={desabilitado}
+                    className="inline-flex w-full flex-col items-center rounded-2xl border border-[var(--skin-accent-color)]/45 bg-[var(--skin-accent-color)]/10 py-2 text-[var(--ui-text-accent)] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                    <span className="text-xs font-black uppercase tracking-[0.16em]">12 meses · {formatBrl(produto.priceBrlAnnual)}</span>
+                    <span className="text-[10px] font-semibold opacity-80">{formatBrl(porMes)} por mês</span>
+                </button>
+            )}
+            <button
+                onClick={onOuro}
+                disabled={desabilitado}
+                className="w-full rounded-2xl border border-white/10 bg-black/20 py-2 text-[11px] font-bold text-amber-200/90 disabled:cursor-not-allowed disabled:opacity-50"
+                title={ouroNaCarteira < produto.priceGold ? `Faltam ${produto.priceGold - ouroNaCarteira} ouro` : undefined}
+            >
+                ou {produto.priceGold} ouro por 30 dias
+            </button>
+            <span className="text-center text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--ui-card-text-soft)]">{rodape}</span>
+        </div>
+    );
+};
+
 const splitBenefitsIntoColumns = (benefits: readonly string[]) => {
     const midpoint = Math.ceil(benefits.length / 2);
     return [benefits.slice(0, midpoint), benefits.slice(midpoint)];
 };
 
 export const MembershipStore: React.FC<{ scrollRequest?: { section: string; nonce: number } | null }> = ({ scrollRequest = null }) => {
-    const { userProfile, modoEssencial } = useGame();
+    const { userProfile, modoEssencial, buyStoreItem } = useGame();
+    const ouroNaCarteira = Number(userProfile.wallet?.gold || 0);
+    const pagarComOuro = (id: string) => { void buyStoreItem(id, 'premium'); };
+    const abrirCheckout = (tier: 'premium' | 'platinum', equivalentGold: number) => (id: BillingInternalProductId, valor: number, nome: string) =>
+        setSelectedMembership({ amount: valor, membershipId: id, membershipName: nome, membershipTier: tier, equivalentGold });
     const [loading] = useState<string | null>(null);
     const [selectedMembership, setSelectedMembership] = useState<MembershipCheckoutState | null>(null);
     const isStaffAccess = isStaffRole(userProfile.role);
@@ -100,9 +154,9 @@ export const MembershipStore: React.FC<{ scrollRequest?: { section: string; nonc
                         </div>
 
                         <div className="mt-3">
-                            <h2 className="text-lg font-black uppercase tracking-[0.05em] text-[color:var(--ui-card-text)]">Premium · 30 dias</h2>
+                            <h2 className="text-lg font-black uppercase tracking-[0.05em] text-[color:var(--ui-card-text)]">Premium</h2>
                             <p className="mt-1 max-w-[26rem] text-[13px] leading-snug text-[color:var(--ui-card-text-soft)]">
-                                30 dias de acesso, mais alcance no Oráculo e mais fôlego nas arenas.
+                                Para quem usa o Glyph todo dia: a leitura completa do seu dia e do seu ciclo, o Oráculo inteiro e mais arenas.
                             </p>
                             <div className="mt-3 flex flex-wrap gap-2">
                                 <span className="rounded-full border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--ui-card-text-soft)]">
@@ -127,27 +181,15 @@ export const MembershipStore: React.FC<{ scrollRequest?: { section: string; nonc
                             </div>
                         ))}
                     </div>
-                    <div className="flex min-w-[176px] flex-col items-stretch gap-2">
-                        <button
-                            onClick={() => setSelectedMembership({
-                                amount: GOLD_PREMIUM_PRODUCT.priceBrl,
-                                membershipId: GOLD_PREMIUM_PRODUCT.id,
-                                membershipName: GOLD_PREMIUM_PRODUCT.name,
-                                membershipTier: 'premium',
-                                equivalentGold: GOLD_PREMIUM_PRODUCT.priceGold,
-                            })}
-                            disabled={!!loading || isPlatinum}
-                            className="luxe-skin-button inline-flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            <span>{isPlatinum ? 'Platinum 30 dias ativo' : isPremium ? 'Estender 30 dias' : 'Ativar 30 dias'}</span>
-                            <span className="inline-flex items-center gap-1 rounded-full bg-black/15 px-2 py-1 text-[11px]">
-                                <span>{formatBrl(GOLD_PREMIUM_PRODUCT.priceBrl)}</span>
-                            </span>
-                        </button>
-                        <span className="text-center text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--ui-card-text-soft)]">
-                            {isStaffAccess ? 'Acesso liberado para equipe' : isPlatinum ? 'Já incluso no plano maior' : moneyCheckoutSalesCopy}
-                        </span>
-                    </div>
+                    <BotoesDoPlano
+                        produto={GOLD_PREMIUM_PRODUCT}
+                        rotuloMensal={isPlatinum ? 'Platinum ativo' : isPremium ? 'Estender 30 dias' : 'Assinar mensal'}
+                        desabilitado={!!loading || isPlatinum}
+                        ouroNaCarteira={ouroNaCarteira}
+                        onDinheiro={abrirCheckout('premium', GOLD_PREMIUM_PRODUCT.priceGold)}
+                        onOuro={() => pagarComOuro(GOLD_PREMIUM_PRODUCT.id)}
+                        rodape={isStaffAccess ? 'Acesso liberado para equipe' : isPlatinum ? 'Já incluso no plano maior' : moneyCheckoutSalesCopy}
+                    />
                 </div>
             </GlassCard>
 
@@ -165,16 +207,16 @@ export const MembershipStore: React.FC<{ scrollRequest?: { section: string; nonc
                         </div>
 
                         <div className="mt-3">
-                            <h2 className="text-lg font-black uppercase tracking-[0.05em] text-[color:var(--ui-card-text)]">Platinum · 30 dias</h2>
+                            <h2 className="text-lg font-black uppercase tracking-[0.05em] text-[color:var(--ui-card-text)]">Platinum</h2>
                             <p className="mt-1 max-w-[26rem] text-[13px] leading-snug text-[color:var(--ui-card-text-soft)]">
-                                O pacote mais alto: leva tudo do Premium e empurra identidade, vitrine e legado para o patamar máximo.
+                                Tudo do Premium, para quem acompanha outras pessoas ou quer tudo: 40 arenas, 5 fichas de vínculo e todos os temas.
                             </p>
                             <div className="mt-3 flex flex-wrap gap-2">
                                 <span className="rounded-full border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--ui-card-text-soft)]">
                                     {isPlatinum ? premiumBadgeLabel : '30 dias'}
                                 </span>
                                 <span className="rounded-full border border-amber-200/18 bg-amber-200/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-amber-100">
-                                    Cenas extras do legado · 70% off
+                                    Até 40 arenas
                                 </span>
                             </div>
                         </div>
@@ -192,27 +234,15 @@ export const MembershipStore: React.FC<{ scrollRequest?: { section: string; nonc
                             </div>
                         ))}
                     </div>
-                    <div className="flex min-w-[176px] flex-col items-stretch gap-2">
-                        <button
-                            onClick={() => setSelectedMembership({
-                                amount: GOLD_PLATINUM_PRODUCT.priceBrl,
-                                membershipId: GOLD_PLATINUM_PRODUCT.id,
-                                membershipName: GOLD_PLATINUM_PRODUCT.name,
-                                membershipTier: 'platinum',
-                                equivalentGold: GOLD_PLATINUM_PRODUCT.priceGold,
-                            })}
-                            disabled={!!loading}
-                            className="luxe-skin-button inline-flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            <span>{isPlatinum ? 'Estender 30 dias' : activeMembershipTier === 'premium' ? 'Subir para Platinum 30 dias' : 'Ativar 30 dias'}</span>
-                            <span className="inline-flex items-center gap-1 rounded-full bg-black/15 px-2 py-1 text-[11px]">
-                                <span>{formatBrl(GOLD_PLATINUM_PRODUCT.priceBrl)}</span>
-                            </span>
-                        </button>
-                        <span className="text-center text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--ui-card-text-soft)]">
-                            {moneyCheckoutSalesCopy}
-                        </span>
-                    </div>
+                    <BotoesDoPlano
+                        produto={GOLD_PLATINUM_PRODUCT}
+                        rotuloMensal={isPlatinum ? 'Estender 30 dias' : activeMembershipTier === 'premium' ? 'Subir para Platinum' : 'Assinar mensal'}
+                        desabilitado={!!loading}
+                        ouroNaCarteira={ouroNaCarteira}
+                        onDinheiro={abrirCheckout('platinum', GOLD_PLATINUM_PRODUCT.priceGold)}
+                        onOuro={() => pagarComOuro(GOLD_PLATINUM_PRODUCT.id)}
+                        rodape={moneyCheckoutSalesCopy}
+                    />
                 </div>
             </GlassCard>
             {selectedMembership && (

@@ -114,7 +114,7 @@ export const BillingCheckoutGate: React.FC<BillingCheckoutGateProps> = (props) =
 
         setIsPurchasingAndroid(true);
         try {
-            const result = await purchaseNativeStoreProduct(billingEntry.googlePlayProductId, billingEntry.kind);
+            const result = await purchaseNativeStoreProduct(billingEntry.googlePlayProductId, billingEntry.kind, billingEntry.googlePlayBasePlanId);
             setAndroidPurchaseResult(result);
 
             if (result.purchaseState === 'pending') {

@@ -2070,7 +2070,8 @@ export const ReportsView: React.FC<{
     );
     const historyStartDate = eraSummaries[eraSummaries.length - 1]?.startDate;
     const historyEndDate = eraSummaries[0]?.endDate;
-    const legacyPlaqueUnlocked = useMemo(() => hasPremiumAccess(userProfile) || eraSummaries.length >= 3, [eraSummaries.length, userProfile]);
+    // A placa do Legado libera com 3 ciclos para todo mundo (28/10/2026): plano nao adianta.
+    const legacyPlaqueUnlocked = eraSummaries.length >= 3;
     const legacyProjectionSceneGoldCost = useMemo(
         () => getLegacyProjectionScenePrice(userProfile, LEGACY_PROJECTION_SCENE_BASE_GOLD_COST),
         [userProfile],

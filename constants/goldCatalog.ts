@@ -27,35 +27,50 @@ export const GOLD_PACK_CATALOG: Array<{
     { id: 'pack_gold_5', name: 'Tesouro', priceBrl: 100, goldBase: 1000, bonusGold: 300, totalGold: 1300, icon: '\u{1F48E}' },
 ] as const;
 
+/*
+ * OS PLANOS DE 28/10/2026 (com o Afonso).
+ *
+ * Gratis usa o app inteiro (8 arenas). Premium e o de quem usa de verdade:
+ * leitura completa, Oraculo completo, matriz no planner. Platinum e o do coach
+ * e do colecionador: mais arenas, mais fichas, todos os temas. Plano NAO da
+ * ouro (ouro e dinheiro) e pode ser pago com ouro; o anual so com dinheiro.
+ * A ficha de vinculo abre ou renova um vinculo por 30 dias; a do plano nao
+ * acumula de um mes para o outro.
+ */
 export const GOLD_PREMIUM_PRODUCT = {
     id: 'premium_30d',
+    annualId: 'premium_365d',
     name: 'Premium (30 dias)',
     tier: 'premium',
-    priceGold: 200,
-    priceBrl: 17.9,
+    priceGold: 150,
+    priceBrl: 14.99,
+    priceBrlAnnual: 119.9,
     benefits: [
-        'Até 20 arenas ativas (vs 10 no plano base); arquivadas e de missão não contam',
-        'Fundos premium de perfil e ativos',
-        'Oráculo: todos os tons de fala',
-        'Oráculo: escolha os temas e peça card na hora',
-        'Cenas extras do legado com 50% off',
-        '2 vagas de vínculos ativos',
+        'Até 20 arenas ativas (8 no grátis)',
+        'Leitura Premium no painel do dia e no relatório do ciclo',
+        'Oráculo completo: todos os tons, temas e card na hora',
+        'Matriz de urgência e importância no planner',
+        'Fundos premium nas áreas e no perfil',
+        '2 fichas de vínculo por mês',
+        'Campanhas com 20% off',
     ],
 } as const;
 
 export const GOLD_PLATINUM_PRODUCT = {
     id: 'platinum_30d',
+    annualId: 'platinum_365d',
     name: 'Platinum (30 dias)',
     tier: 'platinum',
-    priceGold: 500,
-    priceBrl: 44.9,
+    priceGold: 300,
+    priceBrl: 29.99,
+    priceBrlAnnual: 239.9,
     benefits: [
-        'Todas as vantagens do Premium',
-        'Até 30 arenas ativas; arquivadas e de missão não contam',
-        'Cenas extras do legado com 70% off',
-        'Campanhas com 20% off',
-        'Todos os planos de fundo e aparências premium',
-        '5 vagas de vínculos ativos',
+        'Tudo do Premium',
+        'Até 40 arenas ativas',
+        'Todos os fundos e temas de interface',
+        '5 fichas de vínculo por mês',
+        'Campanhas com 40% off',
+        '1 cena do Legado por mês',
     ],
 } as const;
 

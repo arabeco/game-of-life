@@ -76,9 +76,20 @@ const GOLD_PACKS: Record<string, GoldPackConfig> = {
   pack_gold_5: { packId: "pack_gold_5", productId: "pack_gold_5", gold: 1300, brl: 100 },
 };
 
-const MEMBERSHIPS: Record<string, MembershipConfig> = {
-  premium_30d: { productId: "premium_30d", tier: "premium", brl: 17.9 },
-  platinum_30d: { productId: "platinum_30d", tier: "platinum", brl: 44.9 },
+// OS PLANOS DE 28/10/2026: o anual e o mesmo produto com o plano base "anual".
+// Quem diz se a compra foi anual e a resposta da Google, nunca o aparelho.
+const ANNUAL_BASE_PLAN_ID = "anual";
+const MEMBERSHIPS: Record<string, MembershipConfig & { brlAnnual: number }> = {
+  premium_30d: { productId: "premium_30d", tier: "premium", brl: 14.99, brlAnnual: 119.9 },
+  platinum_30d: { productId: "platinum_30d", tier: "platinum", brl: 29.99, brlAnnual: 239.9 },
+};
+
+/** O plano base da linha desta assinatura na resposta da Google ("" se nao vier). */
+const basePlanOfLineItem = (subscription: JsonRecord, productId: string): string => {
+  const lineItems = Array.isArray(subscription.lineItems) ? subscription.lineItems : [];
+  const item = lineItems.find((entry) => entry && typeof entry === "object" && asTrimmedString((entry as JsonRecord).productId) === productId) as JsonRecord | undefined;
+  const offer = item && typeof item.offerDetails === "object" ? item.offerDetails as JsonRecord : null;
+  return asTrimmedString(offer?.basePlanId);
 };
 
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -402,19 +413,25 @@ const handleMembershipPurchase = async (body: GooglePlayBody, userId: string, ac
     throw new Error("SUBSCRIPTION_PRODUCT_MISMATCH");
   }
 
+  const basePlanId = basePlanOfLineItem(subscription, productId);
+  const isAnnual = basePlanId === ANNUAL_BASE_PLAN_ID;
+  const amountPaid = isAnnual ? membership.brlAnnual : membership.brl;
   const metadata = buildSafeGoogleMetadata(body, userId, subscription, {
     catalog: {
       product_id: productId,
       tier: membership.tier,
-      brl: membership.brl,
+      brl: amountPaid,
+      base_plan_id: basePlanId || null,
     },
+    // process_approved_membership_payment le daqui quantos dias somar.
+    days: isAnnual ? 365 : 30,
   });
 
   const { data, error } = await supabaseAdmin.rpc("process_approved_membership_payment", {
     p_user_id: userId,
     p_payment_id: purchaseToken,
     p_membership_tier: membership.tier,
-    p_amount_paid: membership.brl,
+    p_amount_paid: amountPaid,
     p_metadata: metadata,
   });
 

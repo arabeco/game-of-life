@@ -26,3 +26,11 @@ console.log('ok - so ativa conta; campanha conta; missao e arquivada nao');
 const semMissao = getArenaCapacitySummary(assets, null);
 assert.equal(semMissao.total, 5, 'sem a lista de missoes, toda ativa conta (compatibilidade)');
 console.log('Limite de arenas: regra conferida.');
+
+// OS PLANOS DE 28/10/2026: gratis 8, Premium 20, Platinum 40.
+import { getArenaLimitForProfile } from '../utils/arenaCapacity.ts';
+const futuro = new Date(Date.now() + 86400000).toISOString();
+assert.equal(getArenaLimitForProfile(null), 8);
+assert.equal(getArenaLimitForProfile({ isPremium: true, subscriptionTier: 'premium', premiumExpiresAt: futuro }), 20);
+assert.equal(getArenaLimitForProfile({ isPremium: true, subscriptionTier: 'platinum', premiumExpiresAt: futuro }), 40);
+console.log('Limite por plano: 8, 20 e 40.');

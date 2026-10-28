@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
-import { useGame } from '../contexts/GameContext';
 import { getAssetArt, ASSET_BACKGROUND_VARIANTS } from '../constants/assetVisuals';
-import { hasPremiumAccess } from '../utils/premiumAccess';
 import { getProfileBackgroundPrimarySource, PROFILE_BACKGROUND_OPTIONS } from '../utils/profileBackgrounds';
 import { ImageIcon, XIcon } from './Icons';
 import { BackgroundImageSelectionModal } from './BackgroundImageSelectionModal';
@@ -25,9 +23,7 @@ export const AssetArtButton: React.FC<AssetArtButtonProps> = ({
     compact = false,
     iconOnly = false,
 }) => {
-    const { userProfile, showToast } = useGame();
     const [isPickerOpen, setIsPickerOpen] = useState(false);
-    const canEditAssetBackground = hasPremiumAccess(userProfile);
 
     // Cada area da vida ja nasce com uma arte propria, ligada. Ela so nao
     // aparecia aqui: o botao recebia o assetId e o descartava, entao o seletor
@@ -38,11 +34,8 @@ export const AssetArtButton: React.FC<AssetArtButtonProps> = ({
         : null;
 
     const handleOpenPicker = () => {
-        if (!canEditAssetBackground) {
-            showToast('Recurso do Premium. Fundos de ativos liberam a partir do Premium.', 'info');
-            return;
-        }
-
+        // Gratis edita com os fundos basicos de cada area (28/10/2026); os
+        // fundos premium aparecem trancados no seletor ate assinar.
         setIsPickerOpen(true);
     };
 

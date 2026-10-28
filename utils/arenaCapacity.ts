@@ -1,12 +1,13 @@
 import type { Asset, Campaign, UserCodex, UserProfile } from '../types';
 import { getActiveSubscriptionTier, hasPremiumAccess } from './premiumAccess.ts';
 
-// 7 apertava demais quem esta comecando: as cinco areas da vida ja consomem
-// quase tudo antes da pessoa entender o app. 10 deixa espaco para experimentar
-// sem que o limite vire a primeira coisa que ela encontra.
-export const STANDARD_ARENA_LIMIT = 10;
+// OS PLANOS DE 28/10/2026 (com o Afonso): gratis 8, Premium 20, Platinum 40.
+// 7 apertava demais quem esta comecando; 8 ainda deixa experimentar as cinco
+// areas e sobra, e o Premium passa a ter o que oferecer a quem usa de verdade.
+// Quem ja tinha mais nao perde nenhuma: o limite so barra criar acima dele.
+export const STANDARD_ARENA_LIMIT = 8;
 export const PREMIUM_ARENA_LIMIT = 20;
-export const PLATINUM_ARENA_LIMIT = 30;
+export const PLATINUM_ARENA_LIMIT = 40;
 
 export type ArenaCapacitySummary = {
     active: number;

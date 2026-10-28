@@ -25,6 +25,9 @@ import java.util.Map;
 
 @CapacitorPlugin(name = "StoreBilling")
 public class StoreBillingPlugin extends Plugin implements PurchasesUpdatedListener {
+    /** O plano base anual no Play Console (constants/billingCatalog.ts). */
+    private static final String ANNUAL_BASE_PLAN_ID = "anual";
+
 
     private BillingClient billingClient;
     private boolean isConnecting = false;
@@ -327,7 +330,13 @@ public class StoreBillingPlugin extends Plugin implements PurchasesUpdatedListen
             .newBuilder()
             .setProductDetails(productDetails);
 
-        String offerToken = extractOfferToken(productDetails, productType);
+        // O plano base (28/10/2026): o anual vem como "anual"; o mensal vem vazio.
+        String basePlanId = safeTrim(call.getString("basePlanId"));
+        String offerToken = extractOfferToken(productDetails, productType, basePlanId);
+        if (!basePlanId.isEmpty() && offerToken.isEmpty()) {
+            call.reject("Plano " + basePlanId + " nao encontrado na Google Play", "BASE_PLAN_NOT_FOUND");
+            return;
+        }
         if (!offerToken.isEmpty()) {
             productParamsBuilder.setOfferToken(offerToken);
         }
@@ -391,7 +400,7 @@ public class StoreBillingPlugin extends Plugin implements PurchasesUpdatedListen
         payload.put("title", productDetails.getTitle());
         payload.put("description", productDetails.getDescription());
         payload.put("formattedPrice", extractFormattedPrice(productDetails, productType));
-        payload.put("offerTokenAvailable", !extractOfferToken(productDetails, productType).isEmpty());
+        payload.put("offerTokenAvailable", !extractOfferToken(productDetails, productType, "").isEmpty());
         payload.put("type", BillingClient.ProductType.SUBS.equals(productType) ? "subscription" : "consumable");
         return payload;
     }
@@ -438,13 +447,28 @@ public class StoreBillingPlugin extends Plugin implements PurchasesUpdatedListen
         return "";
     }
 
-    private String extractOfferToken(ProductDetails productDetails, String productType) {
+    /**
+     * A oferta da assinatura. Com plano base pedido (o anual), so serve uma
+     * oferta desse plano, de preferencia a oferta base (sem offerId). Sem plano
+     * pedido (o mensal), serve a primeira que NAO seja do anual: a ordem das
+     * ofertas nao e garantida, e o mensal nunca pode cair no preco do ano.
+     */
+    private String extractOfferToken(ProductDetails productDetails, String productType, String basePlanId) {
         if (BillingClient.ProductType.SUBS.equals(productType)) {
             List<ProductDetails.SubscriptionOfferDetails> offers = productDetails.getSubscriptionOfferDetails();
-            if (offers != null && !offers.isEmpty()) {
-                return safeTrim(offers.get(0).getOfferToken());
+            if (offers == null || offers.isEmpty()) {
+                return "";
             }
-            return "";
+            String pedido = safeTrim(basePlanId);
+            String qualquerDoPlano = "";
+            for (ProductDetails.SubscriptionOfferDetails offer : offers) {
+                String plano = safeTrim(offer.getBasePlanId());
+                boolean serve = pedido.isEmpty() ? !ANNUAL_BASE_PLAN_ID.equals(plano) : pedido.equals(plano);
+                if (!serve) continue;
+                if (offer.getOfferId() == null) return safeTrim(offer.getOfferToken());
+                if (qualquerDoPlano.isEmpty()) qualquerDoPlano = safeTrim(offer.getOfferToken());
+            }
+            return qualquerDoPlano;
         }
 
         List<ProductDetails.OneTimePurchaseOfferDetails> offers = productDetails.getOneTimePurchaseOfferDetailsList();

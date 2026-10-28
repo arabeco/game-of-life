@@ -2002,8 +2002,10 @@ const PreferenciasTab: React.FC = () => {
             if (isUnlocked) unlocked.add(skinId);
         });
         inventory.forEach((item) => unlocked.add(item.id));
+        // O Platinum tem todos os temas de interface (28/10/2026).
+        if (hasPlatinumAccess(userProfile)) uiSkinCatalog.forEach((skin) => unlocked.add(skin.id));
         return unlocked;
-    }, [inventory, userProfile.skin, userProfile.unlockedItems]);
+    }, [inventory, uiSkinCatalog, userProfile]);
     const effectiveUiSkinId = userProfile.skin || 'BASIC';
     const currentUiSkinName = useMemo(() => {
         const selectedSkin = uiSkinCatalog.find((skin) => skin.id === effectiveUiSkinId);
@@ -2294,8 +2296,7 @@ const LegacyPremiumTab: React.FC = () => {
                         <button
                             id="campaigns-button"
                             onClick={() => setShowCampaignsCodex(true)}
-                            disabled={!isPremium}
-                            className={`p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center ${!isPremium ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
+                            className={`p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center`}
                         >
                             <span className="text-3xl group-hover:scale-110 transition-transform">🎯</span>
                             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Campanhas</span>

@@ -57,8 +57,8 @@ const CATALOGO: Record<string, Produto> = {
   pack_gold_3: { kind: "gold", priceBrl: 20, gold: 230, label: "230 ouro" },
   pack_gold_4: { kind: "gold", priceBrl: 50, gold: 600, label: "600 ouro" },
   pack_gold_5: { kind: "gold", priceBrl: 100, gold: 1300, label: "1300 ouro" },
-  premium_30d: { kind: "membership", priceBrl: 17.9, tier: "premium", equivalentGold: 200, label: "Premium 30d" },
-  platinum_30d: { kind: "membership", priceBrl: 44.9, tier: "platinum", equivalentGold: 500, label: "Platinum 30d" },
+  premium_30d: { kind: "membership", priceBrl: 14.99, tier: "premium", equivalentGold: 150, label: "Premium 30d" },
+  platinum_30d: { kind: "membership", priceBrl: 29.99, tier: "platinum", equivalentGold: 300, label: "Platinum 30d" },
 };
 
 /**
@@ -80,7 +80,7 @@ const usuarioDoToken = async (req: Request): Promise<string | null> => {
   }
 };
 
-/** Centavos batem; float nao. 17.9 e 44.9 existem no catalogo. */
+/** Centavos batem; float nao. 14.99 e 29.99 existem no catalogo. */
 const mesmoValor = (a: unknown, b: number) => Math.round(Number(a || 0) * 100) === Math.round(b * 100);
 
 /**

@@ -38,7 +38,7 @@ export interface NativeStoreBillingPurchaseResult {
 interface StoreBillingPlugin {
     getStatus(): Promise<NativeStoreBillingStatus>;
     getProduct(options: { productId: string; kind: BillingMonetizationKind }): Promise<NativeStoreBillingProduct>;
-    purchaseProduct(options: { productId: string; kind: BillingMonetizationKind }): Promise<NativeStoreBillingPurchaseResult>;
+    purchaseProduct(options: { productId: string; kind: BillingMonetizationKind; basePlanId?: string }): Promise<NativeStoreBillingPurchaseResult>;
     getActivePurchases(): Promise<{ purchases: NativeStoreBillingPurchaseResult[] }>;
 }
 
@@ -90,9 +90,11 @@ export const getNativeStoreProduct = async (
 export const purchaseNativeStoreProduct = async (
     productId: string,
     kind: BillingMonetizationKind,
+    /** Plano base da assinatura (o anual); sem ele, a Play usa o primeiro. */
+    basePlanId?: string,
 ): Promise<NativeStoreBillingPurchaseResult> => {
     try {
-        return await StoreBilling.purchaseProduct({ productId, kind });
+        return await StoreBilling.purchaseProduct(basePlanId ? { productId, kind, basePlanId } : { productId, kind });
     } catch (error) {
         throw normalizePluginError(error);
     }

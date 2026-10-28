@@ -391,14 +391,10 @@ export const DailyPanelContent: React.FC<{
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isToday, selectedDate, userProfile.id]);
 
-    // O painel so falava de dias passados. Esta leitura cobre o dia corrente, e a
-    // profundidade acompanha a assinatura: livre descreve, Premium compara com o
-    // seu dia medio no ciclo, Platinum compara o ciclo com o seu historico.
-    const readingDepth: DailyReadingDepth = hasPlatinumAccess(userProfile)
-        ? 'platinum'
-        : hasPremiumAccess(userProfile)
-            ? 'premium'
-            : 'livre';
+    // O painel so falava de dias passados. Esta leitura cobre o dia corrente:
+    // livre descreve; quem assina (Premium ou Platinum, desde 28/10/2026) recebe
+    // a leitura completa, que compara o ciclo com o seu historico.
+    const readingDepth: DailyReadingDepth = hasPremiumAccess(userProfile) ? 'platinum' : 'livre';
 
     const todayReading = useMemo(() => {
         if (!isToday) return null;

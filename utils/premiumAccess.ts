@@ -88,9 +88,11 @@ export const LEGACY_PROJECTION_PREMIUM_DISCOUNT = 0.5;
  * O credito antigo continua sendo honrado para quem tem saldo; o que mudou e que
  * ele deixou de ser o beneficio anunciado.
  */
+// OS PLANOS DE 28/10/2026: a cena custa o mesmo para todos. O Platinum ganha 1
+// cena por mes, como credito entregue na renovacao (process_approved_membership_payment).
 export const LEGACY_PROJECTION_DISCOUNT_BY_TIER: Record<SubscriptionTier, number> = {
-  premium: LEGACY_PROJECTION_PREMIUM_DISCOUNT,
-  platinum: 0.7,
+  premium: 0,
+  platinum: 0,
 };
 
 export const getLegacyProjectionSceneCredits = (profile?: PremiumLikeProfile | null): number => {
@@ -163,9 +165,10 @@ export const getCycleXpBonusPercentLabel = (tier: SubscriptionTier): string =>
  * catalogo). Este calculo existe para EXIBIR o preco; a mesma regra tem de valer
  * la, senao a tela promete um valor e a carteira paga outro.
  */
+// OS PLANOS DE 28/10/2026: Premium -20%, Platinum -40% (campaign_price_for_user).
 export const CAMPAIGN_DISCOUNT_BY_TIER: Record<SubscriptionTier, number> = {
-  premium: 0,
-  platinum: 0.20,
+  premium: 0.20,
+  platinum: 0.40,
 };
 
 export const getCampaignDiscountRate = (

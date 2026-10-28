@@ -1,4 +1,4 @@
-﻿import { CapaDeFundoDaCampanha, capaDaCampanha } from '../CapaDaCampanha';
+﻿import { CAMPANHAS_NA_VITRINE, CapaDeFundoDaCampanha, capaDaCampanha } from '../CapaDaCampanha';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import '../campaign-plate.css';
@@ -219,8 +219,10 @@ export const CodexStore: React.FC = () => {
         })
     ), [assets, codexCatalog]);
 
+    // So as campanhas da vitrine, gratis ou nao (28/10/2026). Antes a loja
+    // escondia toda campanha de preco zero, e a gratis de amostra nao aparecia.
     const visibleCatalogEntries = useMemo(() => (
-        catalogEntries.filter((entry) => !entry.isFree)
+        catalogEntries.filter((entry) => CAMPANHAS_NA_VITRINE.has(entry.codex.id))
     ), [catalogEntries]);
 
     // O quiz saiu da loja (13/10/2026): busca de campanha agora mora no Oraculo, aba Missao.

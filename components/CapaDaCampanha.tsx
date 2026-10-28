@@ -34,6 +34,13 @@ const CAPA_LOCAL: Record<string, string> = {
     // faxina-total: entra quando a campanha nova existir no catalogo.
 };
 
+/**
+ * A VITRINE (28/10/2026, com o Afonso): a loja mostra so as campanhas
+ * escolhidas, que sao as que tem capa. As antigas continuam no banco (quem
+ * instalou nao perde), mas saem da vitrine. Duas delas sao gratis, de amostra.
+ */
+export const CAMPANHAS_NA_VITRINE = new Set(Object.keys(CAPA_LOCAL));
+
 /** A capa local da campanha, se houver; senao, a do banco. */
 export const capaDaCampanha = (catalogId?: string | null, cover?: string | null): string | undefined => {
     const local = catalogId ? CAPA_LOCAL[catalogId] : undefined;

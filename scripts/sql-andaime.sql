@@ -481,3 +481,11 @@ create or replace function public._relationship_linked_arena_capacity(p_user_id 
 returns jsonb language sql as $$ select '{}'::jsonb $$;
 create or replace function public._competition_snapshot_arena_exists(p_arena_id uuid)
 returns boolean language sql as $$ select false $$;
+
+-- Precos das campanhas (28/10/2026).
+create table if not exists public.codex_catalog (
+  id uuid primary key,
+  title text,
+  price_gold integer,
+  price_brl numeric(10,2)
+);

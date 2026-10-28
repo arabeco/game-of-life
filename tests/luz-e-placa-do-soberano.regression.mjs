@@ -55,23 +55,24 @@ console.log('ok - equipado mantem a luz do proprio tier; o selo verde diz que es
 // `contain` ela boiava no meio como um selo, com faixas vazias em cima e
 // embaixo — parecia que nao tinha carregado.
 const editor = readFileSync(new URL('../components/SovereignCustomizer.tsx', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
-const inicioDoSlot = editor.indexOf('{/* 2. O artefato, a direita.');
-assert.ok(inicioDoSlot > 0, 'o slot do artefato mudou de lugar no editor');
-const slot = semComentarios(editor.slice(inicioDoSlot, editor.indexOf('O interruptor fica junto dos previews', inicioDoSlot)));
+// Desde a vitrine (tres vagas de artefato abaixo do soberano), cada vaga e um
+// quadrado que recorta a placa compartilhada por baixo do artefato.
+const inicioDoSlot = editor.indexOf('aria-label="Artefatos equipados"');
+assert.ok(inicioDoSlot > 0, 'as vagas de artefato sumiram do editor');
+const slot = editor.slice(inicioDoSlot, editor.indexOf('</div>', editor.indexOf('</button>', inicioDoSlot)));
 
-const caixa = slot.match(/className=\{`relative[^`]*`\}/);
-assert.ok(caixa, 'a caixa do slot do artefato sumiu');
-const largura = caixa[0].match(/\bw-(\d+)\b/);
-const altura = caixa[0].match(/\bh-(\d+)\b/);
-assert.ok(largura && altura, 'o slot do artefato perdeu a medida fixa');
-assert.equal(largura[1], altura[1], `o slot do artefato voltou a ser retangular (w-${largura[1]} x h-${altura[1]})`);
-assert.doesNotMatch(caixa[0], /flex-1/, 'flex-1 estica o slot para a altura do soberano');
+const caixa = slot.match(/className="relative[^"]*"/);
+assert.ok(caixa, 'a caixa da vaga do artefato sumiu');
+const largura = caixa[0].match(/\bw-\[([\d.]+rem)\]/);
+const altura = caixa[0].match(/\bh-\[([\d.]+rem)\]/);
+assert.ok(largura && altura, 'a vaga do artefato perdeu a medida fixa');
+assert.equal(largura[1], altura[1], `a vaga do artefato voltou a ser retangular (${largura[1]} x ${altura[1]})`);
 assert.match(caixa[0], /overflow-hidden/, 'sem overflow-hidden a placa vaza pelos cantos arredondados');
-console.log('ok - o slot do artefato e quadrado e recorta a placa');
+console.log('ok - cada vaga de artefato e quadrada e recorta a placa');
 
-assert.match(slot, /alt="Placa"[\s\S]*?object-cover/,
-    'a placa deixou de cobrir o slot: em contain ela vira um selo boiando no meio');
-assert.doesNotMatch(slot, /w-12 h-12/, 'o artefato voltou a ter 48px dentro de um slot de 128');
-console.log('ok - a placa e o fundo do slot inteiro, e o artefato ocupa o slot');
+assert.match(slot, /equippedSharedPlate\.url[\s\S]*?object-cover/,
+    'a placa deixou de cobrir a vaga: em contain ela vira um selo boiando no meio');
+assert.match(slot, /imgClassName="h-full w-full object-contain"/, 'o artefato deixou de ocupar a vaga');
+console.log('ok - a placa e o fundo da vaga inteira, e o artefato ocupa a vaga');
 
 console.log('Luz e placa do soberano: a raridade acende todo card; o artefato mora num quadrado.');

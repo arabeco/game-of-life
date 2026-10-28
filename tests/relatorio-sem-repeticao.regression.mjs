@@ -113,7 +113,7 @@ assert.match(marcas, /metrics\.bestDayCount/, 'O volume do melhor dia precisa ch
 assert.ok(!/Melhor dia/.test(execucao), 'O melhor dia nao pode repetir o rodape da Execucao.');
 
 // ---------------------------------------------------------------------------
-// 4. A COMPARACAO E DO PLATINUM, INTEIRA.
+// 4. A COMPARACAO E DE QUEM PAGA, INTEIRA (Premium desde 28/10/2026).
 //
 // Uma linha dela chegou a sair para o gratuito, no rodape do Veredito, e voltou
 // em 21/09: comparar o ciclo com o proprio historico e o que o Platinum vende, e
@@ -123,7 +123,7 @@ assert.ok(!/Melhor dia/.test(execucao), 'O melhor dia nao pode repetir o rodape 
 
 assert.match(
   fonte,
-  /\(isPlatinum \? buildCycleComparison\(report, reports \|\| \[\]\) : null\)/,
+  /\(leituraLiberada \? buildCycleComparison\(report, reports \|\| \[\]\) : null\)/,
   'A comparacao tem de ser calculada so para quem paga por ela.',
 );
 assert.ok(
@@ -147,7 +147,7 @@ assert.ok(
 // 6. ZERO NAO E CONQUISTA.
 // ---------------------------------------------------------------------------
 
-const conquistas = quadro('const renderAchievementsSlide', 'const isPlatinum');
+const conquistas = quadro('const renderAchievementsSlide', 'const leituraLiberada');
 assert.match(
   conquistas,
   /if \(\(metrics\.questsCompleted \|\| 0\) > 0\) \{/,

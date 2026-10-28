@@ -200,7 +200,7 @@ for (const arquivo of ['constants/economy.ts', 'constants/goldCatalog.ts']) {
   const vitrine = readFileSync(new URL(`../${arquivo}`, import.meta.url), 'utf8');
   assert.match(
     vitrine,
-    /escolha os temas e peça card na hora/,
+    /escolha os temas e peça card na hora|temas e card na hora/,
     `${arquivo} precisa anunciar o beneficio que existe`,
   );
 }

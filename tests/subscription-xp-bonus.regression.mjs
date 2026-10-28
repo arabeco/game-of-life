@@ -56,21 +56,23 @@ const {
 
 // campanha de 100
 assert.equal(getCampaignPriceForProfile(100, gratis), 100);
-assert.equal(getCampaignPriceForProfile(100, premium), 100, 'campanha: Premium ainda paga cheio');
-assert.equal(getCampaignPriceForProfile(100, platinum), 80, 'campanha: Platinum paga 20% menos');
+// Planos de 28/10/2026: Premium paga 20% menos, Platinum 40%.
+assert.equal(getCampaignPriceForProfile(100, premium), 80, 'campanha: Premium paga 20% menos');
+assert.equal(getCampaignPriceForProfile(100, platinum), 60, 'campanha: Platinum paga 40% menos');
 assert.equal(getCampaignPriceForProfile(100, expirado), 100, 'assinatura vencida nao desconta');
 
-// cena de legado de 50
-assert.equal(getLegacyProjectionScenePrice(gratis, 50), 50);
-assert.equal(getLegacyProjectionScenePrice(premium, 50), 25);
-assert.equal(getLegacyProjectionScenePrice(platinum, 50), 15, 'Platinum paga menos que Premium, sempre');
-assert.equal(getLegacyProjectionScenePrice(expirado, 50), 50);
+// cena de legado de 50: desde 28/10/2026 ninguem tem desconto. O Platinum
+// ganha 1 cena por mes de credito; a cena avulsa custa igual para todos.
+// (a primeira cena e de graca para todos; aqui ela ja foi usada)
+const jaUsou = (p) => ({ ...p, legacyProjectionSceneFreeClaimedAt: '2026-01-01T00:00:00Z' });
+assert.equal(getLegacyProjectionScenePrice(jaUsou(gratis), 50), 50);
+assert.equal(getLegacyProjectionScenePrice(jaUsou(premium), 50), 50);
+assert.equal(getLegacyProjectionScenePrice(jaUsou(platinum), 50), 50);
+assert.equal(getLegacyProjectionScenePrice(jaUsou(expirado), 50), 50);
+assert.equal(LEGACY_PROJECTION_DISCOUNT_BY_TIER.premium, 0);
+assert.equal(LEGACY_PROJECTION_DISCOUNT_BY_TIER.platinum, 0);
 
 // a escada nunca inverte
-assert.ok(
-  LEGACY_PROJECTION_DISCOUNT_BY_TIER.platinum > LEGACY_PROJECTION_DISCOUNT_BY_TIER.premium,
-  'Platinum nao pode descontar menos que Premium na cena de legado',
-);
 assert.ok(
   CAMPAIGN_DISCOUNT_BY_TIER.platinum >= CAMPAIGN_DISCOUNT_BY_TIER.premium,
   'Platinum nao pode descontar menos que Premium na campanha',
@@ -80,7 +82,7 @@ assert.ok(
 assert.ok(getCampaignPriceForProfile(1, platinum) >= 1);
 assert.ok(getLegacyProjectionScenePrice(platinum, 1) >= 0);
 
-console.log('Descontos: Platinum paga menos que Premium em campanha e cena de legado, sempre.');
+console.log('Descontos: Platinum paga menos que Premium em campanha; cena de legado custa igual para todos.');
 
 // --- mentoria nao e vantagem de plano (13/10/2026) -------------------------
 // O servidor cobra o vinculo de todo mundo (75 de ouro, renovacao 40) e nao

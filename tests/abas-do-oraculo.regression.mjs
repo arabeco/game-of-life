@@ -30,7 +30,7 @@ assert.deepEqual(
 
 const chat = readFileSync(new URL('../components/OracleChat.tsx', import.meta.url), 'utf8');
 assert.match(chat, /secaoDaMensagem\(message\) === section/, 'so a aba aberta marca como lido');
-assert.match(chat, /section !== id && secoesNaoLidas\.has\(id\)/, 'a bolinha aparece nas outras abas');
+assert.match(chat, /section !== id && <AttentionBadge count=\{secoesNaoLidas\.has\(id\)/, 'a bolinha aparece nas outras abas');
 
 const feed = readFileSync(new URL('../components/OracleFeed.tsx', import.meta.url), 'utf8');
 assert.doesNotMatch(feed, /markOracleMessageAsRead\(messageId\)/, 'abrir o Oraculo nao marca tudo como lido');

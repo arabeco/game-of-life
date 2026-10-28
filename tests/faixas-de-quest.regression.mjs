@@ -23,6 +23,7 @@ assert.match(faixa, /QUEST_FAMILY_COLOR\[family\]/, 'a familia continua na barri
 // Os modais que a faixa abre continuam com a arte.
 const modais = readFileSync(new URL('../components/SeasonDetailModal.tsx', import.meta.url), 'utf8');
 assert.match(modais, /artUrl=\{quest\.artUrl\}/);
-assert.match(modais, /artUrl=\{mission\.artUrl\}/);
+assert.match(modais, /const artUrl = mission\.artUrl \|\|/, 'a missao usa a propria arte, ou a da temporada');
+assert.match(modais, /artUrl=\{artUrl\}/);
 
 console.log('faixas-de-quest: ok');

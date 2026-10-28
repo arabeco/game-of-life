@@ -99,7 +99,7 @@ assert.match(modal, /APP_NAVIGATE_EVENT/,
     'a placa nao navega mais — fechar arena volta a deixar a pessoa na arena vazia');
 assert.match(
     modal,
-    /if \(isArenaComplete && typeof window !== 'undefined'\) \{[\s\S]{0,260}view: 'planner'/,
+    /if \(isArenaComplete(?: && !achievement\.data\.metaFinal)? && typeof window !== 'undefined'\) \{[\s\S]{0,260}view: 'planner'/,
     "a volta pro Planner precisa ser so do fecho de arena, e so dentro de handleClose",
 );
 

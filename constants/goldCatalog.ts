@@ -9,6 +9,17 @@
  * recusava. Anotar aqui conserta os dois pontos de uma vez e, de quebra,
  * passa a acusar id de pacote escrito errado na origem.
  */
+/** A arte de cada produto, a mesma da Play Store (public/assets/loja). */
+export const ARTE_DO_PRODUTO: Record<string, string> = {
+    pack_gold_1: '/assets/loja/pepita.webp',
+    pack_gold_2: '/assets/loja/barra-pequena.webp',
+    pack_gold_3: '/assets/loja/barra-grande.webp',
+    pack_gold_4: '/assets/loja/cofre.webp',
+    pack_gold_5: '/assets/loja/tesouro.webp',
+    premium_30d: '/assets/loja/premium.webp',
+    platinum_30d: '/assets/loja/platinum.webp',
+};
+
 export const GOLD_PACK_CATALOG: Array<{
     id: BillingInternalProductId;
     name: string;

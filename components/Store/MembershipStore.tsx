@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import type { BillingInternalProductId } from '../../constants/billingCatalog';
 import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
-import { GOLD_PLATINUM_PRODUCT, GOLD_PREMIUM_PRODUCT } from '../../constants/goldCatalog';
-import { CheckIcon, CrownIcon } from '../Icons';
+import { ARTE_DO_PRODUTO, GOLD_PLATINUM_PRODUCT, GOLD_PREMIUM_PRODUCT } from '../../constants/goldCatalog';
+import { CheckIcon } from '../Icons';
 import { BillingCheckoutGate } from './BillingCheckoutGate';
 import { getActiveSubscriptionTier, getPremiumDaysRemaining, hasPlatinumAccess, hasPremiumAccess, isStaffRole } from '../../utils/premiumAccess';
 import { getMoneyCheckoutSalesCopy } from '../../utils/billingRuntime';
@@ -145,9 +145,7 @@ export const MembershipStore: React.FC<{ scrollRequest?: { section: string; nonc
                 <div className="relative z-10 grid gap-4 p-4 md:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)_auto] md:items-center">
                     <div className="min-w-0">
                         <div className="flex items-center gap-3">
-                            <div className="rounded-full border border-[var(--ui-border-accent)] bg-[var(--ui-core-surface-strong-bg)] p-3 shadow-[0_0_20px_var(--ui-button-primary-glow)]">
-                                <CrownIcon className="h-6 w-6 text-[var(--ui-text-accent)]" />
-                            </div>
+                            <img src={ARTE_DO_PRODUTO.premium_30d} alt="" aria-hidden="true" className="h-14 w-14 rounded-2xl border border-[var(--ui-border-accent)] object-cover shadow-[0_0_20px_var(--ui-button-primary-glow)]" />
                             <div className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${isPremium ? 'border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/12 text-[var(--ui-text-accent)]' : 'border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] text-[color:var(--ui-card-text-soft)]'}`}>
                                 {isStaffAccess ? 'Acesso GM' : isPremium ? 'Ativo' : 'Disponível'}
                             </div>
@@ -198,9 +196,7 @@ export const MembershipStore: React.FC<{ scrollRequest?: { section: string; nonc
                 <div className="relative z-10 grid gap-4 p-4 md:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)_auto] md:items-center">
                     <div className="min-w-0">
                         <div className="flex items-center gap-3">
-                            <div className="rounded-full border border-white/20 bg-white/10 p-3 shadow-[0_0_26px_rgba(240,218,160,0.2)]">
-                                <CrownIcon className="h-6 w-6 text-amber-100" />
-                            </div>
+                            <img src={ARTE_DO_PRODUTO.platinum_30d} alt="" aria-hidden="true" className="h-14 w-14 rounded-2xl border border-white/20 object-cover shadow-[0_0_26px_rgba(160,190,255,0.22)]" />
                             <div className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${isPlatinum ? 'border-amber-200/30 bg-amber-200/12 text-amber-100' : 'border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] text-[color:var(--ui-card-text-soft)]'}`}>
                                 {isPlatinum ? 'Ativo' : 'Disponível'}
                             </div>

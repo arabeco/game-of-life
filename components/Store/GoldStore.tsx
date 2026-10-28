@@ -2,7 +2,7 @@
 import type { BillingInternalProductId } from '../../constants/billingCatalog';
 import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
-import { GOLD_PACK_CATALOG } from '../../constants/goldCatalog';
+import { ARTE_DO_PRODUTO, GOLD_PACK_CATALOG } from '../../constants/goldCatalog';
 import { BillingCheckoutGate } from './BillingCheckoutGate';
 import { ValorIcon } from '../ValorIcon';
 
@@ -55,7 +55,7 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                                QUANTIDADE e o PRECO; o nome do pacote e sabor e cabe numa
                                linha. E a quantidade vem com o simbolo da moeda, não com a
                                palavra ao lado. */
-                            <GlassCard key={pack.id} className="group relative h-[9.2rem] overflow-hidden p-2.5 text-center transition-colors hover:bg-white/5">
+                            <GlassCard key={pack.id} className="group relative h-[10.2rem] overflow-hidden p-2.5 text-center transition-colors hover:bg-white/5">
                                 {pack.bonusGold > 0 && (
                                     <div className="absolute right-1.5 top-1.5 rounded border border-green-500/30 bg-green-500/20 px-1.5 py-0.5 text-[8px] font-bold tracking-wider text-green-400">
                                         +{pack.bonusGold}
@@ -63,9 +63,13 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                                 )}
 
                                 <div className="flex h-full flex-col items-center gap-1.5">
-                                    <div className="mt-0.5 text-[28px] leading-none drop-shadow-[0_0_10px_rgba(255,215,0,0.25)] transition-transform duration-300 group-hover:scale-110">
-                                        {pack.icon}
-                                    </div>
+                                    <img
+                                        src={ARTE_DO_PRODUTO[pack.id]}
+                                        alt=""
+                                        aria-hidden="true"
+                                        loading="lazy"
+                                        className="mt-0.5 h-11 w-11 rounded-xl object-cover shadow-[0_0_14px_rgba(255,215,0,0.25)] transition-transform duration-300 group-hover:scale-110"
+                                    />
 
                                     <div className="flex items-center gap-1 text-xl font-black leading-none text-[var(--gold)]">
                                         {pack.totalGold}
@@ -79,7 +83,7 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                                         disabled={!!loading}
                                         className="luxe-skin-button mt-auto w-full whitespace-nowrap rounded-lg py-1.5 text-[12px] font-bold leading-none disabled:opacity-50"
                                     >
-                                        {loading === pack.id ? '...' : `R$ ${pack.priceBrl.toFixed(2)}`}
+                                        {loading === pack.id ? '...' : pack.priceBrl.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                     </button>
                                 </div>
                             </GlassCard>

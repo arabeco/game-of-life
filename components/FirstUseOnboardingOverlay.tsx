@@ -90,7 +90,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
   onDismiss: () => void;
   onComplete: (acceptedSystemChallenges: string[], answers: OnboardingAnswers) => void;
 }> = ({ active, onDismiss, onComplete }) => {
-  const { userProfile, assets, actions, tasks, updateUserProfile, experienciaEscolhida, definirExperiencia } = useGame();
+  const { userProfile, assets, actions, tasks, updateUserProfile, experienciaEscolhida, definirExperiencia, modoEssencial } = useGame();
   const [identityReady, setIdentityReady] = useState(false);
   const [readyUserId, setReadyUserId] = useState<string | null>(null);
   const [createdActionId, setCreatedActionId] = useState<string | null>(null);
@@ -107,7 +107,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
   const currentStepRef = useRef<StepDef | undefined>(undefined);
   const isTypingRef = useRef(false);
 
-  const steps = useMemo<StepDef[]>(() => [
+  const steps = useMemo<StepDef[]>(() => ([
     {
       id: 'purpose',
       title: 'Pra que você quer usar o app?',
@@ -242,7 +242,8 @@ export const FirstUseOnboardingOverlay: React.FC<{
       navigation: { view: 'planner', showReports: false, showRestScreen: false, showArenaId: null },
       final: true,
     },
-  ], [createdArenaId, purpose]);
+  // Essencial (27/10/2026): sem o passo da missao — a escolha vem antes dos passos.
+  ] as StepDef[]).filter((passo) => !(modoEssencial && passo.id === 'missions')), [createdArenaId, purpose, modoEssencial]);
 
   const stepIndexById = useMemo(() => {
     return steps.reduce<Record<string, number>>((accumulator, currentStep, index) => {

@@ -208,9 +208,13 @@ const buildNotificationSignalMessage = (notification: Notification, oracleMode: 
 
 
 export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; isEmbedded?: boolean; initialSection?: 'guidance' | 'mission' | 'wisdom'; onNavigateTab?: (tab: OracleTabTarget) => void }> = ({ onClose, hideHeader = false, isEmbedded = false, initialSection }) => {
-  const { userProfile, assets, actions, tasks, taskPool, activeCycle, freeProgressResetAt, dailyCommitment, cycleProgress, oraclePreferences, oracleMessages, markOracleMessageAsRead, notifications, requestOracleContentCard, activeArenaPact, arenaPactProgress, arenaPactCandidates, missaoIndividualDisponivel, missaoDeSistemaAtiva, showToast } = useGame();
+  const { userProfile, assets, actions, tasks, taskPool, activeCycle, freeProgressResetAt, dailyCommitment, cycleProgress, oraclePreferences, oracleMessages, markOracleMessageAsRead, notifications, requestOracleContentCard, activeArenaPact, arenaPactProgress, arenaPactCandidates, missaoIndividualDisponivel, missaoDeSistemaAtiva, showToast, modoEssencial } = useGame();
   // Missao cumprida e ainda nao recebida: o Oraculo abre direto na aba dela.
-  const [section, setSection] = useState<'guidance' | 'mission' | 'wisdom'>(() => initialSection || (arenaPactProgress?.completed ? 'mission' : 'guidance'));
+  // Essencial (27/10/2026): o Oraculo nao tem a aba Missao.
+  const [section, setSection] = useState<'guidance' | 'mission' | 'wisdom'>(() => {
+    const inicial = initialSection || (arenaPactProgress?.completed ? 'mission' : 'guidance');
+    return modoEssencial && inicial === 'mission' ? 'guidance' : inicial;
+  });
   useEffect(() => { if (initialSection) setSection(initialSection); }, [initialSection]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
@@ -734,7 +738,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         )}
 
         <div className="flex shrink-0 gap-2 border-b border-white/10 px-4 py-2" role="tablist" aria-label="Oráculo">
-          {([{id:'guidance',label:'Dia e ciclo',icon:Sun},{id:'mission',label:'Missão',icon:Flag},{id:'wisdom',label:'Sabedoria',icon:BookOpen}] as const).map(({id,label,icon:Icon}, index, tabs) => <button key={id} id={`oracle-tab-${id}`} role="tab" aria-selected={section === id} tabIndex={section === id ? 0 : -1} aria-controls="oracle-content" className={`flex min-h-12 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl px-1 text-[11px] font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--skin-accent-color)] ${section === id ? 'bg-white/10 text-[var(--skin-accent-color)]' : 'text-white/55'}`} onKeyDown={event => {
+          {([{id:'guidance',label:'Dia e ciclo',icon:Sun},{id:'mission',label:'Missão',icon:Flag},{id:'wisdom',label:'Sabedoria',icon:BookOpen}] as const).filter(({id}) => !(modoEssencial && id === 'mission')).map(({id,label,icon:Icon}, index, tabs) => <button key={id} id={`oracle-tab-${id}`} role="tab" aria-selected={section === id} tabIndex={section === id ? 0 : -1} aria-controls="oracle-content" className={`flex min-h-12 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl px-1 text-[11px] font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--skin-accent-color)] ${section === id ? 'bg-white/10 text-[var(--skin-accent-color)]' : 'text-white/55'}`} onKeyDown={event => {
             const next = event.key === 'ArrowRight' ? (index+1)%tabs.length : event.key === 'ArrowLeft' ? (index+tabs.length-1)%tabs.length : event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length-1 : -1;
             if (next < 0) return;
             event.preventDefault(); setSection(tabs[next].id); document.getElementById(`oracle-tab-${tabs[next].id}`)?.focus();

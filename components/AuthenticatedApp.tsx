@@ -1214,7 +1214,8 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
              * O arbitro decide se vale falar agora — com cooldown de tres dias,
              * porque oferecer missao todo dia vira cobranca.
              */
-            missaoIndividualDisponivel,
+            // No Essencial o Oraculo nao oferece missao.
+            missaoIndividualDisponivel: modoEssencial ? false : missaoIndividualDisponivel,
             // TODAS as arenas, nao so focusArenaSignal.
             //
             // O contexto ja calculava ate seis, ranqueadas por gravidade, e esta

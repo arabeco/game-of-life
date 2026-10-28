@@ -220,7 +220,8 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
                                 </div>
                             </div>
 
-                            <div className="relative z-10 grid grid-cols-3 gap-1 border-b border-white/8 bg-black/35 p-1.5 backdrop-blur-sm">
+                            {/* Essencial: sem a aba Missao (missao e coisa de jogo). */}
+                            <div className={`relative z-10 grid ${modoEssencial ? 'grid-cols-2' : 'grid-cols-3'} gap-1 border-b border-white/8 bg-black/35 p-1.5 backdrop-blur-sm`}>
                                 <button
                                     type="button"
                                     onClick={() => setActiveTab('headquarters')}
@@ -228,13 +229,13 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
                                 >
                                     Sede
                                 </button>
-                                <button
+                                {!modoEssencial && <button
                                     type="button"
                                     onClick={() => setActiveTab('mission')}
                                     className={`rounded-lg py-2 text-[11px] font-black uppercase tracking-[0.12em] ${activeTab === 'mission' ? 'bg-white/10 text-white' : 'text-white/45'}`}
                                 >
                                     Missão
-                                </button>
+                                </button>}
                                 <button
                                     type="button"
                                     onClick={() => setActiveTab('members')}

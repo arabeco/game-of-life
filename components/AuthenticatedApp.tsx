@@ -12,6 +12,8 @@ import type { Session } from '@supabase/supabase-js';
 import { GlobalHeader } from './GlobalHeader';
 import { AssetIcon, ArenaIcon, ConfigIcon, PlannerIcon, SocialIcon, XIcon } from './Icons';
 import { supabase } from '../supabaseClient';
+import { canUseNativeStoreBilling, getNativeStoreActivePurchases } from '../utils/nativeBilling';
+import { assinaturasParaConferir, hojeConfere } from '../utils/conferirAssinaturas';
 import { GameProvider, PROFILE_FLAG_TERMS_ACCEPTED, PROFILE_FLAG_TERMS_PENDING, PROFILE_FLAG_TUTORIAL_COMPLETED, useGame } from '../contexts/GameContext';
 import { CodexBuilderProvider, useCodexBuilder } from '../contexts/CodexBuilderContext';
 import { TutorialProvider, useTutorial } from '../contexts/TutorialContext';
@@ -462,6 +464,51 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     const { userProfile, activeTheme, notifications, showToast, assets, actions, tasks, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, achievementUnlocked, updateUserProfile, reports, activeArenaPact, arenaPactProgress, missaoIndividualDisponivel, isProfileLoaded, freeProgressResetAt, recordMoodEntry, modoEssencial, definirExperiencia } = useGame();
     // Diario escrito sem internet sai sozinho quando a conexao volta (18/10).
     useEnviarDiarioPendente(userProfile?.id, recordMoodEntry);
+
+    // A RENOVACAO AUTOMATICA DA PLAY (28/10/2026): ao abrir no Android, confere
+    // as assinaturas ativas no servidor (no maximo a cada 6 horas). Mes novo
+    // pago estende o plano pela data da Google; mes ja entregue nao muda nada.
+    useEffect(() => {
+        const userId = userProfile?.id;
+        if (!isProfileLoaded || !userId || userId === 'placeholder_user' || !canUseNativeStoreBilling()) return;
+        const chave = `glyph-conferiu-assinaturas:${userId}`;
+        let ultima: number | null = null;
+        try { ultima = Number(window.localStorage.getItem(chave)) || null; } catch { ultima = null; }
+        if (!hojeConfere(ultima)) return;
+        let vigente = true;
+        void (async () => {
+            try {
+                const assinaturas = assinaturasParaConferir(await getNativeStoreActivePurchases());
+                for (const assinatura of assinaturas) {
+                    const { data } = await supabase.functions.invoke('google-play-purchase', {
+                        body: {
+                            kind: 'membership',
+                            membershipTier: assinatura.tier,
+                            productId: assinatura.productId,
+                            purchaseToken: assinatura.purchaseToken,
+                            orderId: assinatura.orderId || null,
+                            packageName: assinatura.packageName || null,
+                            platform: 'android',
+                            products: assinatura.products,
+                        },
+                    });
+                    const resposta = data as { success?: boolean; membership_tier?: string; premium_expires_at?: string | null } | null;
+                    if (vigente && resposta?.success && resposta.premium_expires_at) {
+                        updateUserProfile({
+                            isPremium: true,
+                            subscriptionTier: resposta.membership_tier === 'platinum' ? 'platinum' : 'premium',
+                            premiumExpiresAt: resposta.premium_expires_at,
+                        });
+                    }
+                }
+                try { window.localStorage.setItem(chave, String(Date.now())); } catch { /* sem armazenamento, confere de novo na proxima */ }
+            } catch (error) {
+                console.warn('[assinatura] a conferência com a Play falhou; tenta de novo na próxima abertura', error);
+            }
+        })();
+        return () => { vigente = false; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isProfileLoaded, userProfile?.id]);
     const historyReady = useRef(false);
 
     const effectiveUiSkin = resolveUiSkinId(userProfile.skin || 'BASIC');

@@ -84,6 +84,14 @@ const MEMBERSHIPS: Record<string, MembershipConfig & { brlAnnual: number }> = {
   platinum_30d: { productId: "platinum_30d", tier: "platinum", brl: 29.99, brlAnnual: 239.9 },
 };
 
+/** Quando a linha desta assinatura vence, segundo a Google ("" se nao vier). */
+const expiryOfLineItem = (subscription: JsonRecord, productId: string): string => {
+  const lineItems = Array.isArray(subscription.lineItems) ? subscription.lineItems : [];
+  const item = lineItems.find((entry) => entry && typeof entry === "object" && asTrimmedString((entry as JsonRecord).productId) === productId) as JsonRecord | undefined;
+  const expiry = asTrimmedString(item?.expiryTime);
+  return expiry && Number.isFinite(Date.parse(expiry)) ? new Date(expiry).toISOString() : "";
+};
+
 /** O plano base da linha desta assinatura na resposta da Google ("" se nao vier). */
 const basePlanOfLineItem = (subscription: JsonRecord, productId: string): string => {
   const lineItems = Array.isArray(subscription.lineItems) ? subscription.lineItems : [];
@@ -405,7 +413,9 @@ const handleMembershipPurchase = async (body: GooglePlayBody, userId: string, ac
     accessToken,
   );
 
-  if (asTrimmedString(subscription.subscriptionState) !== "SUBSCRIPTION_STATE_ACTIVE") {
+  // Em periodo de carencia a pessoa ainda tem o plano: a Play esta tentando cobrar.
+  const subscriptionState = asTrimmedString(subscription.subscriptionState);
+  if (subscriptionState !== "SUBSCRIPTION_STATE_ACTIVE" && subscriptionState !== "SUBSCRIPTION_STATE_IN_GRACE_PERIOD") {
     throw new Error(`SUBSCRIPTION_NOT_ACTIVE:${String(subscription.subscriptionState || "unknown")}`);
   }
 
@@ -414,6 +424,16 @@ const handleMembershipPurchase = async (body: GooglePlayBody, userId: string, ac
   }
 
   const basePlanId = basePlanOfLineItem(subscription, productId);
+  /*
+   * A RENOVACAO (28/10/2026). O token da compra e o mesmo a vida inteira da
+   * assinatura; quem muda a cada cobranca e o pedido (latestOrderId: ...0,
+   * ...1, ...2). Entao o pagamento e "token:pedido": a primeira compra e cada
+   * renovacao entram uma vez cada, e conferir de novo o mesmo mes so devolve
+   * "ja processado". A validade passa a ser a que a Google informa.
+   */
+  const latestOrderId = asTrimmedString(subscription.latestOrderId) || asTrimmedString(body.orderId);
+  const paymentKey = latestOrderId ? `${purchaseToken}:${latestOrderId}` : purchaseToken;
+  const expiresAt = expiryOfLineItem(subscription, productId);
   const isAnnual = basePlanId === ANNUAL_BASE_PLAN_ID;
   const amountPaid = isAnnual ? membership.brlAnnual : membership.brl;
   const metadata = buildSafeGoogleMetadata(body, userId, subscription, {
@@ -423,13 +443,16 @@ const handleMembershipPurchase = async (body: GooglePlayBody, userId: string, ac
       brl: amountPaid,
       base_plan_id: basePlanId || null,
     },
-    // process_approved_membership_payment le daqui quantos dias somar.
+    // process_approved_membership_payment le daqui quantos dias somar, ou a
+    // validade exata (a da Google, que vence quando a proxima cobranca cai).
     days: isAnnual ? 365 : 30,
+    expires_at: expiresAt || null,
+    order_id: latestOrderId || null,
   });
 
   const { data, error } = await supabaseAdmin.rpc("process_approved_membership_payment", {
     p_user_id: userId,
-    p_payment_id: purchaseToken,
+    p_payment_id: paymentKey,
     p_membership_tier: membership.tier,
     p_amount_paid: amountPaid,
     p_metadata: metadata,
@@ -459,8 +482,10 @@ const handleMembershipPurchase = async (body: GooglePlayBody, userId: string, ac
   return {
     success: true,
     kind: "membership",
+    // Conferir de novo um mes ja entregue nao e erro: so nao muda nada.
+    duplicate: data?.success === false,
     membership_tier: data?.membership_tier ?? membership.tier,
-    premium_expires_at: data?.premium_expires_at ?? null,
+    premium_expires_at: data?.premium_expires_at ?? expiresAt ?? null,
     product_id: productId,
     acknowledge_status: acknowledgeStatus,
   };

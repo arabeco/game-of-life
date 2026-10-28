@@ -59,7 +59,6 @@ const BotoesDoPlano: React.FC<{
                 className="luxe-skin-button inline-flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-50"
             >
                 <span>{rotuloMensal}</span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-black/15 px-2 py-1 text-[11px]">{formatBrl(produto.priceBrl)}</span>
             </button>
             {mostraAnual && (
                 <button
@@ -84,10 +83,63 @@ const BotoesDoPlano: React.FC<{
     );
 };
 
-const splitBenefitsIntoColumns = (benefits: readonly string[]) => {
-    const midpoint = Math.ceil(benefits.length / 2);
-    return [benefits.slice(0, midpoint), benefits.slice(midpoint)];
-};
+/**
+ * O CARTAO DE UM PLANO (28/10/2026): a arte do produto ao lado do nome, o
+ * preco em destaque logo embaixo, as vantagens numa coluna so (sem caixinha em
+ * volta de cada uma) e os botoes no pe. O mesmo desenho nos dois planos; muda
+ * so o tom.
+ */
+const CartaoDoPlano: React.FC<{
+    id: string;
+    arte: string;
+    nome: string;
+    frase: string;
+    estado: string;
+    ativo: boolean;
+    produto: typeof GOLD_PREMIUM_PRODUCT | typeof GOLD_PLATINUM_PRODUCT;
+    vantagens: string[];
+    tom: 'ouro' | 'platina';
+    children: React.ReactNode;
+}> = ({ id, arte, nome, frase, estado, ativo, produto, vantagens, tom, children }) => (
+    <GlassCard id={id} className={`relative overflow-hidden ${tom === 'ouro' ? 'border-[var(--ui-border-accent-soft)]' : 'border-[var(--ui-border-accent)]'}`}>
+        <div className={`pointer-events-none absolute inset-0 ${tom === 'ouro'
+            ? 'bg-[radial-gradient(circle_at_0%_0%,rgba(243,212,138,0.16),transparent_55%)]'
+            : 'bg-[radial-gradient(circle_at_0%_0%,rgba(170,195,255,0.16),transparent_55%)]'}`} />
+        <div className="relative z-10 grid gap-4 p-4 md:grid-cols-[minmax(0,1.2fr)_auto] md:items-start">
+            <div className="min-w-0 space-y-3">
+                <div className="flex items-center gap-3">
+                    <img
+                        src={arte}
+                        alt=""
+                        aria-hidden="true"
+                        className={`h-16 w-16 shrink-0 rounded-2xl object-cover ${tom === 'ouro' ? 'shadow-[0_0_22px_rgba(243,212,138,0.3)]' : 'shadow-[0_0_22px_rgba(170,195,255,0.3)]'}`}
+                    />
+                    <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <h2 className="text-xl font-black uppercase tracking-[0.05em] text-[color:var(--ui-card-text)]">{nome}</h2>
+                            <span className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.14em] ${ativo ? 'border-[var(--skin-accent-color)]/40 bg-[var(--skin-accent-color)]/12 text-[var(--ui-text-accent)]' : 'border-white/12 text-[color:var(--ui-card-text-soft)]'}`}>{estado}</span>
+                        </div>
+                        <div className="mt-0.5 flex items-baseline gap-1.5">
+                            <span className={`text-2xl font-black tabular-nums ${tom === 'ouro' ? 'text-[var(--gold)]' : 'text-[#dfe7ff]'}`}>{formatBrl(produto.priceBrl)}</span>
+                            <span className="text-[11px] text-[color:var(--ui-card-text-soft)]">por mês</span>
+                        </div>
+                        <p className="text-[10px] text-[color:var(--ui-card-text-soft)]">ou {formatBrl(produto.priceBrlAnnual)} por ano · {formatBrl(produto.priceBrlAnnual / 12)} por mês</p>
+                    </div>
+                </div>
+                <p className="text-[12px] leading-snug text-[color:var(--ui-card-text-soft)]">{frase}</p>
+                <ul className="space-y-1.5">
+                    {vantagens.map((vantagem) => (
+                        <li key={vantagem} className="flex items-start gap-2 text-[12px] leading-snug text-[color:var(--ui-card-text)]">
+                            <CheckIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-green-400" />
+                            <span>{vantagem}</span>
+                        </li>
+                    ))}
+                </ul>
+            </div>
+            {children}
+        </div>
+    </GlassCard>
+);
 
 export const MembershipStore: React.FC<{ scrollRequest?: { section: string; nonce: number } | null }> = ({ scrollRequest = null }) => {
     const { userProfile, modoEssencial, buyStoreItem } = useGame();
@@ -120,127 +172,63 @@ export const MembershipStore: React.FC<{ scrollRequest?: { section: string; nonc
         }, 120);
     }, [scrollRequest]);
 
-    const premiumBadgeLabel = useMemo(() => {
-        if (isStaffAccess) {
-            return 'Acesso GM';
-        }
-        if (isPremium && premiumExpiresLabel) {
-            return `${premiumDaysRemaining ?? 0}d - ate ${premiumExpiresLabel}`;
-        }
-        return '30 dias';
-    }, [isPremium, isStaffAccess, premiumDaysRemaining, premiumExpiresLabel]);
+    const estadoDoPlano = (doPlano: boolean) => {
+        if (isStaffAccess) return 'Acesso GM';
+        if (!doPlano) return 'Disponível';
+        return premiumDaysRemaining != null && premiumExpiresLabel ? `Ativo · até ${premiumExpiresLabel}` : 'Ativo';
+    };
 
     // Essencial (27/10/2026): os planos nao prometem aparencia (fundos e
     // aparencias premium), que esse modo nao mostra.
     const semAparencia = (lista: readonly string[]) => (modoEssencial ? lista.filter((linha) => !/fundo|aparência/i.test(linha)) : [...lista]);
     const premiumBenefits = useMemo(() => semAparencia(GOLD_PREMIUM_PRODUCT.benefits), [modoEssencial]);
     const platinumBenefits = useMemo(() => semAparencia(GOLD_PLATINUM_PRODUCT.benefits), [modoEssencial]);
-    const [premiumBenefitLeft, premiumBenefitRight] = useMemo(() => splitBenefitsIntoColumns(premiumBenefits), [premiumBenefits]);
-    const [platinumBenefitLeft, platinumBenefitRight] = useMemo(() => splitBenefitsIntoColumns(platinumBenefits), [platinumBenefits]);
 
     return (
-        <div className="space-y-6 animate-fade-in pb-8">
-            <GlassCard id="gold-store-premium" className="relative overflow-hidden border-[var(--ui-border-accent-soft)]">
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-yellow-900/20 via-yellow-500/5 to-transparent" />
-                <div className="relative z-10 grid gap-4 p-4 md:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)_auto] md:items-center">
-                    <div className="min-w-0">
-                        <div className="flex items-center gap-3">
-                            <img src={ARTE_DO_PRODUTO.premium_30d} alt="" aria-hidden="true" className="h-14 w-14 rounded-2xl border border-[var(--ui-border-accent)] object-cover shadow-[0_0_20px_var(--ui-button-primary-glow)]" />
-                            <div className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${isPremium ? 'border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/12 text-[var(--ui-text-accent)]' : 'border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] text-[color:var(--ui-card-text-soft)]'}`}>
-                                {isStaffAccess ? 'Acesso GM' : isPremium ? 'Ativo' : 'Disponível'}
-                            </div>
-                        </div>
+        <div className="space-y-5 animate-fade-in pb-8">
+            <CartaoDoPlano
+                id="gold-store-premium"
+                arte={ARTE_DO_PRODUTO.premium_30d}
+                nome="Premium"
+                frase="Para quem usa o Glyph todo dia: a leitura completa do seu dia e do seu ciclo, o Oráculo inteiro e mais arenas."
+                estado={estadoDoPlano(isPremium && !isPlatinum)}
+                ativo={isPremium && !isPlatinum}
+                produto={GOLD_PREMIUM_PRODUCT}
+                vantagens={premiumBenefits}
+                tom="ouro"
+            >
+                <BotoesDoPlano
+                    produto={GOLD_PREMIUM_PRODUCT}
+                    rotuloMensal={isPlatinum ? 'Platinum ativo' : isPremium ? 'Estender 30 dias' : 'Assinar mensal'}
+                    desabilitado={!!loading || isPlatinum}
+                    ouroNaCarteira={ouroNaCarteira}
+                    onDinheiro={abrirCheckout('premium', GOLD_PREMIUM_PRODUCT.priceGold)}
+                    onOuro={() => pagarComOuro(GOLD_PREMIUM_PRODUCT.id)}
+                    rodape={isStaffAccess ? 'Acesso liberado para equipe' : isPlatinum ? 'Já incluso no plano maior' : moneyCheckoutSalesCopy}
+                />
+            </CartaoDoPlano>
 
-                        <div className="mt-3">
-                            <h2 className="text-lg font-black uppercase tracking-[0.05em] text-[color:var(--ui-card-text)]">Premium</h2>
-                            <p className="mt-1 max-w-[26rem] text-[13px] leading-snug text-[color:var(--ui-card-text-soft)]">
-                                Para quem usa o Glyph todo dia: a leitura completa do seu dia e do seu ciclo, o Oráculo inteiro e mais arenas.
-                            </p>
-                            <div className="mt-3 flex flex-wrap gap-2">
-                                <span className="rounded-full border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--ui-card-text-soft)]">
-                                    {isStaffAccess ? 'Acesso GM' : isPlatinum ? 'Platinum 30 dias ativo' : premiumBadgeLabel}
-                                </span>
-                                <span className="rounded-full border border-[var(--skin-accent-color)]/18 bg-[var(--skin-accent-color)]/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--ui-text-accent)]">
-                                    Até 20 arenas
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                        {[premiumBenefitLeft, premiumBenefitRight].map((column, columnIndex) => (
-                            <div key={`premium-col-${columnIndex}`} className="space-y-2">
-                                {column.map((benefit) => (
-                                    <div key={benefit} className="flex min-h-[34px] items-center gap-1.5 rounded-lg border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-2 py-1.5">
-                                        <CheckIcon className="h-3.5 w-3.5 shrink-0 text-green-400" />
-                                        <span className="text-[10px] leading-tight text-[color:var(--ui-card-text-soft)]">{benefit}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        ))}
-                    </div>
-                    <BotoesDoPlano
-                        produto={GOLD_PREMIUM_PRODUCT}
-                        rotuloMensal={isPlatinum ? 'Platinum ativo' : isPremium ? 'Estender 30 dias' : 'Assinar mensal'}
-                        desabilitado={!!loading || isPlatinum}
-                        ouroNaCarteira={ouroNaCarteira}
-                        onDinheiro={abrirCheckout('premium', GOLD_PREMIUM_PRODUCT.priceGold)}
-                        onOuro={() => pagarComOuro(GOLD_PREMIUM_PRODUCT.id)}
-                        rodape={isStaffAccess ? 'Acesso liberado para equipe' : isPlatinum ? 'Já incluso no plano maior' : moneyCheckoutSalesCopy}
-                    />
-                </div>
-            </GlassCard>
-
-            <GlassCard id="gold-store-platinum" className="relative overflow-hidden border-[var(--ui-border-accent)]">
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,244,206,0.18),transparent_56%),linear-gradient(135deg,rgba(186,144,255,0.12),transparent_46%)]" />
-                <div className="relative z-10 grid gap-4 p-4 md:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)_auto] md:items-center">
-                    <div className="min-w-0">
-                        <div className="flex items-center gap-3">
-                            <img src={ARTE_DO_PRODUTO.platinum_30d} alt="" aria-hidden="true" className="h-14 w-14 rounded-2xl border border-white/20 object-cover shadow-[0_0_26px_rgba(160,190,255,0.22)]" />
-                            <div className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${isPlatinum ? 'border-amber-200/30 bg-amber-200/12 text-amber-100' : 'border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] text-[color:var(--ui-card-text-soft)]'}`}>
-                                {isPlatinum ? 'Ativo' : 'Disponível'}
-                            </div>
-                        </div>
-
-                        <div className="mt-3">
-                            <h2 className="text-lg font-black uppercase tracking-[0.05em] text-[color:var(--ui-card-text)]">Platinum</h2>
-                            <p className="mt-1 max-w-[26rem] text-[13px] leading-snug text-[color:var(--ui-card-text-soft)]">
-                                Tudo do Premium, para quem acompanha outras pessoas ou quer tudo: 40 arenas, 5 fichas de vínculo e todos os temas.
-                            </p>
-                            <div className="mt-3 flex flex-wrap gap-2">
-                                <span className="rounded-full border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--ui-card-text-soft)]">
-                                    {isPlatinum ? premiumBadgeLabel : '30 dias'}
-                                </span>
-                                <span className="rounded-full border border-amber-200/18 bg-amber-200/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-amber-100">
-                                    Até 40 arenas
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                        {[platinumBenefitLeft, platinumBenefitRight].map((column, columnIndex) => (
-                            <div key={`platinum-col-${columnIndex}`} className="space-y-2">
-                                {column.map((benefit) => (
-                                    <div key={benefit} className="flex min-h-[34px] items-center gap-1.5 rounded-lg border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-2 py-1.5">
-                                        <CheckIcon className="h-3.5 w-3.5 shrink-0 text-green-400" />
-                                        <span className="text-[10px] leading-tight text-[color:var(--ui-card-text-soft)]">{benefit}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        ))}
-                    </div>
-                    <BotoesDoPlano
-                        produto={GOLD_PLATINUM_PRODUCT}
-                        rotuloMensal={isPlatinum ? 'Estender 30 dias' : activeMembershipTier === 'premium' ? 'Subir para Platinum' : 'Assinar mensal'}
-                        desabilitado={!!loading}
-                        ouroNaCarteira={ouroNaCarteira}
-                        onDinheiro={abrirCheckout('platinum', GOLD_PLATINUM_PRODUCT.priceGold)}
-                        onOuro={() => pagarComOuro(GOLD_PLATINUM_PRODUCT.id)}
-                        rodape={moneyCheckoutSalesCopy}
-                    />
-                </div>
-            </GlassCard>
+            <CartaoDoPlano
+                id="gold-store-platinum"
+                arte={ARTE_DO_PRODUTO.platinum_30d}
+                nome="Platinum"
+                frase="Tudo do Premium, para quem acompanha outras pessoas ou quer tudo: 40 arenas, 5 fichas de vínculo e todos os temas."
+                estado={estadoDoPlano(isPlatinum)}
+                ativo={isPlatinum}
+                produto={GOLD_PLATINUM_PRODUCT}
+                vantagens={platinumBenefits}
+                tom="platina"
+            >
+                <BotoesDoPlano
+                    produto={GOLD_PLATINUM_PRODUCT}
+                    rotuloMensal={isPlatinum ? 'Estender 30 dias' : activeMembershipTier === 'premium' ? 'Subir para Platinum' : 'Assinar mensal'}
+                    desabilitado={!!loading}
+                    ouroNaCarteira={ouroNaCarteira}
+                    onDinheiro={abrirCheckout('platinum', GOLD_PLATINUM_PRODUCT.priceGold)}
+                    onOuro={() => pagarComOuro(GOLD_PLATINUM_PRODUCT.id)}
+                    rodape={moneyCheckoutSalesCopy}
+                />
+            </CartaoDoPlano>
             {selectedMembership && (
                 <BillingCheckoutGate
                     kind="membership"

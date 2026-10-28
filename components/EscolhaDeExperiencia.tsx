@@ -13,7 +13,7 @@ type Modo = 'imersivo' | 'essencial';
 
 // Previas com pecas DO GLYPH. Imersivo: o jardim zen ao fundo, com o bau, a
 // insignia por cima (sem exagerar no fantastico). Essencial: recortes de telas reais — o
-// planner, a faixa da arena e a placa do ciclo (public/assets/onboarding).
+// planner, duas arenas e a placa do ciclo com brilho (public/assets/onboarding).
 const ONBOARDING = '/assets/onboarding';
 
 const PreviaImersiva: React.FC = () => (
@@ -28,13 +28,19 @@ const PreviaImersiva: React.FC = () => (
 );
 
 const PreviaEssencial: React.FC = () => (
-    <div className="relative h-full overflow-hidden bg-[linear-gradient(180deg,#14120d,#0a0b0e)]">
-        {/* O planner de verdade, com as horas e duas acoes */}
-        <img src={`${ONBOARDING}/pedaco-planner.webp`} alt="" className="absolute bottom-0 left-0 h-[62%] w-[74%] rounded-tr-lg border-r border-t border-white/10 object-cover object-left-top" />
-        {/* A faixa da arena */}
-        <img src={`${ONBOARDING}/faixa-arena.webp`} alt="" className="absolute left-[4%] top-[7%] h-[30%] w-auto max-w-[68%] rounded-md object-contain shadow-[0_8px_18px_rgba(0,0,0,0.6)]" />
-        {/* A placa do ciclo, levemente girada por cima */}
-        <img src={`${ONBOARDING}/placa-ciclo.webp`} alt="" className="absolute right-[5%] top-1/2 h-[92%] w-auto -translate-y-1/2 rotate-[4deg] rounded-md object-contain shadow-[0_12px_28px_rgba(0,0,0,0.75)]" />
+    <div className="flex h-full items-center gap-2 bg-[linear-gradient(180deg,#121317,#08090b)] px-3 py-2.5">
+        {/* O planner de verdade: as horas e duas acoes */}
+        <img src={`${ONBOARDING}/pedaco-planner.webp`} alt="" className="h-full min-w-0 flex-[1.35] rounded-lg border border-white/10 object-cover object-left-top" />
+        {/* Duas arenas */}
+        <div className="flex h-full min-w-0 flex-1 flex-col justify-center gap-1.5">
+            <img src={`${ONBOARDING}/arena-corpo.webp`} alt="" className="min-h-0 w-full flex-1 object-contain" />
+            <img src={`${ONBOARDING}/arena-projeto.webp`} alt="" className="min-h-0 w-full flex-1 object-contain" />
+        </div>
+        {/* A placa do ciclo, reta, com o brilho dourado atras */}
+        <div className="relative flex h-full shrink-0 items-center justify-center px-1">
+            <div className="absolute inset-[-30%] bg-[radial-gradient(circle,rgba(243,212,138,0.32),rgba(8,10,12,0)_62%)]" />
+            <img src={`${ONBOARDING}/placa-ciclo.webp`} alt="" className="relative h-full w-auto object-contain drop-shadow-[0_8px_22px_rgba(243,212,138,0.35)]" />
+        </div>
     </div>
 );
 

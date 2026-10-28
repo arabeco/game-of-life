@@ -1,4 +1,4 @@
-import { avisoDaConquista, EVENTO_TROCAR_EXPERIENCIA, type Experiencia } from '../utils/avisoEssencial';
+import { avisoDaConquista, EVENTO_TROCAR_EXPERIENCIA, resumoDasGuardadas, type Experiencia } from '../utils/avisoEssencial';
 import { SplashScreen } from './SplashScreen';
 import { getPendingMembershipPurchase } from '../utils/membershipPurchase';
 import { useEnviarDiarioPendente } from '../hooks/useEnviarDiarioPendente';
@@ -696,10 +696,13 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
      * parecer um interruptor de ligar e desligar.
      */
     const [trocaDeExperiencia, setTrocaDeExperiencia] = useState<Experiencia | null>(null);
+    // O que entrou calado no Essencial, lido ANTES da troca apagar as marcas.
+    const resumoNaVoltaRef = useRef<string | null>(null);
     useEffect(() => {
         const aoTrocar = (event: Event) => {
             const modo = (event as CustomEvent<{ modo?: Experiencia }>).detail?.modo;
             if (modo !== 'essencial' && modo !== 'imersivo') return;
+            resumoNaVoltaRef.current = modo === 'imersivo' ? resumoDasGuardadas(userProfile.completedSeasonMissions) : null;
             setTrocaDeExperiencia(modo);
             definirExperiencia(modo);
         };
@@ -711,7 +714,10 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         setTrocaDeExperiencia(null);
         handleSetView('planner');
         window.dispatchEvent(new CustomEvent('tutorialRestScreen', { detail: { open: true } }));
-        showToast(modo === 'essencial' ? 'Experiência Essencial. Seu progresso continua todo guardado.' : 'Experiência Imersiva. Suas recompensas estão no Arsenal.', 'success');
+        // Um aviso so, em vez de um modal por conquista guardada.
+        const resumo = resumoNaVoltaRef.current;
+        resumoNaVoltaRef.current = null;
+        showToast(modo === 'essencial' ? 'Experiência Essencial. Seu progresso continua todo guardado.' : (resumo || 'Experiência Imersiva. Suas recompensas estão no Arsenal.'), 'success');
     }, [handleSetView, showToast, trocaDeExperiencia]);
 
     const handleNavTouchEnd = () => {

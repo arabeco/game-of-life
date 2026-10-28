@@ -6,6 +6,7 @@ import { isItemCatalogVisible, resolveItemDef } from '../constants/items';
 import type { UnlockCategory, UserUnlocks } from '../types';
 import { MARCA_DE_EXP_DO_SEGREDO, MARCA_DE_SEGREDO, expPendente, lerDescobertas, lerExpPago, montarModalDeSegredos, novasConquistas, type FatosDeSegredo } from '../utils/medidorDeSegredos';
 import { EVENTO_DE_SEGREDO, criarFilaDeSegredos, regraEscutaEvento, type EventoDeSegredo } from '../utils/eventosDeSegredos';
+import { MARCA_DE_GUARDADA } from '../utils/avisoEssencial';
 
 const CATEGORIA_DE_DESBLOQUEIO: Record<string, UnlockCategory> = { border: 'borders', banner: 'banners', skin: 'skins' };
 type Modal = ReturnType<typeof montarModalDeSegredos>;
@@ -123,6 +124,8 @@ export const useConquistasSecretas = ({ pausado }: { pausado: boolean }) => {
                         ...novas.map(regra => MARCA_DE_SEGREDO + regra.id),
                         ...Array.from(expPagoSessao, id => MARCA_DE_EXP_DO_SEGREDO + id),
                         ...novas.map(regra => MARCA_DE_EXP_DO_SEGREDO + regra.id),
+                        // Essencial: entrou calada. Na volta ao Imersivo, um aviso so.
+                        ...(api.current.modoEssencial ? novas.map(regra => MARCA_DE_GUARDADA + regra.id) : []),
                     ])),
                 });
                 if (!vigente()) return;

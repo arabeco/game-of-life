@@ -50,13 +50,36 @@ export const avisoDaConquista = ({ type, data }: Conquista): string | null => {
     }
 };
 
-// A mesma marca de utils/medidorDeSegredos (MARCA_DE_EXP_DO_SEGREDO): o EXP da
-// conquista foi pago. Repetida aqui para o aviso nao puxar o catalogo de itens.
-const MARCA_DO_EXP_PAGO = 'segredo-exp:';
 const EXP_DA_REGRA = new Map(REGRAS_DE_DESBLOQUEIO.map((regra) => [regra.id, expDaRegra(regra)]));
+const REGRA_POR_ID = new Map(REGRAS_DE_DESBLOQUEIO.map((regra) => [regra.id, regra]));
 
-/** O EXP que as conquistas secretas ja pagaram, para o cartao da patente no Essencial. */
+/*
+ * GUARDADAS (27/10/2026): as conquistas que entraram caladas no Essencial
+ * ficam marcadas assim ate a pessoa voltar ao Imersivo. La, um aviso so diz
+ * tudo o que entrou — em vez de dez modais seguidos — e as marcas saem.
+ */
+export const MARCA_DE_GUARDADA = 'guardada:';
+
+/** As marcas de uma conquista calada, a partir do id do modal (`segredo:a+b`). */
+export const marcasDeGuardada = (idDoModal: string | null | undefined): string[] =>
+    String(idDoModal || '').replace(/^segredo:/, '').split('+').filter(Boolean).map((id) => MARCA_DE_GUARDADA + id);
+
+/** O aviso unico de quem volta ao Imersivo; `null` se nada entrou calado. */
+export const resumoDasGuardadas = (marcas: readonly string[] | null | undefined): string | null => {
+    const regras = (marcas || [])
+        .filter((marca) => marca.startsWith(MARCA_DE_GUARDADA))
+        .map((marca) => REGRA_POR_ID.get(marca.slice(MARCA_DE_GUARDADA.length)))
+        .filter((regra): regra is NonNullable<typeof regra> => Boolean(regra));
+    if (!regras.length) return null;
+    const exp = regras.reduce((soma, regra) => soma + expDaRegra(regra), 0);
+    const itens = regras.reduce((soma, regra) => soma + regra.itens.length, 0);
+    const conquistas = regras.length === 1 ? '1 conquista secreta' : `${regras.length} conquistas secretas`;
+    const comItens = itens ? ` e ${itens} ${itens === 1 ? 'item' : 'itens'} no Arsenal` : '';
+    return `Enquanto você esteve no Essencial: ${conquistas}, +${exp.toLocaleString('pt-BR')} EXP${comItens}. Estão em Missões, em Segredos.`;
+};
+
+/** O EXP que entrou calado no Essencial, para o cartao da patente. */
 export const expDasConquistasGuardadas = (marcas: readonly string[] | null | undefined): number =>
     (marcas || []).reduce((soma, marca) => (
-        marca.startsWith(MARCA_DO_EXP_PAGO) ? soma + (EXP_DA_REGRA.get(marca.slice(MARCA_DO_EXP_PAGO.length)) || 0) : soma
+        marca.startsWith(MARCA_DE_GUARDADA) ? soma + (EXP_DA_REGRA.get(marca.slice(MARCA_DE_GUARDADA.length)) || 0) : soma
     ), 0);

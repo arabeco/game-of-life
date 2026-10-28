@@ -1,5 +1,6 @@
 import { EVENTO_AGENDAR_CAMPANHA, datasDaAcao, diasValidos, horarioSugerido, inicioDaFaseQueAbriu, modeloTemAgenda } from '../utils/agendaDaCampanha';
 import { copiaDaArena, diasAteConcluir, tarefasQueParam } from '../utils/arenaFinalizada';
+import { MARCA_DE_GUARDADA } from '../utils/avisoEssencial';
 import { habitosConsolidados } from '../utils/habitosConsolidados';
 import type { DailyFragmentReceipt } from '../components/DailyFragmentReward';
 import { GARDEN_BASKET_CHANGED, type GardenBasketReceipt } from '../services/gardenBasket';
@@ -9640,7 +9641,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const modoEssencial = Boolean(userProfile.completedSeasonMissions?.includes(PROFILE_FLAG_EXPERIENCIA_ESSENCIAL));
     const experienciaEscolhida = Boolean(userProfile.completedSeasonMissions?.includes(PROFILE_FLAG_EXPERIENCIA_ESCOLHIDA));
     const definirExperiencia = (modo: 'essencial' | 'imersivo') => {
-        const atuais = (userProfile.completedSeasonMissions || []).filter(flag => flag !== PROFILE_FLAG_EXPERIENCIA_ESSENCIAL);
+        // Voltando ao Imersivo, as conquistas guardadas ja foram avisadas (ver
+        // resumoDasGuardadas): as marcas saem junto com a do Essencial.
+        const atuais = (userProfile.completedSeasonMissions || []).filter(flag => (
+            flag !== PROFILE_FLAG_EXPERIENCIA_ESSENCIAL && !(modo === 'imersivo' && flag.startsWith(MARCA_DE_GUARDADA))
+        ));
         updateUserProfile({
             completedSeasonMissions: Array.from(new Set([
                 ...atuais,

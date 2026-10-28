@@ -18,7 +18,7 @@ import { APP_NAVIGATE_EVENT, type AppNavigatePayload } from '../utils/arenaAtten
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
 import { CheckIcon, MessageIcon, PlusIcon, RefreshCwIcon, TrashIcon, TrophyIcon, UsersIcon, XIcon } from './Icons';
-import { getDisplayLevel } from '../constants/lifeAreas';
+import { nivelOuTraco } from '../constants/lifeAreas';
 import { ArenaCard } from './ArenaCard';
 import { ArenaDetailModal } from './ArenaDetailModal';
 import { NewArenaModal } from './NewArenaModal';
@@ -862,7 +862,7 @@ export const ConnectionsModal: React.FC<{
               ) : inviteCandidates.map((friend) => (
                 <button key={friend.id} id={`connections-invite-friend-${friend.id}`} type="button" disabled={Boolean(busyKey)} onClick={() => void sendInvite(friend.id)} className="flex w-full items-center gap-3 rounded-lg border border-white/10 bg-white/[0.035] p-3 text-left hover:bg-white/[0.07]">
                   <Avatar profile={profileFromUser(friend)} />
-                  <div className="min-w-0 flex-1"><div className="truncate text-sm font-bold text-white">{friend.nickname}</div><div className="text-[10px] text-white/45">Nivel {getDisplayLevel(friend.level)}</div></div>
+                  <div className="min-w-0 flex-1"><div className="truncate text-sm font-bold text-white">{friend.nickname}</div><div className="text-[10px] text-white/45">Nivel {nivelOuTraco(friend.level)}</div></div>
                   <PlusIcon className="h-4 w-4 text-white/55" />
                 </button>
               ))}

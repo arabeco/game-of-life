@@ -145,6 +145,15 @@ export const getMasteryIndexFromLevels = (levels: readonly (number | null | unde
 export const getDisplayLevel = (rawLevel: number | null | undefined): number =>
   toMasteryIndex(Math.max(0, Number(rawLevel || 0)));
 
+/**
+ * O nivel de OUTRA pessoa, como texto (27/10/2026, com o Afonso): quem nunca
+ * avaliou a maestria nao esta no nivel 0 — nao tem nivel. Aparece um traco, e
+ * a bolinha do avatar nem aparece.
+ */
+export const temNivel = (rawLevel: number | null | undefined): boolean => Number(rawLevel) > 0;
+export const nivelOuTraco = (rawLevel: number | null | undefined): number | string =>
+  temNivel(rawLevel) ? getDisplayLevel(rawLevel) : '—';
+
 export const getMasteryIndexFromAssets = (
   assets: readonly { id: string; level?: number | null }[],
 ): number =>

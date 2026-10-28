@@ -9,7 +9,7 @@ import { Portal } from './Portal';
 import { UserAvatar } from './UserAvatar';
 import { Sovereign } from './Avatar';
 import { ClanEmblem } from './ClanEmblem';
-import { getDisplayLevel } from '../constants/lifeAreas';
+import { nivelOuTraco } from '../constants/lifeAreas';
 import { SovereignVitrineModal } from './SovereignVitrine';
 import { MissaoDoClaCard } from './MissaoDoClaCard';
 import { BarrinhaDeHumor } from './BarrinhaDeHumor';
@@ -322,7 +322,7 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
                                                         <span className="text-white/24"> · {Number(member.seasonContributionPoints || 0).toLocaleString('pt-BR')} nesta temporada</span>
                                                     </p>
                                                 </div>
-                                                <span className="text-xs font-black text-white/45">Nv. {getDisplayLevel(member.level)}</span>
+                                                <span className="text-xs font-black text-white/45">Nv. {nivelOuTraco(member.level)}</span>
                                             </div>
                                         ))}
                                         {!isLeader && (

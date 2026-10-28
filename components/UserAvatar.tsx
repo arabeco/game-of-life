@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BORDERS_DATA, SKINS_DATA } from '../constants';
-import { getDisplayLevel } from '../constants/lifeAreas';
+import { getDisplayLevel, temNivel } from '../constants/lifeAreas';
 
 interface UserAvatarProps {
     avatarUrl?: string;
@@ -89,7 +89,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
                 <div className="absolute bottom-[10%] right-[10%] w-[20%] h-[20%] bg-green-500 rounded-full border-2 border-gray-800 z-20" />
             )}
             
-            {level !== undefined && (
+            {temNivel(level) && (
                 <div className="absolute -bottom-1 -right-1 bg-gray-900/90 rounded-full w-6 h-6 flex items-center justify-center border border-[var(--skin-accent-color)] z-20 shadow-lg group-hover:scale-110 transition-transform">
                     <span className="text-[11px] font-black text-white">{getDisplayLevel(level)}</span>
                 </div>

@@ -230,8 +230,10 @@ const tests = [
             });
 
             assert.equal(snapshot.baseExp, 63);
-            assert.equal(snapshot.premiumBonusExp, 6);
-            assert.equal(snapshot.totalExp, 69);
+            // SEM PAY-TO-WIN (28/10/2026): sem taxa informada, plano nao da EXP.
+            // O padrao era 10% e duas contas do GameContext caiam nele.
+            assert.equal(snapshot.premiumBonusExp, 0);
+            assert.equal(snapshot.totalExp, 63);
             assert.equal(snapshot.completedCount, 1);
             assert.equal(snapshot.totalCount, 2);
         },

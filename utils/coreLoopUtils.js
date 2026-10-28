@@ -56,7 +56,9 @@ export const buildDailyExpSnapshot = ({
     operationalDate,
     taskIds = [],
     includePremium = false,
-    premiumRate = 0.1,
+    // SEM PAY-TO-WIN: o padrao e zero. Quem quiser bonus passa a taxa
+    // (getCycleXpBonusRate, hoje zero para todos os planos).
+    premiumRate = 0,
 }) => {
     const actionById = new Map(actions.map(action => [action.id, action]));
     const taskIdSet = new Set(taskIds);

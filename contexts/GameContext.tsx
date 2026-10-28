@@ -5071,6 +5071,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             operationalDate,
             taskIds,
             includePremium: hasPremiumAccess(userProfile),
+            premiumRate: getCycleXpBonusRate(userProfile),
         });
         const committedTasks = expSnapshot.trackedTasks;
         const completedAllCount = expSnapshot.completedAllCount;
@@ -5394,6 +5395,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 operationalDate,
                 taskIds,
                 includePremium: hasPremiumAccess(userProfile),
+                premiumRate: getCycleXpBonusRate(userProfile),
             });
 
             return { totalCount, completedCount, score, totalExp: expSnapshot.totalExp };

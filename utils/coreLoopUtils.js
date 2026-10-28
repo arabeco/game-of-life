@@ -29,14 +29,16 @@ const normalizeActionDifficulty = (value) => {
     return Math.min(3, Math.max(0, Math.round(numeric)));
 };
 
+// EXP = MINUTOS (28/10/2026, com o Afonso). Facil e media valem o tempo; so
+// a dificil multiplica, e a tela avisa isso na hora de escolher.
+export const EXP_DA_DIFICIL = 1.1;
+
 export const getActionExpMultiplier = (action) => {
     switch (normalizeActionDifficulty(action?.difficulty)) {
         case 0:
             return 0;
-        case 2:
-            return 1.05;
         case 3:
-            return 1.1;
+            return EXP_DA_DIFICIL;
         case 1:
         default:
             return 1;

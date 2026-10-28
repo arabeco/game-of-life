@@ -1855,6 +1855,10 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                             {advancedSubTab === 'context' && <>
                                 {!schedulePanelOpen ? <>
                                     {mode === 'edit' && canEditExecutionSettings && <StyledRangeInput label="Dificuldade" value={normalizeActionDifficulty(editableAction.difficulty)} min={0} max={3} step={1} unit={difficultyLabels[normalizeActionDifficulty(editableAction.difficulty)]} onChange={value => setEditableAction(p => ({...p, difficulty: value}))} />}
+                                    {/* EXP = minutos; so a ALTA multiplica, e avisa (28/10/2026). */}
+                                    {mode === 'edit' && canEditExecutionSettings && normalizeActionDifficulty(editableAction.difficulty) === 3 && (
+                                        <p className="-mt-1 text-[11px] font-semibold text-amber-200/90">Dificuldade alta: a EXP desta ação vale ×1,1 (cada minuto rende 10% a mais).</p>
+                                    )}
                                     {(mode === 'edit' || displayAction?.description) && <label className="action-context-note"><span>Contexto</span>
                                         {mode === 'edit' ? <textarea aria-label="Contexto da ação" maxLength={1000} value={editableAction.description || ''} disabled={!canEditAuthorialContent} onChange={e => setEditableAction(p => ({...p, description:e.target.value}))} placeholder="Onde ou em que situação?" /> : <p>{displayAction?.description}</p>}
                                     </label>}

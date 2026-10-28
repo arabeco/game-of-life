@@ -137,3 +137,5 @@ export function buildCyclePaceMetrics(
     tarefasSoDePresenca?: ScheduledTask[],
     commitment?: { plannedCount: number; completedCount: number },
 ): CyclePaceMetrics;
+
+export const EXP_DA_DIFICIL: number;

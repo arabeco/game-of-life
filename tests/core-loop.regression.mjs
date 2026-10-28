@@ -229,11 +229,13 @@ const tests = [
                 includePremium: true,
             });
 
-            assert.equal(snapshot.baseExp, 63);
+            // EXP = MINUTOS (28/10/2026, com o Afonso): 60 min na dificuldade
+            // media valem 60. So a dificil multiplica (x1,10).
+            assert.equal(snapshot.baseExp, 60);
             // SEM PAY-TO-WIN (28/10/2026): sem taxa informada, plano nao da EXP.
             // O padrao era 10% e duas contas do GameContext caiam nele.
             assert.equal(snapshot.premiumBonusExp, 0);
-            assert.equal(snapshot.totalExp, 63);
+            assert.equal(snapshot.totalExp, 60);
             assert.equal(snapshot.completedCount, 1);
             assert.equal(snapshot.totalCount, 2);
         },

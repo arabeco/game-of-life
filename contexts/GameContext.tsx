@@ -6893,7 +6893,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (!raw) return fallback;
         if (raw.includes('arena_snapshot')) return 'Seu banco ainda esta com o schema antigo da mentoria. Rode o SQL que libera arena_snapshot como opcional.';
         if (raw.includes('MENTOR_PREMIUM_REQUIRED')) return 'A mentoria básica não usa mais Premium. Se isso apareceu, o banco ainda esta com regra antiga.';
-        if (raw.includes('RELATIONSHIP_SLOT_LIMIT_REACHED')) return 'Sem vagas livres. Compre uma vaga ou ative Premium ou Platinum.';
+        if (raw.includes('FICHA_DE_VINCULO_NECESSARIA') || raw.includes('RELATIONSHIP_SLOT_LIMIT_REACHED')) return 'Sem fichas de vínculo. Compre uma ficha ou assine o Premium (2 por mês) ou o Platinum (5).';
         if (raw.includes('PUPIL_MENTOR_SLOT_LIMIT_REACHED')) return 'Esse pupilo já esta em outra mentoria ativa.';
         if (raw.includes('RELATIONSHIP_INVITE_ALREADY_PENDING')) return 'Já existe um convite pendente com esse aliado.';
         if (raw.includes('RELATIONSHIP_LINK_ALREADY_ACTIVE')) return 'Esse vínculo já esta ativo.';

@@ -23,7 +23,7 @@ import { ArenaCard } from './ArenaCard';
 import { ArenaDetailModal } from './ArenaDetailModal';
 import { NewArenaModal } from './NewArenaModal';
 import { CodexModal } from './CodexModal';
-import { getRelationshipLifecycle, getRelationshipLinkPrice, getRelationshipRenewalPrice } from '../constants/relationshipLinks';
+import { getRelationshipLifecycle } from '../constants/relationshipLinks';
 import { getArenaPresentationTasks } from '../utils/arenaProgressPresentation';
 
 type VisibleConnectionType = Extract<RelationshipLinkType, 'mentoria' | 'parceria' | 'competicao'>;
@@ -471,8 +471,9 @@ export const ConnectionsModal: React.FC<{
     const {error}=await supabase.rpc(name,args);
     if(error){
       const raw=String(error.message||'');
-      showToast(raw.includes('RELATIONSHIP_SLOT_LIMIT_REACHED') ? 'Sem vagas livres. Compre uma vaga no topo de Vínculos.' : 'Não foi possível concluir: '+raw,'error');
-      if(raw.includes('RELATIONSHIP_SLOT_LIMIT_REACHED')) await refresh();
+      const semFicha = raw.includes('FICHA_DE_VINCULO_NECESSARIA') || raw.includes('RELATIONSHIP_SLOT_LIMIT_REACHED');
+      showToast(semFicha ? 'Sem fichas de vínculo. Compre uma ficha no topo de Vínculos.' : 'Não foi possível concluir: '+raw,'error');
+      if(semFicha) await refresh();
       return false;
     }
     await refresh();window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));return true;
@@ -480,9 +481,7 @@ export const ConnectionsModal: React.FC<{
   const runBusy=async(key:string,action:()=>Promise<unknown>)=>{if(busyKey)return;setBusyKey(key);try{await action();}finally{setBusyKey(null);}};
   const renewLink=async(link:RelationshipLink)=>{
     const clientPays = link.linkType === 'mentoria';
-    const message = clientPays
-      ? 'A renovação usa uma vaga livre de quem oferece a mentoria. Os 30 dias começam no aceite.'
-      : `${getRelationshipRenewalPrice(link.linkType)} ouros serão reservados. Os 30 dias começam no aceite da outra pessoa.`;
+    const message = 'A renovação usa 1 ficha sua. Os 30 dias começam no aceite da outra pessoa; se ela recusar, a ficha volta.';
     if(!await confirm({title:'Propor renovação?',message,confirmLabel:'PROPOR'}))return;
     await runBusy('renew:'+link.id,async()=>{
       const renewed = clientPays
@@ -553,14 +552,21 @@ export const ConnectionsModal: React.FC<{
             </div>
           </header>
 
+          {/* AS FICHAS (28/10/2026): 1 ficha abre ou renova um vinculo por 30 dias.
+              O plano da fichas por mes (Premium 2, Platinum 5), que nao acumulam;
+              a ficha comprada fica guardada ate usar. */}
           {capacidade && (() => {
-            const vagas = capacidade.relationship_slot;
-            const livres = Math.max(0, vagas.limit - vagas.used);
+            const fichas = capacidade.relationship_slot;
+            const doPlano = Math.max(0, fichas.base - fichas.used);
+            const livres = doPlano + fichas.purchased;
             return (
               <div className="flex items-center justify-between gap-3 border-b border-amber-200/10 bg-amber-200/[0.035] px-4 py-2">
-                <div className="text-[10px] font-bold text-amber-100/80">Vagas livres: <span className="text-amber-200">{livres} / {vagas.limit}</span></div>
-                <button type="button" disabled={comprandoEspaco} onClick={async () => { setComprandoEspaco(true); try { if (await buyRelationshipCapacitySlot('relationship_slot', vagas.costGold)) await refresh(); } finally { setComprandoEspaco(false); } }} className="rounded-md border border-amber-200/25 bg-amber-200/[0.08] px-2 py-1 text-[9px] font-black uppercase tracking-[0.09em] text-amber-100 disabled:opacity-45">
-                  {comprandoEspaco ? 'Comprando…' : `Comprar vaga · ${vagas.costGold} ouro`}
+                <div className="text-[10px] font-bold text-amber-100/80" title="1 ficha abre ou renova um vínculo por 30 dias">
+                  Fichas: <span className="text-amber-200">{livres}</span>
+                  {fichas.base > 0 && <span className="ml-1 font-normal text-amber-100/50">({doPlano} do plano este mês{fichas.purchased > 0 ? ` · ${fichas.purchased} compradas` : ''})</span>}
+                </div>
+                <button type="button" disabled={comprandoEspaco} onClick={async () => { setComprandoEspaco(true); try { if (await buyRelationshipCapacitySlot('relationship_slot', fichas.costGold)) await refresh(); } finally { setComprandoEspaco(false); } }} className="rounded-md border border-amber-200/25 bg-amber-200/[0.08] px-2 py-1 text-[9px] font-black uppercase tracking-[0.09em] text-amber-100 disabled:opacity-45">
+                  {comprandoEspaco ? 'Comprando…' : `Comprar ficha · ${fichas.costGold} ouro`}
                 </button>
               </div>
             );
@@ -587,7 +593,7 @@ export const ConnectionsModal: React.FC<{
             </section>
 
             <section className="flex items-center justify-between gap-3">
-              <p className="text-[11px] leading-relaxed text-white/45">{typeCopy[activeType].description}{activeType === 'mentoria' ? ' · usa uma vaga do mentor' : ` · ${getRelationshipLinkPrice(activeType)} ouro${activeType!=='competicao'?' / 30 dias':' por duelo'}`}</p>
+              <p className="text-[11px] leading-relaxed text-white/45">{typeCopy[activeType].description}{activeType === 'competicao' ? ' · 1 ficha por duelo' : ' · 1 ficha · 30 dias'}</p>
               <button id="connections-invite-open" type="button" onClick={() => setInviteType(activeType)} className="shrink-0 rounded-md bg-[var(--skin-accent-color)] px-3 py-2 text-[10px] font-black uppercase tracking-[0.1em] text-black">
                 {typeCopy[activeType].invite}
               </button>
@@ -698,7 +704,7 @@ export const ConnectionsModal: React.FC<{
                           <button type="button" disabled={Boolean(busyKey)} onClick={() => void endLink(link)} className="p-2 text-white/45 hover:text-rose-200" aria-label="Encerrar conexão"><TrashIcon className="h-4 w-4" /></button>
                         </div>
 
-                        {!live && link.linkType!=='competicao' ? (<div className="mt-3 flex gap-2"><button disabled={Boolean(busyKey)} onClick={()=>void renewLink(link)} className="luxe-skin-button luxe-brilho rounded-lg px-4 py-3 text-xs font-black disabled:opacity-50 disabled:cursor-not-allowed">{link.linkType==='mentoria' ? 'Renovar com vaga' : `Renovar · ${getRelationshipRenewalPrice(link.linkType)} ouro`}</button><button disabled={Boolean(busyKey)} onClick={()=>void runBusy('hide:'+link.id,()=>runRelationshipRpc('hide_relationship_link',{p_link_id:link.id}))} className="text-xs text-white/50">Remover da minha lista</button></div>) : link.linkType === 'competicao' ? (
+                        {!live && link.linkType!=='competicao' ? (<div className="mt-3 flex gap-2"><button disabled={Boolean(busyKey)} onClick={()=>void renewLink(link)} className="luxe-skin-button luxe-brilho rounded-lg px-4 py-3 text-xs font-black disabled:opacity-50 disabled:cursor-not-allowed">{'Renovar · 1 ficha'}</button><button disabled={Boolean(busyKey)} onClick={()=>void runBusy('hide:'+link.id,()=>runRelationshipRpc('hide_relationship_link',{p_link_id:link.id}))} className="text-xs text-white/50">Remover da minha lista</button></div>) : link.linkType === 'competicao' ? (
                           <div className="mt-3 space-y-2">
                             {challengesForLink(link.id).length === 0 ? (
                               <p className="text-[11px] leading-relaxed text-white/45">Nenhum desafio registrado.</p>
@@ -851,7 +857,7 @@ export const ConnectionsModal: React.FC<{
           <div className="max-h-[70vh] w-full max-w-sm overflow-y-auto rounded-lg border border-white/12 bg-[#0b0c0f] p-4" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-center justify-between">
               <h3 className="text-base font-black text-white">{typeCopy[inviteType].invite}</h3>
-            <p className="my-2 text-xs text-white/60">{inviteType === 'mentoria' ? 'Ao aceitar, este vínculo usará uma vaga livre de quem oferece a mentoria.' : `${getRelationshipLinkPrice(inviteType)} ouros reservados no envio. Aceite confirma o pagamento; recusa ou expiração devolve a reserva.`}</p>
+            <p className="my-2 text-xs text-white/60">{'Enviar usa 1 ficha sua. Se a pessoa recusar ou o convite vencer, a ficha volta.'}</p>
             {inviteType==='mentoria'&&<label className="block text-xs text-white">Quero<select value={mentorshipRole} onChange={e=>setMentorshipRole(e.target.value as 'mentor'|'pupil')} className="ml-2 bg-black p-2"><option value="mentor">Oferecer mentoria</option><option value="pupil">Pedir mentoria</option></select></label>}
               <button aria-label="Voltar" type="button" onClick={() => setInviteType(null)} className="p-2 text-white/55"><XIcon className="h-4 w-4" /></button>
             </div>
@@ -1024,7 +1030,7 @@ export const ConnectionsModal: React.FC<{
       {creatingArena&&<NewArenaModal isOpen onClose={()=>setCreatingArena(false)} onArenaCreated={arena=>{setCreatingArena(false);setSelectedArenaId(arena.id);setEditingCreatedArena(arena);}}/>}
       {editingCreatedArena&&<ArenaDetailModal arena={assets.flatMap(a=>a.arenas).find(a=>a.id===editingCreatedArena.id)||editingCreatedArena} onClose={()=>setEditingCreatedArena(null)}/>}
       {reviewInvite&&<div className="fixed inset-0 z-[10040] flex items-center justify-center bg-black/80 p-4"><div className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-lg bg-[#10131a] p-5 text-white">
-        <h3 className="font-bold">{reviewInvite.renewalLinkId?'Renovar por 30 dias':'Revisar convite'}</h3><p className="my-2 text-sm">{reviewInvite.linkType === 'mentoria' ? 'Ao aceitar, a mentoria ocupará uma vaga livre de quem oferece o acompanhamento.' : `Quem enviou paga ${reviewInvite.costGold} ouros. Você não será cobrado.`}</p>
+        <h3 className="font-bold">{reviewInvite.renewalLinkId?'Renovar por 30 dias':'Revisar convite'}</h3><p className="my-2 text-sm">{'Quem enviou já usou 1 ficha. Você não paga nada para aceitar.'}</p>
         {reviewInvite.linkType==='mentoria'&&<p className="text-sm">{reviewInvite.pupilUserId===userProfile.id?'Você escolhe as arenas que a outra pessoa poderá acompanhar.':'Você acompanhará as arenas autorizadas pela outra pessoa.'}</p>}
         {reviewInvite.linkType==='competicao'&&<p className="text-sm">{reviewInvite.arenaSnapshot?.name} · {reviewInvite.arenaSnapshot?.durationDays} dias. Os dois começam do zero.</p>}
         {reviewInvite.actionsSnapshot?.map((a,index)=><p key={index} className="mt-2 text-xs text-white/70">{a.name} · {a.repetitions||1} repetições · {a.duration||0} min</p>)}

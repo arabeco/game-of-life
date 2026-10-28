@@ -470,3 +470,14 @@ create table if not exists public.daily_commitments (
   stage text default 'planning',
   exp_deposited integer
 );
+
+-- Fichas de vinculo (28/10/2026): o que a migracao le e nao existia aqui.
+alter table public.user_profiles add column if not exists relationship_slots_purchased integer not null default 0;
+alter table public.relationship_link_invites add column if not exists created_at timestamptz default now();
+alter table public.relationship_link_invites add column if not exists refunded_at timestamptz;
+create or replace function public._relationship_credit_gold(p_user_id uuid, p_amount integer, p_reason text, p_label text, p_meta jsonb)
+returns integer language sql as $$ select 0 $$;
+create or replace function public._relationship_linked_arena_capacity(p_user_id uuid)
+returns jsonb language sql as $$ select '{}'::jsonb $$;
+create or replace function public._competition_snapshot_arena_exists(p_arena_id uuid)
+returns boolean language sql as $$ select false $$;

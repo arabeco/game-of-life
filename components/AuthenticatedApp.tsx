@@ -1,4 +1,5 @@
-import { avisoDaConquista } from '../utils/avisoEssencial';
+import { avisoDaConquista, EVENTO_TROCAR_EXPERIENCIA, type Experiencia } from '../utils/avisoEssencial';
+import { SplashScreen } from './SplashScreen';
 import { getPendingMembershipPurchase } from '../utils/membershipPurchase';
 import { useEnviarDiarioPendente } from '../hooks/useEnviarDiarioPendente';
 import { speechVisualTone } from '../supabase/functions/_shared/oracle-visual-tone.ts';
@@ -458,7 +459,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
 }) => {
     const { isTutorialActive } = useTutorial();
     const { isBuilderMode, draftName, setDraftName, exitBuilderMode, packDraftToJson } = useCodexBuilder();
-    const { userProfile, activeTheme, notifications, showToast, assets, actions, tasks, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, achievementUnlocked, updateUserProfile, reports, activeArenaPact, arenaPactProgress, missaoIndividualDisponivel, isProfileLoaded, freeProgressResetAt, recordMoodEntry, modoEssencial } = useGame();
+    const { userProfile, activeTheme, notifications, showToast, assets, actions, tasks, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, achievementUnlocked, updateUserProfile, reports, activeArenaPact, arenaPactProgress, missaoIndividualDisponivel, isProfileLoaded, freeProgressResetAt, recordMoodEntry, modoEssencial, definirExperiencia } = useGame();
     // Diario escrito sem internet sai sozinho quando a conexao volta (18/10).
     useEnviarDiarioPendente(userProfile?.id, recordMoodEntry);
     const historyReady = useRef(false);
@@ -687,6 +688,31 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             return prev === nextView ?prev : nextView;
         });
     }, [canUseAssetsView, isBuilderMode]);
+
+    /*
+     * A TROCA DE EXPERIENCIA COMO RECOMECO (27/10/2026, com o Afonso): depois de
+     * confirmar nas Configuracoes, a abertura do Glyph roda por cima enquanto a
+     * troca acontece por baixo, e o app volta na tela de descanso. Para nao
+     * parecer um interruptor de ligar e desligar.
+     */
+    const [trocaDeExperiencia, setTrocaDeExperiencia] = useState<Experiencia | null>(null);
+    useEffect(() => {
+        const aoTrocar = (event: Event) => {
+            const modo = (event as CustomEvent<{ modo?: Experiencia }>).detail?.modo;
+            if (modo !== 'essencial' && modo !== 'imersivo') return;
+            setTrocaDeExperiencia(modo);
+            definirExperiencia(modo);
+        };
+        window.addEventListener(EVENTO_TROCAR_EXPERIENCIA, aoTrocar);
+        return () => window.removeEventListener(EVENTO_TROCAR_EXPERIENCIA, aoTrocar);
+    }, [definirExperiencia]);
+    const terminarTrocaDeExperiencia = useCallback(() => {
+        const modo = trocaDeExperiencia;
+        setTrocaDeExperiencia(null);
+        handleSetView('planner');
+        window.dispatchEvent(new CustomEvent('tutorialRestScreen', { detail: { open: true } }));
+        showToast(modo === 'essencial' ? 'Experiência Essencial. Seu progresso continua todo guardado.' : 'Experiência Imersiva. Suas recompensas estão no Arsenal.', 'success');
+    }, [handleSetView, showToast, trocaDeExperiencia]);
 
     const handleNavTouchEnd = () => {
         if (touchStartRef.current === null) return;
@@ -1631,6 +1657,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
                 onRestScreenVisibilityChange={setRestScreenVisible}
             />
             <TutorialBridge />
+            {trocaDeExperiencia && <SplashScreen onComplete={terminarTrocaDeExperiencia} />}
             <GlobalSeasonTransitionGate
                 enabled={
                     allowSeasonTransition &&

@@ -1,6 +1,5 @@
 import React from 'react';
-import { CATALOG_AVATAR_ROOT, CATALOG_INTERFACE_ROOT } from '../constants/catalogAssets';
-import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
+import { CATALOG_INTERFACE_ROOT } from '../constants/catalogAssets';
 
 /**
  * COMO VOCE PREFERE EVOLUIR? (27/10/2026, com o Afonso)
@@ -12,51 +11,30 @@ import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
  */
 type Modo = 'imersivo' | 'essencial';
 
-// Previas com pecas DO GLYPH (o bau, a insignia e um artefato do catalogo; o
-// planner e as barras do ciclo nas cores das areas), nao um painel generico.
+// Previas com pecas DO GLYPH. Imersivo: o jardim zen ao fundo, com o bau, a
+// insignia por cima (sem exagerar no fantastico). Essencial: recortes de telas reais — o
+// planner, a faixa da arena e a placa do ciclo (public/assets/onboarding).
+const ONBOARDING = '/assets/onboarding';
+
 const PreviaImersiva: React.FC = () => (
-    <div className="relative flex h-full items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_50%_62%,rgba(243,212,138,0.22),rgba(8,10,12,0)_58%),linear-gradient(180deg,#15110b,#07080a)]">
-        <img src={`${CATALOG_INTERFACE_ROOT}/insignia_missao_prata.webp`} alt="" className="absolute left-[9%] top-[22%] h-14 w-14 -rotate-6 object-contain drop-shadow-[0_6px_14px_rgba(0,0,0,0.7)] md:h-16 md:w-16" />
-        <img src={`${CATALOG_INTERFACE_ROOT}/bau_raro.webp`} alt="" className="relative h-[70%] max-h-36 w-auto object-contain drop-shadow-[0_10px_28px_rgba(243,212,138,0.35)]" />
-        <img src={`${CATALOG_AVATAR_ROOT}/ARTEFATO_T4_DRAGAO_BEBE.png`} alt="" className="absolute right-[8%] top-[18%] h-16 w-16 rotate-6 object-contain drop-shadow-[0_6px_14px_rgba(0,0,0,0.7)] md:h-20 md:w-20" />
-        <span className="absolute bottom-3 left-3 rounded-full border border-[#f3d48a]/40 bg-black/50 px-2 py-0.5 text-[10px] font-black text-[#f6dfab]">+300 EXP</span>
-        <span className="absolute bottom-3 right-3 rounded-full border border-amber-300/40 bg-black/50 px-2 py-0.5 text-[10px] font-black text-amber-200">🪙 +25</span>
+    <div className="relative h-full overflow-hidden bg-[#0b0d10]">
+        <img src={`${ONBOARDING}/jardim-cena.webp`} alt="" className="absolute inset-0 h-full w-full object-cover object-[50%_40%]" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,8,10,0.55),rgba(7,8,10,0.05)_45%,rgba(7,8,10,0.35)),linear-gradient(0deg,rgba(7,8,10,0.75),transparent_55%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-[radial-gradient(ellipse_at_62%_100%,rgba(243,212,138,0.38),transparent_65%)]" />
+        <img src={`${CATALOG_INTERFACE_ROOT}/bau_raro.webp`} alt="" className="absolute bottom-[4%] left-1/2 h-[62%] w-auto -translate-x-[10%] object-contain drop-shadow-[0_10px_24px_rgba(243,212,138,0.45)]" />
+        <img src={`${CATALOG_INTERFACE_ROOT}/insignia_missao_prata.webp`} alt="" className="absolute left-[6%] top-[10%] h-[38%] w-auto -rotate-6 object-contain drop-shadow-[0_6px_14px_rgba(0,0,0,0.75)]" />
+        <span className="absolute bottom-2.5 left-3 text-[11px] font-black text-[#f6dfab] [text-shadow:0_1px_6px_rgba(0,0,0,0.9)]">+300 EXP · 🪙 +25</span>
     </div>
 );
 
-const AREA = (id: string) => ASSET_ACCENT_COLORS[id as keyof typeof ASSET_ACCENT_COLORS] || '#d5b878';
-const BLOCOS = [
-    { hora: '07:00', nome: 'Treino', icone: '💪', area: 'saude', topo: 4, altura: 26 },
-    { hora: '09:00', nome: 'Foco no projeto', icone: '💼', area: 'trabalho', topo: 34, altura: 34 },
-    { hora: '19:30', nome: 'Leitura', icone: '📘', area: 'proposito', topo: 76, altura: 18 },
-];
-const BARRAS = [['saude', 82], ['trabalho', 64], ['relacoes', 48], ['proposito', 90], ['lazer', 55]] as const;
-
 const PreviaEssencial: React.FC = () => (
-    <div className="flex h-full gap-3 bg-[linear-gradient(180deg,#11141a,#0a0c10)] p-3">
-        {/* Um dia do planner */}
-        <div className="relative flex-1 overflow-hidden rounded-lg border border-white/8 bg-black/25">
-            {BLOCOS.map((bloco) => (
-                <div
-                    key={bloco.nome}
-                    className="absolute left-1.5 right-1.5 flex items-center gap-1.5 rounded-md px-2"
-                    style={{ top: `${bloco.topo}%`, height: `${bloco.altura}%`, background: `linear-gradient(135deg, ${AREA(bloco.area)}cc, ${AREA(bloco.area)}66)` }}
-                >
-                    <span className="text-[11px]" aria-hidden="true">{bloco.icone}</span>
-                    <span className="truncate text-[10px] font-bold text-white">{bloco.nome}</span>
-                    <span className="ml-auto text-[8px] text-white/70">{bloco.hora}</span>
-                </div>
-            ))}
-        </div>
-        {/* As barras do ciclo, uma por area */}
-        <div className="flex w-[38%] flex-col justify-center gap-1.5">
-            <div className="text-[8px] font-black uppercase tracking-[0.14em] text-white/45">Ciclo · 86%</div>
-            {BARRAS.map(([area, valor]) => (
-                <div key={area} className="h-2 rounded-full bg-white/8">
-                    <div className="h-full rounded-full" style={{ width: `${valor}%`, background: AREA(area) }} />
-                </div>
-            ))}
-        </div>
+    <div className="relative h-full overflow-hidden bg-[linear-gradient(180deg,#14120d,#0a0b0e)]">
+        {/* O planner de verdade, com as horas e duas acoes */}
+        <img src={`${ONBOARDING}/pedaco-planner.webp`} alt="" className="absolute bottom-0 left-0 h-[62%] w-[74%] rounded-tr-lg border-r border-t border-white/10 object-cover object-left-top" />
+        {/* A faixa da arena */}
+        <img src={`${ONBOARDING}/faixa-arena.webp`} alt="" className="absolute left-[4%] top-[7%] h-[30%] w-auto max-w-[68%] rounded-md object-contain shadow-[0_8px_18px_rgba(0,0,0,0.6)]" />
+        {/* A placa do ciclo, levemente girada por cima */}
+        <img src={`${ONBOARDING}/placa-ciclo.webp`} alt="" className="absolute right-[5%] top-1/2 h-[92%] w-auto -translate-y-1/2 rotate-[4deg] rounded-md object-contain shadow-[0_12px_28px_rgba(0,0,0,0.75)]" />
     </div>
 );
 

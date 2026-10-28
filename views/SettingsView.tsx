@@ -12,6 +12,7 @@ import { ChevronRightIcon, XIcon, LightbulbIcon, TrashIcon, CheckIcon, SendIcon,
 import { GlassCard } from '../components/GlassCard';
 import { CodexLibrary } from '../components/CodexLibrary';
 import { ConfirmationModal } from '../components/ConfirmationModal';
+import { EVENTO_TROCAR_EXPERIENCIA, type Experiencia } from '../utils/avisoEssencial';
 import { OracleSettingsModal } from '../components/OracleSettingsModal';
 import { BillingCheckoutGate } from '../components/Store/BillingCheckoutGate';
 import { Capacitor } from '@capacitor/core';
@@ -1910,8 +1911,9 @@ const GeralTab: React.FC = () => {
 };
 
 const PreferenciasTab: React.FC = () => {
-    const { userProfile, oraclePreferences, updateOraclePreferences, updateUserProfile, activeTheme, toggleTheme, inventory, setCurrentSkin, showToast, usarCodigoDeConvite, modoEssencial, definirExperiencia } = useGame();
+    const { userProfile, oraclePreferences, updateOraclePreferences, updateUserProfile, activeTheme, toggleTheme, inventory, setCurrentSkin, showToast, usarCodigoDeConvite, modoEssencial } = useGame();
     const [modal, setModal] = useState<'oracle' | 'tutorial' | 'privacy' | 'ui' | 'primer' | 'redeem' | null>(null);
+    const [trocarPara, setTrocarPara] = useState<Experiencia | null>(null);
     // O resgate termina numa TELA, nao num toast: e a unica hora em que a
     // pessoa digita alguma coisa esperando um premio.
     const [premioResgatado, setPremioResgatado] = useState<RewardModalPayload | null>(null);
@@ -2105,11 +2107,7 @@ const PreferenciasTab: React.FC = () => {
                                             key={modo}
                                             type="button"
                                             aria-pressed={ligado}
-                                            onClick={() => {
-                                                if (ligado) return;
-                                                definirExperiencia(modo);
-                                                showToast(modo === 'essencial' ? 'Experiência Essencial ligada. Seu progresso continua todo guardado.' : 'Experiência Imersiva ligada. Suas recompensas estão no Arsenal.', 'success');
-                                            }}
+                                            onClick={() => { if (!ligado) setTrocarPara(modo); }}
                                             className={`rounded-md px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.1em] ${ligado ? 'luxe-skin-button' : 'text-white/55'}`}
                                         >
                                             {modo === 'essencial' ? 'Essencial' : 'Imersivo'}
@@ -2119,6 +2117,22 @@ const PreferenciasTab: React.FC = () => {
                             </div>
                         </div>
                     </div>
+                    {trocarPara && (
+                        <ConfirmationModal
+                            eyebrow="EXPERIÊNCIA"
+                            title={trocarPara === 'essencial' ? 'Trocar para o Essencial?' : 'Trocar para o Imersivo?'}
+                            message={trocarPara === 'essencial'
+                                ? 'O Glyph recomeça mais limpo: sem recompensas, avatar, jardim e missões. Seu progresso, arenas e ciclos continuam iguais.'
+                                : 'O Glyph recomeça com recompensas, baús, avatar, jardim e missões. Seu progresso continua igual.'}
+                            confirmLabel="TROCAR"
+                            onCancel={() => setTrocarPara(null)}
+                            onConfirm={() => {
+                                const modo = trocarPara;
+                                setTrocarPara(null);
+                                window.dispatchEvent(new CustomEvent(EVENTO_TROCAR_EXPERIENCIA, { detail: { modo } }));
+                            }}
+                        />
+                    )}
                     <SettingSelector id="interface-settings-selector" label="Interface & Som" value={currentUiSkinName} onClick={() => setModal('ui')} />
                     <div id="oracle-preferences-setting">
                         <SettingSelector label="Oráculo & Alertas" value={activeModeName} onClick={() => setModal('oracle')} />

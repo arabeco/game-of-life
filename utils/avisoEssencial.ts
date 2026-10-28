@@ -5,6 +5,14 @@
  * dizendo o que aconteceu e o EXP. Bau, item e ouro continuam entrando em
  * silencio — quem trocar para Imersivo encontra tudo.
  */
+/**
+ * Trocar de experiencia nas Configuracoes nao e um interruptor: depois da
+ * confirmacao o app roda a abertura do Glyph e volta na tela de descanso, como
+ * um recomeco. Quem dispara e a tela de Configuracoes; quem toca e o app.
+ */
+export const EVENTO_TROCAR_EXPERIENCIA = 'glyph:trocar-experiencia';
+export type Experiencia = 'essencial' | 'imersivo';
+
 type Conquista = { type: string; data?: Record<string, any> | null };
 
 const exp = (data?: Record<string, any> | null) => {

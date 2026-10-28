@@ -15,18 +15,19 @@ import type { NobilityRank, UnlockCategory } from '../types';
  *     a tres horas por dia para sair de Vagante. A primeira promocao e a que
  *     ensina que a escada existe.
  *
- * Agora cada patente cai num numero redondo de HORAS, e o degrau cresce ate o
- * fim:
+ * A ESCADA DE 28/10/2026 (com o Afonso). A anterior (6k, 15k, 30k, 60k, 120k,
+ * 240k, 420k, 660k, 1M) subia rapido demais no meio: quem registra ~7 horas por
+ * dia chegava a Lorde em sete meses. O meio ficou mais longo e o topo igual:
  *
- *   Escudeiro    100 h      Conde       2.000 h
- *   Cavaleiro    250 h      Duque       4.000 h
- *   Lorde        500 h      Principe    7.000 h
- *   Barao      1.000 h      Rei        11.000 h
- *                           Soberano   16.667 h  (o milhao de EXP)
+ *   Escudeiro    6.000  (100 h)     Conde      150.000  (2.500 h)
+ *   Cavaleiro   20.000  (333 h)     Duque      250.000  (4.167 h)
+ *   Lorde       50.000  (833 h)     Principe   400.000  (6.667 h)
+ *   Barao      100.000  (1.667 h)   Rei        650.000  (10.833 h)
+ *                                   Soberano 1.000.000  (16.667 h)
  *
- * NINGUEM E REBAIXADO por esta troca: todos os limiares novos sao menores ou
- * iguais aos antigos, e a patente e derivada da EXP a cada leitura. Quem estava
- * numa patente continua nela ou sobe.
+ * ESTA TROCA PODE REBAIXAR: a patente e derivada da EXP a cada leitura, entao
+ * quem estava entre 30k e 50k volta a Cavaleiro (e assim por diante). Os itens
+ * ja ganhos ficam; so o titulo acompanha a EXP.
  *
  * `levelRequired` nao governa nada — nenhuma parte do app calcula nivel a
  * partir de EXP. Fica como rotulo.
@@ -34,13 +35,13 @@ import type { NobilityRank, UnlockCategory } from '../types';
 export const NOBILITY_RANKS: NobilityRank[] = [
     { id: 'vagante', name: 'Vagante', levelRequired: 1, expTotalRequired: 0 },
     { id: 'escudeiro', name: 'Escudeiro', levelRequired: 10, expTotalRequired: 6000 },
-    { id: 'cavaleiro', name: 'Cavaleiro', levelRequired: 20, expTotalRequired: 15000 },
-    { id: 'lorde', name: 'Lorde', levelRequired: 30, expTotalRequired: 30000 },
-    { id: 'barao', name: 'Barão', levelRequired: 40, expTotalRequired: 60000 },
-    { id: 'conde', name: 'Conde', levelRequired: 50, expTotalRequired: 120000 },
-    { id: 'duque', name: 'Duque', levelRequired: 60, expTotalRequired: 240000 },
-    { id: 'principe', name: 'Príncipe', levelRequired: 70, expTotalRequired: 420000 },
-    { id: 'rei', name: 'Rei', levelRequired: 80, expTotalRequired: 660000 },
+    { id: 'cavaleiro', name: 'Cavaleiro', levelRequired: 20, expTotalRequired: 20000 },
+    { id: 'lorde', name: 'Lorde', levelRequired: 30, expTotalRequired: 50000 },
+    { id: 'barao', name: 'Barão', levelRequired: 40, expTotalRequired: 100000 },
+    { id: 'conde', name: 'Conde', levelRequired: 50, expTotalRequired: 150000 },
+    { id: 'duque', name: 'Duque', levelRequired: 60, expTotalRequired: 250000 },
+    { id: 'principe', name: 'Príncipe', levelRequired: 70, expTotalRequired: 400000 },
+    { id: 'rei', name: 'Rei', levelRequired: 80, expTotalRequired: 650000 },
     { id: 'soberano', name: 'Soberano', levelRequired: 90, expTotalRequired: 1000000 },
 ];
 

@@ -1238,9 +1238,6 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     const displayActionTypeLabel = displayAction?.actionType === 'Livre'
         ? 'Livre (sem alvo)'
         : (displayAction?.actionType || 'Ação Recorrente');
-    const displayDifficultyLabel = displayAction?.actionType === 'Livre'
-        ? 'sem EXP'
-        : null;
     const displaySurfaceBadge = displayAction ? resolveActionSurfaceBadge(displayAction) : null;
     const briefingPages = React.useMemo(() => paginateBriefing(displayAction?.briefing), [displayAction?.briefing]);
     const briefingPreviewText = React.useMemo(() => {
@@ -1629,7 +1626,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                             <div className="reference-stat"><strong>{formatDurationLabel(effectiveDuration)}</strong><small>por vez</small></div>
                                             {displayAction.actionType === 'Ação Recorrente' && <div className="reference-stat"><strong>{displayAction.repetitions}</strong><small>repetições</small></div>}
                                         </div>
-                                        <p className="reference-action-kind">{displayActionTypeLabel} · {displayDifficultyLabel || difficultyLabels[displayDifficulty]}</p>
+                                        <p className="reference-action-kind">{displayActionTypeLabel} · {difficultyLabels[displayDifficulty]}</p>
                                         {!isPreview && hasTaskInstanceContext && canStartNow && (
                                             <button type="button" onClick={handleStartMission} className="mt-1 text-[10px] font-black uppercase tracking-[0.14em] text-white/42 transition-colors hover:text-[var(--skin-accent-color)]">
                                                 ▷ Começar agora

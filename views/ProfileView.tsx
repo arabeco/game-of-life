@@ -313,8 +313,10 @@ export const ShareableProfileCard: React.FC<{
     assets: Asset[];
     /** Soma das curtidas recebidas. `null` = a base nao conta curtidas. */
     curtidasRecebidas?: number | null;
-}> = ({ id, userProfile, clanName, clanRank, assets, curtidasRecebidas = null }) => {
-    const selectedBorder = [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === userProfile.border);
+    /** Experiencia Essencial: sem borda, banner, soberano nem bolinha de nivel. */
+    essencial?: boolean;
+}> = ({ id, userProfile, clanName, clanRank, assets, curtidasRecebidas = null, essencial = false }) => {
+    const selectedBorder = essencial ? undefined : [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === userProfile.border);
     const activeAssetCount = assets.filter((asset) => asset.id !== 'geral').length;
     const totalArenas = assets.reduce((sum, asset) => sum + asset.arenas.length, 0);
     const masteryLevels = assets.filter((asset) => asset.id !== 'geral').map((asset) => Math.max(0, asset.level || 0));
@@ -376,9 +378,9 @@ export const ShareableProfileCard: React.FC<{
                         </div>
 
                         {/* Level Badge */}
-                        <div className="absolute -bottom-1 -right-1 bg-gray-800 rounded-full w-10 h-10 flex items-center justify-center border-2 z-50" style={{ borderColor: selectedBorder?.color || 'var(--skin-accent-color)' }}>
+                        {!essencial && <div className="absolute -bottom-1 -right-1 bg-gray-800 rounded-full w-10 h-10 flex items-center justify-center border-2 z-50" style={{ borderColor: selectedBorder?.color || 'var(--skin-accent-color)' }}>
                             <span className="text-lg font-black text-white">{masteryIndex}</span>
-                        </div>
+                        </div>}
                     </div>
 
                     {/* Name & Clan */}
@@ -399,7 +401,7 @@ export const ShareableProfileCard: React.FC<{
                 </div>
 
                 {/* Banner */}
-                {userProfile.bannerUrl && (
+                {userProfile.bannerUrl && !essencial && (
                     <div className="pt-0 pb-0 text-center flex items-center justify-center -my-1 px-4">
                         <img
                             src={resolveCatalogAssetUrl(userProfile.bannerUrl)}
@@ -455,7 +457,7 @@ export const ShareableProfileCard: React.FC<{
             )}
 
             {/* UNIFIED POSITIONING: Match the Live Profile View */}
-            {userProfile.sovereign && (
+            {userProfile.sovereign && !essencial && (
                 <UnifiedSovereignDisplay
                     sovereignConfig={userProfile.sovereign}
                     className="absolute top-[60px] right-4 w-[70px] h-[95px]"
@@ -717,7 +719,9 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
         setActiveWidgetTab(defaultProfileTab);
     }, [defaultProfileTab, isOwnProfile, profile?.id]);
 
-    const selectedBorder = [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === displayProfile.border);
+    // Essencial (27/10/2026): sem enfeite — sem borda, banner nem soberano, no
+    // seu perfil e no dos outros. Os itens continuam guardados.
+    const selectedBorder = modoEssencial ? undefined : [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === displayProfile.border);
 
     // CRITICAL FIX: Use fetched clan data for other profiles
     const currentClanRank = isOwnProfile ? (clan ? clanRanks.find(r => r.id === clan.rankId) : undefined) : viewedClanRank;
@@ -751,6 +755,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                     clanRank={currentClanRank}
                     assets={profileAssets}
                     curtidasRecebidas={curtidasRecebidas}
+                    essencial={modoEssencial}
                 />
             </div>
             <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center animate-fade-in p-4" onClick={onClose}>
@@ -837,8 +842,8 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                             <div className="-mt-2 flex flex-col items-center text-center">
                                 <div className="relative h-36 w-36">
                                     <button
-                                        onClick={() => isEditing && setBorderModalOpen(true)}
-                                        disabled={!isEditing}
+                                        onClick={() => isEditing && !modoEssencial && setBorderModalOpen(true)}
+                                        disabled={!isEditing || modoEssencial}
                                         className="absolute -inset-1 z-10"
                                         aria-label="Editar borda"
                                         title="Editar borda"
@@ -881,13 +886,15 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                         >
                                             Foto
                                         </button>
-                                        <button
-                                            onClick={() => setBorderModalOpen(true)}
-                                            className="px-3 py-1.5 rounded-xl border border-white/15 bg-black/45 backdrop-blur-sm text-[10px] font-bold uppercase tracking-widest text-white/85 hover:bg-white/10 transition-colors"
-                                            title="Editar borda"
-                                        >
-                                            Borda
-                                        </button>
+                                        {!modoEssencial && (
+                                            <button
+                                                onClick={() => setBorderModalOpen(true)}
+                                                className="px-3 py-1.5 rounded-xl border border-white/15 bg-black/45 backdrop-blur-sm text-[10px] font-bold uppercase tracking-widest text-white/85 hover:bg-white/10 transition-colors"
+                                                title="Editar borda"
+                                            >
+                                                Borda
+                                            </button>
+                                        )}
                                     </div>
                                 )}
 
@@ -960,7 +967,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                             </div>
 
                             <div className="mt-2 px-4 pb-0 w-full">
-                                {displayProfile.bannerUrl ? (
+                                {modoEssencial ? null : displayProfile.bannerUrl ? (
                                     <div className="relative group mb-0 -my-1 px-4 flex items-center justify-center">
                                         <img src={resolveCatalogAssetUrl(displayProfile.bannerUrl)} alt="Banner" className="mx-auto h-[52px] max-w-[94%] object-contain" crossOrigin="anonymous" />
                                         {isEditing && isOwnProfile && (
@@ -1167,7 +1174,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                         )}
 
                         {/* Unified Sovereign Display */}
-                        {displayProfile.sovereign && (
+                        {displayProfile.sovereign && !modoEssencial && (
                             <UnifiedSovereignDisplay
                                 sovereignConfig={displayProfile.sovereign}
                                 /* Clicar abre a VITRINE, que e onde o soberano se ve

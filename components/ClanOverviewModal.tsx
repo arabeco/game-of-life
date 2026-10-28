@@ -57,6 +57,7 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
         clan,
         clanRanks,
         humorDoCla,
+        modoEssencial,
         enrichedClanMembers,
         loadClanAndMembers,
         leaveClan,
@@ -255,6 +256,13 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
                                                         className={`relative flex w-[104px] shrink-0 flex-col items-center origin-bottom ${member.role === 'leader' ? 'scale-110' : ''}`}
                                                         style={{ zIndex: member.role === 'leader' ? 20 : Math.max(1, 10 - index) }}
                                                     >
+                                                        {/* Essencial: o palco mostra a foto (ou a inicial), sem
+                                                            soberano e sem vitrine. */}
+                                                        {modoEssencial ? (
+                                                            <div className="flex h-[112px] w-[104px] items-end justify-center pb-6">
+                                                                <UserAvatar avatarUrl={member.avatarUrl} nickname={member.nickname} className="h-16 w-16" showBorder={false} />
+                                                            </div>
+                                                        ) : (
                                                         <button
                                                             type="button"
                                                             onClick={() => setMembroNaVitrine(member)}
@@ -270,6 +278,7 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
                                                                 className="absolute left-1/2 top-1/2 h-[142%] w-[142%] -translate-x-1/2 -translate-y-1/2 object-contain"
                                                             />
                                                         </button>
+                                                        )}
                                                         <div className="relative -mt-5 max-w-[96px] rounded-full border border-white/12 bg-black/75 px-2 py-1 text-center backdrop-blur-sm">
                                                             <p className="truncate text-[8px] font-black uppercase tracking-[0.05em] text-white/82">{member.nickname}</p>
                                                         </div>

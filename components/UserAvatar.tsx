@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { BORDERS_DATA, SKINS_DATA } from '../constants';
 import { getDisplayLevel, temNivel } from '../constants/lifeAreas';
+import { GameContext } from '../contexts/GameContext';
 
 interface UserAvatarProps {
     avatarUrl?: string;
@@ -32,7 +33,11 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
     level,
     imgProps
 }) => {
-    const selectedBorder = borderId ? [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === borderId) : null;
+    // Essencial (27/10/2026): sem borda de item e sem a bolinha de nivel em
+    // ninguem — quem escolheu o modo sem enfeite acha ate isso demais. Lido sem
+    // o useGame para o avatar continuar funcionando fora do provedor.
+    const modoEssencial = Boolean(useContext(GameContext)?.modoEssencial);
+    const selectedBorder = borderId && !modoEssencial ? [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === borderId) : null;
     const normalizedAvatarUrl = avatarUrl?.trim();
     const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | null>(null);
     const canRenderAvatar = Boolean(normalizedAvatarUrl && failedAvatarUrl !== normalizedAvatarUrl);
@@ -89,7 +94,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
                 <div className="absolute bottom-[10%] right-[10%] w-[20%] h-[20%] bg-green-500 rounded-full border-2 border-gray-800 z-20" />
             )}
             
-            {temNivel(level) && (
+            {temNivel(level) && !modoEssencial && (
                 <div className="absolute -bottom-1 -right-1 bg-gray-900/90 rounded-full w-6 h-6 flex items-center justify-center border border-[var(--skin-accent-color)] z-20 shadow-lg group-hover:scale-110 transition-transform">
                     <span className="text-[11px] font-black text-white">{getDisplayLevel(level)}</span>
                 </div>

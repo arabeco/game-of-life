@@ -14,7 +14,7 @@ interface ClanMemberCardProps {
 }
 
 export const ClanMemberCard: React.FC<ClanMemberCardProps> = ({ member, isLeaderView, onKick }) => {
-    const { nobilityRanks, userProfile, clan } = useGame();
+    const { nobilityRanks, userProfile, clan, modoEssencial } = useGame();
     const isOfficeClan = clan?.clanType?.toLowerCase() === 'office';
     const rank = nobilityRanks.find(r => r.id === member.nobility.rankId);
     const isSelf = member.id === userProfile.id;
@@ -39,7 +39,8 @@ export const ClanMemberCard: React.FC<ClanMemberCardProps> = ({ member, isLeader
                 isto, roupa, cabelo e aura nao tem plateia nenhuma.
                 Quem nao montou soberano cai no avatarUrl, que e o que sempre
                 foi. */}
-            {member.sovereign ? (
+            {/* No Essencial ninguem aparece de soberano: foto ou inicial. */}
+            {member.sovereign && !modoEssencial ? (
                 <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-black/30">
                     <CanvasAvatar sovereignConfig={member.sovereign} className="h-full w-full object-contain" width={96} height={96} />
                 </div>

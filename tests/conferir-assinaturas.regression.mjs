@@ -26,4 +26,11 @@ const agora = Date.parse('2026-10-28T12:00:00Z');
 assert.equal(hojeConfere(null, agora), true, 'nunca conferiu');
 assert.equal(hojeConfere(agora - 2 * 3600e3, agora), false, 'conferiu ha 2 horas');
 assert.equal(hojeConfere(agora - 7 * 3600e3, agora), true, 'conferiu ha 7 horas');
-console.log('Conferir assinaturas: so as do Glyph, compradas, no maximo a cada 6 horas.');
+// Plano vencido ou vencendo em menos de 1 dia: confere em toda abertura. Senao
+// o mes renovado pela Play ficava ate 6 horas aparecendo como vencido.
+const dia = 24 * 3600e3;
+assert.equal(hojeConfere(agora - 1 * 3600e3, agora, new Date(agora - 60e3).toISOString()), true, 'plano vencido confere ja');
+assert.equal(hojeConfere(agora - 1 * 3600e3, agora, new Date(agora + 5 * 60e3).toISOString()), true, 'vence em 5 minutos confere ja');
+assert.equal(hojeConfere(agora - 1 * 3600e3, agora, new Date(agora + 10 * dia).toISOString()), false, 'vence em 10 dias espera as 6 horas');
+assert.equal(hojeConfere(agora - 1 * 3600e3, agora, null), false, 'sem plano espera as 6 horas');
+console.log('Conferir assinaturas: so as do Glyph, compradas, a cada 6 horas, ou em toda abertura perto do vencimento.');

@@ -40,7 +40,20 @@ export const assinaturasParaConferir = (compras: NativeStoreBillingPurchaseResul
     });
 
 const SEIS_HORAS = 6 * 60 * 60 * 1000;
+const UM_DIA = 24 * 60 * 60 * 1000;
 
-/** Confere no maximo a cada 6 horas: renovacao e mensal, nao precisa de mais. */
-export const hojeConfere = (ultimaConferencia: number | null, agora: number = Date.now()): boolean =>
-    !ultimaConferencia || !Number.isFinite(ultimaConferencia) || agora - ultimaConferencia >= SEIS_HORAS;
+/**
+ * Confere a cada 6 horas: renovacao e mensal, nao precisa de mais. Mas com o
+ * plano vencido ou vencendo em menos de 1 dia, confere em toda abertura: e a
+ * hora em que a Play cobra o mes seguinte, e esperar 6 horas mostraria como
+ * vencido um plano ja pago.
+ */
+export const hojeConfere = (
+    ultimaConferencia: number | null,
+    agora: number = Date.now(),
+    planoVenceEm: string | null = null,
+): boolean => {
+    const vence = planoVenceEm ? Date.parse(planoVenceEm) : NaN;
+    if (Number.isFinite(vence) && vence - agora < UM_DIA) return true;
+    return !ultimaConferencia || !Number.isFinite(ultimaConferencia) || agora - ultimaConferencia >= SEIS_HORAS;
+};

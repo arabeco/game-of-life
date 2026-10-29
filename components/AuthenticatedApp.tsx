@@ -474,7 +474,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         const chave = `glyph-conferiu-assinaturas:${userId}`;
         let ultima: number | null = null;
         try { ultima = Number(window.localStorage.getItem(chave)) || null; } catch { ultima = null; }
-        if (!hojeConfere(ultima)) return;
+        if (!hojeConfere(ultima, Date.now(), userProfile?.premiumExpiresAt || null)) return;
         let vigente = true;
         void (async () => {
             try {

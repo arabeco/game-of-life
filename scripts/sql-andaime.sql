@@ -491,3 +491,12 @@ create table if not exists public.codex_catalog (
   price_gold integer,
   price_brl numeric(10,2)
 );
+
+-- Teste do Luigi (29/10): as fichas e as colunas reais de user_purchases.
+alter table public.user_profiles add column if not exists fichas_de_vinculo integer not null default 0;
+alter table public.user_purchases add column if not exists payment_id text;
+alter table public.user_purchases add column if not exists gold_amount integer;
+alter table public.user_purchases add column if not exists amount_paid numeric(10, 2);
+alter table public.user_purchases add column if not exists status text;
+alter table public.user_purchases add column if not exists created_at timestamptz default now();
+alter table public.user_purchases add column if not exists metadata jsonb;

@@ -563,7 +563,7 @@ export const ConnectionsModal: React.FC<{
               <div className="flex items-center justify-between gap-3 border-b border-amber-200/10 bg-amber-200/[0.035] px-4 py-2">
                 <div className="text-[10px] font-bold text-amber-100/80" title="1 ficha abre ou renova um vínculo por 30 dias">
                   Fichas: <span className="text-amber-200">{livres}</span>
-                  {fichas.base > 0 && <span className="ml-1 font-normal text-amber-100/50">({doPlano} do plano este mês{fichas.purchased > 0 ? ` · ${fichas.purchased} compradas` : ''})</span>}
+                  {fichas.base > 0 && <span className="ml-1 font-normal text-amber-100/50">({doPlano} do plano este mês{fichas.purchased > 0 ? ` · ${fichas.purchased} comprada${fichas.purchased > 1 ? 's' : ''}` : ''})</span>}
                 </div>
                 <button type="button" disabled={comprandoEspaco} onClick={async () => { setComprandoEspaco(true); try { if (await buyRelationshipCapacitySlot('relationship_slot', fichas.costGold)) await refresh(); } finally { setComprandoEspaco(false); } }} className="rounded-md border border-amber-200/25 bg-amber-200/[0.08] px-2 py-1 text-[9px] font-black uppercase tracking-[0.09em] text-amber-100 disabled:opacity-45">
                   {comprandoEspaco ? 'Comprando…' : `Comprar ficha · ${fichas.costGold} ouro`}

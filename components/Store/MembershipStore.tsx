@@ -154,8 +154,14 @@ export const MembershipStore: React.FC<{ scrollRequest?: { section: string; nonc
     const isPlatinum = hasPlatinumAccess(userProfile);
     const activeMembershipTier = getActiveSubscriptionTier(userProfile);
     const premiumDaysRemaining = getPremiumDaysRemaining(userProfile);
-    const premiumExpiresLabel = userProfile.premiumExpiresAt
-        ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date(userProfile.premiumExpiresAt))
+    // Faltando menos de 2 dias, a hora entra: e quando a Play renova, e "ate 29
+    // de out." nao diz se ainda vale hoje a noite.
+    const premiumExpiresAt = userProfile.premiumExpiresAt ? new Date(userProfile.premiumExpiresAt) : null;
+    const venceLogo = premiumExpiresAt ? premiumExpiresAt.getTime() - Date.now() < 2 * 24 * 60 * 60 * 1000 : false;
+    const premiumExpiresLabel = premiumExpiresAt
+        ? new Intl.DateTimeFormat('pt-BR', venceLogo
+            ? { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }
+            : { day: '2-digit', month: 'short' }).format(premiumExpiresAt)
         : null;
     const moneyCheckoutSalesCopy = getMoneyCheckoutSalesCopy();
 

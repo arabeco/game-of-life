@@ -11,17 +11,17 @@ import { build } from 'esbuild';
  * 1. Num ciclo de segunda a domingo (14 dias), domingo e 7 e 14. O widget
  *    mostrava 13: desenhava o "Dia N/T" que o app mandou da ultima vez que foi
  *    aberto. Agora o widget calcula o dia sozinho (CicloDoWidget.java), pela
- *    mesma regra do app: o primeiro dia e o 1, hoje ja conta, o dia vira as 4h.
+ *    mesma regra do app: o primeiro dia e o 1, hoje aparece no rotulo mas so entra na barra quando acaba, o dia vira as 4h.
  * 2. A linha Tempo mostra a porcentagem ao lado do dia, como a de Progresso:
- *    "Dia 7/14 (50%)" — no widget e no cartao do ciclo (Ativos e Arenas, o mesmo
+ *    "Dia 7/14 (43%)" — no widget e no cartao do ciclo (Ativos e Arenas, o mesmo
  *    CycleSummaryCard).
  */
 const saida = await build({ entryPoints: ['utils/dateUtils.ts'], bundle: true, write: false, platform: 'node', format: 'esm' });
 const { getCycleTimingSummary } = await import('data:text/javascript;base64,' + Buffer.from(saida.outputFiles[0].text).toString('base64'));
 const rotulo = (hoje) => { const t = getCycleTimingSummary('2026-10-06', '2026-10-19', hoje); return `${t.statusLabel} (${Math.round(t.timeProgress)}%)`; };
-assert.equal(rotulo('2026-10-06'), 'Dia 1/14 (7%)', 'o primeiro dia ja conta');
-assert.equal(rotulo('2026-10-12'), 'Dia 7/14 (50%)', 'o primeiro domingo e o dia 7');
-assert.equal(rotulo('2026-10-19'), 'Dia 14/14 (100%)', 'o segundo domingo e o dia 14');
+assert.equal(rotulo('2026-10-06'), 'Dia 1/14 (0%)', 'o primeiro dia aparece no rotulo, a barra so anda quando ele acaba');
+assert.equal(rotulo('2026-10-12'), 'Dia 7/14 (43%)', 'o primeiro domingo e o dia 7');
+assert.equal(rotulo('2026-10-19'), 'Dia 14/14 (93%)', 'o segundo domingo e o dia 14');
 
 // O cartao do app mostra a porcentagem ao lado do dia.
 const cartao = readFileSync(new URL('../components/CycleSummaryCard.tsx', import.meta.url), 'utf8');
@@ -50,4 +50,4 @@ int[] r = CicloDoWidget.tempo("2026-10-06", "2026-10-19", c); System.out.println
   assert.deepEqual(doJava, doApp, 'o widget e o app contam o dia diferente');
   console.log('  (conferido tambem no Java: 16 dias iguais ao app)');
 }
-console.log('Tempo do ciclo: dia certo no widget sem abrir o app, e "Dia 7/14 (50%)" nos dois.');
+console.log('Tempo do ciclo: dia certo no widget sem abrir o app, e "Dia 7/14 (43%)" nos dois.');

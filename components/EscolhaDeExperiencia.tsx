@@ -44,6 +44,23 @@ const PreviaEssencial: React.FC = () => (
     </div>
 );
 
+// Cada cartao tem a sua cor para nao sumir no fundo: dourado no Imersivo (recompensas),
+// prata no Essencial (limpo). Borda, brilho e fundo tingido; o fundo escuro segue por baixo.
+const ACENTO: Record<Modo, { borda: string; brilho: string; fundo: string; nome: string }> = {
+    imersivo: {
+        borda: 'rgba(226,191,106,0.6)',
+        brilho: '0 0 28px rgba(226,191,106,0.2)',
+        fundo: 'linear-gradient(180deg, rgba(226,191,106,0.16), #0d0f12 48%)',
+        nome: '#f3d48a',
+    },
+    essencial: {
+        borda: 'rgba(206,214,224,0.55)',
+        brilho: '0 0 28px rgba(206,214,224,0.16)',
+        fundo: 'linear-gradient(180deg, rgba(206,214,224,0.14), #0d0f12 48%)',
+        nome: '#e3e8ef',
+    },
+};
+
 const OPCOES: Array<{ id: Modo; nome: string; texto: string; tem: string; semIsso?: string; Previa: React.FC }> = [
     { id: 'imersivo', nome: 'Imersivo', texto: 'Sua evolução vira uma jornada.', tem: 'Tudo, com recompensas, baús, avatar, jardim e missões.', Previa: PreviaImersiva },
     { id: 'essencial', nome: 'Essencial', texto: 'Metas, planner e resultados, sem distração.', tem: 'Arenas, planner, ciclos, Oráculo e campanhas.', semIsso: 'Sem recompensas, avatar, jardim e missões.', Previa: PreviaEssencial },
@@ -51,8 +68,8 @@ const OPCOES: Array<{ id: Modo; nome: string; texto: string; tem: string; semIss
 
 export const EscolhaDeExperiencia: React.FC<{ onEscolher: (modo: Modo) => void }> = ({ onEscolher }) => (
     <div
-        className="fixed inset-0 z-[10040] flex items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_top,rgba(243,212,138,0.08),transparent_55%),#07080a] px-4"
-        style={{ paddingTop: 'calc(1rem + var(--safe-area-top, 0px))', paddingBottom: 'calc(1rem + var(--safe-area-bottom, 0px))' }}
+        className="fixed inset-0 z-[10040] flex items-center justify-center overflow-hidden px-4"
+        style={{ background: 'radial-gradient(circle at top, rgba(243,212,138,0.08), transparent 55%), #07080a', paddingTop: 'calc(1rem + var(--safe-area-top, 0px))', paddingBottom: 'calc(1rem + var(--safe-area-bottom, 0px))' }}
         role="dialog"
         aria-modal="true"
         aria-labelledby="escolha-experiencia-titulo"
@@ -67,14 +84,15 @@ export const EscolhaDeExperiencia: React.FC<{ onEscolher: (modo: Modo) => void }
                         key={id}
                         type="button"
                         onClick={() => onEscolher(id)}
-                        className="overflow-hidden rounded-2xl border border-white/12 bg-white/[0.03] text-left transition-all hover:border-[#f3d48a]/55 focus-visible:border-[#f3d48a] active:scale-[0.99]"
+                        className="overflow-hidden rounded-2xl border text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f3d48a]/70 active:scale-[0.99]"
+                        style={{ borderColor: ACENTO[id].borda, boxShadow: ACENTO[id].brilho, background: ACENTO[id].fundo }}
                     >
                         <div className="h-[clamp(6.5rem,17svh,11rem)] overflow-hidden border-b border-white/8">
                             <Previa />
                         </div>
                         <div className="px-4 py-3">
                             <div className="flex items-baseline gap-2">
-                                <span className="text-base font-black text-white">{nome}</span>
+                                <span className="text-base font-black" style={{ color: ACENTO[id].nome }}>{nome}</span>
                                 <span className="text-[12px] text-white/55">{texto}</span>
                             </div>
                             <p className="mt-1.5 text-[12px] leading-snug text-emerald-200/80"><span aria-hidden="true">✓ </span>{tem}</p>

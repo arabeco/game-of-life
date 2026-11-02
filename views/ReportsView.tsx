@@ -1261,8 +1261,9 @@ export const ReportsView: React.FC<{
             content: {
                 title: report.cycleName || activeCycle?.name || 'um ciclo',
                 score: report.performanceScore,
-                // A nota leva o fundo da placa ao card dos Feitos.
-                grade: report.grade || undefined,
+                // A nota leva o fundo da placa ao card dos Feitos. Relatorio
+                // antigo nao gravou a dele: vai a do score, a mesma do carrossel.
+                grade: report.grade || getScoreGrade(report.performanceScore, report.metrics?.fairness).grade || undefined,
                 deliveries: report.metrics?.actionsCompleted,
                 exp: report.expGained ?? report.metrics?.expGained,
                 days: report.metrics?.consistencyDays,

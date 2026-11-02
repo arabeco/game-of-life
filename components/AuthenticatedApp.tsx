@@ -1711,7 +1711,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
                 onRestScreenVisibilityChange={setRestScreenVisible}
             />
             <TutorialBridge />
-            {trocaDeExperiencia && <SplashScreen onComplete={terminarTrocaDeExperiencia} />}
+            {trocaDeExperiencia && <SplashScreen sempreComVideo onComplete={terminarTrocaDeExperiencia} />}
             <GlobalSeasonTransitionGate
                 enabled={
                     allowSeasonTransition &&

@@ -7,10 +7,12 @@ import { consumeNativeBackgroundSplashHint } from '../utils/appResumeSplashHint'
 interface SplashScreenProps {
     onComplete: () => void;
     isLoading?: boolean;
+    /** A troca Imersivo/Essencial: toca o video mesmo com acao rodando ou volta do fundo pendente. */
+    sempreComVideo?: boolean;
 }
 
-export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete, isLoading }) => {
-    const [preferQuietResume] = useState(() => consumeNativeBackgroundSplashHint() || hasActivePersistedRestScreenActionSession());
+export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete, isLoading, sempreComVideo }) => {
+    const [preferQuietResume] = useState(() => !sempreComVideo && (consumeNativeBackgroundSplashHint() || hasActivePersistedRestScreenActionSession()));
     const splashMaxDuration = preferQuietResume ? 1200 : 5200;
     const splashFadeDuration = preferQuietResume ? 320 : 520;
     const splashMinDuration = preferQuietResume ? 680 : 0;

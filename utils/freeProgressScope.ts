@@ -1,4 +1,5 @@
 import type { ScheduledTask, UserProfile } from '../types';
+import { getOperationalDateString } from './operationalDay.js';
 
 export const FREE_PROGRESS_RESET_FLAG_PREFIX = 'free_progress_reset_at:';
 
@@ -112,8 +113,12 @@ export const filterTasksAfterFreeProgressReset = <T extends ScheduledTask>(tasks
     if (Number.isNaN(resetTime)) return tasks;
     const marca = new Date(resetTime);
     const doisDigitos = (n: number) => String(n).padStart(2, '0');
-    const diaDaMarca = `${marca.getFullYear()}-${doisDigitos(marca.getMonth() + 1)}-${doisDigitos(marca.getDate())}`;
+    // A meia-noite do "Continuar" e o comeco de um dia; qualquer outra hora e o
+    // dia do Glyph, que so vira as 4h (zerar as 2h ainda e o dia anterior).
     const naVirada = marca.getHours() === 0 && marca.getMinutes() === 0 && marca.getSeconds() === 0 && marca.getMilliseconds() === 0;
+    const diaDaMarca = naVirada
+        ? `${marca.getFullYear()}-${doisDigitos(marca.getMonth() + 1)}-${doisDigitos(marca.getDate())}`
+        : getOperationalDateString(marca);
     return tasks.filter((task) => {
         if (typeof task.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(task.date)) {
             if (task.date < diaDaMarca) return false;

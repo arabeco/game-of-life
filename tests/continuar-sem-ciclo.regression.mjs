@@ -149,6 +149,21 @@ const marca = marcaDeRodadaDepoisDoCiclo(relatorio);
     );
 }
 
+// 6c. Zerar de madrugada vale para o dia do Glyph, que so vira as 4h.
+{
+    const zerarAs2h = new Date(2026, 10, 3, 2, 0, 0, 0).toISOString(); // 03/11 02:00, ainda dia 02
+    assert.deepEqual(
+        filterTasksAfterFreeProgressReset([
+            { id: 'dia-02-antes', date: '2026-11-02', completedAt: new Date(2026, 10, 3, 1, 0).toISOString() },
+            { id: 'dia-02-depois', date: '2026-11-02', completedAt: new Date(2026, 10, 3, 3, 0).toISOString() },
+            { id: 'dia-03', date: '2026-11-03', completedAt: new Date(2026, 10, 3, 9, 0).toISOString() },
+            { id: 'dia-01', date: '2026-11-01', completedAt: new Date(2026, 10, 3, 3, 30).toISOString() },
+        ], zerarAs2h).map((t) => t.id),
+        ['dia-02-depois', 'dia-03'],
+        'zerar as 2h tratou o dia como 03 em vez do dia 02 do Glyph',
+    );
+}
+
 // 7. Relatorio sem data nao inventa marca.
 //
 // Devolver uma marca invalida seria pior do que nao devolver nenhuma: a marca

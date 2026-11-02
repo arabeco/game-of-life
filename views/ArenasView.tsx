@@ -1,3 +1,4 @@
+import { getActiveSubscriptionTier } from '../utils/premiumAccess';
 import { capaDaCampanha } from '../components/CapaDaCampanha';
 import { diasAteConcluir } from '../utils/arenaFinalizada';
 import { getCampaignGradient } from '../utils/arenaTones';
@@ -97,11 +98,24 @@ export const ArenasView: React.FC = () => {
     const campaigns = useMemo(() => allCampaigns.filter(c => c.status === 'active'), [allCampaigns]);
     const arenaCapacity = capacidadeDasArenas;
     const arenaCapacityRate = arenaCapacity.limit > 0 ? arenaCapacity.total / arenaCapacity.limit : 0;
-    const arenaCapacityTone = arenaCapacityRate >= 1
-        ? 'border-rose-400/45 bg-rose-500/12 text-rose-200'
+    // A borda diz o plano (ouro no Premium, platina no Platinum); o numero diz
+    // o quanto falta: normal, amarelo perto do limite, vermelho no limite.
+    const planoDasArenas = getActiveSubscriptionTier(userProfile);
+    const arenaCapacityBorda = planoDasArenas === 'platinum'
+        ? 'border-[#d6dee8]/60'
+        : planoDasArenas === 'premium'
+            ? 'border-[#e2bf6a]/60'
+            : 'border-white/10';
+    const arenaCapacityNumero = arenaCapacityRate >= 1
+        ? 'text-rose-300'
         : arenaCapacityRate >= 0.75
-            ? 'border-amber-300/35 bg-amber-400/10 text-amber-100'
-            : 'border-white/10 bg-black/25 text-white/48';
+            ? 'text-amber-200'
+            : planoDasArenas === 'platinum'
+                ? 'text-[#e6ecf3]'
+                : planoDasArenas === 'premium'
+                    ? 'text-[#ecd08a]'
+                    : 'text-white/70';
+    const arenaCapacityTone = `${arenaCapacityBorda} bg-black/25 ${arenaCapacityNumero}`;
     const arenaCapacityTitle = arenaCapacityRate >= 1
         ? `Limite de arenas atingido: ${arenaCapacity.total} de ${arenaCapacity.limit}. Arquive/finalize ou renove para criar outra.`
         : arenaCapacityRate >= 0.75

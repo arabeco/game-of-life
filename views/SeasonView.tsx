@@ -118,7 +118,11 @@ export const SeasonQuestCard: React.FC<{
             type="button"
             onClick={onClick}
             aria-label={`${title}, ${metaLabel}, ${estado}${onde && isAccepted ? `, ${onde}` : ''}`}
-            className="group relative flex h-10 w-full items-center gap-2.5 overflow-hidden rounded-lg border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] pl-3.5 pr-3 text-left transition-colors hover:border-[var(--ui-border-accent-soft)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--skin-accent-color)] active:scale-[0.99]"
+            className="group relative flex h-10 w-full items-center gap-2.5 overflow-hidden rounded-lg border border-white/[0.09] pl-3.5 pr-3 text-left transition-colors hover:border-[var(--ui-border-accent-soft)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--skin-accent-color)] active:scale-[0.99]"
+            /* A cor da familia sai da barrinha e se apaga antes do meio, sobre o
+               fundo do nucleo. A borda dourada cheia em volta de fundo preto
+               chapado era dura demais no Ouro escuro (02/11/2026). */
+            style={{ background: `linear-gradient(90deg, color-mix(in srgb, ${cor} 20%, transparent) 0%, color-mix(in srgb, ${cor} 7%, transparent) 38%, transparent 72%), var(--ui-core-surface-bg)` }}
         >
             <span aria-hidden="true" className="absolute inset-y-0 left-0 w-[3px]" style={{ background: cor }} />
             <span aria-hidden="true" className="shrink-0 text-base leading-none">{icon || '📜'}</span>

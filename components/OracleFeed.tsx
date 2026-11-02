@@ -77,7 +77,9 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab: ini
                 <div id="oracle-feed-backdrop" className="absolute inset-0 bg-black/40 backdrop-blur-[2px] pointer-events-auto" onClick={onClose} />
                 <GlassCard
                     variant="neutral"
-                    className="w-full max-w-lg h-[80vh] pointer-events-auto rounded-3xl flex flex-col overflow-hidden !p-0 border border-white/10 shadow-2xl relative"
+                    /* A BORDA FECHA O PAINEL (02/11/2026): com border-white/10 a moldura
+                       sumia no fundo escuro e o painel parecia nao ter fim embaixo. */
+                    className="w-full max-w-lg h-[80vh] pointer-events-auto rounded-3xl flex flex-col overflow-hidden !p-0 border border-[var(--skin-accent-color)]/35 shadow-[0_18px_50px_rgba(0,0,0,0.65),0_0_0_1px_rgba(0,0,0,0.6)] relative"
                     onClick={(event) => event.stopPropagation()}
                 >
                     <div className="flex-none flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/40 gap-4">
@@ -117,6 +119,8 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab: ini
                                         initialSection={initialSection}
                                         onClose={onClose}
                                         isEmbedded={true}
+                                        // Um cabecalho so: o deste painel (Conversar, Alertas e o X).
+                                        hideHeader
                                         onNavigateTab={(tab) => setActiveTab(tab === 'requests' ? 'requests' : 'chat')}
                                     />
                                 </Suspense>

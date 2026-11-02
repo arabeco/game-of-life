@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
+import { ditadoDisponivel, ouvirUmaFrase } from '../utils/ditado';
 
 /**
  * PERGUNTE AO ORACULO (02/11/2026, com o Afonso).
@@ -21,6 +22,31 @@ export const PerguntaAoOraculo: React.FC<{
     const [enviando, setEnviando] = useState(false);
     const [cota, setCota] = useState<Cota | null>(null);
     const [aviso, setAviso] = useState<string | null>(null);
+    const [temDitado, setTemDitado] = useState(false);
+    const [ouvindo, setOuvindo] = useState(false);
+
+    useEffect(() => {
+        let vivo = true;
+        void ditadoDisponivel().then((sim) => { if (vivo) setTemDitado(sim); });
+        return () => { vivo = false; };
+    }, []);
+
+    // Fala e vira texto na caixa; a pessoa confere e manda.
+    const ditar = useCallback(async () => {
+        if (ouvindo || enviando) return;
+        setOuvindo(true);
+        setAviso(null);
+        try {
+            const falado = await ouvirUmaFrase();
+            if (falado) setTexto((atual) => (atual ? `${atual} ${falado}` : falado).slice(0, 400));
+        } catch (erro) {
+            setAviso((erro as Error)?.message === 'SEM_PERMISSAO'
+                ? 'Para falar a pergunta, libere o microfone para o Glyph.'
+                : 'Não deu para ouvir agora. Tente de novo ou digite.');
+        } finally {
+            setOuvindo(false);
+        }
+    }, [enviando, ouvindo]);
 
     useEffect(() => {
         let vivo = true;
@@ -87,11 +113,25 @@ export const PerguntaAoOraculo: React.FC<{
                         onChange={(event) => setTexto(event.target.value.slice(0, 400))}
                         onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void enviar(); } }}
                         rows={1}
-                        placeholder="Pergunte ao Oráculo sobre seus padrões…"
+                        placeholder="Pergunte ao Oráculo…"
                         aria-label="Pergunta ao Oráculo"
                         disabled={enviando}
                         className="max-h-28 min-h-11 flex-1 resize-none rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/35 focus:border-[var(--skin-accent-color)]/60 focus:outline-none"
                     />
+                    {temDitado && (
+                        <button
+                            type="button"
+                            onClick={() => { void ditar(); }}
+                            disabled={enviando}
+                            aria-label={ouvindo ? 'Ouvindo' : 'Falar a pergunta'}
+                            className={`grid min-h-11 w-11 shrink-0 place-items-center rounded-xl border transition-colors disabled:opacity-40 ${ouvindo ? 'animate-pulse border-[var(--skin-accent-color)] bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)]' : 'border-white/15 bg-white/5 text-white/70'}`}
+                        >
+                            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <rect x="9" y="3" width="6" height="11" rx="3" />
+                                <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+                            </svg>
+                        </button>
+                    )}
                     <button
                         type="submit"
                         disabled={enviando || !texto.trim()}

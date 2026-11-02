@@ -87,16 +87,15 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <!--
-      RECORD_AUDIO saiu daqui.
+      RECORD_AUDIO VOLTOU (02/11/2026), agora com uso: o microfone da pergunta ao
+      Oraculo com IA. Ela nao esta declarada aqui: vem do plugin
+      @capacitor-community/speech-recognition, que entra no manifest na montagem.
+      O audio vai para o reconhecimento de voz do proprio Android, que devolve o
+      texto; o Glyph nao grava nem guarda audio.
 
-      Ela sobrou do Oraculo por voz, que nao existe mais. O Deep Work so TOCA
-      som de fundo, e pra isso quem serve e MODIFY_AUDIO_SETTINGS, logo abaixo.
-      Nada no app grava: nao ha getUserMedia nem MediaRecorder no codigo.
-
-      Permissao sem uso nao e detalhe. Ela aparece como "Microfone" na ficha da
-      Play Store, pra todo mundo que for instalar, e puxa pergunta no
-      formulario de Seguranca dos Dados — tudo isso sem o app usar o microfone
-      uma vez sequer.
+      (Tinha saido em 02/10 porque sobrava de um Oraculo por voz antigo, sem uso.
+      Permissao aparece como "Microfone" na ficha da Play e puxa pergunta no
+      formulario de Seguranca dos Dados.)
     -->
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />

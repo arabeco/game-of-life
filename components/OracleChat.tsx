@@ -657,7 +657,9 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   
   // Custom header for Embedded mode (since default header might be hidden)
   // If isEmbedded is true, we render a smaller status bar inside the chat area if header is hidden
-  const showStatusPill = hideHeader;
+  // Dentro do painel do Oraculo nao ha faixa de tom: o painel ja tem o cabecalho
+  // dele, e tres andares de barra no topo pesavam (02/11/2026).
+  const showStatusPill = hideHeader && !isEmbedded;
 
   // Mesma lista de permissao da linha que monta `section`. Eram duas decisoes do
   // mesmo destino em dois lugares, e a segunda continuava sendo por exclusao:

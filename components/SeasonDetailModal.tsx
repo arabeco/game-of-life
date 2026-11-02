@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useMemo, useState } from 'react';
 import { GlassCard } from './GlassCard';
 import { CheckIcon } from './Icons';
+import { ExpValor } from './ExpValor';
 import { PROFILE_FLAG_TUTORIAL_COMPLETED, useGame } from '../contexts/GameContext';
 import { ChestType, Season, SeasonMission, SeasonQuest } from '../types';
 import { Portal } from './Portal';
@@ -194,8 +195,8 @@ export const QuestDetailModal: React.FC<{
 
             <div className="grid grid-cols-3 gap-3">
                 <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-3 text-center">
-                    <div className="text-[10px] font-black uppercase tracking-[0.16em] text-white/48">XP</div>
-                    <div className="mt-1 text-lg font-black text-white">+{quest.rewards.xp}</div>
+                    <div className="text-[10px] font-black uppercase tracking-[0.16em] text-white/48">EXP</div>
+                    <div className="mt-1 flex justify-center text-lg font-black text-white"><ExpValor exp={quest.rewards.xp} tamanho={18} /></div>
                 </div>
                 <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-3 text-center">
                     <div className="text-[10px] font-black uppercase tracking-[0.16em] text-white/48">Meta</div>
@@ -236,9 +237,11 @@ export const QuestDetailModal: React.FC<{
                 <div className="flex items-center justify-between gap-3">
                     <div>
                         <div className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-200">Recompensas</div>
-                        <div className="mt-1 text-sm font-black uppercase tracking-[0.12em] text-white">{rewardSummary}</div>
+                        <div className="mt-1 text-sm font-black uppercase tracking-[0.12em] text-white">
+                            {rewardSummary === `+${quest.rewards.xp} XP` ? <ExpValor exp={quest.rewards.xp} /> : rewardSummary}
+                        </div>
                         {quest.rewards.xp > 0 && rewardSummary !== `+${quest.rewards.xp} XP` && (
-                            <div className="mt-1 text-[11px] font-bold text-white/55">+{quest.rewards.xp} XP</div>
+                            <div className="mt-1 text-[11px] font-bold text-white/70"><ExpValor exp={quest.rewards.xp} tamanho={14} /></div>
                         )}
                     </div>
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] border border-amber-300/30 bg-black/20 text-2xl shadow-[0_0_18px_rgba(251,191,36,0.16)]">
@@ -291,12 +294,11 @@ const MissionRewardPreview: React.FC<{ mission: SeasonMission }> = ({ mission })
                     })}
                 </div>
             ) : (
-                <div className="mt-2 text-sm font-bold text-white/72">{xp > 0 ? `+${xp} XP` : 'Recompensa da temporada'}</div>
+                <div className="mt-2 text-sm font-bold text-white/80">{xp > 0 ? <ExpValor exp={xp} /> : 'Recompensa da temporada'}</div>
             )}
             {xp > 0 && rewardItems.length > 0 && (
                 <div className="mt-3 flex items-center gap-2 border-t border-white/8 pt-2 text-[10px] font-black uppercase tracking-[0.14em] text-white/66">
-                    <span className="grid h-6 w-6 place-items-center border border-white/10 bg-black/30 text-[12px]">✦</span>
-                    +{xp} XP
+                    <ExpValor exp={xp} tamanho={14} />
                 </div>
             )}
         </section>

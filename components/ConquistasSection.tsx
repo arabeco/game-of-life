@@ -5,6 +5,7 @@ import { resolveItemDef } from '../constants/items';
 import { lerDescobertas } from '../utils/medidorDeSegredos';
 import { ItemArt } from './ItemArt';
 import { ChevronDownIcon } from './Icons';
+import { ExpValor } from './ExpValor';
 
 /**
  * MISSOES → CONQUISTAS (chamava "Segredos" ate 22/10/2026; virou o mesmo nome
@@ -52,8 +53,8 @@ export const ConquistasSection: React.FC = () => {
                             </div>
                             <div className="flex shrink-0 gap-1">
                                 {regra.itens.length === 0 && (
-                                    <span className="flex h-8 items-center rounded-md border border-amber-200/20 bg-amber-300/10 px-2 text-[10px] font-bold text-amber-100/85">
-                                        +{(expDaRegra(regra) / 1000).toLocaleString('pt-BR')} mil EXP
+                                    <span className="flex h-8 items-center rounded-md border border-amber-200/20 bg-amber-300/10 px-2 text-[11px] font-black text-amber-100">
+                                        <ExpValor exp={expDaRegra(regra)} />
                                     </span>
                                 )}
                                 {regra.itens.map((itemId) => {

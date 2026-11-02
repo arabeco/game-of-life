@@ -122,7 +122,10 @@ export const SeasonQuestCard: React.FC<{
         >
             <span aria-hidden="true" className="absolute inset-y-0 left-0 w-[3px]" style={{ background: cor }} />
             <span aria-hidden="true" className="shrink-0 text-base leading-none">{icon || '📜'}</span>
-            <span className="min-w-0 flex-1 truncate text-[13px] font-bold text-[var(--ui-card-text)]" title={title}>{title}</span>
+            {/* --text-primary, e nao --ui-card-text: este e o texto feito para o
+                cartao da skin (claro no Ouro), e a faixa tem o fundo escuro do
+                nucleo. No Ouro escuro o nome sumia (02/11/2026). */}
+            <span className="min-w-0 flex-1 truncate text-[13px] font-bold text-[var(--text-primary)]" title={title}>{title}</span>
             {typeof participants === 'number' && (
                 <span className="flex shrink-0 items-center gap-1 text-[10px] text-[var(--ui-core-caption-color)]">
                     <UsersIcon className="h-3 w-3" />
@@ -131,7 +134,7 @@ export const SeasonQuestCard: React.FC<{
             )}
             {isCompleted
                 ? <CheckIcon className="h-4 w-4 shrink-0 text-green-400" />
-                : <span className={`shrink-0 text-[10px] font-black tabular-nums ${isAccepted ? 'text-[var(--ui-card-text-soft)]' : 'uppercase tracking-[0.08em] text-[var(--ui-core-caption-color)]'}`}>{onde}</span>}
+                : <span className={`shrink-0 text-[10px] font-black tabular-nums ${isAccepted ? 'text-[var(--text-secondary)]' : 'uppercase tracking-[0.08em] text-[var(--ui-core-caption-color)]'}`}>{onde}</span>}
             <span aria-hidden="true" className="absolute bottom-0 left-[3px] right-0 h-[2px] bg-[var(--ui-core-pill-bg)]">
                 <span className="block h-full transition-all duration-700 ease-out" style={{ width: `${Math.max(0, Math.min(100, progress))}%`, background: cor }} />
             </span>

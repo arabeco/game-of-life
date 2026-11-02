@@ -350,11 +350,13 @@ const naPasta = (relativo) => fs.existsSync(path.join(root, 'public', relativo.r
         custo: rank.expTotalRequired - NOBILITY_RANKS[i].expTotalRequired,
     }));
 
+    // A escada de 28/10/2026 (do Afonso) tem dois degraus iguais no meio:
+    // Lorde→Barao e Barao→Conde custam 50 mil cada. Igual pode; descer nao.
     for (let i = 1; i < degraus.length; i += 1) {
         assert.ok(
-            degraus[i].custo > degraus[i - 1].custo,
-            `${degraus[i].nome} custa ${degraus[i].custo}, o mesmo ou menos que ${degraus[i - 1].nome} ` +
-            `(${degraus[i - 1].custo}) — a escada parou de subir`,
+            degraus[i].custo >= degraus[i - 1].custo,
+            `${degraus[i].nome} custa ${degraus[i].custo}, menos que ${degraus[i - 1].nome} ` +
+            `(${degraus[i - 1].custo}) — a escada desceu`,
         );
     }
 

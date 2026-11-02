@@ -1,3 +1,5 @@
+// O fuso de quem usa: no Brasil, a meia-noite local e 03:00 em UTC.
+process.env.TZ = 'America/Sao_Paulo';
 import assert from 'node:assert/strict';
 import {
     filterTasksAfterFreeProgressReset,
@@ -40,7 +42,7 @@ const marca = marcaDeRodadaDepoisDoCiclo(relatorio);
 
 // 1. A marca cai no dia seguinte ao fim do ciclo.
 {
-    assert.equal(marca, '2026-09-21T00:00:00.000Z', 'a marca deveria ser a zero hora do dia seguinte ao fim do ciclo');
+    assert.equal(marca, '2026-09-21T03:00:00.000Z', 'a marca deveria ser a zero hora do dia seguinte ao fim do ciclo');
 }
 
 // 2. Nenhuma tarefa do ciclo sobrevive ao filtro da rodada.
@@ -78,7 +80,7 @@ const marca = marcaDeRodadaDepoisDoCiclo(relatorio);
 // 5. Um ciclo de um dia so tambem fecha direito.
 {
     const curto = marcaDeRodadaDepoisDoCiclo({ startDate: '2026-09-20', endDate: '2026-09-20' });
-    assert.equal(curto, '2026-09-21T00:00:00.000Z');
+    assert.equal(curto, '2026-09-21T03:00:00.000Z');
 }
 
 // 6. ENCERRAR NO MEIO. A marca segue o dia em que se fechou, nao o planejado.
@@ -99,7 +101,7 @@ const marca = marcaDeRodadaDepoisDoCiclo(relatorio);
         plannedEndDate: '2026-09-30', // ia ate o fim do mes
     };
     const marcaDoMeio = marcaDeRodadaDepoisDoCiclo(encerradoNoMeio);
-    assert.equal(marcaDoMeio, '2026-09-21T00:00:00.000Z', 'a marca seguiu a data planejada em vez do fecho de verdade');
+    assert.equal(marcaDoMeio, '2026-09-21T03:00:00.000Z', 'a marca seguiu a data planejada em vez do fecho de verdade');
 
     // O dia seguinte ao fecho ja conta, mesmo estando antes do fim planejado.
     const depoisDoFecho = filterTasksAfterFreeProgressReset(
@@ -111,6 +113,39 @@ const marca = marcaDeRodadaDepoisDoCiclo(relatorio);
         depoisDoFecho,
         ['dia-seguinte', 'dentro-do-planejado'],
         'tarefa feita depois do fecho manual precisa contar na rodada nova',
+    );
+}
+
+// 6b. A ACAO VALE PELO DIA DELA (02/11/2026, achado do Afonso).
+//
+// A marca era a meia-noite em UTC, que no Brasil sao 21h do ultimo dia do
+// ciclo. O almoco do ultimo dia, marcado as 21h43, ficava "depois do zerar" e
+// aparecia na rodada nova. Agora a marca e a meia-noite LOCAL, e uma acao de um
+// dia anterior a marca nunca entra, mesmo concluida depois.
+{
+    const ciclo = { startDate: '2026-10-05', endDate: '2026-11-01' };
+    const marcaDoAlmoco = marcaDeRodadaDepoisDoCiclo(ciclo);
+    const tarefas = [
+        { id: 'almoco-21h43', date: '2026-11-01', completedAt: '2026-11-02T00:43:20.010Z' },
+        { id: 'ontem-marcado-hoje', date: '2026-11-01', completedAt: '2026-11-02T15:00:00.000Z' },
+        { id: 'hoje', date: '2026-11-02', completedAt: '2026-11-02T15:00:00.000Z' },
+    ];
+    assert.deepEqual(
+        filterTasksAfterFreeProgressReset(tarefas, marcaDoAlmoco).map((t) => t.id),
+        ['hoje'],
+        'acao do ultimo dia do ciclo entrou na rodada nova por ter sido marcada tarde',
+    );
+
+    // Zerar no meio do dia: o que e de hoje e foi feito depois conta; o que e
+    // de ontem nao, mesmo marcado depois do zerar.
+    const zerarAoMeioDia = '2026-11-02T15:00:00.000Z'; // 12h em Brasilia
+    assert.deepEqual(
+        filterTasksAfterFreeProgressReset([
+            { id: 'ontem-depois', date: '2026-11-01', completedAt: '2026-11-02T16:00:00.000Z' },
+            { id: 'hoje-antes', date: '2026-11-02', completedAt: '2026-11-02T13:00:00.000Z' },
+            { id: 'hoje-depois', date: '2026-11-02', completedAt: '2026-11-02T16:00:00.000Z' },
+        ], zerarAoMeioDia).map((t) => t.id),
+        ['hoje-depois'],
     );
 }
 

@@ -36,10 +36,15 @@ export const marcaDeRodadaDepoisDoCiclo = (
     const fim = relatorio?.endDate;
     if (typeof fim !== 'string' || !fim.trim()) return null;
 
-    const ultimoDia = Date.parse(`${fim}T00:00:00.000Z`);
-    if (Number.isNaN(ultimoDia)) return null;
+    // Meia-noite LOCAL do dia seguinte (02/11/2026). Em UTC, no Brasil, ela
+    // caia as 21h do ultimo dia do ciclo, e o que se marcava depois disso
+    // aparecia na rodada nova.
+    const partes = /^(\d{4})-(\d{2})-(\d{2})$/.exec(fim.trim());
+    if (!partes) return null;
+    const diaSeguinte = new Date(Number(partes[1]), Number(partes[2]) - 1, Number(partes[3]) + 1, 0, 0, 0, 0);
+    if (Number.isNaN(diaSeguinte.getTime())) return null;
 
-    return new Date(ultimoDia + 24 * 60 * 60 * 1000).toISOString();
+    return diaSeguinte.toISOString();
 };
 
 /**
@@ -95,9 +100,25 @@ const getTaskAnchorTime = (task: ScheduledTask) => {
     return 0;
 };
 
+/**
+ * A ACAO VALE PELO DIA EM QUE ESTA NO PLANNER, nao pela hora do toque (02/11/2026,
+ * com o Afonso). Dia antes do zerar fica de fora, mesmo marcado depois; dia
+ * depois entra. So no proprio dia de um zerar feito no meio do dia o horario
+ * da conclusao decide.
+ */
 export const filterTasksAfterFreeProgressReset = <T extends ScheduledTask>(tasks: T[], resetAt?: string | null): T[] => {
     if (!resetAt) return tasks;
     const resetTime = Date.parse(resetAt);
     if (Number.isNaN(resetTime)) return tasks;
-    return tasks.filter((task) => getTaskAnchorTime(task) > resetTime);
+    const marca = new Date(resetTime);
+    const doisDigitos = (n: number) => String(n).padStart(2, '0');
+    const diaDaMarca = `${marca.getFullYear()}-${doisDigitos(marca.getMonth() + 1)}-${doisDigitos(marca.getDate())}`;
+    const naVirada = marca.getHours() === 0 && marca.getMinutes() === 0 && marca.getSeconds() === 0 && marca.getMilliseconds() === 0;
+    return tasks.filter((task) => {
+        if (typeof task.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(task.date)) {
+            if (task.date < diaDaMarca) return false;
+            if (task.date > diaDaMarca || naVirada) return true;
+        }
+        return getTaskAnchorTime(task) > resetTime;
+    });
 };

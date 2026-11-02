@@ -2805,7 +2805,6 @@ export const ArenasView: React.FC = () => {
                         title={arenaCapacityTitle}
                         aria-label={arenaCapacityTitle}
                     >
-                        <span className="mr-1.5 text-white/52">Arenas</span>
                         <span className="tabular-nums">{arenaCapacity.total}/{arenaCapacity.limit}</span>
                     </span>
                 </FloatingActionDock>

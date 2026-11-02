@@ -747,9 +747,13 @@ export const ReportsView: React.FC<{
     // A trilha abre no ciclo mais recente: ela le da esquerda para a direita e
     // termina no agora, entao o ponto de chegada e onde a pessoa esta.
     const cycleStripRef = useRef<HTMLDivElement>(null);
-    // Qual ciclo esta no centro. A trilha deixou de ser arrastavel livre: quem
-    // move sao as setas, e o que esta no meio e o que se esta olhando.
+    // Qual ciclo esta no centro: o que as setas pediram (stripIndex) e o que o
+    // dedo deixou no meio (emFoco). Arrastar tambem acende a placa do centro;
+    // antes so as setas acendiam, e a placa que se estava olhando ficava apagada.
     const [stripIndex, setStripIndex] = useState<number | null>(null);
+    const [emFoco, setEmFoco] = useState<number | null>(null);
+    const quadroDaRolagemRef = useRef<number | null>(null);
+    const paradaDaRolagemRef = useRef<number | null>(null);
     const [selectedReport, setSelectedReport] = useState<Report | null>(null);
     const [selectedReportStartsAtEnd, setSelectedReportStartsAtEnd] = useState(false);
     const [reportsToCompare, setReportsToCompare] = useState<[Report, Report] | null>(null);
@@ -2031,10 +2035,38 @@ export const ReportsView: React.FC<{
         return () => window.clearTimeout(conferir);
     }, [totalDeParadas, ultimaParada, stripIndex]);
 
+    const focoAtual = emFoco ?? stripIndex ?? ultimaParada;
+
     const moveStrip = (delta: number) => {
-        const atual = stripIndex ?? ultimaParada;
-        setStripIndex(Math.min(ultimaParada, Math.max(0, atual + delta)));
+        setStripIndex(Math.min(ultimaParada, Math.max(0, focoAtual + delta)));
     };
+
+    /** A placa mais perto do centro da trilha, a cada quadro da rolagem. */
+    const acompanharRolagem = () => {
+        if (quadroDaRolagemRef.current !== null) return;
+        quadroDaRolagemRef.current = window.requestAnimationFrame(() => {
+            quadroDaRolagemRef.current = null;
+            const strip = cycleStripRef.current;
+            if (!strip) return;
+            const centroDaTrilha = strip.scrollLeft + strip.clientWidth / 2;
+            let maisPerto = 0;
+            let menorDistancia = Infinity;
+            Array.from(strip.children).forEach((filho, indice) => {
+                const card = filho as HTMLElement;
+                const distancia = Math.abs(card.offsetLeft + card.clientWidth / 2 - centroDaTrilha);
+                if (distancia < menorDistancia) { menorDistancia = distancia; maisPerto = indice; }
+            });
+            setEmFoco(maisPerto);
+            // Parada a rolagem, as setas passam a partir daqui.
+            if (paradaDaRolagemRef.current !== null) window.clearTimeout(paradaDaRolagemRef.current);
+            paradaDaRolagemRef.current = window.setTimeout(() => setStripIndex(maisPerto), 160);
+        });
+    };
+
+    useEffect(() => () => {
+        if (quadroDaRolagemRef.current !== null) window.cancelAnimationFrame(quadroDaRolagemRef.current);
+        if (paradaDaRolagemRef.current !== null) window.clearTimeout(paradaDaRolagemRef.current);
+    }, []);
 
     const legacyFallbackIdentity = useMemo(() => ({
         snapshotVersion: 2 as const,
@@ -3064,7 +3096,7 @@ export const ReportsView: React.FC<{
                                         <button
                                             type="button"
                                             onClick={() => moveStrip(-1)}
-                                            disabled={(stripIndex ?? ultimaParada) <= 0}
+                                            disabled={focoAtual <= 0}
                                             aria-label="Ciclo anterior"
                                             className="absolute left-0 top-1/2 z-20 -translate-y-1/2 rounded-full border border-white/12 bg-black/55 p-2 text-white/70 backdrop-blur-sm transition-colors hover:border-[var(--skin-accent-color)]/40 hover:text-white disabled:opacity-0"
                                         >
@@ -3073,7 +3105,7 @@ export const ReportsView: React.FC<{
                                         <button
                                             type="button"
                                             onClick={() => moveStrip(1)}
-                                            disabled={(stripIndex ?? ultimaParada) >= ultimaParada}
+                                            disabled={focoAtual >= ultimaParada}
                                             aria-label="Próximo ciclo"
                                             className="absolute right-0 top-1/2 z-20 -translate-y-1/2 rounded-full border border-white/12 bg-black/55 p-2 text-white/70 backdrop-blur-sm transition-colors hover:border-[var(--skin-accent-color)]/40 hover:text-white disabled:opacity-0"
                                         >
@@ -3083,6 +3115,7 @@ export const ReportsView: React.FC<{
                                 )}
                                 <div
                                     ref={cycleStripRef}
+                                    onScroll={acompanharRolagem}
                                     /* O padding lateral vale (100% - largura do card) / 2.
                                        Sem ele o primeiro e o ultimo card nao conseguem
                                        chegar ao centro — encostam na borda e ficam
@@ -3128,7 +3161,7 @@ export const ReportsView: React.FC<{
                                                 style={{ width: `${LARGURA_DA_PLACA_NA_TRILHA}px` }}
                                             >
                                                 <div className={`${RECUO_DO_VIZINHO} ${
-                                                    indexFromStart === (stripIndex ?? ultimaParada)
+                                                    indexFromStart === focoAtual
                                                         ? 'scale-100 opacity-100'
                                                         : 'scale-[0.82] opacity-30'
                                                 }`}>
@@ -3177,7 +3210,7 @@ export const ReportsView: React.FC<{
                                     {visibleActiveCycle && (
                                         <div className="shrink-0 snap-center" style={{ width: `${LARGURA_DA_PLACA_NA_TRILHA}px` }}>
                                             <div className={`${RECUO_DO_VIZINHO} ${
-                                                (stripIndex ?? ultimaParada) >= sortedReports.length ? 'scale-100 opacity-100' : 'scale-[0.82] opacity-30'
+                                                focoAtual >= sortedReports.length ? 'scale-100 opacity-100' : 'scale-[0.82] opacity-30'
                                             }`}>
                                             <PlacaEmEscala largura={LARGURA_DA_PLACA_NA_TRILHA}>
                                             <div className="cursor-pointer" onClick={() => setCycleBeingEdited(visibleActiveCycle)}>
@@ -3258,7 +3291,7 @@ export const ReportsView: React.FC<{
                                   * que nem esta na tela. Agora ele acompanha o foco: aparece
                                   * quando a parada centralizada e a do ciclo em andamento.
                                   */}
-                                {visibleActiveCycle && (stripIndex ?? ultimaParada) >= sortedReports.length && (
+                                {visibleActiveCycle && focoAtual >= sortedReports.length && (
                                     <button
                                         id="end-cycle-button"
                                         onClick={handleEndCycle}

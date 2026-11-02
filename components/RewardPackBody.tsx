@@ -206,8 +206,11 @@ export const RewardPackBody: React.FC<RewardPackBodyProps> = ({
             {payload.subtitle}
           </div>
         )}
+        {/* A frase diz O QUE a pessoa fez ("Conclua 12 ações no mesmo dia").
+            Em 10px cinza ela sumia, e a conquista secreta virava so um nome
+            (relatado em 02/11/2026). */}
         {(payload?.summary || fallbackSummary) && (
-          <p className="mx-auto mb-[10px] max-w-[300px] text-[10px] leading-[1.4] text-[#9ca0a8]">
+          <p className="mx-auto mb-[10px] max-w-[300px] text-[12.5px] font-semibold leading-[1.4] text-[#d4d1c8]">
             {payload?.summary || fallbackSummary}
           </p>
         )}

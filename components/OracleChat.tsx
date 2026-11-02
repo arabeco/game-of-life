@@ -20,6 +20,7 @@ import { ORACLE_CARD_LIBRARY, splitCardText } from '../constants/oracleCardLibra
 import { secaoDaMensagem, secoesComNaoLidas } from '../utils/oracleSecoes';
 import { emitOracleSpeech } from '../utils/oracleSpeech';
 import { OracleMissionPanel } from './OracleMissionPanel';
+import { PerguntaAoOraculo } from './PerguntaAoOraculo';
 import { Sun, Flag, BookOpen } from 'lucide-react';
 
 type OracleTabTarget = 'chat' | 'requests';
@@ -876,6 +877,14 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
           <div ref={messagesEndRef} />
         </div>
 
+        {/* O chat com IA (02/11/2026): a pergunta e a resposta entram na conversa
+            desta aba, como a leitura do dia. */}
+        {section === 'guidance' && <PerguntaAoOraculo
+          tom={isPremiumUser ? (oraclePreferences?.speechTone || ORACLE_FREE_TONE) : ORACLE_FREE_TONE}
+          gratis={!isPremiumUser}
+          onPergunta={(pergunta) => setMessages(previous => [...previous, { role: 'user', content: pergunta, timestamp: new Date(), mode: currentMode }])}
+          onResposta={(resposta) => setMessages(previous => [...previous, { role: 'assistant', content: resposta, timestamp: new Date(), mode: currentMode, feedCategory: 'analise_padroes', feedTrigger: 'manual' }])}
+        />}
         {section === 'wisdom' && <div className="shrink-0 border-t border-white/10 bg-black/20 p-3 space-y-2">
           <p className="text-[11px] leading-relaxed text-white/55">{oracleInputHint}</p>
           <button disabled={manualGenerateDisabled} onClick={handleGenerateCard} className="min-h-11 w-full rounded-xl border border-white/15 bg-white/5 px-3 text-xs font-bold disabled:opacity-50">{manualGenerateLabel}{isPremiumUser ? ` · ${manualQuotaLabel} hoje` : ''}</button>

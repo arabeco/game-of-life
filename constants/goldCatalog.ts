@@ -58,6 +58,7 @@ export const GOLD_PREMIUM_PRODUCT = {
     priceBrlAnnual: 119.9,
     benefits: [
         'Até 20 arenas ativas (8 no grátis)',
+        'Oráculo com IA: 5 perguntas por dia sobre os seus padrões (1 no grátis)',
         'Leitura Premium no painel do dia e no relatório do ciclo',
         'Oráculo completo: todos os tons, temas e card na hora',
         'Matriz de urgência e importância no planner',
@@ -78,6 +79,7 @@ export const GOLD_PLATINUM_PRODUCT = {
     benefits: [
         'Tudo do Premium',
         'Até 40 arenas ativas',
+        'Oráculo com IA: 15 perguntas por dia',
         'Todos os fundos e temas de interface',
         '5 fichas de vínculo por mês',
         'Campanhas com 40% off',

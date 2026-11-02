@@ -97,6 +97,13 @@
       Permissao aparece como "Microfone" na ficha da Play e puxa pergunta no
       formulario de Seguranca dos Dados.)
     -->
+    <!--
+      MICROFONE OPCIONAL. Sem esta linha a Play deduz da RECORD_AUDIO que o
+      microfone e obrigatorio e tira o app de 21 aparelhos sem microfone (TVs,
+      tablets, Chromebooks) — o aviso apareceu ao subir o 124. Nesses aparelhos
+      o botao de voz some sozinho (utils/ditado.ts) e o resto funciona.
+    -->
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>

@@ -24,6 +24,20 @@ import './report-ui.css';
 import { emitAppSensoryCue } from '../utils/sensoryCue';
 import { getChestVisual, withAlpha } from '../constants/rarityVisuals';
 import { diasDaJanela, resumoDoCiclo, type HabitoNoCiclo } from '../services/HabitHistoryService';
+/**
+ * A ACAO COMO NO PLANNER (02/11/2026): o quadradinho na cor da arena com o
+ * emoji dentro, antes do nome. Acao apagada depois do ciclo fica so com o nome.
+ */
+const QuadradoDaAcao: React.FC<{ icone?: string; estilo: React.CSSProperties }> = ({ icone, estilo }) => (
+    <span
+        aria-hidden="true"
+        className="inline-grid h-5 w-5 shrink-0 place-items-center rounded-[6px] text-[11px] leading-none shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18)]"
+        style={estilo}
+    >
+        {icone || ''}
+    </span>
+);
+
 const ReportRadarChart = React.lazy(() => import('./ReportRadarChart').then((m) => ({ default: m.ReportRadarChart })));
 
 // Helper functions (duplicated to avoid circular dependencies)
@@ -135,7 +149,14 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
 }) => {
     const REWARD_CARD_CAPTURE_ID = 'report-metal-card-capture';
     const preferNativeShare = shouldPreferNativeShare();
-    const { userProfile, showToast, reports } = useGame();
+    const { userProfile, showToast, reports, actions, getActionBackgroundStyle } = useGame();
+    const marcaDaAcao = (id?: string, nome?: string): React.ReactNode => {
+        const acao = (id && actions.find((a) => a.id === id))
+            || (nome && actions.find((a) => a.name === nome))
+            || null;
+        if (!acao) return null;
+        return <QuadradoDaAcao icone={acao.icon} estilo={getActionBackgroundStyle(acao.id)} />;
+    };
     const cycleExp = report.expGained ?? expGained ?? report.metrics.expGained ?? 0;
     const recognition = useProgressRecognition(userProfile.id, 'cycle', report.cycleId || '', cycleExp);
     const cycleAverageLabel = recognition?.days ? expAverageLabel(cycleExp / recognition.days, recognition.baseline, recognition.baselineDays) : null;
@@ -432,6 +453,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
             ? dominantes.map((acao, idx) => ({
                 rotulo: `${['I', 'II', 'III'][idx]} · ${acao.name}`,
                 valor: `${acao.count}x`,
+                marca: marcaDaAcao(undefined, acao.name),
             }))
             : [{ rotulo: 'Arenas no ciclo', valor: `${metrics.arenasInvolved || 0}` }];
 
@@ -960,6 +982,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                     <div className="flex h-full w-full flex-col justify-center gap-1.5 px-1">
                         {habitos.slice(0, 5).map((h) => (
                             <div key={`${h.kind}-${h.itemId}`} className="flex items-center gap-2">
+                                {marcaDaAcao(h.itemId, h.title)}
                                 <span className="min-w-0 flex-1 truncate text-[11px] text-white/78">{h.title || 'Sem nome'}</span>
                                 <span className="h-1 flex-[2] overflow-hidden rounded-full bg-white/8">
                                     <span

@@ -7,6 +7,8 @@ export interface LegendaDoCartaz {
     /** Uma nota miuda embaixo do valor, quando o numero sozinho nao se explica. */
     nota?: string;
     tom?: 'normal' | 'bom' | 'alerta';
+    /** O quadradinho da acao (cor da arena e emoji), antes do rotulo. */
+    marca?: React.ReactNode;
 }
 
 interface SlideCartazProps {
@@ -248,6 +250,7 @@ export const SlideCartaz: React.FC<SlideCartazProps> = ({
                                     className="m-0 truncate text-[9.5px] font-black uppercase tracking-[0.2em]"
                                     style={{ color: `${acabamento.pale}99` }}
                                 >
+                                    {item.marca && <span className="mr-1.5 inline-block align-middle">{item.marca}</span>}
                                     {item.rotulo}
                                 </p>
                                 <p

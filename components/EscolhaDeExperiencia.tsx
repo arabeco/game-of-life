@@ -1,5 +1,6 @@
 import React from 'react';
 import { CATALOG_INTERFACE_ROOT } from '../constants/catalogAssets';
+import { Portal } from './Portal';
 
 /**
  * COMO VOCE PREFERE EVOLUIR? (27/10/2026, com o Afonso)
@@ -49,10 +50,18 @@ const OPCOES: Array<{ id: Modo; nome: string; texto: string; tem: string; semIss
     { id: 'essencial', nome: 'Essencial', texto: 'Metas, planner e resultados, sem distração.', tem: 'Arenas, planner, ciclos, Oráculo e campanhas.', semIsso: 'Sem recompensas, avatar, jardim e missões.', Previa: PreviaEssencial },
 ];
 
+// NO PORTAL, COM FUNDO PROPRIO (02/11/2026). Dentro do onboarding ela ficava
+// presa num bloco do app: o "fixed" deixava de cobrir a tela e o topo, a barra
+// de baixo e a tela de Ativos apareciam atravessando os cartoes.
 export const EscolhaDeExperiencia: React.FC<{ onEscolher: (modo: Modo) => void }> = ({ onEscolher }) => (
+    <Portal>
     <div
-        className="fixed inset-0 z-[10040] flex items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_top,rgba(243,212,138,0.08),transparent_55%),#07080a] px-4"
-        style={{ paddingTop: 'calc(1rem + var(--safe-area-top, 0px))', paddingBottom: 'calc(1rem + var(--safe-area-bottom, 0px))' }}
+        className="fixed inset-0 z-[10040] flex items-center justify-center overflow-hidden px-4"
+        style={{
+            paddingTop: 'calc(1rem + var(--safe-area-top, 0px))',
+            paddingBottom: 'calc(1rem + var(--safe-area-bottom, 0px))',
+            background: 'radial-gradient(circle at top, rgba(243,212,138,0.08), transparent 55%), #07080a',
+        }}
         role="dialog"
         aria-modal="true"
         aria-labelledby="escolha-experiencia-titulo"
@@ -67,7 +76,7 @@ export const EscolhaDeExperiencia: React.FC<{ onEscolher: (modo: Modo) => void }
                         key={id}
                         type="button"
                         onClick={() => onEscolher(id)}
-                        className="overflow-hidden rounded-2xl border border-white/12 bg-white/[0.03] text-left transition-all hover:border-[#f3d48a]/55 focus-visible:border-[#f3d48a] active:scale-[0.99]"
+                        className="overflow-hidden rounded-2xl border border-white/12 bg-[#0d0f12] text-left transition-all hover:border-[#f3d48a]/55 focus-visible:border-[#f3d48a] active:scale-[0.99]"
                     >
                         <div className="h-[clamp(6.5rem,17svh,11rem)] overflow-hidden border-b border-white/8">
                             <Previa />
@@ -86,4 +95,5 @@ export const EscolhaDeExperiencia: React.FC<{ onEscolher: (modo: Modo) => void }
             <p className="mt-3 text-center text-[11px] text-white/35">O seu progresso é o mesmo nas duas.</p>
         </div>
     </div>
+    </Portal>
 );

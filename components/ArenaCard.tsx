@@ -1,7 +1,7 @@
 import { getArenaTone, getArenaActionGradient } from '../utils/arenaTones.ts';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Arena, Action, RelationshipLinkType } from '../types';
-import { CheckIcon, UsersIcon } from './Icons';
+import { UsersIcon } from './Icons';
 import { PRODUCT_FEATURES } from '../constants/featureFlags';
 import { getLocalDateString, useGame } from '../contexts/GameContext';
 import { supabase } from '../supabaseClient';
@@ -10,7 +10,6 @@ import { describeArenaProgress, getArenaPresentationTasks } from '../utils/arena
 import { EmojiGlyph } from './EmojiGlyph';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import { getContentVisualPalette, resolveArenaVisualFamily } from '../utils/contentCardVisuals';
-import { getActionSurfaceBadgeClassName, resolveActionSurfaceBadge } from '../utils/actionSurfaceBadges';
 import { getArenaDomainFlags } from '../utils/taskDomain.js';
 import { ArenaStatusTags } from './ArenaStatusTags';
 import './arena-ui.css';
@@ -164,42 +163,14 @@ const ActionIcon: React.FC<{
     onDrop?: (e: React.DragEvent) => void;
     isDragOver?: boolean;
     compact?: boolean;
-    relationshipBadgeType?: RelationshipLinkType | null;
-}> = ({ action, onDragStart, onDragOver, onDrop, isDragOver, compact = false, relationshipBadgeType = null }) => {
-    const { getActionBackgroundStyle, getArenas, getClanQuestProgress, getClanQuestForActionName } = useGame();
+}> = ({ action, onDragStart, onDragOver, onDrop, isDragOver, compact = false }) => {
+    const { getActionBackgroundStyle } = useGame();
     const backgroundStyle = getActionBackgroundStyle(action.id);
-    
-    const arena = getArenas().find(ar => ar.id === action.arenaId);
-    const normalizedArena = arena?.name ? arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
-    const clanQuest = getClanQuestForActionName(action.name);
-    const isClanQuest = !!clanQuest;
-    const isSeasonQuest = normalizedArena.includes('quests - season');
     const displayIcon = action.icon || '\u{1F3DB}\uFE0F';
     const isFreeAction = action.actionType === 'Livre';
 
-    const currentProgress = clanQuest ? getClanQuestProgress(clanQuest.id) : 0;
-    const target = clanQuest?.requirements?.clanGoal || clanQuest?.goal_value || 50;
-    const actionsRemaining = clanQuest ? Math.max(0, target - currentProgress) : 0;
-    const surfaceBadge = resolveActionSurfaceBadge(action, relationshipBadgeType);
-
-    const renderIcon = () => {
-        // Override for special quests
-        if (isClanQuest) {
-             return (
-                 <div className="relative w-full h-full flex items-center justify-center">
-                     <EmojiGlyph symbol={displayIcon} size="action" className="text-white" />
-                     {actionsRemaining > 0 && (
-                         <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold px-1 rounded-full min-w-[12px] text-center border border-black">
-                             {actionsRemaining}
-                         </div>
-                     )}
-                 </div>
-             );
-        }
-        if (isSeasonQuest) return <EmojiGlyph symbol={displayIcon} size="action" className="text-white" />;
-
-        return <EmojiGlyph symbol={displayIcon} size="action" className="text-white" />;
-    };
+    // Miniatura: so o emoji. Vinculo, grupo e repeticoes ficam na arena, onde a
+    // soma ja aparece; o infinito das livres fica no estoque.
     return (
         <div 
             draggable 
@@ -209,16 +180,7 @@ const ActionIcon: React.FC<{
             style={isFreeAction ? { '--free-action-bg': backgroundStyle.background } as React.CSSProperties : backgroundStyle}
             className={`${compact ? 'w-[1.32rem] h-[1.32rem] rounded-[6px]' : 'w-6 h-6 rounded-md'} ${isFreeAction ? 'free-action-shell free-action-outline rounded-full' : 'border border-[var(--accent-bronze)]'} ${isDragOver ? 'border-white scale-110' : ''} flex items-center justify-center flex-shrink-0 relative overflow-visible transition-all cursor-grab active:cursor-grabbing`}
         >
-            {renderIcon()}
-            {isFreeAction && <span aria-hidden className={`${compact ? '-right-1 -bottom-1 h-2.5 w-2.5 text-[7px]' : '-right-1.5 -bottom-1.5 h-3.5 w-3.5 text-[9px]'} absolute z-20 flex items-center justify-center rounded-full border border-slate-100/70 bg-[#151c25] font-black leading-none text-slate-100 shadow-[0_1px_5px_rgba(0,0,0,.6)]`}>∞</span>}
-            {surfaceBadge && !compact && (
-                <span className={`pointer-events-none absolute -bottom-2 left-1/2 z-20 -translate-x-1/2 rounded-full border px-1 py-[1px] text-[6px] font-black uppercase leading-none tracking-[0.06em] shadow-[0_3px_8px_rgba(0,0,0,0.35)] ${getActionSurfaceBadgeClassName(surfaceBadge.tone)}`}>
-                    {surfaceBadge.label}
-                </span>
-            )}
-            {surfaceBadge && compact && (
-                <span className={`pointer-events-none absolute -right-0.5 -top-0.5 z-20 h-1.5 w-1.5 rounded-full border ${getActionSurfaceBadgeClassName(surfaceBadge.tone)}`} />
-            )}
+            <EmojiGlyph symbol={displayIcon} size="action" className="text-white" />
         </div>
     );
 };
@@ -606,8 +568,6 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                         <div className="flex min-w-max items-center gap-[0.18rem]">
                             {orderedCompactActions.map(action => {
                                 const backgroundStyle = getActionBackgroundStyle(action.id);
-                                const task = tasksForCounts.find(t => t.actionId === action.id);
-                                const isCompleted = !!task?.completed;
                                 const isDragOver = dragOverActionId === action.id;
                                 const isMilestone = action.actionType === 'Marco';
 
@@ -630,11 +590,6 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                                                     <div className="flex h-full w-full items-center justify-center">
                                                         <EmojiGlyph symbol={action.icon || '\u{1F3DB}\uFE0F'} size="milestone" className="text-white -rotate-45" />
                                                     </div>
-                                                    {isCompleted && (
-                                                        <div className="absolute inset-0 flex items-center justify-center rounded-[3px] bg-black/60">
-                                                            <CheckIcon className="h-3 w-3 text-white -rotate-45" />
-                                                        </div>
-                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -649,7 +604,6 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                                         onDragOver={(e) => handleActionDragOver(e, action.id)}
                                         onDrop={(e) => handleActionDrop(e, action.id)}
                                         isDragOver={isDragOver}
-                                        relationshipBadgeType={effectiveLinkType}
                                         compact
                                     />
                                 );
@@ -661,8 +615,6 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                         <div className="w-full flex items-center justify-center h-8 gap-2">
                             {visibleMilestones.map(action => {
                                 const backgroundStyle = getActionBackgroundStyle(action.id);
-                                const task = tasksForCounts.find(t => t.actionId === action.id);
-                                const isCompleted = !!task?.completed;
                                 const isDragOver = dragOverActionId === action.id;
 
                                 return (
@@ -683,11 +635,6 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                                                 <div className="transform flex items-center justify-center h-full w-full">
                                                     <EmojiGlyph symbol={action.icon || '\u{1F3DB}\uFE0F'} size="milestone" className="transform -rotate-45 text-white" />
                                                 </div>
-                                                {isCompleted && (
-                                                    <div className="absolute inset-0 bg-black/60 rounded-sm flex items-center justify-center">
-                                                        <CheckIcon className="w-4 h-4 text-white transform -rotate-45"/>
-                                                    </div>
-                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -704,7 +651,6 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                                     onDragOver={(e) => handleActionDragOver(e, action.id)}
                                     onDrop={(e) => handleActionDrop(e, action.id)}
                                     isDragOver={dragOverActionId === action.id}
-                                    relationshipBadgeType={effectiveLinkType}
                                 />
                             ))}
                         </div>

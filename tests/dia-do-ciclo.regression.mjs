@@ -13,12 +13,12 @@ for (const [date, day, elapsed] of [
   const timing = getCycleTimingSummary('2026-10-05', '2026-10-11', date);
   assert.equal(timing.statusLabel, `Dia ${day}/7`);
   assert.equal(timing.elapsedDays, elapsed);
-  assert.equal(timing.timeProgress, day / 7 * 100);
+  assert.equal(timing.timeProgress, elapsed / 7 * 100);
 }
 assert.equal(getCycleTimingSummary('2026-10-05', '2026-10-11', '2026-10-04').statusLabel, 'Começa amanhã');
 assert.equal(getCycleTimingSummary('2026-10-05', '2026-10-11', '2026-10-04').timeProgress, 0);
 assert.equal(getCycleTimingSummary('2026-10-05', '2026-10-05', '2026-10-05').statusLabel, 'Dia 1/1');
-assert.equal(getCycleTimingSummary('2026-10-05', '2026-10-05', '2026-10-05').timeProgress, 100);
+assert.equal(getCycleTimingSummary('2026-10-05', '2026-10-05', '2026-10-05').timeProgress, 0);
 for (const [hour, minute, expected] of [[3, 59, 'Dia 2/7'], [4, 0, 'Dia 3/7']]) {
   const date = getOperationalDateString(new Date(2026, 9, 7, hour, minute));
   assert.equal(getCycleTimingSummary('2026-10-05', '2026-10-11', date).statusLabel, expected);

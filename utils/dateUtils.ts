@@ -23,9 +23,9 @@ export const getCycleTimingSummary = (startDateStr: string, endDateStr: string, 
         ? 0
         : Math.max(0, Math.min(totalDays, daysBetween(startDate, today)));
     const displayDay = isUpcoming ? 0 : Math.max(1, Math.min(totalDays, elapsedDays + 1));
-    // A barra acompanha o dia exibido, incluindo hoje. Dias encerrados continuam
-    // separados para os cálculos que dependem de períodos realmente completos.
-    const timeProgress = isUpcoming ? 0 : Math.min(100, (displayDay / totalDays) * 100);
+    // A barra conta só os dias completos: o dia em curso aparece no rótulo, mas
+    // só preenche a barra quando termina (virada das 4h).
+    const timeProgress = isUpcoming ? 0 : Math.min(100, (elapsedDays / totalDays) * 100);
 
     return {
         startDate,

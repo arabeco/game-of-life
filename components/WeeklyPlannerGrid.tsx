@@ -169,6 +169,11 @@ const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: 
                 )}
                 {showSparkles && <Sparkles />}
             </div>
+            {isMilestone && !task.completed && (
+                <svg aria-hidden className="pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: 'absolute', left: '0.25rem', top: 0, width: 'calc(100% - 0.5rem)', height: '100%', overflow: 'visible' }}>
+                    <polygon points="13,0 87,0 100,50 87,100 13,100 0,50" fill="none" stroke="rgba(107,114,128,0.8)" strokeWidth="1.5" strokeDasharray="4 3" vectorEffect="non-scaling-stroke" />
+                </svg>
+            )}
              <style>{`
                 @keyframes fill {
                     from { clip-path: inset(100% 0 0 0); }

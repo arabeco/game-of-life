@@ -9,8 +9,8 @@ import java.util.Calendar;
  * Sem abrir o app no domingo, o domingo continuava "Dia 13/14" — o sabado. O
  * widget se redesenha sozinho a cada meia hora, entao o dia sai daqui, das datas
  * do ciclo e do relogio, com a mesma regra de utils/dateUtils.ts
- * (getCycleTimingSummary): o primeiro dia e o dia 1, o dia de hoje ja conta, e o
- * dia vira as 4h (utils/operationalDay.js).
+ * (getCycleTimingSummary): o primeiro dia e o dia 1, o dia de hoje aparece no rotulo,
+ * mas so conta na barra quando acaba, e o dia vira as 4h (utils/operationalDay.js).
  *
  * Java puro, sem Android, para dar para conferir fora do aparelho.
  */
@@ -32,11 +32,12 @@ final class CicloDoWidget {
         int total = (int) Math.max(1, diaDoFim - diaDoInicio + 1);
         if (diaDeHoje < diaDoInicio) return null;
         int dia = (int) Math.max(1, Math.min(total, diaDeHoje - diaDoInicio + 1));
-        int porcentagem = (int) Math.round(Math.min(100.0, dia * 100.0 / total));
+        int concluidos = (int) Math.max(0, Math.min(total, diaDeHoje - diaDoInicio));
+        int porcentagem = (int) Math.round(Math.min(100.0, concluidos * 100.0 / total));
         return new int[] { dia, total, porcentagem };
     }
 
-    /** "Dia 7/14 (50%)" — o mesmo texto da linha Tempo do cartao do ciclo no app. */
+    /** "Dia 7/14 (43%)" — o mesmo texto da linha Tempo do cartao do ciclo no app. */
     static String rotulo(int[] tempo) {
         return "Dia " + tempo[0] + "/" + tempo[1] + " (" + tempo[2] + "%)";
     }

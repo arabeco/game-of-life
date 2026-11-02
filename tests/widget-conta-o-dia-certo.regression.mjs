@@ -84,6 +84,6 @@ assert.match(
 // 4. TEMPO USA O MESMO ROTULO DO DIA E A BARRA INCLUI HOJE.
 // ---------------------------------------------------------------------------
 assert.match(codigo, /"Tempo",\s*day,\s*progressPercent,\s*timeProgress/);
-assert.match(datas, /const timeProgress = isUpcoming \? 0 : Math\.min\(100, \(displayDay \/ totalDays\) \* 100\)/);
+assert.match(datas, /const timeProgress = isUpcoming \? 0 : Math\.min\(100, \(elapsedDays \/ totalDays\) \* 100\)/);
 
 console.log('[ok] o widget e o app contam o mesmo dia');

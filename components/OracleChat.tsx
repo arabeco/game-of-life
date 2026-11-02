@@ -21,6 +21,7 @@ import { secaoDaMensagem, secoesComNaoLidas } from '../utils/oracleSecoes';
 import { emitOracleSpeech } from '../utils/oracleSpeech';
 import { OracleMissionPanel } from './OracleMissionPanel';
 import { PerguntaAoOraculo } from './PerguntaAoOraculo';
+import { PERGUNTA_LER_MEU_DIA, perguntarAoOraculo } from '../utils/oraculoIa';
 import { Sun, Flag, BookOpen } from 'lucide-react';
 
 type OracleTabTarget = 'chat' | 'requests';
@@ -515,15 +516,24 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   // ciclo" diziam quase a mesma coisa com contas diferentes; agora a leitura e
   // uma — o ciclo e o dia — e sai de supabase/functions/_shared/
   // oracle-cycle-reading.ts, o mesmo arquivo que monta o push.
-  const handleReadMyDay = useCallback(() => {
+  //
+  // COM IA (02/11/2026): a leitura vira uma pergunta pronta ao Oraculo com IA e
+  // gasta 1 da cota do dia. Sem cota, ou se a IA falhar, entra a leitura por
+  // regras de antes, entao o botao nunca fica sem resposta.
+  const [lendoMeuDia, setLendoMeuDia] = useState(false);
+  const handleReadMyDay = useCallback(async () => {
+    if (lendoMeuDia) return;
     const brief = lerMeuDiaECiclo({ tasks, actions, assets, activeCycle, resetAt: freeProgressResetAt });
     sensory('click_soft');
+    setLendoMeuDia(true);
+    const daIa = await perguntarAoOraculo(PERGUNTA_LER_MEU_DIA, isPremiumUser ? currentMode : ORACLE_FREE_TONE);
+    setLendoMeuDia(false);
     setMessages(previous => [...previous.filter(message => message.feedId !== READING_FEED_ID), {
-      role: 'assistant', visualTone: brief.visualTone, content: brief.content, timestamp: new Date(), mode: currentMode,
+      role: 'assistant', visualTone: brief.visualTone, content: daIa.ok ? daIa.resposta : brief.content, timestamp: new Date(), mode: currentMode,
       feedId: READING_FEED_ID, feedCategory: 'analise_padroes', feedSummary: 'Meu dia e ciclo',
       feedTrigger: 'manual', quickActions: brief.quickActions,
     }]);
-  }, [tasks, actions, assets, activeCycle, freeProgressResetAt, sensory, currentMode]);
+  }, [lendoMeuDia, tasks, actions, assets, activeCycle, freeProgressResetAt, sensory, currentMode, isPremiumUser]);
 
   const runQuickAction = useCallback((action: ChatQuickAction) => {
     switch (action.kind) {
@@ -748,7 +758,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
           }} onClick={() => setSection(id)}><Icon size={15} aria-hidden="true" className="shrink-0" />{label}{section !== id && <AttentionBadge count={secoesNaoLidas.has(id) ? 1 : 0} compact label={`Há novidade em ${label}`} className="ml-0.5" />}</button>)}
         </div>
         {section === 'guidance' && <div className="shrink-0 px-4 pt-3">
-          <button id="oracle-read-my-day" onClick={handleReadMyDay} className="min-h-14 w-full rounded-xl border border-white/10 bg-white/5 p-3 text-left"><span className="block text-xs font-bold">Ler meu ciclo e arenas</span><span className="text-[11px] text-white/50">Seu progresso nas arenas, com ou sem ciclo</span></button>
+          <button id="oracle-read-my-day" onClick={() => { void handleReadMyDay(); }} disabled={lendoMeuDia} className="min-h-14 w-full rounded-xl border border-white/10 bg-white/5 p-3 text-left disabled:opacity-60"><span className="block text-xs font-bold">{lendoMeuDia ? 'Lendo seu ciclo…' : 'Ler meu ciclo e arenas'}</span><span className="text-[11px] text-white/50">Seu progresso nas arenas, com ou sem ciclo</span></button>
         </div>}
 
         {/* Messages */}

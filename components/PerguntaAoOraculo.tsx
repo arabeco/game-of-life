@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { ditadoDisponivel, ouvirUmaFrase } from '../utils/ditado';
+import { EVENTO_COTA_DO_ORACULO, perguntarAoOraculo } from '../utils/oraculoIa';
 
 /**
  * PERGUNTE AO ORACULO (02/11/2026, com o Afonso).
@@ -53,7 +54,13 @@ export const PerguntaAoOraculo: React.FC<{
         void supabase.rpc('oraculo_ia_restantes').then(({ data }) => {
             if (vivo && data && typeof data.limite === 'number') setCota({ usadas: Number(data.usadas) || 0, limite: data.limite });
         });
-        return () => { vivo = false; };
+        // O "Ler meu ciclo e arenas" gasta da mesma cota: o contador acompanha.
+        const aoMudarCota = (evento: Event) => {
+            const detalhe = (evento as CustomEvent<Cota>).detail;
+            if (vivo && detalhe && typeof detalhe.limite === 'number') setCota(detalhe);
+        };
+        window.addEventListener(EVENTO_COTA_DO_ORACULO, aoMudarCota);
+        return () => { vivo = false; window.removeEventListener(EVENTO_COTA_DO_ORACULO, aoMudarCota); };
     }, []);
 
     const acabou = Boolean(cota && cota.usadas >= cota.limite);
@@ -65,21 +72,13 @@ export const PerguntaAoOraculo: React.FC<{
         setAviso(null);
         onPergunta(pergunta);
         setTexto('');
-        const { data, error } = await supabase.functions.invoke('oraculo-ia', { body: { pergunta, tom } });
+        const resultado = await perguntarAoOraculo(pergunta, tom);
         setEnviando(false);
-        if (data?.resposta) {
-            onResposta(String(data.resposta));
-            setCota({ usadas: data.usadas, limite: data.limite });
+        if (resultado.ok) {
+            onResposta(resultado.resposta);
             return;
         }
-        // O corpo do erro vem no contexto da resposta.
-        let erro: { erro?: string; usadas?: number; limite?: number } | null = null;
-        try { erro = await (error as { context?: Response })?.context?.json(); } catch { erro = null; }
-        if (erro?.erro === 'LIMITE') {
-            setCota({ usadas: erro.usadas ?? 0, limite: erro.limite ?? 1 });
-            setAviso(null);
-            return;
-        }
+        if ('erro' in resultado && resultado.erro === 'LIMITE') return;
         setTexto(pergunta);
         setAviso('O Oráculo não respondeu agora. Tente de novo em instantes; a pergunta não foi gasta.');
     }, [acabou, enviando, onPergunta, onResposta, texto, tom]);

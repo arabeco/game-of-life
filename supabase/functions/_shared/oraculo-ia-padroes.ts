@@ -23,6 +23,7 @@
  */
 
 import { FRASES_DOS_DEGRAUS, NOMES_DOS_DEGRAUS } from './maestria-degraus.ts';
+import { ROTINA_TIPICA } from './maestria-gabarito.ts';
 
 export type TarefaCrua = { action_id: string; date: string; start_time: number | null; completed: boolean; duration?: number | null };
 export type AcaoCrua = { id: string; arena_id: string | null; name: string; action_type: string | null; repetitions?: number | null; source_quest_id?: string | null; origin_codex_id?: string | null };
@@ -510,6 +511,13 @@ export const montarPadroes = (entrada: {
         if (serie.length) partes.push(`ciclos fechados: ${serie.join(', ')}`);
         const minutos = minutosPorArea.get(nome);
         if (minutos && janela >= 7) partes.push(`tempo: ${(minutos / 60 / (janela / 7)).toFixed(1).replace('.', ',')}h por semana`);
+        // O gabarito: a rotina tipica do degrau atual e do proximo (do 3 ao 10).
+        const rotina = ROTINA_TIPICA[id] as Record<number, string>;
+        const atual = nivel != null && rotina[nivel] ? `do ${nivel}: "${rotina[nivel]}"` : '';
+        const alvo = nivel == null ? 3 : Math.max(3, nivel + 1);
+        const proximo = rotina[alvo] && alvo > (nivel ?? -1) ? `do ${alvo}: "${rotina[alvo]}"` : '';
+        const gabarito = [atual, proximo].filter(Boolean).join('; ');
+        if (gabarito) partes.push(`rotina típica ${gabarito}`);
         return `- ${partes.join(' | ')}`;
       });
     linhas.splice(posicaoDaFicha, 0, 'ficha por área (da mais baixa para a mais alta):', ...ficha);

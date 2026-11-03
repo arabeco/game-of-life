@@ -167,3 +167,14 @@ console.log('Padroes: resumo dos degraus.');
   assert.match(relacoes, /sem arena/);
 }
 console.log('Padroes: ficha por area.');
+
+// O GABARITO NA FICHA (03/11/2026, com o Afonso): a rotina tipica do degrau atual
+// e do proximo, para o Oraculo comparar com as arenas e acoes de verdade.
+{
+  const m = montarPadroes({ hoje: '2026-11-03', ciclos: [], acoes: [], arenas: [], tarefas: [], niveis: [{ asset_id: 'saude', level: 7 }, { asset_id: 'lazer', level: 10 }, { asset_id: 'relacoes', level: 2 }] });
+  const saude = m.split('\n').find((l) => l.startsWith('- Saúde '));
+  assert.match(saude, /rotina típica do 7: "Força 4 a 5 vezes por semana[^"]*"; do 8: "Força, cardio 2 vezes e mobilidade/);
+  assert.match(m.split('\n').find((l) => l.startsWith('- Lazer e bem-estar ')), /rotina típica do 10: "[^"]+"$/);
+  assert.match(m.split('\n').find((l) => l.startsWith('- Relações ')), /rotina típica do 3: "Começa a notar padrões/, 'abaixo do 3, so a rotina do proximo');
+}
+console.log('Padroes: gabarito na ficha.');

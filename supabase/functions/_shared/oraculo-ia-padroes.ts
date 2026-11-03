@@ -106,31 +106,25 @@ const nomeDaArea = (bruto: string) => {
  * Oraculo ajudar a subir, ele ve o degrau de cada area com nome e frase e o
  * proximo degrau, da area mais baixa para a mais alta.
  */
+type AreaId = keyof typeof FRASES_DOS_DEGRAUS;
+const niveisValidos = (niveisCrus: NivelCru[]) => niveisCrus
+  .filter((n) => NOME_DA_AREA[n.asset_id] && Number.isFinite(Number(n.level)) && Number(n.level) > 0)
+  .map((n) => ({ id: n.asset_id as AreaId, nivel: Math.min(10, Math.max(0, Math.round(Number(n.level)))) }))
+  .filter((n) => FRASES_DOS_DEGRAUS[n.id]);
+
 const linhasDaMaestria = (niveisCrus: NivelCru[]): string[] => {
-  const niveis = niveisCrus
-    .filter((n) => NOME_DA_AREA[n.asset_id] && Number.isFinite(Number(n.level)) && Number(n.level) > 0)
-    .map((n) => ({ id: n.asset_id as keyof typeof FRASES_DOS_DEGRAUS, nivel: Math.min(10, Math.max(0, Math.round(Number(n.level)))) }))
-    .filter((n) => FRASES_DOS_DEGRAUS[n.id]);
+  const niveis = niveisValidos(niveisCrus);
   if (!niveis.length) return [];
   const soma = niveis.reduce((total, n) => total + n.nivel, 0);
   // O resumo por degrau vem pronto: sem ele a IA trocava quem esta em qual degrau.
   const porDegrau = [...new Set(niveis.map((n) => n.nivel))].sort((a, b) => a - b)
     .map((d) => `${d} em ${emLista(niveis.filter((n) => n.nivel === d).map((n) => NOME_DA_AREA[n.id]))}`);
-  const maisBaixas = niveis.filter((n) => n.nivel === Math.min(...niveis.map((x) => x.nivel))).map((n) => NOME_DA_AREA[n.id]);
-  const linhas = [
-    `maestria (cada área numa escada de 0 a 10 que a própria pessoa escolhe; Nível = soma das cinco × 2): Nível ${Math.min(100, soma * 2)} de 100`,
-    `degraus: ${porDegrau.join('; ')}. Mais baixo: ${maisBaixas.length > 1 ? `${maisBaixas.length} áreas empatadas no ${Math.min(...niveis.map((x) => x.nivel))} (${emLista(maisBaixas)})` : maisBaixas[0]}`,
+  const menor = Math.min(...niveis.map((x) => x.nivel));
+  const maisBaixas = niveis.filter((n) => n.nivel === menor).map((n) => NOME_DA_AREA[n.id]);
+  return [
+    `maestria (cada área numa escada de 0 a 10 que a própria pessoa escolhe; Nível = soma das cinco × 2, cada degrau vale 2): Nível ${Math.min(100, soma * 2)} de 100${soma * 2 < 100 ? ` (soma ${soma} de 50; faltam ${100 - soma * 2} pontos, ou ${50 - soma} degraus, para o 100)` : ''}`,
+    `degraus: ${porDegrau.join('; ')}. Mais baixo: ${maisBaixas.length > 1 ? `${maisBaixas.length} áreas empatadas no ${menor} (${emLista(maisBaixas)})` : maisBaixas[0]}`,
   ];
-  for (const n of [...niveis].sort((a, b) => a.nivel - b.nivel || NOME_DA_AREA[a.id].localeCompare(NOME_DA_AREA[b.id]))) {
-    const frases = FRASES_DOS_DEGRAUS[n.id];
-    const agora = `${NOME_DA_AREA[n.id]} ${n.nivel}, ${NOMES_DOS_DEGRAUS[n.nivel]}: "${frases[n.nivel]}"`;
-    linhas.push(n.nivel >= 10
-      ? `- ${agora} → topo da escada`
-      : `- ${agora} → próximo, ${n.nivel + 1} ${NOMES_DOS_DEGRAUS[n.nivel + 1]}: "${frases[n.nivel + 1]}"`);
-  }
-  const semNivel = Object.keys(NOME_DA_AREA).filter((id) => FRASES_DOS_DEGRAUS[id as keyof typeof FRASES_DOS_DEGRAUS] && !niveis.some((n) => n.id === id));
-  if (semNivel.length) linhas.push(`- sem avaliação (contam 0 no Nível): ${semNivel.map((id) => NOME_DA_AREA[id]).join(', ')}`);
-  return linhas;
 };
 
 /** O planejado e o feito por area, do relatorio gravado (snake ou camel). */
@@ -228,6 +222,7 @@ export const montarPadroes = (entrada: {
     linhas.push(`arenas: ${entrada.arenas.map((a) => `${a.name} (${NOME_DA_AREA[a.asset_id || ''] || 'sem área'}${soLivre(a.id) ? ', só ações Livres: registro, sem meta' : ''})`).join(' · ')}`);
   }
   linhas.push(...linhasDaMaestria(entrada.niveis || []));
+  const posicaoDaFicha = linhas.length;
   const areasComArena = new Set(entrada.arenas.map((a) => a.asset_id));
   const semArena = Object.keys(NOME_DA_AREA).filter((id) => !areasComArena.has(id)).map((id) => NOME_DA_AREA[id]);
   if (entrada.arenas.length && semArena.length) linhas.push(`áreas sem nenhuma arena: ${semArena.join(', ')}`);
@@ -449,6 +444,75 @@ export const montarPadroes = (entrada: {
     linhas.push(`agendado no planner para hoje (só o que foi marcado com horário; pode haver ação planejada sem horário): ${lista.join(' · ')}`);
   } else {
     linhas.push('agendado no planner para hoje: nada (isso não quer dizer que não haja ação planejada)');
+  }
+
+  // A FICHA POR AREA (03/11/2026, com o Afonso). Para ajudar a subir de degrau,
+  // a IA precisa ver junto, de cada area: o degrau e o proximo (com as frases),
+  // as arenas e acoes dela, como a area foi nos ciclos, os habitos que ja
+  // firmaram e o tempo por semana. Espalhado em linhas diferentes, ela errava
+  // de que area era cada coisa.
+  const niveisPorArea = new Map(niveisValidos(entrada.niveis || []).map((n) => [n.id, n.nivel]));
+  const comArena = entrada.arenas.length > 0 || niveisPorArea.size > 0;
+  if (comArena) {
+    const totalDoCiclo = aberto ? diasEntre(aberto.start_date, aberto.end_date) : 0;
+    const diaDoCiclo = aberto ? diasEntre(aberto.start_date, hoje) : 0;
+    const ritmo = (repeticoes: number) => {
+      if (!aberto) return `${repeticoes}x na rodada`;
+      const porDia = repeticoes / totalDoCiclo;
+      if (porDia >= 1.9) return `${Math.round(porDia)} por dia`;
+      if (porDia >= 0.9) return 'todo dia';
+      const porSemana = Math.max(1, Math.round(porDia * 7));
+      return porSemana >= 7 ? 'todo dia' : `${porSemana} por semana`;
+    };
+    const ultimoFechado = fechados[fechados.length - 1];
+    const habitos = (() => {
+      const m = ((ultimoFechado?.report_data as Record<string, unknown>)?.metrics || {}) as Record<string, unknown>;
+      const lista = (m.habitos_consolidados ?? m.habitosConsolidados) as Array<Record<string, unknown>> | undefined;
+      return (Array.isArray(lista) ? lista : []).map((h) => String(h.nome || h.name || '')).filter(Boolean);
+    })();
+    const ficha = (Object.keys(FRASES_DOS_DEGRAUS) as AreaId[])
+      .map((id) => ({ id, nivel: niveisPorArea.get(id) }))
+      .sort((a, b) => (a.nivel ?? -1) - (b.nivel ?? -1))
+      .map(({ id, nivel }) => {
+        const nome = NOME_DA_AREA[id];
+        const frases = FRASES_DOS_DEGRAUS[id];
+        const partes: string[] = [];
+        partes.push(nivel == null
+          ? `${nome} sem avaliação (conta 0 no Nível)`
+          : nivel >= 10
+            ? `${nome} ${nivel}, ${NOMES_DOS_DEGRAUS[nivel]}: "${frases[nivel]}" → topo da escada`
+            : `${nome} ${nivel}, ${NOMES_DOS_DEGRAUS[nivel]}: "${frases[nivel]}" → próximo, ${nivel + 1} ${NOMES_DOS_DEGRAUS[nivel + 1]}: "${frases[nivel + 1]}"`);
+        const arenasDaArea = entrada.arenas.filter((a) => a.asset_id === id && !a.completed_at);
+        if (!arenasDaArea.length) {
+          partes.push('sem arena');
+        } else {
+          partes.push(`arenas: ${arenasDaArea.map((a) => a.name).join(', ')}`);
+          const ids = new Set(arenasDaArea.map((a) => a.id));
+          const daArea = entrada.acoes.filter((a) => a.arena_id && ids.has(a.arena_id));
+          const comMeta = daArea.filter((a) => a.action_type !== 'Livre' && !a.source_quest_id && !a.origin_codex_id);
+          if (comMeta.length) partes.push(`ações: ${comMeta.map((a) => `${a.name} (${ritmo(Math.max(1, Math.floor(Number(a.repetitions) || 1)))})`).join(', ')}`);
+          else if (daArea.length) partes.push('só ações Livres: registro, sem meta');
+          if (aberto && diaDoCiclo > 3 && comMeta.length) {
+            const prometido = comMeta.reduce((soma, a) => soma + Math.max(1, Math.floor(Number(a.repetitions) || 1)), 0);
+            const feito = comMeta.reduce((soma, a) => soma + Math.min(Math.max(1, Math.floor(Number(a.repetitions) || 1)),
+              entrada.tarefas.filter((t) => t.action_id === a.id && t.completed && t.date >= aberto.start_date && t.date <= hoje).length), 0);
+            partes.push(`ciclo atual: ${feito} de ${prometido}`);
+          }
+          const firmes = habitos.filter((h) => daArea.some((a) => a.name.trim() === h.trim()));
+          if (firmes.length) partes.push(`hábitos firmes: ${firmes.join(', ')}`);
+        }
+        const serie = fechados.map((c) => {
+          const lista = ((c.report_data as Record<string, unknown>)?.asset_progress || (c.report_data as Record<string, unknown>)?.assetProgress) as Array<Record<string, unknown>> | undefined;
+          const item = (Array.isArray(lista) ? lista : []).find((x) => nomeDaArea(String(x.asset || '').trim()) === nome);
+          const planejado = Number(item?.total_planned ?? item?.totalPlanned ?? 0);
+          return planejado > 0 ? `${pct(Number(item?.total_completed ?? item?.totalCompleted ?? 0), planejado)}%` : null;
+        }).filter((x): x is string => Boolean(x));
+        if (serie.length) partes.push(`ciclos fechados: ${serie.join(', ')}`);
+        const minutos = minutosPorArea.get(nome);
+        if (minutos && janela >= 7) partes.push(`tempo: ${(minutos / 60 / (janela / 7)).toFixed(1).replace('.', ',')}h por semana`);
+        return `- ${partes.join(' | ')}`;
+      });
+    linhas.splice(posicaoDaFicha, 0, 'ficha por área (da mais baixa para a mais alta):', ...ficha);
   }
 
   return linhas.join('\n');

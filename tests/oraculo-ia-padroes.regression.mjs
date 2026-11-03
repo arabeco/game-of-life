@@ -127,12 +127,12 @@ console.log('Padroes: conta nova.');
   const m = montarPadroes({ hoje: '2026-11-03', ciclos: [], acoes: [], arenas: [], tarefas: [], niveis: [
     { asset_id: 'proposito', level: 7 }, { asset_id: 'relacoes', level: 7 }, { asset_id: 'trabalho', level: 7 }, { asset_id: 'lazer', level: 9 }, { asset_id: 'saude', level: 7 },
   ] });
-  assert.match(m, /Nível 74 de 100/);
+  assert.match(m, /Nível 74 de 100 \(soma 37 de 50; faltam 26 pontos, ou 13 degraus, para o 100\)/);
   assert.match(m, /Saúde 7, Domínio: "Tenho um corpo resistente[^"]*" → próximo, 8 Solidez: "Minha força, condicionamento e mobilidade/);
   assert.match(m, /Lazer e bem-estar 9, Referência/);
   const topo = montarPadroes({ hoje: '2026-11-03', ciclos: [], acoes: [], arenas: [], tarefas: [], niveis: [{ asset_id: 'saude', level: 10 }] });
   assert.match(topo, /Saúde 10, Obra: "[^"]+" → topo da escada/);
-  assert.match(topo, /sem avaliação \(contam 0 no Nível\): /, 'area sem nivel aparece');
+  assert.match(topo, /- Propósito sem avaliação \(conta 0 no Nível\)/, 'area sem nivel aparece');
   assert.match(topo, /Nível 20 de 100/);
   const linhas = m.split('\n');
   assert.ok(linhas.findIndex((l) => l.includes('Lazer e bem-estar 9')) > linhas.findIndex((l) => l.includes('Saúde 7')), 'da area mais baixa para a mais alta');
@@ -145,3 +145,25 @@ console.log('Padroes: escada da maestria.');
   assert.match(m, /degraus: 7 em Propósito, Relações, Trabalho e estudos e Saúde; 9 em Lazer e bem-estar\. Mais baixo: 4 áreas empatadas no 7 \(/);
 }
 console.log('Padroes: resumo dos degraus.');
+
+// A FICHA POR AREA (03/11/2026, com o Afonso): para ajudar a subir, a IA precisa
+// ver juntos o degrau, as arenas e acoes da area, os ciclos e os habitos dela.
+{
+  const linhaDe = (nome) => texto.split('\n').find((l) => l.startsWith(`- ${nome} `));
+  const saude = linhaDe('Saúde');
+  assert.ok(saude, 'Saude tem ficha');
+  assert.match(saude, /Saúde 7, Domínio: "[^"]+" → próximo, 8 Solidez: "[^"]+"/);
+  assert.match(saude, /arenas: Corpo/);
+  assert.match(saude, /ações: Caminhar/);
+  assert.doesNotMatch(saude, /Alongar/, 'acao Livre nao entra nas acoes da area');
+  assert.match(saude, /ciclos fechados: 100%/);
+  assert.match(saude, /hábitos firmes: Caminhar/);
+  const trabalho = linhaDe('Trabalho e estudos');
+  assert.match(trabalho, /sem avaliação/);
+  assert.match(trabalho, /arenas: Idiomas/);
+  assert.match(trabalho, /ciclos fechados: 14%/);
+  const relacoes = linhaDe('Relações');
+  assert.match(relacoes, /Relações 3, Despertar/);
+  assert.match(relacoes, /sem arena/);
+}
+console.log('Padroes: ficha por area.');

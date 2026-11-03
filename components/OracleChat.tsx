@@ -762,9 +762,6 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
             event.preventDefault(); setSection(tabs[next].id); document.getElementById(`oracle-tab-${tabs[next].id}`)?.focus();
           }} onClick={() => setSection(id)}><Icon size={15} aria-hidden="true" className="shrink-0" />{label}{section !== id && <AttentionBadge count={secoesNaoLidas.has(id) ? 1 : 0} compact label={`Há novidade em ${label}`} className="ml-0.5" />}</button>)}
         </div>
-        {section === 'guidance' && <div className="shrink-0 px-4 pt-3">
-          <button id="oracle-read-my-day" onClick={() => { void handleReadMyDay(); }} disabled={lendoMeuDia} className="min-h-14 w-full rounded-xl border border-white/10 bg-white/5 p-3 text-left disabled:opacity-60"><span className="block text-xs font-bold">{lendoMeuDia ? 'Lendo seu ciclo…' : 'Ler meu ciclo e arenas'}</span><span className="text-[11px] text-white/50">Seu progresso nas arenas, com ou sem ciclo</span></button>
-        </div>}
 
         {/* Messages */}
         <div id="oracle-content" role="tabpanel" aria-labelledby={`oracle-tab-${section}`} className="min-h-0 flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
@@ -774,7 +771,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
               <div className="opacity-50">
               <HeaderIcon className={`w-16 h-16 mb-4 ${MODE_VISUALS[currentMode].color} drop-shadow-[0_0_10px_rgba(255,215,0,0.3)]`} />
               <p className="text-sm text-gray-400 font-bold">{section === 'wisdom' ? 'Um espaço para refletir' : 'Seu dia ou seu ciclo?'}</p>
-              <p className="text-xs text-gray-600 mt-2 max-w-[200px]">{section === 'wisdom' ? 'Seus cards de informação e sabedoria aparecem aqui.' : 'Escolha uma leitura acima. A resposta aparece aqui.'}</p>
+              <p className="text-xs text-gray-600 mt-2 max-w-[200px]">{section === 'wisdom' ? 'Seus cards de informação e sabedoria aparecem aqui.' : 'Escolha uma pergunta pronta abaixo ou escreva a sua.'}</p>
               </div>
             </div>
           )}
@@ -901,6 +898,8 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
           gratis={!isPremiumUser}
           onPergunta={(pergunta) => setMessages(previous => [...previous, { role: 'user', content: pergunta, timestamp: new Date(), mode: currentMode }])}
           onResposta={(resposta) => setMessages(previous => [...previous, { role: 'assistant', content: resposta, timestamp: new Date(), mode: currentMode, feedCategory: 'analise_padroes', feedTrigger: 'manual' }])}
+          onLerMeuDia={() => { void handleReadMyDay(); }}
+          lendoMeuDia={lendoMeuDia}
           onAviso={(texto, comPremium) => setMessages(previous => [...previous, {
             role: 'assistant', content: texto, timestamp: new Date(), mode: currentMode, feedTrigger: 'manual',
             quickActions: comPremium ? [{ id: 'oraculo-ia-premium', label: 'Ver o Premium', kind: 'open_premium' as const }] : undefined,

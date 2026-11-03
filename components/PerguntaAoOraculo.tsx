@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { ditadoDisponivel, ouvirUmaFrase } from '../utils/ditado';
-import { EVENTO_COTA_DO_ORACULO, perguntarAoOraculo } from '../utils/oraculoIa';
+import { EVENTO_COTA_DO_ORACULO, PERGUNTAS_PRONTAS, perguntarAoOraculo } from '../utils/oraculoIa';
 import { avisoDoOraculo } from '../utils/oraculoIaAvisos';
 
 /**
@@ -21,7 +21,10 @@ export const PerguntaAoOraculo: React.FC<{
     onResposta: (resposta: string) => void;
     /** Sem internet, erro ou conversas esgotadas: o Oraculo avisa no proprio chat. */
     onAviso: (texto: string, comPremium: boolean) => void;
-}> = ({ tom, gratis, onPergunta, onResposta, onAviso }) => {
+    /** O primeiro card: a leitura do dia e do ciclo (cai na leitura por regras sem cota). */
+    onLerMeuDia: () => void;
+    lendoMeuDia: boolean;
+}> = ({ tom, gratis, onPergunta, onResposta, onAviso, onLerMeuDia, lendoMeuDia }) => {
     const [texto, setTexto] = useState('');
     const [enviando, setEnviando] = useState(false);
     const [cota, setCota] = useState<Cota | null>(null);
@@ -68,13 +71,18 @@ export const PerguntaAoOraculo: React.FC<{
 
     const acabou = Boolean(cota && cota.usadas >= cota.limite);
 
-    const enviar = useCallback(async () => {
-        const pergunta = texto.trim();
-        if (!pergunta || enviando || acabou) return;
+    const enviar = useCallback(async (pronta?: string) => {
+        const pergunta = (pronta ?? texto).trim();
+        if (!pergunta || enviando) return;
+        if (acabou) {
+            const aviso = avisoDoOraculo('LIMITE', { gratis, tom, limite: cota?.limite });
+            onAviso(aviso.texto, aviso.premium);
+            return;
+        }
         setEnviando(true);
         setAviso(null);
         onPergunta(pergunta);
-        setTexto('');
+        if (!pronta) setTexto('');
         const resultado = await perguntarAoOraculo(pergunta, tom);
         setEnviando(false);
         if (resultado.ok) {
@@ -82,14 +90,41 @@ export const PerguntaAoOraculo: React.FC<{
             return;
         }
         const erro = 'erro' in resultado ? resultado.erro : 'FALHOU';
-        const aviso = avisoDoOraculo(erro, { gratis, limite: 'limite' in resultado ? resultado.limite : undefined });
+        const aviso = avisoDoOraculo(erro, { gratis, tom, limite: 'limite' in resultado ? resultado.limite : undefined });
         onAviso(aviso.texto, aviso.premium);
         // Sem internet ou erro: a pergunta volta para a caixa, pronta para mandar de novo.
-        if (erro !== 'LIMITE') setTexto(pergunta);
-    }, [acabou, enviando, gratis, onAviso, onPergunta, onResposta, texto, tom]);
+        if (erro !== 'LIMITE' && !pronta) setTexto(pergunta);
+    }, [acabou, cota?.limite, enviando, gratis, onAviso, onPergunta, onResposta, texto, tom]);
+
+    // Os cards de pergunta pronta: uma fileira que desliza para o lado, acima da caixa.
+    const cards = (
+        <div className="-mx-3 flex gap-2 overflow-x-auto px-3 pb-1 [scrollbar-width:none]" role="group" aria-label="Perguntas prontas">
+            <button
+                id="oracle-read-my-day"
+                type="button"
+                onClick={onLerMeuDia}
+                disabled={lendoMeuDia || enviando}
+                className="shrink-0 rounded-full border border-[var(--skin-accent-color)]/45 bg-[var(--skin-accent-color)]/12 px-3 py-1.5 text-[11px] font-bold text-[var(--skin-accent-color)] disabled:opacity-50"
+            >
+                {lendoMeuDia ? 'Lendo seu dia…' : 'Ler meu dia e ciclo'}
+            </button>
+            {PERGUNTAS_PRONTAS.map(({ rotulo, pergunta }) => (
+                <button
+                    key={rotulo}
+                    type="button"
+                    onClick={() => { void enviar(pergunta); }}
+                    disabled={enviando || lendoMeuDia}
+                    className="shrink-0 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[11px] font-semibold text-white/80 disabled:opacity-50"
+                >
+                    {rotulo}
+                </button>
+            ))}
+        </div>
+    );
 
     return (
         <div className="shrink-0 space-y-2 border-t border-white/10 bg-black/20 p-3">
+            {cards}
             {acabou ? (
                 <div className="space-y-2 text-center">
                     <p className="text-[11px] leading-relaxed text-white/60">

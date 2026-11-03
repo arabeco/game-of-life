@@ -9,6 +9,22 @@ import { supabase } from '../supabaseClient';
  */
 export const EVENTO_COTA_DO_ORACULO = 'oraculo-ia-cota';
 
+/**
+ * AS PERGUNTAS PRONTAS (03/11/2026): cards numa fileira acima da caixa, para
+ * quem nao sabe o que perguntar. Servem para qualquer pessoa; o Oraculo
+ * responde com os padroes dela. Cada uma gasta da cota como uma pergunta.
+ */
+export const PERGUNTAS_PRONTAS: ReadonlyArray<{ rotulo: string; pergunta: string }> = [
+    { rotulo: 'O que faço agora?', pergunta: 'O que eu faço agora?' },
+    { rotulo: 'Onde vou bem?', pergunta: 'Onde eu estou indo bem?' },
+    { rotulo: 'Meu ponto fraco', pergunta: 'Qual é o meu ponto mais fraco?' },
+    { rotulo: 'Um hábito pequeno', pergunta: 'Que hábito pequeno faria mais diferença pra mim?' },
+    { rotulo: 'Planejo demais?', pergunta: 'Estou planejando mais do que consigo cumprir?' },
+    { rotulo: 'Semana mais leve', pergunta: 'Como deixo minha semana mais leve sem perder o ritmo?' },
+    { rotulo: 'Próximo ciclo', pergunta: 'O que eu mudaria no próximo ciclo?' },
+    { rotulo: 'Ideia de arena', pergunta: 'Me dá uma ideia de arena nova' },
+];
+
 /** A pergunta pronta do botao "Ler meu ciclo e arenas". */
 export const PERGUNTA_LER_MEU_DIA = 'Leia o meu dia e o meu ciclo: o que importa hoje e o que você recomenda?';
 

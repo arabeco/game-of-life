@@ -27,3 +27,14 @@ assert.doesNotMatch(acabouPago.texto, /Premium/, 'quem ja paga nao recebe propag
 assert.equal(acabouPago.premium, false);
 
 console.log('Avisos do Oraculo com IA: sem internet, erro e esgotado, na voz dele.');
+
+// Um texto por tom (03/11/2026): o mesmo aviso muda de voz, sem chamar a IA.
+{
+  const tons = ['neutro', 'coach', 'reflexivo', 'calmo'];
+  const textos = tons.map((tom) => avisoDoOraculo('LIMITE', { gratis: true, tom }).texto);
+  assert.equal(new Set(textos).size, 4, 'os quatro tons tem textos diferentes');
+  textos.forEach((t) => assert.match(t, /Premium/));
+  assert.equal(avisoDoOraculo('FALHOU', { gratis: false, tom: 'qualquer' }).texto, avisoDoOraculo('FALHOU', { gratis: false, tom: 'neutro' }).texto, 'tom desconhecido vira neutro');
+  assert.match(avisoDoOraculo('LIMITE', { gratis: false, limite: 15, tom: 'calmo' }).texto, /15 conversas/);
+}
+console.log('Avisos: um texto por tom.');

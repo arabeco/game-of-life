@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
-import { TONS, chamarHaiku, instrucoes, lerConversa, lerPadroes, type Tom } from "../_shared/oraculo-ia-nucleo.ts";
+import { TONS, chamarHaiku, instrucoes, lerConversa, lerMemoria, lerPadroes, type Tom } from "../_shared/oraculo-ia-nucleo.ts";
+import { separarMemoria } from "../_shared/oraculo-ia-memoria.ts";
 
 /**
  * O ORACULO COM IA, V1: O CHAT (02/11/2026, com o Afonso).
@@ -10,6 +11,7 @@ import { TONS, chamarHaiku, instrucoes, lerConversa, lerPadroes, type Tom } from
  * do banco, junta as ultimas
  * trocas da conversa e chama o Claude Haiku 5.5 pelo OpenRouter, fixado no
  * provedor Anthropic. A IA decide o que dizer; o app so entrega os dados.
+ * Na mesma chamada ela reescreve a memoria do que a pessoa contou de si.
  *
  * So conta o que foi entregue: se a IA falhar, a pergunta e devolvida.
  * A chave do OpenRouter fica nos secrets do Supabase, nunca no app.
@@ -83,14 +85,22 @@ serve(async (req) => {
     const pedido = TONS.includes(corpo.tom as Tom) ? (corpo.tom as Tom) : "neutro";
     const tom: Tom = pago ? pedido : "neutro";
 
-    const [padroes, conversa] = await Promise.all([lerPadroes(supabaseAdmin, userId), lerConversa(supabaseAdmin, userId)]);
-    const texto = await chamarHaiku(OPENROUTER_API_KEY, instrucoes(tom, String(perfil?.nickname || "")), padroes, conversa, pergunta);
+    const [padroes, conversa, memoriaAtual] = await Promise.all([
+      lerPadroes(supabaseAdmin, userId),
+      lerConversa(supabaseAdmin, userId),
+      lerMemoria(supabaseAdmin, userId),
+    ]);
+    const bruto = await chamarHaiku(OPENROUTER_API_KEY, instrucoes(tom, String(perfil?.nickname || "")), padroes, conversa, pergunta, memoriaAtual);
+    const { resposta: texto, memoria } = separarMemoria(bruto || "", memoriaAtual);
     if (!texto) {
       await supabaseAdmin.rpc("oraculo_ia_devolver", { p_user_id: userId, p_conversa_nova: conversaNova });
       return resposta({ erro: "IA_FALHOU" }, 502, headers);
     }
 
     await supabaseAdmin.from("oraculo_ia_mensagens").insert({ user_id: userId, pergunta, resposta: texto });
+    if (memoria !== memoriaAtual) {
+      await supabaseAdmin.from("oraculo_ia_memoria").upsert({ user_id: userId, texto: memoria, atualizada_em: new Date().toISOString() });
+    }
     return resposta({ resposta: texto, usadas: reserva.usadas, limite: reserva.limite, mensagens: mensagensRestantes }, 200, headers);
   } catch (erro) {
     console.error("oraculo-ia: erro", String(erro));

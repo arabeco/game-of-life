@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { chamarHaiku, instrucoes, lerPadroes, TONS, type Tom } from "../_shared/oraculo-ia-nucleo.ts";
+import { separarMemoria } from "../_shared/oraculo-ia-memoria.ts";
 
 /**
  * ENSAIO TEMPORARIO DO ORACULO COM IA (02/11/2026). Roda perguntas com os
@@ -27,11 +28,16 @@ serve(async (req) => {
   // modo "conversa": cada pergunta leva as trocas anteriores, como na funcao de verdade.
   const emConversa = corpo.modo === "conversa";
   const historico: Array<{ role: string; content: string }> = [];
+  // A memoria passa de uma pergunta para a outra; pode vir de um ensaio anterior.
+  let memoria = typeof corpo.memoria === "string" ? corpo.memoria : "";
   const respostas = [];
   for (const pergunta of perguntas) {
     const inicio = Date.now();
-    const texto = await chamarHaiku(OPENROUTER_API_KEY, instrucoes(tom, "mister x"), padroes, emConversa ? historico.slice(-6) : [], pergunta);
-    respostas.push({ pergunta, texto, segundos: (Date.now() - inicio) / 1000 });
+    const bruto = await chamarHaiku(OPENROUTER_API_KEY, instrucoes(tom, "mister x"), padroes, emConversa ? historico.slice(-6) : [], pergunta, emConversa ? memoria : "");
+    const separado = separarMemoria(bruto || "", memoria);
+    const texto = separado.resposta;
+    if (emConversa) memoria = separado.memoria;
+    respostas.push({ pergunta, texto, memoria: emConversa ? memoria : undefined, segundos: (Date.now() - inicio) / 1000 });
     if (emConversa && texto) historico.push({ role: "user", content: pergunta }, { role: "assistant", content: texto });
   }
   return new Response(JSON.stringify({ padroes, respostas }), { headers: json });

@@ -23,6 +23,15 @@ create table if not exists public.oraculo_ia_conversa (
 );
 alter table public.oraculo_ia_conversa enable row level security;
 
+-- A memoria do Oraculo (03/11/2026): o que a pessoa contou de si, reescrito
+-- pela IA a cada resposta. So a funcao (service role) le e grava.
+create table if not exists public.oraculo_ia_memoria (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  texto text not null default '',
+  atualizada_em timestamptz not null default now()
+);
+alter table public.oraculo_ia_memoria enable row level security;
+
 -- Mensagens por conversa e a janela em que ela continua aberta.
 create or replace function public.oraculo_ia_mensagens_por_conversa()
 returns integer language sql immutable as $$ select 3 $$;

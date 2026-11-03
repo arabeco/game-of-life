@@ -61,6 +61,8 @@ GÊNERO: não suponha. Trate por "você" e evite palavras com gênero; nunca esc
 
 TOM: ${TOM_EM_PALAVRAS[tom]}
 
+MEMÓRIA: você recebe a MEMÓRIA, o que a pessoa já te contou de si em outras conversas. Use quando tiver a ver com a pergunta, como quem lembra (nunca fale em "memória" na resposta); o que a pessoa disse vale mais que os números. Depois do parágrafo, numa linha separada, escreva "MEMÓRIA: " e a memória atualizada, ou "MEMÓRIA: =" se nada mudou. Guarde só o que a pessoa disse de si: preferências, limites, decisões ("não vou largar a Meditação"), rotina, como está se sentindo, com a data quando for passageiro (sono, ânimo). Só entra o que a pessoa afirmou com as próprias palavras: pergunta não é decisão, e o que você sugeriu não vira vontade dela (nada de "pensa em fazer a versão curta" se foi você quem propôs). Não guarde horário, porcentagem nem nada que já esteja nos DADOS. Tire o que for passageiro e tiver mais de 7 dias. Cada item começa pelo que a pessoa fez ao falar ("disse que", "pediu", "decidiu", "prefere") e, se for passageiro, leva a data (dd/mm); se você não consegue apontar a frase dela, não guarde. Itens curtos separados por ponto e vírgula, no máximo 8, juntando os antigos que continuam valendo; se a pessoa pedir para esquecer algo ou mudar de ideia, tire ou troque o item. Essa linha não conta nas 5 frases.
+
 O MAIS IMPORTANTE, por último: um parágrafo só, no máximo 5 frases curtas. Se precisar escolher, corte e fique com o essencial. Antes de enviar, releia: todo verbo de sugestão no imperativo ("faça", "tente", "não deixe", "comece") vira "eu faria", "eu tentaria", "que tal". Só no tom coach: se os DADOS trazem a linha "áreas em 100% em todos os ciclos", a resposta termina usando essa linha para desafiar (subir um degrau numa dessas áreas), sempre que perguntam onde estão indo bem, como está o ciclo ou o que mudar. Nos outros tons, essa linha é só informação. Por fim, confira se a resposta obedece ao FAZ e ao NÃO FAZ do TOM.`;
 
 /** O dia do Glyph em Brasilia (vira as 4h): o mesmo do banco. */
@@ -130,7 +132,12 @@ export const lerConversa = async (supabaseAdmin: SupabaseClient, userId: string)
   ]);
 };
 
-export const chamarHaiku = async (chave: string, sistema: string, padroes: string, conversa: unknown[], pergunta: string) => {
+export const lerMemoria = async (supabaseAdmin: SupabaseClient, userId: string) => {
+  const { data } = await supabaseAdmin.from("oraculo_ia_memoria").select("texto").eq("user_id", userId).maybeSingle();
+  return String(data?.texto || "");
+};
+
+export const chamarHaiku = async (chave: string, sistema: string, padroes: string, conversa: unknown[], pergunta: string, memoria = "") => {
   const controle = new AbortController();
   const relogio = setTimeout(() => controle.abort(), 20000);
   try {
@@ -148,9 +155,9 @@ export const chamarHaiku = async (chave: string, sistema: string, padroes: strin
         messages: [
           { role: "system", content: sistema },
           ...conversa,
-          { role: "user", content: `DADOS (use se ajudarem)\n${padroes}\n\nPERGUNTA\n${pergunta}\n\n(Um parágrafo, no máximo 5 frases.)` },
+          { role: "user", content: `MEMÓRIA\n${memoria || "(vazia)"}\n\nDADOS (use se ajudarem)\n${padroes}\n\nPERGUNTA\n${pergunta}\n\n(Um parágrafo, no máximo 5 frases. Depois, a linha MEMÓRIA.)` },
         ],
-        max_tokens: 380,
+        max_tokens: 480,
         temperature: 0.7,
         reasoning: { enabled: false },
         provider: { order: ["Anthropic"], allow_fallbacks: false },

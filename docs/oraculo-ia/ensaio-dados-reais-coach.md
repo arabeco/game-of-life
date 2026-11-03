@@ -3,7 +3,8 @@
 ## Dados que ele recebe
 
 ```
-agora: terça-feira, 03/11, 06:47
+agora: terça-feira, 03/11, 07:26
+usa o Glyph há 234 dias
 arenas: O Andarilho (Propósito) · Academia e dieta (Saúde) · Projetos (Propósito) · SIDEQUESTS  (Relações) · Lazer (Lazer e bem-estar, só ações Livres: registro, sem meta) · Estudos (Trabalho e estudos) · RITUAIS (Propósito) · Meditação (Propósito) · Trabalho (Trabalho e estudos)
 maestria por área (0 a 10, a pessoa se avalia): Relações 7 · Lazer e bem-estar 9 · Propósito 7 · Trabalho e estudos 7 · Saúde 7
 ciclos anteriores (planejado → feito, por área, do relatório do ciclo):
@@ -13,7 +14,7 @@ ciclos anteriores (planejado → feito, por área, do relatório do ciclo):
 áreas em 100% em todos os 3 ciclos fechados: Relações, Trabalho e estudos e Saúde — ou a pessoa já domina, ou a meta ficou folgada
 no último ciclo, a área que mais cumpriu foi Relações (100%) e a que menos cumpriu foi Propósito (87%)
 ciclo atual: dia 2 de 28 (faltam 27 dias, contando hoje). É começo de ciclo: o que conta agora é pegar ritmo, não o placar.
-o que ela planejou no ciclo, por arena e ação (com o ritmo de cada uma): Trabalho: Edição Video 11x (3 por semana) · Meditação: Meditação Zen 27x (todo dia, costuma ficar depois das 21h) · Estudos: Audiobook 2 5x (1 por semana, costuma ficar de manhã (4h às 12h)), Conteúdo/Leitura 11x (3 por semana) · Academia e dieta: ABCDE 14x (4 por semana, costuma ficar de manhã (4h às 12h)), Correr 3km 3x (1 por semana, costuma ficar de manhã (4h às 12h)), Almoço 25x (6 por semana, costuma ficar à tarde (12h às 18h)), Correr 4km 1x (1 por semana), Café da Manhã 28x (todo dia, costuma ficar de manhã (4h às 12h)) · Projetos: Progredir 18x (5 por semana), Receita 2x (1 por semana), Social Media 4x (1 por semana, costuma ficar à tarde (12h às 18h)) · RITUAIS: Pentágono 28x (todo dia, costuma ficar de manhã (4h às 12h)), Gratidão, Reza, Plano 28x (todo dia, costuma ficar depois das 21h) · SIDEQUESTS : Conexão  22x (6 por semana, costuma ficar à tarde (12h às 18h)), Votação  1x (1 por semana), Sidequests 8x (2 por semana, costuma ficar à tarde (12h às 18h))
+o que foi planejado no ciclo, por arena e ação (com o ritmo de cada uma): Trabalho: Edição Video 11x (3 por semana) · Meditação: Meditação Zen 27x (todo dia, costuma ficar depois das 21h) · Estudos: Audiobook 2 5x (1 por semana, costuma ficar de manhã (4h às 12h)), Conteúdo/Leitura 11x (3 por semana) · Academia e dieta: ABCDE 14x (4 por semana, costuma ficar de manhã (4h às 12h)), Correr 3km 3x (1 por semana, costuma ficar de manhã (4h às 12h)), Almoço 25x (6 por semana, costuma ficar à tarde (12h às 18h)), Correr 4km 1x (1 por semana), Café da Manhã 28x (todo dia, costuma ficar de manhã (4h às 12h)) · Projetos: Progredir 18x (5 por semana), Receita 2x (1 por semana), Social Media 4x (1 por semana, costuma ficar à tarde (12h às 18h)) · RITUAIS: Pentágono 28x (todo dia, costuma ficar de manhã (4h às 12h)), Gratidão, Reza, Plano 28x (todo dia, costuma ficar depois das 21h) · SIDEQUESTS : Conexão  22x (6 por semana, costuma ficar à tarde (12h às 18h)), Votação  1x (1 por semana), Sidequests 8x (2 por semana, costuma ficar à tarde (12h às 18h))
 horários (feitas do que foi agendado): de manhã (4h às 12h) 99% · à tarde (12h às 18h) 100% · à noite (18h às 21h) 100% · depois das 21h 86%
 horário em que mais cumpre: à tarde (12h às 18h) e à noite (18h às 21h) (100%); em que menos cumpre: depois das 21h (86%)
 dias da semana (feitas do que foi agendado): domingo 98% · segunda 94% · terça 97% · quarta 94% · quinta 99% · sexta 100% · sábado 100%
@@ -22,53 +23,53 @@ em que horário cada arena costuma estar agendada (não é o quanto cumpre): Med
 tempo agendado por semana (média dos últimos 28 dias): Propósito 20,6h · Saúde 14,3h · Lazer e bem-estar 11,3h · Relações 7,6h · Trabalho e estudos 7,4h — total 61,1h
 dia típico no planner: primeira ação por volta de 07:00, última por volta de 22:30
 próximos 7 dias no planner (ações e horas): quarta 4 (2,3h) · quinta 4 (2,3h) · sexta 4 (2,3h) · sábado 3 (1,3h) · domingo 3 (1,3h) · segunda 4 (2,3h) · terça 4 (2,3h)
-agendado no planner para hoje (só o que ela marcou com horário; pode haver ação planejada sem horário): Pentágono (07:00, pendente) · Café da Manhã (07:30, pendente) · Edição Video (08:00, pendente) · Conteúdo/Leitura (09:00, pendente) · ABCDE (10:30, pendente) · Conexão  (11:30, pendente) · Sidequests (12:15, pendente) · Almoço (13:15, pendente) · Gratidão, Reza, Plano (22:30, pendente)
+agendado no planner para hoje (só o que foi marcado com horário; pode haver ação planejada sem horário): Pentágono (07:00, pendente) · Café da Manhã (07:30, pendente) · Edição Video (08:00, pendente) · Conteúdo/Leitura (09:00, pendente) · ABCDE (10:30, pendente) · Conexão  (11:30, pendente) · Sidequests (12:15, pendente) · Almoço (13:15, pendente) · Gratidão, Reza, Plano (22:30, pendente)
 ```
 
-### O que eu faço agora?  (2.4s)
+### O que eu faço agora?  (2.1s)
 
-Agora, às 06:47, o próximo passo do seu planner é o Pentágono às 07:00, e depois o Café da Manhã às 07:30. Como estamos no começo do ciclo (dia 2 de 28), o foco é só pegar ritmo: eu começaria pelo Pentágono e seguiria a sequência da manhã sem pensar muito além disso. Se quiser, depois do Café dá para ver se o restante do dia cabe tranquilo.
+Agora é começo de ciclo, e o planner de hoje tem o Pentágono às 07:00 e o Café da Manhã às 07:30, bem cedo, quando você costuma cumprir quase tudo. Eu começaria por eles, marcando cada um ao concluir, e seguiria pelo Edição Vídeo às 08:00, que é uma ação de Trabalho e vale ter pegado ritmo logo cedo. Depois, com o dia rodando, o resto do planner segue a mesma lógica. Se você fizer só isso, já está no caminho certo.
 
-### Como está o meu ciclo?  (1.6s)
+### Como está o meu ciclo?  (1.7s)
 
-Você está no dia 2 de 28, então o que importa agora é pegar ritmo, não o placar. Até aqui você está bem: a agenda de hoje já tem Pentágono, Café da Manhã e o resto, e os horários em que você mais cumpre (tarde e noite) batem com o que você agendou. A única coisa que eu vigiaria é a Meditação Zen, que você planejou todo dia mas costuma ficar depois das 21h, onde seu cumprimento é o mais fraco. Se essa ação ficar travando, eu tentaria puxá-la para um horário mais cedo do dia.
+Você está no dia 2 de 28, então o que importa agora é pegar ritmo, não o placar. Os seus últimos ciclos fecharam com execução de 100%, e Relações, Trabalho e estudos e Saúde já bateram 100% nos três. Isso pode significar que você já domina essas áreas, ou que as metas ficaram folgadas para o seu nível. Eu olharia com calma para Propósito, que foi a área que mais ficou para trás no último ciclo (87%), e tentaria subir um degrau em uma das ações de Saúde ou Relações para descobrir qual é o caso.
 
-### Qual é o meu ponto mais fraco?  (2.2s)
+### Qual é o meu ponto mais fraco?  (1.7s)
 
-Seu ponto mais fraco aparece em Propósito: foi a área que menos cumpriu no último ciclo (87%), e no ciclo de setembro ficou em 65%. Os números apontam mais para o horário do que para a área em si: suas ações de Propósito ficam depois das 21h, que é o horário em que você menos cumpre (86%), e a Meditação Zen, que é todo dia, cai justamente aí. Eu tentaria puxar a Meditação Zen para mais cedo, talvez logo depois do Café da Manhã, que você já cumpre quase sempre. Só dá para afirmar isso com dados de uns poucos ciclos, então vale observar mais uma semana antes de concluir.
+Pelos dados, o ponto mais fraco é Propósito, que foi a área que menos cumpriu no último ciclo (87%) e no SET 1 chegou a 65%. Ele também é a área com mais tempo agendado (20,6h por semana), então o problema parece ser a quantidade de compromisso, e não falta de disciplina. Eu olharia especialmente a Meditação Zen, que tem 27 repetições e costuma ficar depois das 21h, o horário em que você menos cumpre (86%). Talvez valha testar movê-la para a manhã, junto do Café da Manhã e do Pentágono, que têm o horário mais forte.
 
-### Onde eu estou indo bem?  (1.8s)
+### Onde eu estou indo bem?  (1.6s)
 
-Você está indo muito bem em Relações, Trabalho e estudos e Saúde: as três fecharam 100% nos três ciclos, e o planner também acompanha, com 100% à tarde e à noite e sexta e sábado como seus dias mais fortes. Nos rituais, Café da Manhã, Gratidão, Reza, Plano e Pentágono já viraram hábito, e o Pentágono chegou a 28 repetições no ciclo de outubro. Como esse padrão está firme há três ciclos, eu tentaria uma provocação: que tal subir um degrau em uma ação de Saúde, como o ABCDE, e ver se você segura o ritmo?
+Você está indo muito bem em Relações, Trabalho e estudos e Saúde, que fecharam 100% nos três ciclos seguidos. Propósito também vem forte, com 87% no último ciclo e a sequência de rituais se mantendo todo dia. Um detalhe que me chama atenção: sexta e sábado são seus dias mais fortes, com 100%, e Relações, que hoje está em 7 na maestria, é a área que mais cumpriu no último ciclo. Já que Saúde e Trabalho estão sempre em 100%, eu talvez testaria subir um degrau em uma ação dessas áreas para ver se a meta ainda te desafia.
 
-### Que hábito pequeno faria mais diferença pra mim?  (2.1s)
+### Que hábito pequeno faria mais diferença pra mim?  (2.0s)
 
-Eu começaria pelo Meditação Zen, que você planejou todo dia mas costuma cair depois das 21h, o horário em que você menos cumpre (86%). Um hábito pequeno que eu tentaria é amarrar essa meditação a algo que já acontece de manhã, como logo depois do Café da Manhã, que você faz quase sempre e no horário em que mais rende. Em dez minutos, em vez de deixar para a noite, ela fica resolvida antes de o dia pesar. Você pode testar isso essa semana e ver se o ritmo melhora.
+Eu começaria pelo Café da Manhã, porque você já cumpre quase tudo de manhã (99%) e ele é uma das ações mais consistentes do ciclo. Um hábito pequeno que eu faria diferença agora é a Gratidão, Reza, Plano, que costuma ficar depois das 21h e é a ação mais fácil de deixar escorregar à noite. Que tal prendê-la a um gatilho fixo, como logo depois do Almoço ou assim que você apaga a última tela do dia, para que ela deixe de depender de lembrar na hora? Sobre o Propósito, que foi a área com menos cumprimento (87%), eu veria se o problema é a quantidade de horas (20,6h por semana) ou o horário mais tarde.
 
-### Estou planejando mais do que consigo cumprir?  (1.7s)
+### Estou planejando mais do que consigo cumprir?  (1.6s)
 
-Pelos números, não parece. Nos três ciclos fechados você cumpriu quase tudo: Relações, Trabalho e estudos e Saúde ficaram em 100% em todos, e o único ponto baixo foi Propósito, com 65% no SET 1 e 87% no de outubro. Como este ciclo ainda está no segundo dia, eu não tiraria conclusão do começo. Se quiser testar a folga, eu olharia o Propósito, que é a área com mais tempo planejado (cerca de 20,6h por semana), e veria se alguma ação pesa mais do que as outras.
+Pelos dados, não parece. Nos três ciclos fechados você cumpriu quase tudo, com 100% em Relações, Trabalho e estudos e Saúde, e 87% em Propósito no último, que é a área mais pesada do planejamento. Como estamos só no dia 2 de 28, ainda não dá para julgar o ciclo atual. Se quiser testar sua capacidade, eu olharia a meditação diária depois das 21h, que é o horário em que você cumpre menos (86%), e veria se faz sentido movê-la para a tarde ou a noite antes de qualquer corte.
 
-### Qual área da minha vida está esquecida?  (2.1s)
+### Qual área da minha vida está esquecida?  (1.9s)
 
-Pelos dados, nenhuma área está esquecida: Propósito é a que mais pesa no tempo (cerca de 20,6h por semana) e a que mais ficou abaixo no último ciclo (87%), e Lazer e bem-estar só tem ações livres, então não tem meta para cumprir. A que parece mais no canto é Relações, com 7,6h por semana e maestria 7, mas ela vem fechando 100% nos ciclos. Eu não diria que está esquecida, só menos ocupada. Se você sente que alguma delas anda sem espaço na sua vida, me diz qual, que eu olho com mais calma.
+Pelos seus números, a área menos cuidada é Propósito: foi a que menos cumpriu no ciclo de outubro (87%) e a que mais ficou abaixo do planejado. Ela também concentra o maior tempo agendado (20,6h por semana), então o problema parece estar mais na execução do que na falta de espaço. Eu olharia para a Meditação Zen, que está planejada todo dia mas costuma cair depois das 21h, o horário em que você menos cumpre (86%). Que tal testar mover essa ação para um horário da tarde ou da noite, onde você costuma cumprir tudo?
 
-### Como deixo minha semana mais leve sem perder o ritmo?  (2.8s)
+### Como deixo minha semana mais leve sem perder o ritmo?  (2.3s)
 
-Pelos seus números, o ritmo não está em risco: você cumpre quase tudo e o ciclo está no começo, então dá para aliviar sem perder nada. Eu começaria pela Meditação Zen, que é diária e fica depois das 21h, o horário em que você menos cumpre (86%): passá-la para a tarde, entre 12h e 18h, onde você cumpre tudo, tira um peso da noite sem mexer no total. Outra possibilidade é reduzir o Correr 4km de 1 por semana para ficar só com o Correr 3km, já que a ação de 4km não tem horário no planner e pesa mais que as outras. Como você ainda está só no dia 2, prefiro mexer em uma coisa de cada vez e ver como fica por uns dias.
+Pelos dados, a semana já está equilibrada: são cerca de 61 horas agendadas, e os dias mais fortes (sexta e sábado) são também os que você mais cumpre, então não há um ponto de sobrecarga óbvio. Se quiser aliviar sem perder ritmo, eu tiraria a ação de menor retorno em horas, a Correr 4km, e manteria as demais no lugar, porque o ritmo costuma vir da regularidade e não do volume. Como a Meditação Zen fica depois das 21h, que é o horário em que você menos cumpre, eu experimentaria puxá-la para a tarde na terça, que é um dia mais fraco e pode ganhar um pouco de folga. Uma alternativa simples seria acrescentar uma folga leve no fim de semana, já que sábado e domingo ainda são dias de cumprimento alto.
 
-### O que eu mudaria no próximo ciclo?  (1.8s)
+### O que eu mudaria no próximo ciclo?  (1.3s)
 
-Eu olharia para Propósito, que foi a área que menos cumpriu (87%) e onde mais tempo está agendado (20,6h por semana). Eu tiraria um pouco de carga ali, principalmente na Meditação Zen, que é todo dia e costuma cair depois das 21h, o horário em que você menos cumpre (86%). Eu tentaria mover a Meditação para a tarde ou para a noite, onde você tem 100%. Como as áreas de Relações, Trabalho e estudos e Saúde já estão em 100% nos três ciclos, eu também consideraria subir um degrau em uma ação delas, para não deixar a meta folgada demais.
+Eu não mudaria nada de forma grande, porque o ciclo está no dia 2 e o que vale agora é pegar ritmo. Se fosse para mexer em algo, eu olharia para a Meditação Zen, que está planejada para todo dia mas costuma cair depois das 21h, onde você cumpre menos (86%). Que tal testar um horário de manhã ou à tarde, onde você cumpre quase tudo? As ações de fechar o dia, como Gratidão, Reza, Plano, eu deixaria onde estão.
 
-### Me dá uma ideia de arena nova  (2.1s)
+### Me dá uma ideia de arena nova  (1.7s)
 
-Uma ideia que encaixa no seu momento: uma arena de Lazer e bem-estar com ações Livres de leitura pessoal, fora do Estudos, por exemplo "Leitura por prazer" ou "Caminhada sem fone", só para registrar sem meta. Você já tem Lazer como registro, então eu manteria esse formato, que tira a pressão de número justamente numa área que você avalia em 9. Se quiser algo mais estruturado, eu também consideraria uma arena de Finanças dentro de Trabalho e estudos, com uma ação semanal de revisar gastos. Para criar, toque em Arenas, depois em "Nova arena", escolha a área e dê um nome claro.
+Uma ideia que eu acharia interessante: uma arena de Lazer e bem-estar com ações de cuidado com a casa e a rotina, como "Arrumar a mesa de trabalho" ou "Organizar a semana de refeições", que hoje não aparecem no planner. Você pode criá-la em Arenas, em "Nova arena", escolhendo a área Lazer e bem-estar e dando um nome claro. Eu começaria com uma ação só, de 2 ou 3 repetições por semana, para ver se encaixa sem pesar. Você é quem sabe se faz falta na sua rotina.
 
-### Onde eu atualizo o nível da minha maestria?  (1.1s)
+### Onde eu atualizo o nível da minha maestria?  (1.2s)
 
-Você ajusta o nível da maestria em Config, na aba Geral: toque no pentágono com o número e recalibre cada área de 0 a 10. Patente e perfil também ficam em Config, então é o lugar certo para revisar essa avaliação quando sentir que mudou.
+Para atualizar o nível da sua maestria, vá em Config, na aba Geral. Lá tem um pentágono com o número de cada área, e é ali que você recalibra cada uma de 0 a 10. Hoje Relações está em 7, Lazer e bem-estar em 9, Propósito em 7, Trabalho e estudos em 7 e Saúde em 7.
 
-### Como eu crio uma arena nova?  (1.3s)
+### Como eu crio uma arena nova?  (1.1s)
 
-Para criar uma arena nova, vá em Arenas, na barra de baixo, e toque em "Nova arena". Escolha a área da vida a que ela pertence e dê um nome claro. Se quiser, pode definir uma meta final, que é você quem conclui a arena. Depois de criada, toque nela e use "Nova ação" para adicionar o que vai fazer e quantas repetições quer nesta rodada.
+Para criar uma arena nova, vá em Arenas, na barra de baixo, e toque em "Nova arena". Escolha a área da vida a que ela pertence e dê um nome claro. Se quiser, pode definir uma meta final, que é você mesmo quem vai concluir. Depois é só adicionar as ações dentro dela com "Nova ação".

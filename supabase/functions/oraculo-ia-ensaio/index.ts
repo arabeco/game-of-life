@@ -24,11 +24,15 @@ serve(async (req) => {
   const perguntas: string[] = Array.isArray(corpo.perguntas) ? corpo.perguntas.slice(0, 12).map(String) : [];
   const tom: Tom = TONS.includes(corpo.tom) ? corpo.tom : "coach";
   const padroes = await lerPadroes(supabaseAdmin, AFONSO);
+  // modo "conversa": cada pergunta leva as trocas anteriores, como na funcao de verdade.
+  const emConversa = corpo.modo === "conversa";
+  const historico: Array<{ role: string; content: string }> = [];
   const respostas = [];
   for (const pergunta of perguntas) {
     const inicio = Date.now();
-    const texto = await chamarHaiku(OPENROUTER_API_KEY, instrucoes(tom, "mister x"), padroes, [], pergunta);
+    const texto = await chamarHaiku(OPENROUTER_API_KEY, instrucoes(tom, "mister x"), padroes, emConversa ? historico.slice(-6) : [], pergunta);
     respostas.push({ pergunta, texto, segundos: (Date.now() - inicio) / 1000 });
+    if (emConversa && texto) historico.push({ role: "user", content: pergunta }, { role: "assistant", content: texto });
   }
   return new Response(JSON.stringify({ padroes, respostas }), { headers: json });
 });

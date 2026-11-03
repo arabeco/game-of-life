@@ -55,3 +55,18 @@ console.log('Memoria do Oraculo com IA: sai da resposta e fica guardada.');
   assert.equal(separarMemoria('Resposta normal.\nMEMÓRIA: =', '').estimativa, '');
 }
 console.log('Memoria: estimativa escondida.');
+// A PERGUNTA DE TODAS AS AREAS (03/11/2026, com o Afonso): "cada area" nao pode
+// virar resposta sobre uma area so. A funcao cola a instrucao na pergunta.
+{
+  const { lembreteDaPergunta } = await import('../supabase/functions/_shared/oraculo-ia-memoria.ts');
+  for (const p of ['Qual o jeito mais fácil de subir de nível em cada área?', 'como melhoro todas as minhas áreas', 'E nas outras áreas?', 'me fala de todas as areas'])
+    assert.match(lembreteDaPergunta(p), /cinco áreas/, p);
+  assert.equal(lembreteDaPergunta('Como subo em Saúde?'), '');
+}
+console.log('Memoria: pergunta de todas as areas.');
+{
+  const r = separarMemoria('Resposta.\nMEMÓRIA: =\n', 'antiga');
+  assert.equal(r.resposta, 'Resposta.', 'quebra de linha no fim nao deixa a linha MEMORIA aparecer');
+  assert.equal(r.memoria, 'antiga');
+}
+console.log('Memoria: quebra de linha no fim.');

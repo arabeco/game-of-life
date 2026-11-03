@@ -23,7 +23,8 @@ const ESTIMATIVA = /^\s*estimativa\s*:[ \t]*([^\n]*)\n?/i;
 export const separarMemoria = (texto: string, memoriaAtual: string) => {
   const comEstimativa = texto.match(ESTIMATIVA);
   const estimativa = comEstimativa ? comEstimativa[1].trim() : '';
-  const corpo = comEstimativa ? texto.slice(comEstimativa[0].length) : texto;
+  // Sem o trim, uma quebra de linha no fim deixava a linha MEMORIA aparecer.
+  const corpo = (comEstimativa ? texto.slice(comEstimativa[0].length) : texto).trim();
   const achou = corpo.match(LINHA);
   if (!achou || achou.index === undefined) return { resposta: semGenero(corpo.trim()), memoria: memoriaAtual, estimativa };
   const resposta = semGenero(corpo.slice(0, achou.index).trim());
@@ -31,3 +32,15 @@ export const separarMemoria = (texto: string, memoriaAtual: string) => {
   const memoria = !nova || nova === "=" ? memoriaAtual : nova.slice(0, LIMITE_DA_MEMORIA);
   return { resposta, memoria, estimativa };
 };
+
+/**
+ * A PERGUNTA DE TODAS AS AREAS (03/11/2026, com o Afonso). "Cada área" virava
+ * resposta sobre uma area so: a regra no meio do prompt nao bastava. Quando a
+ * pergunta pede todas, o lembrete vai colado nela.
+ */
+const TODAS_AS_AREAS = /\b(cada|todas(?: as)?(?: minhas)?|outras)\s+[aá]reas?\b/i;
+
+export const lembreteDaPergunta = (pergunta: string) =>
+  TODAS_AS_AREAS.test(pergunta)
+    ? 'A pergunta pede as cinco áreas: fale de todas, uma frase curta por área (o que falta em cada uma), ou de uma coisa que ajude todas. Não responda sobre uma área só.'
+    : '';

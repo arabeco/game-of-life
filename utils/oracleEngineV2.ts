@@ -70,11 +70,13 @@ export function openingFacts(s: Scope, lastOpen: string | null): OpeningFacts {
         daysLeft: Math.max(0, Math.round((Date.parse(s.activeCycle.endDate) - Date.parse(s.today)) / 86400000)),
         pace,
         focusArenas,
+        day: dayNumber,
+        totalDays,
       };
     }
   }
   return { completed: today.filter(t => t.completed).length, queued: today.filter(t => !t.completed && (!isTaskInPool(t) || t.executionOrder != null)).length,
-    stock, returned: Boolean(lastOpen && (Date.parse(s.today) - Date.parse(lastOpen)) / 86400000 >= 3), cycle };
+    stock, returned: Boolean(lastOpen && (Date.parse(s.today) - Date.parse(lastOpen)) / 86400000 >= 3), ...(cycle ? { cycle } : {}) };
 }
 
 const key = (userId: string) => `glyph:oracle-v2:${userId}`;

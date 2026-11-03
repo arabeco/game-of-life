@@ -77,4 +77,26 @@ globalThis.localStorage = { getItem: k => store.get(k) || null, setItem: (k,v) =
 assert.ok(chooseReaction(scope, action, scope.tasks[2], scope.tasks.slice(0, 2), null, 'neutro', 3, 'u').chosen);
 assert.equal(chooseReaction(scope, action, scope.tasks[2], scope.tasks, null, 'neutro', 3, 'u').chosen, null);
 assert.equal(chooseReaction(scope, action, task('old', { date: '2026-10-01' }), [], null, 'neutro', 3, 'u').chosen, null);
+// 03/11/2026, com o Afonso: reacao so no que importa, comeco de ciclo sem placar, nada de imperativo.
+{
+  const silencio = reactionCandidates({ eventId: 'e', action: { id: 'c:m', name: 'Meditação Zen', completed: 2, target: 27 }, previousCount: 1, returned: false }, 'neutro');
+  assert.equal(selectSpeech(silencio, 'reaction', 3, [], 1e9, day).chosen, null, '2/27 nao vira fala: contador nao e conversa');
+  const metade = reactionCandidates({ eventId: 'e', action: { id: 'c:m', name: 'Meditação Zen', completed: 14, target: 27 }, previousCount: 13, returned: false }, 'coach');
+  assert.match(selectSpeech(metade, 'reaction', 3, [], 1e9, day).chosen.text, /metade/i);
+  const arenaMeio = reactionCandidates({ eventId: 'e', action: { id: 'c:x', name: 'X', completed: 1, target: 0 }, previousCount: 0, returned: false, arena: { id: 'a', name: 'Corpo', completed: 2, target: 10 } }, 'neutro');
+  assert.equal(arenaMeio.length, 0, 'arena no meio do caminho nao fala');
+  const arenaFeita = reactionCandidates({ eventId: 'e', action: { id: 'c:x', name: 'X', completed: 1, target: 0 }, previousCount: 0, returned: false, arena: { id: 'a', name: 'Corpo', completed: 10, target: 10 } }, 'calmo');
+  assert.notEqual(arenaFeita[0].text, reactionCandidates({ eventId: 'e', action: { id: 'c:x', name: 'X', completed: 1, target: 0 }, previousCount: 0, returned: false, arena: { id: 'a', name: 'Corpo', completed: 10, target: 10 } }, 'coach')[0].text, 'arena tem voz por tom');
+  for (const tone of ['neutro', 'coach', 'reflexivo', 'calmo']) {
+    const comeco = openingCandidates({ completed: 0, queued: 9, stock: 0, returned: false, cycle: { percent: 4, daysLeft: 26, pace: 'no_ritmo', focusArenas: [], day: 2, totalDays: 28 } }, tone, day);
+    const ciclo = comeco.find(c => c.subject.startsWith('cycle'));
+    assert.match(ciclo.text, /Dia 2 de 28/);
+    assert.doesNotMatch(ciclo.text, /%/, 'no comeco do ciclo, porcentagem nao diz nada');
+    const meio = openingCandidates({ completed: 0, queued: 9, stock: 0, returned: false, cycle: { percent: 40, daysLeft: 14, pace: 'no_ritmo', focusArenas: ['Corpo'], day: 14, totalDays: 28 } }, tone, day);
+    assert.match(meio.find(c => c.subject.startsWith('cycle')).text, /40%/);
+    const todas = [...comeco, ...meio, ...openingCandidates({ completed: 0, queued: 2, stock: 8, returned: true }, tone, day),
+      ...reactionCandidates({ eventId: 'e', action: { id: 'a', name: 'A', completed: 5, target: 5 }, previousCount: 4, returned: true, mission: { id: 'm', name: 'M', completed: 5, target: 5, previous: 4 } }, tone)];
+    for (const c of todas) assert.doesNotMatch(c.text, /\b(Abra|Escolha|Receba|Faça|Tente|Comece|Conclua)\b/, `sem imperativo: ${c.text}`);
+  }
+}
 console.log('oracle-engine-v2: opening quadrants, voices, presence, priorities, dedupe, unscheduled progress and server/app parity passed');

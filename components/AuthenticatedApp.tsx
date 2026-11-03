@@ -4,7 +4,7 @@ import { getPendingMembershipPurchase } from '../utils/membershipPurchase';
 import { useEnviarDiarioPendente } from '../hooks/useEnviarDiarioPendente';
 import { speechVisualTone } from '../supabase/functions/_shared/oracle-visual-tone.ts';
 import { ORACLE_ENGINE_V2, chooseOpening, rememberEngineSpeech, rememberDiscoveryClick, readEngineMemory } from '../utils/oracleEngineV2';
-import { discoveryCandidates, readDiscoveryUsage } from '../utils/oracleDiscovery';
+import { discoveryCandidates, pesoDasDescobertas, podeSugerirDescoberta, readDiscoveryUsage } from '../utils/oracleDiscovery';
 import { discoveryBlock, type DiscoveryTopic } from '../supabase/functions/_shared/oracle-engine-v2';
 import { PRODUCT_FEATURES } from '../constants/featureFlags';
 ﻿import React, { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -199,7 +199,10 @@ export const OracleSpeechOverlay: React.FC<{ discoveryBlocked?: boolean }> = ({ 
         };
 
         window.addEventListener(ORACLE_SPEECH_EVENT, handleSpeech as EventListener);
-        const liberarTela = () => setSpeech(null);
+        // Fecha sem disputar com o gesto (03/11/2026): no meio do touchstart, um
+        // redesenho urgente atrasava o arrasto, e o primeiro toque depois de
+        // concluir falhava. Como transicao, o React fecha o balao depois.
+        const liberarTela = () => React.startTransition(() => setSpeech(null));
         window.addEventListener(ORACLE_GESTURE_START_EVENT, liberarTela);
         return () => {
             window.removeEventListener(ORACLE_SPEECH_EVENT, handleSpeech as EventListener);
@@ -1159,7 +1162,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         if (ORACLE_ENGINE_V2) {
             const tone = hasPremiumAccess(userProfile) ? resolveOracleSpeechTone(oraclePreferences?.speechTone) : 'neutro';
             const scope = { actions, arenas: assets.flatMap(a => a.arenas), tasks, activeCycle, resetAt: freeProgressResetAt, today };
-            const decide = (tips = [] as ReturnType<typeof discoveryCandidates>) => chooseOpening(scope, previousPlannerOpen, tone, presenceRules.value, userProfile.id, tips);
+            const decide = (tips = [] as ReturnType<typeof discoveryCandidates>) => chooseOpening(scope, previousPlannerOpen, tone, presenceRules.value, userProfile.id, pesoDasDescobertas(tips, readEngineMemory(userProfile.id), today));
             const ordinary = decide();
             let cancelled = false;
             let timer: number | undefined;
@@ -1179,10 +1182,10 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             };
             const history = readEngineMemory(userProfile.id);
             // Essencial (27/10/2026): o Oraculo nao sugere arsenal nem jardim.
-            const topics: DiscoveryTopic[] = (['mastery', 'journal', 'relationships', 'campaigns', 'arsenal', 'garden', 'wisdom'] as DiscoveryTopic[]).filter(topic => !modoEssencial || (topic !== 'arsenal' && topic !== 'garden'));
+            const topics: DiscoveryTopic[] = (['mastery', 'journal', 'relationships', 'campaigns', 'arsenal', 'garden', 'wisdom', 'mission'] as DiscoveryTopic[]).filter(topic => !modoEssencial || (topic !== 'arsenal' && topic !== 'garden'));
             const mayDiscover = !isTutorialActive && !!userProfile.onboardingCompletedAt && !arenaPactProgress?.completed
                 && !reports.some(r => r.metrics?.sealedAt ? getOperationalDateString(new Date(r.metrics.sealedAt)) === today : r.endDate === today)
-                && !!ordinary.chosen && ordinary.chosen.score < 30
+                && podeSugerirDescoberta(ordinary.chosen, history, today)
                 && topics.some(topic => !discoveryBlock(topic, history, Date.now(), today));
             if (mayDiscover) {
                 // Bounded wait: optional usage checks must never hold an ordinary opening hostage.
@@ -1199,6 +1202,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
                         hasEquippedItem: userProfile.inventory.some(i => i.isEquipped) || !!userProfile.completedSeasonMissions?.includes('system-first-equipped-item'),
                         hasWisdomThemes: !oraclePreferences || oraclePreferences.enabledCategories.length > 0,
                         gardenEnabled: PRODUCT_FEATURES.personalGarden,
+                        hasActiveMission: Boolean(activeArenaPact?.id),
                     }, tone, Date.now())));
                 });
             } else deliver(ordinary);
@@ -1330,7 +1334,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         }, 520);
 
         return () => window.clearTimeout(timer);
-    }, [openingEpoch, isProfileLoaded, freeProgressResetAt, actions, activeCycle, assets, currentView, cycleProgress, dailyCommitment, isRestScreenVisible, oraclePreferences, tasks, userProfile.dailyProofStreak, userProfile.id, userProfile.level, userProfile.nickname, userProfile.lastLevelUpdate, userProfile.inventory, userProfile.completedSeasonMissions, userProfile.onboardingCompletedAt, isTutorialActive, arenaPactProgress?.completed, reports, isProfileVisible, isReportsVisible]);
+    }, [openingEpoch, isProfileLoaded, freeProgressResetAt, actions, activeCycle, assets, currentView, cycleProgress, dailyCommitment, isRestScreenVisible, oraclePreferences, tasks, userProfile.dailyProofStreak, userProfile.id, userProfile.level, userProfile.nickname, userProfile.lastLevelUpdate, userProfile.inventory, userProfile.completedSeasonMissions, userProfile.onboardingCompletedAt, isTutorialActive, arenaPactProgress?.completed, activeArenaPact?.id, reports, isProfileVisible, isReportsVisible]);
 
     useEffect(() => {
         if (suppressScreenIntroTips || isTutorialActive) {

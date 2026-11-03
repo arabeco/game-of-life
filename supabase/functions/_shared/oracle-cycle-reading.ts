@@ -35,6 +35,7 @@ export type EstadoDoCiclo =
   | 'sem_ciclo'
   | 'ciclo_sem_meta'
   | 'ciclo_comeca'
+  | 'ciclo_comecando'
   | 'ciclo_indo_bem'
   | 'ciclo_abaixo'
   | 'ciclo_prazo_acabou';
@@ -77,6 +78,7 @@ export const FRASES_DA_LEITURA: Record<EstadoDaLeitura, string[]> = {
   sem_ciclo: [],
   ciclo_sem_meta: ['Dia {dia} de {total_dias} do seu ciclo.'],
   ciclo_comeca: ['Dia 1 de {total_dias}: seu ciclo começa hoje.'],
+  ciclo_comecando: ['Dia {dia} de {total_dias}: começo de ciclo, hora de pegar ritmo.'],
   ciclo_indo_bem: ['Seu ciclo está indo bem: {pct}%, dia {dia} de {total_dias}.'],
   ciclo_abaixo: ['Dia {dia} de {total_dias} do seu ciclo, {pct}% feito.'],
   ciclo_prazo_acabou: ['O prazo do ciclo acabou com {pct}% feito. Falta fechar.'],
@@ -99,6 +101,8 @@ export const estadoDoCiclo = (ciclo: FatosDaLeitura['ciclo']): EstadoDoCiclo => 
   if (ciclo.prazoAcabou) return 'ciclo_prazo_acabou';
   if (ciclo.prometidas <= 0) return 'ciclo_sem_meta';
   if (ciclo.dia <= 1) return 'ciclo_comeca';
+  // Ate o 3o dia a porcentagem nao diz nada: fala de ritmo, nao de placar (03/11/2026).
+  if (ciclo.dia <= 3) return 'ciclo_comecando';
   // Zero feito nao e "indo bem" so porque a folga ainda cobre: o dia 3 com nada
   // feito le o numero, sem elogio.
   const pct = (ciclo.feitas / ciclo.prometidas) * 100;

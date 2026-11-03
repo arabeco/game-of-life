@@ -576,6 +576,6 @@ console.log('Escopo do app: uma arena sintetica, arena nula no banco, e so volum
   assert.match(ler('components/OracleChat.tsx'), /arenaPactProgress\?\.completed\) secoesNaoLidas\.add\('mission'\)/, 'a aba Missao acende');
   assert.match(ler('components/OracleChat.tsx'), /arenaPactProgress\?\.completed \? 'mission' : 'guidance'/, 'o Oraculo abre na aba Missao');
   assert.match(ler('components/GlobalHeader.tsx'), /Boolean\(arenaPactProgress\?\.completed\)/, 'o botao do Oraculo acende');
-  assert.match(ler('supabase/functions/_shared/oracle-engine-v2.ts'), /'Missão ', ' Receba na aba Missão do Oráculo\.'/, 'a fala diz onde receber');
+  assert.match(ler('supabase/functions/_shared/oracle-engine-v2.ts'), /'Missão ', ' Ela está esperando na aba Missão do Oráculo\.'/, 'a fala diz onde receber');
   console.log('PASS a contagem trava no alvo e a missao cumprida espera na aba Missao.');
 }

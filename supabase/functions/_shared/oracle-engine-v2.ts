@@ -10,7 +10,7 @@ export interface Candidate {
   important?: boolean;
   discovery?: { topic: DiscoveryTopic; label: string };
 }
-export type DiscoveryTopic = 'mastery' | 'journal' | 'relationships' | 'campaigns' | 'arsenal' | 'garden' | 'wisdom';
+export type DiscoveryTopic = 'mastery' | 'journal' | 'relationships' | 'campaigns' | 'arsenal' | 'garden' | 'wisdom' | 'mission';
 export interface Spoken { id: string; subject: string; at: number; day: string; channel: Channel; clickedAt?: number; important?: boolean }
 const DAY = 86_400_000;
 export function discoveryBlock(topic: DiscoveryTopic, history: Spoken[], now: number, day: string): string | null {
@@ -64,14 +64,20 @@ export interface OpeningFacts {
     daysLeft: number;
     pace: 'adiantado' | 'no_ritmo' | 'atrasado' | 'critico';
     focusArenas: string[];
+    /** Dia do ciclo (1 = hoje comecou) e o total: no comeco a porcentagem nao diz nada. */
+    day?: number;
+    totalDays?: number;
   };
 }
+
+/** Ate o 3o dia o ciclo esta comecando: fala de ritmo, nao de placar (03/11/2026). */
+export const DIAS_DE_COMECO = 3;
 export function openingCandidates(f: OpeningFacts, tone: Voice, day: string): Candidate[] {
   const candidates: Candidate[] = [];
   const add = (subject: string, score: number, lines: Record<Voice, string>) => candidates.push({ subject, score, id: subject === 'return' ? `opening:${day}:return` : `opening:${day}:${subject}:${f.completed}:${f.queued}:${f.stock}`, text: voice(tone, lines) });
   if (f.returned) add('return', 70, {
     neutro: 'Bom te ver de volta. Seu planner e suas arenas estão aqui.',
-    coach: 'Bom te ver de volta. Abra o planner e escolha por onde quer continuar.',
+    coach: 'Bom te ver de volta. O planner e as arenas estão do jeito que você deixou.',
     reflexivo: 'Bom te ver de volta. O que faz sentido retomar agora?',
     calmo: 'Bom te ver de volta. Você pode continuar do seu jeito.',
   });
@@ -83,13 +89,13 @@ export function openingCandidates(f: OpeningFacts, tone: Voice, day: string): Ca
   });
   if (f.completed === 0 && f.queued > 0) add('planned', 45, {
     neutro: `Seu planner tem ${actions(f.queued)} para hoje.`,
-    coach: `Você separou ${actions(f.queued)} para hoje. Abra o planner para escolher o primeiro passo.`,
+    coach: `Você separou ${actions(f.queued)} para hoje. O primeiro passo já está no planner.`,
     reflexivo: `Há ${actions(f.queued)} no planner. Por qual faz sentido começar?`,
     calmo: `${actions(f.queued)} no planner de hoje. Uma de cada vez, no seu ritmo.`,
   });
   if (f.stock > 0) add('stock', f.stock >= 5 && !f.queued && !f.completed ? 35 : 25, {
     neutro: 'Seu estoque tem ações disponíveis. Você pode concluir direto, sem agendar.',
-    coach: 'Tem opções no estoque. Escolha uma e conclua por ali mesmo, sem precisar agendar.',
+    coach: 'Tem opções no estoque, e dá para concluir direto por lá, sem agendar.',
     reflexivo: 'Entre as opções do estoque, qual combina com o seu momento?',
     calmo: 'Seu estoque guarda possibilidades. Não é uma lista de dívidas para hoje.',
   });
@@ -102,25 +108,35 @@ export function openingCandidates(f: OpeningFacts, tone: Voice, day: string): Ca
         ? ` ${arenas} é a parte do ciclo que ficou mais para trás.`
         : ` ${arenas} são as duas partes que mais ficaram para trás.`;
     const estado = f.cycle.pace;
-    const lines: Record<Voice, string> = estado === 'adiantado' ? {
-      neutro: `Você está indo bem no ciclo: ${f.cycle.percent}% das ações, com ${dias} pela frente.${leituraDasArenas}`,
-      coach: `O ciclo está bem encaminhado: ${f.cycle.percent}% das ações e ${dias} pela frente.${leituraDasArenas}`,
-      reflexivo: `${f.cycle.percent}% das ações e ${dias} pela frente. O que você quer ver ganhar espaço até o fim?${leituraDasArenas}`,
-      calmo: `Seu ciclo está indo bem: ${f.cycle.percent}% das ações e ${dias} ainda abertos.${leituraDasArenas}`,
+    const diaDoCiclo = f.cycle.day && f.cycle.totalDays ? `Dia ${f.cycle.day} de ${f.cycle.totalDays}` : '';
+    const hoje = f.queued > 0 ? ` Hoje tem ${actions(f.queued)} no planner.` : '';
+    const comecando = Boolean(diaDoCiclo && f.cycle.day! <= DIAS_DE_COMECO);
+    const comeco: Record<Voice, string> = {
+      neutro: `${diaDoCiclo} do ciclo. O começo é para pegar ritmo.${hoje}`,
+      coach: `${diaDoCiclo}. Os primeiros dias são para firmar o ritmo.${hoje}`,
+      reflexivo: `${diaDoCiclo}, começo de ciclo. Que ritmo você quer firmar nesses primeiros dias?`,
+      calmo: `${diaDoCiclo}, começo de ciclo. Sem pressa: o ritmo vem com os dias.${hoje}`,
+    };
+    const prefixo = diaDoCiclo ? `${diaDoCiclo}: ` : '';
+    const lines: Record<Voice, string> = comecando ? comeco : estado === 'adiantado' ? {
+      neutro: `${prefixo}você está indo bem, com ${f.cycle.percent}% do planejado e ${dias} pela frente.${leituraDasArenas}`,
+      coach: `${prefixo}ciclo bem encaminhado, ${f.cycle.percent}% do planejado e ${dias} pela frente.${leituraDasArenas}`,
+      reflexivo: `${prefixo}${f.cycle.percent}% do planejado e ${dias} pela frente. O que você quer ver ganhar espaço até o fim?${leituraDasArenas}`,
+      calmo: `${prefixo}seu ciclo está indo bem, ${f.cycle.percent}% do planejado e ${dias} ainda abertos.${leituraDasArenas}`,
     } : estado === 'no_ritmo' ? {
-      neutro: `Seu ciclo está no ritmo: ${f.cycle.percent}% das ações, com ${dias} restantes.${leituraDasArenas}`,
-      coach: `O ciclo segue de pé: ${f.cycle.percent}% das ações e ${dias} restantes.${leituraDasArenas}`,
-      reflexivo: `${f.cycle.percent}% das ações, ${dias} restantes. O que merece lugar no tempo que falta?${leituraDasArenas}`,
-      calmo: `${f.cycle.percent}% das ações e ${dias} restantes. O ciclo segue no seu tempo.${leituraDasArenas}`,
+      neutro: `${prefixo}seu ciclo está no ritmo, com ${f.cycle.percent}% do planejado e ${dias} restantes.${leituraDasArenas}`,
+      coach: `${prefixo}o ciclo segue de pé, ${f.cycle.percent}% do planejado e ${dias} restantes.${leituraDasArenas}`,
+      reflexivo: `${prefixo}${f.cycle.percent}% do planejado, ${dias} restantes. O que merece lugar no tempo que falta?${leituraDasArenas}`,
+      calmo: `${prefixo}${f.cycle.percent}% do planejado e ${dias} restantes. O ciclo segue no seu tempo.${leituraDasArenas}`,
     } : {
-      neutro: `Seu ciclo está em ${f.cycle.percent}% das ações, com ${dias} restantes.${leituraDasArenas}`,
-      coach: `Ainda há ${dias} neste ciclo. Ele está em ${f.cycle.percent}% das ações.${leituraDasArenas}`,
-      reflexivo: `Faltam ${dias}; o ciclo está em ${f.cycle.percent}% das ações. O que dessas frentes ainda importa para você?${leituraDasArenas}`,
-      calmo: `Ainda há ${dias} neste ciclo. ${f.cycle.percent}% das ações já estão registradas.${leituraDasArenas}`,
+      neutro: `${prefixo}seu ciclo está em ${f.cycle.percent}% do planejado, com ${dias} restantes.${leituraDasArenas}`,
+      coach: `${prefixo}ainda há ${dias} neste ciclo, e ele está em ${f.cycle.percent}% do planejado.${leituraDasArenas}`,
+      reflexivo: `${prefixo}faltam ${dias}, e o ciclo está em ${f.cycle.percent}% do planejado. O que dessas frentes ainda importa para você?${leituraDasArenas}`,
+      calmo: `${prefixo}ainda há ${dias} neste ciclo, e ${f.cycle.percent}% do planejado já está registrado.${leituraDasArenas}`,
     };
     // Leitura do ciclo ganha de uma saudação genérica, mas nunca de voltar ao
     // app depois de dias: retorno é um acontecimento mais humano que placar.
-    if (!f.returned) add(`cycle_${estado}`, estado === 'critico' ? 68 : 62, lines);
+    if (!f.returned) add(comecando ? 'cycle_comeco' : `cycle_${estado}`, estado === 'critico' && !comecando ? 68 : 62, lines);
   }
   if (!f.completed && !f.queued && !f.stock) add('open', 20, {
     neutro: 'Hoje ainda não há registros nem ações na lista do planner.',
@@ -136,6 +152,14 @@ export interface ReactionFacts {
   eventId: string; action: ProgressFact; previousCount: number; returned: boolean;
   arena?: ProgressFact; mission?: ProgressFact & { previous: number };
 }
+/**
+ * REACAO SO NO QUE IMPORTA (03/11/2026, com o Afonso).
+ *
+ * Antes cada conclusao virava "«Meditação Zen»: 2/27. Faltam 25" — um contador,
+ * nao alguem falando, e um balao no meio de quem esta emendando acoes. Agora a
+ * acao fala em tres momentos: meta cumprida, falta 1 e quando passa da metade.
+ * A arena so fala ao cumprir a meta. Fora disso, silencio.
+ */
 export function reactionCandidates(f: ReactionFacts, tone: Voice): Candidate[] {
   const result: Candidate[] = [];
   // `aoCumprir` fecha a frase quando a meta chega no alvo: a missao individual nao
@@ -143,28 +167,48 @@ export function reactionCandidates(f: ReactionFacts, tone: Voice): Candidate[] {
   const addProgress = (p: ProgressFact, previous: number, subject: string, prefix: string, aoCumprir = '') => {
     if (p.target <= 0 || p.completed <= previous || previous >= p.target) return;
     const remaining = Math.max(0, p.target - p.completed);
+    const metade = p.target >= 4 && previous < p.target / 2 && p.completed >= p.target / 2;
+    if (remaining > 1 && !metade) return;
     const count = `${p.completed}/${p.target}`;
-    const score = remaining === 0 ? 100 : remaining === 1 ? 80 : 60;
-    const summary = `${prefix}«${p.name}»: ${count}.`;
+    const score = remaining === 0 ? 100 : remaining === 1 ? 80 : 65;
+    const nome = `${prefix}«${p.name}»`;
+    const lines: Record<Voice, string> = remaining === 0 ? {
+      neutro: `${nome}: ${count}. Meta cumprida.`,
+      coach: `${nome}: ${count}. Essa meta está cumprida.`,
+      reflexivo: `${nome}: ${count}. O que fez diferença nessa conquista?`,
+      calmo: `${nome}: ${count}. O que você fez agora é uma conquista completa.`,
+    } : remaining === 1 ? {
+      neutro: `${nome}: ${count}. Falta 1 para a meta.`,
+      coach: `${nome}: ${count}. Mais uma e essa meta está cumprida.`,
+      reflexivo: `${nome}: ${count}. Falta 1. O que te trouxe até aqui?`,
+      calmo: `${nome}: ${count}. Falta só 1, no seu tempo.`,
+    } : {
+      neutro: `${nome} passou da metade: ${count}.`,
+      coach: `${nome}: metade da meta batida, ${count}. A segunda metade é com o mesmo ritmo.`,
+      reflexivo: `${nome} chegou à metade, ${count}. O que está sustentando esse ritmo?`,
+      calmo: `${nome} já está na metade, ${count}. Um passo de cada vez.`,
+    };
     result.push({ id: `${subject}:${p.id}:${p.completed}`, subject, score, important: remaining === 0,
-      text: voice(tone, {
-        neutro: `${summary} ${remaining === 0 ? 'Meta cumprida.' : left(remaining)}`,
-        coach: `${summary} ${remaining === 0 ? 'Essa meta está cumprida.' : remaining === 1 ? 'Mais uma e essa meta está cumprida.' : left(remaining)}`,
-        reflexivo: `${summary} ${remaining === 0 ? 'O que fez diferença nessa conquista?' : left(remaining)}`,
-        calmo: `${summary} ${remaining === 0 ? 'O que você fez agora é uma conquista completa.' : `Mais um avanço registrado. ${left(remaining)}`}`,
-      }) + (remaining === 0 ? aoCumprir : ''),
+      text: voice(tone, lines) + (remaining === 0 ? aoCumprir : ''),
     });
   };
   addProgress(f.action, f.previousCount, 'action', '');
-  if (f.mission) addProgress(f.mission, f.mission.previous, 'mission', 'Missão ', ' Receba na aba Missão do Oráculo.');
+  if (f.mission) addProgress(f.mission, f.mission.previous, 'mission', 'Missão ', ' Ela está esperando na aba Missão do Oráculo.');
   if (f.returned) result.push({ id: `return:${f.eventId}`, subject: 'return', score: 70, text: voice(tone, {
     neutro: `«${f.action.name}» voltou a ter uma conclusão registrada.`,
     coach: `«${f.action.name}» voltou a andar. Esse foi o primeiro passo da retomada.`,
     reflexivo: `Você retomou «${f.action.name}». O que ajudou hoje?`,
     calmo: `Você voltou a «${f.action.name}». Esse passo já conta.`,
   }) });
-  if (f.arena && f.arena.target > 0) result.push({ id: `arena:${f.arena.id}:${f.arena.completed}`, subject: 'arena', score: 50,
-    text: `«${f.arena.name}»: ${f.arena.completed}/${f.arena.target}. ${f.arena.completed >= f.arena.target ? 'Meta cumprida.' : left(f.arena.target - f.arena.completed)}` });
+  if (f.arena && f.arena.target > 0 && f.arena.completed >= f.arena.target) {
+    const contagem = `${f.arena.completed}/${f.arena.target}`;
+    result.push({ id: `arena:${f.arena.id}:${f.arena.completed}`, subject: 'arena', score: 90, important: true, text: voice(tone, {
+      neutro: `Arena «${f.arena.name}»: ${contagem}. Meta da arena cumprida.`,
+      coach: `Arena «${f.arena.name}» fechada: ${contagem}. Meta inteira batida.`,
+      reflexivo: `Arena «${f.arena.name}» completa, ${contagem}. O que essa arena te deu neste ciclo?`,
+      calmo: `Arena «${f.arena.name}» completa, ${contagem}. Tudo o que você planejou nela está feito.`,
+    }) });
+  }
   return result;
 }
 

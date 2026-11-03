@@ -63,6 +63,7 @@ try {
  assert.equal(await page.getByRole('button',{name:'Abrir garden'}).count(),0);
  assert.equal(await page.evaluate(()=>window.memory().length),0);
  await page.evaluate(()=>window.start());
- assert.equal(await page.getByText('Meta cumprida.',{exact:true}).count(),0);
+ // Fecha como transicao (03/11/2026): sem redesenho urgente no meio do toque.
+ await page.getByText('Meta cumprida.',{exact:true}).waitFor({state:'detached',timeout:1000});
  console.log('Oracle overlay: deferred delivery, real CTA, click memory, account switch, modal blocking and pending-reaction priority passed.');
 } finally {await browser.close();}

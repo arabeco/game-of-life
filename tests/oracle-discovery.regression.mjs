@@ -8,7 +8,7 @@ const bundle = await build({ entryPoints: ['utils/oracleDiscovery.ts'], bundle: 
   b.onResolve({ filter: /supabaseClient$/ }, () => ({ path: 'db', namespace: 'fixture' }));
   b.onLoad({ filter: /.*/, namespace: 'fixture' }, () => ({ contents: `export const supabase={from(table){ const q={select(cols,opts){globalThis.calls.push({table,cols,opts});return q},eq(){return q},neq(){return q},or(){return q},then(resolve,reject){return Promise.resolve(globalThis.results[table]).then(resolve,reject)}}; return q;}};` }));
 } }] });
-const { discoveryCandidates, readDiscoveryUsage } = await import('data:text/javascript;base64,' + Buffer.from(bundle.outputFiles[0].text).toString('base64'));
+const { discoveryCandidates, readDiscoveryUsage, podeSugerirDescoberta, pesoDasDescobertas } = await import('data:text/javascript;base64,' + Buffer.from(bundle.outputFiles[0].text).toString('base64'));
 const day = '2026-10-14', now = Date.parse(day), DAY = 86400000;
 const facts = { hasJournal: false, hasFriends: true, hasRelationships: false, hasGarden: false, hasClosedCycle: true, hasCampaign: false, hasUnequippedItem: true, hasEquippedItem: false, hasWisdomThemes: false, gardenEnabled: true };
 const tips = discoveryCandidates(facts, 'neutro', now);
@@ -45,4 +45,22 @@ globalThis.calls=[];
 globalThis.results={journal_pages:{count:0},friends:{count:1},relationship_links:{count:null,error:{}},user_gardens_3d:{count:1}};
 assert.deepEqual(await readDiscoveryUsage('a'),{hasJournal:false,hasFriends:true,hasGarden:true});
 assert.ok(globalThis.calls.every(c=>c.opts.head===true && !/content|state/.test(c.cols)));
+// 03/11/2026, com o Afonso: com ciclo aberto a dica nunca aparecia (a leitura do ciclo ganhava sempre).
+// Depois que a leitura do ciclo ja saiu hoje, a proxima abertura pode ser uma descoberta.
+{
+  const leuHoje = [{ id: 'opening:x:cycle_no_ritmo', subject: 'cycle_no_ritmo', at: now - 3 * 3600000, day, channel: 'opening' }];
+  assert.equal(podeSugerirDescoberta({ score: 62 }, [], day), false, 'primeira abertura do dia e a leitura do ciclo');
+  assert.equal(podeSugerirDescoberta({ score: 62 }, leuHoje, day), true);
+  assert.equal(podeSugerirDescoberta({ score: 20 }, [], day), true);
+  const ciclo = openingCandidates({ completed: 1, queued: 3, stock: 0, returned: false, cycle: { percent: 40, daysLeft: 10, pace: 'no_ritmo', focusArenas: [], day: 18, totalDays: 28 } }, 'neutro', day);
+  const escolhida = selectSpeech([...ciclo, ...pesoDasDescobertas(tips, leuHoje, day)], 'opening', 3, leuHoje, now, day).chosen;
+  assert.ok(escolhida.discovery, 'depois da leitura do dia, a dica ganha da leitura repetida');
+  assert.ok(!selectSpeech([...ciclo, ...pesoDasDescobertas(tips, [], day)], 'opening', 3, [], now, day).chosen.discovery);
+  const missao = discoveryCandidates({ ...facts, hasActiveMission: false }, 'neutro', now).find(t => t.discovery.topic === 'mission');
+  assert.ok(missao, 'sem missao ativa, sugere a Missao do Oraculo');
+  assert.ok(!discoveryCandidates({ ...facts, hasActiveMission: true }, 'neutro', now).some(t => t.discovery.topic === 'mission'));
+  for (const tone of ['neutro', 'coach', 'reflexivo', 'calmo']) {
+    for (const tip of discoveryCandidates({ ...facts, hasActiveMission: false }, tone, now)) assert.doesNotMatch(tip.text, /\b(Escolha|Abra|Faça|Tente|Crie|Comece)\b/, `sem imperativo: ${tip.text}`);
+  }
+}
 console.log('Oracle discovery: eligibility, priority, cadence, click, account isolation, memory retention and metadata-only queries passed.');

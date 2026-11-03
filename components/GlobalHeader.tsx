@@ -54,8 +54,8 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
             if (modoEssencial && (topic === 'arsenal' || topic === 'garden')) return;
             if (topic === 'arsenal') {
                 window.dispatchEvent(new CustomEvent(APP_NAVIGATE_EVENT, { detail: { view: 'social', mundoTab: 'arsenal' } }));
-            } else if (topic === 'campaigns' || topic === 'wisdom') {
-                setOracleSection(topic === 'campaigns' ? 'mission' : 'wisdom');
+            } else if (topic === 'campaigns' || topic === 'wisdom' || topic === 'mission') {
+                setOracleSection(topic === 'wisdom' ? 'wisdom' : 'mission');
                 setOracleInitialTab('chat');
                 setOracleOpen(true);
             } else if (['mastery', 'journal', 'relationships', 'garden'].includes(topic)) setFeature(topic);

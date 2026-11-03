@@ -34,7 +34,8 @@ assert.equal(estadoDoCiclo(null), 'sem_ciclo');
 assert.equal(estadoDoCiclo(ciclo({ dia: 1 })), 'ciclo_comeca');
 assert.equal(estadoDoCiclo(ciclo({ feitas: 25 })), 'ciclo_indo_bem', '25% no dia 6 esta acima dos 21% com folga');
 assert.equal(estadoDoCiclo(ciclo({ feitas: 15 })), 'ciclo_abaixo');
-assert.equal(estadoDoCiclo(ciclo({ dia: 3, feitas: 0 })), 'ciclo_abaixo', 'zero feito nao vira elogio');
+assert.equal(estadoDoCiclo(ciclo({ dia: 3, feitas: 0 })), 'ciclo_comecando', 'ate o 3o dia e comeco: sem placar (03/11/2026)');
+assert.equal(estadoDoCiclo(ciclo({ dia: 4, feitas: 0 })), 'ciclo_abaixo', 'zero feito nao vira elogio');
 assert.equal(estadoDoCiclo(ciclo({ prometidas: 0 })), 'ciclo_sem_meta');
 assert.equal(estadoDoCiclo(ciclo({ prazoAcabou: true, feitas: 90 })), 'ciclo_prazo_acabou');
 
@@ -50,6 +51,8 @@ assert.equal(
 assert.equal(ler({ hoje: { agendadas: 4, feitas: 4 }, ciclo: null }).texto, 'Planner de hoje completo: 4 de 4.');
 assert.equal(ler({ hoje: { agendadas: 1, feitas: 0 }, ciclo: null }).texto, 'Hoje tem 1 ação no seu planner.', 'singular sem erro');
 assert.equal(ler({ hoje: semDia, ciclo: ciclo({ dia: 1 }) }).texto, 'Dia 1 de 14: seu ciclo começa hoje.');
+assert.equal(ler({ hoje: semDia, ciclo: ciclo({ dia: 2, feitas: 4 }) }).texto, 'Dia 2 de 14: começo de ciclo, hora de pegar ritmo.');
+assert.doesNotMatch(ler({ hoje: semDia, ciclo: ciclo({ dia: 3, feitas: 1 }) }).texto, /%/, 'no comeco, porcentagem nao diz nada');
 assert.equal(ler({ hoje: semDia, ciclo: null }).texto, null, 'sem dia e sem ciclo o push fica quieto');
 assert.equal(
   montarLeituraDoCiclo({ hoje: semDia, ciclo: null }, { nuncaVazia: true }).texto,

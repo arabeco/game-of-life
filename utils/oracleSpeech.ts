@@ -51,7 +51,15 @@ let ultimoGesto = -Infinity;
  */
 const RESPIRO_APOS_SOLTAR_MS = 650;
 
-const respiroDa = (_payload: OracleSpeechPayload) => RESPIRO_APOS_SOLTAR_MS;
+/**
+ * A REACAO ESPERA MAIS (03/11/2026, com o Afonso). Com 650ms o balao entrava no
+ * ar bem quando o dedo descia na proxima tarefa, e o primeiro toque depois de
+ * concluir falhava. Com 1,6s sem mao na tela, quem esta emendando acoes nunca
+ * ve o balao (o gesto novo descarta a reacao); quem parou, ve.
+ */
+const RESPIRO_DA_REACAO_MS = 1600;
+
+const respiroDa = (payload: OracleSpeechPayload) => payload.kind === 'reacao' ? RESPIRO_DA_REACAO_MS : RESPIRO_APOS_SOLTAR_MS;
 
 const despachar = (payload: OracleSpeechPayload) => {
   window.dispatchEvent(new CustomEvent<OracleSpeechPayload>(ORACLE_SPEECH_EVENT, { detail: payload }));

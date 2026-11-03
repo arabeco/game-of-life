@@ -48,7 +48,7 @@ try{
  await page.waitForTimeout(750);assert.equal(await page.evaluate(()=>window.speeches.length),0,'arraste mantém bloqueio depois de soltar hold');
  await page.evaluate(()=>{window.exit();window.emit({kind:'reacao',message:'última'});});await page.waitForTimeout(250);
  await page.evaluate(()=>window.enter());await page.waitForTimeout(700);assert.equal(await page.evaluate(()=>window.speeches.length),0);
- await page.evaluate(()=>window.exit());await page.waitForTimeout(750);assert.deepEqual(await page.evaluate(()=>window.speeches),['última']);
+ await page.evaluate(()=>window.exit());await page.waitForTimeout(1800);assert.deepEqual(await page.evaluate(()=>window.speeches),[],'gesto novo descarta a reacao guardada (26/10 e 03/11/2026)');
  const edge=await page.evaluate(()=>[window.edge(300,0,600,16),window.edge(599,0,600,16),window.edge(599,0,600,8)*2,window.edge(570,0,600,16)]);
  assert.equal(edge[0],0);assert.ok(edge[1]>edge[3]);assert.equal(edge[1],edge[2]);
  console.log('PASS: toque, pegar+8px, hold cancelado, rolagem nativa no cartão, Oráculo espera gesto encadeado e reação assíncrona, rolagem proporcional 60/120Hz.');

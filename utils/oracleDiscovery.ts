@@ -1,4 +1,4 @@
-import type { Candidate, DiscoveryTopic, Voice } from '../supabase/functions/_shared/oracle-engine-v2';
+import type { Candidate, DiscoveryTopic, Spoken, Voice } from '../supabase/functions/_shared/oracle-engine-v2';
 import { supabase } from '../supabaseClient';
 
 export interface DiscoveryFacts {
@@ -13,6 +13,8 @@ export interface DiscoveryFacts {
   hasEquippedItem: boolean;
   hasWisdomThemes: boolean;
   gardenEnabled: boolean;
+  /** Missao do Oraculo aceita agora; desconhecido nao sugere. */
+  hasActiveMission?: boolean;
 }
 
 /** Only existence checks: never download journal text or the garden document. Errors stay unknown. */
@@ -78,9 +80,33 @@ export function discoveryCandidates(f: DiscoveryFacts, tone: Voice, now: number)
   });
   if (!f.hasWisdomThemes) add('wisdom', 'Ver Sabedoria', {
     neutro: 'Na Sabedoria, você escolhe os temas dos cards de reflexão que quer receber.',
-    coach: 'Escolha um assunto que desperte sua curiosidade na aba Sabedoria.',
+    coach: 'Um assunto que desperte sua curiosidade pode virar tema na aba Sabedoria.',
     reflexivo: 'Que assunto você gostaria de explorar? Os temas da Sabedoria ficam à sua escolha.',
     calmo: 'Na Sabedoria, você pode escolher temas para ler quando quiser.',
   });
+  if (f.hasActiveMission === false) add('mission', 'Ver Missão', {
+    neutro: 'Na aba Missão do Oráculo há desafios curtos para uma arena, com prazo e prêmio.',
+    coach: 'Quer um desafio com prazo? A aba Missão do Oráculo tem missões para uma arena.',
+    reflexivo: 'Que arena pediria um pequeno desafio agora? A aba Missão do Oráculo tem algumas.',
+    calmo: 'Quando quiser um desafio leve, a aba Missão do Oráculo tem opções para uma arena.',
+  });
   return result;
 }
+
+/**
+ * A DICA TAMBEM APARECE COM CICLO ABERTO (03/11/2026, com o Afonso).
+ *
+ * A dica so entrava quando a melhor abertura valia menos de 30, e a leitura do
+ * ciclo vale 62: quem sempre tem ciclo aberto nunca via Jardim, Maestria,
+ * campanhas ou Missao. Agora a primeira abertura do dia continua sendo a
+ * leitura; depois que ela saiu, a proxima abertura pode ser uma dica. Os freios
+ * da dica (3 dias entre dicas, 14 por tema, 3 ignoradas) continuam valendo.
+ */
+const leuCicloHoje = (history: Spoken[], day: string) =>
+  history.some(h => h.channel === 'opening' && h.day === day && h.subject.startsWith('cycle'));
+
+export const podeSugerirDescoberta = (ordinary: { score: number } | null, history: Spoken[], day: string) =>
+  !ordinary || ordinary.score < 30 || leuCicloHoje(history, day);
+
+export const pesoDasDescobertas = (tips: Candidate[], history: Spoken[], day: string): Candidate[] =>
+  leuCicloHoje(history, day) ? tips.map(t => ({ ...t, score: 75 })) : tips;

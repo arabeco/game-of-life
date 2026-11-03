@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 
 /**
- * A REACAO ESPERA A PESSOA PARAR (03/11/2026, com o Afonso).
+ * A REACAO NAO ATRAPALHA O PROXIMO GESTO (03/11/2026, com o Afonso).
  *
- * Concluir e ja emendar outra acao: o balao da reacao entrava no ar 650ms
- * depois de soltar, bem quando o dedo descia na proxima tarefa, e o primeiro
- * toque nao ia. Agora a reacao so aparece depois de 1,6s sem mao na tela; se
- * outro gesto comeca antes, ela e descartada. A abertura continua com 650ms.
+ * Concluir e ja emendar outra acao: o primeiro toque falhava. O balao ja deixa
+ * o dedo passar; o que pesava era fecha-lo no inicio do toque. Agora ele nao
+ * fecha com o toque (some sozinho), e a reacao ainda guardada e descartada se
+ * outro gesto comeca antes dela sair. Sem espera maior: 650ms depois de soltar.
  */
 const alvo = new EventTarget();
 globalThis.window = alvo;
@@ -16,31 +16,21 @@ const falas = [];
 alvo.addEventListener(ORACLE_SPEECH_EVENT, (e) => falas.push(e.detail.message));
 const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Concluiu segurando: a reacao nasce com a mao na tela.
 maoEntrouNaTela();
 emitOracleSpeech({ kind: 'reacao', message: 'meta cumprida' });
 maoSaiuDaTela();
-await espera(900);
-assert.deepEqual(falas, [], 'aos 900ms a reacao ainda espera');
-await espera(900);
-assert.deepEqual(falas, ['meta cumprida'], 'depois de 1,6s parada, ela aparece');
+await espera(300);
+assert.deepEqual(falas, [], 'com a mao recem-saida, a reacao espera');
+await espera(500);
+assert.deepEqual(falas, ['meta cumprida'], '650ms depois de soltar, ela aparece');
 
-// Emendou outra acao antes: a reacao some, sem balao no meio do gesto.
 falas.length = 0;
 maoEntrouNaTela();
 emitOracleSpeech({ kind: 'reacao', message: 'metade' });
 maoSaiuDaTela();
-await espera(700);
+await espera(300);
 maoEntrouNaTela();
 maoSaiuDaTela();
-await espera(1900);
-assert.deepEqual(falas, [], 'gesto novo descarta a reacao guardada');
-
-// A abertura nao mudou.
-falas.length = 0;
-maoEntrouNaTela();
-emitOracleSpeech({ kind: 'abertura', message: 'bom dia' });
-maoSaiuDaTela();
-await espera(800);
-assert.deepEqual(falas, ['bom dia']);
-console.log('Oraculo: reacao espera 1,6s sem mao na tela; gesto novo descarta; abertura igual.');
+await espera(900);
+assert.deepEqual(falas, [], 'gesto novo antes de ela sair descarta a reacao guardada');
+console.log('Oraculo: reacao sai 650ms depois de soltar; gesto novo descarta a guardada; o balao nao fecha com o toque.');

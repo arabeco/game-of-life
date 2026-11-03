@@ -64,6 +64,8 @@ export interface OpeningFacts {
     daysLeft: number;
     pace: 'adiantado' | 'no_ritmo' | 'atrasado' | 'critico';
     focusArenas: string[];
+    /** A arena que mais anda no ciclo; citada quando nenhuma ficou para tras. */
+    leadArena?: { name: string; percent: number };
     /** Dia do ciclo (1 = hoje comecou) e o total: no comeco a porcentagem nao diz nada. */
     day?: number;
     totalDays?: number;
@@ -102,8 +104,9 @@ export function openingCandidates(f: OpeningFacts, tone: Voice, day: string): Ca
   if (f.cycle) {
     const dias = f.cycle.daysLeft === 1 ? '1 dia' : `${f.cycle.daysLeft} dias`;
     const arenas = f.cycle.focusArenas.join(' e ');
+    const lider = f.cycle.leadArena;
     const leituraDasArenas = !arenas
-      ? ''
+      ? (lider ? ` ${lider.name} é a arena que mais anda, com ${lider.percent}% do planejado.` : '')
       : f.cycle.focusArenas.length === 1
         ? ` ${arenas} é a parte do ciclo que ficou mais para trás.`
         : ` ${arenas} são as duas partes que mais ficaram para trás.`;

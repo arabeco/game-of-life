@@ -51,15 +51,7 @@ let ultimoGesto = -Infinity;
  */
 const RESPIRO_APOS_SOLTAR_MS = 650;
 
-/**
- * A REACAO ESPERA MAIS (03/11/2026, com o Afonso). Com 650ms o balao entrava no
- * ar bem quando o dedo descia na proxima tarefa, e o primeiro toque depois de
- * concluir falhava. Com 1,6s sem mao na tela, quem esta emendando acoes nunca
- * ve o balao (o gesto novo descarta a reacao); quem parou, ve.
- */
-const RESPIRO_DA_REACAO_MS = 1600;
-
-const respiroDa = (payload: OracleSpeechPayload) => payload.kind === 'reacao' ? RESPIRO_DA_REACAO_MS : RESPIRO_APOS_SOLTAR_MS;
+const respiroDa = (_payload: OracleSpeechPayload) => RESPIRO_APOS_SOLTAR_MS;
 
 const despachar = (payload: OracleSpeechPayload) => {
   window.dispatchEvent(new CustomEvent<OracleSpeechPayload>(ORACLE_SPEECH_EVENT, { detail: payload }));
@@ -89,7 +81,8 @@ const agendarFalaGuardada = () => {
 export const maoEntrouNaTela = () => {
   if (maosNaTela === 0) {
     // A proxima acao e mais importante que um comentario que ainda nem chegou.
-    // O evento abaixo tambem fecha imediatamente uma fala ja visivel.
+    // Uma fala ja visivel NAO fecha com o toque (03/11/2026): o balao deixa o
+    // dedo passar e some sozinho, e nada precisa ser redesenhado no meio do gesto.
     if (falaGuardada?.kind === 'reacao') falaGuardada = null;
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(ORACLE_GESTURE_START_EVENT));
   }

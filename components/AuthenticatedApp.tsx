@@ -71,7 +71,7 @@ import { ConfirmationModal } from './ConfirmationModal';
 import type { AppBroadcast } from './AppBroadcastModal';
 import { PLANNER_OPEN_ACTION_MODAL_EVENT, REST_SCREEN_ACTION_VIEW_REQUEST_EVENT, RestScreenActionViewRequestDetail } from '../utils/restScreenActionSession';
 import { BLOCKING_OVERLAY_EVENT, type BlockingOverlayDetail } from '../utils/blockingOverlay';
-import { ORACLE_SPEECH_EVENT, ORACLE_GESTURE_START_EVENT, emitOracleSpeech, type OracleSpeechPayload } from '../utils/oracleSpeech';
+import { ORACLE_SPEECH_EVENT, emitOracleSpeech, type OracleSpeechPayload } from '../utils/oracleSpeech';
 import { getOraclePresenceRules } from '../constants/oraclePresencePolicy';
 import { resolveOracleSpeechTone } from '../constants/oracleSpeechLibrary';
 import { App as CapacitorApp } from '@capacitor/app';
@@ -199,14 +199,12 @@ export const OracleSpeechOverlay: React.FC<{ discoveryBlocked?: boolean }> = ({ 
         };
 
         window.addEventListener(ORACLE_SPEECH_EVENT, handleSpeech as EventListener);
-        // Fecha sem disputar com o gesto (03/11/2026): no meio do touchstart, um
-        // redesenho urgente atrasava o arrasto, e o primeiro toque depois de
-        // concluir falhava. Como transicao, o React fecha o balao depois.
-        const liberarTela = () => React.startTransition(() => setSpeech(null));
-        window.addEventListener(ORACLE_GESTURE_START_EVENT, liberarTela);
+        // O BALAO NAO FECHA COM O TOQUE (03/11/2026, com o Afonso). Ele ja deixa
+        // o dedo passar (pointer-events-none); fechar no touchstart obrigava um
+        // redesenho bem no inicio do gesto, e o primeiro toque depois de concluir
+        // falhava. Agora a pessoa mexe por baixo e ele some no proprio tempo.
         return () => {
             window.removeEventListener(ORACLE_SPEECH_EVENT, handleSpeech as EventListener);
-            window.removeEventListener(ORACLE_GESTURE_START_EVENT, liberarTela);
         };
     }, [oraclePreferences?.presenceLevel, userProfile.id, discoveryBlocked]);
     useEffect(() => { setSpeech(null); }, [userProfile.id]);

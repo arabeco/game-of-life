@@ -99,4 +99,21 @@ assert.equal(chooseReaction(scope, action, task('old', { date: '2026-10-01' }), 
     for (const c of todas) assert.doesNotMatch(c.text, /\b(Abra|Escolha|Receba|Faça|Tente|Comece|Conclua)\b/, `sem imperativo: ${c.text}`);
   }
 }
+// 03/11/2026: a abertura mede as arenas DENTRO do ciclo, cita a que ficou para tras e, sem nenhuma atras, a que mais anda.
+{
+  const arenasC = [{ id: 'corpo', name: 'Corpo' }, { id: 'mente', name: 'Mente' }];
+  const acoesC = [{ id: 'treino', arenaId: 'corpo', name: 'Treino', actionType: 'Repetição', repetitions: 10 }, { id: 'ler', arenaId: 'mente', name: 'Ler', actionType: 'Repetição', repetitions: 10 }];
+  const t = (id, actionId, date) => ({ id, actionId, date, startTime: -1, completed: true });
+  const antigas = Array.from({ length: 10 }, (_, i) => t(`old${i}`, 'ler', '2026-09-01'));
+  const noCiclo = Array.from({ length: 7 }, (_, i) => t(`c${i}`, 'treino', '2026-10-05'));
+  const cicloC = { id: 'cc', startDate: '2026-10-01', endDate: '2026-10-14' };
+  const f = openingFacts({ actions: acoesC, arenas: arenasC, tasks: [...antigas, ...noCiclo], activeCycle: cicloC, today: '2026-10-10' }, null);
+  assert.deepEqual(f.cycle.focusArenas, ['Mente'], 'o que foi feito antes do ciclo nao conta para a arena');
+  const sem = openingFacts({ actions: acoesC, arenas: arenasC, tasks: [...noCiclo, ...Array.from({ length: 6 }, (_, i) => t(`m${i}`, 'ler', '2026-10-06'))], activeCycle: cicloC, today: '2026-10-10' }, null);
+  assert.deepEqual(sem.cycle.focusArenas, []);
+  assert.equal(sem.cycle.leadArena.name, 'Corpo');
+  for (const tone of ['neutro', 'coach', 'reflexivo', 'calmo']) {
+    assert.match(openingCandidates({ completed: 0, queued: 2, stock: 0, returned: false, cycle: sem.cycle }, tone, day).find(c => c.subject.startsWith('cycle')).text, /Corpo/, 'sem arena atras, cita a que mais anda');
+  }
+}
 console.log('oracle-engine-v2: opening quadrants, voices, presence, priorities, dedupe, unscheduled progress and server/app parity passed');

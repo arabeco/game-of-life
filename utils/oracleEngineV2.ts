@@ -33,12 +33,10 @@ export function readingFacts(s: Scope): ReadingFacts {
 export function openingFacts(s: Scope, lastOpen: string | null): OpeningFacts {
   const activeIds = new Set(s.actions.filter(a => s.arenas.some(r => r.id === a.arenaId && !r.isArchived)).map(a => a.id));
   const tasks = unique(s.tasks).filter(t => activeIds.has(t.actionId));
-  const arenaProgress = s.arenas.filter(arena => !arena.isArchived && !isSharedArena(arena)).flatMap(arena => {
-    const arenaActions = s.actions.filter(action => action.arenaId === arena.id);
-    if (arenaActions.some(action => isCycleQuestAction(action, s.arenas))) return [];
-    const progress = calculateArenaProgress({ arena, actions: arenaActions, tasks });
-    return [{ id: arena.id, name: arena.name, completed: progress.totalCompleted, target: progress.totalPlanned }];
-  });
+  // A arena se mede no ciclo (ou na rodada), como na leitura (03/11/2026): com
+  // todas as tarefas de sempre, o que foi feito meses antes enchia a meta e
+  // nenhuma arena aparecia como "ficou para tras".
+  const arenaProgress = readingFacts(s).arenas;
   const today = tasks.filter(t => taskMatchesOperationalDate(t, s.today));
   // Count available action TYPES, never call the stock a list of obligations.
   const poolScope = s.activeCycle ? tasks.filter(t => t.date >= s.activeCycle!.startDate && t.date <= s.activeCycle!.endDate) : today;
@@ -65,11 +63,17 @@ export function openingFacts(s: Scope, lastOpen: string | null): OpeningFacts {
         .sort((left, right) => left.delta - right.delta || left.name.localeCompare(right.name))
         .slice(0, 2)
         .map((arena) => arena.name);
+      // Sem arena para tras, a leitura cita a que mais anda.
+      const lead = arenaProgress
+        .filter((arena) => arena.target > 0 && arena.completed > 0)
+        .map((arena) => ({ name: arena.name, percent: Math.min(100, Math.round((arena.completed / arena.target) * 100)) }))
+        .sort((left, right) => right.percent - left.percent || left.name.localeCompare(right.name))[0];
       cycle = {
         percent,
         daysLeft: Math.max(0, Math.round((Date.parse(s.activeCycle.endDate) - Date.parse(s.today)) / 86400000)),
         pace,
         focusArenas,
+        ...(lead ? { leadArena: lead } : {}),
         day: dayNumber,
         totalDays,
       };

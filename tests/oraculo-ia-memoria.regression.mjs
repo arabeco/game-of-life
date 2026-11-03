@@ -46,3 +46,12 @@ console.log('Memoria do Oraculo com IA: sai da resposta e fica guardada.');
   assert.equal(r.resposta, 'Isso ajuda a sua memória: dormir bem.', 'so a linha propria vira memoria');
   assert.equal(r.memoria, 'antiga');
 }
+// A ESTIMATIVA ESCONDIDA (03/11/2026): antes de responder sobre maestria, a IA
+// estima o degrau de cada area numa primeira linha que a pessoa nao ve.
+{
+  const r = separarMemoria('ESTIMATIVA: Saúde ~7,8 perto do 8 (falta mobilidade)\nSaúde está quase no 8.\nMEMÓRIA: =', 'x');
+  assert.equal(r.resposta, 'Saúde está quase no 8.', 'a estimativa nao aparece');
+  assert.equal(r.estimativa, 'Saúde ~7,8 perto do 8 (falta mobilidade)');
+  assert.equal(separarMemoria('Resposta normal.\nMEMÓRIA: =', '').estimativa, '');
+}
+console.log('Memoria: estimativa escondida.');

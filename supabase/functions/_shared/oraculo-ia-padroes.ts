@@ -491,7 +491,15 @@ export const montarPadroes = (entrada: {
           const ids = new Set(arenasDaArea.map((a) => a.id));
           const daArea = entrada.acoes.filter((a) => a.arena_id && ids.has(a.arena_id));
           const comMeta = daArea.filter((a) => a.action_type !== 'Livre' && !a.source_quest_id && !a.origin_codex_id);
-          if (comMeta.length) partes.push(`ações: ${comMeta.map((a) => `${a.name} (${ritmo(Math.max(1, Math.floor(Number(a.repetitions) || 1)))})`).join(', ')}`);
+          // O planejado e o feito de verdade (03/11/2026): sem o feito, a IA nao
+          // sabia se a rotina ja era a do proximo degrau ou so estava no papel.
+          const desdeFeito = somarDias(hoje, -(janela - 1));
+          const feitas = (acaoId: string) => entrada.tarefas.filter((t) => t.action_id === acaoId && t.completed && t.date >= desdeFeito && t.date <= hoje).length;
+          const feitoTexto = (acaoId: string) => {
+            const n = feitas(acaoId);
+            return n > 0 ? `feita ${n}x nos últimos ${janela} dias` : `não feita nos últimos ${janela} dias`;
+          };
+          if (comMeta.length) partes.push(`ações: ${comMeta.map((a) => `${a.name} (${ritmo(Math.max(1, Math.floor(Number(a.repetitions) || 1)))}; ${feitoTexto(a.id)})`).join(', ')}`);
           else if (daArea.length) partes.push('só ações Livres: registro, sem meta');
           if (aberto && diaDoCiclo > 3 && comMeta.length) {
             const prometido = comMeta.reduce((soma, a) => soma + Math.max(1, Math.floor(Number(a.repetitions) || 1)), 0);

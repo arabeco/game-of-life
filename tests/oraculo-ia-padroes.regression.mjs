@@ -178,3 +178,18 @@ console.log('Padroes: ficha por area.');
   assert.match(m.split('\n').find((l) => l.startsWith('- Relações ')), /rotina típica do 3: "Começa a notar padrões/, 'abaixo do 3, so a rotina do proximo');
 }
 console.log('Padroes: gabarito na ficha.');
+
+// O QUE FOI FEITO DE VERDADE (03/11/2026): cada acao da ficha diz quantas vezes
+// foi feita nos ultimos 28 dias, alem do planejado.
+{
+  const t = [];
+  for (let d = 1; d <= 20; d += 1) t.push({ action_id: 'tr', date: `2026-10-${String(d + 8).padStart(2, '0')}`, start_time: 8 * 60, completed: d % 2 === 0 });
+  const m = montarPadroes({ hoje: '2026-11-03', ciclos: [], tarefas: t,
+    arenas: [{ id: 'ac', name: 'Academia', asset_id: 'saude' }],
+    acoes: [{ id: 'tr', arena_id: 'ac', name: 'Treino', action_type: 'Recorrente', repetitions: 12 }, { id: 'mob', arena_id: 'ac', name: 'Mobilidade', action_type: 'Recorrente', repetitions: 8 }],
+    niveis: [{ asset_id: 'saude', level: 7 }] });
+  const saude = m.split('\n').find((l) => l.startsWith('- Saúde '));
+  assert.match(saude, /Treino \(12x na rodada; feita 10x nos últimos 28 dias\)/);
+  assert.match(saude, /Mobilidade \(8x na rodada; não feita nos últimos 28 dias\)/);
+}
+console.log('Padroes: feito de verdade na ficha.');

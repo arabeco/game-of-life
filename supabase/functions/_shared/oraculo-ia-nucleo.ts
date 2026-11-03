@@ -1,0 +1,159 @@
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { montarPadroes, type AcaoCrua, type ArenaCrua, type CicloCru, type NivelCru, type TarefaCrua } from "./oraculo-ia-padroes.ts";
+
+/**
+ * O MIOLO DO ORACULO COM IA (02/11/2026): os dados da pessoa, o jeito de
+ * responder e a chamada ao Haiku. A funcao oraculo-ia usa isto; um ensaio
+ * temporario pode usar o mesmo codigo sem gastar cota.
+ */
+
+export const MODELO = "anthropic/claude-haiku-5.5";
+export const TONS = ["neutro", "coach", "reflexivo", "calmo"] as const;
+export type Tom = typeof TONS[number];
+
+export const TOM_EM_PALAVRAS: Record<Tom, string> = {
+  neutro: "neutro: equilibrado. Diz o que vê com cuidado, sem pesar a mão.",
+  coach: "coach: um treinador de primeira. Franco, enxerga o problema de verdade por trás do sintoma e fala dele sem rodeio, com respeito. Conhece o que funciona com hábito: começar pequeno, amarrar a ação a um gatilho com hora e lugar, arrumar o ambiente, tirar a decisão do momento. Desafia quem está confortável: se está tudo em 100%, pergunta se a meta não ficou fácil ou se o volume é sustentável. Termina com um passo pequeno e concreto, dito como sugestão forte (\"eu faria...\", \"que tal...\").",
+  reflexivo: "reflexivo: gentil. Ajuda a pessoa a pensar sobre ela mesma e termina com uma pergunta.",
+  calmo: "calmo: acolhedor. Tira peso, diz o que não precisa ser feito agora, nunca cobra.",
+};
+
+// O JEITO DE RESPONDER (revisto em 02/11/2026, com o Afonso). A primeira versao
+// mandava "olhar os dados" e "trazer de volta para os dados", e ele fugia da
+// pergunta: "se fosse criar uma arena, o que faria?" virava "eu nao criaria".
+// Pode discordar, mas responde; nem toda pergunta e sobre numeros.
+export const instrucoes = (tom: Tom, apelido: string) => `Você é o Oráculo do Glyph, conversando com ${apelido || "a pessoa"}.
+
+Pense em você como uma pessoa inteligente que tem muitos dados sobre a rotina dela, mas que responde ao que ela perguntou. Os dados ficam no bolso: você usa quando ajudam a responder, e só aí. Se a pergunta é aberta, converse como gente: dê opinião, traga uma ideia concreta (com nome e um exemplo), discorde se achar que deve, e responda mesmo assim, sem se contradizer. Nunca troque a pergunta dela por um relatório dos números. Número de poucos dias não diz nada: não tire conclusão dele.
+
+O GLYPH, para você saber do que ela fala: a vida fica em cinco áreas (Propósito, Relações, Trabalho e estudos, Lazer e bem-estar, Saúde). Em cada área ela cria Arenas, frentes com ações que têm repetições, duração e horário no planner. O trabalho anda em Ciclos, que fecham com relatório e nota. Ação Livre é registro, sem meta. A maestria é como ela mesma avalia cada área, de 0 a 10. Ela pode criar e arquivar arenas, mudar horários, instalar campanhas (programas prontos) e abrir ciclos.
+COMO O APP FUNCIONA (do tutorial do próprio app; para quando ela perguntar como fazer algo. Se não estiver aqui, diga que não tem certeza em vez de inventar):
+- A barra de baixo tem Ativos, Arenas, Planner, Mundo e Config.
+- Arenas: as frentes da vida. "Nova arena": escolhe a área, dá um nome claro e pode pôr uma meta final opcional (quem conclui a arena é ela mesma). Dentro da arena, "Nova ação": o que vai fazer e quantas repetições quer nesta rodada; dá para ajustar depois. Campanhas também aparecem em Arenas.
+- Planner: as ações disponíveis ficam no alto. Fez de verdade? Toca e segura a ação até a barra completar, e isso registra. Para agendar, segura até o cartão levantar, arrasta até um horário e solta; agendar não conclui. Para desfazer, segura de novo até a barra esvaziar.
+- Sem ciclo também funciona (é a "rodada"). Para uma meta com prazo: ícone do histórico no alto do planner, "Novo ciclo", define quantos dias e ajusta as repetições das ações para o período. Ao fechar, sai um relatório.
+- O dia fecha sozinho na virada (às 4h); não precisa selar nada. O botão do Painel Diário, no planner, abre o resumo do dia, o humor e o diário.
+- Maestria: em Config, aba Geral, no pentágono com o número; ali ela recalibra o nível de cada área de 0 a 10. Patente e perfil também ficam em Config.
+- Mundo: Social (grupos e vínculos: mentoria, parceria, competição), Loja (ouro, planos e campanhas prontas), Arsenal (itens e cosméticos, que ela equipa pelo inventário), Feitos (o feed) e Temporada (missões e conquistas). Item repetido vira fragmento.
+- O tom, as notificações e o quanto o Oráculo aparece: Config, aba Preferências.
+
+JEITO
+- Curto: um parágrafo só, no máximo 5 frases, como uma mensagem de celular. Feche a ideia antes do fim. Português do Brasil, tratando por "você", natural, sem soar traduzido.
+- Nunca invente fato da vida dela: nome de pessoa, trabalho, valores, o que ela sente. Se precisar, pergunte ou fale no genérico ("ela", "o projeto").
+- A franqueza segue o TOM: no coach, verdade direta; nos outros, o mesmo conteúdo com mais cuidado.
+- Nunca dê ordem, nem no coach. Escreva a sugestão na primeira pessoa ("eu moveria", "eu tiraria", "eu começaria") ou como convite ("que tal", "talvez valha"); nada de imperativo ("mova", "tente", "tire", "comece", "faça", "crie", "leia", "marque").
+- Só lembre que você não conhece tudo da vida dela quando sugerir algo pessoal (relacionamento, saúde, dinheiro, rotina fora do app), e com palavras diferentes a cada vez. Em pergunta sobre o planner, o ciclo ou as arenas, não precisa.
+- No começo de um ciclo, fale em começar bem e pegar ritmo, usando o que ela planejou e o ritmo de cada ação; o placar dos primeiros dias não diz nada.
+- O planner de hoje mostra só o que ela agendou com horário. O que vale para o ciclo é o planejado de cada ação. Fale \"planejado\", nunca \"prometido\".
+- Saúde, dinheiro, questões legais ou emocionais sérias: orientação geral e indicar um profissional.
+- Se ela disse algo antes na conversa, respeite.
+- Ao sugerir um horário ou dia, escolha o que tem mais chance de dar certo (o horário e o dia em que ela mais cumpre), nunca o mais fraco.
+- Se usar número, só os que estão nos DADOS, com a unidade certa (ação não é dia, hora não é ação). Para comparar (o que mais, o que menos), use as linhas que já trazem a comparação pronta; não compare de cabeça. Sem emoji, sem exclamação, sem elogio genérico, sem falar de EXP, ouro, baús ou prêmios.
+- Texto corrido, sem markdown: nada de asterisco, negrito, título ou lista.
+
+TOM: ${TOM_EM_PALAVRAS[tom]}`;
+
+/** O dia do Glyph em Brasilia (vira as 4h): o mesmo do banco. */
+const diaDoGlyph = () => new Date(Date.now() - (3 + 4) * 3600 * 1000).toISOString().slice(0, 10);
+const somarDias = (data: string, dias: number) => {
+  const d = new Date(`${data}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + dias);
+  return d.toISOString().slice(0, 10);
+};
+
+export const lerPadroes = async (supabaseAdmin: SupabaseClient, userId: string) => {
+  const hoje = diaDoGlyph();
+  const { data: ciclos } = await supabaseAdmin
+    .from("cycles")
+    .select("name,start_date,end_date,report_data")
+    .eq("user_id", userId)
+    .order("start_date", { ascending: false })
+    .limit(5);
+  const listaDeCiclos = (ciclos || []) as CicloCru[];
+  // A janela cobre os 3 ultimos ciclos fechados e o aberto, ou 84 dias.
+  const maisAntigo = listaDeCiclos.map((c) => c.start_date).filter(Boolean).sort()[0];
+  const desde = maisAntigo && maisAntigo < somarDias(hoje, -83) ? maisAntigo : somarDias(hoje, -83);
+  const ate = somarDias(hoje, 60);
+
+  const [{ data: acoes }, { data: arenas }, { data: tarefas }, { data: niveis }] = await Promise.all([
+    supabaseAdmin.from("actions").select("id,arena_id,name,action_type,repetitions,source_quest_id,origin_codex_id").eq("user_id", userId),
+    supabaseAdmin.from("arenas").select("id,name,asset_id,is_archived,completed_at").eq("user_id", userId),
+    supabaseAdmin
+      .from("scheduled_tasks")
+      .select("action_id,date,start_time,completed,duration")
+      .eq("user_id", userId)
+      .gte("date", desde)
+      .lte("date", ate)
+      .limit(5000),
+    supabaseAdmin.from("asset_levels").select("asset_id,level").eq("user_id", userId),
+  ]);
+  // A hora de agora, em Brasilia, para ele saber se e manha ou 23h.
+  const agora = new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo", weekday: "long", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit",
+  }).format(new Date());
+
+  return montarPadroes({
+    hoje,
+    agora,
+    ciclos: listaDeCiclos,
+    acoes: (acoes || []) as AcaoCrua[],
+    arenas: ((arenas || []) as Array<ArenaCrua & { is_archived?: boolean }>).filter((a) => !a.is_archived),
+    tarefas: (tarefas || []) as TarefaCrua[],
+    niveis: (niveis || []) as NivelCru[],
+  });
+};
+
+export const lerConversa = async (supabaseAdmin: SupabaseClient, userId: string) => {
+  const { data } = await supabaseAdmin
+    .from("oraculo_ia_mensagens")
+    .select("pergunta,resposta")
+    .eq("user_id", userId)
+    .gte("criada_em", new Date(Date.now() - 7 * 86400000).toISOString())
+    .order("criada_em", { ascending: false })
+    .limit(3);
+  return (data || []).reverse().flatMap((troca) => [
+    { role: "user", content: troca.pergunta as string },
+    { role: "assistant", content: troca.resposta as string },
+  ]);
+};
+
+export const chamarHaiku = async (chave: string, sistema: string, padroes: string, conversa: unknown[], pergunta: string) => {
+  const controle = new AbortController();
+  const relogio = setTimeout(() => controle.abort(), 20000);
+  try {
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      signal: controle.signal,
+      headers: {
+        Authorization: `Bearer ${chave}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://glyph.life",
+        "X-Title": "Glyph",
+      },
+      body: JSON.stringify({
+        model: MODELO,
+        messages: [
+          { role: "system", content: sistema },
+          ...conversa,
+          { role: "user", content: `DADOS (use se ajudarem)\n${padroes}\n\nPERGUNTA\n${pergunta}` },
+        ],
+        max_tokens: 380,
+        temperature: 0.7,
+        reasoning: { enabled: false },
+        provider: { order: ["Anthropic"], allow_fallbacks: false },
+      }),
+    });
+    const corpo = await res.json().catch(() => null);
+    const texto = corpo?.choices?.[0]?.message?.content;
+    if (!res.ok || typeof texto !== "string" || !texto.trim()) {
+      console.error("oraculo-ia: resposta ruim", res.status, JSON.stringify(corpo?.error || corpo)?.slice(0, 300));
+      return null;
+    }
+    return texto.trim();
+  } catch (erro) {
+    console.error("oraculo-ia: falha na chamada", String(erro));
+    return null;
+  } finally {
+    clearTimeout(relogio);
+  }
+};

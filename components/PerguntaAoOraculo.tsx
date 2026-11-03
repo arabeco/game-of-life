@@ -1,18 +1,18 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { supabase } from '../supabaseClient';
 import { ditadoDisponivel, ouvirUmaFrase } from '../utils/ditado';
-import { EVENTO_COTA_DO_ORACULO, PERGUNTAS_PRONTAS, perguntarAoOraculo } from '../utils/oraculoIa';
+import { PERGUNTAS_PRONTAS, perguntarAoOraculo } from '../utils/oraculoIa';
 import { avisoDoOraculo } from '../utils/oraculoIaAvisos';
+import { mensagensRestantes, useCotaDoOraculo } from '../utils/useCotaDoOraculo';
 
 /**
  * PERGUNTE AO ORACULO (02/11/2026, com o Afonso).
  *
  * A caixa do chat com IA, no rodape da aba "Dia e ciclo". A pergunta vai para
  * a funcao oraculo-ia, que olha os padroes da pessoa e responde. A cota e do
- * servidor: gratis 1 por dia, Premium 5, Platinum 15. Acabou, a caixa diz
- * quando volta e, no gratis, mostra o Premium.
+ * servidor, em conversas de 3 mensagens: gratis 1 por dia, Premium 5,
+ * Platinum 15. As mensagens que restam aparecem na aba Conversar. Acabou, a
+ * caixa diz quando volta e, no gratis, mostra o Premium.
  */
-type Cota = { usadas: number; limite: number };
 
 export const PerguntaAoOraculo: React.FC<{
     tom: string;
@@ -27,7 +27,7 @@ export const PerguntaAoOraculo: React.FC<{
 }> = ({ tom, gratis, onPergunta, onResposta, onAviso, onLerMeuDia, lendoMeuDia }) => {
     const [texto, setTexto] = useState('');
     const [enviando, setEnviando] = useState(false);
-    const [cota, setCota] = useState<Cota | null>(null);
+    const cota = useCotaDoOraculo();
     const [aviso, setAviso] = useState<string | null>(null);
     const [temDitado, setTemDitado] = useState(false);
     const [ouvindo, setOuvindo] = useState(false);
@@ -55,21 +55,7 @@ export const PerguntaAoOraculo: React.FC<{
         }
     }, [enviando, ouvindo]);
 
-    useEffect(() => {
-        let vivo = true;
-        void supabase.rpc('oraculo_ia_restantes').then(({ data }) => {
-            if (vivo && data && typeof data.limite === 'number') setCota({ usadas: Number(data.usadas) || 0, limite: data.limite });
-        });
-        // O "Ler meu ciclo e arenas" gasta da mesma cota: o contador acompanha.
-        const aoMudarCota = (evento: Event) => {
-            const detalhe = (evento as CustomEvent<Cota>).detail;
-            if (vivo && detalhe && typeof detalhe.limite === 'number') setCota(detalhe);
-        };
-        window.addEventListener(EVENTO_COTA_DO_ORACULO, aoMudarCota);
-        return () => { vivo = false; window.removeEventListener(EVENTO_COTA_DO_ORACULO, aoMudarCota); };
-    }, []);
-
-    const acabou = Boolean(cota && cota.usadas >= cota.limite);
+    const acabou = mensagensRestantes(cota) === 0;
 
     const enviar = useCallback(async (pronta?: string) => {
         const pergunta = (pronta ?? texto).trim();
@@ -129,8 +115,8 @@ export const PerguntaAoOraculo: React.FC<{
                 <div className="space-y-2 text-center">
                     <p className="text-[11px] leading-relaxed text-white/60">
                         {gratis
-                            ? 'Sua pergunta de hoje já foi. Amanhã tem outra. No Premium são 5 por dia, e o Oráculo responde no tom que você escolher.'
-                            : `Você fez as ${cota?.limite} perguntas de hoje. Amanhã tem mais.`}
+                            ? 'Sua conversa de hoje já foi. Amanhã tem outra. No Premium são 5 por dia, e o Oráculo responde no tom que você escolher.'
+                            : `Você usou as ${cota?.limite} conversas de hoje. Amanhã tem mais.`}
                     </p>
                     {gratis && (
                         <button
@@ -179,11 +165,6 @@ export const PerguntaAoOraculo: React.FC<{
                         {enviando ? '…' : 'Perguntar'}
                     </button>
                 </form>
-            )}
-            {!acabou && cota && (
-                <p className="text-center text-[10px] text-white/40">
-                    {cota.limite - cota.usadas} de {cota.limite} {cota.limite === 1 ? 'pergunta' : 'perguntas'} hoje
-                </p>
             )}
             {aviso && <p className="text-center text-[11px] text-amber-200/80">{aviso}</p>}
         </div>

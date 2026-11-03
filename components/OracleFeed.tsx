@@ -7,6 +7,7 @@ import { Portal } from './Portal';
 import { CodexClaimModal } from './CodexClaimModal';
 import { AttentionBadge } from './AttentionBadge';
 import { APP_NAVIGATE_EVENT, type AppNavigatePayload } from '../utils/arenaAttention';
+import { mensagensRestantes, useCotaDoOraculo } from '../utils/useCotaDoOraculo';
 import {
     getNotificationBody,
     getNotificationIcon,
@@ -70,6 +71,9 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab: ini
 
     // Each alert is marked read when opened, not merely when its list appears.
 
+    // As mensagens com o Oraculo que ainda cabem hoje, ao lado de Conversar.
+    const restam = mensagensRestantes(useCotaDoOraculo());
+
 
     return (
         <Portal>
@@ -90,7 +94,7 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab: ini
                                 className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg transition-all ${activeTab === 'chat' ? 'bg-[var(--skin-accent-color)] text-black shadow-lg font-bold' : 'text-gray-400 hover:text-white'}`}
                             >
                                 <SparklesIcon className="w-4 h-4" />
-                                <span className="text-[10px] font-bold tracking-wider">CONVERSAR</span>
+                                <span className="text-[10px] font-bold tracking-wider">CONVERSAR{restam !== null && <span className="ml-1 font-semibold opacity-70" aria-label={`${restam} mensagens restantes hoje`}>({restam})</span>}</span>
                                 {activeTab !== 'chat' && <AttentionBadge count={unreadChat ? 1 : 0} compact label="Há novidade no Oráculo" className="ml-1" />}
                             </button>
 

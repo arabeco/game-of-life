@@ -9,6 +9,9 @@ import { supabase } from '../supabaseClient';
  */
 export const EVENTO_COTA_DO_ORACULO = 'oraculo-ia-cota';
 
+/** Conversas usadas e o limite do dia; mensagens = as que ainda cabem hoje. */
+export type CotaDoOraculo = { usadas: number; limite: number; mensagens?: number };
+
 /**
  * AS PERGUNTAS PRONTAS (03/11/2026): cards numa fileira acima da caixa, para
  * quem nao sabe o que perguntar. Servem para qualquer pessoa; o Oraculo
@@ -33,16 +36,17 @@ export type RespostaDoOraculo =
     | { ok: false; erro: 'LIMITE'; usadas: number; limite: number }
     | { ok: false; erro: 'FALHOU' | 'SEM_INTERNET' };
 
-const avisarCota = (usadas: number, limite: number) => {
+const avisarCota = (usadas: number, limite: number, mensagens?: number) => {
     if (typeof window === 'undefined') return;
-    window.dispatchEvent(new CustomEvent(EVENTO_COTA_DO_ORACULO, { detail: { usadas, limite } }));
+    const detail: CotaDoOraculo = { usadas, limite, mensagens: typeof mensagens === 'number' ? mensagens : undefined };
+    window.dispatchEvent(new CustomEvent(EVENTO_COTA_DO_ORACULO, { detail }));
 };
 
 export const perguntarAoOraculo = async (pergunta: string, tom: string): Promise<RespostaDoOraculo> => {
     if (typeof navigator !== 'undefined' && navigator.onLine === false) return { ok: false, erro: 'SEM_INTERNET' };
     const { data, error } = await supabase.functions.invoke('oraculo-ia', { body: { pergunta, tom } });
     if (data?.resposta) {
-        avisarCota(data.usadas, data.limite);
+        avisarCota(data.usadas, data.limite, data.mensagens);
         return { ok: true, resposta: String(data.resposta), usadas: data.usadas, limite: data.limite };
     }
     // O corpo do erro vem no contexto da resposta.
@@ -51,7 +55,7 @@ export const perguntarAoOraculo = async (pergunta: string, tom: string): Promise
     if (erro?.erro === 'LIMITE') {
         const usadas = erro.usadas ?? 0;
         const limite = erro.limite ?? 1;
-        avisarCota(usadas, limite);
+        avisarCota(usadas, limite, 0);
         return { ok: false, erro: 'LIMITE', usadas, limite };
     }
     // A chamada nem chegou ao servidor: quase sempre e a rede.

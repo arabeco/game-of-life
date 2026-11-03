@@ -43,6 +43,25 @@ const MINIMO_PARA_PADRAO = 5;
 
 const pct = (feitas: number, total: number) => (total > 0 ? Math.round((feitas / total) * 100) : 0);
 
+/** "a, b e c": a lista do jeito que se fala. */
+const emLista = (nomes: string[]) => (nomes.length <= 1 ? nomes.join('') : `${nomes.slice(0, -1).join(', ')} e ${nomes[nomes.length - 1]}`);
+
+/**
+ * O MAIS E O MENOS, COM EMPATE (03/11/2026). Escolher um so quando tres
+ * empatam em 100% fazia a IA dizer "a tarde e o seu horario mais forte"
+ * para quem cumpre tudo de manha, de tarde e de noite.
+ */
+const extremos = <T,>(itens: T[], nome: (item: T) => string, valor: (item: T) => number) => {
+  const valores = itens.map(valor);
+  const maior = Math.max(...valores);
+  const menor = Math.min(...valores);
+  return {
+    mais: `${emLista(itens.filter((i) => valor(i) === maior).map(nome))} (${maior}%)`,
+    menos: `${emLista(itens.filter((i) => valor(i) === menor).map(nome))} (${menor}%)`,
+    empateGeral: maior === menor,
+  };
+};
+
 const somarDias = (data: string, dias: number) => {
   const d = new Date(`${data}T12:00:00Z`);
   d.setUTCDate(d.getUTCDate() + dias);
@@ -150,7 +169,13 @@ export const montarPadroes = (entrada: {
 
   // As arenas e a area de cada uma; a maestria por area; as areas sem arena.
   if (entrada.arenas.length) {
-    linhas.push(`arenas: ${entrada.arenas.map((a) => `${a.name} (${NOME_DA_AREA[a.asset_id || ''] || 'sem área'})`).join(' · ')}`);
+    // Arena so de acoes Livres tem horas no planner, mas nao entra no planejado:
+    // sem a marca, a IA dizia que a area "quase nao aparece".
+    const soLivre = (arenaId: string) => {
+      const daArena = entrada.acoes.filter((a) => a.arena_id === arenaId);
+      return daArena.length > 0 && daArena.every((a) => a.action_type === 'Livre');
+    };
+    linhas.push(`arenas: ${entrada.arenas.map((a) => `${a.name} (${NOME_DA_AREA[a.asset_id || ''] || 'sem área'}${soLivre(a.id) ? ', só ações Livres: registro, sem meta' : ''})`).join(' · ')}`);
   }
   const niveis = (entrada.niveis || []).filter((n) => NOME_DA_AREA[n.asset_id] && Number.isFinite(Number(n.level)));
   if (niveis.length) {
@@ -173,6 +198,24 @@ export const montarPadroes = (entrada: {
       const destaques = destaquesDoRelatorio(c.report_data);
       linhas.push(`- ${c.name || 'Ciclo'} (${diasEntre(c.start_date, c.end_date)} dias): ${doRelatorio || 'sem detalhe por área'}${destaques ? ` · ${destaques}` : ''}`);
     });
+    // A META FOLGADA (03/11/2026): area que fecha 100% em todo ciclo e o gancho
+    // do coach para provocar ("domina ou a meta ficou pequena?"). Sem o fato
+    // nos dados ele so elogiava.
+    const porAreaEmTodos = new Map<string, number[]>();
+    fechados.forEach((c) => {
+      const lista = ((c.report_data as Record<string, unknown>)?.asset_progress || (c.report_data as Record<string, unknown>)?.assetProgress) as Array<Record<string, unknown>> | undefined;
+      (Array.isArray(lista) ? lista : []).forEach((item) => {
+        const planejado = Number(item.total_planned ?? item.totalPlanned ?? 0);
+        if (planejado <= 0) return;
+        const nome = nomeDaArea(String(item.asset || '').trim());
+        porAreaEmTodos.set(nome, [...(porAreaEmTodos.get(nome) || []), pct(Number(item.total_completed ?? item.totalCompleted ?? 0), planejado)]);
+      });
+    });
+    const folgadas = [...porAreaEmTodos.entries()].filter(([, v]) => v.length >= 2 && v.every((x) => x >= 100)).map(([nome]) => nome);
+    if (folgadas.length) {
+      linhas.push(`áreas em 100% em todos os ${fechados.length} ciclos fechados: ${emLista(folgadas)} — ou a pessoa já domina, ou a meta ficou folgada`);
+    }
+
     // A area que mais e a que menos cumpriu no ultimo ciclo fechado, ja comparadas.
     const ultimo = fechados[fechados.length - 1];
     const lista = ((ultimo.report_data as Record<string, unknown>)?.asset_progress || (ultimo.report_data as Record<string, unknown>)?.assetProgress) as Array<Record<string, unknown>> | undefined;
@@ -217,6 +260,17 @@ export const montarPadroes = (entrada: {
     const comeco = dia <= 3;
     const restam = Math.max(1, total - dia + 1);
     linhas.push(`ciclo atual: dia ${dia} de ${total} (faltam ${restam} dias, contando hoje).${comeco ? ' É começo de ciclo: o que conta agora é pegar ritmo, não o placar.' : ''}`);
+    // O horario em que cada acao costuma ficar (60%+ numa faixa, ultimos 84
+    // dias): sem isso a IA sugeria mudar "a meditacao para a noite" para quem
+    // ja medita depois das 21h, o horario mais fraco.
+    const faixaDaAcao = (acaoId: string) => {
+      const daAcao = entrada.tarefas.filter((t) => t.action_id === acaoId && t.date >= somarDias(hoje, -83) && faixaDoHorario(t.start_time));
+      if (daAcao.length < 3) return '';
+      const contagem = new Map<string, number>();
+      daAcao.forEach((t) => { const f = faixaDoHorario(t.start_time)!.nome; contagem.set(f, (contagem.get(f) || 0) + 1); });
+      const [faixa, n] = [...contagem.entries()].sort((x, y) => y[1] - x[1])[0];
+      return n / daAcao.length >= 0.6 ? `, costuma ficar ${faixa}` : '';
+    };
     const porArenaAcoes = new Map<string, string[]>();
     pessoais.forEach((a) => {
       const prometido = Math.max(1, Math.floor(Number(a.repetitions) || 1));
@@ -224,8 +278,8 @@ export const montarPadroes = (entrada: {
       const nome = arenaAtiva.get(a.arena_id!)!;
       // Nos 3 primeiros dias o feito nao vai: "71 → 1" virava "parado".
       const texto = comeco
-        ? `${a.name} ${prometido}x (${ritmoDaAcao(prometido)})`
-        : `${a.name} ${feito} de ${prometido} (${ritmoDaAcao(prometido)})`;
+        ? `${a.name} ${prometido}x (${ritmoDaAcao(prometido)}${faixaDaAcao(a.id)})`
+        : `${a.name} ${feito} de ${prometido} (${ritmoDaAcao(prometido)}${faixaDaAcao(a.id)})`;
       porArenaAcoes.set(nome, [...(porArenaAcoes.get(nome) || []), texto]);
     });
     if (porArenaAcoes.size) {
@@ -250,10 +304,10 @@ export const montarPadroes = (entrada: {
     linhas.push(`horários (feitas do que foi agendado): ${porFaixa.map((f) => `${f.faixa.nome} ${pct(f.feitas, f.total)}%`).join(' · ')}`);
     // A comparacao ja feita: a IA errava "o maior" e "o menor".
     if (porFaixa.length >= 2) {
-      const ordenadas = [...porFaixa].sort((a, b) => pct(b.feitas, b.total) - pct(a.feitas, a.total));
-      const melhor = ordenadas[0];
-      const pior = ordenadas[ordenadas.length - 1];
-      linhas.push(`horário em que mais cumpre: ${melhor.faixa.nome} (${pct(melhor.feitas, melhor.total)}%); em que menos cumpre: ${pior.faixa.nome} (${pct(pior.feitas, pior.total)}%)`);
+      const e = extremos(porFaixa, (f) => f.faixa.nome, (f) => pct(f.feitas, f.total));
+      linhas.push(e.empateGeral
+        ? `horários: cumpre igual em todas as faixas (${pct(porFaixa[0].feitas, porFaixa[0].total)}%)`
+        : `horário em que mais cumpre: ${e.mais}; em que menos cumpre: ${e.menos}`);
     }
   }
 
@@ -264,8 +318,10 @@ export const montarPadroes = (entrada: {
   if (porDia.length) {
     linhas.push(`dias da semana (feitas do que foi agendado): ${porDia.map((d) => `${d.nome} ${pct(d.feitas, d.total)}%`).join(' · ')}`);
     if (porDia.length >= 2) {
-      const ordenados = [...porDia].sort((a, b) => pct(b.feitas, b.total) - pct(a.feitas, a.total));
-      linhas.push(`dia da semana mais forte: ${ordenados[0].nome} (${pct(ordenados[0].feitas, ordenados[0].total)}%); mais fraco: ${ordenados[ordenados.length - 1].nome} (${pct(ordenados[ordenados.length - 1].feitas, ordenados[ordenados.length - 1].total)}%)`);
+      const e = extremos(porDia, (d) => d.nome, (d) => pct(d.feitas, d.total));
+      linhas.push(e.empateGeral
+        ? `dias da semana: cumpre igual todos os dias (${pct(porDia[0].feitas, porDia[0].total)}%)`
+        : `dia da semana mais forte: ${e.mais}; mais fraco: ${e.menos}`);
     }
   }
 

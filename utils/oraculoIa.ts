@@ -15,7 +15,7 @@ export const PERGUNTA_LER_MEU_DIA = 'Leia o meu dia e o meu ciclo: o que importa
 export type RespostaDoOraculo =
     | { ok: true; resposta: string; usadas: number; limite: number }
     | { ok: false; erro: 'LIMITE'; usadas: number; limite: number }
-    | { ok: false; erro: 'FALHOU' };
+    | { ok: false; erro: 'FALHOU' | 'SEM_INTERNET' };
 
 const avisarCota = (usadas: number, limite: number) => {
     if (typeof window === 'undefined') return;
@@ -23,6 +23,7 @@ const avisarCota = (usadas: number, limite: number) => {
 };
 
 export const perguntarAoOraculo = async (pergunta: string, tom: string): Promise<RespostaDoOraculo> => {
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return { ok: false, erro: 'SEM_INTERNET' };
     const { data, error } = await supabase.functions.invoke('oraculo-ia', { body: { pergunta, tom } });
     if (data?.resposta) {
         avisarCota(data.usadas, data.limite);
@@ -37,5 +38,7 @@ export const perguntarAoOraculo = async (pergunta: string, tom: string): Promise
         avisarCota(usadas, limite);
         return { ok: false, erro: 'LIMITE', usadas, limite };
     }
+    // A chamada nem chegou ao servidor: quase sempre e a rede.
+    if ((error as { name?: string } | null)?.name === 'FunctionsFetchError') return { ok: false, erro: 'SEM_INTERNET' };
     return { ok: false, erro: 'FALHOU' };
 };

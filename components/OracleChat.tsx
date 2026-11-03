@@ -56,7 +56,8 @@ type ChatQuickAction =
   | { id: string; label: string; kind: 'open_planner' }
   | { id: string; label: string; kind: 'open_cycle' }
   | { id: string; label: string; kind: 'open_arenas' }
-  | { id: string; label: string; kind: 'open_arena'; arenaId: string };
+  | { id: string; label: string; kind: 'open_arena'; arenaId: string }
+  | { id: string; label: string; kind: 'open_premium' };
 
 
 
@@ -537,6 +538,10 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
   const runQuickAction = useCallback((action: ChatQuickAction) => {
     switch (action.kind) {
+      case 'open_premium':
+        window.dispatchEvent(new CustomEvent('navigate-to-store', { detail: { tab: 'membership', section: 'premium' } }));
+        onClose();
+        return;
       case 'open_planner_create_action':
         openPlannerCreateAction();
         onClose();
@@ -896,6 +901,10 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
           gratis={!isPremiumUser}
           onPergunta={(pergunta) => setMessages(previous => [...previous, { role: 'user', content: pergunta, timestamp: new Date(), mode: currentMode }])}
           onResposta={(resposta) => setMessages(previous => [...previous, { role: 'assistant', content: resposta, timestamp: new Date(), mode: currentMode, feedCategory: 'analise_padroes', feedTrigger: 'manual' }])}
+          onAviso={(texto, comPremium) => setMessages(previous => [...previous, {
+            role: 'assistant', content: texto, timestamp: new Date(), mode: currentMode, feedTrigger: 'manual',
+            quickActions: comPremium ? [{ id: 'oraculo-ia-premium', label: 'Ver o Premium', kind: 'open_premium' as const }] : undefined,
+          }])}
         />}
         {section === 'wisdom' && <div className="shrink-0 border-t border-white/10 bg-black/20 p-3 space-y-2">
           <p className="text-[11px] leading-relaxed text-white/55">{oracleInputHint}</p>

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { ditadoDisponivel, ouvirUmaFrase } from '../utils/ditado';
 import { EVENTO_COTA_DO_ORACULO, perguntarAoOraculo } from '../utils/oraculoIa';
+import { avisoDoOraculo } from '../utils/oraculoIaAvisos';
 
 /**
  * PERGUNTE AO ORACULO (02/11/2026, com o Afonso).
@@ -18,7 +19,9 @@ export const PerguntaAoOraculo: React.FC<{
     gratis: boolean;
     onPergunta: (pergunta: string) => void;
     onResposta: (resposta: string) => void;
-}> = ({ tom, gratis, onPergunta, onResposta }) => {
+    /** Sem internet, erro ou conversas esgotadas: o Oraculo avisa no proprio chat. */
+    onAviso: (texto: string, comPremium: boolean) => void;
+}> = ({ tom, gratis, onPergunta, onResposta, onAviso }) => {
     const [texto, setTexto] = useState('');
     const [enviando, setEnviando] = useState(false);
     const [cota, setCota] = useState<Cota | null>(null);
@@ -78,10 +81,12 @@ export const PerguntaAoOraculo: React.FC<{
             onResposta(resultado.resposta);
             return;
         }
-        if ('erro' in resultado && resultado.erro === 'LIMITE') return;
-        setTexto(pergunta);
-        setAviso('O Oráculo não respondeu agora. Tente de novo em instantes; a pergunta não foi gasta.');
-    }, [acabou, enviando, onPergunta, onResposta, texto, tom]);
+        const erro = 'erro' in resultado ? resultado.erro : 'FALHOU';
+        const aviso = avisoDoOraculo(erro, { gratis, limite: 'limite' in resultado ? resultado.limite : undefined });
+        onAviso(aviso.texto, aviso.premium);
+        // Sem internet ou erro: a pergunta volta para a caixa, pronta para mandar de novo.
+        if (erro !== 'LIMITE') setTexto(pergunta);
+    }, [acabou, enviando, gratis, onAviso, onPergunta, onResposta, texto, tom]);
 
     return (
         <div className="shrink-0 space-y-2 border-t border-white/10 bg-black/20 p-3">

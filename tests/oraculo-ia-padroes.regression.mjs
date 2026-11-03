@@ -55,7 +55,7 @@ assert.match(texto, /maestria por área \(0 a 10, a pessoa se avalia\): Saúde 7
 assert.match(texto, /áreas sem nenhuma arena: Propósito, Relações, Lazer e bem-estar/, 'as areas sem arena');
 assert.match(texto, /Ciclo de outubro \(7 dias\): Trabalho e estudos 7 → 1 \(14%\) · Saúde 7 → 7 \(100%\) · nota B · execução 57% · maior sequência 7 dias · ação mais repetida Caminhar \(7x\) · hábitos consolidados: Caminhar/, 'ciclo fechado pelo relatorio, com o nome da area padronizado e os destaques');
 assert.match(texto, /ciclo atual: dia 2 de 28 \(faltam 27 dias, contando hoje\)\. É começo de ciclo: o que conta agora é pegar ritmo/, 'comeco de ciclo fala em pegar ritmo');
-assert.match(texto, /o que ela planejou no ciclo, por arena e ação \(com o ritmo de cada uma\): .*Duolingo 1x \(1 por semana, costuma ficar depois das 21h\)/, 'no comeco, o planejado com o ritmo e o horario de cada acao, sem o feito');
+assert.match(texto, /o que foi planejado no ciclo, por arena e ação \(com o ritmo de cada uma\): .*Duolingo 1x \(1 por semana, costuma ficar depois das 21h\)/, 'no comeco, o planejado com o ritmo e o horario de cada acao, sem o feito');
 assert.match(texto, /Caminhar 1x \(1 por semana, costuma ficar de manhã \(4h às 12h\)\)/, 'cada acao com o horario em que costuma ficar');
 assert.doesNotMatch(texto, /média de/, 'sem media geral de acoes por dia');
 const ritmos = montarPadroes({ hoje: '2026-10-20', ciclos: [{ name: 'C', start_date: '2026-10-19', end_date: '2026-11-15', report_data: null }], acoes: [{ id: 'x1', arena_id: 'a1', name: 'Meditar', action_type: 'Ação Recorrente', repetitions: 28 }, { id: 'x2', arena_id: 'a2', name: 'Treino', action_type: 'Ação Recorrente', repetitions: 12 }], arenas, tarefas: [] });
@@ -68,12 +68,12 @@ assert.match(maisAdiante, /Corpo: Caminhar 1 de 1 \(1 por semana, costuma ficar 
 assert.match(texto, /de manhã \(4h às 12h\) 100%/, 'manha cumpre tudo');
 assert.match(texto, /depois das 21h 14%/, 'depois das 21h quase nada');
 assert.match(texto, /Idiomas fica depois das 21h/, 'onde a arena costuma ficar, sem porcentagem');
-assert.match(texto, /agendado no planner para hoje \(só o que ela marcou com horário; pode haver ação planejada sem horário\): Caminhar \(07:00, feita\) · Duolingo \(22:00, pendente\)/, 'o planner de hoje, avisando que e so o agendado');
+assert.match(texto, /agendado no planner para hoje \(só o que foi marcado com horário; pode haver ação planejada sem horário\): Caminhar \(07:00, feita\) · Duolingo \(22:00, pendente\)/, 'o planner de hoje, avisando que e so o agendado');
 assert.doesNotMatch(texto, /Alongar/, 'acao Livre nao entra');
 
 // Sem ciclo nenhum: os ultimos 28 dias.
 const semCiclo = montarPadroes({ hoje: '2026-10-08', ciclos: [], acoes, arenas, tarefas });
-assert.match(semCiclo, /sem ciclo aberto\. últimos 28 dias/);
+assert.match(semCiclo, /sem ciclo aberto \(está na rodada livre\)\. últimos 28 dias/);
 
 console.log('Padroes do Oraculo com IA: ciclo por arena, horario, dia da semana e hoje.');
 
@@ -105,3 +105,17 @@ console.log('Padroes: empate aparece como empate.');
   assert.doesNotMatch(t, /fechados: Saúde e Trabalho/, 'Trabalho caiu num ciclo: nao entra');
 }
 console.log('Padroes: meta folgada vira gancho.');
+
+// Conta nova (03/11/2026): 2 dias de uso nao viram "ultimos 28 dias" nem "0,4h por semana".
+{
+  const nova = montarPadroes({ hoje: '2026-11-03', usaDesde: '2026-11-02T10:00:00Z', ciclos: [], acoes: [{ id: 'x1', arena_id: 'a1', name: 'Duolingo', action_type: 'Ação Recorrente', repetitions: 5 }], arenas, tarefas: [
+    { action_id: 'x1', date: '2026-11-02', start_time: 22 * 60, completed: true, duration: 15 },
+  ] });
+  assert.match(nova, /conta nova: usa o Glyph há 2 dias\. Ainda não há padrão/);
+  assert.match(nova, /desde que começou \(2 dias\), agendadas → feitas: Idiomas 1 → 1/);
+  assert.match(nova, /planejado nas ações \(repetições, sem prazo enquanto não há ciclo\): Duolingo 5x/);
+  assert.doesNotMatch(nova, /por semana \(média/, 'menos de uma semana: sem horas por semana');
+  assert.doesNotMatch(nova, /próximos 7 dias/, 'semana sem nada agendado: nao aparece');
+  assert.doesNotMatch(nova, /\bela\b/, 'sem genero nos dados');
+}
+console.log('Padroes: conta nova.');

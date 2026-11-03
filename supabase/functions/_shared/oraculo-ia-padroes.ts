@@ -140,6 +140,8 @@ export const montarPadroes = (entrada: {
   arenas: ArenaCrua[];
   tarefas: TarefaCrua[];
   niveis?: NivelCru[];
+  /** Quando a pessoa comecou a usar (data da conta). Conta nova muda o tom. */
+  usaDesde?: string | null;
 }): string => {
   const { hoje } = entrada;
   const nomeDaArena = new Map(entrada.arenas.map((arena) => [arena.id, arena.name]));
@@ -166,6 +168,17 @@ export const montarPadroes = (entrada: {
 
   const linhas: string[] = [];
   if (entrada.agora) linhas.push(`agora: ${entrada.agora}`);
+
+  // CONTA NOVA (03/11/2026): com 2 dias de uso, "ultimos 28 dias" e "0,4h por
+  // semana" faziam a IA tratar quem esta comecando como quem parou.
+  const desdeValido = entrada.usaDesde && /^\d{4}-\d{2}-\d{2}/.test(entrada.usaDesde) ? entrada.usaDesde.slice(0, 10) : null;
+  const diasDeUso = desdeValido ? Math.max(1, diasEntre(desdeValido, hoje)) : null;
+  const janela = Math.min(28, diasDeUso ?? 28);
+  if (diasDeUso != null) {
+    linhas.push(diasDeUso < 14
+      ? `conta nova: usa o Glyph há ${diasDeUso} ${diasDeUso === 1 ? 'dia' : 'dias'}. Ainda não há padrão: fale de começo, não de queda nem de "pouco movimento".`
+      : `usa o Glyph há ${diasDeUso} dias`);
+  }
 
   // As arenas e a area de cada uma; a maestria por area; as areas sem arena.
   if (entrada.arenas.length) {
@@ -283,13 +296,18 @@ export const montarPadroes = (entrada: {
       porArenaAcoes.set(nome, [...(porArenaAcoes.get(nome) || []), texto]);
     });
     if (porArenaAcoes.size) {
-      const titulo = comeco ? 'o que ela planejou no ciclo, por arena e ação (com o ritmo de cada uma)' : 'planejado no ciclo, por arena e ação: feito de planejado (ritmo)';
+      const titulo = comeco ? 'o que foi planejado no ciclo, por arena e ação (com o ritmo de cada uma)' : 'planejado no ciclo, por arena e ação: feito de planejado (ritmo)';
       linhas.push(`${titulo}: ${[...porArenaAcoes.entries()].map(([arena, lista]) => `${arena}: ${lista.join(', ')}`).join(' · ')}`);
     }
   } else {
-    const desde = somarDias(hoje, -27);
+    const desde = somarDias(hoje, -(janela - 1));
     const recentes = medidas.filter((t) => t.date >= desde && t.date <= hoje);
-    linhas.push(`sem ciclo aberto. últimos 28 dias (agendadas → feitas): ${porArena(recentes) || 'nada agendado'}`);
+    const rotulo = janela < 28 ? `desde que começou (${janela} ${janela === 1 ? 'dia' : 'dias'})` : 'últimos 28 dias';
+    linhas.push(`sem ciclo aberto (está na rodada livre). ${rotulo}, agendadas → feitas: ${porArena(recentes) || 'nada agendado'}`);
+    const naRodada = entrada.acoes
+      .filter((a) => a.action_type !== 'Livre' && !a.source_quest_id && !a.origin_codex_id && a.arena_id && nomeDaArena.has(a.arena_id))
+      .map((a) => `${a.name} ${Math.max(1, Math.floor(Number(a.repetitions) || 1))}x`);
+    if (naRodada.length) linhas.push(`planejado nas ações (repetições, sem prazo enquanto não há ciclo): ${naRodada.join(' · ')}`);
   }
 
   // Padroes de horario e de dia da semana: so o que ja passou, ultimos 84 dias.
@@ -341,7 +359,7 @@ export const montarPadroes = (entrada: {
   // O USO DO TEMPO no planner (02/11/2026): o que foi agendado nos ultimos 28
   // dias, em horas por semana por area, e o desenho do dia (primeiro e ultimo
   // horario, em mediana, nos dias que tiveram algo agendado).
-  const desde28 = somarDias(hoje, -27);
+  const desde28 = somarDias(hoje, -(janela - 1));
   const ultimas = entrada.tarefas.filter((t) => t.date >= desde28 && t.date <= hoje && acaoPorId.has(t.action_id));
   const areaDaTarefa = (t: TarefaCrua) => {
     const acao = acaoPorId.get(t.action_id);
@@ -355,11 +373,13 @@ export const montarPadroes = (entrada: {
     if (area && minutos > 0) minutosPorArea.set(area, (minutosPorArea.get(area) || 0) + minutos);
   });
   if (minutosPorArea.size) {
+    const semanas = Math.max(1, janela) / 7;
     const porSemana = [...minutosPorArea.entries()]
       .sort((a, b) => b[1] - a[1])
-      .map(([area, minutos]) => `${area} ${(minutos / 60 / 4).toFixed(1).replace('.', ',')}h`);
-    const totalSemana = [...minutosPorArea.values()].reduce((s, m) => s + m, 0) / 60 / 4;
-    linhas.push(`tempo agendado por semana (média dos últimos 28 dias): ${porSemana.join(' · ')} — total ${totalSemana.toFixed(1).replace('.', ',')}h`);
+      .map(([area, minutos]) => `${area} ${(minutos / 60 / semanas).toFixed(1).replace('.', ',')}h`);
+    const totalSemana = [...minutosPorArea.values()].reduce((s, m) => s + m, 0) / 60 / semanas;
+    // Com menos de uma semana de uso, "por semana" nao diz nada.
+    if (janela >= 7) linhas.push(`tempo agendado por semana (média dos últimos ${janela} dias): ${porSemana.join(' · ')} — total ${totalSemana.toFixed(1).replace('.', ',')}h`);
   }
   const mediana = (valores: number[]) => {
     const v = [...valores].sort((a, b) => a - b);
@@ -383,7 +403,8 @@ export const montarPadroes = (entrada: {
     const nome = DIAS_DA_SEMANA[new Date(`${data}T12:00:00Z`).getUTCDay()];
     return doDia.length ? `${nome} ${doDia.length} (${Math.round(minutos / 60 * 10) / 10}h)`.replace('.', ',') : `${nome} livre`;
   });
-  linhas.push(`próximos 7 dias no planner (ações e horas): ${proximos.join(' · ')}`);
+  // Quem agenda dia a dia tem a semana "livre", e a IA lia isso como problema.
+  if (proximos.some((dia) => !dia.endsWith('livre'))) linhas.push(`próximos 7 dias no planner (ações e horas): ${proximos.join(' · ')}`);
 
   // Hoje no planner.
   const deHoje = entrada.tarefas
@@ -391,7 +412,7 @@ export const montarPadroes = (entrada: {
     .sort((a, b) => (a.start_time ?? 9999) - (b.start_time ?? 9999));
   if (deHoje.length) {
     const lista = deHoje.map((t) => `${acaoPorId.get(t.action_id)!.name} (${horaLegivel(t.start_time)}, ${t.completed ? 'feita' : 'pendente'})`);
-    linhas.push(`agendado no planner para hoje (só o que ela marcou com horário; pode haver ação planejada sem horário): ${lista.join(' · ')}`);
+    linhas.push(`agendado no planner para hoje (só o que foi marcado com horário; pode haver ação planejada sem horário): ${lista.join(' · ')}`);
   } else {
     linhas.push('agendado no planner para hoje: nada (isso não quer dizer que não haja ação planejada)');
   }

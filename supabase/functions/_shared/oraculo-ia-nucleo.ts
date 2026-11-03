@@ -95,6 +95,8 @@ export const lerPadroes = async (supabaseAdmin: SupabaseClient, userId: string) 
       .limit(5000),
     supabaseAdmin.from("asset_levels").select("asset_id,level").eq("user_id", userId),
   ]);
+  // Desde quando usa: conta nova muda o tom (sem "pouco movimento" no 2o dia).
+  const { data: conta } = await supabaseAdmin.from("user_profiles").select("created_at").eq("id", userId).maybeSingle();
   // A hora de agora, em Brasilia, para ele saber se e manha ou 23h.
   const agora = new Intl.DateTimeFormat("pt-BR", {
     timeZone: "America/Sao_Paulo", weekday: "long", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit",
@@ -108,6 +110,7 @@ export const lerPadroes = async (supabaseAdmin: SupabaseClient, userId: string) 
     arenas: ((arenas || []) as Array<ArenaCrua & { is_archived?: boolean }>).filter((a) => !a.is_archived),
     tarefas: (tarefas || []) as TarefaCrua[],
     niveis: (niveis || []) as NivelCru[],
+    usaDesde: (conta?.created_at as string | undefined) || null,
   });
 };
 

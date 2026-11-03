@@ -22,6 +22,8 @@
  * Pura: sem rede e sem banco, para dar para testar.
  */
 
+import { FRASES_DOS_DEGRAUS, NOMES_DOS_DEGRAUS } from './maestria-degraus.ts';
+
 export type TarefaCrua = { action_id: string; date: string; start_time: number | null; completed: boolean; duration?: number | null };
 export type AcaoCrua = { id: string; arena_id: string | null; name: string; action_type: string | null; repetitions?: number | null; source_quest_id?: string | null; origin_codex_id?: string | null };
 export type ArenaCrua = { id: string; name: string; asset_id?: string | null; completed_at?: string | null };
@@ -94,6 +96,41 @@ const nomeDaArea = (bruto: string) => {
   if (t.includes('lazer') || t.includes('bem-estar')) return NOME_DA_AREA.lazer;
   if (t.includes('saude')) return NOME_DA_AREA.saude;
   return NOME_DA_AREA[t] || bruto;
+};
+
+/**
+ * A ESCADA DA MAESTRIA (03/11/2026, com o Afonso).
+ *
+ * Cada area tem 11 degraus, de 0 (Abandono) a 10 (Obra), e a propria pessoa
+ * escolhe o seu. O Nivel e a soma das cinco vezes dois: 0 a 100. Para o
+ * Oraculo ajudar a subir, ele ve o degrau de cada area com nome e frase e o
+ * proximo degrau, da area mais baixa para a mais alta.
+ */
+const linhasDaMaestria = (niveisCrus: NivelCru[]): string[] => {
+  const niveis = niveisCrus
+    .filter((n) => NOME_DA_AREA[n.asset_id] && Number.isFinite(Number(n.level)) && Number(n.level) > 0)
+    .map((n) => ({ id: n.asset_id as keyof typeof FRASES_DOS_DEGRAUS, nivel: Math.min(10, Math.max(0, Math.round(Number(n.level)))) }))
+    .filter((n) => FRASES_DOS_DEGRAUS[n.id]);
+  if (!niveis.length) return [];
+  const soma = niveis.reduce((total, n) => total + n.nivel, 0);
+  // O resumo por degrau vem pronto: sem ele a IA trocava quem esta em qual degrau.
+  const porDegrau = [...new Set(niveis.map((n) => n.nivel))].sort((a, b) => a - b)
+    .map((d) => `${d} em ${emLista(niveis.filter((n) => n.nivel === d).map((n) => NOME_DA_AREA[n.id]))}`);
+  const maisBaixas = niveis.filter((n) => n.nivel === Math.min(...niveis.map((x) => x.nivel))).map((n) => NOME_DA_AREA[n.id]);
+  const linhas = [
+    `maestria (cada área numa escada de 0 a 10 que a própria pessoa escolhe; Nível = soma das cinco × 2): Nível ${Math.min(100, soma * 2)} de 100`,
+    `degraus: ${porDegrau.join('; ')}. Mais baixo: ${maisBaixas.length > 1 ? `${maisBaixas.length} áreas empatadas no ${Math.min(...niveis.map((x) => x.nivel))} (${emLista(maisBaixas)})` : maisBaixas[0]}`,
+  ];
+  for (const n of [...niveis].sort((a, b) => a.nivel - b.nivel || NOME_DA_AREA[a.id].localeCompare(NOME_DA_AREA[b.id]))) {
+    const frases = FRASES_DOS_DEGRAUS[n.id];
+    const agora = `${NOME_DA_AREA[n.id]} ${n.nivel}, ${NOMES_DOS_DEGRAUS[n.nivel]}: "${frases[n.nivel]}"`;
+    linhas.push(n.nivel >= 10
+      ? `- ${agora} → topo da escada`
+      : `- ${agora} → próximo, ${n.nivel + 1} ${NOMES_DOS_DEGRAUS[n.nivel + 1]}: "${frases[n.nivel + 1]}"`);
+  }
+  const semNivel = Object.keys(NOME_DA_AREA).filter((id) => FRASES_DOS_DEGRAUS[id as keyof typeof FRASES_DOS_DEGRAUS] && !niveis.some((n) => n.id === id));
+  if (semNivel.length) linhas.push(`- sem avaliação (contam 0 no Nível): ${semNivel.map((id) => NOME_DA_AREA[id]).join(', ')}`);
+  return linhas;
 };
 
 /** O planejado e o feito por area, do relatorio gravado (snake ou camel). */
@@ -190,10 +227,7 @@ export const montarPadroes = (entrada: {
     };
     linhas.push(`arenas: ${entrada.arenas.map((a) => `${a.name} (${NOME_DA_AREA[a.asset_id || ''] || 'sem área'}${soLivre(a.id) ? ', só ações Livres: registro, sem meta' : ''})`).join(' · ')}`);
   }
-  const niveis = (entrada.niveis || []).filter((n) => NOME_DA_AREA[n.asset_id] && Number.isFinite(Number(n.level)));
-  if (niveis.length) {
-    linhas.push(`maestria por área (0 a 10, a pessoa se avalia): ${niveis.map((n) => `${NOME_DA_AREA[n.asset_id]} ${n.level}`).join(' · ')}`);
-  }
+  linhas.push(...linhasDaMaestria(entrada.niveis || []));
   const areasComArena = new Set(entrada.arenas.map((a) => a.asset_id));
   const semArena = Object.keys(NOME_DA_AREA).filter((id) => !areasComArena.has(id)).map((id) => NOME_DA_AREA[id]);
   if (entrada.arenas.length && semArena.length) linhas.push(`áreas sem nenhuma arena: ${semArena.join(', ')}`);

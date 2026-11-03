@@ -1,3 +1,5 @@
+import { FRASES_DOS_DEGRAUS, NOMES_DOS_DEGRAUS } from '../supabase/functions/_shared/maestria-degraus.ts';
+
 export const LIFE_AREA_IDS = ['proposito', 'relacoes', 'trabalho', 'lazer', 'saude'] as const;
 
 export type LifeAreaId = (typeof LIFE_AREA_IDS)[number];
@@ -65,19 +67,7 @@ export const getAreaDisplayLevel = (level: number | null | undefined): number =>
  * nao pergunta, nao tenta, nao olha. E a distincao que faz a escada comecar do
  * chao de verdade, e e o que permite o Indice ter piso em 50 redondo.
  */
-export const MASTERY_LEVEL_NAMES = [
-  'Abandono',
-  'Negligência',
-  'Alerta',
-  'Despertar',
-  'Base',
-  'Ritmo',
-  'Constância',
-  'Domínio',
-  'Solidez',
-  'Referência',
-  'Obra',
-] as const;
+export const MASTERY_LEVEL_NAMES = NOMES_DOS_DEGRAUS;
 
 export const getMasteryLevelName = (level: number | null | undefined): string => {
   // O nome esta na posicao do proprio degrau: o zero e o primeiro da lista.
@@ -202,19 +192,7 @@ export const LIFE_AREAS: readonly LifeAreaDefinition[] = [
     icon: '✨',
     color: '#3f70a4',
     description: 'Sentido, valores, presença, fé e direção interior.',
-    levelDescriptions: [
-      'Parei de me perguntar para que estou aqui. A pergunta em si já parece perda de tempo.',
-      'Sinto pouca direção e quase não paro para refletir sobre o que dá sentido à minha vida.',
-      'Percebo que preciso de um norte, mas ainda vivo principalmente no automático.',
-      'Começo a reconhecer meus valores e a explorar práticas de reflexão ou espiritualidade.',
-      'Tenho momentos de presença e alguma direção, embora ainda sejam irregulares.',
-      'Meu propósito está mais claro e já influencia parte das minhas escolhas.',
-      'Mantenho práticas que fortalecem presença, valores e sentido na maior parte das semanas.',
-      'Minhas ações diárias costumam refletir meu norte interior.',
-      'Vivo com significado e consigo atravessar dúvidas sem perder completamente a direção.',
-      'Propósito e espiritualidade estão integrados às minhas escolhas e à minha contribuição.',
-      'Minha vida expressa com clareza, presença e maturidade aquilo em que acredito.',
-    ],
+    levelDescriptions: FRASES_DOS_DEGRAUS.proposito,
     widget: {
       id: 'widget_proposito',
       label: 'Norte interior',
@@ -228,19 +206,7 @@ export const LIFE_AREAS: readonly LifeAreaDefinition[] = [
     icon: '🤝',
     color: '#3f8069',
     description: 'Família, amizades, amor, comunidade e convivência.',
-    levelDescriptions: [
-      'Estou sozinho e parei de tentar. Não procuro ninguém e não deixo ninguém chegar.',
-      'Sinto-me isolado ou preso em relações que me fazem mal.',
-      'Tenho contatos, mas pouca intimidade, apoio ou segurança emocional.',
-      'Começo a perceber padrões e a buscar relações mais honestas.',
-      'Pratico escuta, presença e limites, ainda com bastante oscilação.',
-      'Cultivo algumas relações verdadeiras e consigo pedir ou oferecer apoio.',
-      'Minhas relações importantes recebem atenção e comunicação frequentes.',
-      'Tenho vínculos saudáveis, limites claros e espaço para vulnerabilidade.',
-      'Minha rede de relações é fonte consistente de crescimento, afeto e pertencimento.',
-      'Fortaleço comunidades e ajudo outras pessoas a se conectarem de forma autêntica.',
-      'Minhas relações são maduras, recíprocas e profundamente integradas à vida que construo.',
-    ],
+    levelDescriptions: FRASES_DOS_DEGRAUS.relacoes,
     widget: {
       id: 'widget_relacoes',
       label: 'Foco relacional',
@@ -254,19 +220,7 @@ export const LIFE_AREAS: readonly LifeAreaDefinition[] = [
     icon: '💼',
     color: '#b28a35',
     description: 'Ofício, estudo, projetos, dinheiro e construção de futuro.',
-    levelDescriptions: [
-      'Desisti de organizar essa parte. Deixo acontecer e lido com o estrago depois.',
-      'Estou sem direção, paralisado ou em crise com trabalho, estudos e dinheiro.',
-      'Faço apenas o urgente e tenho pouca clareza sobre o futuro que estou construindo.',
-      'Começo a organizar prioridades, aprender e cuidar melhor da vida financeira.',
-      'Consigo executar tarefas e pequenos projetos, mas ainda perco ritmo com facilidade.',
-      'Tenho uma direção profissional ou acadêmica e avanço com alguma consistência.',
-      'Trabalho, estudo, projetos e finanças estão organizados o bastante para sustentar progresso.',
-      'Entrego com qualidade, desenvolvo habilidades e tomo decisões de longo prazo.',
-      'Meu trabalho gera valor, meus estudos têm direção e minha base financeira é estável.',
-      'Construo projetos relevantes com domínio, autonomia e impacto crescente.',
-      'Trabalho, conhecimento e recursos formam uma obra coerente, sustentável e significativa.',
-    ],
+    levelDescriptions: FRASES_DOS_DEGRAUS.trabalho,
     widget: {
       id: 'widget_trabalho',
       label: 'Foco atual',
@@ -280,19 +234,7 @@ export const LIFE_AREAS: readonly LifeAreaDefinition[] = [
     icon: '🎨',
     color: '#b9684b',
     description: 'Descanso, prazer, hobbies, criatividade e espaço mental.',
-    levelDescriptions: [
-      'Não tenho lazer nenhum, e já nem sinto falta. Descansar virou só cair no sono.',
-      'Minha rotina deixa pouco espaço para descanso, prazer ou recuperação mental.',
-      'Descanso de modo passivo, mas raramente termino realmente renovado.',
-      'Experimento formas de lazer e bem-estar, ainda sem regularidade.',
-      'Já protejo alguns momentos de descanso, hobby ou silêncio durante a semana.',
-      'Tenho atividades que me dão prazer e ajudam a recuperar minha energia.',
-      'Lazer, descanso e cuidado mental fazem parte da minha rotina com frequência.',
-      'Consigo alternar esforço e recuperação sem culpa e com boa consciência do meu ritmo.',
-      'Meus interesses alimentam criatividade, leveza, presença e conexão com outras pessoas.',
-      'Cultivo um ritmo de vida rico, sustentável e genuinamente prazeroso.',
-      'Bem-estar, descanso e criação estão plenamente integrados à forma como vivo.',
-    ],
+    levelDescriptions: FRASES_DOS_DEGRAUS.lazer,
     widget: {
       id: 'widget_lazer',
       label: 'Forma de recarregar',
@@ -306,19 +248,7 @@ export const LIFE_AREAS: readonly LifeAreaDefinition[] = [
     icon: '💪',
     color: '#a6424f',
     description: 'Movimento, alimentação, sono, energia e cuidado físico.',
-    levelDescriptions: [
-      'Meu corpo limita severamente minha vida e exige intervenção imediata.',
-      'Minha saúde está ruim; sinto dores, letargia e cansaço constante no dia a dia.',
-      'Tenho pouca energia e meu condicionamento físico está muito abaixo do limite aceitável.',
-      'Saí do zero, eliminei os piores hábitos, mas meu corpo ainda é vulnerável.',
-      'Meu corpo dá conta da rotina, mas não tenho margem para suportar grandes esforços físicos.',
-      'Tenho saúde estável, energia regular e capacidade física razoável sem grandes dores.',
-      'Meu corpo funciona muito bem, treino com consistência e tenho disposição de sobra.',
-      'Tenho um corpo resistente, força real e resultados estéticos e físicos claramente visíveis.',
-      'Minha força, condicionamento e mobilidade operam em alto nível de performance.',
-      'Minha capacidade física e resiliência me colocam no topo, muito acima da média.',
-      'Opero no limite do potencial humano: força, energia e saúde inabaláveis.',
-    ],
+    levelDescriptions: FRASES_DOS_DEGRAUS.saude,
     widget: {
       id: 'widget_saude',
       label: 'Momento físico',

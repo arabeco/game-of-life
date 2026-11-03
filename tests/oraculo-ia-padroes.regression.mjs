@@ -51,7 +51,8 @@ const texto = montarPadroes({
 
 assert.match(texto, /agora: terça, 20\/10, 19:40/, 'a hora de agora');
 assert.match(texto, /arenas: Idiomas \(Trabalho e estudos\) · Corpo \(Saúde\)/, 'a area de cada arena');
-assert.match(texto, /maestria por área \(0 a 10, a pessoa se avalia\): Saúde 7 · Relações 3/, 'a maestria');
+assert.match(texto, /Relações 3, Despertar: "[^"]+" → próximo, 4 Base/, 'a maestria');
+assert.match(texto, /Saúde 7, Domínio/);
 assert.match(texto, /áreas sem nenhuma arena: Propósito, Relações, Lazer e bem-estar/, 'as areas sem arena');
 assert.match(texto, /Ciclo de outubro \(7 dias\): Trabalho e estudos 7 → 1 \(14%\) · Saúde 7 → 7 \(100%\) · nota B · execução 57% · maior sequência 7 dias · ação mais repetida Caminhar \(7x\) · hábitos consolidados: Caminhar/, 'ciclo fechado pelo relatorio, com o nome da area padronizado e os destaques');
 assert.match(texto, /ciclo atual: dia 2 de 28 \(faltam 27 dias, contando hoje\)\. É começo de ciclo: o que conta agora é pegar ritmo/, 'comeco de ciclo fala em pegar ritmo');
@@ -119,3 +120,28 @@ console.log('Padroes: meta folgada vira gancho.');
   assert.doesNotMatch(nova, /\bela\b/, 'sem genero nos dados');
 }
 console.log('Padroes: conta nova.');
+
+// A ESCADA DA MAESTRIA NOS DADOS (03/11/2026, com o Afonso): o degrau de cada area
+// com nome e frase, o proximo degrau, e o Nivel de 0 a 100 (soma das cinco x 2).
+{
+  const m = montarPadroes({ hoje: '2026-11-03', ciclos: [], acoes: [], arenas: [], tarefas: [], niveis: [
+    { asset_id: 'proposito', level: 7 }, { asset_id: 'relacoes', level: 7 }, { asset_id: 'trabalho', level: 7 }, { asset_id: 'lazer', level: 9 }, { asset_id: 'saude', level: 7 },
+  ] });
+  assert.match(m, /Nível 74 de 100/);
+  assert.match(m, /Saúde 7, Domínio: "Tenho um corpo resistente[^"]*" → próximo, 8 Solidez: "Minha força, condicionamento e mobilidade/);
+  assert.match(m, /Lazer e bem-estar 9, Referência/);
+  const topo = montarPadroes({ hoje: '2026-11-03', ciclos: [], acoes: [], arenas: [], tarefas: [], niveis: [{ asset_id: 'saude', level: 10 }] });
+  assert.match(topo, /Saúde 10, Obra: "[^"]+" → topo da escada/);
+  assert.match(topo, /sem avaliação \(contam 0 no Nível\): /, 'area sem nivel aparece');
+  assert.match(topo, /Nível 20 de 100/);
+  const linhas = m.split('\n');
+  assert.ok(linhas.findIndex((l) => l.includes('Lazer e bem-estar 9')) > linhas.findIndex((l) => l.includes('Saúde 7')), 'da area mais baixa para a mais alta');
+}
+console.log('Padroes: escada da maestria.');
+{
+  const m = montarPadroes({ hoje: '2026-11-03', ciclos: [], acoes: [], arenas: [], tarefas: [], niveis: [
+    { asset_id: 'proposito', level: 7 }, { asset_id: 'relacoes', level: 7 }, { asset_id: 'trabalho', level: 7 }, { asset_id: 'lazer', level: 9 }, { asset_id: 'saude', level: 7 },
+  ] });
+  assert.match(m, /degraus: 7 em Propósito, Relações, Trabalho e estudos e Saúde; 9 em Lazer e bem-estar\. Mais baixo: 4 áreas empatadas no 7 \(/);
+}
+console.log('Padroes: resumo dos degraus.');

@@ -36,6 +36,10 @@ import { separarMemoria, LIMITE_DA_MEMORIA } from '../supabase/functions/_shared
   const r = separarMemoria('MEMÓRIA: só a memória', 'antiga');
   assert.equal(r.resposta, '', 'sem resposta, a funcao trata como falha');
 }
+{
+  const r = separarMemoria('Quem decide é você mesmo, e conversar com você mesma ajuda.\nMEMÓRIA: =', '');
+  assert.equal(r.resposta, 'Quem decide é você, e conversar com você ajuda.', 'sem genero');
+}
 console.log('Memoria do Oraculo com IA: sai da resposta e fica guardada.');
 {
   const r = separarMemoria('Isso ajuda a sua memória: dormir bem.', 'antiga');

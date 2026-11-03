@@ -19,6 +19,9 @@ export type CotaDoOraculo = { usadas: number; limite: number; mensagens?: number
  */
 export const PERGUNTAS_PRONTAS: ReadonlyArray<{ rotulo: string; pergunta: string }> = [
     { rotulo: 'O que faço agora?', pergunta: 'O que eu faço agora?' },
+    // A escada da maestria (03/11/2026): o Oraculo ve o degrau atual e o proximo.
+    { rotulo: 'Como subo de nível?', pergunta: 'Como eu subo de nível na maestria?' },
+    { rotulo: 'Melhorar minha vida', pergunta: 'Como eu melhoro a minha vida?' },
     { rotulo: 'Onde vou bem?', pergunta: 'Onde eu estou indo bem?' },
     { rotulo: 'Meu ponto fraco', pergunta: 'Qual é o meu ponto mais fraco?' },
     { rotulo: 'Um hábito pequeno', pergunta: 'Que hábito pequeno faria mais diferença pra mim?' },

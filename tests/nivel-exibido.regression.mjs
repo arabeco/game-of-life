@@ -86,9 +86,11 @@ assert.equal(
 console.log('ok - o degrau da área aparece cru');
 
 // ----------------------------------------------------- 2. onze frases, onze nomes
-const nomes = areas.match(/MASTERY_LEVEL_NAMES = \[([^\]]*)\]/);
-assert.ok(nomes, 'MASTERY_LEVEL_NAMES sumiu');
-const quantosNomes = (nomes[1].match(/'/g) || []).length / 2;
+// A escada mora em _shared desde 03/11/2026: o app e o Oraculo com IA leem a mesma.
+assert.match(areas, /MASTERY_LEVEL_NAMES = NOMES_DOS_DEGRAUS;/, 'MASTERY_LEVEL_NAMES sumiu');
+const nomes = ler('supabase/functions/_shared/maestria-degraus.ts').match(/NOMES_DOS_DEGRAUS = \[([^\]]*)\]/);
+assert.ok(nomes, 'NOMES_DOS_DEGRAUS sumiu');
+const quantosNomes = (nomes[1].match(/"/g) || []).length / 2;
 assert.equal(
     quantosNomes,
     TETO + 1,

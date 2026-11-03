@@ -10,10 +10,13 @@ export const LIMITE_DA_MEMORIA = 500;
 
 const LINHA = /(?:^|\n)[ \t]*mem[oó]ria[ \t]*:[ \t]*(.*)$/i;
 
+/** "Você mesmo/mesma" escapava apesar da regra: sem genero, sai so "você" (03/11/2026). */
+const semGenero = (texto: string) => texto.replace(/(você|voce) (mesmo|mesma)(?![a-zà-ú])/gi, '$1');
+
 export const separarMemoria = (texto: string, memoriaAtual: string) => {
   const achou = texto.match(LINHA);
-  if (!achou || achou.index === undefined) return { resposta: texto.trim(), memoria: memoriaAtual };
-  const resposta = texto.slice(0, achou.index).trim();
+  if (!achou || achou.index === undefined) return { resposta: semGenero(texto.trim()), memoria: memoriaAtual };
+  const resposta = semGenero(texto.slice(0, achou.index).trim());
   const nova = achou[1].trim();
   const memoria = !nova || nova === "=" ? memoriaAtual : nova.slice(0, LIMITE_DA_MEMORIA);
   return { resposta, memoria };

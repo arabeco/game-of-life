@@ -71,4 +71,4 @@ export const lembreteDoPerfil = (padroes: string) => {
  * uma acao e, "tem mais dinheiro", "vale marcar o 10", imperativo) so cedem com
  * o aviso colado na pergunta: regra no meio do prompt o Haiku esquece.
  */
-export const CONFERENCIA = 'Antes de enviar, confira: só afirme sobre a pessoa e sobre as ações o que está escrito nos DADOS (nada de supor com quem é uma ação, o que ela é, ou que algo caiu); sem verbo de sugestão no imperativo; não mande mudar o nível, no máximo "talvez seja hora"; onde a pessoa marcou algo no perfil, o que ela marcou vence.';
+export const CONFERENCIA = 'Antes de enviar, confira: só afirme sobre a pessoa e sobre as ações o que está escrito nos DADOS (nada de supor com quem é uma ação, o que ela é, ou que algo caiu); sem verbo de sugestão no imperativo; não mande mudar o nível, no máximo "talvez seja hora"; onde a pessoa marcou algo no perfil, o que ela marcou vence. Se a sua resposta é mais palpite do que leitura, porque os DADOS não bastam para responder bem, diga o que dá para dizer e feche com uma pergunta específica cuja resposta te faria responder melhor.';

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { avisoDoOraculo, contadorDaAba } from '../utils/oraculoIaAvisos.ts';
+import { avisoDoOraculo, textoDasRestantes } from '../utils/oraculoIaAvisos.ts';
 import { readFileSync } from 'node:fs';
 
 /**
@@ -40,13 +40,15 @@ console.log('Avisos do Oraculo com IA: sem internet, erro e esgotado, na voz del
 }
 console.log('Avisos: um texto por tom.');
 
-// O numero ao lado de Conversar (04/11/2026): so quando esta acabando.
-assert.equal(contadorDaAba(45), null, '"(45)" parecia notificacao');
-assert.equal(contadorDaAba(7), null);
-assert.equal(contadorDaAba(6), 6);
-assert.equal(contadorDaAba(3), 3, 'o gratis ve as 3 mensagens');
-assert.equal(contadorDaAba(0), 0);
-assert.equal(contadorDaAba(null), null);
+// As restantes perto da caixa; o numero de Conversar e o de nao lidas (04/11/2026).
+assert.equal(textoDasRestantes(45), '45 mensagens restantes hoje');
+assert.equal(textoDasRestantes(1), '1 mensagem restante hoje');
+{
+  const feed = readFileSync(new URL('../components/OracleFeed.tsx', import.meta.url), 'utf8');
+  assert.match(feed, /<AttentionBadge count=\{unreadChat\}/, 'o numero de cima e o de nao lidas');
+  assert.doesNotMatch(feed, /restam|mensagensRestantes/, 'as restantes nao ficam em cima');
+  assert.match(readFileSync(new URL('../components/PerguntaAoOraculo.tsx', import.meta.url), 'utf8'), /textoDasRestantes\(mensagensRestantes\(cota\)!\)/);
+}
 
 // Os tres pontinhos: da pergunta ate a resposta, e na leitura do dia.
 {

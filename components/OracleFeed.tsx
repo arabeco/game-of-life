@@ -7,8 +7,6 @@ import { Portal } from './Portal';
 import { CodexClaimModal } from './CodexClaimModal';
 import { AttentionBadge } from './AttentionBadge';
 import { APP_NAVIGATE_EVENT, type AppNavigatePayload } from '../utils/arenaAttention';
-import { mensagensRestantes, useCotaDoOraculo } from '../utils/useCotaDoOraculo';
-import { contadorDaAba } from '../utils/oraculoIaAvisos';
 import {
     getNotificationBody,
     getNotificationIcon,
@@ -56,7 +54,8 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab: ini
     const chatNotifications = getOracleChatNotificationsForProfile(notifications, activeOracleMode);
     const requestNotifications = getOracleRequestNotificationsForProfile(notifications, activeOracleMode);
     const unreadRequests = requestNotifications.filter((notification) => !notification.read).length;
-    const unreadChat = oracleMessages.some((message) => !message.read) || chatNotifications.some((notification) => !notification.read);
+    // O numero de Conversar e o de nao lidas (04/11/2026, com o Afonso): zera ao ver.
+    const unreadChat = oracleMessages.filter((message) => !message.read).length + chatNotifications.filter((notification) => !notification.read).length;
 
     // As mensagens do Oraculo nao se marcam mais aqui, todas de uma vez: cada
     // sub-aba do OracleChat marca so as suas, para as outras manterem a bolinha
@@ -71,9 +70,6 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab: ini
     }, [activeTab, chatNotifications, markNotificationRead]);
 
     // Each alert is marked read when opened, not merely when its list appears.
-
-    // As mensagens com o Oraculo que ainda cabem hoje, ao lado de Conversar.
-    const restam = contadorDaAba(mensagensRestantes(useCotaDoOraculo()));
 
 
     return (
@@ -95,8 +91,8 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab: ini
                                 className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg transition-all ${activeTab === 'chat' ? 'bg-[var(--skin-accent-color)] text-black shadow-lg font-bold' : 'text-gray-400 hover:text-white'}`}
                             >
                                 <SparklesIcon className="w-4 h-4" />
-                                <span className="text-[10px] font-bold tracking-wider">CONVERSAR{restam !== null && <span className="ml-1 font-semibold opacity-70" aria-label={`${restam} mensagens restantes hoje`}>({restam})</span>}</span>
-                                {activeTab !== 'chat' && <AttentionBadge count={unreadChat ? 1 : 0} compact label="Há novidade no Oráculo" className="ml-1" />}
+                                <span className="text-[10px] font-bold tracking-wider">CONVERSAR</span>
+                                <AttentionBadge count={unreadChat} label={`${unreadChat} ${unreadChat === 1 ? 'mensagem não lida' : 'mensagens não lidas'}`} className="ml-1" />
                             </button>
 
                             <button

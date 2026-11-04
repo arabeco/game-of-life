@@ -7,12 +7,11 @@
  * quem ja paga nao recebe propaganda.
  */
 /**
- * O NUMERO AO LADO DE CONVERSAR (04/11/2026, com o Afonso). Sao as mensagens que
- * restam hoje, nao mensagens nao lidas, mas "(45)" parecia notificacao que nao
- * sumia nunca. So aparece quando esta acabando: ate 2 conversas (6 mensagens).
+ * AS MENSAGENS QUE RESTAM, PERTO DA CAIXA (04/11/2026, com o Afonso). Em cima de
+ * tudo "(45)" parecia nao lida; aqui, junto de onde se escreve, diz o que e.
  */
-export const contadorDaAba = (restam: number | null): number | null =>
-    restam !== null && restam <= 6 ? restam : null;
+export const textoDasRestantes = (restam: number): string =>
+    `${restam} ${restam === 1 ? 'mensagem restante' : 'mensagens restantes'} hoje`;
 
 export type MotivoDoAviso = 'SEM_INTERNET' | 'FALHOU' | 'LIMITE';
 export type TomDoAviso = 'neutro' | 'coach' | 'reflexivo' | 'calmo';

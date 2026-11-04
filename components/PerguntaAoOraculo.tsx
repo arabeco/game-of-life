@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ditadoDisponivel, ouvirUmaFrase } from '../utils/ditado';
 import { PERGUNTAS_PRONTAS, perguntarAoOraculo } from '../utils/oraculoIa';
-import { avisoDoOraculo } from '../utils/oraculoIaAvisos';
+import { avisoDoOraculo, textoDasRestantes } from '../utils/oraculoIaAvisos';
 import { mensagensRestantes, useCotaDoOraculo } from '../utils/useCotaDoOraculo';
 
 /**
@@ -169,6 +169,9 @@ export const PerguntaAoOraculo: React.FC<{
                         {enviando ? '…' : 'Perguntar'}
                     </button>
                 </form>
+            )}
+            {!acabou && mensagensRestantes(cota) !== null && (
+                <p className="text-center text-[10px] text-white/40">{textoDasRestantes(mensagensRestantes(cota)!)}</p>
             )}
             {aviso && <p className="text-center text-[11px] text-amber-200/80">{aviso}</p>}
         </div>

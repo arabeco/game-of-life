@@ -53,7 +53,7 @@ const TODAS_AS_AREAS = /\b(cada|todas(?: as)?(?: minhas)?|outras)\s+[aá]reas?\b
 
 export const lembreteDaPergunta = (pergunta: string) =>
   TODAS_AS_AREAS.test(pergunta)
-    ? 'A pergunta pede as cinco áreas: fale de todas, uma frase curta por área (o que falta em cada uma), ou de uma coisa que ajude todas. Não responda sobre uma área só.'
+    ? 'A pergunta pede as cinco áreas: fale de todas, uma frase curta por área (o que falta em cada uma, ajustado ao que a pessoa marcou no perfil daquela área), ou de uma coisa que ajude todas. Não responda sobre uma área só.'
     : '';
 
 /**
@@ -65,3 +65,10 @@ export const lembreteDoPerfil = (padroes: string) => {
   const achou = padroes.match(/^perfil marcado pela pessoa: (.+)$/m);
   return achou ? `A pessoa marcou no perfil: ${achou[1].trim()}. Se a pergunta tocar numa dessas áreas, a sugestão tem de caber nisso e dizer isso em palavras. Se o que a pessoa marcou bate de frente com a rotina típica, vale o que ela marcou: proponha outro caminho para o mesmo degrau.` : '';
 };
+
+/**
+ * A CONFERENCIA (04/11/2026, com o Afonso). Os erros que sobraram (inventar o que
+ * uma acao e, "tem mais dinheiro", "vale marcar o 10", imperativo) so cedem com
+ * o aviso colado na pergunta: regra no meio do prompt o Haiku esquece.
+ */
+export const CONFERENCIA = 'Antes de enviar, confira: só afirme sobre a pessoa e sobre as ações o que está escrito nos DADOS (nada de supor com quem é uma ação, o que ela é, ou que algo caiu); sem verbo de sugestão no imperativo; não mande mudar o nível, no máximo "talvez seja hora"; onde a pessoa marcou algo no perfil, o que ela marcou vence.';

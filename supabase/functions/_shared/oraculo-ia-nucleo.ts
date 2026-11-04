@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { montarPadroes, type AcaoCrua, type ArenaCrua, type CicloCru, type NivelCru, type TarefaCrua } from "./oraculo-ia-padroes.ts";
-import { lembreteDaPergunta, lembreteDoPerfil } from "./oraculo-ia-memoria.ts";
+import { CONFERENCIA, lembreteDaPergunta, lembreteDoPerfil } from "./oraculo-ia-memoria.ts";
 
 /**
  * O MIOLO DO ORACULO COM IA (02/11/2026): os dados da pessoa, o jeito de
@@ -173,7 +173,7 @@ export const chamarHaiku = async (chave: string, sistema: string, padroes: strin
         messages: [
           { role: "system", content: sistema },
           ...conversa,
-          { role: "user", content: `MEMÓRIA\n${memoria || "(vazia)"}\n\nDADOS (use se ajudarem)\n${padroes}\n\nPERGUNTA\n${pergunta}\n\n${lembreteDoPerfil(padroes) ? `${lembreteDoPerfil(padroes)}\n` : ""}${lembreteDaPergunta(pergunta) ? `${lembreteDaPergunta(pergunta)}\n(Uma frase curta por área. Depois, a linha MEMÓRIA.)` : "(3 frases de até 20 palavras cada. Depois, a linha MEMÓRIA.)"}` },
+          { role: "user", content: `MEMÓRIA\n${memoria || "(vazia)"}\n\nDADOS (use se ajudarem)\n${padroes}\n\nPERGUNTA\n${pergunta}\n\n${lembreteDoPerfil(padroes) ? `${lembreteDoPerfil(padroes)}\n` : ""}${CONFERENCIA}\n${lembreteDaPergunta(pergunta) ? `${lembreteDaPergunta(pergunta)}\n(Uma frase curta por área. Depois, a linha MEMÓRIA.)` : "(3 frases de até 20 palavras cada. Depois, a linha MEMÓRIA.)"}` },
         ],
         // Cabe a estimativa, a resposta das cinco areas e a linha da memoria.
         max_tokens: 700,

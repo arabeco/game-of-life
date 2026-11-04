@@ -8,6 +8,7 @@ import { CodexClaimModal } from './CodexClaimModal';
 import { AttentionBadge } from './AttentionBadge';
 import { APP_NAVIGATE_EVENT, type AppNavigatePayload } from '../utils/arenaAttention';
 import { mensagensRestantes, useCotaDoOraculo } from '../utils/useCotaDoOraculo';
+import { contadorDaAba } from '../utils/oraculoIaAvisos';
 import {
     getNotificationBody,
     getNotificationIcon,
@@ -72,7 +73,7 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab: ini
     // Each alert is marked read when opened, not merely when its list appears.
 
     // As mensagens com o Oraculo que ainda cabem hoje, ao lado de Conversar.
-    const restam = mensagensRestantes(useCotaDoOraculo());
+    const restam = contadorDaAba(mensagensRestantes(useCotaDoOraculo()));
 
 
     return (

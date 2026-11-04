@@ -24,7 +24,9 @@ export const PerguntaAoOraculo: React.FC<{
     /** O primeiro card: a leitura do dia e do ciclo (cai na leitura por regras sem cota). */
     onLerMeuDia: () => void;
     lendoMeuDia: boolean;
-}> = ({ tom, gratis, onPergunta, onResposta, onAviso, onLerMeuDia, lendoMeuDia }) => {
+    /** Enquanto a resposta nao chega: o chat mostra os tres pontinhos. */
+    onDigitando: (digitando: boolean) => void;
+}> = ({ tom, gratis, onPergunta, onResposta, onAviso, onLerMeuDia, lendoMeuDia, onDigitando }) => {
     const [texto, setTexto] = useState('');
     const [enviando, setEnviando] = useState(false);
     const cota = useCotaDoOraculo();
@@ -66,11 +68,13 @@ export const PerguntaAoOraculo: React.FC<{
             return;
         }
         setEnviando(true);
+        onDigitando(true);
         setAviso(null);
         onPergunta(pergunta);
         if (!pronta) setTexto('');
         const resultado = await perguntarAoOraculo(pergunta, tom);
         setEnviando(false);
+        onDigitando(false);
         if (resultado.ok) {
             onResposta(resultado.resposta);
             return;
@@ -80,7 +84,7 @@ export const PerguntaAoOraculo: React.FC<{
         onAviso(aviso.texto, aviso.premium);
         // Sem internet ou erro: a pergunta volta para a caixa, pronta para mandar de novo.
         if (erro !== 'LIMITE' && !pronta) setTexto(pergunta);
-    }, [acabou, cota?.limite, enviando, gratis, onAviso, onPergunta, onResposta, texto, tom]);
+    }, [acabou, cota?.limite, enviando, gratis, onAviso, onDigitando, onPergunta, onResposta, texto, tom]);
 
     // Os cards de pergunta pronta: uma fileira que desliza para o lado, acima da caixa.
     const cards = (

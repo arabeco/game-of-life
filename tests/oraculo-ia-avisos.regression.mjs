@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { avisoDoOraculo } from '../utils/oraculoIaAvisos.ts';
+import { avisoDoOraculo, contadorDaAba } from '../utils/oraculoIaAvisos.ts';
+import { readFileSync } from 'node:fs';
 
 /**
  * OS AVISOS DO ORACULO COM IA, NA VOZ DELE (03/11/2026, com o Afonso).
@@ -38,3 +39,23 @@ console.log('Avisos do Oraculo com IA: sem internet, erro e esgotado, na voz del
   assert.match(avisoDoOraculo('LIMITE', { gratis: false, limite: 15, tom: 'calmo' }).texto, /15 conversas/);
 }
 console.log('Avisos: um texto por tom.');
+
+// O numero ao lado de Conversar (04/11/2026): so quando esta acabando.
+assert.equal(contadorDaAba(45), null, '"(45)" parecia notificacao');
+assert.equal(contadorDaAba(7), null);
+assert.equal(contadorDaAba(6), 6);
+assert.equal(contadorDaAba(3), 3, 'o gratis ve as 3 mensagens');
+assert.equal(contadorDaAba(0), 0);
+assert.equal(contadorDaAba(null), null);
+
+// Os tres pontinhos: da pergunta ate a resposta, e na leitura do dia.
+{
+  const caixa = readFileSync(new URL('../components/PerguntaAoOraculo.tsx', import.meta.url), 'utf8');
+  const chat = readFileSync(new URL('../components/OracleChat.tsx', import.meta.url), 'utf8');
+  assert.ok(caixa.indexOf('onDigitando(true)') < caixa.indexOf('perguntarAoOraculo(pergunta, tom)'), 'liga antes de perguntar');
+  assert.ok(caixa.indexOf('onDigitando(false)') > caixa.indexOf('perguntarAoOraculo(pergunta, tom)'), 'desliga depois da resposta');
+  assert.match(chat, /onDigitando=\{setIaDigitando\}/);
+  assert.match(chat, /const oraculoDigitando = iaDigitando \|\| lendoMeuDia/);
+  assert.match(chat, /aria-label="Oráculo digitando"/);
+}
+console.log('Avisos: contador e tres pontinhos.');

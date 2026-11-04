@@ -522,6 +522,12 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   // gasta 1 da cota do dia. Sem cota, ou se a IA falhar, entra a leitura por
   // regras de antes, entao o botao nunca fica sem resposta.
   const [lendoMeuDia, setLendoMeuDia] = useState(false);
+  // Os tres pontinhos (04/11/2026): da pergunta ate a resposta chegar.
+  const [iaDigitando, setIaDigitando] = useState(false);
+  const oraculoDigitando = iaDigitando || lendoMeuDia;
+  useEffect(() => {
+    if (oraculoDigitando) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [oraculoDigitando]);
   const handleReadMyDay = useCallback(async () => {
     if (lendoMeuDia) return;
     const brief = lerMeuDiaECiclo({ tasks, actions, assets, activeCycle, resetAt: freeProgressResetAt });
@@ -888,6 +894,17 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
             </div>
           )})}
 
+          {section === 'guidance' && oraculoDigitando && (
+            <div role="status" aria-label="Oráculo digitando" className="flex items-center gap-2">
+              <OracleSpeakerMark tone="neutral" size="sm" pulse={false} />
+              <span className="flex items-center gap-1 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5">
+                {[0, 150, 300].map((atraso) => (
+                  <span key={atraso} className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/60 motion-reduce:animate-none" style={{ animationDelay: `${atraso}ms` }} />
+                ))}
+              </span>
+            </div>
+          )}
+
           <div ref={messagesEndRef} />
         </div>
 
@@ -900,6 +917,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
           onResposta={(resposta) => setMessages(previous => [...previous, { role: 'assistant', content: resposta, timestamp: new Date(), mode: currentMode, feedCategory: 'analise_padroes', feedTrigger: 'manual' }])}
           onLerMeuDia={() => { void handleReadMyDay(); }}
           lendoMeuDia={lendoMeuDia}
+          onDigitando={setIaDigitando}
           onAviso={(texto, comPremium) => setMessages(previous => [...previous, {
             role: 'assistant', content: texto, timestamp: new Date(), mode: currentMode, feedTrigger: 'manual',
             quickActions: comPremium ? [{ id: 'oraculo-ia-premium', label: 'Ver o Premium', kind: 'open_premium' as const }] : undefined,

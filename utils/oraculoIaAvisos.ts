@@ -6,6 +6,14 @@
  * por tom (sem chamar a IA). So o gratis que esgotou ganha o botao do Premium;
  * quem ja paga nao recebe propaganda.
  */
+/**
+ * O NUMERO AO LADO DE CONVERSAR (04/11/2026, com o Afonso). Sao as mensagens que
+ * restam hoje, nao mensagens nao lidas, mas "(45)" parecia notificacao que nao
+ * sumia nunca. So aparece quando esta acabando: ate 2 conversas (6 mensagens).
+ */
+export const contadorDaAba = (restam: number | null): number | null =>
+    restam !== null && restam <= 6 ? restam : null;
+
 export type MotivoDoAviso = 'SEM_INTERNET' | 'FALHOU' | 'LIMITE';
 export type TomDoAviso = 'neutro' | 'coach' | 'reflexivo' | 'calmo';
 

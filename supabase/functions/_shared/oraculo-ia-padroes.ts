@@ -37,6 +37,9 @@ const NOME_DA_AREA: Record<string, string> = {
 export const ROTULO_DO_PERFIL: Record<string, string> = {
   proposito: 'Norte interior', relacoes: 'Foco relacional', trabalho: 'Foco atual', lazer: 'Forma de recarregar', saude: 'Momento físico',
 };
+/** Quantos dias de tarefas entram nos padroes de horario e de dia (04/11/2026): 8 semanas. */
+export const JANELA_DOS_PADROES = 56;
+
 export type CicloCru = { name: string | null; start_date: string; end_date: string; report_data: unknown };
 
 const FAIXAS = [
@@ -284,7 +287,6 @@ export const montarPadroes = (entrada: {
     const dia = diasEntre(aberto.start_date, hoje);
     const total = diasEntre(aberto.start_date, aberto.end_date);
     const ateHoje = medidas.filter((t) => t.date >= aberto.start_date && t.date <= hoje);
-    const depois = medidas.filter((t) => t.date > hoje && t.date <= aberto.end_date).length;
     // O CICLO PELO PROMETIDO (02/11/2026, com o Afonso). O planner mostra so o
     // que ela agendou; o que conta e o que prometeu em cada arena (as
     // repeticoes de cada acao pessoal) e quantas por dia faltam para fechar.
@@ -309,11 +311,11 @@ export const montarPadroes = (entrada: {
     const comeco = dia <= 3;
     const restam = Math.max(1, total - dia + 1);
     linhas.push(`ciclo atual: dia ${dia} de ${total} (faltam ${restam} dias, contando hoje).${comeco ? ' É começo de ciclo: o que conta agora é pegar ritmo, não o placar.' : ''}`);
-    // O horario em que cada acao costuma ficar (60%+ numa faixa, ultimos 84
+    // O horario em que cada acao costuma ficar (60%+ numa faixa, ultimos 56
     // dias): sem isso a IA sugeria mudar "a meditacao para a noite" para quem
     // ja medita depois das 21h, o horario mais fraco.
     const faixaDaAcao = (acaoId: string) => {
-      const daAcao = entrada.tarefas.filter((t) => t.action_id === acaoId && t.date >= somarDias(hoje, -83) && faixaDoHorario(t.start_time));
+      const daAcao = entrada.tarefas.filter((t) => t.action_id === acaoId && t.date >= somarDias(hoje, -(JANELA_DOS_PADROES - 1)) && faixaDoHorario(t.start_time));
       if (daAcao.length < 3) return '';
       const contagem = new Map<string, number>();
       daAcao.forEach((t) => { const f = faixaDoHorario(t.start_time)!.nome; contagem.set(f, (contagem.get(f) || 0) + 1); });
@@ -346,9 +348,9 @@ export const montarPadroes = (entrada: {
     if (naRodada.length) linhas.push(`planejado nas ações (repetições, sem prazo enquanto não há ciclo): ${naRodada.join(' · ')}`);
   }
 
-  // Padroes de horario e de dia da semana: so o que ja passou, ultimos 84 dias.
-  const desde84 = somarDias(hoje, -83);
-  const passadas = medidas.filter((t) => t.date >= desde84 && t.date < hoje);
+  // Padroes de horario e de dia da semana: so o que ja passou, ultimos 56 dias.
+  const desdeDaJanela = somarDias(hoje, -(JANELA_DOS_PADROES - 1));
+  const passadas = medidas.filter((t) => t.date >= desdeDaJanela && t.date < hoje);
 
   const porFaixa = FAIXAS.map((faixa) => {
     const daFaixa = passadas.filter((t) => faixaDoHorario(t.start_time) === faixa);

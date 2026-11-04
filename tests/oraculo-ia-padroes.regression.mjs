@@ -209,3 +209,16 @@ console.log('Padroes: feito de verdade na ficha.');
   for (const nome of ['Relações', 'Trabalho e estudos', 'Lazer e bem-estar']) assert.doesNotMatch(linha(nome), /Foco relacional|Foco atual|Forma de recarregar/);
 }
 console.log('Padroes: perfil do ativo na ficha.');
+
+// A JANELA DAS TAREFAS (04/11/2026): 56 dias bastam para os padroes; o historico
+// dos ciclos vem dos relatorios, nao das tarefas.
+{
+  const { JANELA_DOS_PADROES } = await import('../supabase/functions/_shared/oraculo-ia-padroes.ts');
+  assert.equal(JANELA_DOS_PADROES, 56);
+  const t = [];
+  for (let d = 1; d <= 30; d += 1) t.push({ action_id: 'x', date: `2026-08-${String(d).padStart(2, '0')}`, start_time: 22 * 60, completed: false });
+  for (let d = 1; d <= 20; d += 1) t.push({ action_id: 'x', date: `2026-10-${String(d).padStart(2, '0')}`, start_time: 7 * 60, completed: true });
+  const m = montarPadroes({ hoje: '2026-10-21', ciclos: [], tarefas: t, arenas: [{ id: 'a', name: 'A', asset_id: 'saude' }], acoes: [{ id: 'x', arena_id: 'a', name: 'X', action_type: 'Recorrente', repetitions: 5 }] });
+  assert.doesNotMatch(m, /depois das 21h \d+%/, 'o que passou de 56 dias nao entra nos horarios');
+}
+console.log('Padroes: janela de 56 dias.');

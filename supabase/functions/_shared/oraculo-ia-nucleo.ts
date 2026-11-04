@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
-import { montarPadroes, type AcaoCrua, type ArenaCrua, type CicloCru, type NivelCru, type TarefaCrua } from "./oraculo-ia-padroes.ts";
+import { JANELA_DOS_PADROES, montarPadroes, type AcaoCrua, type ArenaCrua, type CicloCru, type NivelCru, type TarefaCrua } from "./oraculo-ia-padroes.ts";
 import { CONFERENCIA, ULTIMA_DO_DIA, lembreteDaPergunta, lembreteDoPerfil } from "./oraculo-ia-memoria.ts";
 
 /**
@@ -97,12 +97,14 @@ export const lerPadroes = async (supabaseAdmin: SupabaseClient, userId: string) 
     .select("name,start_date,end_date,report_data")
     .eq("user_id", userId)
     .order("start_date", { ascending: false })
-    .limit(5);
+    .limit(4);
   const listaDeCiclos = (ciclos || []) as CicloCru[];
-  // A janela cobre os 3 ultimos ciclos fechados e o aberto, ou 84 dias.
-  const maisAntigo = listaDeCiclos.map((c) => c.start_date).filter(Boolean).sort()[0];
-  const desde = maisAntigo && maisAntigo < somarDias(hoje, -83) ? maisAntigo : somarDias(hoje, -83);
-  const ate = somarDias(hoje, 60);
+  // Os ciclos fechados vem do relatorio, entao as tarefas so precisam dos padroes
+  // (8 semanas), do ciclo aberto e dos proximos 7 dias (04/11/2026: menos egress).
+  const inicioDoAberto = listaDeCiclos.find((c) => c.report_data == null && c.start_date <= hoje && c.end_date >= hoje)?.start_date;
+  const inicioDaJanela = somarDias(hoje, -(JANELA_DOS_PADROES - 1));
+  const desde = inicioDoAberto && inicioDoAberto < inicioDaJanela ? inicioDoAberto : inicioDaJanela;
+  const ate = somarDias(hoje, 7);
 
   const [{ data: acoes }, { data: arenas }, { data: tarefas }, { data: niveis }] = await Promise.all([
     supabaseAdmin.from("actions").select("id,arena_id,name,action_type,repetitions,source_quest_id,origin_codex_id").eq("user_id", userId),

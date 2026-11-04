@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { TONS, chamarHaiku, instrucoes, lerConversa, lerMemoria, lerPadroes, type Tom } from "../_shared/oraculo-ia-nucleo.ts";
 import { separarMemoria } from "../_shared/oraculo-ia-memoria.ts";
+import { guardarPadroes, padroesGuardados } from "../_shared/oraculo-ia-cache.ts";
 
 /**
  * O ORACULO COM IA, V1: O CHAT (02/11/2026, com o Afonso).
@@ -84,7 +85,7 @@ serve(async (req) => {
     const tom: Tom = pago ? pedido : "neutro";
 
     const [padroes, conversa, memoriaAtual] = await Promise.all([
-      lerPadroes(supabaseAdmin, userId),
+      padroesGuardados(userId) ?? lerPadroes(supabaseAdmin, userId).then((lidos) => { guardarPadroes(userId, lidos); return lidos; }),
       lerConversa(supabaseAdmin, userId),
       lerMemoria(supabaseAdmin, userId),
     ]);

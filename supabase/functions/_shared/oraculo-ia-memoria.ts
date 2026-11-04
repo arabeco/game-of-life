@@ -22,9 +22,20 @@ const ESTIMATIVA = /^\s*estimativa\s*:[ \t]*([^\n]*)\n?/i;
 
 export const separarMemoria = (texto: string, memoriaAtual: string) => {
   const comEstimativa = texto.match(ESTIMATIVA);
-  const estimativa = comEstimativa ? comEstimativa[1].trim() : '';
+  let estimativa = comEstimativa ? comEstimativa[1].trim() : '';
   // Sem o trim, uma quebra de linha no fim deixava a linha MEMORIA aparecer.
-  const corpo = (comEstimativa ? texto.slice(comEstimativa[0].length) : texto).trim();
+  let corpo = (comEstimativa ? texto.slice(comEstimativa[0].length) : texto).trim();
+  // A resposta colada na mesma linha: sem isto ela sumia com a estimativa, e o
+  // app mostrava erro (04/11/2026). O corte e no fim do ultimo parenteses.
+  if (comEstimativa && (!corpo || LINHA.test(corpo) && corpo.match(LINHA)?.index === 0)) {
+    const fim = estimativa.lastIndexOf(')');
+    const colada = fim >= 0 ? estimativa.slice(fim + 1).replace(/^[.\s]+/, '') : '';
+    if (colada) {
+      const ponto = estimativa.charAt(fim + 1) === '.' ? '.' : '';
+      corpo = `${colada}\n${corpo}`.trim();
+      estimativa = `${estimativa.slice(0, fim + 1)}${ponto}`;
+    }
+  }
   const achou = corpo.match(LINHA);
   if (!achou || achou.index === undefined) return { resposta: semGenero(corpo.trim()), memoria: memoriaAtual, estimativa };
   const resposta = semGenero(corpo.slice(0, achou.index).trim());
@@ -52,5 +63,5 @@ export const lembreteDaPergunta = (pergunta: string) =>
  */
 export const lembreteDoPerfil = (padroes: string) => {
   const achou = padroes.match(/^perfil marcado pela pessoa: (.+)$/m);
-  return achou ? `A pessoa marcou no perfil: ${achou[1].trim()}. Se a pergunta tocar numa dessas áreas, a sugestão tem de caber nisso e dizer isso em palavras.` : '';
+  return achou ? `A pessoa marcou no perfil: ${achou[1].trim()}. Se a pergunta tocar numa dessas áreas, a sugestão tem de caber nisso e dizer isso em palavras. Se o que a pessoa marcou bate de frente com a rotina típica, vale o que ela marcou: proponha outro caminho para o mesmo degrau.` : '';
 };

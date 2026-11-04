@@ -76,3 +76,13 @@ console.log('Memoria: perfil colado na pergunta.');
   assert.equal(r.memoria, 'antiga');
 }
 console.log('Memoria: quebra de linha no fim.');
+// A resposta colada na linha da estimativa nao pode sumir (04/11/2026): a funcao
+// tratava tudo como estimativa, a resposta ficava vazia e o app mostrava erro.
+{
+  const r = separarMemoria('ESTIMATIVA: Lazer ~9 (perto do 10: falta integrar). Faz sentido sim: você marcou Games. Um passo pequeno.\nMEMÓRIA: =', '');
+  assert.equal(r.resposta, 'Faz sentido sim: você marcou Games. Um passo pequeno.');
+  assert.equal(r.estimativa, 'Lazer ~9 (perto do 10: falta integrar).');
+  const s = separarMemoria('ESTIMATIVA: Saúde ~7,8 · Lazer ~9,2.\nResposta.', '');
+  assert.equal(s.resposta, 'Resposta.', 'em linha propria continua igual');
+}
+console.log('Memoria: resposta colada na estimativa.');

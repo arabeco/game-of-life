@@ -19,6 +19,7 @@ import {
 } from "../_shared/oracle-host-voice.ts";
 import { medirCicloPrometido, montarLeituraDoCiclo, ritmoEsperado } from "../_shared/oracle-cycle-reading.ts";
 import { pickOracleCard } from "../_shared/oracle-card-library.ts";
+import { filaDoDia, type EntregaDeHoje } from "../_shared/oracle-fila-do-dia.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
@@ -1303,6 +1304,9 @@ const createAutomaticOracleMessage = async (
 
 // Alerta global de sequencia aposentado.
 
+/** Quantas contas com card pendente cada rodada atende (a rotina roda a cada 10 minutos). */
+const TETO_DA_RODADA = 50;
+
 const handleAutomaticOracleCron = async (req: Request, origin: string | null) => {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !WEB_PUSH_WEBHOOK_SECRET) {
     return jsonResponse(origin, 500, { error: "Function misconfigured for backend oracle automation." });
@@ -1319,7 +1323,8 @@ const handleAutomaticOracleCron = async (req: Request, origin: string | null) =>
     body = {};
   }
 
-  const limit = clamp(asNumber(body.limit, 25), 1, 50);
+  // Com a fila do dia, o teto e por rodada, de quem ainda precisa de card.
+  const limit = TETO_DA_RODADA;
   const supabaseAdmin = getSupabaseAdmin();
   const requestedUserId = asTrimmedString(body.userId) || asTrimmedString(body.user_id);
 
@@ -1348,11 +1353,12 @@ const handleAutomaticOracleCron = async (req: Request, origin: string | null) =>
 
   const { data: eligiblePreferences, error: preferencesError } = await supabaseAdmin
     .from("oracle_preferences")
-    .select("user_id")
+    .select("user_id, ia_enabled, notifications_enabled, daily_focus_card_enabled, presence_level, enabled_categories, active_mode, custom_mode_instructions, quiet_hours_start, quiet_hours_end")
     .eq("ia_enabled", true)
     .eq("notifications_enabled", true)
     .eq("daily_focus_card_enabled", true)
-    .gt("presence_level", 0);
+    .gt("presence_level", 0)
+    .returns<OraclePreferencesRow[]>();
 
   if (preferencesError) {
     return jsonResponse(origin, 500, {
@@ -1361,18 +1367,42 @@ const handleAutomaticOracleCron = async (req: Request, origin: string | null) =>
     });
   }
 
-  const uniqueUserIds = Array.from(new Set(
-    (eligiblePreferences || []).map((row) => asTrimmedString((row as JsonRecord).user_id)).filter(Boolean),
-  ));
+  // Quem ja recebeu tudo hoje, ou esta em horario de silencio, nao gera nenhuma
+  // consulta: a fila sai destas duas leituras (04/11/2026, com o Afonso).
+  const agora = new Date();
+  const contas = Array.from(new Map((eligiblePreferences || []).map((row) => [row.user_id, row])).values())
+    .map((row) => ({ row, preferences: resolveRuntimeOraclePreferences(row.user_id, row) }))
+    .filter(({ preferences }) => !isQuietHours(agora, preferences))
+    .map(({ row, preferences }) => ({
+      userId: row.user_id,
+      temSabedoria: normalizeOracleManualCategories(preferences.enabledCategories).length > 0,
+    }));
 
-  const shuffledUserIds = uniqueUserIds
-    .map((userId) => ({ userId, sortKey: crypto.getRandomValues(new Uint32Array(1))[0] }))
-    .sort((left, right) => left.sortKey - right.sortKey)
-    .map((entry) => entry.userId)
-    .slice(0, limit);
+  const hojeOperacional = getOperationalDateString(agora);
+  const desde = new Date(agora.getTime() - 26 * 3600 * 1000).toISOString();
+  const entregas: EntregaDeHoje[] = [];
+  for (let offset = 0; contas.length > 0; offset += 1000) {
+    const { data, error } = await supabaseAdmin
+      .from("oracle_messages")
+      .select("user_id, created_at, purpose:context_snapshot->>purpose, gatilho:context_snapshot->>triggerType")
+      .eq("delivery_type", "feed")
+      .gte("created_at", desde)
+      .order("created_at", { ascending: true })
+      .range(offset, offset + 999);
+    if (error) {
+      return jsonResponse(origin, 500, { error: "Failed to load today's Oracle deliveries.", details: error.message });
+    }
+    const linhas = (data || []) as unknown as Array<{ user_id: string; created_at: string; purpose: string | null; gatilho: string | null }>;
+    linhas
+      .filter((linha) => linha.gatilho !== "manual" && getOperationalDateString(new Date(linha.created_at)) === hojeOperacional)
+      .forEach((linha) => entregas.push({ userId: linha.user_id, purpose: linha.purpose || "", createdAt: linha.created_at }));
+    if (linhas.length < 1000) break;
+  }
+
+  const contasDaRodada = filaDoDia(contas, entregas, limit);
 
   const results: Array<{ userId: string; status: string; reason?: string; messageId?: string }> = [];
-  for (const userId of shuffledUserIds) {
+  for (const userId of contasDaRodada) {
     try {
       results.push({ userId, ...(await createAutomaticOracleMessage(supabaseAdmin, userId, origin)) });
     } catch (error) {
@@ -1383,7 +1413,7 @@ const handleAutomaticOracleCron = async (req: Request, origin: string | null) =>
 
   return jsonResponse(origin, 200, {
     ok: true,
-    processed: shuffledUserIds.length,
+    processed: contasDaRodada.length,
     generated: results.filter((result) => result.status === "generated").length,
     skipped: results.filter((result) => result.status === "skipped").length,
     errored: results.filter((result) => result.status === "error").length,

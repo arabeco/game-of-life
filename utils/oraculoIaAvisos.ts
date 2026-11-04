@@ -2,7 +2,7 @@
  * OS AVISOS DO ORACULO COM IA, NA VOZ DELE (03/11/2026, com o Afonso).
  *
  * Quando a pergunta nao vira resposta, quem avisa e o proprio Oraculo, no
- * chat: sem internet, erro, ou as conversas do dia acabaram. Um texto pronto
+ * chat: sem internet, erro, ou as mensagens do dia acabaram. Um texto pronto
  * por tom (sem chamar a IA). So o gratis que esgotou ganha o botao do Premium;
  * quem ja paga nao recebe propaganda.
  */
@@ -31,17 +31,17 @@ const FALHOU: Record<TomDoAviso, string> = {
 };
 
 const LIMITE_GRATIS: Record<TomDoAviso, string> = {
-    neutro: 'Por hoje nossa conversa acabou. Amanhã tem outra. No Premium são 5 conversas por dia, e eu respondo no tom que você escolher.',
-    coach: 'A conversa de hoje acabou. Amanhã tem mais. Se quiser treinar comigo todo dia, o Premium dá 5 conversas por dia.',
-    reflexivo: 'Nossa conversa de hoje chegou ao fim. Amanhã tem outra. No Premium são 5 por dia, para pensar junto sempre que precisar.',
-    calmo: 'Por hoje é isso, e está tudo bem. Amanhã tem outra conversa. No Premium são 5 por dia, quando quiser.',
+    neutro: 'Suas mensagens de hoje acabaram. Amanhã tem mais. No Premium são 15 mensagens por dia, e eu respondo no tom que você escolher.',
+    coach: 'Suas mensagens de hoje acabaram. Amanhã tem mais. Se quiser treinar comigo todo dia, o Premium dá 15 mensagens por dia.',
+    reflexivo: 'Suas mensagens de hoje chegaram ao fim. Amanhã tem mais. No Premium são 15 por dia, para pensar junto sempre que precisar.',
+    calmo: 'Por hoje é isso, e está tudo bem. Amanhã tem mais mensagens. No Premium são 15 por dia, quando quiser.',
 };
 
 const LIMITE_PAGO: Record<TomDoAviso, (limite: number) => string> = {
-    neutro: (n) => `Você usou as ${n} conversas de hoje. Amanhã eu volto com a cabeça fresca.`,
-    coach: (n) => `As ${n} conversas de hoje acabaram. Agora é executar; amanhã a gente revê.`,
-    reflexivo: (n) => `As ${n} conversas de hoje acabaram. Fica com o que surgiu nelas até amanhã.`,
-    calmo: (n) => `As ${n} conversas de hoje acabaram. Descansa a cabeça; amanhã eu estou aqui.`,
+    neutro: (n) => `Você usou as ${n} mensagens de hoje. Amanhã eu volto com a cabeça fresca.`,
+    coach: (n) => `As ${n} mensagens de hoje acabaram. Agora é executar; amanhã a gente revê.`,
+    reflexivo: (n) => `As ${n} mensagens de hoje acabaram. Fica com o que surgiu nelas até amanhã.`,
+    calmo: (n) => `As ${n} mensagens de hoje acabaram. Descansa a cabeça; amanhã eu estou aqui.`,
 };
 
 export const avisoDoOraculo = (
@@ -54,5 +54,5 @@ export const avisoDoOraculo = (
     if (motivo === 'SEM_INTERNET') return { texto: SEM_INTERNET[tom], premium: false };
     if (motivo === 'FALHOU') return { texto: FALHOU[tom], premium: false };
     if (contexto.gratis) return { texto: LIMITE_GRATIS[tom], premium: true };
-    return { texto: LIMITE_PAGO[tom](contexto.limite ?? 5), premium: false };
+    return { texto: LIMITE_PAGO[tom](contexto.limite ?? 15), premium: false };
 };

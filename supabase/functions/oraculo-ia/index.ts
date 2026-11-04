@@ -6,8 +6,8 @@ import { separarMemoria } from "../_shared/oraculo-ia-memoria.ts";
 /**
  * O ORACULO COM IA, V1: O CHAT (02/11/2026, com o Afonso).
  *
- * A pessoa pergunta; esta funcao confere a cota do dia (conversas de ate 3
- * mensagens: gratis 1, Premium 5, Platinum 15), monta os padroes dela a partir
+ * A pessoa pergunta; esta funcao confere a cota do dia (mensagens: gratis 3,
+ * Premium 15, Platinum 45), monta os padroes dela a partir
  * do banco, junta as ultimas
  * trocas da conversa e chama o Claude Haiku 5.5 pelo OpenRouter, fixado no
  * provedor Anthropic. A IA decide o que dizer; o app so entrega os dados.
@@ -69,9 +69,7 @@ serve(async (req) => {
     return resposta({ erro: "COTA_INDISPONIVEL" }, 503, headers);
   }
   if (!reserva.ok) return resposta({ erro: "LIMITE", usadas: reserva.usadas, limite: reserva.limite, mensagens: 0 }, 429, headers);
-  const conversaNova = Boolean(reserva.conversa_nova);
-  // Mensagens que ainda cabem hoje: as da conversa aberta e as das conversas que sobram.
-  const mensagensRestantes = Number(reserva.na_conversa || 0) + Math.max(0, reserva.limite - reserva.usadas) * 3;
+  const mensagensRestantes = Number(reserva.mensagens ?? 0);
 
   try {
     const { data: perfil } = await supabaseAdmin
@@ -90,10 +88,10 @@ serve(async (req) => {
       lerConversa(supabaseAdmin, userId),
       lerMemoria(supabaseAdmin, userId),
     ]);
-    const bruto = await chamarHaiku(OPENROUTER_API_KEY, instrucoes(tom, String(perfil?.nickname || "")), padroes, conversa, pergunta, memoriaAtual);
+    const bruto = await chamarHaiku(OPENROUTER_API_KEY, instrucoes(tom, String(perfil?.nickname || "")), padroes, conversa, pergunta, memoriaAtual, mensagensRestantes === 0);
     const { resposta: texto, memoria } = separarMemoria(bruto || "", memoriaAtual);
     if (!texto) {
-      await supabaseAdmin.rpc("oraculo_ia_devolver", { p_user_id: userId, p_conversa_nova: conversaNova });
+      await supabaseAdmin.rpc("oraculo_ia_devolver", { p_user_id: userId });
       return resposta({ erro: "IA_FALHOU" }, 502, headers);
     }
 
@@ -104,7 +102,7 @@ serve(async (req) => {
     return resposta({ resposta: texto, usadas: reserva.usadas, limite: reserva.limite, mensagens: mensagensRestantes }, 200, headers);
   } catch (erro) {
     console.error("oraculo-ia: erro", String(erro));
-    await supabaseAdmin.rpc("oraculo_ia_devolver", { p_user_id: userId, p_conversa_nova: conversaNova });
+    await supabaseAdmin.rpc("oraculo_ia_devolver", { p_user_id: userId });
     return resposta({ erro: "INTERNO" }, 500, headers);
   }
 });

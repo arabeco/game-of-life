@@ -5,14 +5,14 @@ import { EVENTO_COTA_DO_ORACULO, type CotaDoOraculo } from './oraculoIa';
 /**
  * AS MENSAGENS QUE AINDA CABEM HOJE (03/11/2026, com o Afonso).
  *
- * A cota e de conversas (3 mensagens cada), mas a pessoa ve as mensagens que
- * restam: as da conversa aberta e as das conversas que sobram. Aparece na aba
- * Conversar e decide quando a caixa fecha. Acompanha o evento de cada chamada.
+ * A cota e de mensagens: gratis 3, Premium 15, Platinum 45. O numero aparece
+ * junto da caixa de escrever e decide quando ela fecha. Acompanha o evento de
+ * cada chamada.
  */
 export const mensagensRestantes = (cota: CotaDoOraculo | null): number | null => {
     if (!cota) return null;
     if (typeof cota.mensagens === 'number') return Math.max(0, cota.mensagens);
-    return Math.max(0, cota.limite - cota.usadas) * 3;
+    return Math.max(0, cota.limite - cota.usadas);
 };
 
 export const useCotaDoOraculo = () => {

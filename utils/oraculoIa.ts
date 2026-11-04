@@ -9,7 +9,7 @@ import { supabase } from '../supabaseClient';
  */
 export const EVENTO_COTA_DO_ORACULO = 'oraculo-ia-cota';
 
-/** Conversas usadas e o limite do dia; mensagens = as que ainda cabem hoje. */
+/** Mensagens usadas e o limite do dia; mensagens = as que ainda cabem hoje. */
 export type CotaDoOraculo = { usadas: number; limite: number; mensagens?: number };
 
 /**

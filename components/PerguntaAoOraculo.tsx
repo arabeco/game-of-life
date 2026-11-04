@@ -9,9 +9,9 @@ import { mensagensRestantes, useCotaDoOraculo } from '../utils/useCotaDoOraculo'
  *
  * A caixa do chat com IA, no rodape da aba "Dia e ciclo". A pergunta vai para
  * a funcao oraculo-ia, que olha os padroes da pessoa e responde. A cota e do
- * servidor, em conversas de 3 mensagens: gratis 1 por dia, Premium 5,
- * Platinum 15. As mensagens que restam aparecem na aba Conversar. Acabou, a
- * caixa diz quando volta e, no gratis, mostra o Premium.
+ * servidor, em mensagens: gratis 3 por dia, Premium 15, Platinum 45. As que
+ * restam aparecem junto da caixa. Acabou, a caixa diz quando volta e, no
+ * gratis, mostra o Premium.
  */
 
 export const PerguntaAoOraculo: React.FC<{
@@ -19,7 +19,7 @@ export const PerguntaAoOraculo: React.FC<{
     gratis: boolean;
     onPergunta: (pergunta: string) => void;
     onResposta: (resposta: string) => void;
-    /** Sem internet, erro ou conversas esgotadas: o Oraculo avisa no proprio chat. */
+    /** Sem internet, erro ou mensagens esgotadas: o Oraculo avisa no proprio chat. */
     onAviso: (texto: string, comPremium: boolean) => void;
     /** O primeiro card: a leitura do dia e do ciclo (cai na leitura por regras sem cota). */
     onLerMeuDia: () => void;
@@ -119,8 +119,8 @@ export const PerguntaAoOraculo: React.FC<{
                 <div className="space-y-2 text-center">
                     <p className="text-[11px] leading-relaxed text-white/60">
                         {gratis
-                            ? 'Sua conversa de hoje já foi. Amanhã tem outra. No Premium são 5 por dia, e o Oráculo responde no tom que você escolher.'
-                            : `Você usou as ${cota?.limite} conversas de hoje. Amanhã tem mais.`}
+                            ? 'Suas mensagens de hoje acabaram. Amanhã tem mais. No Premium são 15 por dia, e o Oráculo responde no tom que você escolher.'
+                            : `Você usou as ${cota?.limite} mensagens de hoje. Amanhã tem mais.`}
                     </p>
                     {gratis && (
                         <button

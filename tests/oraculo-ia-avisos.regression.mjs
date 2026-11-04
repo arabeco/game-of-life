@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 /**
  * OS AVISOS DO ORACULO COM IA, NA VOZ DELE (03/11/2026, com o Afonso).
  *
- * Sem internet, erro e conversas esgotadas viram uma fala do Oraculo no chat,
+ * Sem internet, erro e mensagens esgotadas viram uma fala do Oraculo no chat,
  * nao um aviso solto. So o esgotado do gratis leva o botao do Premium.
  */
 const semInternet = avisoDoOraculo('SEM_INTERNET', { gratis: true });
@@ -23,7 +23,7 @@ assert.match(acabouGratis.texto, /Premium/);
 assert.equal(acabouGratis.premium, true, 'gratis esgotado mostra o Premium');
 
 const acabouPago = avisoDoOraculo('LIMITE', { gratis: false, limite: 5 });
-assert.match(acabouPago.texto, /5 conversas/);
+assert.match(acabouPago.texto, /5 mensagens/);
 assert.doesNotMatch(acabouPago.texto, /Premium/, 'quem ja paga nao recebe propaganda');
 assert.equal(acabouPago.premium, false);
 
@@ -36,7 +36,7 @@ console.log('Avisos do Oraculo com IA: sem internet, erro e esgotado, na voz del
   assert.equal(new Set(textos).size, 4, 'os quatro tons tem textos diferentes');
   textos.forEach((t) => assert.match(t, /Premium/));
   assert.equal(avisoDoOraculo('FALHOU', { gratis: false, tom: 'qualquer' }).texto, avisoDoOraculo('FALHOU', { gratis: false, tom: 'neutro' }).texto, 'tom desconhecido vira neutro');
-  assert.match(avisoDoOraculo('LIMITE', { gratis: false, limite: 15, tom: 'calmo' }).texto, /15 conversas/);
+  assert.match(avisoDoOraculo('LIMITE', { gratis: false, limite: 15, tom: 'calmo' }).texto, /15 mensagens/);
 }
 console.log('Avisos: um texto por tom.');
 

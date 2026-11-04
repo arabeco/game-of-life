@@ -44,3 +44,13 @@ export const lembreteDaPergunta = (pergunta: string) =>
   TODAS_AS_AREAS.test(pergunta)
     ? 'A pergunta pede as cinco áreas: fale de todas, uma frase curta por área (o que falta em cada uma), ou de uma coisa que ajude todas. Não responda sobre uma área só.'
     : '';
+
+/**
+ * O PERFIL COLADO NA PERGUNTA (04/11/2026, com o Afonso). Regra longe da pergunta
+ * o Haiku ignora: com "Momento físico: Em recuperação" na ficha, ele ainda
+ * sugeria treino como se nada. O que a pessoa marcou vai junto da pergunta.
+ */
+export const lembreteDoPerfil = (padroes: string) => {
+  const achou = padroes.match(/^perfil marcado pela pessoa: (.+)$/m);
+  return achou ? `A pessoa marcou no perfil: ${achou[1].trim()}. Se a pergunta tocar numa dessas áreas, a sugestão tem de caber nisso e dizer isso em palavras.` : '';
+};

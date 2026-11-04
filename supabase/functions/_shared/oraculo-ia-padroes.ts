@@ -33,6 +33,10 @@ export type NivelCru = { asset_id: string; level: number | null };
 const NOME_DA_AREA: Record<string, string> = {
   proposito: 'Propósito', relacoes: 'Relações', trabalho: 'Trabalho e estudos', lazer: 'Lazer e bem-estar', saude: 'Saúde',
 };
+/** O que cada area pergunta no perfil do ativo: os mesmos rotulos da tela (constants/lifeAreas.ts). */
+export const ROTULO_DO_PERFIL: Record<string, string> = {
+  proposito: 'Norte interior', relacoes: 'Foco relacional', trabalho: 'Foco atual', lazer: 'Forma de recarregar', saude: 'Momento físico',
+};
 export type CicloCru = { name: string | null; start_date: string; end_date: string; report_data: unknown };
 
 const FAIXAS = [
@@ -174,6 +178,8 @@ export const montarPadroes = (entrada: {
   niveis?: NivelCru[];
   /** Quando a pessoa comecou a usar (data da conta). Conta nova muda o tom. */
   usaDesde?: string | null;
+  /** O que a pessoa marcou no perfil de cada ativo (asset_widget_values). */
+  perfilDasAreas?: Record<string, unknown> | null;
 }): string => {
   const { hoje } = entrada;
   const nomeDaArena = new Map(entrada.arenas.map((arena) => [arena.id, arena.name]));
@@ -483,6 +489,12 @@ export const montarPadroes = (entrada: {
           : nivel >= 10
             ? `${nome} ${nivel}, ${NOMES_DOS_DEGRAUS[nivel]}: "${frases[nivel]}" → topo da escada`
             : `${nome} ${nivel}, ${NOMES_DOS_DEGRAUS[nivel]}: "${frases[nivel]}" → próximo, ${nivel + 1} ${NOMES_DOS_DEGRAUS[nivel + 1]}: "${frases[nivel + 1]}"`);
+        // O PERFIL DO ATIVO (04/11/2026, com o Afonso): e como a pessoa se descreve
+        // na area. "Momento físico: Em recuperação" muda toda sugestao de treino.
+        const marcado = entrada.perfilDasAreas?.[id];
+        if (typeof marcado === 'string' && marcado.trim() && !['Não definido', 'Outro'].includes(marcado.trim())) {
+          partes.push(`a pessoa marcou ${ROTULO_DO_PERFIL[id]}: ${marcado.trim()}`);
+        }
         const arenasDaArea = entrada.arenas.filter((a) => a.asset_id === id && !a.completed_at);
         if (!arenasDaArea.length) {
           partes.push('sem arena');
@@ -528,7 +540,12 @@ export const montarPadroes = (entrada: {
         if (gabarito) partes.push(`rotina típica ${gabarito}`);
         return `- ${partes.join(' | ')}`;
       });
-    linhas.splice(posicaoDaFicha, 0, 'ficha por área (da mais baixa para a mais alta):', ...ficha);
+    // A linha do perfil junta tudo: ela tambem vai colada na pergunta (lembreteDoPerfil).
+    const marcados = (Object.keys(ROTULO_DO_PERFIL)).flatMap((id) => {
+      const v = entrada.perfilDasAreas?.[id];
+      return typeof v === 'string' && v.trim() && !['Não definido', 'Outro'].includes(v.trim()) ? [`${ROTULO_DO_PERFIL[id]}: ${v.trim()}`] : [];
+    });
+    linhas.splice(posicaoDaFicha, 0, ...(marcados.length ? [`perfil marcado pela pessoa: ${marcados.join(' · ')}`] : []), 'ficha por área (da mais baixa para a mais alta):', ...ficha);
   }
 
   return linhas.join('\n');

@@ -65,6 +65,12 @@ console.log('Memoria: estimativa escondida.');
 }
 console.log('Memoria: pergunta de todas as areas.');
 {
+  const { lembreteDoPerfil } = await import('../supabase/functions/_shared/oraculo-ia-memoria.ts');
+  assert.match(lembreteDoPerfil('agora: x\nperfil marcado pela pessoa: Momento físico: Em recuperação · Foco relacional: Família\nficha'), /Momento físico: Em recuperação · Foco relacional: Família\. Se a pergunta/);
+  assert.equal(lembreteDoPerfil('agora: x\nficha'), '', 'sem perfil, sem lembrete');
+}
+console.log('Memoria: perfil colado na pergunta.');
+{
   const r = separarMemoria('Resposta.\nMEMÓRIA: =\n', 'antiga');
   assert.equal(r.resposta, 'Resposta.', 'quebra de linha no fim nao deixa a linha MEMORIA aparecer');
   assert.equal(r.memoria, 'antiga');

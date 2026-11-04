@@ -193,3 +193,19 @@ console.log('Padroes: gabarito na ficha.');
   assert.match(saude, /Mobilidade \(8x na rodada; não feita nos últimos 28 dias\)/);
 }
 console.log('Padroes: feito de verdade na ficha.');
+
+// O PERFIL DO ATIVO (04/11/2026, com o Afonso): o que a pessoa marcou em cada area
+// entra na ficha. "Não definido" e "Outro" nao dizem nada e ficam de fora.
+{
+  const { LIFE_AREAS } = await import('../constants/lifeAreas.ts');
+  const { ROTULO_DO_PERFIL } = await import('../supabase/functions/_shared/oraculo-ia-padroes.ts');
+  for (const area of LIFE_AREAS) assert.equal(ROTULO_DO_PERFIL[area.id], area.widget.label, `rotulo igual ao da tela: ${area.id}`);
+  const m = montarPadroes({ hoje: '2026-11-03', ciclos: [], acoes: [], arenas: [], tarefas: [], niveis: [{ asset_id: 'saude', level: 7 }],
+    perfilDasAreas: { saude: 'Em recuperação', proposito: 'Criar', relacoes: 'Não definido', trabalho: 'Outro', lazer: { imageUrl: 'x', caption: 'y' } } });
+  const linha = (nome) => m.split('\n').find((l) => l.startsWith(`- ${nome} `));
+  assert.match(linha('Saúde'), /Momento físico: Em recuperação/);
+  assert.match(m, /^perfil marcado pela pessoa: Norte interior: Criar · Momento físico: Em recuperação$/m);
+  assert.match(linha('Propósito'), /Norte interior: Criar/);
+  for (const nome of ['Relações', 'Trabalho e estudos', 'Lazer e bem-estar']) assert.doesNotMatch(linha(nome), /Foco relacional|Foco atual|Forma de recarregar/);
+}
+console.log('Padroes: perfil do ativo na ficha.');

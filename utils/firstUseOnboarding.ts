@@ -21,6 +21,10 @@ export const FIRST_USE_ONBOARDING_EVENTS = {
   actionCreated: 'glyph:first-use-action-created',
 } as const;
 
+/** O guia esta na tela? Tocar fora da janela nao fecha enquanto ele conduz. */
+export const guiaDoPrimeiroUsoAberto = () =>
+  typeof document !== 'undefined' && Boolean(document.getElementById('first-use-onboarding-title'));
+
 export const shouldAutoStartOnboarding = (profile?: UserProfile | null) => {
   if (!profile || profile.id === 'placeholder_user') return false;
   return !profile.onboardingCompletedAt && !profile.onboardingDismissedAt;

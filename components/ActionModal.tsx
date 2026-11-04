@@ -15,7 +15,7 @@ import { ConfirmationModal } from './ConfirmationModal';
 import { ArenaSelectionModal } from './ArenaSelectionModal';
 import { DatePickerModal } from './DatePickerModal';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
-import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
+import { FIRST_USE_ONBOARDING_EVENTS, guiaDoPrimeiroUsoAberto } from '../utils/firstUseOnboarding';
 import { getActionSurfaceBadgeClassName, resolveActionSurfaceBadge } from '../utils/actionSurfaceBadges';
 import { REST_SCREEN_ACTION_SESSION_CLEAR_EVENT, REST_SCREEN_ACTION_SESSION_EVENT, createRestScreenActionSession } from '../utils/restScreenActionSession';
 import { OPERATIONAL_DAY_START_MINUTE, getActualDateStringForOperationalMinutes, getActualStartTimeForOperationalMinutes } from '../utils/operationalDay.js';
@@ -1091,7 +1091,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
         }
     };
     const handleDateSelect = (date: Date) => { setSelectedDate(date); setIsDatePickerOpen(false); };
-    const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => { if (e.target === e.currentTarget) onClose(); };
+    const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => { if (e.target === e.currentTarget && !guiaDoPrimeiroUsoAberto()) onClose(); };
 
     const handleReminderToggle = async () => {
         if (!startTime || startTime === 'Sem Horário') {

@@ -6,7 +6,7 @@ import { signOutAndClearSupabaseSession } from '../utils/authSession';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Portal } from './Portal';
 import { useGame } from '../contexts/GameContext';
-import { loadOnboardingProgress, saveOnboardingProgress, clearOnboardingProgress, resolveOnboardingResume, shouldIgnoreGuideKeyboard } from '../utils/onboardingProgress';
+import { loadOnboardingProgress, passoAoFecharFormulario, saveOnboardingProgress, clearOnboardingProgress, resolveOnboardingResume, shouldIgnoreGuideKeyboard } from '../utils/onboardingProgress';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 import { OracleSpeakerMark } from './OracleSpeakerMark';
 import { AVAILABLE_SYSTEM_CHALLENGES } from '../constants/systemChallenges';
@@ -103,6 +103,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
   const [selectedMissionIds, setSelectedMissionIds] = useState<string[]>([]);
   const [presenceLevel, setPresenceLevel] = useState<OraclePresenceLevel>(2);
   const [wantsPush, setWantsPush] = useState(false);
+  const [confirmandoSaida, setConfirmandoSaida] = useState(false);
   const autoAdvanceStepRef = useRef<string | null>(null);
   const currentStepRef = useRef<StepDef | undefined>(undefined);
   const isTypingRef = useRef(false);
@@ -135,6 +136,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
       text: 'Em qual parte da vida essa meta vive?',
       targetSelector: '#new-arena-asset-button',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: null },
+      hideNext: true,
       padding: 10,
     },
     {
@@ -187,24 +189,19 @@ export const FirstUseOnboardingOverlay: React.FC<{
       hideNext: true,
       padding: 12,
     },
+    // O PLANNER SE APRENDE FAZENDO (04/11/2026, com o Afonso): em vez de tres textos
+    // longos, a pessoa arrasta a propria acao, e o passo seguinte so diz como concluir.
     {
-      id: 'planner-hold',
-      title: 'Sua ação está no planner',
-      text: 'Você já pode usar o Glyph sem criar um ciclo. As ações disponíveis ficam no alto do planner. Quando tiver feito uma delas de verdade, toque e segure a ação, sem mover o dedo, até a barra completar. Isso registra a conclusão.',
+      id: 'planner-drag',
+      title: 'Coloque no seu dia',
+      text: 'Sua ação está no estoque, aqui no alto. Segure até ela levantar e, sem soltar, arraste até um horário.',
       targetSelector: '#planner-pool',
       navigation: { view: 'planner' },
     },
     {
-      id: 'planner-schedule',
-      title: 'Prefere escolher um horário?',
-      text: 'Na grade de horários, toque e segure a ação até ela levantar. Sem soltar, arraste até o horário desejado e solte. Agendar não conclui a ação: depois de fazê-la, toque e segure o cartão no horário até a barra completar. No modo lista, você também pode concluir segurando a ação.',
-      targetSelector: '#planner-container',
-      navigation: { view: 'planner' },
-    },
-    {
-      id: 'planner-undo',
-      title: 'Concluiu sem querer?',
-      text: 'Toque e segure novamente a ação concluída até a barra esvaziar para desfazer. Só marque o que você realmente fez. Não precisa concluir nada agora para terminar este guia.',
+      id: 'planner-hold',
+      title: 'Agora é só concluir',
+      text: 'Quando quiser concluir, toque e segure a ação até a barra encher. Também dá para segurar direto no estoque: ela entra no horário de agora. Segurar de novo desfaz.',
       targetSelector: '#planner-container',
       navigation: { view: 'planner' },
     },
@@ -308,9 +305,30 @@ export const FirstUseOnboardingOverlay: React.FC<{
   }, [active, step?.id, createdArenaId, createdActionId, purpose, selectedMissionIds, userProfile.id]);
 
   useEffect(() => {
-    if (!active || !createdActionId || step?.id !== 'planner-hold') return;
-    if (tasks.some(task => task.actionId === createdActionId && task.completed)) jumpToAtLeast('planner-schedule');
+    if (!active || !createdActionId || step?.id !== 'planner-drag') return;
+    // Arrastou para um horario, ou ja concluiu pelo estoque: o passo esta feito.
+    if (tasks.some(task => task.actionId === createdActionId && (task.completed || Number(task.startTime) >= 0))) jumpToAtLeast('planner-hold');
   }, [active, createdActionId, step?.id, tasks, jumpToAtLeast]);
+
+  // A janela fechou no meio do guia: volta ao passo que a reabre. A espera cobre o
+  // instante em que a janela ainda nao abriu ou esta fechando depois de salvar.
+  useEffect(() => {
+    if (!active || !step) return;
+    let semJanelaDesde: number | null = null;
+    const conferir = () => {
+      const voltarPara = passoAoFecharFormulario(step.id, {
+        arena: Boolean(getTargetElement('#new-arena-submit-button')),
+        acao: Boolean(getTargetElement('#onboarding-action-save-button')),
+      });
+      if (!voltarPara) { semJanelaDesde = null; return; }
+      semJanelaDesde = semJanelaDesde ?? Date.now();
+      if (Date.now() - semJanelaDesde < 700) return;
+      const indice = stepIndexById[voltarPara];
+      if (typeof indice === 'number') setCurrentStepIndex(indice);
+    };
+    const relogio = window.setInterval(conferir, 200);
+    return () => window.clearInterval(relogio);
+  }, [active, step, stepIndexById]);
 
   useEffect(() => {
     currentStepRef.current = step;
@@ -452,6 +470,8 @@ export const FirstUseOnboardingOverlay: React.FC<{
     };
 
     const handleArenaNameCompleted = () => {
+      // Escrever o nome nao pula a escolha da area.
+      if (currentStepRef.current?.id === 'arena-asset') return;
       jumpToAtLeast('arena-save');
     };
 
@@ -498,7 +518,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
 
     const handleActionCreated = (event: Event) => {
       setCreatedActionId((event as CustomEvent<{ actionId?: string }>).detail?.actionId || null);
-      jumpToAtLeast('planner-hold');
+      jumpToAtLeast('planner-drag');
     };
 
     window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.arenaModalOpened, handleArenaModalOpened as EventListener);
@@ -558,7 +578,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
 
     if (!canAdvanceFromStep(step)) return;
     if (step.id === 'arena-entry' && createdArenaId) {
-      jumpToAtLeast(createdActionId ? 'planner-hold' : 'action-entry');
+      jumpToAtLeast(createdActionId ? 'planner-drag' : 'action-entry');
       return;
     }
 
@@ -576,7 +596,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     const handleKeyDown = (event: KeyboardEvent) => {
       if (shouldIgnoreGuideKeyboard(event)) return;
       if (event.key === 'Escape') {
-        handleDismiss();
+        setConfirmandoSaida(true);
         return;
       }
       if ((event.key === 'Enter' || event.key === ' ') && !step?.hideNext) {
@@ -587,7 +607,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [active, identityReady, handleDismiss, handleNext, step?.hideNext]);
+  }, [active, identityReady, handleNext, step?.hideNext]);
 
   if (!active || !step) return null;
   if (!identityReady) return <OnboardingIdentity nickname={userProfile.nickname || ''} verificarNome={nicknameDisponivel} onExit={() => { void signOutAndClearSupabaseSession('local', 'onboarding-identity-exit'); }} onSave={async (nickname, range) => {
@@ -611,6 +631,8 @@ export const FirstUseOnboardingOverlay: React.FC<{
   const helperText = step.hideNext
     ? step.id === 'purpose'
       ? 'Escolha o que faz sentido para você hoje.'
+      : step.id === 'arena-asset'
+      ? 'Toque no destaque e escolha a área.'
       : step.id === 'arena-save'
       ? 'Crie a arena e eu já sigo para a próxima etapa.'
       : step.id === 'action-save'
@@ -625,7 +647,9 @@ export const FirstUseOnboardingOverlay: React.FC<{
 
         : step.id === 'action-name' && !canAdvance
           ? 'Preencha o título para liberar o próximo passo.'
-          : 'Se você adiantar alguma etapa, eu acompanho.';
+          : step.id === 'planner-drag'
+            ? 'Arrastou, eu sigo sozinho.'
+            : 'Se você adiantar alguma etapa, eu acompanho.';
 
   return (
     <Portal>
@@ -688,7 +712,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
                     </div>
 
                     <button aria-label="Pular apresentação"
-                      onClick={handleDismiss}
+                      onClick={() => setConfirmandoSaida(true)}
                       className="shrink-0 px-1 text-[10px] uppercase tracking-[0.18em] text-gray-500 transition-colors hover:text-white"
                     >
                       X
@@ -798,6 +822,21 @@ export const FirstUseOnboardingOverlay: React.FC<{
                     </div>
                   )}
 
+                  {confirmandoSaida ? (
+                    <div className="mt-3 flex items-center justify-between gap-3">
+                      <div className="text-[10px] leading-snug text-gray-300 md:text-[11px]">
+                        Pular o guia? O tutorial completo fica em Ajustes.
+                      </div>
+                      <div className="flex shrink-0 gap-2">
+                        <button id="first-use-onboarding-sair" type="button" onClick={handleDismiss} className="rounded-full border border-white/15 px-3 py-2 text-[10px] font-bold text-white/70">
+                          Pular
+                        </button>
+                        <button type="button" onClick={() => setConfirmandoSaida(false)} className="rounded-full border border-[#f3d48a]/35 bg-[#f3d48a]/12 px-3 py-2 text-[10px] font-black text-[#f6dfab]">
+                          Continuar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
                   <div className="mt-3 flex items-center justify-between gap-3">
                     <div className="text-[9px] tracking-[0.08em] text-gray-500 md:text-[11px]">
                       {helperText}
@@ -814,6 +853,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
                       </button>
                     )}
                   </div>
+                  )}
                 </div>
               </div>
             </div>

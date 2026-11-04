@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { resolveOnboardingResume, loadOnboardingProgress, saveOnboardingProgress, clearOnboardingProgress } from '../utils/onboardingProgress.ts';
+import { resolveOnboardingResume, loadOnboardingProgress, saveOnboardingProgress, clearOnboardingProgress, passoAoFecharFormulario } from '../utils/onboardingProgress.ts';
 import { completedTutorialFlags } from '../utils/tutorialCompletion.ts';
 import { hasSeenScreenIntroTip, markScreenIntroTipSeen, areScreenIntroTipsEnabled, setScreenIntroTipsEnabled } from '../utils/screenIntroTips.ts';
 
@@ -13,11 +13,25 @@ saveOnboardingProgress('alice', progress);
 assert.deepEqual(loadOnboardingProgress('alice'), progress);
 assert.equal(loadOnboardingProgress('bob'), null, 'progress must be scoped to the account');
 assert.equal(resolveOnboardingResume(progress, [arena], []).stepId, 'action-entry', 'reopen an unfinished form');
-assert.equal(resolveOnboardingResume(progress, [arena], [action]).stepId, 'planner-hold', 'saved action must not be duplicated after interrupted save');
+assert.equal(resolveOnboardingResume(progress, [arena], [action]).stepId, 'planner-drag', 'saved action must not be duplicated after interrupted save');
 assert.equal(resolveOnboardingResume({...progress, stepId:'arena-save'}, [arena], []).stepId, 'action-entry');
 assert.equal(resolveOnboardingResume({...progress, stepId:'planner-undo'}, [], []).stepId, 'arena-entry', 'deleted entities cannot leave a missing target');
 assert.equal(resolveOnboardingResume({...progress, stepId:'missions'}, [arena], [action]).stepId, 'missions');
 assert.equal(resolveOnboardingResume(null, [], []).stepId, 'purpose');
+// Quem parou num passo que nao existe mais retoma no passo que o substituiu (04/11/2026).
+for (const antigo of ['planner-schedule', 'planner-undo']) assert.equal(resolveOnboardingResume({...progress, stepId: antigo}, [arena], [action]).stepId, 'planner-hold');
+
+// A JANELA FECHOU NO MEIO DO GUIA (04/11/2026, com o Afonso): o passo ficava sem
+// alvo, sem Proximo, e a pessoa travava. Volta para o passo que reabre a janela.
+for (const passo of ['arena-asset', 'arena-name', 'arena-save']) {
+  assert.equal(passoAoFecharFormulario(passo, { arena: false, acao: false }), 'arena-entry', passo);
+  assert.equal(passoAoFecharFormulario(passo, { arena: true, acao: false }), null);
+}
+for (const passo of ['action-name', 'action-reps', 'action-save']) {
+  assert.equal(passoAoFecharFormulario(passo, { arena: false, acao: false }), 'action-entry', passo);
+  assert.equal(passoAoFecharFormulario(passo, { arena: false, acao: true }), null);
+}
+for (const passo of ['purpose', 'arena-entry', 'action-entry', 'planner-drag']) assert.equal(passoAoFecharFormulario(passo, { arena: false, acao: false }), null);
 clearOnboardingProgress('alice');
 assert.equal(loadOnboardingProgress('alice'), null);
 
@@ -43,7 +57,7 @@ const read = p => readFileSync(new URL('../'+p, import.meta.url), 'utf8');
 const onboarding = read('components/FirstUseOnboardingOverlay.tsx');
 assert.doesNotMatch(onboarding, /id: 'cycle-(entry|date|save)'/);
 assert.match(onboarding, /toque e segure/);
-assert.match(onboarding, /arraste até o horário/);
+assert.match(onboarding, /arraste até um horário/);
 assert.match(onboarding, /shouldIgnoreGuideKeyboard\(event\)/);
 const app = read('components/AuthenticatedApp.tsx');
 assert.doesNotMatch(app.slice(app.indexOf('suppressScreenIntroTips={')), /onboardingShownInSession \|\|/);

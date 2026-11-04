@@ -43,13 +43,26 @@ export const resolveOnboardingResume = (
   const action = arena && (actions.find(a => a.id === progress?.actionId && a.arenaId === arena.id)
     || actions.find(a => a.arenaId === arena.id));
   let stepId = progress?.stepId || 'purpose';
+  // Passos que viraram um so (04/11/2026): quem parou neles retoma no novo.
+  if (stepId === 'planner-schedule' || stepId === 'planner-undo') stepId = 'planner-hold';
   if (stepId !== 'purpose') {
     if (!arena) stepId = 'arena-entry';
     else if (!action) stepId = 'action-entry';
-    else if (!['planner-hold', 'planner-schedule', 'planner-undo', 'cycle-later', 'missions', 'finish'].includes(stepId)) stepId = 'planner-hold';
+    else if (!['planner-drag', 'planner-hold', 'cycle-later', 'missions', 'oracle-presence', 'finish'].includes(stepId)) stepId = 'planner-drag';
   }
   return { stepId, arenaId: arena?.id || null, actionId: action?.id || null,
     purpose: progress?.purpose || null, missionIds: progress?.missionIds || [] };
+};
+
+/**
+ * A JANELA FECHOU NO MEIO DO GUIA (04/11/2026, com o Afonso). Tocar no X da janela
+ * deixava o passo sem alvo: o Proximo apagava e a pessoa so saia reabrindo o app.
+ * Devolve o passo que reabre a janela, ou null quando esta tudo certo.
+ */
+export const passoAoFecharFormulario = (stepId: string, aberto: { arena: boolean; acao: boolean }): string | null => {
+  if (['arena-asset', 'arena-name', 'arena-save'].includes(stepId) && !aberto.arena) return 'arena-entry';
+  if (['action-name', 'action-reps', 'action-save'].includes(stepId) && !aberto.acao) return 'action-entry';
+  return null;
 };
 
 export const shouldIgnoreGuideKeyboard = (event: KeyboardEvent) =>

@@ -9,7 +9,7 @@ import { GlassCard } from './GlassCard';
 import { ReferencePlate } from './ReferencePlate';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import { Portal } from './Portal';
-import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
+import { FIRST_USE_ONBOARDING_EVENTS, guiaDoPrimeiroUsoAberto } from '../utils/firstUseOnboarding';
 import { suggestEmojiForLabel } from '../utils/suggestEmojiForLabel';
 import { buildArenaLimitMessage } from '../utils/arenaCapacity';
 import { isLifeAreaId, LIFE_AREAS, LIFE_AREA_IDS } from '../constants/lifeAreas';
@@ -59,6 +59,9 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
         initialAssetId && isLifeAreaId(initialAssetId) ? initialAssetId : LIFE_AREA_IDS[0],
     );
     const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
+    // No guia a area nao vem marcada (04/11/2026): com Propósito ja escolhido, quem
+    // tocava rapido criava a arena "Trabalho" dentro de Propósito sem perceber.
+    const [escolheuArea, setEscolheuArea] = useState(Boolean(initialAssetId));
     const modalCardRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -82,9 +85,10 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
     if (!isOpen) return null;
     const arenaCapacity = capacidadeDasArenas;
     const canCreateArena = !arenaCapacity.isAtLimit;
+    const faltaEscolherArea = guiaDoPrimeiroUsoAberto() && !escolheuArea;
 
     const handleSave = async () => {
-        if (!name.trim() || !assetId) {
+        if (!name.trim() || !assetId || faltaEscolherArea) {
             showToast('Escolha o ativo e dê um nome para a arena.', 'warning');
             return;
         }
@@ -121,13 +125,13 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
     };
 
     const selectedAsset = assets.find(a => a.id === assetId);
-    const selectedAssetLabel = selectedAsset?.name;
+    const selectedAssetLabel = faltaEscolherArea ? undefined : selectedAsset?.name;
     const previewArena = { id: 'preview', assetId, name: '', description: '', icon: '', actionIds: [], colorToneSequence: getNextArenaToneSequence(assetId) };
 
     return (
         <>
             <Portal>
-                <div className="ui-modal-backdrop z-[240] animate-fade-in" onClick={onClose}>
+                <div className="ui-modal-backdrop z-[240] animate-fade-in" onClick={() => { if (!guiaDoPrimeiroUsoAberto()) onClose(); }}>
                     <ReferencePlate ref={modalCardRef} role="dialog" aria-modal="true" aria-label="Nova arena" className="reference-arena reference-new-arena" style={{'--arena-accent': getArenaTone(previewArena), '--arena-gradient': getArenaActionGradient(previewArena)} as React.CSSProperties} onClick={e => e.stopPropagation()}>
                         <header className="reference-header">
                             <button className="reference-corner reference-close" aria-label="Fechar nova arena" onClick={onClose}>×</button>
@@ -172,6 +176,7 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
             </Portal>
             {isAssetPickerOpen && <AssetSelectionModal onSelect={(id) => {
                 setAssetId(id);
+                setEscolheuArea(true);
                 setIsAssetPickerOpen(false);
                 window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.arenaAssetSelected, { detail: { assetId: id } }));
             }} onClose={() => setIsAssetPickerOpen(false)} />}

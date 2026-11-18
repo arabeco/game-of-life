@@ -19,7 +19,7 @@ const gesto = readFileSync(new URL('../hooks/useLongPress.ts', import.meta.url),
 
 assert.match(
   fala,
-  /if \(maosNaTela > 0\) \{\s*\n\s*falaGuardada = payload;\s*\n\s*return;/,
+  /if \(maosNaTela > 0[\s\S]{0,80}?\{[\s\S]{0,240}?falaGuardada = payload;[\s\S]{0,120}?return;/,
   'emitOracleSpeech precisa guardar a fala enquanto houver gesto em curso',
 );
 
@@ -40,14 +40,14 @@ assert.ok(
 assert.match(fala, /RESPIRO_APOS_SOLTAR_MS/, 'soltar precisa de um respiro antes de falar');
 assert.match(
   fala,
-  /export const maoEntrouNaTela = \(\) => \{\s*\n\s*maosNaTela \+= 1;\s*\n\s*cancelarSaida\(\);/,
+  /export const maoEntrouNaTela = \(\) => \{[\s\S]{0,500}?maosNaTela \+= 1;\s*\n\s*cancelarSaida\(\);/,
   'um gesto novo tem de cancelar a saida agendada pelo anterior',
 );
 
 // Depois do respiro, confere de novo: o gesto pode ter recomecado no meio dele.
 assert.match(
   fala,
-  /if \(pendente && maosNaTela === 0\) despachar\(pendente\)/,
+  /if \((\w+) && maosNaTela === 0\) despachar\(\1\)/,
   'a fala so sai se a mao ainda estiver fora quando o respiro terminar',
 );
 

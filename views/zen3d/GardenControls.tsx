@@ -1,13 +1,20 @@
+import { cameraBlend } from './cameraMotion';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type PointerEvent as ReactPointerEvent } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { OrthographicCamera, PerspectiveCamera, Plane, Raycaster, Vector2, Vector3 } from 'three';
+import { OrthographicCamera, PerspectiveCamera, Plane, Raycaster, Vector2, Vector3, Quaternion, Euler } from 'three';
 import { GARDEN_X, GARDEN_Z, inGarden, canWalkCircles, collisionCircles, isWater, bridgeHeight, EYE_HEIGHT, findEntrance, type GardenMode, type GardenObject } from './model';
 export interface Motion { x:number;y:number }
 export interface GardenView { angle:number;zoom:number;x:number;z:number }
-export function GardenCamera({gestureOwner,mode,objects,motion,view,onView,gesture,buildNavigation=true,sandEditing=false}: {gestureOwner?:MutableRefObject<'sand'|'camera'|null>;buildNavigation?:boolean;sandEditing?:boolean;mode:GardenMode;objects:GardenObject[];motion:MutableRefObject<Motion>;view:GardenView;onView:(change:(v:GardenView)=>GardenView)=>void;gesture:MutableRefObject<boolean>}) {
+export function GardenCamera({autoOrbit=false,gestureOwner,mode,objects,motion,view,onView,gesture,buildNavigation=true,sandEditing=false}: {autoOrbit?:boolean;gestureOwner?:MutableRefObject<'sand'|'camera'|null>;buildNavigation?:boolean;sandEditing?:boolean;mode:GardenMode;objects:GardenObject[];motion:MutableRefObject<Motion>;view:GardenView;onView:(change:(v:GardenView)=>GardenView)=>void;gesture:MutableRefObject<boolean>}) {
   const {camera,set,gl,invalidate,size}=useThree();
   const cameras=useMemo(()=>({ build:new OrthographicCamera(-6,6,10,-10,.1,100),overview:new OrthographicCamera(-6,6,10,-10,.1,100),explore:new PerspectiveCamera(62,1,.08,100) }),[]);
   const keys=useRef(new Set<string>()),look=useRef({yaw:0,pitch:-.07});
+  const orbit=useRef(0),pauseUntil=useRef(0),dragging=useRef(false);
+  const reduced=useRef(false);
+  const entering=useRef<{position:Vector3;elapsed:number}|null>(null);
+  const target=useMemo(()=>new Vector3(),[]);
+  const entryRotation=useMemo(()=>new Quaternion().setFromEuler(new Euler(-.07,0,0,'YXZ')),[]);
+  useEffect(()=>{const media=matchMedia('(prefers-reduced-motion: reduce)');const change=()=>{reduced.current=media.matches;invalidate();};change();media.addEventListener('change',change);const wake=()=>invalidate();document.addEventListener('visibilitychange',wake);return()=>{media.removeEventListener('change',change);document.removeEventListener('visibilitychange',wake);};},[invalidate]);
   const lastMode=useRef<GardenMode|null>(null);
   const collisions=useMemo(()=>({all:collisionCircles(objects),dry:collisionCircles(objects.filter(o=>!isWater(o.type)))}),[objects]);
   const walk=(x:number,z:number)=>canWalkCircles(bridgeHeight(objects,x,z)!==null?collisions.dry:collisions.all,x,z);
@@ -19,11 +26,12 @@ export function GardenCamera({gestureOwner,mode,objects,motion,view,onView,gestu
       const halfWidth=aspect<1?Math.max(GARDEN_X+.75,GARDEN_Z*aspect+.8)*view.zoom:Math.max(10.3,GARDEN_Z+1)*aspect*view.zoom;
       const halfHeight=halfWidth/aspect;
       c.left=-halfWidth;c.right=halfWidth;c.top=halfHeight;c.bottom=-halfHeight;
-      c.position.set(view.x+Math.sin(view.angle)*23,21,view.z+Math.cos(view.angle)*23);c.lookAt(view.x,-1,view.z);c.updateProjectionMatrix();
+      if(mode==='build'||lastMode.current!==mode){c.position.set(view.x+Math.sin(view.angle+(mode==='overview'?orbit.current:0))*23,21,view.z+Math.cos(view.angle+(mode==='overview'?orbit.current:0))*23);c.lookAt(view.x,-1,view.z);}c.updateProjectionMatrix();
     } else {
       const c=cameras.explore;c.aspect=aspect;c.updateProjectionMatrix();
-      if(lastMode.current!=='explore') {const entry=findEntrance(latestObjects.current);if(entry)c.position.set(...entry);look.current={yaw:0,pitch:-.07};c.rotation.set(-.07,0,0,'YXZ');}
+      if(lastMode.current!=='explore') {const entry=findEntrance(latestObjects.current);look.current={yaw:0,pitch:-.07};if(entry){if(lastMode.current==='overview'&&!reduced.current){c.position.copy(cameras.overview.position);c.quaternion.copy(cameras.overview.quaternion);entering.current={position:new Vector3(...entry),elapsed:0};}else{c.position.set(...entry);c.rotation.set(-.07,0,0,'YXZ');}}}
     }
+    if(mode!=='explore')entering.current=null;
     lastMode.current=mode;
     if(camera!==cameras[mode])set({camera:cameras[mode]});
     invalidate();
@@ -35,27 +43,27 @@ export function GardenCamera({gestureOwner,mode,objects,motion,view,onView,gestu
     const ray=new Raycaster(),uv=new Vector2(),plane=new Plane(new Vector3(0,1,0),-.045);
     const startsOnIsland=(e:PointerEvent)=>{const r=canvas.getBoundingClientRect();uv.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(uv,cameras.build);const p=ray.ray.intersectPlane(plane,new Vector3());return !!p&&inGarden(p.x,p.z);};
     const pair=()=>{const p=[...pointers.values()];return {distance:Math.hypot(p[1].x-p[0].x,p[1].y-p[0].y),angle:Math.atan2(p[1].y-p[0].y,p[1].x-p[0].x)};};
-    const down=(e:PointerEvent)=>{if(e.button!==0||gestureOwner?.current==='sand'||(sandEditing&&startsOnIsland(e)))return;if(gestureOwner)gestureOwner.current='camera';if(!pointers.size)gesture.current=false;pointers.set(e.pointerId,{x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY});canvas.setPointerCapture(e.pointerId);if(pointers.size===2){gesture.current=true;const p=pair();distance=p.distance;angle=p.angle;}};
+    const down=(e:PointerEvent)=>{if(e.button!==0||gestureOwner?.current==='sand'||(sandEditing&&startsOnIsland(e)))return;dragging.current=true;pauseUntil.current=performance.now()+6000;if(gestureOwner)gestureOwner.current='camera';if(!pointers.size)gesture.current=false;pointers.set(e.pointerId,{x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY});canvas.setPointerCapture(e.pointerId);if(pointers.size===2){gesture.current=true;const p=pair();distance=p.distance;angle=p.angle;}};
     const move=(e:PointerEvent)=>{
       const previous=pointers.get(e.pointerId);if(!previous)return;
       if(!gesture.current&&Math.hypot(e.clientX-previous.startX,e.clientY-previous.startY)<7)return;
       gesture.current=true;
       const dx=e.clientX-previous.x,dy=e.clientY-previous.y;pointers.set(e.pointerId,{...previous,x:e.clientX,y:e.clientY});
-      if(pointers.size===1)onView(v=>{if(e.shiftKey)return {...v,angle:v.angle+dx*.008};const scale=(cameras.build.right-cameras.build.left)/size.width;return {...v,x:Math.max(-4,Math.min(4,v.x-dx*scale*Math.cos(v.angle)-dy*scale*Math.sin(v.angle)*1.45)),z:Math.max(-7,Math.min(7,v.z+dx*scale*Math.sin(v.angle)-dy*scale*Math.cos(v.angle)*1.45))};});
+      if(pointers.size===1)onView(v=>{if(mode==='overview')return {...v,angle:v.angle-dx*.006,z:Math.max(-7,Math.min(7,v.z+dy*.018))};if(e.shiftKey)return {...v,angle:v.angle+dx*.008};const scale=(cameras[mode].right-cameras[mode].left)/size.width;return {...v,x:Math.max(-4,Math.min(4,v.x-dx*scale*Math.cos(v.angle)-dy*scale*Math.sin(v.angle)*1.45)),z:Math.max(-7,Math.min(7,v.z+dx*scale*Math.sin(v.angle)-dy*scale*Math.cos(v.angle)*1.45))};});
       if(pointers.size===2){const next=pair();const ratio=distance/Math.max(20,next.distance),delta=Math.atan2(Math.sin(next.angle-angle),Math.cos(next.angle-angle));onView(v=>({...v,zoom:Math.max(.55,Math.min(1.65,v.zoom*ratio)),angle:v.angle+delta}));distance=next.distance;angle=next.angle;}
     };
-    const up=(e:PointerEvent)=>{pointers.delete(e.pointerId);if(!pointers.size&&gestureOwner?.current==='camera')gestureOwner.current=null;};
-    const wheel=(e:WheelEvent)=>{e.preventDefault();if(gestureOwner?.current==='sand')return;onView(v=>({...v,zoom:Math.max(.55,Math.min(1.65,v.zoom*Math.exp(e.deltaY*.001)))}));};
-    const reset=()=>{pointers.clear();if(gestureOwner?.current==='camera')gestureOwner.current=null;};
+    const up=(e:PointerEvent)=>{pointers.delete(e.pointerId);if(!pointers.size){dragging.current=false;pauseUntil.current=performance.now()+6000;invalidate();}if(!pointers.size&&gestureOwner?.current==='camera')gestureOwner.current=null;};
+    const wheel=(e:WheelEvent)=>{e.preventDefault();pauseUntil.current=performance.now()+6000;if(gestureOwner?.current==='sand')return;onView(v=>({...v,zoom:Math.max(.55,Math.min(1.65,v.zoom*Math.exp(e.deltaY*.001)))}));};
+    const reset=()=>{pointers.clear();dragging.current=false;if(gestureOwner?.current==='camera')gestureOwner.current=null;};
     canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',move);canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);canvas.addEventListener('lostpointercapture',up);canvas.addEventListener('wheel',wheel,{passive:false});window.addEventListener('blur',reset);
     return()=>{reset();canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);canvas.removeEventListener('pointerup',up);canvas.removeEventListener('pointercancel',up);canvas.removeEventListener('lostpointercapture',up);canvas.removeEventListener('wheel',wheel);window.removeEventListener('blur',reset);};
-  },[gestureOwner,mode,buildNavigation,sandEditing,gl,cameras,size.width,onView,gesture]);
+  },[gestureOwner,mode,buildNavigation,sandEditing,gl,cameras,size.width,onView,gesture,invalidate]);
   useEffect(()=>{
     if(mode!=='explore')return;
     const canvas=gl.domElement;
     let pointer:{id:number;x:number;y:number}|null=null;
-    const down=(e:PointerEvent)=>{if(pointer||e.button!==0)return;pointer={id:e.pointerId,x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);};
-    const move=(e:PointerEvent)=>{if(!pointer||pointer.id!==e.pointerId)return;look.current.yaw-=(e.clientX-pointer.x)*.003;look.current.pitch=Math.max(-1.05,Math.min(.9,look.current.pitch-(e.clientY-pointer.y)*.003));pointer.x=e.clientX;pointer.y=e.clientY;cameras.explore.rotation.set(look.current.pitch,look.current.yaw,0,'YXZ');invalidate();};
+    const down=(e:PointerEvent)=>{if(pointer||e.button!==0)return;if(entering.current){cameras.explore.position.copy(entering.current.position);entering.current=null;cameras.explore.rotation.set(look.current.pitch,look.current.yaw,0,'YXZ');}pointer={id:e.pointerId,x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);};
+    const move=(e:PointerEvent)=>{if(!pointer||pointer.id!==e.pointerId)return;look.current.yaw-=(e.clientX-pointer.x)*.003;look.current.pitch=Math.max(-1.05,Math.min(.9,look.current.pitch-(e.clientY-pointer.y)*.003));pointer.x=e.clientX;pointer.y=e.clientY;invalidate();};
     const up=(e:PointerEvent)=>{if(pointer?.id===e.pointerId)pointer=null;};
     const reset=()=>{keys.current.clear();motion.current={x:0,y:0};pointer=null;};
     const downKey=(e:KeyboardEvent)=>{if((e.target as HTMLElement)?.closest('button,input,select'))return;if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)){e.preventDefault();keys.current.add(e.code);invalidate();}};
@@ -64,7 +72,24 @@ export function GardenCamera({gestureOwner,mode,objects,motion,view,onView,gestu
     return()=>{reset();canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);canvas.removeEventListener('pointerup',up);canvas.removeEventListener('pointercancel',up);canvas.removeEventListener('lostpointercapture',up);window.removeEventListener('keydown',downKey);window.removeEventListener('keyup',upKey);window.removeEventListener('blur',reset);document.removeEventListener('visibilitychange',reset);};
   },[mode,cameras,gl,invalidate,motion]);
   useFrame((_,delta)=>{
-    if(mode!=='explore'||document.hidden)return;
+    if(document.hidden)return;
+    if(mode==='overview'){
+      const c=cameras.overview;
+      if(autoOrbit&&!reduced.current&&!dragging.current&&performance.now()>pauseUntil.current)orbit.current+=Math.min(delta,.05)*.075;
+      const angle=view.angle+orbit.current,aspect=size.width/Math.max(1,size.height);
+      const projectedWidth=Math.abs(Math.cos(angle))*GARDEN_X+Math.abs(Math.sin(angle))*GARDEN_Z+1;
+      const projectedHeight=(Math.abs(Math.sin(angle))*GARDEN_X+Math.abs(Math.cos(angle))*GARDEN_Z)*.7+2;
+      const halfWidth=Math.max(projectedWidth,projectedHeight*aspect)*view.zoom;
+      const blend=reduced.current?1:cameraBlend(delta);
+      c.right+=(halfWidth-c.right)*blend;c.left=-c.right;c.top=c.right/aspect;c.bottom=-c.top;c.updateProjectionMatrix();
+      target.set(view.x+Math.sin(angle)*23,21,view.z+Math.cos(angle)*23);
+      c.position.lerp(target,reduced.current?1:cameraBlend(delta));c.lookAt(view.x,-1,view.z);
+      if(c.position.distanceToSquared(target)>.00001||Math.abs(c.right-halfWidth)>.001||autoOrbit&&!reduced.current)invalidate();
+      return;
+    }
+    if(mode!=='explore')return;
+    if(entering.current){const transition=entering.current;transition.elapsed+=Math.min(delta,.05);const c=cameras.explore;c.position.lerp(transition.position,cameraBlend(delta*.55));c.quaternion.slerp(entryRotation,cameraBlend(delta*.55));if(transition.elapsed>1.4){c.position.copy(transition.position);c.rotation.set(-.07,0,0,'YXZ');entering.current=null;}invalidate();return;}
+    const cLook=cameras.explore;const previousYaw=cLook.rotation.y,previousPitch=cLook.rotation.x;const alpha=reduced.current?1:cameraBlend(delta);cLook.rotation.set(previousPitch+(look.current.pitch-previousPitch)*alpha,previousYaw+(look.current.yaw-previousYaw)*alpha,0,'YXZ');if(Math.abs(previousYaw-look.current.yaw)+Math.abs(previousPitch-look.current.pitch)>.0001)invalidate();
     const k=keys.current;let x=motion.current.x+Number(k.has('KeyD')||k.has('ArrowRight'))-Number(k.has('KeyA')||k.has('ArrowLeft'));let z=motion.current.y+Number(k.has('KeyS')||k.has('ArrowDown'))-Number(k.has('KeyW')||k.has('ArrowUp'));
     const length=Math.hypot(x,z);if(length<.045)return;if(length>1){x/=length;z/=length;}
     const speed=Math.min(delta,.04)*1.65,yaw=look.current.yaw,c=cameras.explore;

@@ -30,19 +30,9 @@ const FALHOU: Record<TomDoAviso, string> = {
     calmo: 'Não saiu nada agora, tudo bem. Tenta de novo daqui a pouco; essa não gastou nada.',
 };
 
-const LIMITE_GRATIS: Record<TomDoAviso, string> = {
-    neutro: 'Suas mensagens de hoje acabaram. Amanhã tem mais. No Premium são 15 mensagens por dia, e eu respondo no tom que você escolher.',
-    coach: 'Suas mensagens de hoje acabaram. Amanhã tem mais. Se quiser treinar comigo todo dia, o Premium dá 15 mensagens por dia.',
-    reflexivo: 'Suas mensagens de hoje chegaram ao fim. Amanhã tem mais. No Premium são 15 por dia, para pensar junto sempre que precisar.',
-    calmo: 'Por hoje é isso, e está tudo bem. Amanhã tem mais mensagens. No Premium são 15 por dia, quando quiser.',
-};
-
-const LIMITE_PAGO: Record<TomDoAviso, (limite: number) => string> = {
-    neutro: (n) => `Você usou as ${n} mensagens de hoje. Amanhã eu volto com a cabeça fresca.`,
-    coach: (n) => `As ${n} mensagens de hoje acabaram. Agora é executar; amanhã a gente revê.`,
-    reflexivo: (n) => `As ${n} mensagens de hoje acabaram. Fica com o que surgiu nelas até amanhã.`,
-    calmo: (n) => `As ${n} mensagens de hoje acabaram. Descansa a cabeça; amanhã eu estou aqui.`,
-};
+// Esgotado (15/11/2026, com o Afonso): curto e igual em todo tom. O dia do
+// Oraculo vira as 4h (oraculo_ia_dia no banco). No gratis vem o botao Premium.
+export const ACABARAM = 'Suas mensagens acabaram. Voltam às 4h.';
 
 export const avisoDoOraculo = (
     motivo: MotivoDoAviso,
@@ -53,6 +43,5 @@ export const avisoDoOraculo = (
         : 'neutro';
     if (motivo === 'SEM_INTERNET') return { texto: SEM_INTERNET[tom], premium: false };
     if (motivo === 'FALHOU') return { texto: FALHOU[tom], premium: false };
-    if (contexto.gratis) return { texto: LIMITE_GRATIS[tom], premium: true };
-    return { texto: LIMITE_PAGO[tom](contexto.limite ?? 15), premium: false };
+    return { texto: ACABARAM, premium: contexto.gratis };
 };

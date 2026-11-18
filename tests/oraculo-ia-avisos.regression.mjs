@@ -17,26 +17,26 @@ const falhou = avisoDoOraculo('FALHOU', { gratis: false });
 assert.match(falhou.texto, /de novo/i);
 assert.equal(falhou.premium, false);
 
+// Esgotado (15/11/2026, com o Afonso): uma linha so, a hora em que volta, e o botao.
 const acabouGratis = avisoDoOraculo('LIMITE', { gratis: true, limite: 1 });
-assert.match(acabouGratis.texto, /amanhã/i);
-assert.match(acabouGratis.texto, /Premium/);
-assert.equal(acabouGratis.premium, true, 'gratis esgotado mostra o Premium');
+assert.equal(acabouGratis.texto, 'Suas mensagens acabaram. Voltam às 4h.');
+assert.equal(acabouGratis.premium, true, 'gratis esgotado mostra o botao Premium');
 
-const acabouPago = avisoDoOraculo('LIMITE', { gratis: false, limite: 5 });
-assert.match(acabouPago.texto, /5 mensagens/);
-assert.doesNotMatch(acabouPago.texto, /Premium/, 'quem ja paga nao recebe propaganda');
-assert.equal(acabouPago.premium, false);
+const acabouPago = avisoDoOraculo('LIMITE', { gratis: false, limite: 15 });
+assert.equal(acabouPago.texto, 'Suas mensagens acabaram. Voltam às 4h.');
+assert.equal(acabouPago.premium, false, 'quem ja paga nao recebe propaganda');
+for (const tom of ['neutro', 'coach', 'reflexivo', 'calmo']) {
+  assert.equal(avisoDoOraculo('LIMITE', { gratis: true, tom }).texto, acabouGratis.texto, 'esgotado e igual em todo tom');
+}
 
 console.log('Avisos do Oraculo com IA: sem internet, erro e esgotado, na voz dele.');
 
 // Um texto por tom (03/11/2026): o mesmo aviso muda de voz, sem chamar a IA.
 {
   const tons = ['neutro', 'coach', 'reflexivo', 'calmo'];
-  const textos = tons.map((tom) => avisoDoOraculo('LIMITE', { gratis: true, tom }).texto);
+  const textos = tons.map((tom) => avisoDoOraculo('FALHOU', { gratis: false, tom }).texto);
   assert.equal(new Set(textos).size, 4, 'os quatro tons tem textos diferentes');
-  textos.forEach((t) => assert.match(t, /Premium/));
   assert.equal(avisoDoOraculo('FALHOU', { gratis: false, tom: 'qualquer' }).texto, avisoDoOraculo('FALHOU', { gratis: false, tom: 'neutro' }).texto, 'tom desconhecido vira neutro');
-  assert.match(avisoDoOraculo('LIMITE', { gratis: false, limite: 15, tom: 'calmo' }).texto, /15 mensagens/);
 }
 console.log('Avisos: um texto por tom.');
 
@@ -61,3 +61,12 @@ assert.equal(textoDasRestantes(1), '1 mensagem restante hoje');
   assert.match(chat, /aria-label="Oráculo digitando"/);
 }
 console.log('Avisos: contador e tres pontinhos.');
+
+// A caixa esgotada: a mesma linha e o botao Premium, que abre os planos.
+{
+  const caixa = readFileSync(new URL('../components/PerguntaAoOraculo.tsx', import.meta.url), 'utf8');
+  assert.match(caixa, /avisoDoOraculo\('LIMITE'/, 'a caixa usa o mesmo texto do chat');
+  assert.match(caixa, />\s*Premium\s*</, 'o botao se chama Premium');
+  const chat = readFileSync(new URL('../components/OracleChat.tsx', import.meta.url), 'utf8');
+  assert.match(chat, /label: 'Premium', kind: 'open_premium'/);
+}

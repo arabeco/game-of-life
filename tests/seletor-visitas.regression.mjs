@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import { frasesDoJardim, motivoIndisponivel, confirmarInteracao } from '../utils/visitasJardim.ts';
+assert.equal(frasesDoJardim.length,10);
+const state={balance:10,pond:true,today:0,noteToday:false,enabled:true};
+assert.equal(motivoIndisponivel({id:'peixes',custo:2}, {...state,pond:false}),'Sem lago neste jardim');
+assert.equal(motivoIndisponivel({id:'borboleta',custo:3},{...state,balance:2}),'Fragmentos insuficientes');
+assert.equal(motivoIndisponivel({id:'recado',custo:1},{...state,noteToday:true}),'Já feito hoje aqui');
+assert.equal(motivoIndisponivel({id:'borboleta',custo:3},{...state,today:3}),'Limite de hoje atingido');
+assert.equal(confirmarInteracao({key:'a',until:2000},'a',1999),true);
+assert.equal(confirmarInteracao({key:'a',until:2000},'a',2001),false);
+assert.equal(confirmarInteracao({key:'a',until:2000},'b',1000),false);
+console.log('ok - Seletor: motivos e confirmação de dois toques em dois segundos');

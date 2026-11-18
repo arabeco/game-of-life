@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react';
+import type { GardenMark } from '../../utils/visitasJardim';
 import { gardenSize } from './gardenSizes';
 import type { GardenObject } from './model';
 import type { PlacedArtifact } from './ArtifactStands';
@@ -20,6 +21,10 @@ export interface GardenSnapshot {
   drawingBounds?:DrawingBounds;
 }
 export interface GardenAccount {
+  visitEntered?:boolean;
+  visitMarks?:GardenMark[];
+  essential?:boolean;
+  inspectVisitMark?:(mark:GardenMark)=>void;
   expansionLevel?:number;
   expansionsAvailable?:boolean;
   buyExpansion?:(level:number)=>void;

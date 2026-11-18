@@ -1,5 +1,7 @@
 import { useGardenBasket } from '../hooks/useGardenBasket';
 import { GardenBasketPanel } from './GardenBasketPanel';
+import { GardenVisitPanel } from './GardenVisitPanel';
+import type { GardenMark } from '../utils/visitasJardim';
 import { GARDEN_SIZES } from '../views/zen3d/gardenSizes';
 import { GardenLegacyCapture, type GardenPlaqueImage } from './GardenLegacyCapture';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -45,6 +47,9 @@ export function Garden3DModal({ onClose, profile }: { onClose: () => void; profi
   const [loaded, setLoaded] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   const frame = useRef<HTMLIFrameElement>(null);
+  const visitMarks=useRef<GardenMark[]>([]);
+  const {modoEssencial}=useGame();
+  const sendVisitMarks=useCallback((marks:GardenMark[])=>{visitMarks.current=marks;frame.current?.contentWindow?.postMessage({type:'glyph-garden-visit-marks',marks,essential:modoEssencial},location.origin);},[modoEssencial]);
   const onPlaqueReady=useCallback((image:GardenPlaqueImage)=>{
     plaque.current=image;frame.current?.contentWindow?.postMessage({type:'glyph-garden-legacy',plaque:image},location.origin);
   },[]);
@@ -117,6 +122,7 @@ export function Garden3DModal({ onClose, profile }: { onClose: () => void; profi
   },[ownerId,retry]);
   const products=ITEMS_DB.filter(i=>i.category==='garden'&&i.costGold).map(i=>({id:i.id,name:i.name,price:i.costGold!}));
   const send=(data:unknown)=>frame.current?.contentWindow?.postMessage(data,location.origin);
+  useEffect(()=>{if(ready&&loaded&&!ownGarden)send({type:'glyph-garden-visit-mode',entered:entrou});},[ready,loaded,ownGarden,entrou]);
   useEffect(()=>{if(ready&&loaded)send({type:'glyph-garden-expansions',level:expansionLevel,available:ownGarden&&expansionsAvailable});},[ready,loaded,expansionLevel,expansionsAvailable,ownGarden]);
   useEffect(() => { if (ready && loaded && ownGarden) send({ type: 'glyph-garden-basket', enabled: basket.available, score: deliveries[0]?.score ?? null }); }, [ready, loaded, ownGarden, basket.available, deliveries[0]?.score]);
   useEffect(()=>{if(!ready||!ownGarden)return;let cancelled=false;supabase.from('user_inventory').select('item_id').eq('user_id',ownerId).then(({data,error})=>{if(cancelled||error)return;const ids=Array.from(new Set((data??[]).map(i=>resolveItemDef(i.item_id)?.id??i.item_id)));setOwned(ids);send({type:'glyph-garden-inventory',owned:ids});});return()=>{cancelled=true;};},[inventory,ready,ownerId,ownGarden]);
@@ -138,10 +144,12 @@ export function Garden3DModal({ onClose, profile }: { onClose: () => void; profi
         const initial=state?(ownGarden?{...state,artifacts:state.artifacts.filter(a=>artifacts.some(i=>i.id===a.artifact))}:state):null;
         send({type:'glyph-garden-init',owned,artifacts,products,state:initial,readOnly:!ownGarden,basketEnabled:ownGarden&&basket.available,basketScore:deliveries[0]?.score??null,legacyPlaque:plaque.current});
         send({type:'glyph-garden-expansions',level:expansionLevel,available:ownGarden&&expansionsAvailable});
+        sendVisitMarks(visitMarks.current);
+        send({type:'glyph-garden-visit-mode',entered:entrou});
       }
       if(d?.type==='glyph-garden-open-basket'&&ownGarden&&basket.available)setBasketOpen(true);
       if(d?.type==='glyph-garden-buy-expansion'&&ownGarden&&expansionsAvailable&&Number.isInteger(d.level)&&d.level===expansionLevel+1&&d.level<=7){setExpansionError('');setExpansionPurchase(d.level);}
-      if(d?.type==='glyph-garden-buy'&&products.some(p=>p.id===d.id)&&!owned.includes(d.id))setPurchase(d.id);
+      if(d?.type==='glyph-garden-buy'&&ownGarden&&products.some(p=>p.id===d.id)&&!owned.includes(d.id))setPurchase(d.id);
       if(d?.type==='glyph-garden-save'&&ownGarden){
         if(saving.current){send({type:'glyph-garden-saved',id:d.id,error:'Um salvamento já está em andamento.'});return;}
         if(!validateGardenSnapshot(d.state)){send({type:'glyph-garden-saved',id:d.id,error:'Composição inválida. Nada foi salvo.'});return;}
@@ -168,7 +176,7 @@ export function Garden3DModal({ onClose, profile }: { onClose: () => void; profi
     };
     window.addEventListener('message', requestExit);
     return () => window.removeEventListener('message', requestExit);
-  }, [ready,state,owned,ownGarden,dirty,onClose,exitSaving,basket.available,deliveries[0]?.score,expansionLevel,expansionsAvailable]);
+  }, [ready,state,owned,ownGarden,dirty,onClose,exitSaving,basket.available,deliveries[0]?.score,expansionLevel,expansionsAvailable,entrou]);
 
   return <Portal><dialog data-garden ref={mountDialog} aria-label={ownGarden?'Jardim 3D':`Jardim de ${nomeDono}`} onCancel={e => { e.preventDefault(); if(exitSaving||buying)return; ownGarden&&dirty ? setClosing(true) : onClose(); }}
     style={telaCheia
@@ -183,6 +191,7 @@ export function Garden3DModal({ onClose, profile }: { onClose: () => void; profi
         {!loaded && <p role="status" className="p-4 text-sm">Preparando o jardim…</p>}
         <iframe ref={frame} title={ownGarden?'Meu Jardim Zen 3D':'Jardim Zen 3D visitado'} src={src} onLoad={() => setLoaded(true)} style={{flex:1,width:'100%',minHeight:0,border:0}}/>
       </>}
+      {ready&&!error&&<GardenVisitPanel key={ownerId} ownerId={ownerId} ownGarden={ownGarden} entered={telaCheia} frameReady={loaded} onMarks={sendVisitMarks} gardenFrame={frame}/>}
     </div>
     {basketOpen&&ownGarden&&<GardenBasketPanel deliveries={deliveries} claim={claimGardenBasket} onClose={()=>setBasketOpen(false)} onClaimed={id=>setCollected(ids=>[...ids,id])}/>}
     {expansionPurchase!==null&&<div className="absolute inset-0 flex items-center justify-center bg-black/80 p-5" role="alertdialog" aria-modal="true" aria-label="Comprar expansão do jardim"><div className="max-w-sm rounded-2xl border border-white/20 bg-gray-950 p-5">

@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import { montarReino } from '../utils/descobertaReino.ts';
+const now = Date.parse('2026-11-17T15:00:00Z');
+const post = (id, userId, type = 'QUEST_COMPLETED', content = {}, timestamp = '2026-11-17T12:00:00Z') => ({ id, userId, type, content, timestamp });
+const input = [post('a','u'), post('b','u'), post('c','u','PLAYER_RANK_UP'), post('d','v','CYCLE_COMPLETED',{grade:'SS'}), post('e','w','LEVEL_UP',{level:80}), post('f','x','PLAYER_RANK_UP',{},'2026-11-01T12:00:00Z')];
+const result = montarReino(input, {}, now);
+assert.deepEqual(result.destaques.map(p=>p.id), ['c','d','e']);
+const all = [...result.destaques,...result.posts];
+assert.equal(all.filter(p=>p.userId==='u').length,2);
+assert.equal(new Set(all.map(p=>p.id)).size,all.length);
+assert.equal(montarReino([...input,input[0]],{},now).posts.filter(p=>p.id==='a').length,1);
+assert.equal(montarReino([post('a','a'),post('b','b')],{b:5},now).posts[0].id,'b');
+assert.equal(montarReino([post('low','a','LEVEL_UP',{level:79})],{},now).destaques.length,0);
+assert.equal(input.length,6);
+console.log('ok - Reino: destaques, limite diário, afinidade e unicidade');

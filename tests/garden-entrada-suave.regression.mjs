@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {cameraBlend,canDrawGarden,visitCameraMode} from '../views/zen3d/cameraMotion.ts';
+assert.equal(canDrawGarden('overview',true),false);
+assert.equal(canDrawGarden('explore',true),false);
+assert.equal(canDrawGarden('build',true),true);
+assert.equal(visitCameraMode(false),'overview');
+assert.equal(visitCameraMode(true),'explore');
+assert(cameraBlend(1/60)>0&&cameraBlend(1/60)<1);
+assert(Math.abs((1-cameraBlend(1/60))**60-(1-cameraBlend(1/30))**30)<1e-10);
+const read=p=>readFileSync(p,'utf8');
+assert.match(read('components/Garden3DModal.tsx'),/glyph-garden-visit-mode/);
+assert.match(read('zen3d-test/AccountGarden.tsx'),/glyph-garden-visit-mode/);
+assert.match(read('views/zen3d/SandExperiment.tsx'),/visitCameraMode\(account\?\.visitEntered/);
+console.log('ok - Prévia não captura desenho; Entrar muda o passeio; amortecimento independe do FPS');

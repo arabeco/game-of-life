@@ -9,7 +9,7 @@ import { mensagensRestantes, useCotaDoOraculo } from '../utils/useCotaDoOraculo'
  *
  * A caixa do chat com IA, no rodape da aba "Dia e ciclo". A pergunta vai para
  * a funcao oraculo-ia, que olha os padroes da pessoa e responde. A cota e do
- * servidor, em mensagens: gratis 3 por dia, Premium 15, Platinum 45. As que
+ * servidor, em mensagens: gratis 1 por dia, Premium 5, Platinum 10. As que
  * restam aparecem junto da caixa. Acabou, a caixa diz quando volta e, no
  * gratis, mostra o Premium.
  */
@@ -118,9 +118,7 @@ export const PerguntaAoOraculo: React.FC<{
             {acabou ? (
                 <div className="space-y-2 text-center">
                     <p className="text-[11px] leading-relaxed text-white/60">
-                        {gratis
-                            ? 'Suas mensagens de hoje acabaram. Amanhã tem mais. No Premium são 15 por dia, e o Oráculo responde no tom que você escolher.'
-                            : `Você usou as ${cota?.limite} mensagens de hoje. Amanhã tem mais.`}
+                        {avisoDoOraculo('LIMITE', { gratis, tom }).texto}
                     </p>
                     {gratis && (
                         <button
@@ -128,7 +126,7 @@ export const PerguntaAoOraculo: React.FC<{
                             onClick={() => window.dispatchEvent(new CustomEvent('navigate-to-store', { detail: { tab: 'membership', section: 'premium' } }))}
                             className="min-h-10 w-full rounded-xl border border-[var(--skin-accent-color)]/40 bg-[var(--skin-accent-color)]/10 px-3 text-xs font-bold text-[var(--skin-accent-color)]"
                         >
-                            Ver o Premium
+                            Premium
                         </button>
                     )}
                 </div>
@@ -145,7 +143,7 @@ export const PerguntaAoOraculo: React.FC<{
                         placeholder="Pergunte ao Oráculo…"
                         aria-label="Pergunta ao Oráculo"
                         disabled={enviando}
-                        className="max-h-28 min-h-11 flex-1 resize-none rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/35 focus:border-[var(--skin-accent-color)]/60 focus:outline-none"
+                        className="max-h-28 min-h-11 flex-1 resize-none rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:overflow-hidden placeholder:text-ellipsis placeholder:whitespace-nowrap placeholder:text-[13px] placeholder:text-white/35 focus:border-[var(--skin-accent-color)]/60 focus:outline-none"
                     />
                     {temDitado && (
                         <button

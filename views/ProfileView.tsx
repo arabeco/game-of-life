@@ -31,6 +31,7 @@ import { ConnectionsModal } from '../components/ConnectionsModal';
 import { getRarityVisual, normalizeVisualRarity } from '../constants/rarityVisuals';
 import { NOBILITY_RANKS } from '../constants/nobility';
 import { REWARD_PLATE_VIEWPORT_STYLE } from '../constants/rewardPlateStyles';
+import { abaInicialDoPerfil, abasDoPerfil, soberanoVisivel, type AbaDoPerfil } from '../utils/abasDoPerfil';
 const AssetPentagon = React.lazy(() => import('../components/AssetPentagon').then((m) => ({ default: m.AssetPentagon })));
 const PROFILE_METAL_EDGE = 'color-mix(in srgb, var(--skin-accent-color) 24%, #9b8050)';
 const UI_SKIN_ORB_ART: Record<string, string> = {
@@ -186,9 +187,7 @@ const UnifiedSovereignDisplay: React.FC<{
      * chegar nao ve nada ate escolher. E `'none'` continua sendo escolha
      * explicita, que vale mesmo vestido.
      */
-    const escolha = sovereignConfig.primaryDisplay;
-    if (escolha === 'none') return null;
-    if (escolha === undefined && (sovereignConfig.outfit || 'none') === 'none') return null;
+    if (!soberanoVisivel(sovereignConfig)) return null;
 
     const isInteractive = !!onClick;
     const artifact = SOVEREIGN_ASSETS.artifacts?.find(a => a.id === sovereignConfig.artifact);
@@ -224,6 +223,47 @@ const UnifiedSovereignDisplay: React.FC<{
                 <div className="relative aspect-square w-full overflow-hidden rounded-lg border-2 bg-[#1a1a1a] shadow-[0_4px_20px_rgba(0,0,0,0.8)]" style={{ borderColor: PROFILE_METAL_EDGE }}>
                     {artifactPlate?.url && <img src={artifactPlate.url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-90" crossOrigin="anonymous" />}
                     <img src={artifact.url} alt={artifact.name || 'Artefato de destaque'} className="relative h-full w-full object-contain p-2 drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]" crossOrigin="anonymous" />
+                </div>
+            )}
+        </button>
+    );
+};
+
+/**
+ * O SOBERANO NA ABA DO PERFIL (15/11/2026, com o Afonso).
+ *
+ * Saiu do canto do cartao, onde ficava do tamanho de um selo e por cima do
+ * nome. Aqui ele tem altura, e os artefatos da vitrine aparecem ao lado, o de
+ * destaque primeiro. Tocar abre a vitrine inteira, como antes.
+ */
+const SoberanoNaAba: React.FC<{ config: NonNullable<UserProfile['sovereign']>; onAbrir: () => void }> = ({ config, onAbrir }) => {
+    const artefatos = [config.artifact, ...(config.extraArtifacts || [])]
+        .slice(0, 3)
+        .map((id) => SOVEREIGN_ASSETS.artifacts?.find((a) => a.id === id && a.id !== 'none'))
+        .filter((a): a is NonNullable<typeof a> => Boolean(a?.url));
+    const figura = { ...config, artifact: 'none', artifactPlate: 'none', glyphPlate: 'none' };
+
+    return (
+        <button
+            type="button"
+            onClick={onAbrir}
+            aria-label="Ver a vitrine do Soberano"
+            className="flex w-full items-center justify-center gap-3 rounded-2xl p-1.5"
+        >
+            <div className="relative aspect-[14/19] h-[clamp(112px,20svh,176px)] shrink-0 overflow-hidden rounded-xl border-2 bg-[#1a1a1a]" style={{ borderColor: PROFILE_METAL_EDGE }}>
+                <div className="absolute inset-0 bg-gradient-to-b from-gray-900 to-black opacity-80" />
+                <Sovereign sovereignConfig={figura} className="absolute left-1/2 top-1/2 h-[180%] w-[180%] -translate-x-1/2 -translate-y-1/2 object-cover" />
+            </div>
+            {artefatos.length > 0 && (
+                <div className="flex flex-col gap-1.5">
+                    {artefatos.map((artefato, indice) => (
+                        <div
+                            key={artefato.id}
+                            className={`relative grid h-[clamp(34px,6.2svh,54px)] w-[clamp(34px,6.2svh,54px)] place-items-center rounded-lg bg-white/[.05] shadow-[0_6px_14px_rgba(0,0,0,.45)] ${indice === 0 ? 'ring-1 ring-[var(--skin-accent-color)]/60' : ''}`}
+                        >
+                            <img src={artefato.url} alt={artefato.name || 'Artefato'} className="h-full w-full object-contain p-1" crossOrigin="anonymous" />
+                        </div>
+                    ))}
                 </div>
             )}
         </button>
@@ -483,7 +523,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
         void fetchLikesReceived().then((total) => { if (vivo) setCurtidasRecebidas(total); });
         return () => { vivo = false; };
     }, [fetchLikesReceived]);
-    type ProfileTab = 'widgets' | 'summary' | 'mastery';
+    type ProfileTab = AbaDoPerfil;
 
     const isOwnProfile = !profile || profile.id === userProfile.id;
     const baseProfile = profile || userProfile;
@@ -709,11 +749,9 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
         .filter((slot): slot is Slot => !!slot && !isWidgetValueEmpty(slot.value));
     const hasVisibleAssetWidgets = canViewAssetsPreview && visibleProfileSlots.length > 0;
     const hasMeaningfulMastery = canViewMastery && masteryLevels.some((level) => level > 1 && level < 10);
-    const defaultProfileTab: ProfileTab = hasVisibleAssetWidgets
-        ? 'widgets'
-        : hasMeaningfulMastery
-            ? 'mastery'
-            : 'summary';
+    const temSoberanoNaAba = !modoEssencial && soberanoVisivel(displayProfile.sovereign);
+    const abasVisiveis = abasDoPerfil(temSoberanoNaAba);
+    const defaultProfileTab: ProfileTab = abaInicialDoPerfil(temSoberanoNaAba);
 
     useEffect(() => {
         setActiveWidgetTab(defaultProfileTab);
@@ -780,7 +818,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                         </div>
 
                         {/* Layer 2: Scrollable Content */}
-                        <div className="absolute inset-0 z-10 space-y-2 overflow-hidden p-4 pb-24">
+                        <div className="absolute inset-0 z-10 flex flex-col overflow-hidden p-4 pb-20">
                             <div className="absolute top-4 left-4 right-4 z-30 flex justify-between items-start">
                                 <div className="flex flex-col space-y-2">
                                     {isOwnProfile && (
@@ -840,8 +878,8 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                 </div>
                             </div>
 
-                            <div className="-mt-2 flex flex-col items-center text-center">
-                                <div className="relative h-36 w-36">
+                            <div className="-mt-2 flex shrink-0 flex-col items-center text-center">
+                                <div className="relative h-[clamp(104px,17svh,144px)] w-[clamp(104px,17svh,144px)]">
                                     <button
                                         onClick={() => isEditing && !modoEssencial && setBorderModalOpen(true)}
                                         disabled={!isEditing || modoEssencial}
@@ -926,14 +964,14 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                                 showToast('Não foi possível copiar o nickname. Tente novamente.', 'error');
                                             }
                                         }}
-                                        className="mt-1 min-h-10 px-3 text-xs text-gray-300 hover:text-white rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:opacity-50"
+                                        className="mt-0.5 min-h-8 px-3 text-xs text-gray-300 hover:text-white rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:opacity-50"
                                     >
                                         Copiar nickname
                                     </button>
-                                    <button onClick={() => isOwnProfile && clan && setClanModalOpen(true)} disabled={!isOwnProfile || !clan} className="mt-1.5 bg-black/50 backdrop-blur-sm border border-white/10 rounded-xl py-1.5 px-4 inline-flex flex-col items-center hover:bg-black/70 transition-colors disabled:cursor-default">
+                                    {(isOwnProfile ? clan : viewedClan) && <button onClick={() => isOwnProfile && clan && setClanModalOpen(true)} disabled={!isOwnProfile || !clan} className="mt-1.5 bg-black/50 backdrop-blur-sm border border-white/10 rounded-xl py-1.5 px-4 inline-flex flex-col items-center hover:bg-black/70 transition-colors disabled:cursor-default">
                                         <span className="text-sm font-bold text-white">{clanName}</span>
                                         <span className="text-xs text-gray-400">{currentClanRank?.name || 'N/A'}</span>
-                                    </button>
+                                    </button>}
                                     {/* Viu o perfil nos Feitos e quer adicionar: sem fechar e buscar o nome. */}
                                     {!isOwnProfile && !isFriendProfile && (() => {
                                         const pedidoPendente = friendRequestsOutgoing.some((pedido) => pedido.recipientId === displayProfile.id && pedido.status === 'pending');
@@ -967,7 +1005,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                 </div>
                             </div>
 
-                            <div className="mt-2 px-4 pb-0 w-full">
+                            <div className="mt-2 flex min-h-0 w-full flex-1 flex-col px-4 pb-0">
                                 {modoEssencial ? null : displayProfile.bannerUrl ? (
                                     <div className="relative group mb-0 -my-1 px-4 flex items-center justify-center">
                                         <img src={resolveCatalogAssetUrl(displayProfile.bannerUrl)} alt="Banner" className="mx-auto h-[52px] max-w-[94%] object-contain" crossOrigin="anonymous" />
@@ -987,32 +1025,29 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                 ) : null}
 
                                 <div
-                                    className="mx-3 mt-5 space-y-1.5 rounded-[18px] border bg-black/[.16] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,.025)]"
-                                    style={{ borderColor: 'color-mix(in srgb, var(--skin-accent-color) 11%, rgba(255,255,255,.075))' }}
+                                    className="mt-3 flex min-h-0 flex-col rounded-[18px] border bg-black/60 p-1.5 backdrop-blur-md shadow-[0_12px_32px_rgba(0,0,0,.45),inset_0_1px_0_rgba(255,255,255,.05)]"
+                                    style={{ borderColor: 'color-mix(in srgb, var(--skin-accent-color) 24%, rgba(255,255,255,.08))' }}
                                 >
-                                    <div className="flex bg-black/30 backdrop-blur-sm rounded-xl p-0.5 border border-white/5 mb-2 relative z-20">
-                                        <button
-                                            onClick={() => setActiveWidgetTab('widgets')}
-                                            className={`flex-1 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors ${activeWidgetTab === 'widgets' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
-                                        >
-                                            Widgets
-                                        </button>
-                                        <button
-                                            onClick={() => setActiveWidgetTab('summary')}
-                                            className={`flex-1 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors ${activeWidgetTab === 'summary' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
-                                        >
-                                            Resumo
-                                        </button>
-                                        <button
-                                            onClick={() => setActiveWidgetTab('mastery')}
-                                            className={`flex-1 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors ${activeWidgetTab === 'mastery' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
-                                        >
-                                            Maestria
-                                        </button>
+                                    <div className="relative z-20 mb-1.5 flex shrink-0 rounded-xl bg-white/[.04] p-0.5">
+                                        {abasVisiveis.map((aba) => (
+                                            <button
+                                                key={aba}
+                                                type="button"
+                                                onClick={() => setActiveWidgetTab(aba)}
+                                                className={`flex-auto whitespace-nowrap rounded-lg px-1.5 py-1 text-[9px] font-bold uppercase tracking-[0.02em] transition-colors ${activeWidgetTab === aba ? 'bg-white/12 text-white' : 'text-white/45 hover:text-white/75'}`}
+                                            >
+                                                {{ sovereign: 'Soberano', summary: 'Resumo', mastery: 'Maestria', widgets: 'Widgets' }[aba]}
+                                            </button>
+                                        ))}
                                     </div>
 
+                                    <div data-perfil-abas-conteudo className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-width:none]">
+                                    {activeWidgetTab === 'sovereign' && temSoberanoNaAba && displayProfile.sovereign && (
+                                        <SoberanoNaAba config={displayProfile.sovereign} onAbrir={() => setIsSovereignModalOpen(true)} />
+                                    )}
+
                                     {activeWidgetTab === 'widgets' && (
-                                        <div className="bg-black/30 backdrop-blur-sm p-1.5 rounded-2xl border border-white/5 w-full space-y-2">
+                                        <div className="rounded-2xl p-0.5 w-full space-y-2">
                                             {hasVisibleAssetWidgets ? (
                                                 <div className="grid grid-cols-2 gap-1.5">
                                                     {visibleProfileSlots.map((slot) => (
@@ -1020,13 +1055,13 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                                     ))}
                                                 </div>
                                             ) : !isEditing ? (
-                                                <div className="rounded-2xl border border-white/8 bg-black/24 px-3 py-4 text-center text-sm text-gray-500">
+                                                <div className="rounded-2xl bg-white/[.05] px-3 py-4 text-center text-sm text-gray-500">
                                                     {isOwnProfile ? 'Nenhum widget visível.' : 'Widgets privados.'}
                                                 </div>
                                             ) : null}
 
                                             {isEditing && isOwnProfile && (
-                                                <div className="rounded-2xl border border-white/8 bg-black/24 p-2">
+                                                <div className="rounded-2xl bg-white/[.05] p-2">
                                                     <div className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-gray-400">
                                                         Widgets visíveis
                                                     </div>
@@ -1061,93 +1096,82 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                     )}
 
                                     {activeWidgetTab === 'summary' && (
-                                        <div className="bg-black/30 backdrop-blur-sm p-1.5 rounded-2xl border border-white/5 w-full space-y-2">
-                                            <div className="grid grid-cols-3 gap-2">
-                                                <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
-                                                    <div className="text-[8px] uppercase tracking-[0.22em] text-gray-500">Nível Geral</div>
-                                                    <div className="text-2xl font-bold text-[var(--ui-text-accent)]">{masteryIndex}</div>
-                                                </div>
-                                                <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
-                                                    <div className="text-[8px] uppercase tracking-[0.22em] text-gray-500">Ativos</div>
-                                                    <div className="text-2xl font-bold text-white">{activeAssetCount}</div>
-                                                </div>
-                                                <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
-                                                    <div className="text-[8px] uppercase tracking-[0.22em] text-gray-500">Arenas</div>
-                                                    <div className="text-2xl font-bold text-white">{totalArenaCount}</div>
-                                                </div>
+                                        <div className="w-full space-y-1.5 rounded-2xl p-0.5">
+                                            <div className="grid grid-cols-3 gap-1.5">
+                                                {[
+                                                    { rotulo: 'Nível', valor: masteryIndex, destaque: true },
+                                                    { rotulo: 'Arenas', valor: totalArenaCount },
+                                                    { rotulo: 'Ações', valor: totalActionCount },
+                                                ].map((item) => (
+                                                    <div key={item.rotulo} className="min-w-0 rounded-xl bg-white/[.05] px-1 py-1.5 text-center">
+                                                        <div className="truncate text-[8px] uppercase tracking-[0.14em] text-gray-500">{item.rotulo}</div>
+                                                        <div className={`text-xl font-bold leading-tight tabular-nums ${item.destaque ? 'text-[var(--ui-text-accent)]' : 'text-white'}`}>{item.valor}</div>
+                                                    </div>
+                                                ))}
                                             </div>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
-                                                    <div className="text-[8px] uppercase tracking-[0.22em] text-gray-500">Acoes</div>
-                                                    <div className="text-2xl font-bold text-white">{totalActionCount}</div>
+                                            <div className="space-y-1.5 rounded-xl bg-white/[.05] p-2">
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-400">
+                                                        {isOwnProfile ? 'Progresso do ciclo' : 'Média da maestria'}
+                                                    </span>
+                                                    <span className="text-[11px] font-bold text-white tabular-nums">
+                                                        {isOwnProfile
+                                                            ? `${summaryProgressPercent}%`
+                                                            : `Nível ${masteryAverageLevel.toFixed(1).replace('.', ',')}`}
+                                                    </span>
                                                 </div>
-                                                <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
-                                                    <div className="text-[8px] uppercase tracking-[0.22em] text-gray-500">Maestria</div>
-                                                    <div className="text-2xl font-bold text-white">{masteryAverageLevel.toFixed(1).replace('.', ',')}</div>
+                                                <div className="h-1.5 w-full overflow-hidden rounded-full bg-black/40">
+                                                    <div className="h-full rounded-full bg-[var(--skin-accent-color)] transition-[width] duration-300" style={{ width: `${summaryProgressPercent}%` }} />
                                                 </div>
                                             </div>
                                             {/* Curtidas recebidas. So aparece quando ha numero: em base
                                                 sem a tabela o contexto devolve null, e "0" ali diria
                                                 "ninguém curtiu" onde a verdade e "ninguém contou". */}
                                             {isOwnProfile && curtidasRecebidas !== null && (
-                                                <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
-                                                    <div className="text-[8px] uppercase tracking-[0.22em] text-gray-500">Curtidas recebidas</div>
-                                                    <div className="text-2xl font-bold text-white">{curtidasRecebidas}</div>
+                                                <div className="flex items-center justify-between rounded-xl bg-white/[.05] px-2 py-1.5">
+                                                    <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-400">Curtidas recebidas</span>
+                                                    <span className="text-sm font-bold text-white tabular-nums">{curtidasRecebidas}</span>
                                                 </div>
                                             )}
-                                            <div className="bg-black/20 p-2 rounded-xl border border-white/5 space-y-1.5">
-                                                <div className="flex items-center justify-between gap-3">
-                                                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">
-                                                        {isOwnProfile ? 'Progresso do ciclo' : 'Média da maestria'}
-                                                    </span>
-                                                    <span className="text-[11px] font-bold text-white">
-                                                        {isOwnProfile
-                                                            ? `${summaryProgressPercent}%`
-                                                            : `Nível ${masteryAverageLevel.toFixed(1).replace('.', ',')}`}
-                                                    </span>
-                                                </div>
-                                                <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden">
-                                                    <div className="h-full bg-[var(--skin-accent-color)] rounded-full transition-[width] duration-300" style={{ width: `${summaryProgressPercent}%` }} />
-                                                </div>
-                                            </div>
                                         </div>
                                     )}
 
                                     {activeWidgetTab === 'mastery' && (
                                         canViewMastery && hasMeaningfulMastery ? (
                                             <div className="relative flex w-full items-center justify-center overflow-hidden py-1 before:absolute before:inset-x-7 before:top-1/2 before:h-36 before:-translate-y-1/2 before:bg-[radial-gradient(ellipse,rgba(190,155,77,.10),transparent_70%)]">
-                                                <Suspense fallback={<div className="h-[210px] w-[210px]" />}>
+                                                <Suspense fallback={<div className="h-[176px] w-[176px]" />}>
                                                     <AssetPentagon
                                                         assets={assets}
                                                         tempLevels={profilePentagonLevels}
                                                         showCentralLevel={false}
-                                                        size={210}
+                                                        size={176}
                                                     />
                                                 </Suspense>
                                             </div>
                                         ) : canViewMastery ? (
-                                            <div className="bg-black/30 backdrop-blur-sm p-1.5 rounded-2xl border border-white/5 w-full">
+                                            <div className="rounded-2xl p-0.5 w-full">
                                                 <div className="grid grid-cols-3 gap-2">
-                                                    <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
+                                                    <div className="rounded-xl bg-white/[.05] p-2 text-center">
                                                         <div className="text-[8px] uppercase tracking-[0.22em] text-gray-500">Ativos</div>
                                                         <div className="text-2xl font-bold text-white">{activeAssetCount}</div>
                                                     </div>
-                                                    <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
+                                                    <div className="rounded-xl bg-white/[.05] p-2 text-center">
                                                         <div className="text-[8px] uppercase tracking-[0.22em] text-gray-500">Arenas</div>
                                                         <div className="text-2xl font-bold text-white">{totalArenaCount}</div>
                                                     </div>
-                                                    <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
+                                                    <div className="rounded-xl bg-white/[.05] p-2 text-center">
                                                         <div className="text-[8px] uppercase tracking-[0.22em] text-gray-500">Acoes</div>
                                                         <div className="text-2xl font-bold text-white">{totalActionCount}</div>
                                                     </div>
                                                 </div>
                                             </div>
                                         ) : (
-                                            <div className="bg-black/30 backdrop-blur-sm p-1.5 rounded-2xl border border-white/5 w-full">
+                                            <div className="rounded-2xl p-0.5 w-full">
                                                 <p className="py-4 text-center text-sm text-gray-500">Maestria privada.</p>
                                             </div>
                                         )
                                     )}
+                                    </div>
 
                                 </div>
 
@@ -1171,20 +1195,6 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                 ownerId={isOwnProfile ? displayProfile.id : undefined}
                                 onClick={() => setGardenOpen(true)}
                                 title={isOwnProfile ? 'Meu jardim' : `Jardim de ${displayProfile.nickname || 'jogador'}`}
-                            />
-                        )}
-
-                        {/* Unified Sovereign Display */}
-                        {displayProfile.sovereign && !modoEssencial && (
-                            <UnifiedSovereignDisplay
-                                sovereignConfig={displayProfile.sovereign}
-                                /* Clicar abre a VITRINE, que e onde o soberano se ve
-                                   inteiro e os tres artefatos tem tamanho. Sendo seu,
-                                   ela leva ao editor por um botao; sendo de outra
-                                   pessoa, ela e so de ver — antes disto, o clique no
-                                   perfil alheio abria o editor com a config DELE. */
-                                onClick={() => setIsSovereignModalOpen(true)}
-                                className="absolute top-[60px] right-4 w-[70px]"
                             />
                         )}
 

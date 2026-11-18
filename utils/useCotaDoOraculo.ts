@@ -5,7 +5,7 @@ import { EVENTO_COTA_DO_ORACULO, type CotaDoOraculo } from './oraculoIa';
 /**
  * AS MENSAGENS QUE AINDA CABEM HOJE (03/11/2026, com o Afonso).
  *
- * A cota e de mensagens: gratis 3, Premium 15, Platinum 45. O numero aparece
+ * A cota e de mensagens: gratis 1, Premium 5, Platinum 10 (desde 15/11). O numero aparece
  * junto da caixa de escrever e decide quando ela fecha. Acompanha o evento de
  * cada chamada.
  */

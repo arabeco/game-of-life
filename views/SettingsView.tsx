@@ -1,3 +1,4 @@
+import { PreferenciasSociais } from '../components/PessoasParaConhecer';
 import { CartaoInstalarNoComputador } from '../components/InstalarNoComputador';
 import { useScreenIntroTip } from '../hooks/useScreenIntroTip';
 import './readability-fixes.css';
@@ -9,6 +10,8 @@ import { PRODUCT_FEATURES } from '../constants/featureFlags';
 import { SovereignConfig, RelationshipLink, RelationshipLinkInvite, LinkNotificationType, UserProfile, ProfileVisibilityScope, Arena, Action, ScheduledTask, PlannerViewMode } from '../types';
 import { ChevronRightIcon, XIcon, LightbulbIcon, TrashIcon, CheckIcon, SendIcon } from '../components/Icons';
 import { GlassCard } from '../components/GlassCard';
+import { ProfileBackgroundSurface } from '../components/ProfileBackgroundSurface';
+import { getRankBackgroundToken } from '../utils/profileBackgrounds';
 import { CodexLibrary } from '../components/CodexLibrary';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { MembershipStore } from '../components/Store/MembershipStore';
@@ -292,6 +295,7 @@ const PrivacyPreferencesModal: React.FC<{
                             value={assetsVisibility}
                             onChange={onAssetsVisibilityChange}
                         />
+                        <PreferenciasSociais/>
                         <VisibilityScopeControl
                             label="Árvore de maestria"
                             value={masteryVisibility}
@@ -1876,7 +1880,11 @@ const GeralTab: React.FC = () => {
                 </div>
             ) : (
             <GlassCard variant="accent" className="text-center cursor-pointer relative overflow-hidden group shadow-[0_0_20px_var(--sephirot-glow-color-soft)]" onClick={() => setIsHierarchyVisible(true)} id="profile-section">
-                <div className="absolute inset-0 bg-gradient-to-b from-[var(--sephirot-glow-color,rgba(0,0,0,0))] to-black/60 pointer-events-none" />
+                {/* O fundo da patente atual, o mesmo da escada, escurecido para o texto ler. */}
+                <div className="absolute inset-0 overflow-hidden rounded-[22px] pointer-events-none">
+                    <ProfileBackgroundSurface value={getRankBackgroundToken(currentRank?.id || 'vagante')} className="h-full w-full object-cover" alt="" />
+                </div>
+                <div className="absolute inset-0 rounded-[22px] bg-[linear-gradient(180deg,rgba(6,7,10,0.55)_0%,rgba(6,7,10,0.85)_100%)] pointer-events-none" />
                 <div className="relative z-10 p-2">
                     <p className="mb-1 text-[10px] uppercase tracking-[0.2em]" style={{ color: 'var(--ui-card-text-soft)' }}>Sua Patente</p>
                     <h2 className="text-3xl font-black drop-shadow-lg tracking-tighter" style={{ color: 'var(--ui-card-text)' }}>{currentRank?.name || 'Vagante'}</h2>

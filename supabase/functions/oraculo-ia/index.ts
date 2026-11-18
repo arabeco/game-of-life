@@ -8,7 +8,7 @@ import { guardarPadroes, padroesGuardados } from "../_shared/oraculo-ia-cache.ts
  * O ORACULO COM IA, V1: O CHAT (02/11/2026, com o Afonso).
  *
  * A pessoa pergunta; esta funcao confere a cota do dia (mensagens: gratis 3,
- * Premium 15, Platinum 45), monta os padroes dela a partir
+ * Premium 5, Platinum 10; desde 15/11/2026), monta os padroes dela a partir
  * do banco, junta as ultimas
  * trocas da conversa e chama o Claude Haiku 5.5 pelo OpenRouter, fixado no
  * provedor Anthropic. A IA decide o que dizer; o app so entrega os dados.

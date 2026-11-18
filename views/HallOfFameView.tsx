@@ -1,4 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { supabase } from '../supabaseClient';
+import { montarReino } from '../utils/descobertaReino';
+import { AdicionarPessoa } from '../components/PessoasParaConhecer';
 import { useGame } from '../contexts/GameContext';
 import { FeedEventCard } from '../components/FeedEventCard';
 import { FeedEvent, FeedEventType, UserProfile } from '../types';
@@ -36,6 +39,9 @@ export const HallOfFameView: React.FC = () => {
     const [filter, setFilter] = useState<FeedFilter>('Reino');
     // Tocar no nome ou na foto de quem publicou abre o perfil dele.
     const [perfilAberto, setPerfilAberto] = useState<UserProfile | null>(null);
+    const [pontos,setPontos]=useState<Record<string,number>>({});
+    const autores=useMemo(()=>Array.from(new Set(feed.map(p=>p.userId))).slice(0,200),[feed]);
+    useEffect(()=>{let cancelled=false;setPontos({});if(autores.length)supabase.rpc('pontuacao_do_reino',{p_ids:autores}).then(({data,error})=>{if(!cancelled&&!error)setPontos(Object.fromEntries((data||[]).map((p:{id:string;pontos:number})=>[p.id,p.pontos])));});return()=>{cancelled=true;};},[autores,userProfile.id]);
 
     // Duas abas sem repeticao: Aliados (voce e amigos) e Reino (o resto).
     const filteredFeed = useMemo(
@@ -56,6 +62,8 @@ export const HallOfFameView: React.FC = () => {
         });
         return Array.from(groups.entries());
     }, [filteredFeed]);
+    const reino=useMemo(()=>montarReino(filteredFeed,pontos),[filteredFeed,pontos]);
+    const card=(event:FeedEvent)=><div key={event.id}><FeedEventCard event={event} onAbrirPerfil={setPerfilAberto}/><div className="flex justify-end"><AdicionarPessoa id={event.userId}/></div></div>;
 
     return (
         <div className="space-y-4">
@@ -79,7 +87,10 @@ export const HallOfFameView: React.FC = () => {
             </div>
 
             <div className="space-y-5">
-                {groupedFeed.length > 0 ? (
+                {filter==='Reino'&&filteredFeed.length>0 ? <>
+                    {reino.destaques.length>0&&<section aria-label="Destaques" className="space-y-3"><h2 className="text-sm font-semibold">Destaques da semana</h2>{reino.destaques.map(card)}</section>}
+                    <section aria-label="Descobrir pessoas" className="space-y-3">{reino.posts.map(card)}</section>
+                </> : groupedFeed.length > 0 ? (
                     groupedFeed.map(([bucket, events]) => (
                         <section key={bucket} className="space-y-3">
                             <div className="flex items-center gap-3 px-1">

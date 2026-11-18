@@ -257,7 +257,8 @@ assert.deepEqual(splitCardText('Card antigo sem titulo.'), { titulo: null, texto
 // O push usa o titulo do card como titulo da notificacao, e o chat o mostra em destaque.
 const push = le('supabase/functions/web-push/index.ts');
 assert.match(push, /purpose === "premium_content_card"[\s\S]{0,120}splitCardText\(message\.content/, 'o titulo do push vem do card');
-assert.match(push, /purpose === "cycle_insight"\) return "Seu ciclo hoje"/, 'a leitura diz que e sobre o ciclo');
+// O card da manha com IA (17/11/2026) traz titulo proprio; sem ele, a leitura diz que e sobre o ciclo.
+assert.match(push, /purpose === "cycle_insight"\)[\s\S]{0,200}cardIa\?\.titulo\) \|\| "Seu ciclo hoje"/, 'a leitura diz que e sobre o ciclo');
 assert.doesNotMatch(push, /"O Oraculo deixou um card\."/, 'sem o titulo antigo sem acento');
 assert.match(chat, /splitCardText\(msg\.content\)/, 'o chat mostra o titulo do card em destaque');
 

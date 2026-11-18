@@ -753,7 +753,11 @@ const getOracleMessageTitle = (message: NormalizedOracleMessage): string => {
     const card = splitCardText(message.content || "");
     if (card.titulo) return card.titulo;
   }
-  if (purpose === "cycle_insight") return "Seu ciclo hoje";
+  // O card da manha com IA (17/11/2026) traz o proprio titulo.
+  if (purpose === "cycle_insight") {
+    const cardIa = message.contextSnapshot.cardIa as Record<string, unknown> | undefined;
+    return asTrimmedString(cardIa?.titulo) || "Seu ciclo hoje";
+  }
 
   if (presentation === "info_card") {
     return pickVariant([

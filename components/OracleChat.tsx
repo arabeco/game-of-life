@@ -22,7 +22,8 @@ import { emitOracleSpeech } from '../utils/oracleSpeech';
 import { OracleMissionPanel } from './OracleMissionPanel';
 import { PerguntaAoOraculo } from './PerguntaAoOraculo';
 import { PERGUNTA_LER_MEU_DIA, perguntarAoOraculo } from '../utils/oraculoIa';
-import { Sun, Flag, BookOpen } from 'lucide-react';
+import { Sun, Flag, BookOpen, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { supabase } from '../supabaseClient';
 
 type OracleTabTarget = 'chat' | 'requests';
 // Marca a leitura pedida a mao: uma so por vez na lista, e nunca vai para o banco.
@@ -48,6 +49,8 @@ interface Message {
   feedTrigger?: 'app_open' | 'cron' | 'manual';
   systemId?: string;
   quickActions?: ChatQuickAction[];
+  /** Card da manha com IA (17/11/2026): titulo proprio e o joinha. */
+  feedCardIa?: { titulo: string; nota: number | null };
 }
 
 type ChatQuickAction =
@@ -336,6 +339,10 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
       quickActions: Array.isArray(feedMessage.contextSnapshot?.quickActions)
         ? (feedMessage.contextSnapshot?.quickActions as ChatQuickAction[])
         : undefined,
+      feedCardIa: (() => {
+        const c = feedMessage.contextSnapshot?.cardIa as { titulo?: unknown; nota?: unknown } | undefined;
+        return c && typeof c === 'object' ? { titulo: String(c.titulo || ''), nota: typeof c.nota === 'number' ? c.nota : null } : undefined;
+      })(),
     }));
 
     setMessages((previous) => {
@@ -528,6 +535,21 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   useEffect(() => {
     if (oraculoDigitando) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [oraculoDigitando]);
+  // O JOINHA DO CARD DA MANHA (17/11/2026): a rotina usa a nota para escolher os
+  // proximos assuntos. Marca na hora; se o servidor recusar, volta como estava.
+  const avaliarCardIa = useCallback((feedId: string, nota: -1 | 0 | 1) => {
+    let anterior: number | null = null;
+    const aplicar = (valor: number | null) => setMessages((lista) => lista.map((m) => {
+      if (m.feedId !== feedId || !m.feedCardIa) return m;
+      anterior = m.feedCardIa.nota;
+      return { ...m, feedCardIa: { ...m.feedCardIa, nota: valor } };
+    }));
+    aplicar(nota === 0 ? null : nota);
+    void supabase.rpc('avaliar_card_do_oraculo', { p_message: feedId, p_nota: nota }).then(({ error }) => {
+      if (error) aplicar(anterior);
+    });
+  }, []);
+
   const handleReadMyDay = useCallback(async () => {
     if (lendoMeuDia) return;
     const brief = lerMeuDiaECiclo({ tasks, actions, assets, activeCycle, resetAt: freeProgressResetAt });
@@ -840,7 +862,9 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                       cima, em destaque, como chega na notificacao. Card antigo,
                       sem titulo, continua saindo como uma frase so. */}
                   {(() => {
-                    const card = msg.feedCategory && msg.feedCategory in ORACLE_CARD_LIBRARY ? splitCardText(msg.content) : null;
+                    const card = msg.feedCardIa?.titulo
+                      ? { titulo: msg.feedCardIa.titulo, texto: msg.content }
+                      : msg.feedCategory && msg.feedCategory in ORACLE_CARD_LIBRARY ? splitCardText(msg.content) : null;
                     if (card?.titulo) {
                       return (
                         <div className="text-white/90">
@@ -855,6 +879,26 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                       </div>
                     );
                   })()}
+                  {msg.feedCardIa && msg.feedId && (
+                    <div className="mt-2 flex items-center justify-end gap-1">
+                      {([1, -1] as const).map((nota) => {
+                        const marcado = msg.feedCardIa?.nota === nota;
+                        const Icone = nota === 1 ? ThumbsUp : ThumbsDown;
+                        return (
+                          <button
+                            key={nota}
+                            type="button"
+                            aria-label={nota === 1 ? 'Gostei deste card' : 'Não gostei deste card'}
+                            aria-pressed={marcado}
+                            onClick={() => avaliarCardIa(msg.feedId!, marcado ? 0 : nota)}
+                            className={`grid h-11 w-11 place-items-center rounded-full transition-colors ${marcado ? 'text-[var(--skin-accent-color)]' : 'text-white/35 hover:text-white/70'}`}
+                          >
+                            <Icone size={16} fill={marcado ? 'currentColor' : 'none'} />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                   {!!msg.quickActions?.length && <div className="mt-3 flex flex-wrap gap-2 border-t border-white/10 pt-2">
                     {msg.quickActions.map(action => <button key={action.id} onClick={() => runQuickAction(action)} className="min-h-11 rounded-lg px-2 text-xs font-semibold text-[var(--skin-accent-color)] underline underline-offset-4">{action.label}</button>)}
                   </div>}
@@ -920,7 +964,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
           onDigitando={setIaDigitando}
           onAviso={(texto, comPremium) => setMessages(previous => [...previous, {
             role: 'assistant', content: texto, timestamp: new Date(), mode: currentMode, feedTrigger: 'manual',
-            quickActions: comPremium ? [{ id: 'oraculo-ia-premium', label: 'Ver o Premium', kind: 'open_premium' as const }] : undefined,
+            quickActions: comPremium ? [{ id: 'oraculo-ia-premium', label: 'Premium', kind: 'open_premium' as const }] : undefined,
           }])}
         />}
         {section === 'wisdom' && <div className="shrink-0 border-t border-white/10 bg-black/20 p-3 space-y-2">

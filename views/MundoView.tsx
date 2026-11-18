@@ -1,3 +1,4 @@
+import { PessoasParaConhecer } from '../components/PessoasParaConhecer';
 import { useScreenIntroTip } from '../hooks/useScreenIntroTip';
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
@@ -867,6 +868,7 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
                     </div>
                 ) : (
                     <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
+                        {activeTab === 'aliados' && <PessoasParaConhecer onProfile={setSelectedProfile}/>}
                         {activeTab === 'aliados' && friends.map(friend => (
                             <SocialCard
                                 key={friend.id}

@@ -33,6 +33,7 @@ import '../components/core-ui.css';
 import { PLANNER_ZOOMS, PLANNER_ZOOM_FACTORS, lerZoomSalvo, type PlannerZoom } from '../utils/plannerZoom';
 import { useVibracaoDoArraste } from '../hooks/useVibracaoDoArraste';
 import { EmojiGlyph } from '../components/EmojiGlyph';
+import { ocorrenciaPendenteParaRegistrar, slotJaPassou } from '../utils/ocorrenciaDaAcao';
 
 /**
  * Zoom do planner: um controle so, quatro paradas.
@@ -1518,6 +1519,37 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             }
         };
 
+        /*
+         * SOLTAR UM CHIP NO PASSADO E REGISTRAR, NAO PLANEJAR (15/11/2026).
+         * Se o dia ja tem essa acao pendente, ela vai para o horario em que
+         * aconteceu, com a anotacao dela; criar outra deixava a planejada
+         * pendente e um acontecimento virava dois ("Visita Dada"). No futuro
+         * continua criando: ali a pessoa pode querer a mesma acao duas vezes.
+         */
+        const registrarOuAgendar = (actionId: string, dateString: string, startTimeInMinutes: number, operationalDate: string): Promise<ScheduledTask | undefined> => {
+            const jaPassou = startTimeInMinutes >= 0
+                ? slotJaPassou(dateString, startTimeInMinutes, new Date())
+                : operationalDate < getOperationalDateString();
+            if (jaPassou) {
+                const pendente = ocorrenciaPendenteParaRegistrar(
+                    tasks.map((task) => ({
+                        id: task.id,
+                        actionId: task.actionId,
+                        completed: task.completed,
+                        startTime: Number(task.startTime),
+                        dataOperacional: getTaskOperationalDateString(task),
+                        bloqueada: isTaskAlreadyJudged(task),
+                    })),
+                    { actionId, dataOperacional: operationalDate, inicio: startTimeInMinutes },
+                );
+                if (pendente) {
+                    rescheduleTask(pendente, dateString, startTimeInMinutes);
+                    return Promise.resolve(tasks.find((task) => task.id === pendente));
+                }
+            }
+            return scheduleTask(actionId, dateString, startTimeInMinutes);
+        };
+
         const handleDragEnd = (e: MouseEvent | TouchEvent) => {
             if (e.type === 'touchend' && e.cancelable) e.preventDefault();
             if (!dragState.item) return;
@@ -1586,7 +1618,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 if (target) {
                     const { type, payload } = dragState.item;
                     if (type === 'new_action' && payload?.actionId) {
-                        void scheduleTask(payload.actionId, target.date, -1).then((task) => {
+                        void registrarOuAgendar(payload.actionId, target.date, -1, target.date).then((task) => {
                             if (task) placeExecutionTask(task.id, target.date, target.index, task);
                         });
                     } else if (type === 'reschedule_task') {
@@ -1612,7 +1644,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 const operationalDateString = formatLocalDateString(currentDate);
                 const { dateString, startTimeInMinutes } = resolveOperationalDropSlot(operationalDateString, dailyDropIndicator.top);
                 const { type, payload } = dragState.item;
-                const scheduledTask = type === 'new_action' ?scheduleTask(payload.actionId, dateString, startTimeInMinutes) : rescheduleTask(payload, dateString, startTimeInMinutes);
+                const scheduledTask = type === 'new_action' ? registrarOuAgendar(payload.actionId, dateString, startTimeInMinutes, operationalDateString) : rescheduleTask(payload, dateString, startTimeInMinutes);
             } else if (isOver(weeklyGridRect, 150) && viewMode === 'week' && weeklyDropIndicator) {
                 const dayIndex = weeklyDropIndicator.dayIndex;
                 const startOfWeek = new Date(currentDate);
@@ -1624,7 +1656,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 const operationalDateString = formatLocalDateString(dropDate);
                 const { dateString, startTimeInMinutes } = resolveOperationalDropSlot(operationalDateString, weeklyDropIndicator.top);
                 const { type, payload } = dragState.item;
-                const scheduledTask = type === 'new_action' ?scheduleTask(payload.actionId, dateString, startTimeInMinutes) : rescheduleTask(payload, dateString, startTimeInMinutes);
+                const scheduledTask = type === 'new_action' ? registrarOuAgendar(payload.actionId, dateString, startTimeInMinutes, operationalDateString) : rescheduleTask(payload, dateString, startTimeInMinutes);
             }
 
             if (scrollContainerRef.current) {

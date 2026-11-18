@@ -149,7 +149,8 @@ const servidor = readFileSync(new URL('../supabase/functions/oracle/index.ts', i
 assert.match(servidor, /montarLeituraDoCiclo\(/, 'o push sai do motor');
 assert.match(servidor, /medirCicloPrometido\(/, 'o push usa a regua da tela');
 assert.doesNotMatch(servidor, /buildContextualOracleLine/, 'as 39 frases antigas nao voltam');
-assert.match(servidor, /"id, arena_id, name, repetitions, action_type, source_quest_id, origin_codex_id"/, 'a regua precisa saber o que e missao e o que e campanha');
+// created_at entrou para o card da manha com IA (acao nova conta de quando entrou).
+assert.match(servidor, /"id, arena_id, name, repetitions, action_type, source_quest_id, origin_codex_id(, created_at)?"/, 'a regua precisa saber o que e missao e o que e campanha');
 const semLeitura = servidor.slice(servidor.indexOf('if (!text) {'), servidor.indexOf('const messageId'));
 assert.match(semLeitura, /resolveAutomaticOracleCategory/, 'sem leitura, a Sabedoria ainda sai');
 

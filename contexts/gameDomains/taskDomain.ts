@@ -31,6 +31,7 @@ type CompletionAttentionResult = 'arena' | 'campaign' | null;
 
 import { buildRecurringDates, resolveScheduleHorizon } from '../../utils/cycleScheduling';
 import { buildCycleCommitment } from '../../utils/cycleCommitment';
+import { escolherOcorrenciaParaConcluir } from '../../utils/ocorrenciaDaAcao';
 
 
 export interface TaskDomainApi {
@@ -1116,34 +1117,37 @@ export const createTaskDomain = ({
     };
 
     const scheduleAndCompleteNow = async (actionId: string, taskId?: string) => {
-        if (taskId) {
-            await toggleTaskCompletion(taskId);
+        // Segurar o chip conclui a ocorrencia que ja esta no dia, antes da que
+        // espera na bandeja: concluir a da bandeja deixava a do dia pendente, e
+        // um acontecimento virava duas ocorrencias (utils/ocorrenciaDaAcao.ts).
+        const now = new Date();
+        const operationalDate = getOperationalDateString(now);
+        const escolhida = escolherOcorrenciaParaConcluir(
+            tasks.map((task) => ({
+                id: task.id,
+                actionId: task.actionId,
+                completed: task.completed,
+                startTime: Number(task.startTime),
+                dataOperacional: getTaskOperationalDateString(task),
+                bloqueada: isTaskLockedByJudgment(task),
+            })),
+            { actionId, hojeOperacional: operationalDate, daEspera: taskId },
+        );
+        if (escolhida) {
+            await toggleTaskCompletion(escolhida);
             return;
         }
 
         const action = getActionById(actionId);
         if (!action || action.actionType === 'Marco' || !canUseCampaignAction(action)) return;
 
-        const now = new Date();
-        const operationalDate = getOperationalDateString(now);
         const date = getLocalDateString(now);
         const nowInMinutes = now.getHours() * 60 + now.getMinutes();
         const startTime = nowInMinutes >= OPERATIONAL_DAY_START_MINUTE
             ? Math.max(OPERATIONAL_DAY_START_MINUTE, nowInMinutes - action.duration)
             : Math.max(0, nowInMinutes - action.duration);
-        const existingTaskForToday = tasks.find(task =>
-            task.actionId === actionId &&
-            taskMatchesOperationalDate(task, operationalDate) &&
-            !task.completed
-        );
-
-        if (!existingTaskForToday && !canPlaceTaskInJudgmentScope({ date, startTime })) {
+        if (!canPlaceTaskInJudgmentScope({ date, startTime })) {
             showJudgedActionMutationBlockedToast();
-            return;
-        }
-
-        if (existingTaskForToday) {
-            await toggleTaskCompletion(existingTaskForToday.id);
             return;
         }
 
@@ -1580,6 +1584,9 @@ export const createTaskDomain = ({
             startTime: -1,
             completed: false,
             executionOrder: null,
+            // A anotacao era daquele dia. Na bandeja ela nao aparece, e voltava
+            // escondida no proximo dia em que o chip fosse usado ("Visita Dada").
+            instanceNote: null,
         });
     };
 

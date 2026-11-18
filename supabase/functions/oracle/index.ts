@@ -20,11 +20,14 @@ import {
 import { medirCicloPrometido, montarLeituraDoCiclo, ritmoEsperado } from "../_shared/oracle-cycle-reading.ts";
 import { pickOracleCard } from "../_shared/oracle-card-library.ts";
 import { filaDoDia, type EntregaDeHoje } from "../_shared/oracle-fila-do-dia.ts";
+import { gerarCardDaManha, type CardAnterior } from "../_shared/card-manha-ia.ts";
+import { TONS, type Tom } from "../_shared/oraculo-ia-nucleo.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const WEB_PUSH_WEBHOOK_SECRET = Deno.env.get("WEB_PUSH_WEBHOOK_SECRET") || "";
+const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY") || "";
 const SITE_URL = Deno.env.get("SITE_URL") || "https://app.glyph.life";
 const TIME_ZONE = "America/Sao_Paulo";
 const ALLOWED_ORIGINS = (
@@ -147,6 +150,7 @@ type ArenaRow = {
   name?: string | null;
   is_archived?: boolean | null;
   description?: string | null;
+  completed_at?: string | null;
 };
 
 type ActionRow = {
@@ -157,6 +161,7 @@ type ActionRow = {
   action_type?: string | null;
   source_quest_id?: string | null;
   origin_codex_id?: string | null;
+  created_at?: string | null;
 };
 
 type TaskRow = {
@@ -209,6 +214,7 @@ type OraclePreferencesRow = {
   custom_mode_instructions?: string | null;
   quiet_hours_start?: string | null;
   quiet_hours_end?: string | null;
+  speech_tone?: string | null;
 };
 
 type UserProfileRow = {
@@ -995,6 +1001,49 @@ const getSupabaseAdmin = () => createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
+const assinaturaAtiva = (profile: UserProfileRow | null, now: Date) =>
+  Boolean(profile?.is_premium) && (!profile?.premium_expires_at || Date.parse(profile.premium_expires_at) > now.getTime());
+
+/**
+ * O CARD DA MANHA COM IA: junta o que falta (presenca, ciclos fechados, perfil
+ * das areas e os cards de antes) e pede o card. Null = sai a leitura de regras.
+ */
+const cardDaManhaComIa = async (
+  supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  userId: string,
+  d: {
+    now: Date; hoje: string; tom: Tom;
+    acoes: ActionRow[]; arenas: ArenaRow[]; tarefas: TaskRow[]; niveis: AssetLevelRow[];
+    mensagens: OracleMessageRuntime[];
+  },
+) => {
+  // Quem sumiu nao precisa de card caro: a presenca grava a abertura do app.
+  const { data: presenca } = await supabaseAdmin.from("social_presence").select("seen_at").eq("user_id", userId).maybeSingle();
+  if (!presenca?.seen_at || Date.parse(String(presenca.seen_at)) < d.now.getTime() - 3 * 86400000) return null;
+
+  const [{ data: ciclos }, { data: conta }] = await Promise.all([
+    supabaseAdmin.from("cycles").select("name,start_date,end_date,report_data").eq("user_id", userId).order("start_date", { ascending: false }).limit(4),
+    supabaseAdmin.from("user_profiles").select("asset_widget_values").eq("id", userId).maybeSingle(),
+  ]);
+  const historico: CardAnterior[] = d.mensagens
+    .filter((m) => m.contextSnapshot?.cardIa && typeof m.contextSnapshot.cardIa === "object")
+    .map((m) => {
+      const c = m.contextSnapshot.cardIa as JsonRecord;
+      return { data: getOperationalDateString(new Date(m.createdAt)), tipo: String(c.tipo || ""), assunto: String(c.assunto || ""), texto: m.content, nota: typeof c.nota === "number" ? c.nota : null };
+    });
+
+  const card = await gerarCardDaManha(OPENROUTER_API_KEY, {
+    hoje: d.hoje,
+    ciclos: (ciclos || []) as Array<{ name: string | null; start_date: string; end_date: string; report_data: unknown }>,
+    acoes: d.acoes.map((a) => ({ id: a.id, arena_id: a.arena_id, name: String(a.name || ""), action_type: a.action_type ?? null, repetitions: a.repetitions, source_quest_id: a.source_quest_id, origin_codex_id: a.origin_codex_id, created_at: a.created_at })),
+    arenas: d.arenas.map((a) => ({ id: a.id, name: String(a.name || ""), asset_id: a.asset_id, completed_at: a.completed_at, is_archived: a.is_archived })),
+    tarefas: d.tarefas.map((t) => ({ action_id: t.action_id, date: t.date, start_time: t.start_time ?? null, completed: t.completed === true })),
+    niveis: d.niveis.map((n) => ({ asset_id: String(n.asset_id), level: Number(n.level) })),
+    perfilDasAreas: (conta?.asset_widget_values as Record<string, unknown> | null) || null,
+  }, d.tom, historico);
+  return card ? { ...card, tom: d.tom } : null;
+};
+
 const createAutomaticOracleMessage = async (
   supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
   userId: string,
@@ -1004,7 +1053,7 @@ const createAutomaticOracleMessage = async (
   const [preferencesResult, profileResult] = await Promise.all([
     supabaseAdmin
       .from("oracle_preferences")
-      .select("user_id, ia_enabled, notifications_enabled, daily_focus_card_enabled, presence_level, enabled_categories, active_mode, custom_mode_instructions, quiet_hours_start, quiet_hours_end")
+      .select("user_id, ia_enabled, notifications_enabled, daily_focus_card_enabled, presence_level, enabled_categories, active_mode, custom_mode_instructions, quiet_hours_start, quiet_hours_end, speech_tone")
       .eq("user_id", userId)
       .maybeSingle<OraclePreferencesRow>(),
     supabaseAdmin
@@ -1139,12 +1188,12 @@ const createAutomaticOracleMessage = async (
       //
       // O campo nunca era lido: aparecia so no tipo e neste select. O efeito
       // pratico era o Oraculo parar de produzir card, e sem card nao ha push.
-      .select("id, asset_id, name, is_archived, description")
+      .select("id, asset_id, name, is_archived, description, completed_at")
       .eq("user_id", userId)
       .returns<ArenaRow[]>(),
     supabaseAdmin
       .from("actions")
-      .select("id, arena_id, name, repetitions, action_type, source_quest_id, origin_codex_id")
+      .select("id, arena_id, name, repetitions, action_type, source_quest_id, origin_codex_id, created_at")
       .eq("user_id", userId)
       .returns<ActionRow[]>(),
     fetchReadingTasks(),
@@ -1240,6 +1289,25 @@ const createAutomaticOracleMessage = async (
     }
   }
 
+  // O CARD DA MANHA COM IA (17/11/2026, com o Afonso): so no pago, so para quem
+  // abriu o app nos ultimos 3 dias. Ele toma o lugar da leitura de regras; se a
+  // IA falhar ou nao houver assunto, a leitura de regras sai como sempre.
+  let cardIa: Awaited<ReturnType<typeof cardDaManhaComIa>> = null;
+  if (faltaInsight && OPENROUTER_API_KEY && assinaturaAtiva(profile, now)) {
+    const tom: Tom = TONS.includes(preferencesResult.data?.speech_tone as Tom) ? (preferencesResult.data?.speech_tone as Tom) : "neutro";
+    cardIa = await cardDaManhaComIa(supabaseAdmin, userId, {
+      now, hoje: operationalDate, tom,
+      acoes: actionsResult.data ?? [], arenas: arenasResult.data ?? [], tarefas: tasksResult.data ?? [],
+      niveis: assetLevelsResult.data ?? [], mensagens: oracleMessages,
+    }).catch((erro) => { console.error("card da manha com IA:", String(erro)); return null; });
+    if (cardIa) {
+      text = cardIa.texto;
+      summary = cardIa.titulo;
+      category = "analise_padroes";
+      purpose = "cycle_insight";
+    }
+  }
+
   // SEM NADA PARA LER, A LEITURA FICA QUIETA — E A SABEDORIA NAO.
   //
   // Antes o silencio da leitura dava `return` aqui e segurava o card de tema
@@ -1293,6 +1361,8 @@ const createAutomaticOracleMessage = async (
         operationalState,
         visualTone: purpose === "premium_content_card" ? "neutral" : visualTone,
         summary,
+        // O tipo e o assunto evitam repetir amanha; a nota (joinha) entra aqui depois.
+        ...(cardIa ? { cardIa: { tipo: cardIa.tipo, assunto: cardIa.assunto, tom: cardIa.tom, titulo: cardIa.titulo } } : {}),
       },
       read: false,
       created_at: now.toISOString(),

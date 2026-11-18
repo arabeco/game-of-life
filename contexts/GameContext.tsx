@@ -1199,6 +1199,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     });
 
     const [isProfileLoaded, setIsProfileLoaded] = useState(false);
+    useEffect(() => {
+        const id=session?.user.id;
+        if(!id)return;
+        let stopped=false;
+        const presence=()=>{if(document.visibilityState==='visible')void supabase.rpc('registrar_presenca_social').then(()=>{});};
+        const wallet=async()=>{const {data,error}=await supabase.from('user_profiles').select('gold,fragments,wallet').eq('id',id).single();if(!stopped&&!error&&data)setUserProfile(p=>p.id===id?{...p,wallet:resolveProfileWallet(data,p.wallet)}:p);};
+        presence();const timer=setInterval(presence,15*60000);
+        document.addEventListener('visibilitychange',presence);window.addEventListener('glyph:wallet-refresh',wallet);
+        return()=>{stopped=true;clearInterval(timer);document.removeEventListener('visibilitychange',presence);window.removeEventListener('glyph:wallet-refresh',wallet);};
+    },[session?.user.id]);
 
     const isNewUser = useMemo(() => {
         return !userProfile.completedSeasonMissions?.includes(PROFILE_FLAG_TUTORIAL_COMPLETED);

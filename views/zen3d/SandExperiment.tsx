@@ -1,3 +1,5 @@
+import { GardenVisitMarks } from '../../zen3d-test/GardenVisitMarks';
+import { canDrawGarden, visitCameraMode } from './cameraMotion';
 import { GardenGuide } from './GardenGuide';
 import { GUIDE_PAGES, guidePagesFor, readGuideVersion, markGuideSeen } from './gardenGuideContent';
 import { GardenBasket } from './GardenBasket';
@@ -62,6 +64,7 @@ export default function SandExperiment({skinId='BASIC',theme='dark'}:GardenMenuP
   // O jardim abre como uma vista geral, de cima. Ela nao e o editor nem a
   // caminhada: sao duas escolhas claras nos controles superiores.
   const [mode,setMode]=useState<GardenMode>('overview'),[tool,setTool]=useState<SandTool>('rake');
+  useEffect(()=>{if(readOnly)setMode(visitCameraMode(account?.visitEntered));},[readOnly,account?.visitEntered]);
   const [settings,setSettings]=useState<RakeSettings>({style:1,spacing:1,pressure:1}),[sand,setSand]=useState(initial?.sand??1),[options,setOptions]=useState(false);
   const [view,setView]=useState(VIEW);
   const [artifacts,setArtifacts]=useState<PlacedArtifact[]>(initial?.artifacts??[]),[draft,setDraft]=useState<PlacedArtifact|null>(null),[selected,setSelected]=useState<string|null>(null),[gallery,setGallery]=useState(false),[artNotice,setArtNotice]=useState('Escolha uma arte para o canto superior.');
@@ -191,13 +194,14 @@ export default function SandExperiment({skinId='BASIC',theme='dark'}:GardenMenuP
         {tool==='decor'&&displayedObjects.filter(o=>o.id===decor.active?.id||(decor.kit&&o.fixed)).map(o=><mesh key={`ring-${o.id}`} position={[o.position[0],.10,o.position[2]]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[.65,.74,40]}/><meshBasicMaterial color={decor.draft&&!decor.valid?'#f08070':'#f3d58c'} depthTest={false}/></mesh>)}
         {mode==='build'&&tool==='decor'&&<mesh position={[0,.02,0]} rotation={[-Math.PI/2,0,0]} onClick={e=>{if(e.delta>7||gesture.current)return;e.stopPropagation();if(decor.draft)decor.drop({...decor.draft,position:[e.point.x,0,e.point.z]});else{decor.cancel();}}}><planeGeometry args={[30,40]}/><meshBasicMaterial transparent opacity={0} depthWrite={false}/></mesh>}
         {!readOnly&&account?.basket&&<GardenBasket score={account.basket.score} target={pouchTarget} onOpen={account.basket.open}/>}
+        <GardenVisitMarks/>
         <LegacyStone plaque={account?.legacyPlaque} onInspect={()=>{if(mode!=='build'||drawerCollapsed||(tool!=='rake'&&tool!=='smooth'))setLegacy(true);}}/>
         {artifacts.filter(a=>a.id!==draft?.id).map(a=><ArtifactStand key={a.id} item={a} selected={selected===a.id} onSelect={e=>{if(mode!=='build'||(tool!=='artifacts'&&tool!=='decor')||e.delta>7||gesture.current)return;if(draft){stageArtifact(e);return;}e.stopPropagation();decor.cancel();setTool('artifacts');setSelected(a.id);setGallery(false);}}/>)}
         {mode==='build'&&tool==='artifacts'&&activeArt&&<DragPlacement item={{id:activeArt.id,type:'rock',position:[activeArt.x,0,activeArt.z],rotation:activeArt.rotation,variant:0}} moving={!!draft} onMove={item=>setDraft({...activeArt,x:item.position[0],z:item.position[2]})} canDrop={item=>artifactFits({...activeArt,x:item.position[0],z:item.position[2]},artifacts,fixed)} onDrop={item=>dropArtifact(item?{...activeArt,x:item.position[0],z:item.position[2]}:null)} onCancel={()=>setDraft(null)}/>}
         {draft&&<ArtifactStand key={draft.artifact} item={draft} draft valid={valid} onSelect={stageArtifact}/>}
         {mode==='build'&&tool==='artifacts'&&<mesh position={[0,.02,0]} rotation={[-Math.PI/2,0,0]} onClick={stageArtifact}><planeGeometry args={[30,40]}/><meshBasicMaterial transparent opacity={0} depthWrite={false}/></mesh>}
         {mode==='build'&&itemSelected&&selectedPosition&&<SelectionAnchor position={selectedPosition} element={selectionMenu}/>}
-        <GardenCamera gestureOwner={gestureOwner} sandEditing={!drawerCollapsed&&(tool==='rake'||tool==='smooth')} mode={mode} objects={obstacles} motion={motion} view={view} onView={onView} gesture={gesture} buildNavigation={!legacy&&!help&&!pendingModel&&!itemSelected}/>
+        <GardenCamera autoOrbit={mode==='overview'&&!account?.essential&&!legacy&&!help} gestureOwner={gestureOwner} sandEditing={canDrawGarden(mode,!drawerCollapsed&&(tool==='rake'||tool==='smooth'))} mode={mode} objects={obstacles} motion={motion} view={view} onView={onView} gesture={gesture} buildNavigation={!legacy&&!help&&!pendingModel&&!itemSelected}/>
         </group></QualityGardenProvider>
       </Canvas>
     </div>

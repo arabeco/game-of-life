@@ -59,6 +59,7 @@ export const GOLD_PREMIUM_PRODUCT = {
     benefits: [
         'Até 20 arenas ativas (8 no grátis)',
         'Oráculo com IA: 5 mensagens por dia sobre os seus padrões (1 no grátis)',
+        'Card da manhã escrito pelo Oráculo com IA, sobre o seu ciclo',
         'Leitura Premium no painel do dia e no relatório do ciclo',
         'Oráculo completo: todos os tons, temas e card na hora',
         'Matriz de urgência e importância no planner',

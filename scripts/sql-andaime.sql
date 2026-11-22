@@ -500,3 +500,7 @@ alter table public.user_purchases add column if not exists amount_paid numeric(1
 alter table public.user_purchases add column if not exists status text;
 alter table public.user_purchases add column if not exists created_at timestamptz default now();
 alter table public.user_purchases add column if not exists metadata jsonb;
+
+-- Oraculo com IA (02/11/2026): a conversa gravada pela funcao.
+create table if not exists public.oraculo_ia_mensagens (id bigint generated always as identity primary key, user_id uuid not null, pergunta text not null, resposta text not null, criada_em timestamptz not null default now());
+alter table public.oraculo_ia_mensagens enable row level security;

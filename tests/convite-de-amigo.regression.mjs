@@ -52,11 +52,26 @@ assert.match(convites, /PREMIO_DO_MARCO: Record<MarcoDeConvite, string> = \{ 1: 
 console.log('ok - o servidor trava conta velha, o proprio codigo e o segundo convite, e paga 10 fragmentos, bau Comum e bau Incomum');
 
 // ============================== 2. o campo de cupom serve aos dois
-assert.match(ajustes, /if \(result\.error === 'CODE_NOT_FOUND'\) \{\s*const convite = await usarCodigoDeConvite\(code\);/,
+// 22/11/2026: antes de usar, o app pergunta de quem e o convite e oferece a amizade ja marcada.
+assert.match(ajustes, /if \(result\.error === 'CODE_NOT_FOUND'\) \{[\s\S]{0,300}?supabase\.rpc\('dono_do_convite', \{ p_codigo: code \}\)/,
   'o campo de cupom deixou de tentar o convite quando o cupom nao existe');
+assert.match(ajustes, /const convite = await usarCodigoDeConvite\(code\);\s*if \(convite\.ok\) return;/,
+  'sem a funcao nova no banco, o convite tem de seguir funcionando como antes');
+assert.match(ajustes, /const \[amizade, setAmizade\] = useState\(true\);/, 'adicionar como amigo tem de vir marcado');
+assert.match(ajustes, /await onRedeemInvite\(normalized, amizade && !convite\.jaAmigos\)/);
+assert.match(contexto, /amizade \? \{ p_codigo: codigo \} : \{ p_codigo: codigo, p_amizade: false \}/);
+const opcional = ler('supabase/migrations/20261122130000_convite_com_amizade_opcional.sql');
+assert.match(opcional, /usar_codigo_de_convite\(p_codigo text, p_amizade boolean default true\)/,
+  'sem o parametro, tem de continuar virando amigo (app antigo e convite da instalacao)');
+assert.match(opcional, /if coalesce\(p_amizade, true\) then\s*insert into public\.friends/);
+const dono = opcional.slice(opcional.indexOf('function public.dono_do_convite'), opcional.indexOf('drop function if exists public.usar_codigo_de_convite'));
+assert.doesNotMatch(dono, /'(dono|id|user_id)',/, 'dono_do_convite nao pode devolver o id de ninguem');
+assert.doesNotMatch(dono, /\b(insert|update|delete)\b|credit/i, 'perguntar de quem e o convite nao pode gravar nada');
 assert.match(ajustes, /throw new Error\(mensagemDoErroDeCodigo\(result\.error\)\);/,
   'o modal voltou a mostrar o erro cru do servidor');
-assert.match(ajustes, /<ConviteDeAmigo onReward=\{onReward\} \/>\s*<\/GlassCard>/, 'o bloco do convite saiu de baixo do campo de cupom');
+// 22/11/2026: o bloco do convite fica aberto na tela de Configuracoes, nao dentro da janelinha do codigo.
+assert.match(ajustes, /<ConviteDeAmigo solto onReward=\{setPremioResgatado\} \/>/, 'o convite voltou a morar dentro da janelinha do codigo');
+assert.doesNotMatch(ajustes, /<ConviteDeAmigo onReward=\{onReward\} \/>/);
 assert.match(convites, /case 'CODE_NOT_FOUND': return 'Código não encontrado\.';/);
 assert.match(convites, /case 'ACCOUNT_TOO_OLD':/);
 console.log('ok - o cupom que nao existe vira tentativa de convite, e o erro aparece em portugues');

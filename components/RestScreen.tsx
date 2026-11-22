@@ -24,7 +24,7 @@ import { buildLocalDateFromString, getOperationalDateString, shiftLocalDateStrin
 import { isTaskInPool } from '../utils/taskDomain.js';
 import { EmojiGlyph } from './EmojiGlyph';
 import { SKINS_DATA, BORDERS_DATA, MOODS_DATA } from '../constants';
-import { getNotificationPriority } from '../constants/oracleNotificationPolicy';
+import { getNotificationPriority, getVisibleNotificationsForProfile } from '../constants/oracleNotificationPolicy';
 import { OracleSpeakerMark, type OracleSpeakerTone } from './OracleSpeakerMark';
 import { useGardenBasket } from '../hooks/useGardenBasket';
 import { AttentionBadge } from './AttentionBadge';
@@ -101,7 +101,11 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     const actionSessionReturnedRef = useRef(false);
     // A missao individual cumprida conta como um aviso ate ser recebida na aba Missao.
     const unreadOracleMessages = oracleMessages.filter((message) => !message.read).length + (arenaPactProgress?.completed ? 1 : 0);
-    const unreadNotifications = notifications.filter((notification) => !notification.read);
+    // Conta so os avisos que a pessoa veria ao abrir (22/11/2026). Antes contava
+    // todos: o Oraculo ficava vermelho por um aviso escondido e, ao abrir, nao
+    // havia nada para ver.
+    const unreadNotifications = getVisibleNotificationsForProfile(notifications, oraclePreferences?.activeMode || 'neutro')
+        .filter((notification) => !notification.read);
     const oracleUnreadCount = unreadOracleMessages + unreadNotifications.length;
     const hasCriticalOracleSignal = unreadNotifications.some((notification) => getNotificationPriority(notification.type) === 'critical');
     const hasActionableOracleSignal = unreadNotifications.some((notification) => {

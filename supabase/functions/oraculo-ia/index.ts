@@ -96,7 +96,7 @@ serve(async (req) => {
       return resposta({ erro: "IA_FALHOU" }, 502, headers);
     }
 
-    await supabaseAdmin.from("oraculo_ia_mensagens").insert({ user_id: userId, pergunta, resposta: texto });
+    await supabaseAdmin.from("oraculo_ia_mensagens").insert({ user_id: userId, pergunta, resposta: texto, tom });
     if (memoria !== memoriaAtual) {
       await supabaseAdmin.from("oraculo_ia_memoria").upsert({ user_id: userId, texto: memoria, atualizada_em: new Date().toISOString() });
     }

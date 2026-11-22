@@ -434,7 +434,9 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                             setRestScreenOpen(false);
                         }} 
                         onOpenMood={() => setMoodModalOpen(true)}
-                        onOpenOracle={() => setOracleOpen(true)}
+                        // Mesmo caminho do botao do topo (22/11/2026): se o que acendeu o
+                        // Oraculo foi um aviso, abre direto nos avisos, e nao no chat.
+                        onOpenOracle={handleOracleClick}
                         onOpenClan={() => setClanOpen(true)}
                         onOpenDeepWork={() => setDeepWorkOpen(true)}
                         actionSession={restScreenActionSession}

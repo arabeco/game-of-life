@@ -83,6 +83,14 @@ public class GlyphDayWidgetProvider extends AppWidgetProvider {
         int largura = medir(manager, appWidgetId, AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250, d, 1400) - Math.round(16 * d);
         int altura = medir(manager, appWidgetId, AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 110, d, 2000) - Math.round(55 * d);
         largura = Math.max(Math.round(60 * d), largura);
+
+        // Estreito (22/11/2026: da para encolher ate 2 colunas): o titulo sai e as
+        // abas ficam juntas, para RESUMO e PLANNER caberem lado a lado.
+        boolean estreito = largura < Math.round(170 * d);
+        views.setViewVisibility(R.id.glyph_day_title, estreito ? android.view.View.GONE : android.view.View.VISIBLE);
+        int vao = Math.round((estreito ? 3 : 8) * d);
+        views.setViewPadding(R.id.glyph_day_tab_resumo, estreito ? 0 : vao, 0, vao, 0);
+        views.setViewPadding(R.id.glyph_day_tab_planner, vao, 0, Math.round(4 * d), 0);
         altura = Math.max(Math.round(40 * d), altura);
 
         views.setImageViewBitmap(R.id.glyph_day_body, resumo

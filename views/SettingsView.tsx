@@ -705,21 +705,29 @@ const TutorialSettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
     );
 };
 
+/** O codigo digitado era de um amigo: de quem e, antes de usar (22/11/2026). */
+export type ConviteParaConfirmar = { apelido: string; jaAmigos: boolean };
+
 const RedeemCodeModal: React.FC<{
     open: boolean;
     onClose: () => void;
-    onRedeem: (code: string) => Promise<void>;
-    onReward: (payload: RewardModalPayload) => void;
-}> = ({ open, onClose, onRedeem, onReward }) => {
+    /** Cupom: resgata e pronto. Convite de amigo: devolve de quem e, para a pessoa confirmar. */
+    onRedeem: (code: string) => Promise<void | ConviteParaConfirmar>;
+    onRedeemInvite: (code: string, amizade: boolean) => Promise<void>;
+}> = ({ open, onClose, onRedeem, onRedeemInvite }) => {
     const [code, setCode] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [convite, setConvite] = useState<ConviteParaConfirmar | null>(null);
+    const [amizade, setAmizade] = useState(true);
 
     useEffect(() => {
         if (!open) {
             setCode('');
             setSubmitting(false);
             setError(null);
+            setConvite(null);
+            setAmizade(true);
         }
     }, [open]);
 
@@ -735,7 +743,18 @@ const RedeemCodeModal: React.FC<{
         setSubmitting(true);
         setError(null);
         try {
-            await onRedeem(normalized);
+            if (convite) {
+                await onRedeemInvite(normalized, amizade && !convite.jaAmigos);
+                onClose();
+                return;
+            }
+            const resultado = await onRedeem(normalized);
+            if (resultado) {
+                // Era convite de amigo: mostra de quem e, com "adicionar como amigo" ja marcado.
+                setConvite(resultado);
+                setAmizade(true);
+                return;
+            }
             onClose();
         } catch (redeemError: any) {
             setError(redeemError?.message || 'Não consegui resgatar esse código agora.');
@@ -743,6 +762,8 @@ const RedeemCodeModal: React.FC<{
             setSubmitting(false);
         }
     };
+
+    const apelido = convite?.apelido || 'amigo';
 
     return (
         <Portal>
@@ -756,31 +777,51 @@ const RedeemCodeModal: React.FC<{
                         <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[color:var(--ui-card-text-soft)]">
                             Resgatar código
                         </div>
-                        <h2 className="text-lg font-black uppercase tracking-[0.08em] text-white">Tenho um código</h2>
+                        <h2 className="text-lg font-black uppercase tracking-[0.08em] text-white">{convite ? 'Convite de amigo' : 'Tenho um código'}</h2>
                         <p className="text-sm leading-relaxed text-white/62">
-                            Digite seu código para liberar recompensas, campanhas ou vantagens especiais.
+                            {convite
+                                ? <>Este é o convite de <span className="font-bold text-white">@{apelido}</span>. Ao confirmar, você ganha 10 de ouro.</>
+                                : 'Digite seu código para liberar recompensas, campanhas ou vantagens especiais.'}
                         </p>
                     </div>
 
-                    <input
-                        type="text"
-                        value={code}
-                        onChange={(event) => setCode(event.target.value.toUpperCase())}
-                        placeholder="Digite o código"
-                        disabled={submitting}
-                        className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm uppercase tracking-[0.14em] text-white placeholder:text-white/28 focus:outline-none focus:border-[var(--skin-accent-color)] disabled:opacity-60"
-                    />
+                    {convite ? (
+                        convite.jaAmigos ? (
+                            <p className="text-xs text-white/55">Vocês já são amigos.</p>
+                        ) : (
+                            <button
+                                type="button"
+                                role="checkbox"
+                                aria-checked={amizade}
+                                onClick={() => setAmizade((atual) => !atual)}
+                                disabled={submitting}
+                                className={'inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-xs font-bold transition-colors ' + (amizade ? 'border-[var(--skin-accent-color)]/60 bg-[var(--skin-accent-color)]/15 text-[var(--skin-accent-color)]' : 'border-white/15 bg-white/5 text-white/55')}
+                            >
+                                <span aria-hidden="true" className={'grid h-4 w-4 place-items-center rounded-full border text-[10px] ' + (amizade ? 'border-transparent bg-[var(--skin-accent-color)] text-black' : 'border-white/30')}>{amizade ? '✓' : ''}</span>
+                                Adicionar @{apelido} como amigo
+                            </button>
+                        )
+                    ) : (
+                        <input
+                            type="text"
+                            value={code}
+                            onChange={(event) => setCode(event.target.value.toUpperCase())}
+                            placeholder="Digite o código"
+                            disabled={submitting}
+                            className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm uppercase tracking-[0.14em] text-white placeholder:text-white/28 focus:outline-none focus:border-[var(--skin-accent-color)] disabled:opacity-60"
+                        />
+                    )}
 
                     {error && <p className="text-sm text-red-400">{error}</p>}
 
                     <div className="flex gap-2">
                         <button
                             type="button"
-                            onClick={onClose}
+                            onClick={convite ? () => { setConvite(null); setError(null); } : onClose}
                             disabled={submitting}
                             className="flex-1 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-white/70 disabled:opacity-60"
                         >
-                            Cancelar
+                            {convite ? 'Voltar' : 'Cancelar'}
                         </button>
                         <button
                             type="button"
@@ -788,11 +829,9 @@ const RedeemCodeModal: React.FC<{
                             disabled={submitting}
                             className="flex-1 rounded-2xl bg-[var(--skin-accent-color)] px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-black shadow-[0_0_20px_rgba(212,175,55,0.25)] disabled:opacity-60"
                         >
-                            {submitting ? 'OK...' : 'OK'}
+                            {submitting ? 'OK...' : convite ? 'Confirmar' : 'OK'}
                         </button>
                     </div>
-
-                    <ConviteDeAmigo onReward={onReward} />
                 </GlassCard>
             </div>
         </Portal>
@@ -2043,7 +2082,12 @@ const PreferenciasTab: React.FC = () => {
         updateUserProfile({ gardenVisibility: value });
     };
 
-    const handleRedeemCode = async (code: string) => {
+    const handleRedeemInvite = async (code: string, amizade: boolean) => {
+        const convite = await usarCodigoDeConvite(code, amizade);
+        if (!convite.ok) throw new Error(convite.erro || mensagemDoErroDeCodigo('CODE_NOT_FOUND'));
+    };
+
+    const handleRedeemCode = async (code: string): Promise<void | ConviteParaConfirmar> => {
         const { data: sessionData } = await supabase.auth.getSession();
         const userId = sessionData.session?.user?.id;
         if (!userId) {
@@ -2056,6 +2100,13 @@ const PreferenciasTab: React.FC = () => {
             // aos dois (10/10/2026). So "nao existe" passa para o convite: cupom
             // vencido ou esgotado tem de dizer isso, e nao "codigo nao encontrado".
             if (result.error === 'CODE_NOT_FOUND') {
+                // Antes de usar, diz de quem e o convite (22/11/2026). Sem a funcao
+                // no banco ainda, segue como antes: usa direto e vira amigo.
+                const { data: dono, error: erroDoDono } = await supabase.rpc('dono_do_convite', { p_codigo: code });
+                const quem = (dono || {}) as { found?: boolean; apelido?: string; proprio?: boolean; ja_amigos?: boolean };
+                if (!erroDoDono && quem.found && !quem.proprio) return { apelido: String(quem.apelido || ''), jaAmigos: Boolean(quem.ja_amigos) };
+                if (!erroDoDono && quem.proprio) throw new Error(mensagemDoErroDeCodigo('OWN_CODE'));
+                if (!erroDoDono && quem.found === false) throw new Error(mensagemDoErroDeCodigo('CODE_NOT_FOUND'));
                 const convite = await usarCodigoDeConvite(code);
                 if (convite.ok) return;
                 throw new Error(convite.erro || mensagemDoErroDeCodigo('CODE_NOT_FOUND'));
@@ -2170,6 +2221,11 @@ const PreferenciasTab: React.FC = () => {
             <section className="space-y-4">
                 <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest px-1 border-b border-white/5 pb-2">Suporte</h2>
                 <SettingSelector label="Resgatar código" value="Tenho um código" onClick={() => setModal('redeem')} />
+                {/* O convite fica aberto na tela, com as bolinhas dos marcos (22/11/2026);
+                    antes morava dentro da janelinha do codigo. */}
+                <div className="rounded-xl border border-white/10 bg-black/20 px-4 pb-4">
+                    <ConviteDeAmigo solto onReward={setPremioResgatado} />
+                </div>
                 <button
                     onClick={() => setFeedbackOpen(true)}
                     className="w-full py-4 rounded-xl border border-white/10 bg-black/20 hover:bg-black/30 font-bold text-xs tracking-widest accent-text flex items-center justify-center gap-2 transition-all"
@@ -2217,7 +2273,7 @@ const PreferenciasTab: React.FC = () => {
                     open
                     onClose={() => setModal(null)}
                     onRedeem={handleRedeemCode}
-                    onReward={(payload) => { setModal(null); setPremioResgatado(payload); }}
+                    onRedeemInvite={handleRedeemInvite}
                 />
             )}
             {isFeedbackOpen && <ReportarProblemaModal onClose={() => setFeedbackOpen(false)} />}

@@ -16,7 +16,7 @@ import {
 const RISQUINHOS = Array.from({ length: 9 }, (_, i) => i + 1)
     .filter((n) => !(MARCOS_DE_CONVITE as readonly number[]).includes(n));
 
-export const ConviteDeAmigo: React.FC<{ onReward?: (payload: RewardModalPayload) => void }> = ({ onReward }) => {
+export const ConviteDeAmigo: React.FC<{ onReward?: (payload: RewardModalPayload) => void; solto?: boolean }> = ({ onReward, solto = false }) => {
     const { buscarMeusConvites, receberPremioDeConvite, showToast } = useGame();
     const [convites, setConvites] = useState<MeusConvites | null>(null);
     const [recebendo, setRecebendo] = useState<MarcoDeConvite | null>(null);
@@ -57,7 +57,7 @@ export const ConviteDeAmigo: React.FC<{ onReward?: (payload: RewardModalPayload)
     };
 
     return (
-        <div className="space-y-3 border-t border-white/8 pt-4" data-testid="convite-de-amigo">
+        <div className={solto ? "space-y-3 pt-4" : "space-y-3 border-t border-white/8 pt-4"} data-testid="convite-de-amigo">
             <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[color:var(--ui-card-text-soft)]">
                 Seu código de convite
             </div>

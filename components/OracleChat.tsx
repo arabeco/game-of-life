@@ -24,6 +24,7 @@ import { PerguntaAoOraculo } from './PerguntaAoOraculo';
 import { PERGUNTA_LER_MEU_DIA, perguntarAoOraculo } from '../utils/oraculoIa';
 import { Sun, Flag, BookOpen, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { supabase } from '../supabaseClient';
+import { lerHistoricoDoOraculoIa } from '../utils/historicoDoOraculoIa';
 
 type OracleTabTarget = 'chat' | 'requests';
 // Marca a leitura pedida a mao: uma so por vez na lista, e nunca vai para o banco.
@@ -51,6 +52,8 @@ interface Message {
   quickActions?: ChatQuickAction[];
   /** Card da manha com IA (17/11/2026): titulo proprio e o joinha. */
   feedCardIa?: { titulo: string; nota: number | null };
+  /** Resposta do chat com IA (22/11/2026): mostra o tom e a hora. */
+  respostaIa?: boolean;
 }
 
 type ChatQuickAction =
@@ -223,6 +226,20 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   });
   useEffect(() => { if (initialSection) setSection(initialSection); }, [initialSection]);
   const [messages, setMessages] = useState<Message[]>([]);
+  // A conversa com a IA gravada no servidor (22/11/2026): lida uma vez ao abrir,
+  // num estado proprio, para o carregamento dos cards nao apagar ela.
+  const [historicoIa, setHistoricoIa] = useState<Message[]>([]);
+  useEffect(() => {
+    let vivo = true;
+    void lerHistoricoDoOraculoIa(userProfile.id).then((trocas) => {
+      if (!vivo) return;
+      setHistoricoIa(trocas.flatMap((troca): Message[] => [
+        { role: 'user', content: troca.pergunta, timestamp: troca.criadaEm },
+        { role: 'assistant', content: troca.resposta, timestamp: new Date(troca.criadaEm.getTime() + 1), mode: (troca.tom || ORACLE_FREE_TONE) as OracleMode, respostaIa: true },
+      ]));
+    });
+    return () => { vivo = false; };
+  }, [userProfile.id]);
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
   const isInitialLoadRef = useRef(true);
   
@@ -402,7 +419,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
       return;
     }
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, section]);
+  }, [messages, historicoIa, section]);
 
 
   
@@ -731,7 +748,12 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     // markOracleMessageAsRead muda a cada render; o ref impede marcar duas vezes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [oracleMessages, section]);
-  const visibleMessages = section === 'mission' ? [] : messages.filter(message => section === 'wisdom' ? (message.section === 'wisdom' || wisdomIds.has(message.feedId || '')) : !(message.section === 'wisdom' || wisdomIds.has(message.feedId || '')));
+  // O historico entra antes do que chegou nesta abertura; o que ja esta na tela nao repete.
+  const conversaCompleta = historicoIa.length === 0 ? messages : [
+    ...historicoIa.filter((antiga) => !messages.some((m) => m.role === antiga.role && m.content === antiga.content)),
+    ...messages,
+  ].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+  const visibleMessages = section === 'mission' ? [] : conversaCompleta.filter(message => section === 'wisdom' ? (message.section === 'wisdom' || wisdomIds.has(message.feedId || '')) : !(message.section === 'wisdom' || wisdomIds.has(message.feedId || '')));
 
   const content = (
       <>
@@ -910,6 +932,12 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                     ${visuals.bg} ${visuals.color.replace('text-', 'text-white/90 ')} rounded-tl-sm border ${visuals.border} shadow-inner
                   `}
                 >
+                  {msg.respostaIa && (
+                    <div className="mb-1.5 flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.18em] text-white/45">
+                      <span>Oráculo · {ORACLE_TONE_LABELS[msgMode].name}</span>
+                      <span className="ml-auto font-semibold normal-case tracking-normal tabular-nums text-white/32">{formatFeedMoment(msg.timestamp)}</span>
+                    </div>
+                  )}
                   {msg.content}
                   {msg.quickActions && msg.quickActions.length > 0 && (
                     <div className="mt-3 border-t border-white/10 pt-3 text-sm leading-relaxed text-white/80">
@@ -958,7 +986,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
           tom={isPremiumUser ? (oraclePreferences?.speechTone || ORACLE_FREE_TONE) : ORACLE_FREE_TONE}
           gratis={!isPremiumUser}
           onPergunta={(pergunta) => setMessages(previous => [...previous, { role: 'user', content: pergunta, timestamp: new Date(), mode: currentMode }])}
-          onResposta={(resposta) => setMessages(previous => [...previous, { role: 'assistant', content: resposta, timestamp: new Date(), mode: currentMode, feedCategory: 'analise_padroes', feedTrigger: 'manual' }])}
+          onResposta={(resposta) => setMessages(previous => [...previous, { role: 'assistant', content: resposta, timestamp: new Date(), mode: (isPremiumUser ? (oraclePreferences?.speechTone || ORACLE_FREE_TONE) : ORACLE_FREE_TONE) as OracleMode, feedCategory: 'analise_padroes', feedTrigger: 'manual', respostaIa: true }])}
           onLerMeuDia={() => { void handleReadMyDay(); }}
           lendoMeuDia={lendoMeuDia}
           onDigitando={setIaDigitando}

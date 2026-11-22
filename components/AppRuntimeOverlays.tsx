@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Portal } from './Portal';
 import { supabase } from '../supabaseClient';
-import { useLongPress } from '../hooks/useLongPress';
 import { LEGAL_PRIVACY_URL_PLACEHOLDER, LEGAL_TERMS_URL_PLACEHOLDER } from '../constants/legal';
 
 const OracleIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -43,22 +42,22 @@ export const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void }> = (
     const [step, setStep] = useState(0);
     const [typedText, setTypedText] = useState('');
     const [isTyping, setIsTyping] = useState(false);
-    const [isHolding, setIsHolding] = useState(false);
     const [isSealing, setIsSealing] = useState(false);
-    const holdDurationMs = 800;
     const currentClause = clauses[step];
     const isLast = step === clauses.length - 1;
+    // Ate onde a digitacao chegou. Mora num ref para o toque de pular nao ser
+    // desfeito pela proxima letra do intervalo.
+    const letraRef = useRef(0);
 
     useEffect(() => {
         if (!open) return;
+        letraRef.current = 0;
         setTypedText('');
         setIsTyping(true);
-        setIsHolding(false);
-        let i = 0;
         const timer = window.setInterval(() => {
-            i += 1;
-            setTypedText(currentClause.text.slice(0, i));
-            if (i >= currentClause.text.length) {
+            letraRef.current += 1;
+            setTypedText(currentClause.text.slice(0, letraRef.current));
+            if (letraRef.current >= currentClause.text.length) {
                 window.clearInterval(timer);
                 setIsTyping(false);
             }
@@ -66,8 +65,15 @@ export const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void }> = (
         return () => window.clearInterval(timer);
     }, [step, open, currentClause.text]);
 
+    const mostrarTudo = () => {
+        letraRef.current = currentClause.text.length;
+        setTypedText(currentClause.text);
+        setIsTyping(false);
+    };
+
     const handleAccept = () => {
-        setIsHolding(false);
+        if (isSealing) return;
+        mostrarTudo();
         setIsSealing(true);
         window.setTimeout(() => {
             setIsSealing(false);
@@ -76,41 +82,78 @@ export const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void }> = (
         }, 820);
     };
 
-    const longPressEvents = useLongPress({
-        onLongPress: () => {
-            if (isTyping) {
-                setTypedText(currentClause.text);
-                setIsTyping(false);
-            }
-            if (isLast) handleAccept();
-        },
-        onLongPressCancel: () => setIsHolding(false),
-        onLongPressRelease: () => setIsHolding(false),
-        onClick: () => {
-            setIsHolding(false);
-            if (isTyping) {
-                setTypedText(currentClause.text);
-                setIsTyping(false);
-                return;
-            }
-            if (!isLast) {
-                setStep((prev) => Math.min(prev + 1, clauses.length - 1));
-            }
-        },
-        delay: holdDurationMs,
-        preventDefaultOnTouch: true,
-    });
-
-    const handleMouseDown = (e: React.MouseEvent) => {
-        if (isLast) setIsHolding(true);
-        longPressEvents.onMouseDown?.(e);
+    // Clausulas do meio: um toque. Se ainda estiver escrevendo, o toque mostra
+    // o texto inteiro; o seguinte avanca.
+    const avancar = () => {
+        if (isTyping) { mostrarTudo(); return; }
+        setStep((prev) => Math.min(prev + 1, clauses.length - 1));
     };
 
-    const handleTouchStart = (e: React.TouchEvent) => {
-        if (e.cancelable) e.preventDefault();
-        if (isLast) setIsHolding(true);
-        longPressEvents.onTouchStart?.(e);
+    /*
+     * ACEITAR: ARRASTAR (22/11/2026, com o Afonso).
+     *
+     * Era "segure", e travava: tocar nao fazia nada e nao dizia nada, o dedo
+     * mexer 10px cancelava em silencio, e o anel enchia na hora em vez de
+     * acompanhar o tempo. Gente nao sabia que era de segurar, e um amigo dele
+     * ficou preso aqui.
+     *
+     * Agora e UM gesto so, e ele se explica: um trilho com a bolinha, escrito
+     * "Arraste ate o fim para aceitar", e a bolinha mostra sozinha o caminho
+     * (desliza um pedaco e volta) quando a clausula aparece e a cada toque sem
+     * arrastar. A bolinha segue o dedo; chegou ao fim, aceita; soltou antes,
+     * volta. Sem timer, nao ha como travar.
+     */
+    const trilhoRef = useRef<HTMLButtonElement>(null);
+    const bolinhaRef = useRef<HTMLSpanElement>(null);
+    const arrasteRef = useRef<{ inicioX: number; largura: number; arrastou: boolean } | null>(null);
+    const [puxado, setPuxado] = useState(0);
+    const mostrarOCaminho = () => {
+        const bolinha = bolinhaRef.current;
+        const largura = (trilhoRef.current?.clientWidth || 0) - 56;
+        if (!bolinha || largura <= 0 || typeof bolinha.animate !== 'function') return;
+        if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+        bolinha.animate(
+            [
+                { transform: 'translateX(0px)' },
+                { transform: `translateX(${Math.round(largura * 0.45)}px)`, offset: 0.45 },
+                { transform: `translateX(${Math.round(largura * 0.45)}px)`, offset: 0.6 },
+                { transform: 'translateX(0px)' },
+            ],
+            { duration: 1100, easing: 'ease-in-out' },
+        );
     };
+    const comecarArraste = (event: React.PointerEvent<HTMLButtonElement>) => {
+        if (isSealing) return;
+        bolinhaRef.current?.getAnimations?.().forEach((animacao) => animacao.cancel());
+        const largura = Math.max(1, (trilhoRef.current?.clientWidth || 1) - 56);
+        arrasteRef.current = { inicioX: event.clientX, largura, arrastou: false };
+        try { event.currentTarget.setPointerCapture(event.pointerId); } catch { /* alguns WebViews nao deixam */ }
+    };
+    const moverArraste = (event: React.PointerEvent<HTMLButtonElement>) => {
+        const arraste = arrasteRef.current;
+        if (!arraste) return;
+        const fracao = Math.max(0, Math.min(1, (event.clientX - arraste.inicioX) / arraste.largura));
+        if (fracao > 0.04) arraste.arrastou = true;
+        setPuxado(fracao);
+        if (fracao >= 0.9) { arrasteRef.current = null; setPuxado(1); handleAccept(); }
+    };
+    const soltarArraste = () => {
+        const arraste = arrasteRef.current;
+        arrasteRef.current = null;
+        if (!arraste) return;
+        // Soltou antes do fim: a bolinha volta. Tocou sem arrastar: ela mostra o caminho.
+        setPuxado(0);
+        if (!arraste.arrastou) mostrarOCaminho();
+    };
+    const cancelarArraste = () => { arrasteRef.current = null; setPuxado(0); };
+    useEffect(() => { if (!isSealing) setPuxado(0); }, [step, isSealing]);
+    // Assim que a ultima clausula aparece, a bolinha mostra o gesto uma vez.
+    useEffect(() => {
+        if (!open || !isLast) return;
+        const timer = window.setTimeout(mostrarOCaminho, 700);
+        return () => window.clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open, isLast]);
 
     if (!open) return null;
 
@@ -164,53 +207,44 @@ export const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void }> = (
                             </div>
 
                             <div className="mt-4 flex w-full justify-center">
-                                <div
-                                    className={`relative flex cursor-pointer select-none flex-col items-center justify-center gap-1 border-2 border-[var(--gold)] shadow-[0_0_15px_rgba(184,134,11,0.2)] transition-all hover:shadow-[0_0_25px_rgba(184,134,11,0.4)] active:scale-95 ${
-                                        isLast ? 'h-24 w-24 rounded-full md:h-32 md:w-32' : 'w-full rounded-xl px-10 py-4'
-                                    }`}
-                                    onMouseDown={handleMouseDown}
-                                    onTouchStart={handleTouchStart}
-                                    onContextMenu={longPressEvents.onContextMenu}
-                                    style={{
-                                        touchAction: 'none',
-                                        userSelect: 'none',
-                                        WebkitUserSelect: 'none',
-                                        WebkitTouchCallout: 'none',
-                                    } as React.CSSProperties}
-                                >
-                                    <span
-                                        className={`font-black uppercase text-[#725015] ${
-                                            isLast ? 'text-sm tracking-widest md:text-base' : 'text-xs tracking-[0.4em] md:text-sm'
-                                        }`}
+                                {isLast ? (
+                                    <button
+                                        ref={trilhoRef}
+                                        type="button"
+                                        id="terms-accept-track"
+                                        aria-label="Aceitar os termos: arraste a bolinha até o fim"
+                                        onPointerDown={comecarArraste}
+                                        onPointerMove={moverArraste}
+                                        onPointerUp={soltarArraste}
+                                        onPointerCancel={cancelarArraste}
+                                        onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); handleAccept(); } }}
+                                        disabled={isSealing}
+                                        className="relative h-14 w-full select-none overflow-hidden rounded-full border-2 border-[var(--gold)] bg-[#efe6d2] shadow-[0_0_15px_rgba(184,134,11,0.2)]"
+                                        style={{ touchAction: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' } as React.CSSProperties}
                                     >
-                                        {isLast ? (isHolding ? 'FIRMAR...' : 'ACEITAR') : 'PRÓXIMO'}
-                                    </span>
-                                    <span className={`${isLast ? 'text-[#625c53]' : 'text-[#625c53]'} px-2 text-center text-[11px] font-bold uppercase tracking-[0.1em] md:text-[10px]`}>
-                                        {isHolding ? 'ASSINANDO' : isLast ? 'SEGURE' : 'AVANÇAR'}
-                                    </span>
-
-                                    {isLast ? (
-                                        <svg className="pointer-events-none absolute inset-0 h-full w-full -rotate-90">
-                                            <circle
-                                                cx="50%"
-                                                cy="50%"
-                                                r="48%"
-                                                stroke="var(--gold)"
-                                                strokeWidth="4"
-                                                fill="transparent"
-                                                className="transition-all duration-100 ease-linear"
-                                                style={{ strokeDashoffset: isHolding ? 0 : 315, strokeDasharray: 315, opacity: isHolding ? 1 : 0 }}
-                                            />
-                                        </svg>
-                                    ) : (
-                                        <div
-                                            className="absolute bottom-0 left-0 h-0.5 rounded-full bg-[var(--gold)] shadow-[0_0_15px_var(--gold)] transition-all duration-100 ease-linear"
-                                            style={{ width: `${isHolding ? 100 : 0}%`, opacity: isHolding ? 1 : 0 }}
-                                        />
-                                    )}
-
-                                    {isHolding && isLast && <div className="pointer-events-none absolute inset-0 animate-pulse rounded-full bg-[var(--gold)]/10" />}
-                                </div>
+                                        <span className="pointer-events-none absolute inset-y-0 left-0 rounded-full bg-[var(--gold)]/25" style={{ width: `calc(56px + (100% - 56px) * ${puxado})` }} />
+                                        <span className="pointer-events-none relative block pl-12 text-center text-[11px] font-black uppercase tracking-[0.16em] text-[#725015]">
+                                            {isSealing ? 'Firmando…' : 'Arraste até o fim para aceitar'}
+                                        </span>
+                                        <span
+                                            ref={bolinhaRef}
+                                            className={`pointer-events-none absolute left-1 top-1 grid h-11 w-11 place-items-center rounded-full bg-[radial-gradient(circle,#fff4c2_0%,#f4cd67_50%,#9a6d12_100%)] text-lg font-black text-black shadow-md ${arrasteRef.current ? '' : 'transition-transform duration-300'}`}
+                                            style={{ transform: `translateX(calc((${trilhoRef.current?.clientWidth || 0}px - 56px) * ${puxado}))` }}
+                                            aria-hidden="true"
+                                        >
+                                            ›
+                                        </span>
+                                    </button>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={avancar}
+                                        className="relative flex w-full select-none flex-col items-center justify-center gap-1 rounded-xl border-2 border-[var(--gold)] px-10 py-4 shadow-[0_0_15px_rgba(184,134,11,0.2)] transition-all hover:shadow-[0_0_25px_rgba(184,134,11,0.4)] active:scale-95"
+                                    >
+                                        <span className="text-xs font-black uppercase tracking-[0.4em] text-[#725015] md:text-sm">PRÓXIMO</span>
+                                        <span className="px-2 text-center text-[11px] font-bold uppercase tracking-[0.1em] text-[#625c53] md:text-[10px]">{isTyping ? 'Toque para ler tudo' : 'Toque para avançar'}</span>
+                                    </button>
+                                )}
                             </div>
                             <div className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[10px] text-[#625c53] md:text-[11px]">
                                 <a
@@ -221,7 +255,7 @@ export const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void }> = (
                                 >
                                     Termos completos
                                 </a>
-                                <span className="text-[#625c53]">?</span>
+                                <span className="text-[#625c53]" aria-hidden="true">·</span>
                                 <a
                                     href={LEGAL_PRIVACY_URL_PLACEHOLDER}
                                     target="_blank"

@@ -13,45 +13,49 @@ interface SplashScreenProps {
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete, isLoading, sempreComVideo }) => {
     const [preferQuietResume] = useState(() => !sempreComVideo && (consumeNativeBackgroundSplashHint() || hasActivePersistedRestScreenActionSession()));
-    const splashMaxDuration = preferQuietResume ? 1200 : 5200;
-    const splashFadeDuration = preferQuietResume ? 320 : 520;
-    const splashMinDuration = preferQuietResume ? 680 : 0;
+    /*
+     * UMA TELA SO ATE O APP ESTAR PRONTO (22/11/2026, com o Afonso).
+     *
+     * A abertura tinha teto de 5,2s e saia mesmo com o app ainda carregando:
+     * por baixo apareciam "Preparando o ambiente" e depois "Carregando", tres
+     * telas de espera seguidas. Agora o video (ou a logo, na volta do fundo)
+     * fica ate o app estar pronto, com a barrinha andando devagar, e so entao
+     * some. O teto vira uma rede de seguranca longa: se algo travar, o app
+     * aparece com o aviso dele em vez de a abertura prender a pessoa.
+     */
+    const splashMaxDuration = preferQuietResume ? 0 : 5200;
+    const splashSafetyCap = 20000;
+    const splashFadeDuration = preferQuietResume ? 260 : 520;
+    const splashMinDuration = 0;
     const [progress, setProgress] = useState(0);
     const [videoEnded, setVideoEnded] = useState(false);
     const [maxTimeReached, setMaxTimeReached] = useState(false);
+    const [safetyCapReached, setSafetyCapReached] = useState(false);
     const [isFadingOut, setIsFadingOut] = useState(false);
-    const [minTimeReached, setMinTimeReached] = useState(!preferQuietResume);
+    const [minTimeReached, setMinTimeReached] = useState(true);
     const videoSrc = preferQuietResume ? undefined : '/videos/intro.mp4';
     const shouldHideProgress = isFadingOut || (!isLoading && !videoEnded && !maxTimeReached);
 
+    // A barrinha anda rapido no comeco e cada vez mais devagar perto do fim,
+    // entao nunca parece parada enquanto espera; so chega a 100 quando sai.
     useEffect(() => {
+        if (isFadingOut) return;
         const interval = window.setInterval(() => {
-            setProgress((prev) => {
-                if (videoEnded || maxTimeReached) {
-                    return 100;
-                }
-
-                const cappedProgress = 94;
-                if (prev >= cappedProgress) {
-                    return cappedProgress;
-                }
-
-                return Math.min(cappedProgress, prev + 1.4);
-            });
+            setProgress((prev) => Math.min(94, prev + Math.max(0.04, (94 - prev) * 0.008)));
         }, 45);
-
         return () => window.clearInterval(interval);
-    }, [isLoading, videoEnded, maxTimeReached]);
+    }, [isFadingOut]);
 
     useEffect(() => {
-        const timer = window.setTimeout(() => {
-            setMaxTimeReached(true);
-        }, splashMaxDuration);
-
-        return () => {
-            window.clearTimeout(timer);
-        };
+        if (splashMaxDuration <= 0) { setMaxTimeReached(true); return; }
+        const timer = window.setTimeout(() => setMaxTimeReached(true), splashMaxDuration);
+        return () => window.clearTimeout(timer);
     }, [splashMaxDuration]);
+
+    useEffect(() => {
+        const timer = window.setTimeout(() => setSafetyCapReached(true), splashSafetyCap);
+        return () => window.clearTimeout(timer);
+    }, []);
 
     useEffect(() => {
         if (splashMinDuration <= 0) {
@@ -75,11 +79,12 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete, isLoadin
     }, [preferQuietResume]);
 
     useEffect(() => {
-        if (!minTimeReached) return;
-        if (!maxTimeReached && (!videoEnded || isLoading)) return;
+        if (!minTimeReached || isFadingOut) return;
+        const aberturaTerminou = videoEnded || maxTimeReached;
+        if (!safetyCapReached && (!aberturaTerminou || isLoading)) return;
         setProgress(100);
         setIsFadingOut(true);
-    }, [isLoading, maxTimeReached, minTimeReached, videoEnded]);
+    }, [isFadingOut, isLoading, maxTimeReached, minTimeReached, safetyCapReached, videoEnded]);
 
     useEffect(() => {
         if (!isFadingOut) return;
@@ -98,7 +103,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete, isLoadin
                 className={`fixed inset-0 z-[10000] bg-black flex items-center justify-center transition-all ease-out ${preferQuietResume ? 'duration-300' : 'duration-500'} ${isFadingOut ? 'opacity-0 scale-[0.992] pointer-events-none' : 'opacity-100 scale-100'}`}
             >
                 <div className="relative w-full max-w-[300px] aspect-[9/16] max-h-[60vh] bg-black rounded-2xl overflow-hidden shadow-[0_16px_50px_rgba(0,0,0,0.45)] border border-white/5">
-                    {preferQuietResume ? (
+                    {preferQuietResume || (videoEnded && isLoading) ? (
                         <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_28%),linear-gradient(180deg,#120d09_0%,#050505_48%,#000000_100%)]">
                             <div className="absolute inset-0 pointer-events-none">
                                 <div className="absolute inset-x-0 top-0 h-56 bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.18),transparent_58%)]" />
@@ -112,10 +117,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete, isLoadin
                                         <img src="/logo-core.png" alt="" className="h-full w-full" />
                                     </div>
                                 </div>
-                                <div className="space-y-1">
-                                    <p className="text-[10px] font-black uppercase tracking-[0.34em] text-white/55">Retomando</p>
-                                    <p className="text-sm font-medium text-white/76">Voltando direto para o app.</p>
-                                </div>
+                                {/* Volta do fundo: so a logo, sem texto de "retomando" (22/11/2026). */}
                             </div>
                         </div>
                     ) : (

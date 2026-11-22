@@ -946,7 +946,7 @@ export interface GameContextType {
     /** Dias diferentes em que a pessoa abriu o app (a missao inicial dos sete dias). */
     diasNoApp: number;
     /** Convide um amigo: o codigo de convite digitado no campo de cupom. */
-    usarCodigoDeConvite: (codigo: string) => Promise<{ ok: boolean; erro?: string; naoEConvite?: boolean; definitivo?: boolean }>;
+    usarCodigoDeConvite: (codigo: string, amizade?: boolean) => Promise<{ ok: boolean; erro?: string; naoEConvite?: boolean; definitivo?: boolean }>;
     buscarMeusConvites: () => Promise<MeusConvites | null>;
     receberPremioDeConvite: (marco: MarcoDeConvite, onReward?: (payload: RewardModalPayload) => void) => Promise<boolean>;
     /** `substituir` troca o pacto ativo pelo novo, encerrando o anterior. */
@@ -13534,10 +13534,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
      * (20261010150000_convite_de_amigo.sql); aqui a carteira, os baus e a lista
      * de amigos acompanham o que ele devolveu.
      */
-    const usarCodigoDeConvite = async (codigo: string): Promise<{ ok: boolean; erro?: string; naoEConvite?: boolean; definitivo?: boolean }> => {
+    const usarCodigoDeConvite = async (codigo: string, amizade = true): Promise<{ ok: boolean; erro?: string; naoEConvite?: boolean; definitivo?: boolean }> => {
         const userId = getSupabaseUserId();
         if (!userId) return { ok: false, erro: 'Sua sessão não foi encontrada.' };
-        const { data, error } = await supabase.rpc('usar_codigo_de_convite', { p_codigo: codigo });
+        // p_amizade so vai quando a pessoa desmarcou: o padrao do servidor ja e virar amigos (22/11/2026).
+        const { data, error } = await supabase.rpc('usar_codigo_de_convite', amizade ? { p_codigo: codigo } : { p_codigo: codigo, p_amizade: false });
         // Falha de rede ou servidor fora: nao e um "nao" do servidor.
         if (error) return { ok: false, erro: mensagemDoErroDeCodigo(error.message), definitivo: false };
         const resposta = (data || {}) as { success?: boolean; error?: string; new_gold?: number; amigo?: string };
@@ -13548,7 +13549,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         updateUserProfile({ wallet: { ...userProfile.wallet, gold: ouro } });
         await loadFriendsAndRequests(userId);
         window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
-        showToast(resposta.amigo
+        showToast(resposta.amigo && amizade
             ? `+10 de ouro. Você e ${resposta.amigo} agora são amigos.`
             : '+10 de ouro. Convite aceito.', 'success');
         return { ok: true };

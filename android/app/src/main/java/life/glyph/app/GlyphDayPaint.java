@@ -204,7 +204,9 @@ final class GlyphDayPaint {
             vazio.setTextSize(11 * d);
             vazio.setTypeface(Typeface.create(Typeface.SERIF, Typeface.ITALIC));
             vazio.setTextAlign(Paint.Align.CENTER);
-            canvas.drawText("Nada no planner hoje.", calha + (largura - calha) / 2f, altura / 2f, vazio);
+            // Widget estreito: a frase curta, para nao vazar da coluna.
+            String frase = largura - calha < 130 * d ? "Nada hoje." : "Nada no planner hoje.";
+            canvas.drawText(frase, calha + (largura - calha) / 2f, altura / 2f, vazio);
         }
 
         float x0 = calha + 4 * d;

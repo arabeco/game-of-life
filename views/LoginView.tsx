@@ -23,6 +23,7 @@ import {
     launchAppleSignIn,
 } from '../utils/appleAuth';
 import { saveSessionBackup } from '../utils/sessionBackup';
+import { forcaDaSenha, MENSAGEM_SENHA_FRACA } from '../utils/forcaDaSenha';
 import { EyeIcon, EyeOffIcon } from '../components/Icons';
 import './login-ui.css';
 
@@ -121,16 +122,7 @@ export const LoginView: React.FC = () => {
         return data ?? null;
     };
 
-    const getPasswordStrength = (pass: string) => {
-        if (pass.length === 0) return { score: 0, label: '', color: 'bg-gray-800' };
-        if (pass.length < 8) return { score: 1, label: 'RUIM', color: 'bg-red-500' };
-
-        const hasNumber = /\d/.test(pass);
-        const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(pass);
-
-        if (hasNumber || hasSpecial) return { score: 3, label: 'FORTE', color: 'bg-green-500' };
-        return { score: 2, label: 'MÉDIA', color: 'bg-yellow-500' };
-    };
+    const getPasswordStrength = forcaDaSenha;
 
     const isDeletedAccountBlocked = async (rawEmail: string) => {
         const normalizedEmail = rawEmail.trim();
@@ -153,7 +145,7 @@ export const LoginView: React.FC = () => {
 
         const strength = getPasswordStrength(draft.password);
         if (strength.score < 3) {
-            return 'A senha deve ter pelo menos 8 caracteres e incluir um número ou caractere especial.';
+            return MENSAGEM_SENHA_FRACA;
         }
 
         return null;

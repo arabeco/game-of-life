@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Portal } from './Portal';
 import { supabase } from '../supabaseClient';
+import { MENSAGEM_SENHA_FRACA, senhaAceita } from '../utils/forcaDaSenha';
 import { LEGAL_PRIVACY_URL_PLACEHOLDER, LEGAL_TERMS_URL_PLACEHOLDER } from '../constants/legal';
 
 const OracleIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -379,8 +380,9 @@ export const ResetPasswordOverlay: React.FC<{ onClose: () => void }> = ({ onClos
     const [success, setSuccess] = useState(false);
 
     const handleReset = async () => {
-        if (newPassword.length < 6) {
-            setError('A senha deve ter pelo menos 6 caracteres.');
+        // A mesma regra do cadastro (utils/forcaDaSenha).
+        if (!senhaAceita(newPassword)) {
+            setError(MENSAGEM_SENHA_FRACA);
             return;
         }
         setLoading(true);

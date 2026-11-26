@@ -274,7 +274,11 @@ create table if not exists public.scheduled_tasks (
   completed boolean default false,
   completed_at timestamptz,
   execution_order integer,
-  created_at timestamptz default now()
+  created_at timestamptz default now(),
+  -- Conferidos no information_schema de producao em 26/11/2026.
+  instance_note text,
+  reminder_enabled boolean,
+  reminder_minutes integer
 );
 
 -- Amizade e marcadores de compra: o que as regras secretas de borda e banner
@@ -491,6 +495,10 @@ create table if not exists public.codex_catalog (
   price_gold integer,
   price_brl numeric(10,2)
 );
+-- As aulas das campanhas (26/11): o modelo e a ficha.
+alter table public.codex_catalog add column if not exists description text;
+alter table public.codex_catalog add column if not exists duration_days integer;
+alter table public.codex_catalog add column if not exists template jsonb;
 
 -- Teste do Luigi (29/10): as fichas e as colunas reais de user_purchases.
 alter table public.user_profiles add column if not exists fichas_de_vinculo integer not null default 0;
@@ -504,3 +512,8 @@ alter table public.user_purchases add column if not exists metadata jsonb;
 -- Oraculo com IA (02/11/2026): a conversa gravada pela funcao.
 create table if not exists public.oraculo_ia_mensagens (id bigint generated always as identity primary key, user_id uuid not null, pergunta text not null, resposta text not null, criada_em timestamptz not null default now());
 alter table public.oraculo_ia_mensagens enable row level security;
+
+-- Storage com limite (26/11/2026): os buckets e a funcao de pasta do Supabase.
+create table if not exists storage.buckets (id text primary key, public boolean default false, file_size_limit bigint, allowed_mime_types text[]);
+create or replace function storage.foldername(name text) returns text[] language sql immutable as $$ select (string_to_array(name, '/'))[1:array_length(string_to_array(name, '/'), 1) - 1] $$;
+alter table storage.objects enable row level security;

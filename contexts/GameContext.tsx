@@ -46,6 +46,7 @@ import { useQuestSharedDomain } from './gameDomains/questSharedDomain';
 import { buildCyclePaceMetrics, buildDailyExpSnapshot, buildTaskPoolEntries, filterCycleTasksByScope, getInitialDailyCommitmentTaskIds, getTaskBaseExp, mergeTasksIntoCommitment } from '../utils/coreLoopUtils.js';
 import { buildFairScoreFromTasks, recalculateReportsWithFairScore } from '../utils/fairScoreUtils.js';
 import { carregarCiclosFechados } from '../utils/ciclosFechados';
+import { carregarTarefasDaAbertura, DIAS_SEMPRE_FRESCOS } from '../utils/tarefasAntigas';
 import { COLUNAS_DA_TAREFA, COLUNAS_DO_INVENTARIO, perfilDeAbertura, semODono } from '../utils/aberturaEnxuta';
 import { assinaturaDaMissao, deveRecolher, entrarComDesfazer, lerStatusDaMissao, mensagemDoErroDaMissao, podeReceber, type StatusDaMissao } from '../utils/missaoDoCla';
 import { notaDoCiclo } from '../utils/cycleGrade.js';
@@ -3599,12 +3600,28 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
 
-        void fetchSocialFeed();
-        const intervalId = window.setInterval(() => {
+        // O feed so recarrega com a tela a vista: em segundo plano ninguem le,
+        // e eram 80 linhas a cada 2 min de egress a toa. Ao voltar, busca na
+        // hora se a ultima leitura ja passou dos 2 min.
+        const INTERVALO_MS = 120000;
+        let ultimaLeitura = Date.now();
+        const recarregar = () => {
+            if (document.visibilityState !== 'visible') return;
+            ultimaLeitura = Date.now();
             void fetchSocialFeed();
-        }, 120000);
+        };
+        const aoVoltar = () => {
+            if (Date.now() - ultimaLeitura >= INTERVALO_MS) recarregar();
+        };
 
-        return () => window.clearInterval(intervalId);
+        void fetchSocialFeed();
+        const intervalId = window.setInterval(recarregar, INTERVALO_MS);
+        document.addEventListener('visibilitychange', aoVoltar);
+
+        return () => {
+            window.clearInterval(intervalId);
+            document.removeEventListener('visibilitychange', aoVoltar);
+        };
     }, [session?.user.id, fetchSocialFeed]);
 
     const [clanQuestProgress, setClanQuestProgress] = useState<Record<string, Record<string, number>>>(() => ({}));
@@ -5735,6 +5752,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const taskHorizon = new Date();
             taskHorizon.setDate(taskHorizon.getDate() + TASK_LOAD_HORIZON_DAYS);
             const maxDate = getLocalDateString(taskHorizon);
+            const freshFloorDate = new Date();
+            freshFloorDate.setDate(freshFloorDate.getDate() - DIAS_SEMPRE_FRESCOS);
+            const freshFloor = getLocalDateString(freshFloorDate);
 
             const [
                 arenasResult,
@@ -5746,11 +5766,22 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             ] = await rateLimiter.batchRequests([
                 () => supabase.from('arenas').select('*').eq('user_id', userId),
                 () => supabase.from('actions').select('*').eq('user_id', userId),
-                () => semODono(
-                    userId,
-                    () => supabase.from('scheduled_tasks').select(COLUNAS_DA_TAREFA).eq('user_id', userId).gte('date', minDate).lte('date', maxDate),
-                    () => supabase.from('scheduled_tasks').select('*').eq('user_id', userId).gte('date', minDate).lte('date', maxDate),
-                ),
+                // Os ultimos 14 dias e o futuro descem sempre; o mais velho vem
+                // da copia no celular, dia a dia (utils/tarefasAntigas).
+                () => carregarTarefasDaAbertura(userId, {
+                    recentes: () => semODono(
+                        userId,
+                        () => supabase.from('scheduled_tasks').select(COLUNAS_DA_TAREFA).eq('user_id', userId).gte('date', freshFloor).lte('date', maxDate),
+                        () => supabase.from('scheduled_tasks').select('*').eq('user_id', userId).gte('date', freshFloor).lte('date', maxDate),
+                    ),
+                    impressoes: () => supabase.rpc('impressoes_das_tarefas', { p_de: minDate, p_ate: freshFloor }),
+                    dias: (dias) => supabase.from('scheduled_tasks').select(COLUNAS_DA_TAREFA).eq('user_id', userId).gte('date', minDate).lt('date', freshFloor).in('date', dias),
+                    tudo: () => semODono(
+                        userId,
+                        () => supabase.from('scheduled_tasks').select(COLUNAS_DA_TAREFA).eq('user_id', userId).gte('date', minDate).lte('date', maxDate),
+                        () => supabase.from('scheduled_tasks').select('*').eq('user_id', userId).gte('date', minDate).lte('date', maxDate),
+                    ),
+                }),
                 () => supabase.from('asset_levels').select('*').eq('user_id', userId),
                 () => supabase
                     .from('cycles')

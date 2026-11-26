@@ -127,17 +127,25 @@ const abrir = () => new Promise<IDBDatabase>((resolver, rejeitar) => {
     pedido.onblocked = () => rejeitar(new Error('IndexedDB bloqueado'));
 });
 
-export const copiaNoCelular: CopiaDosRelatorios = {
-    ler: (userId) => comPrazo(abrir().then((banco) => new Promise<Guardados | null>((resolver, rejeitar) => {
-        const pedido = banco.transaction(LOJA, 'readonly').objectStore(LOJA).get(chave(userId));
-        pedido.onsuccess = () => { banco.close(); resolver((pedido.result as Guardados) ?? null); };
+/**
+ * Uma copia por conta, na mesma loja do IndexedDB. A loja se chama
+ * `relatorios-fechados` por historia; as tarefas antigas (utils/tarefasAntigas)
+ * moram nela com outra chave. Uma loja nova pediria subir a versao do banco, e
+ * quem abrisse com a versao velha cairia em VersionError.
+ */
+export const copiaGuardada = <T,>(chaveDaConta: (userId: string) => string) => ({
+    ler: (userId: string) => comPrazo(abrir().then((banco) => new Promise<T | null>((resolver, rejeitar) => {
+        const pedido = banco.transaction(LOJA, 'readonly').objectStore(LOJA).get(chaveDaConta(userId));
+        pedido.onsuccess = () => { banco.close(); resolver((pedido.result as T) ?? null); };
         pedido.onerror = () => { banco.close(); rejeitar(pedido.error); };
     })), 2000),
-    gravar: (userId, guardados) => comPrazo(abrir().then((banco) => new Promise<void>((resolver, rejeitar) => {
+    gravar: (userId: string, guardados: T) => comPrazo(abrir().then((banco) => new Promise<void>((resolver, rejeitar) => {
         const transacao = banco.transaction(LOJA, 'readwrite');
-        transacao.objectStore(LOJA).put(guardados, chave(userId));
+        transacao.objectStore(LOJA).put(guardados, chaveDaConta(userId));
         transacao.oncomplete = () => { banco.close(); resolver(); };
         transacao.onerror = () => { banco.close(); rejeitar(transacao.error); };
         transacao.onabort = () => { banco.close(); rejeitar(transacao.error); };
     })), 5000),
-};
+});
+
+export const copiaNoCelular: CopiaDosRelatorios = copiaGuardada<Guardados>(chave);

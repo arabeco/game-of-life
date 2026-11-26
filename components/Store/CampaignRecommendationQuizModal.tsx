@@ -123,14 +123,14 @@ const fullTitles = (answers: QuizAnswers) => {
             return ['Manhã Energetica', 'Corpo em Movimento', 'Sono de Elite'];
         case 'B':
             return answers.p2 === 'A'
-                ? ['Foco Básico (Anti-Distracao)', 'Leitura Ativa', 'Detox Digital', 'Estoicismo Aplicado', 'Foco Blindado']
+                ? ['Foco Básico (Anti-Distracao)', 'Mente sem Armadilhas', 'Detox Digital', 'Estoicismo Aplicado', 'Foco Blindado']
                 : ['Manutenção da Base (Casa)', 'Logística de Vanguarda', 'Foco Básico (Anti-Distracao)', 'Detox Digital'];
         case 'C':
             return answers.p2 === 'B'
                 ? ['Diário de Bordo (Journaling)', 'Logística de Vanguarda', 'Construção de Identidade', 'Liderança sem Cargo']
                 : ['Motor de Produtividade', 'Criatividade em Sprint', 'Expressao Criativa', 'Foco Blindado'];
         case 'D': return ['Radar Financeiro', 'Controle de Impulsos', 'Finanças com Intencao', 'Maestria Financeira'];
-        case 'E': return ['Sincronia de Rede', 'Presença Real', 'Voz e Presença', 'Construção de Clã'];
+        case 'E': return ['Sincronia de Rede', 'Presença Real', 'Voz e Presença', 'Círculo Forte'];
         case 'F': return answers.p2 === 'B'
             ? ['Construção de Identidade', 'Estoicismo Aplicado', 'Liderança sem Cargo']
             : ['Diário de Bordo (Journaling)', 'Estoicismo Aplicado', 'Construção de Identidade'];

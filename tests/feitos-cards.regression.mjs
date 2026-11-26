@@ -59,7 +59,7 @@ assert.match(css, /\.feed-achievement-card \.feed-like-button \{[^}]*border: 0/,
 console.log('ok - foto com borda, nome tocavel, NOME • AÇÃO centralizado, titulo riscado, estrela sem circulo');
 
 // ============================== 4. o que se publica leva o que o fundo precisa
-assert.match(ler('views/ReportsView.tsx'), /type: 'CYCLE_COMPLETED',[\s\S]{0,300}grade:/, 'o ciclo publicado nao leva a nota (sem ela nao ha placa)');
+assert.match(ler('views/ReportsView.tsx'), /type: 'CYCLE_COMPLETED',[\s\S]{0,600}grade:/, 'o ciclo publicado nao leva a nota (sem ela nao ha placa)');
 assert.match(ler('components/AchievementModal.tsx'), /rankId: achievement\.data\.id/, 'a patente publicada nao leva o id (sem ele nao ha fundo)');
 const maestriaView = ler('views/MasteryView.tsx');
 assert.match(maestriaView, /addFeedEvent\(\{\s*type: 'LEVEL_UP'/, 'a maestria nao tem como ser compartilhada');

@@ -91,7 +91,16 @@
     "arte:pendente": "node scripts/placeholders-pendentes.mjs",
     "arte:nova": "node scripts/build-arte-nova.mjs",
     "test:nota-do-ciclo": "node tests/nota-do-ciclo.regression.mjs",
-    "test:ciclo-no-banco": "node tests/ciclo-so-existe-no-banco.regression.mjs"
+    "test:ciclo-no-banco": "node tests/ciclo-so-existe-no-banco.regression.mjs",
+    "test:tarefas-antigas": "node tests/tarefas-antigas.regression.mjs",
+    "test:feed-so-com-a-tela-a-vista": "node tests/feed-so-com-a-tela-a-vista.regression.mjs",
+    "test:funcoes-internas-fechadas": "node tests/funcoes-internas-fechadas.regression.mjs",
+    "test:aulas-das-campanhas": "node tests/aulas-das-campanhas.regression.mjs",
+    "campanhas:gerar": "node scripts/campanhas-md.mjs",
+    "test:bau-e-codigos-travados": "node tests/bau-e-codigos-travados.regression.mjs",
+    "test:senha-uma-regra": "node tests/senha-uma-regra.regression.mjs",
+    "backup": "node scripts/backup-banco.mjs",
+    "restaurar": "node scripts/restaurar-tabela.mjs"
   },
   "dependencies": {
     "@capacitor-community/speech-recognition": "7.0.1",
